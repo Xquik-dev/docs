@@ -371,7 +371,7 @@ app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
 
   const event = JSON.parse(payload);
 
-  switch (event.type) {
+  switch (event.eventType) {
     case "tweet.new":
       console.log(`New tweet from @${event.username}: ${event.data.text}`);
       break;
@@ -410,9 +410,9 @@ def webhook():
 
     event = request.get_json()
 
-    if event["type"] == "tweet.new":
+    if event["eventType"] == "tweet.new":
         print(f"New tweet from @{event['username']}: {event['data']['text']}")
-    elif event["type"] == "tweet.reply":
+    elif event["eventType"] == "tweet.reply":
         print(f"Reply from @{event['username']}: {event['data']['text']}")
 
     return "OK", 200
@@ -458,15 +458,15 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var event struct {
-		Type     string `json:"type"`
-		Username string `json:"username"`
-		Data     struct {
+		EventType string `json:"eventType"`
+		Username  string `json:"username"`
+		Data      struct {
 			Text string `json:"text"`
 		} `json:"data"`
 	}
 	json.Unmarshal(payload, &event)
 
-	switch event.Type {
+	switch event.EventType {
 	case "tweet.new":
 		fmt.Printf("New tweet from @%s: %s\n", event.Username, event.Data.Text)
 	case "tweet.reply":
@@ -556,13 +556,15 @@ The agent calls the `search-tweets` tool:
   {
     "id": "1893456789012345678",
     "text": "TypeScript 6.0 compiler is 10x faster. The rewrite in Go was worth it.",
-    "author": "typescript",
+    "authorUsername": "typescript",
+    "authorName": "TypeScript",
     "createdAt": "2026-02-24T14:22:00.000Z"
   },
   {
     "id": "1893456789012345999",
     "text": "Benchmarked our monorepo build: 45s down to 4s with the new TS compiler.",
-    "author": "webdevexpert",
+    "authorUsername": "webdevexpert",
+    "authorName": "Web Dev Expert",
     "createdAt": "2026-02-24T13:10:00.000Z"
   }
 ]
@@ -591,9 +593,9 @@ The agent calls the `add-monitor` tool:
 ```json
 {
   "id": "12",
-  "username": "typescript",
-  "xUserId": "809233214",
+  "xUsername": "typescript",
   "eventTypes": ["tweet.new", "tweet.reply"],
+  "isActive": true,
   "createdAt": "2026-02-24T15:00:00.000Z"
 }
 ```
@@ -620,11 +622,11 @@ The agent calls the `get-events` tool:
   "events": [
     {
       "id": "9010",
-      "type": "tweet.new",
-      "monitorId": "12",
-      "username": "typescript",
+      "eventType": "tweet.new",
+      "monitoredAccountId": "12",
+      "xUsername": "typescript",
       "occurredAt": "2026-02-24T16:45:00.000Z",
-      "data": {
+      "eventData": {
         "tweetId": "1893556789012345678",
         "text": "TypeScript 6.0.1 patch release is out. Fixes incremental build edge cases.",
         "metrics": { "likes": 3200, "retweets": 890, "replies": 245 }
