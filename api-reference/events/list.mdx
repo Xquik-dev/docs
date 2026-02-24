@@ -1,0 +1,89 @@
+---
+title: List Events
+description: Query events from monitored accounts with filtering and pagination
+---
+
+<Note>
+  This endpoint requires **API key** authentication only.
+</Note>
+
+## Request
+
+```
+GET /api/v1/events
+```
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `x-api-key` | Yes | Your API key |
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | number | 50 | Results per page (1-100) |
+| `monitorId` | string | — | Filter by monitor ID |
+| `eventType` | string | — | Filter by event type |
+| `after` | string | — | Cursor for pagination |
+
+## Response
+
+```json
+{
+  "events": [
+    {
+      "id": "9001",
+      "type": "tweet.new",
+      "monitorId": "7",
+      "username": "elonmusk",
+      "occurredAt": "2026-02-24T14:22:00.000Z",
+      "data": {
+        "tweetId": "1893456789012345678",
+        "text": "The future is now.",
+        "metrics": {
+          "likes": 42000,
+          "retweets": 8500,
+          "replies": 3200
+        }
+      },
+      "xEventId": "evt_abc123"
+    }
+  ],
+  "hasMore": true,
+  "nextCursor": "MjAyNi0wMi0yNFQxNDoyMjowMC4wMDBafDkwMDE="
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `events` | array | List of event objects |
+| `hasMore` | boolean | Whether more results exist |
+| `nextCursor` | string | Pass as `after` to fetch next page (present only when `hasMore` is `true`) |
+
+### Event Object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Event ID |
+| `type` | string | Event type (`tweet.new`, etc.) |
+| `monitorId` | string | Associated monitor ID |
+| `username` | string | X username that triggered the event |
+| `occurredAt` | string | ISO 8601 timestamp of the event |
+| `data` | object | Event-specific payload |
+| `xEventId` | string | X platform event ID (optional) |
+
+### Pagination
+
+Use cursor-based pagination to iterate through events:
+
+```bash
+# First page
+curl "https://xquik.com/api/v1/events?limit=10" \
+  -H "x-api-key: xqk_YOUR_KEY"
+
+# Next page
+curl "https://xquik.com/api/v1/events?limit=10&after=MjAyNi0w..." \
+  -H "x-api-key: xqk_YOUR_KEY"
+```

@@ -1,0 +1,79 @@
+---
+title: Webhooks Overview
+description: Real-time event delivery to your HTTPS endpoints
+---
+
+# Webhooks
+
+Webhooks deliver events from monitored X accounts to your server in real time. Every delivery is signed with HMAC-SHA256 so you can verify authenticity.
+
+## How It Works
+
+```
+X Account Activity → Xquik Stream → Your Webhook Endpoint
+```
+
+<Steps>
+  <Step title="Create a monitor">
+    Monitor an X account for specific event types (tweets, replies, quotes, retweets).
+  </Step>
+  <Step title="Register a webhook">
+    Provide an HTTPS URL and select which event types to receive. Xquik generates a signing secret.
+  </Step>
+  <Step title="Receive events">
+    When a monitored account triggers an event, Xquik sends an HTTPS POST to your endpoint with the event payload and an HMAC signature header.
+  </Step>
+  <Step title="Verify & process">
+    Verify the `X-Signature` header using your webhook secret, then process the event.
+  </Step>
+</Steps>
+
+## Delivery Format
+
+Webhook events are delivered as HTTPS POST requests:
+
+**Headers:**
+
+| Header | Value |
+|--------|-------|
+| `Content-Type` | `application/json` |
+| `X-Signature` | `sha256=HMAC_HEX_DIGEST` |
+
+**Body:**
+
+```json
+{
+  "id": "9001",
+  "type": "tweet.new",
+  "monitorId": "7",
+  "username": "elonmusk",
+  "occurredAt": "2026-02-24T14:22:00.000Z",
+  "data": {
+    "tweetId": "1893456789012345678",
+    "text": "The future is now.",
+    "metrics": {
+      "likes": 42000,
+      "retweets": 8500,
+      "replies": 3200
+    }
+  }
+}
+```
+
+## Retry Policy
+
+Failed deliveries are retried with exponential backoff:
+
+| Attempt | Delay |
+|---------|-------|
+| 1 | Immediate |
+| 2 | ~30 seconds |
+| 3 | ~2 minutes |
+
+After 3 failed attempts, the delivery is marked as `failed`. Check delivery status via the [deliveries endpoint](/api-reference/webhooks/deliveries).
+
+## Requirements
+
+- Endpoint **must** use HTTPS
+- Endpoint **must** respond with `2xx` within 10 seconds
+- Non-2xx responses or timeouts count as failures

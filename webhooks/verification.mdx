@@ -1,0 +1,123 @@
+---
+title: Signature Verification
+description: Verify HMAC-SHA256 signatures on incoming webhook deliveries
+---
+
+# Signature Verification
+
+Every webhook delivery includes an `X-Signature` header containing an HMAC-SHA256 signature. Always verify this signature before processing events.
+
+## How It Works
+
+1. Xquik computes `sha256=` + HMAC-SHA256(webhook secret, raw JSON body)
+2. The result is sent in the `X-Signature` header
+3. Your server recomputes the signature and compares using constant-time comparison
+
+## Implementation
+
+<CodeGroup>
+
+```javascript Node.js
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+function verifyWebhookSignature(payload, signature, secret) {
+  const expected =
+    "sha256=" + createHmac("sha256", secret).update(payload).digest("hex");
+
+  return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+
+// Express example
+app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
+  const signature = req.headers["x-signature"];
+  const payload = req.body.toString();
+
+  if (!verifyWebhookSignature(payload, signature, WEBHOOK_SECRET)) {
+    return res.status(401).send("Invalid signature");
+  }
+
+  const event = JSON.parse(payload);
+  // Process event...
+
+  res.status(200).send("OK");
+});
+```
+
+```python Python
+import hmac
+import hashlib
+from flask import Flask, request
+
+app = Flask(__name__)
+
+def verify_webhook_signature(payload: bytes, signature: str, secret: str) -> bool:
+    expected = "sha256=" + hmac.new(
+        secret.encode(), payload, hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature)
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    signature = request.headers.get("X-Signature", "")
+    payload = request.get_data()
+
+    if not verify_webhook_signature(payload, signature, WEBHOOK_SECRET):
+        return "Invalid signature", 401
+
+    event = request.get_json()
+    # Process event...
+
+    return "OK", 200
+```
+
+```go Go
+package main
+
+import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"io"
+	"net/http"
+)
+
+func verifySignature(payload []byte, signature, secret string) bool {
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write(payload)
+	expected := "sha256=" + hex.EncodeToString(mac.Sum(nil))
+	return hmac.Equal([]byte(expected), []byte(signature))
+}
+
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+	payload, _ := io.ReadAll(r.Body)
+	signature := r.Header.Get("X-Signature")
+
+	if !verifySignature(payload, signature, webhookSecret) {
+		http.Error(w, "Invalid signature", http.StatusUnauthorized)
+		return
+	}
+
+	// Process event...
+	fmt.Fprint(w, "OK")
+}
+```
+
+</CodeGroup>
+
+## Security Checklist
+
+<AccordionGroup>
+  <Accordion title="Always verify before processing">
+    Never process webhook payloads without verifying the signature first. An unverified payload could be a spoofed request.
+  </Accordion>
+  <Accordion title="Use constant-time comparison">
+    Use `timingSafeEqual` (Node.js), `hmac.compare_digest` (Python), or `hmac.Equal` (Go). String equality (`===`) is vulnerable to timing attacks.
+  </Accordion>
+  <Accordion title="Use the raw request body">
+    Compute the HMAC over the raw request body bytes, not a re-serialized JSON object. Re-serialization can alter whitespace or key ordering.
+  </Accordion>
+  <Accordion title="Respond quickly">
+    Return `200` within 10 seconds. Process events asynchronously if your handler is slow.
+  </Accordion>
+</AccordionGroup>

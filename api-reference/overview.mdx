@@ -1,11 +1,11 @@
 ---
 title: API Overview
-description: Xquik REST API v1
+description: Xquik REST API v1 — base URL, authentication, rate limits, conventions
 ---
 
 # API Overview
 
-The Xquik REST API v1 provides programmatic access to monitors, events, and webhooks.
+The Xquik REST API v1 provides programmatic access to monitors, events, webhooks, and account management.
 
 ## Base URL
 
@@ -13,32 +13,106 @@ The Xquik REST API v1 provides programmatic access to monitors, events, and webh
 https://xquik.com/api/v1
 ```
 
+All endpoints are served over HTTPS. HTTP requests are redirected.
+
 ## Authentication
 
-All API requests require an API key passed via the `Authorization` header:
+API requests require an API key passed via the `x-api-key` header:
 
 ```bash
-Authorization: Bearer YOUR_API_KEY
+x-api-key: xqk_YOUR_KEY_HERE
 ```
 
-Generate API keys from your [dashboard](https://xquik.com).
+Some endpoints also accept session cookie authentication (from the dashboard). See the [authentication guide](/api-reference/authentication) for details.
+
+## Rate Limits
+
+| Scope | Limit | Burst |
+|-------|-------|-------|
+| API endpoints | 10 req/s | 20 |
+| General requests | 20 req/s | 40 |
+
+Rate limits are enforced at the server level. Exceeding limits returns `429 Too Many Requests`.
+
+## Conventions
+
+### IDs
+
+All IDs are returned as strings representing bigint values:
+
+```json
+{ "id": "123456789" }
+```
+
+### Timestamps
+
+All timestamps are ISO 8601 in UTC:
+
+```json
+{ "createdAt": "2026-02-24T10:30:00.000Z" }
+```
+
+### Error Responses
+
+All errors follow a consistent format:
+
+```json
+{ "error": "error_code" }
+```
+
+| Status | Error Code | Meaning |
+|--------|-----------|---------|
+| 400 | `invalid_input` | Request body failed validation |
+| 400 | `invalid_id` | Path parameter is not a valid ID |
+| 401 | `unauthenticated` | Missing or invalid API key |
+| 403 | `monitor_limit_reached` | Plan monitor limit exceeded |
+| 404 | `not_found` | Resource does not exist or is not owned by you |
+| 409 | `monitor_already_exists` | Duplicate monitor for the same X account |
+| 429 | — | Rate limited |
+| 500 | `internal_error` | Server error |
+
+### Pagination
+
+List endpoints return up to 200 items. The events endpoint supports cursor-based pagination:
+
+```json
+{
+  "events": [...],
+  "hasMore": true,
+  "nextCursor": "MjAyNi0wMi0yNFQxMDozMDowMC4wMDBafDEyMzQ1Njc4OQ=="
+}
+```
+
+Pass `nextCursor` as the `after` query parameter to fetch the next page.
+
+## Event Types
+
+These event types are used across monitors, webhooks, and events:
+
+| Type | Description |
+|------|-------------|
+| `tweet.new` | New tweet posted |
+| `tweet.quote` | Quote tweet posted |
+| `tweet.reply` | Reply posted |
+| `tweet.retweet` | Retweet posted |
 
 ## Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/monitors` | List all monitors |
-| POST | `/monitors` | Create a monitor |
-| GET | `/monitors/:id` | Get monitor details |
-| PATCH | `/monitors/:id` | Update a monitor |
-| DELETE | `/monitors/:id` | Delete a monitor |
-| GET | `/monitors/:id/events` | List monitor events |
-| GET | `/webhooks` | List all webhooks |
-| POST | `/webhooks` | Create a webhook |
-| GET | `/webhooks/:id` | Get webhook details |
-| PATCH | `/webhooks/:id` | Update a webhook |
-| DELETE | `/webhooks/:id` | Delete a webhook |
-
-## Rate Limits
-
-API requests are rate-limited to 10 requests per second with a burst of 20.
+| GET | `/account` | Get account & subscription info |
+| POST | `/api-keys` | Create API key |
+| GET | `/api-keys` | List API keys |
+| DELETE | `/api-keys/:id` | Revoke API key |
+| POST | `/monitors` | Create monitor |
+| GET | `/monitors` | List monitors |
+| GET | `/monitors/:id` | Get monitor |
+| PATCH | `/monitors/:id` | Update monitor |
+| DELETE | `/monitors/:id` | Delete monitor |
+| GET | `/events` | List events |
+| GET | `/events/:id` | Get event |
+| POST | `/webhooks` | Create webhook |
+| GET | `/webhooks` | List webhooks |
+| PATCH | `/webhooks/:id` | Update webhook |
+| DELETE | `/webhooks/:id` | Delete webhook |
+| GET | `/webhooks/:id/deliveries` | List webhook deliveries |

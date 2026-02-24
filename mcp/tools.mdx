@@ -1,0 +1,176 @@
+---
+title: MCP Tools Reference
+description: Detailed input/output schemas for all 9 MCP tools
+---
+
+# MCP Tools Reference
+
+## list-monitors
+
+List all monitored X accounts for the authenticated user.
+
+**Input:** None
+
+**Output:**
+
+```json
+[
+  {
+    "id": "7",
+    "username": "elonmusk",
+    "xUserId": "44196397",
+    "eventTypes": ["tweet.new", "tweet.reply"],
+    "isActive": true,
+    "createdAt": "2026-02-24T10:30:00.000Z"
+  }
+]
+```
+
+---
+
+## add-monitor
+
+Start monitoring an X account for specific event types.
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `username` | string | Yes | X username to monitor |
+| `eventTypes` | string[] | Yes | Event types to subscribe to |
+
+**Output:** Monitor object with `id`, `username`, `xUserId`, `eventTypes`, `createdAt`.
+
+---
+
+## remove-monitor
+
+Stop monitoring an X account.
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `monitorId` | string | Yes | Monitor ID to remove |
+
+**Output:** `"Monitor removed"` or `"Monitor not found"`
+
+---
+
+## get-events
+
+Query events from monitored accounts with optional filters.
+
+**Input:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | number | No | 50 | Results per page (1-100) |
+| `monitorId` | string | No | — | Filter by monitor ID |
+| `eventType` | string | No | — | Filter by event type |
+| `afterCursor` | string | No | — | Pagination cursor |
+
+**Output:**
+
+```json
+{
+  "events": [...],
+  "hasMore": true,
+  "nextCursor": "MjAyNi0wMi..."
+}
+```
+
+---
+
+## get-event
+
+Retrieve a single event by ID with full details.
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `eventId` | string | Yes | Event ID |
+
+**Output:** Full event object or `"Event not found"`
+
+---
+
+## search-tweets
+
+Search for tweets matching a query. Consumes API usage credits.
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | string | Yes | Search query |
+
+**Output:**
+
+```json
+[
+  {
+    "id": "1893456789012345678",
+    "text": "The future is now.",
+    "author": "elonmusk",
+    "createdAt": "2026-02-24T14:22:00.000Z"
+  }
+]
+```
+
+---
+
+## get-user-info
+
+Get profile information for an X user. Consumes API usage credits.
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `username` | string | Yes | X username |
+
+**Output:**
+
+```json
+{
+  "name": "Elon Musk",
+  "username": "elonmusk",
+  "description": "Mars & Cars, Chips & Dips",
+  "followersCount": 200000000,
+  "followingCount": 800,
+  "profileImageUrl": "https://pbs.twimg.com/..."
+}
+```
+
+Returns `"User not found"` if the username doesn't exist.
+
+---
+
+## list-webhooks
+
+List all webhook endpoints for the authenticated user.
+
+**Input:** None
+
+**Output:** Array of webhook objects with `id`, `url`, `eventTypes`, `isActive`, `createdAt`.
+
+---
+
+## add-webhook
+
+Register a new webhook endpoint to receive event notifications.
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `url` | string | Yes | HTTPS endpoint URL |
+| `eventTypes` | string[] | Yes | Event types to receive |
+
+**Output:** Webhook object with `id`, `url`, `eventTypes`, `secret`, `createdAt`.
+
+<Warning>
+  The `secret` is returned only during creation. Store it securely for [signature verification](/webhooks/verification).
+</Warning>

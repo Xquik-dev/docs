@@ -1,0 +1,103 @@
+---
+title: Authentication
+description: API key authentication, key format, and dual auth endpoints
+---
+
+# Authentication
+
+Xquik uses API key authentication for all developer-facing endpoints.
+
+## API Key Format
+
+Keys follow this format:
+
+```
+xqk_a1b2c3d4e5f6789012345678901234
+```
+
+- Prefix: `xqk_`
+- Body: 32 hexadecimal characters
+- Storage: SHA-256 hashed in database (raw key never stored)
+
+## Using Your API Key
+
+Pass the key in the `x-api-key` header:
+
+<CodeGroup>
+
+```bash cURL
+curl https://xquik.com/api/v1/account \
+  -H "x-api-key: xqk_YOUR_KEY_HERE"
+```
+
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/account", {
+  headers: { "x-api-key": "xqk_YOUR_KEY_HERE" },
+});
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://xquik.com/api/v1/account",
+    headers={"x-api-key": "xqk_YOUR_KEY_HERE"},
+)
+```
+
+</CodeGroup>
+
+## Auth Methods by Endpoint
+
+Most endpoints support **dual authentication** — either an API key or a session cookie from the dashboard.
+
+| Endpoint | API Key | Session Cookie |
+|----------|---------|----------------|
+| `GET /account` | Yes | No |
+| `POST /api-keys` | No | Yes |
+| `GET /api-keys` | No | Yes |
+| `DELETE /api-keys/:id` | No | Yes |
+| `* /monitors/*` | Yes | Yes |
+| `GET /events/*` | Yes | No |
+| `* /webhooks/*` | Yes | Yes |
+| `GET /webhooks/:id/deliveries` | Yes | No |
+
+<Info>
+  API key management endpoints (`/api-keys`) require session authentication to prevent key self-management loops.
+</Info>
+
+## Key Management
+
+### Create a Key
+
+Generate keys from the **API Keys** page in your dashboard or via the API (session auth only):
+
+```bash
+curl -X POST https://xquik.com/api/v1/api-keys \
+  -H "Cookie: session=YOUR_SESSION" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Production"}'
+```
+
+The full key (`fullKey`) is returned **once** in the creation response. Store it securely.
+
+### Revoke a Key
+
+```bash
+curl -X DELETE https://xquik.com/api/v1/api-keys/123 \
+  -H "Cookie: session=YOUR_SESSION"
+```
+
+Revoked keys are deactivated immediately and cannot be reactivated.
+
+## Error Response
+
+Invalid or missing API key returns:
+
+```json
+{
+  "error": "unauthenticated"
+}
+```
+
+**Status:** `401 Unauthorized`
