@@ -3,8 +3,6 @@ title: API Overview
 description: Xquik REST API v1 - base URL, authentication, rate limits, conventions
 ---
 
-# API Overview
-
 The Xquik REST API v1 provides programmatic access to monitors, events, webhooks, and account management.
 
 ## Base URL
@@ -17,13 +15,13 @@ All endpoints are served over HTTPS. HTTP requests are redirected.
 
 ## Authentication
 
-API requests require an API key passed via the `x-api-key` header:
+Pass your API key via the `x-api-key` header:
 
 ```bash
 x-api-key: xqk_YOUR_KEY_HERE
 ```
 
-Some endpoints also accept session cookie authentication (from the dashboard). See the [authentication guide](/api-reference/authentication) for details.
+Generate keys from your [dashboard](https://xquik.com). See [Authentication](/api-reference/authentication) for full details on auth methods per endpoint.
 
 ## Rate Limits
 
@@ -32,62 +30,54 @@ Some endpoints also accept session cookie authentication (from the dashboard). S
 | API endpoints | 10 req/s | 20 |
 | General requests | 20 req/s | 40 |
 
-Rate limits are enforced at the server level. Exceeding limits returns `429 Too Many Requests`.
+Exceeding limits returns `429 Too Many Requests`.
 
 ## Conventions
 
-### IDs
+<AccordionGroup>
+  <Accordion title="IDs are strings">
+    All IDs are returned as strings representing bigint values:
+    ```json
+    { "id": "123456789" }
+    ```
+  </Accordion>
+  <Accordion title="Timestamps are ISO 8601 UTC">
+    ```json
+    { "createdAt": "2026-02-24T10:30:00.000Z" }
+    ```
+  </Accordion>
+  <Accordion title="Errors follow a consistent format">
+    ```json
+    { "error": "error_code" }
+    ```
 
-All IDs are returned as strings representing bigint values:
-
-```json
-{ "id": "123456789" }
-```
-
-### Timestamps
-
-All timestamps are ISO 8601 in UTC:
-
-```json
-{ "createdAt": "2026-02-24T10:30:00.000Z" }
-```
-
-### Error Responses
-
-All errors follow a consistent format:
-
-```json
-{ "error": "error_code" }
-```
-
-| Status | Error Code | Meaning |
-|--------|-----------|---------|
-| 400 | `invalid_input` | Request body failed validation |
-| 400 | `invalid_id` | Path parameter is not a valid ID |
-| 401 | `unauthenticated` | Missing or invalid API key |
-| 403 | `monitor_limit_reached` | Plan monitor limit exceeded |
-| 404 | `not_found` | Resource does not exist or is not owned by you |
-| 409 | `monitor_already_exists` | Duplicate monitor for the same X account |
-| 429 | - | Rate limited |
-| 500 | `internal_error` | Server error |
-
-### Pagination
-
-List endpoints return up to 200 items. The events endpoint supports cursor-based pagination:
-
-```json
-{
-  "events": [...],
-  "hasMore": true,
-  "nextCursor": "MjAyNi0wMi0yNFQxMDozMDowMC4wMDBafDEyMzQ1Njc4OQ=="
-}
-```
-
-Pass `nextCursor` as the `after` query parameter to fetch the next page.
+    | Status | Code | Meaning |
+    |--------|------|---------|
+    | 400 | `invalid_input` | Request body failed validation |
+    | 400 | `invalid_id` | Path parameter is not a valid ID |
+    | 401 | `unauthenticated` | Missing or invalid API key |
+    | 403 | `monitor_limit_reached` | Plan monitor limit exceeded |
+    | 404 | `not_found` | Resource does not exist |
+    | 409 | `monitor_already_exists` | Duplicate monitor |
+    | 429 | - | Rate limited |
+    | 500 | `internal_error` | Server error |
+  </Accordion>
+  <Accordion title="Cursor-based pagination for events">
+    The events endpoint returns a `nextCursor` when more results exist:
+    ```json
+    {
+      "events": [],
+      "hasMore": true,
+      "nextCursor": "MjAyNi0wMi0yNFQxMDozMDowMC4wMDBa..."
+    }
+    ```
+    Pass `nextCursor` as the `after` query parameter to fetch the next page. All other list endpoints return up to 200 items.
+  </Accordion>
+</AccordionGroup>
 
 ## Event Types
 
-These event types are used across monitors, webhooks, and events:
+Used across monitors, webhooks, and events:
 
 | Type | Description |
 |------|-------------|
@@ -95,24 +85,3 @@ These event types are used across monitors, webhooks, and events:
 | `tweet.quote` | Quote tweet posted |
 | `tweet.reply` | Reply posted |
 | `tweet.retweet` | Retweet posted |
-
-## Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/account` | Get account & subscription info |
-| POST | `/api-keys` | Create API key |
-| GET | `/api-keys` | List API keys |
-| DELETE | `/api-keys/:id` | Revoke API key |
-| POST | `/monitors` | Create monitor |
-| GET | `/monitors` | List monitors |
-| GET | `/monitors/:id` | Get monitor |
-| PATCH | `/monitors/:id` | Update monitor |
-| DELETE | `/monitors/:id` | Delete monitor |
-| GET | `/events` | List events |
-| GET | `/events/:id` | Get event |
-| POST | `/webhooks` | Create webhook |
-| GET | `/webhooks` | List webhooks |
-| PATCH | `/webhooks/:id` | Update webhook |
-| DELETE | `/webhooks/:id` | Delete webhook |
-| GET | `/webhooks/:id/deliveries` | List webhook deliveries |
