@@ -18,12 +18,6 @@ custom.css         Custom styling
 llms.txt           AI-readable site index
 ```
 
-## Development
-
-```bash
-npx mintlify dev
-```
-
 ## Deployment
 
 Pushes to `main` auto-deploy. Deployment status is visible in commit check runs.
