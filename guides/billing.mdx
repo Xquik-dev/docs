@@ -1,11 +1,9 @@
 ---
 title: Billing & Usage
-description: Pricing breakdown, usage caps, and cost-per-operation details
+description: Subscription pricing, usage quotas, and monthly operation limits
 ---
 
-# Billing & Usage
-
-Xquik uses a simple subscription model with metered usage. One flat monthly fee, one usage cap, no surprises.
+Xquik uses a simple subscription model with a generous monthly usage quota. One flat monthly fee, no surprises.
 
 ## Subscription
 
@@ -18,58 +16,52 @@ Xquik uses a simple subscription model with metered usage. One flat monthly fee,
 
 Subscribe from the [dashboard](https://xquik.com). Your subscription activates immediately and renews monthly. An active subscription is required for all API access.
 
-## Usage Cap
+## Monthly Quota
 
-Every subscriber gets a **$10/month usage cap** that resets each billing period. Usage is tracked in microcents:
+Every subscription includes a generous monthly usage quota that resets each billing period. The quota covers operations that query the X API (searches, lookups, fetches). Management operations (monitors, webhooks, account) are unlimited.
 
-| Unit | Value |
-|------|-------|
-| 1 microcent | $0.000001 |
-| $10 cap | 10,000,000,000 microcents |
-
-When the cap is reached, API calls that consume credits return `402 Payment Required`. Non-metered calls (list monitors, get account, manage webhooks) continue to work.
+When the quota is reached, metered API calls return `402 Payment Required`. Non-metered calls (list monitors, get account, manage webhooks) continue to work.
 
 <Warning>
-  The usage cap is a hard limit. There is no overage billing — calls are rejected once you hit $10. Monitor your usage via the account endpoint to avoid interruptions.
+  The quota is a hard limit per billing period. There is no overage billing - metered calls are rejected once you hit the limit. Monitor your usage via the account endpoint to avoid interruptions.
 </Warning>
 
-## Cost Per Operation
+## Monthly Operation Limits
 
-| Operation | Microcents | Dollar Cost | Operations per $10 Cap |
-|-----------|-----------|-------------|----------------------|
-| Tweet search | 150 | $0.00015 | ~66,666 |
-| User lookup | 180 | $0.00018 | ~55,555 |
-| Follower fetch | 150 | $0.00015 | ~66,666 |
-| Verified follower fetch | 300 | $0.00030 | ~33,333 |
-| Follow check | 150 | $0.00015 | ~66,666 |
+Each subscription includes the following approximate operation limits per billing period:
 
-Operations are metered automatically. Each API call that hits the X API deducts from your period balance.
+| Operation | Monthly Limit |
+|-----------|--------------|
+| Tweet searches | ~66,000 |
+| User lookups | ~55,000 |
+| Follower fetches | ~66,000 |
+| Verified follower fetches | ~33,000 |
+| Follow checks | ~66,000 |
+
+These limits are approximate and represent the maximum for a single operation type used exclusively. In practice, mixed usage across operation types shares the same quota pool.
 
 ## Usage Scenarios
 
-Three realistic monthly estimates to help you plan:
+Three realistic monthly estimates:
 
 <AccordionGroup>
-  <Accordion title="Light usage — $20.45/month">
-    - 1 monitor (included)
-    - 100 tweet searches/day
-    - **Base:** $20
-    - **Usage:** 100 searches x 150 microcents x 30 days = 450,000 microcents = ~$0.45
-    - **Total:** ~$20.45/month
+  <Accordion title="Light usage - $20/month">
+   - 1 monitor (included)
+   - ~100 tweet searches/day
+   - Well within the monthly quota
+   - **Total:** $20/month
   </Accordion>
-  <Accordion title="Moderate usage — $33.33/month">
-    - 2 monitors ($20 base + $10 for the extra monitor)
-    - 500 tweet searches/day + 200 user lookups/day
-    - **Base:** $30
-    - **Usage:** (500 x 150 + 200 x 180) x 30 = 3,330,000 microcents = ~$3.33
-    - **Total:** ~$33.33/month
+  <Accordion title="Moderate usage - $30/month">
+   - 2 monitors ($20 base + $10 for the extra monitor)
+   - ~500 tweet searches/day + ~200 user lookups/day
+   - Comfortably within the monthly quota
+   - **Total:** $30/month
   </Accordion>
-  <Accordion title="Heavy usage — $69/month">
-    - 5 monitors ($20 base + $40 for 4 extra monitors)
-    - 2,000 tweet searches/day
-    - **Base:** $60
-    - **Usage:** 2,000 x 150 x 30 = 9,000,000 microcents = ~$9.00
-    - **Total:** ~$69/month
+  <Accordion title="Heavy usage - $60/month">
+   - 5 monitors ($20 base + $40 for 4 extra monitors)
+   - ~2,000 tweet searches/day
+   - Approaches the monthly quota limit
+   - **Total:** $60/month
   </Accordion>
 </AccordionGroup>
 
@@ -79,7 +71,7 @@ Call `GET /api/v1/account` to see your current period usage:
 
 ```bash
 curl -s https://xquik.com/api/v1/account \
-  -H "x-api-key: xqk_YOUR_KEY_HERE" | jq
+ -H "x-api-key: xqk_YOUR_KEY_HERE" | jq
 ```
 
 **Response:**
@@ -92,28 +84,16 @@ curl -s https://xquik.com/api/v1/account \
   "currentPeriod": {
     "start": "2026-02-01T00:00:00.000Z",
     "end": "2026-03-01T00:00:00.000Z",
-    "capMicrocents": "10000000000",
-    "usedMicrocents": "4500000"
+    "quotaUsed": "4500000",
+    "quotaLimit": "10000000000"
   }
 }
 ```
 
-**Calculate remaining budget:**
-
-```
-Remaining microcents = capMicrocents - usedMicrocents
-                     = 10,000,000,000 - 4,500,000
-                     = 9,995,500,000 microcents
-
-Remaining dollars    = 9,995,500,000 / 1,000,000,000
-                     = ~$9.995
-
-Remaining tweet searches = 9,995,500,000 / 150
-                         = ~66,636 searches
-```
+Compare `quotaUsed` against `quotaLimit` to calculate remaining capacity. Both values are opaque bigint strings - compare them numerically, not as dollar amounts.
 
 <Tip>
-  Poll the account endpoint periodically to track usage. Build alerts when `usedMicrocents` exceeds a threshold (e.g., 80% of `capMicrocents`) to avoid hitting the cap unexpectedly.
+  Poll the account endpoint periodically to track usage. Build alerts when `quotaUsed` exceeds 80% of `quotaLimit` to avoid hitting the cap unexpectedly.
 </Tip>
 
 ## Next Steps
