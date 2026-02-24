@@ -3,12 +3,12 @@ title: Signature Verification
 description: Verify HMAC-SHA256 signatures on incoming webhook deliveries
 ---
 
-Every webhook delivery includes an `X-Signature` header containing an HMAC-SHA256 signature. Always verify this signature before processing events.
+Every webhook delivery includes an `X-Xquik-Signature` header containing an HMAC-SHA256 signature. Always verify this signature before processing events.
 
 ## How It Works
 
 1. Xquik computes `sha256=` + HMAC-SHA256(webhook secret, raw JSON body)
-2. The result is sent in the `X-Signature` header
+2. The result is sent in the `X-Xquik-Signature` header
 3. Your server recomputes the signature and compares using constant-time comparison
 
 ## Implementation
@@ -32,7 +32,7 @@ function verifyWebhookSignature(payload, signature, secret) {
 
 // Express example
 app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
-  const signature = req.headers["x-signature"];
+  const signature = req.headers["x-xquik-signature"];
   const payload = req.body.toString();
 
   if (!verifyWebhookSignature(payload, signature, WEBHOOK_SECRET)) {
@@ -61,7 +61,7 @@ def verify_webhook_signature(payload: bytes, signature: str, secret: str) -> boo
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    signature = request.headers.get("X-Signature", "")
+    signature = request.headers.get("X-Xquik-Signature", "")
     payload = request.get_data()
 
     if not verify_webhook_signature(payload, signature, WEBHOOK_SECRET):
@@ -94,7 +94,7 @@ func verifySignature(payload []byte, signature, secret string) bool {
 
 func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	payload, _ := io.ReadAll(r.Body)
-	signature := r.Header.Get("X-Signature")
+	signature := r.Header.Get("X-Xquik-Signature")
 
 	if !verifySignature(payload, signature, webhookSecret) {
 		http.Error(w, "Invalid signature", http.StatusUnauthorized)
@@ -127,32 +127,33 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 
 ## Idempotency
 
-Webhook deliveries can be retried on failure, so your endpoint may receive the same event multiple times. Use the delivery `id` field to implement idempotency and avoid processing duplicate events.
-
-Each delivery includes a unique `id` in the payload body and in the `X-Delivery-Id` header. Track processed delivery IDs and skip any that have already been handled.
+Webhook deliveries can be retried on failure, so your endpoint may receive the same event multiple times. The payload does not include a built-in delivery ID, so compute a hash of the raw request body to deduplicate events.
 
 <CodeGroup>
 
 ```javascript Node.js
-const processedDeliveries = new Set();
+import { createHash } from "node:crypto";
+
+const processedPayloads = new Set();
 
 app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
-  const signature = req.headers["x-signature"];
+  const signature = req.headers["x-xquik-signature"];
   const payload = req.body.toString();
 
   if (!verifyWebhookSignature(payload, signature, WEBHOOK_SECRET)) {
     return res.status(401).send("Invalid signature");
   }
 
-  const event = JSON.parse(payload);
+  // Deduplicate by hashing the raw payload
+  const payloadHash = createHash("sha256").update(payload).digest("hex");
 
-  // Skip already-processed deliveries
-  if (processedDeliveries.has(event.id)) {
+  if (processedPayloads.has(payloadHash)) {
     return res.status(200).send("Already processed");
   }
 
-  processedDeliveries.add(event.id);
+  processedPayloads.add(payloadHash);
 
+  const event = JSON.parse(payload);
   // Process event...
   handleEvent(event);
 
@@ -161,24 +162,27 @@ app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
 ```
 
 ```python Python
-processed_deliveries = set()
+import hashlib
+
+processed_payloads = set()
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    signature = request.headers.get("X-Signature", "")
+    signature = request.headers.get("X-Xquik-Signature", "")
     payload = request.get_data()
 
     if not verify_webhook_signature(payload, signature, WEBHOOK_SECRET):
         return "Invalid signature", 401
 
-    event = request.get_json()
+    # Deduplicate by hashing the raw payload
+    payload_hash = hashlib.sha256(payload).hexdigest()
 
-    # Skip already-processed deliveries
-    if event["id"] in processed_deliveries:
+    if payload_hash in processed_payloads:
         return "Already processed", 200
 
-    processed_deliveries.add(event["id"])
+    processed_payloads.add(payload_hash)
 
+    event = request.get_json()
     # Process event...
     handle_event(event)
 
@@ -188,5 +192,5 @@ def webhook():
 </CodeGroup>
 
 <Warning>
-  The in-memory examples above work for single-process servers. In production, use a persistent store (database, Redis) to track processed delivery IDs across restarts and multiple instances.
+  The in-memory examples above work for single-process servers. In production, use a persistent store (database, Redis) to track processed payload hashes across restarts and multiple instances.
 </Warning>

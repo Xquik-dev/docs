@@ -48,7 +48,7 @@ Test your webhook integration before deploying to production. Use these tools to
   <Step title="Create a webhook with the ngrok URL">
     ```bash
     curl -X POST https://xquik.com/api/v1/webhooks \
-      -H "x-api-key: xqk_YOUR_KEY_HERE" \
+      -H "x-api-key: xq_YOUR_KEY_HERE" \
       -H "Content-Type: application/json" \
       -d '{
         "url": "https://a1b2c3d4.ngrok-free.app/webhook",
@@ -82,7 +82,7 @@ Use [webhook.site](https://webhook.site) to inspect webhook payloads without run
   <Step title="Create a webhook with the RequestBin URL">
     ```bash
     curl -X POST https://xquik.com/api/v1/webhooks \
-      -H "x-api-key: xqk_YOUR_KEY_HERE" \
+      -H "x-api-key: xq_YOUR_KEY_HERE" \
       -H "Content-Type: application/json" \
       -d '{
         "url": "https://webhook.site/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -91,7 +91,7 @@ Use [webhook.site](https://webhook.site) to inspect webhook payloads without run
     ```
   </Step>
   <Step title="View incoming payloads">
-    When events arrive, they appear in the webhook.site dashboard in real time. Inspect headers (`X-Signature`, `Content-Type`) and the JSON body to verify the payload format matches your expectations.
+    When events arrive, they appear in the webhook.site dashboard in real time. Inspect headers (`X-Xquik-Signature`, `Content-Type`) and the JSON body to verify the payload format matches your expectations.
   </Step>
 </Steps>
 
@@ -106,14 +106,14 @@ Simulate a webhook delivery to your local handler without waiting for real event
 ```bash
 # Generate a test signature
 SECRET="your_webhook_secret_here"
-PAYLOAD='{"id":"9001","type":"tweet.new","monitorId":"7","username":"elonmusk","occurredAt":"2026-02-24T14:22:00.000Z","data":{"tweetId":"1893456789012345678","text":"The future is now.","metrics":{"likes":42000,"retweets":8500,"replies":3200}}}'
+PAYLOAD='{"eventType":"tweet.new","username":"elonmusk","data":{"tweetId":"1893456789012345678","text":"The future is now.","metrics":{"likes":42000,"retweets":8500,"replies":3200}}}'
 
 SIGNATURE="sha256=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)"
 
 # Send to your local server
 curl -X POST http://localhost:3000/webhook \
   -H "Content-Type: application/json" \
-  -H "X-Signature: $SIGNATURE" \
+  -H "X-Xquik-Signature: $SIGNATURE" \
   -d "$PAYLOAD"
 ```
 
@@ -121,11 +121,8 @@ curl -X POST http://localhost:3000/webhook \
 
 ```json
 {
-  "id": "9001",
-  "type": "tweet.new",
-  "monitorId": "7",
+  "eventType": "tweet.new",
   "username": "elonmusk",
-  "occurredAt": "2026-02-24T14:22:00.000Z",
   "data": {
     "tweetId": "1893456789012345678",
     "text": "The future is now.",
@@ -138,7 +135,7 @@ curl -X POST http://localhost:3000/webhook \
 }
 ```
 
-Test all event types by changing the `type` field: `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet`.
+Test all event types by changing the `eventType` field: `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet`.
 
 ## Debugging Delivery Failures
 
@@ -148,7 +145,7 @@ Query the [deliveries endpoint](/api-reference/webhooks/deliveries) to see deliv
 
 ```bash
 curl https://xquik.com/api/v1/webhooks/15/deliveries \
-  -H "x-api-key: xqk_YOUR_KEY_HERE" | jq
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 ```
 
 **Response:**

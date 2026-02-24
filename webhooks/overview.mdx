@@ -22,7 +22,7 @@ X Account Activity → Xquik Stream → Your Webhook Endpoint
     When a monitored account triggers an event, Xquik sends an HTTPS POST to your endpoint with the event payload and an HMAC signature header.
   </Step>
   <Step title="Verify & process">
-    Verify the `X-Signature` header using your webhook secret, then process the event.
+    Verify the `X-Xquik-Signature` header using your webhook secret, then process the event.
   </Step>
 </Steps>
 
@@ -35,18 +35,14 @@ Webhook events are delivered as HTTPS POST requests.
 | Header | Value | Description |
 |--------|-------|-------------|
 | `Content-Type` | `application/json` | Payload is always JSON |
-| `X-Signature` | `sha256=HMAC_HEX_DIGEST` | HMAC-SHA256 signature for verification |
-| `X-Delivery-Id` | `9001` | Unique delivery ID - use for idempotency |
+| `X-Xquik-Signature` | `sha256=HMAC_HEX_DIGEST` | HMAC-SHA256 signature for verification |
 
 ### Payload Body
 
 ```json
 {
-  "id": "9001",
-  "type": "tweet.new",
-  "monitorId": "7",
+  "eventType": "tweet.new",
   "username": "elonmusk",
-  "occurredAt": "2026-02-24T14:22:00.000Z",
   "data": {
     "tweetId": "1893456789012345678",
     "text": "The future is now.",
@@ -61,11 +57,8 @@ Webhook events are delivered as HTTPS POST requests.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | string | Unique delivery ID |
-| `type` | string | Event type (see below) |
-| `monitorId` | string | ID of the monitor that captured this event |
+| `eventType` | string | Event type (see below) |
 | `username` | string | X username of the monitored account |
-| `occurredAt` | string | ISO 8601 UTC timestamp of when the event occurred |
 | `data` | object | Event-specific payload (varies by type) |
 
 ## Event Data Shapes
@@ -78,11 +71,8 @@ A new original tweet posted by the monitored account.
 
 ```json
 {
-  "id": "9001",
-  "type": "tweet.new",
-  "monitorId": "7",
+  "eventType": "tweet.new",
   "username": "elonmusk",
-  "occurredAt": "2026-02-24T14:22:00.000Z",
   "data": {
     "tweetId": "1893456789012345678",
     "text": "The future is now.",
@@ -101,11 +91,8 @@ A quote tweet posted by the monitored account. Includes `quotedTweetId` and `quo
 
 ```json
 {
-  "id": "9002",
-  "type": "tweet.quote",
-  "monitorId": "7",
+  "eventType": "tweet.quote",
   "username": "elonmusk",
-  "occurredAt": "2026-02-24T15:10:00.000Z",
   "data": {
     "tweetId": "1893456789012345679",
     "text": "Interesting take on this.",
@@ -126,11 +113,8 @@ A reply posted by the monitored account. Includes `inReplyToTweetId` and `inRepl
 
 ```json
 {
-  "id": "9003",
-  "type": "tweet.reply",
-  "monitorId": "7",
+  "eventType": "tweet.reply",
   "username": "elonmusk",
-  "occurredAt": "2026-02-24T16:45:00.000Z",
   "data": {
     "tweetId": "1893456789012345680",
     "text": "Great question. Working on it.",
@@ -151,11 +135,8 @@ A retweet posted by the monitored account. Includes `retweetedTweetId` and `retw
 
 ```json
 {
-  "id": "9004",
-  "type": "tweet.retweet",
-  "monitorId": "7",
+  "eventType": "tweet.retweet",
   "username": "elonmusk",
-  "occurredAt": "2026-02-24T17:30:00.000Z",
   "data": {
     "tweetId": "1893456789012345681",
     "retweetedTweetId": "1893422222222222222",
@@ -171,15 +152,17 @@ A retweet posted by the monitored account. Includes `retweetedTweetId` and `retw
 
 ## Retry Policy
 
-Failed deliveries are retried with exponential backoff:
+Failed deliveries are retried with exponential backoff (base 1s, multiplier 2x):
 
 | Attempt | Delay |
 |---------|-------|
-| 1 | Immediate |
-| 2 | ~30 seconds |
-| 3 | ~2 minutes |
+| 1 | 1 second |
+| 2 | 2 seconds |
+| 3 | 4 seconds |
+| 4 | 8 seconds |
+| 5 | 16 seconds |
 
-After 3 failed attempts, the delivery is marked as `failed`. Check delivery status via the [deliveries endpoint](/api-reference/webhooks/deliveries).
+After 5 failed attempts, the delivery is marked as `exhausted`. Check delivery status via the [deliveries endpoint](/api-reference/webhooks/deliveries).
 
 ## Requirements
 

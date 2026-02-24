@@ -17,6 +17,7 @@ Every Xquik API error returns a consistent JSON body with an `error` code. Use t
 | 409 | `monitor_already_exists` | Duplicate monitor for this X account | Use the existing monitor. Call [Update Monitor](/api-reference/monitors/update) to change event types. |
 | 429 | -- | Rate limited | Retry with exponential backoff. Respect the `Retry-After` header. |
 | 500 | `internal_error` | Server error | Retry with backoff. [Contact support](mailto:support@xquik.com) if the error persists. |
+| 502 | `stream_registration_failed` | Upstream stream registration failed | Retry the request. |
 
 **Response format:**
 
@@ -51,7 +52,7 @@ retry_request() {
 
   for attempt in $(seq 0 $max_retries); do
     response=$(curl -s -w "\n%{http_code}" "$url" \
-      -H "x-api-key: xqk_YOUR_KEY_HERE")
+      -H "x-api-key: xq_YOUR_KEY_HERE")
 
     status=$(echo "$response" | tail -1)
     body=$(echo "$response" | head -n -1)
@@ -88,7 +89,7 @@ async function fetchWithRetry(url, options = {}, maxRetries = 3) {
     const response = await fetch(url, {
       ...options,
       headers: {
-        "x-api-key": "xqk_YOUR_KEY_HERE",
+        "x-api-key": "xq_YOUR_KEY_HERE",
         ...options.headers,
       },
     });
@@ -127,7 +128,7 @@ import requests
 
 def fetch_with_retry(url: str, max_retries: int = 3, **kwargs) -> dict:
     base_delay = 1.0  # 1 second
-    headers = {"x-api-key": "xqk_YOUR_KEY_HERE", **kwargs.pop("headers", {})}
+    headers = {"x-api-key": "xq_YOUR_KEY_HERE", **kwargs.pop("headers", {})}
 
     for attempt in range(max_retries + 1):
         response = requests.get(url, headers=headers, **kwargs)
@@ -176,7 +177,7 @@ func fetchWithRetry(url string, maxRetries int) (map[string]interface{}, error) 
 		if err != nil {
 			return nil, err
 		}
-		req.Header.Set("x-api-key", "xqk_YOUR_KEY_HERE")
+		req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
@@ -289,7 +290,7 @@ def respect_rate_limit(url: str, headers: dict) -> requests.Response:
 ```go Go
 func respectRateLimit(url string) (*http.Response, error) {
 	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Set("x-api-key", "xqk_YOUR_KEY_HERE")
+	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -305,7 +306,7 @@ func respectRateLimit(url string) (*http.Response, error) {
 		time.Sleep(time.Duration(retryAfter) * time.Second)
 
 		req, _ = http.NewRequest("GET", url, nil)
-		req.Header.Set("x-api-key", "xqk_YOUR_KEY_HERE")
+		req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 		return http.DefaultClient.Do(req)
 	}
 
