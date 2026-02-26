@@ -1,0 +1,169 @@
+---
+title: "Trends"
+description: "Trending topics across 12 regions, free for all subscribers"
+keywords: ["trends", "trending topics", "regions", "woeid"]
+---
+
+Xquik surfaces real-time trending topics from X across 12 regions. Trends are free for all subscribers -- they do not consume any usage quota. Data is cached and auto-refreshes every 15 minutes.
+
+## Regions
+
+| WOEID | Region |
+|-------|--------|
+| `1` | Worldwide |
+| `23424977` | United States |
+| `23424975` | United Kingdom |
+| `23424969` | Turkey |
+| `23424950` | Spain |
+| `23424829` | Germany |
+| `23424819` | France |
+| `23424856` | Japan |
+| `23424848` | India |
+| `23424768` | Brazil |
+| `23424775` | Canada |
+| `23424900` | Mexico |
+
+## How It Works
+
+Trend data is stored in the database and synced from X every 15 minutes per region. When you call `GET /api/v1/trends`, you receive the latest cached snapshot for the requested WOEID. No X API call is made at request time, which is why trends are free and fast.
+
+Each trend includes a `name` (the topic or hashtag), an optional `description`, a `rank` position, and a `query` string you can pass directly to the [Search Tweets](/api-reference/x/search-tweets) endpoint.
+
+## Combine Trends With Search
+
+Fetch the top trend for a region, then search for tweets about it:
+
+<CodeGroup>
+  ```bash cURL
+  # 1. Get top trend
+  TREND=$(curl -s "https://xquik.com/api/v1/trends?woeid=23424977&count=1" \
+    -H "x-api-key: xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" \
+    | jq -r '.trends[0].query')
+
+  # 2. Search tweets about it
+  curl -G "https://xquik.com/api/v1/x/tweets/search" \
+    --data-urlencode "q=$TREND" \
+    -H "x-api-key: xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" | jq
+  ```
+
+  ```javascript Node.js
+  const API_KEY = "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
+  const headers = { "x-api-key": API_KEY };
+
+  // 1. Get top trend
+  const trendsRes = await fetch("https://xquik.com/api/v1/trends?woeid=23424977&count=1", { headers });
+  const trendsData = await trendsRes.json();
+  const query = trendsData.trends[0].query;
+
+  // 2. Search tweets about it
+  const searchRes = await fetch(`https://xquik.com/api/v1/x/tweets/search?q=${query}`, { headers });
+  const searchData = await searchRes.json();
+  console.log(searchData);
+  ```
+
+  ```python Python
+  import requests
+
+  API_KEY = "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+  headers = {"x-api-key": API_KEY}
+
+  # 1. Get top trend
+  trends_res = requests.get(
+      "https://xquik.com/api/v1/trends",
+      params={"woeid": 23424977, "count": 1},
+      headers=headers,
+  )
+  query = trends_res.json()["trends"][0]["query"]
+
+  # 2. Search tweets about it
+  search_res = requests.get(
+      "https://xquik.com/api/v1/x/tweets/search",
+      params={"q": query},
+      headers=headers,
+  )
+  print(search_res.json())
+  ```
+
+  ```go Go
+  package main
+
+  import (
+  	"encoding/json"
+  	"fmt"
+  	"io"
+  	"log"
+  	"net/http"
+  	"net/url"
+  )
+
+  const apiKey = "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+
+  func main() {
+  	// 1. Get top trend
+  	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/trends?woeid=23424977&count=1", nil)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	req.Header.Set("x-api-key", apiKey)
+
+  	resp, err := http.DefaultClient.Do(req)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	defer resp.Body.Close()
+
+  	body, err := io.ReadAll(resp.Body)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+
+  	var trends struct {
+  		Trends []struct {
+  			Query string `json:"query"`
+  		} `json:"trends"`
+  	}
+  	json.Unmarshal(body, &trends)
+
+  	// 2. Search tweets about it
+  	searchURL := "https://xquik.com/api/v1/x/tweets/search?q=" + url.QueryEscape(trends.Trends[0].Query)
+  	req2, err := http.NewRequest("GET", searchURL, nil)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	req2.Header.Set("x-api-key", apiKey)
+
+  	resp2, err := http.DefaultClient.Do(req2)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	defer resp2.Body.Close()
+
+  	body2, err := io.ReadAll(resp2.Body)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	fmt.Println(string(body2))
+  }
+  ```
+</CodeGroup>
+
+## MCP Usage
+
+If you use Xquik via the [MCP server](/mcp/overview), ask your AI agent directly:
+
+- "What's trending in the US?"
+- "Show me worldwide trends"
+- "Search tweets about the top trend"
+
+The MCP server exposes a `list-trends` tool that maps to `GET /api/v1/trends`. AI agents can chain it with `search-tweets` to explore trending conversations automatically.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Trends API Reference" icon="trending-up" href="/api-reference/trends/list">
+    Full endpoint reference with query parameters and response schema.
+  </Card>
+  <Card title="Billing & Usage" icon="credit-card" href="/guides/billing">
+    Subscription pricing, usage quotas, and monthly operation limits.
+  </Card>
+</CardGroup>
