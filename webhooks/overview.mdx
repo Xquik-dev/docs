@@ -6,26 +6,59 @@ keywords: ["webhooks", "real-time", "event delivery", "HMAC", "retry policy"]
 
 Webhooks deliver events from monitored X accounts to your server in real time. Every delivery is signed with HMAC-SHA256 so you can verify authenticity.
 
+## Quick Setup
+
+Get webhooks working in 3 steps:
+
+<Steps>
+  <Step title="Create a monitor">
+    Start monitoring an X account for specific event types.
+
+    ```bash
+    curl -X POST https://xquik.com/api/v1/monitors \
+      -H "x-api-key: xq_YOUR_KEY_HERE" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "username": "elonmusk",
+        "eventTypes": ["tweet.new", "tweet.reply"]
+      }' | jq
+    ```
+  </Step>
+  <Step title="Register a webhook">
+    Provide an HTTPS URL and select which event types to receive. Xquik generates a signing secret -- store it securely, it is only returned once.
+
+    ```bash
+    curl -X POST https://xquik.com/api/v1/webhooks \
+      -H "x-api-key: xq_YOUR_KEY_HERE" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "url": "https://your-server.com/webhook",
+        "eventTypes": ["tweet.new", "tweet.reply"]
+      }' | jq
+    ```
+
+    **Response:**
+
+    ```json
+    {
+      "id": "15",
+      "url": "https://your-server.com/webhook",
+      "eventTypes": ["tweet.new", "tweet.reply"],
+      "secret": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+      "createdAt": "2026-02-24T10:30:00.000Z"
+    }
+    ```
+  </Step>
+  <Step title="Verify signatures">
+    When events arrive, verify the `X-Xquik-Signature` header using your webhook secret to confirm authenticity. See [Signature Verification](/webhooks/verification) for implementation details.
+  </Step>
+</Steps>
+
 ## How It Works
 
 ```text
 X Account Activity → Xquik Stream → Your Webhook Endpoint
 ```
-
-<Steps>
-  <Step title="Create a monitor">
-    Monitor an X account for specific event types (tweets, replies, quotes, retweets, follower changes).
-  </Step>
-  <Step title="Register a webhook">
-    Provide an HTTPS URL and select which event types to receive. Xquik generates a signing secret.
-  </Step>
-  <Step title="Receive events">
-    When a monitored account triggers an event, Xquik sends an HTTPS POST to your endpoint with the event payload and an HMAC signature header.
-  </Step>
-  <Step title="Verify & process">
-    Verify the `X-Xquik-Signature` header using your webhook secret, then process the event.
-  </Step>
-</Steps>
 
 ## Delivery Format
 
@@ -207,7 +240,15 @@ After 5 failed attempts, the delivery is marked as `exhausted`. Check delivery s
 - Endpoint **must** respond with `2xx` within 10 seconds
 - Non-2xx responses or timeouts count as failures
 
-## Next Steps
+## Where to Go Next
+
+| Goal | Resource |
+|------|----------|
+| Full REST API reference for webhooks | [Create Webhook](/api-reference/webhooks/create), [List Webhooks](/api-reference/webhooks/list), [Delivery Logs](/api-reference/webhooks/deliveries) |
+| Verify HMAC signatures and implement idempotency | [Signature Verification](/webhooks/verification) |
+| Test webhook delivery locally with tunnels | [Webhook Testing](/guides/webhook-testing) |
+| MCP equivalent | Use the `add-webhook`, `list-webhooks`, and `remove-webhook` MCP tools ([MCP Tools](/mcp/tools)) |
+| Monitor setup | [Create Monitor](/api-reference/monitors/create) |
 
 <CardGroup cols={2}>
   <Card title="Signature Verification" icon="shield-check" href="/webhooks/verification">

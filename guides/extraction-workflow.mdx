@@ -1,0 +1,541 @@
+---
+title: Extraction Workflow
+description: End-to-end guide for running extractions — estimate costs, start jobs, paginate results, and export files
+keywords: ["extraction", "workflow", "guide", "tool types", "export", "pagination", "MCP"]
+---
+
+Run bulk data extractions from X in 4 steps: check your budget, estimate costs, run the job, and retrieve results. This guide covers the full workflow for both the REST API and MCP server.
+
+## Workflow Overview
+
+```text
+Check Budget → Estimate Cost → Run Extraction → Get Results → Export (optional)
+```
+
+<Steps>
+  <Step title="Check your budget">
+    Verify your subscription is active and you have enough quota remaining.
+  </Step>
+  <Step title="Estimate cost">
+    Preview the extraction cost before committing. Check whether it fits within your remaining budget.
+  </Step>
+  <Step title="Run the extraction">
+    Submit the extraction job with the appropriate tool type and target.
+  </Step>
+  <Step title="Retrieve results">
+    Paginate through extracted data via the API, or export as CSV/XLSX/Markdown.
+  </Step>
+</Steps>
+
+## Step 1: Check Your Budget
+
+Before running an extraction, verify your subscription status and remaining quota.
+
+<CodeGroup>
+```bash cURL
+curl -s https://xquik.com/api/v1/account \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/account", {
+  headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+});
+const account = await response.json();
+
+if (account.plan !== "active") {
+  throw new Error("Subscription required");
+}
+
+console.log(`Usage: ${account.currentPeriod.usagePercent}%`);
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://xquik.com/api/v1/account",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+)
+account = response.json()
+
+if account["plan"] != "active":
+    raise Exception("Subscription required")
+
+print(f"Usage: {account['currentPeriod']['usagePercent']}%")
+```
+
+```go Go
+req, _ := http.NewRequest("GET", "https://xquik.com/api/v1/account", nil)
+req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+
+resp, err := http.DefaultClient.Do(req)
+if err != nil {
+    log.Fatal(err)
+}
+defer resp.Body.Close()
+
+var account map[string]interface{}
+json.NewDecoder(resp.Body).Decode(&account)
+fmt.Printf("Plan: %s\n", account["plan"])
+```
+</CodeGroup>
+
+The response includes your current billing period and usage percentage:
+
+```json
+{
+  "plan": "active",
+  "monitorsAllowed": 1,
+  "monitorsUsed": 1,
+  "currentPeriod": {
+    "start": "2026-02-01T00:00:00.000Z",
+    "end": "2026-03-01T00:00:00.000Z",
+    "usagePercent": 45
+  }
+}
+```
+
+If `usagePercent` is near 100, consider waiting for the next billing period or running a smaller extraction.
+
+## Step 2: Estimate Cost
+
+Always estimate before running. The estimate endpoint previews the result count and projected usage without consuming any quota.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://xquik.com/api/v1/extractions/estimate \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolType": "reply_extractor",
+    "targetTweetId": "1893704267862470862"
+  }' | jq
+```
+
+```javascript Node.js
+const estimate = await fetch("https://xquik.com/api/v1/extractions/estimate", {
+  method: "POST",
+  headers: {
+    "x-api-key": "xq_YOUR_KEY_HERE",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    toolType: "reply_extractor",
+    targetTweetId: "1893704267862470862",
+  }),
+}).then((r) => r.json());
+
+if (!estimate.allowed) {
+  throw new Error(`Would exceed quota: ${estimate.projectedPercent}%`);
+}
+
+console.log(`Estimated results: ${estimate.estimatedResults}`);
+```
+
+```python Python
+estimate = requests.post(
+    "https://xquik.com/api/v1/extractions/estimate",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    json={
+        "toolType": "reply_extractor",
+        "targetTweetId": "1893704267862470862",
+    },
+).json()
+
+if not estimate["allowed"]:
+    raise Exception(f"Would exceed quota: {estimate['projectedPercent']}%")
+
+print(f"Estimated results: {estimate['estimatedResults']}")
+```
+
+```go Go
+body, _ := json.Marshal(map[string]interface{}{
+    "toolType":      "reply_extractor",
+    "targetTweetId": "1893704267862470862",
+})
+
+req, _ := http.NewRequest("POST", "https://xquik.com/api/v1/extractions/estimate", bytes.NewReader(body))
+req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+req.Header.Set("Content-Type", "application/json")
+
+resp, _ := http.DefaultClient.Do(req)
+defer resp.Body.Close()
+
+var estimate map[string]interface{}
+json.NewDecoder(resp.Body).Decode(&estimate)
+fmt.Printf("Allowed: %v, Estimated: %v\n", estimate["allowed"], estimate["estimatedResults"])
+```
+</CodeGroup>
+
+**Response:**
+
+```json
+{
+  "allowed": true,
+  "source": "replyCount",
+  "estimatedResults": 150,
+  "usagePercent": 45,
+  "projectedPercent": 78
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `allowed` | Whether the extraction fits within your monthly quota |
+| `source` | Data point used for the estimate (e.g. `replyCount`, `followers`) |
+| `estimatedResults` | Approximate number of results |
+| `usagePercent` | Current usage before this extraction |
+| `projectedPercent` | Projected usage after completion |
+
+<Warning>
+  If `allowed` is `false`, the extraction will return `402`. Wait for the next billing period or run a smaller job.
+</Warning>
+
+## Step 3: Run the Extraction
+
+Submit the job with the same parameters you used for the estimate.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://xquik.com/api/v1/extractions \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolType": "reply_extractor",
+    "targetTweetId": "1893704267862470862"
+  }' | jq
+```
+
+```javascript Node.js
+const extraction = await fetch("https://xquik.com/api/v1/extractions", {
+  method: "POST",
+  headers: {
+    "x-api-key": "xq_YOUR_KEY_HERE",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    toolType: "reply_extractor",
+    targetTweetId: "1893704267862470862",
+  }),
+}).then((r) => r.json());
+
+console.log(`Job ${extraction.id}: ${extraction.status} (${extraction.totalResults} results)`);
+```
+
+```python Python
+extraction = requests.post(
+    "https://xquik.com/api/v1/extractions",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    json={
+        "toolType": "reply_extractor",
+        "targetTweetId": "1893704267862470862",
+    },
+).json()
+
+print(f"Job {extraction['id']}: {extraction['status']} ({extraction['totalResults']} results)")
+```
+
+```go Go
+body, _ := json.Marshal(map[string]interface{}{
+    "toolType":      "reply_extractor",
+    "targetTweetId": "1893704267862470862",
+})
+
+req, _ := http.NewRequest("POST", "https://xquik.com/api/v1/extractions", bytes.NewReader(body))
+req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+req.Header.Set("Content-Type", "application/json")
+
+resp, _ := http.DefaultClient.Do(req)
+defer resp.Body.Close()
+
+var extraction map[string]interface{}
+json.NewDecoder(resp.Body).Decode(&extraction)
+fmt.Printf("Job %s: %s (%v results)\n", extraction["id"], extraction["status"], extraction["totalResults"])
+```
+</CodeGroup>
+
+**Response:**
+
+```json
+{
+  "id": "77777",
+  "toolType": "reply_extractor",
+  "status": "completed",
+  "totalResults": 150
+}
+```
+
+The job runs synchronously and returns when complete. For large extractions (10,000+ results), this may take up to a few minutes.
+
+## Step 4: Retrieve Results
+
+### Option A: Paginate via API
+
+Fetch results in pages of up to 1,000 records. Use cursor-based pagination to iterate through all results.
+
+<CodeGroup>
+```bash cURL
+# First page
+curl -s "https://xquik.com/api/v1/extractions/77777?limit=1000" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+
+# Next page (use nextCursor from previous response)
+curl -s "https://xquik.com/api/v1/extractions/77777?limit=1000&after=990100" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```javascript Node.js
+const extractionId = "77777";
+let cursor = undefined;
+const allResults = [];
+
+do {
+  const params = new URLSearchParams({ limit: "1000" });
+  if (cursor) params.set("after", cursor);
+
+  const data = await fetch(
+    `https://xquik.com/api/v1/extractions/${extractionId}?${params}`,
+    { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
+  ).then((r) => r.json());
+
+  allResults.push(...data.results);
+  cursor = data.hasMore ? data.nextCursor : undefined;
+} while (cursor);
+
+console.log(`Fetched ${allResults.length} results`);
+```
+
+```python Python
+extraction_id = "77777"
+all_results = []
+cursor = None
+
+while True:
+    params = {"limit": 1000}
+    if cursor:
+        params["after"] = cursor
+
+    data = requests.get(
+        f"https://xquik.com/api/v1/extractions/{extraction_id}",
+        headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+        params=params,
+    ).json()
+
+    all_results.extend(data["results"])
+
+    if data.get("hasMore"):
+        cursor = data["nextCursor"]
+    else:
+        break
+
+print(f"Fetched {len(all_results)} results")
+```
+
+```go Go
+extractionID := "77777"
+cursor := ""
+var allResults []map[string]interface{}
+
+for {
+    url := fmt.Sprintf("https://xquik.com/api/v1/extractions/%s?limit=1000", extractionID)
+    if cursor != "" {
+        url += "&after=" + cursor
+    }
+
+    req, _ := http.NewRequest("GET", url, nil)
+    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+
+    resp, _ := http.DefaultClient.Do(req)
+    var data struct {
+        Results    []map[string]interface{} `json:"results"`
+        HasMore    bool                     `json:"hasMore"`
+        NextCursor string                   `json:"nextCursor"`
+    }
+    json.NewDecoder(resp.Body).Decode(&data)
+    resp.Body.Close()
+
+    allResults = append(allResults, data.Results...)
+
+    if !data.HasMore {
+        break
+    }
+    cursor = data.NextCursor
+}
+
+fmt.Printf("Fetched %d results\n", len(allResults))
+```
+</CodeGroup>
+
+Each result contains user profile data and (for tweet-based tools) tweet data:
+
+```json
+{
+  "id": "990001",
+  "xUserId": "44196397",
+  "xUsername": "elonmusk",
+  "xDisplayName": "Elon Musk",
+  "xFollowersCount": 210500000,
+  "xVerified": true,
+  "xProfileImageUrl": "https://pbs.twimg.com/profile_images/el0n.jpg",
+  "tweetId": "1893710452812718080",
+  "tweetText": "This is a great thread, thanks for sharing.",
+  "tweetCreatedAt": "2026-02-24T10:05:00.000Z"
+}
+```
+
+<Info>
+  Only `id` and `xUserId` are guaranteed on every result. All other fields are omitted when unavailable (never `null`). Check for field presence before accessing.
+</Info>
+
+### Option B: Export as File
+
+Download all results as CSV, XLSX, or Markdown. Exports include enrichment data (bios, locations, engagement metrics) not available in the API response.
+
+<CodeGroup>
+```bash cURL
+curl -s "https://xquik.com/api/v1/extractions/77777/export?format=csv" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -o extraction-reply_extractor-77777.csv
+```
+
+```javascript Node.js
+const extractionId = "77777";
+const response = await fetch(
+  `https://xquik.com/api/v1/extractions/${extractionId}/export?format=csv`,
+  { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
+);
+
+const blob = await response.blob();
+// Save to file or process as needed
+```
+
+```python Python
+response = requests.get(
+    f"https://xquik.com/api/v1/extractions/{extraction_id}/export",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    params={"format": "csv"},
+)
+
+with open("extraction-reply_extractor-77777.csv", "wb") as f:
+    f.write(response.content)
+```
+
+```go Go
+req, _ := http.NewRequest("GET", "https://xquik.com/api/v1/extractions/77777/export?format=csv", nil)
+req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+
+resp, _ := http.DefaultClient.Do(req)
+defer resp.Body.Close()
+
+file, _ := os.Create("extraction-reply_extractor-77777.csv")
+defer file.Close()
+io.Copy(file, resp.Body)
+```
+</CodeGroup>
+
+| Format | Content-Type | Use Case |
+|--------|-------------|----------|
+| `csv` | `text/csv; charset=utf-8` | Spreadsheets, data pipelines |
+| `xlsx` | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | Excel, formatted reports |
+| `md` | `text/markdown; charset=utf-8` | Documentation, GitHub issues |
+
+<Warning>
+  Exports are capped at 50,000 rows. For larger extractions, use the paginated API to retrieve all results.
+</Warning>
+
+## Tool Types Reference
+
+All 19 extraction tools grouped by target type. Each requires a specific target field.
+
+### Tweet-Based Tools
+
+| Tool Type | Required Field | Description |
+|-----------|---------------|-------------|
+| `reply_extractor` | `targetTweetId` | Extract users who replied to a tweet |
+| `repost_extractor` | `targetTweetId` | Extract users who retweeted a tweet |
+| `quote_extractor` | `targetTweetId` | Extract users who quote-tweeted a tweet |
+| `thread_extractor` | `targetTweetId` | Extract all tweets in a thread |
+| `article_extractor` | `targetTweetId` | Extract article content from a tweet |
+
+### User-Based Tools
+
+| Tool Type | Required Field | Description |
+|-----------|---------------|-------------|
+| `follower_explorer` | `targetUsername` | Extract followers of an account |
+| `following_explorer` | `targetUsername` | Extract accounts followed by a user |
+| `verified_follower_explorer` | `targetUsername` | Extract verified followers of an account |
+| `mention_extractor` | `targetUsername` | Extract tweets mentioning an account |
+| `post_extractor` | `targetUsername` | Extract posts from an account |
+
+### Community Tools
+
+| Tool Type | Required Field | Description |
+|-----------|---------------|-------------|
+| `community_extractor` | `targetCommunityId` | Extract members of a community |
+| `community_moderator_explorer` | `targetCommunityId` | Extract moderators of a community |
+| `community_post_extractor` | `targetCommunityId` | Extract posts from a community |
+| `community_search` | `targetCommunityId` + `searchQuery` | Search posts within a community |
+
+### List Tools
+
+| Tool Type | Required Field | Description |
+|-----------|---------------|-------------|
+| `list_member_extractor` | `targetListId` | Extract members of a list |
+| `list_post_extractor` | `targetListId` | Extract posts from a list |
+| `list_follower_explorer` | `targetListId` | Extract followers of a list |
+
+### Other Tools
+
+| Tool Type | Required Field | Description |
+|-----------|---------------|-------------|
+| `people_search` | `searchQuery` | Search for users by keyword |
+| `space_explorer` | `targetSpaceId` | Extract participants of a Space |
+
+## MCP Equivalent
+
+The same workflow works through the MCP server using 3 tools:
+
+| REST API | MCP Tool | Purpose |
+|----------|----------|---------|
+| `GET /account` | `get-account` | Check subscription and usage |
+| `POST /extractions/estimate` | `estimate-extraction` | Preview cost |
+| `POST /extractions` | `run-extraction` | Start the job |
+| `GET /extractions/:id` | `get-extraction` | Retrieve results |
+
+**Example prompts for AI agents:**
+
+- "How much would it cost to extract all followers of @elonmusk?"
+- "Extract all replies to this tweet: https://x.com/vercel/status/1893704267862470862"
+- "Show me the results of my last extraction."
+
+<Note>
+  File export (`GET /extractions/:id/export`) is only available via the REST API. The MCP server returns results as structured JSON through the `get-extraction` tool.
+</Note>
+
+## Error Handling
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `402 no_subscription` | No active subscription | Subscribe from the [dashboard](https://xquik.com) |
+| `402 usage_limit_reached` | Monthly quota exhausted | Wait for next billing period |
+| `400 invalid_tool_type` | Unrecognized `toolType` | Check the [tool types](#tool-types-reference) table |
+| `400 invalid_input` | Missing required target field | Match target field to tool type |
+| `502 x_api_unavailable` | X API temporarily down | Retry with exponential backoff |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create Extraction" icon="pickaxe" href="/api-reference/extractions/create">
+    Full API reference with request/response schemas.
+  </Card>
+  <Card title="Estimate Extraction" icon="calculator" href="/api-reference/extractions/estimate">
+    Cost estimation endpoint reference.
+  </Card>
+  <Card title="Export Extraction" icon="download" href="/api-reference/extractions/export">
+    CSV, XLSX, and Markdown export with column details.
+  </Card>
+  <Card title="Billing & Usage" icon="credit-card" href="/guides/billing">
+    Pricing, quotas, and usage scenarios.
+  </Card>
+</CardGroup>

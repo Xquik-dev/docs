@@ -1,0 +1,186 @@
+---
+title: Platform Architecture
+description: How Xquik works — architecture, security model, data isolation, rate limits, and platform limitations
+keywords: ["architecture", "security", "data isolation", "API key", "rate limits", "limitations"]
+---
+
+Xquik is a hosted SaaS platform for X (Twitter) data. All data processing happens server-side -- there is no infrastructure to deploy, no workers to manage, and no X API credentials to configure. You interact with Xquik through the REST API, MCP server, or dashboard.
+
+## Architecture Overview
+
+```text
+┌──────────────────────────────────────────────────┐
+│                    Clients                        │
+│  REST API  ·  MCP Server  ·  Dashboard  ·  CLI   │
+└──────────────────────┬───────────────────────────┘
+                       │ HTTPS
+┌──────────────────────▼───────────────────────────┐
+│                  Xquik Server                     │
+│  Next.js App Router  ·  API Routes  ·  MCP Host  │
+├───────────────────────────────────────────────────┤
+│  Auth  ·  Rate Limiter  ·  Usage Tracking         │
+├───────────────────────────────────────────────────┤
+│  Extraction Engine  ·  Draw Engine  ·  Monitors   │
+└──────────┬──────────────────────┬─────────────────┘
+           │                      │
+┌──────────▼──────────┐  ┌───────▼─────────────────┐
+│   PostgreSQL 18     │  │   Xquik Stream Service   │
+│  29 tables, Drizzle │  │  WebSocket + pg_notify   │
+│  ORM                │  │  Webhook delivery        │
+└─────────────────────┘  └───────┬─────────────────┘
+                                 │
+                        ┌────────▼────────┐
+                        │   X API Layer   │
+                        │  TwitterAPI.io  │
+                        └─────────────────┘
+```
+
+### Components
+
+| Component | Role |
+|-----------|------|
+| **REST API** | 30+ endpoints at `https://xquik.com/api/v1/*` for programmatic access |
+| **MCP Server** | 21 tools at `https://xquik.com/mcp` for AI agent integration |
+| **Dashboard** | Web UI for managing monitors, running extractions, viewing results |
+| **Xquik Stream** | Background service that maintains WebSocket connections to X and delivers webhook events |
+| **PostgreSQL** | Primary datastore for all user data, extraction results, events, and job state |
+| **X API Layer** | Proxied access to X data via TwitterAPI.io with automatic retry and rate management |
+
+## Security Model
+
+### Authentication
+
+Xquik uses **API key authentication** for all API and MCP access.
+
+| Aspect | Detail |
+|--------|--------|
+| **Header** | `x-api-key` (lowercase, required on every request) |
+| **Key format** | Prefixed with `xq_`, 64 characters total |
+| **Storage** | Keys are hashed (SHA-256) at rest -- Xquik never stores plaintext keys |
+| **Revocation** | Instant via dashboard or API. Revoked keys return `401` immediately |
+| **Last used** | Tracked per key for audit purposes |
+| **Session auth** | Dashboard uses HTTP-only session cookies (90-day expiry, magic link login) |
+
+<Warning>
+  API keys are shown once at creation. Store them securely. There is no way to retrieve a key after creation.
+</Warning>
+
+### Data Isolation
+
+Every API key is scoped to a single user account. There is no cross-user access.
+
+| Resource | Isolation |
+|----------|-----------|
+| **Monitors** | Each user sees only their own monitors |
+| **Events** | Events are scoped to the user's monitors |
+| **Webhooks** | Webhook endpoints and delivery logs are per-user |
+| **Extractions** | Extraction jobs and results belong to the creating user |
+| **Draws** | Giveaway draws and winner lists are per-user |
+| **API Keys** | Users manage only their own keys (session auth required) |
+
+Attempting to access another user's resources returns `404 Not Found` (not `403`), preventing enumeration attacks.
+
+### Authorization
+
+Xquik uses a flat permission model -- no roles, no RBAC, no team workspaces.
+
+- **One user, one account**: Each account has full access to all its own resources
+- **API key = full access**: Any valid API key for an account can perform all operations that account is authorized for
+- **Session-only endpoints**: API key management (`/api/v1/api-keys/*`) requires session auth (dashboard login), not API key auth. You cannot create or revoke API keys using an API key.
+- **Subscription gates**: Metered endpoints (extractions, draws, X lookups) require an active subscription. Management endpoints (monitors, webhooks, events) work without a subscription.
+
+## Rate Limits
+
+Rate limits are enforced per API key using a **token bucket** algorithm.
+
+| Scope | Sustained Rate | Burst Allowance |
+|-------|---------------|-----------------|
+| API endpoints (`/api/v1/*`) | 10 req/s | 20 requests |
+| General requests | 60 req/s | 100 requests |
+
+When the bucket is empty, requests return `429 Too Many Requests` with a `Retry-After` header.
+
+See the [Rate Limits](/guides/rate-limits) guide for detailed explanations, backoff strategies, and client-side rate limiter code examples.
+
+## Usage & Billing
+
+| Aspect | Detail |
+|--------|--------|
+| **Subscription** | $20/month base, includes 1 monitor |
+| **Additional monitors** | $10/month each |
+| **Usage cap** | $10/month metered usage per subscriber |
+| **Quota reset** | Automatic at each billing period |
+| **Overage** | No overage billing -- metered calls are rejected at 100% usage |
+
+### What Counts as Usage
+
+| Metered (consumes quota) | Free (unlimited) |
+|--------------------------|------------------|
+| Tweet searches | Monitor management |
+| User lookups | Event retrieval |
+| Follower checks | Webhook management |
+| Extractions | API key management |
+| Draws | Account management |
+| | Trends |
+
+See [Billing & Usage](/guides/billing) for operation limits and usage scenarios.
+
+## Monitoring Architecture
+
+Xquik monitors X accounts in real time through a dedicated background service.
+
+```text
+X WebSocket Stream
+       │
+       ▼
+┌─────────────────┐     ┌──────────────────┐
+│  Xquik Stream   │────▶│   PostgreSQL     │
+│  (systemd svc)  │     │  events table    │
+└────────┬────────┘     └──────────────────┘
+         │
+         │ pg_notify
+         ▼
+┌─────────────────┐
+│ Webhook Delivery │
+│ HMAC-signed POST │
+│ 5 retries, exp.  │
+│ backoff           │
+└─────────────────┘
+```
+
+| Aspect | Detail |
+|--------|--------|
+| **Event types** | `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet`, `follower.gained`, `follower.lost` |
+| **Delivery** | HMAC-SHA256 signed HTTPS POST to registered webhook endpoints |
+| **Retries** | 5 attempts with exponential backoff (1s, 2s, 4s, 8s, 16s) |
+| **Timeout** | Webhook endpoints must respond with `2xx` within 10 seconds |
+| **Propagation** | Events appear within seconds to minutes depending on X API latency |
+
+## Platform Limitations
+
+| Limitation | Detail |
+|------------|--------|
+| **Single region** | All data is processed and stored in a single datacenter (no multi-region replication) |
+| **No DMs** | Direct messages and private account data are not accessible |
+| **No write operations** | Cannot post tweets, like, retweet, or follow accounts |
+| **No liked/bookmarked tweets** | Cannot retrieve tweets a user liked or bookmarked |
+| **Export cap** | File exports (CSV/XLSX/Markdown) are capped at 50,000 rows per extraction |
+| **Webhook retries** | 5 attempts maximum. After exhaustion, the delivery is marked as `exhausted` |
+| **Monitor default** | 1 monitor included per subscription. Additional monitors cost $10/month each |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get up and running with your first API call.
+  </Card>
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    API key format, header requirements, and dual auth.
+  </Card>
+  <Card title="Rate Limits" icon="gauge" href="/guides/rate-limits">
+    Token bucket algorithm, backoff strategies, and code examples.
+  </Card>
+  <Card title="Billing & Usage" icon="credit-card" href="/guides/billing">
+    Pricing, quotas, and monthly operation limits.
+  </Card>
+</CardGroup>
