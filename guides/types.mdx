@@ -72,7 +72,8 @@ interface Event {
   xEventId?: string;
 }
 
-interface EventData {
+// Tweet events (tweet.new, tweet.reply, tweet.quote, tweet.retweet)
+interface TweetEventData {
   tweetId: string;
   text: string;
   metrics: {
@@ -80,7 +81,27 @@ interface EventData {
     retweets: number;
     replies: number;
   };
+  // tweet.quote only
+  quotedTweetId?: string;
+  quotedUsername?: string;
+  // tweet.reply only
+  inReplyToTweetId?: string;
+  inReplyToUsername?: string;
+  // tweet.retweet only
+  retweetedTweetId?: string;
+  retweetedUsername?: string;
 }
+
+// Follower events (follower.gained, follower.lost)
+interface FollowerEventData {
+  followerId: string;
+  followerUsername: string;
+  followerName: string;
+  followerFollowersCount: number;
+  followerVerified: boolean;
+}
+
+type EventData = TweetEventData | FollowerEventData;
 
 interface EventList {
   events: Event[];
@@ -382,7 +403,10 @@ interface TrendList {
   |------|---------------|-----------|
   | **Monitor** | `username` | `xUsername` |
   | **Event** | `type` | `eventType` |
+  | **Event** | `data` | `eventData` |
   | **Event** | `monitorId` | `monitoredAccountId` |
+  | **UserProfile** | `followers` | `followersCount` |
+  | **UserProfile** | `following` | `followingCount` |
   | **FollowerCheck** | `isFollowing` / `isFollowedBy` | `following` / `followedBy` |
 </Info>
 
@@ -406,7 +430,7 @@ Returned by all monitor endpoints. The `xUserId` is the X (Twitter) user ID reso
 
 ### Events
 
-`Event` represents a single tracked action from a monitored account. The `data` field contains tweet content and engagement metrics at the time of capture. `EventList` wraps paginated responses - use `nextCursor` with the `after` query parameter to fetch subsequent pages.
+`Event` represents a single tracked action from a monitored account. The `data` field shape depends on the event type: tweet events contain `tweetId`, `text`, and `metrics`, while follower events contain `followerId`, `followerUsername`, `followerName`, `followerFollowersCount`, and `followerVerified`. Tweet subtypes include additional fields (`quotedTweetId` for quotes, `inReplyToTweetId` for replies, `retweetedTweetId` for retweets). `EventList` wraps paginated responses. Use `nextCursor` with the `after` query parameter to fetch subsequent pages.
 
 ### Webhooks
 
