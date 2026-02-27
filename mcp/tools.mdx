@@ -1,10 +1,10 @@
 ---
 title: MCP Tools Reference
-description: All 20 MCP tools with input/output schemas, usage examples, and costs
-keywords: ["MCP tools", "list-monitors", "add-monitor", "remove-monitor", "get-events", "get-event", "search-tweets", "get-user-info", "list-webhooks", "add-webhook", "remove-webhook", "lookup-tweet", "check-follow", "run-extraction", "list-extractions", "get-extraction", "estimate-extraction", "run-draw", "list-draws", "get-draw", "get-account"]
+description: All 21 MCP tools with input/output schemas, usage examples, and costs
+keywords: ["MCP tools", "list-monitors", "add-monitor", "remove-monitor", "get-events", "get-event", "search-tweets", "get-user-info", "list-webhooks", "add-webhook", "remove-webhook", "lookup-tweet", "check-follow", "run-extraction", "list-extractions", "get-extraction", "estimate-extraction", "run-draw", "list-draws", "get-draw", "get-account", "get-trends"]
 ---
 
-The Xquik MCP server exposes 20 tools that AI agents can use to manage monitors, query events, search tweets, look up users and tweets, check follow relationships, run extractions and draws, configure webhooks, and check account status. Connect to the MCP server at `https://xquik.com/mcp` with your API key.
+The Xquik MCP server exposes 21 tools that AI agents can use to manage monitors, query events, search tweets, look up users and tweets, check follow relationships, run extractions and draws, configure webhooks, check account status, and get trending topics. Connect to the MCP server at `https://xquik.com/mcp` with your API key.
 
 ---
 
@@ -844,6 +844,75 @@ Check account status, subscription, and usage.
 
 ---
 
+### get-trends
+
+Get trending topics on X for a specific region. **Free — does not consume usage quota.**
+
+**Input:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `woeid` | number | No | 1 | Region WOEID (see table below) |
+| `count` | number | No | 30 | Number of trends to return (1-50) |
+
+**Regions:**
+
+| Region | WOEID |
+|--------|-------|
+| Worldwide | `1` |
+| United States | `23424977` |
+| United Kingdom | `23424975` |
+| Turkey | `23424969` |
+| Spain | `23424950` |
+| Germany | `23424829` |
+| France | `23424819` |
+| Japan | `23424856` |
+| India | `23424848` |
+| Brazil | `23424768` |
+| Canada | `23424775` |
+| Mexico | `23424900` |
+
+**Example:**
+
+> **Prompt:** "What's trending on X in the US right now?"
+
+```json Tool Call
+{
+  "name": "get-trends",
+  "arguments": {
+    "woeid": 23424977,
+    "count": 10
+  }
+}
+```
+
+```json Result
+{
+  "woeid": 23424977,
+  "total": 50,
+  "trends": [
+    {
+      "name": "#SuperBowl",
+      "rank": 1,
+      "query": "#SuperBowl",
+      "description": "Trending in United States"
+    },
+    {
+      "name": "Chiefs",
+      "rank": 2,
+      "query": "Chiefs",
+      "description": "Trending in Sports"
+    }
+  ]
+}
+```
+
+<Info>
+  Trends are cached and auto-refresh every 15 minutes. Pass the `query` field from a trend directly to `search-tweets` to find related tweets. See the [Trends guide](/guides/trends) for workflow examples.
+</Info>
+
+---
+
 ## Usage & Quotas
 
 Most MCP tools are free to use. Tools that query the X API or run extractions/draws consume usage credits that count toward your monthly quota:
@@ -870,6 +939,7 @@ Most MCP tools are free to use. Tools that query the X API or run extractions/dr
 | `list-draws` | No | Unlimited |
 | `get-draw` | No | Unlimited |
 | `get-account` | No | Unlimited |
+| `get-trends` | No | Free, unlimited |
 
 <Info>
   Usage is tracked per billing period. Monitor your current usage from the dashboard, via the `GET /account` API endpoint, or with the `get-account` MCP tool. See [Billing & Usage](/guides/billing) for monthly operation limits.
