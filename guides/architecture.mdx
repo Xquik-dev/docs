@@ -24,14 +24,13 @@ Xquik is a hosted SaaS platform for X (Twitter) data. All data processing happen
 └──────────┬──────────────────────┬─────────────────┘
            │                      │
 ┌──────────▼──────────┐  ┌───────▼─────────────────┐
-│   PostgreSQL 18     │  │   Xquik Stream Service   │
-│  30 tables, Drizzle │  │  WebSocket + pg_notify   │
-│  ORM                │  │  Webhook delivery        │
+│     Database        │  │   Xquik Stream Service   │
+│                     │  │  Real-time event         │
+│                     │  │  processing & webhooks   │
 └─────────────────────┘  └───────┬─────────────────┘
                                  │
                         ┌────────▼────────┐
                         │   X API Layer   │
-                        │  TwitterAPI.io  │
                         └─────────────────┘
 ```
 
@@ -43,8 +42,8 @@ Xquik is a hosted SaaS platform for X (Twitter) data. All data processing happen
 | **MCP Server** | 22 tools at `https://xquik.com/mcp` for AI agent integration |
 | **Dashboard** | Web UI for managing monitors, running extractions, viewing results |
 | **Xquik Stream** | Background service that maintains WebSocket connections to X and delivers webhook events |
-| **PostgreSQL** | Primary datastore for all user data, extraction results, events, and job state |
-| **X API Layer** | Proxied access to X data via TwitterAPI.io with automatic retry and rate management |
+| **Database** | Primary datastore for all user data, extraction results, events, and job state |
+| **X API Layer** | Proxied access to X data with automatic retry and rate management |
 
 ## Security Model
 
@@ -108,7 +107,7 @@ See the [Rate Limits](/guides/rate-limits) guide for detailed explanations, back
 |--------|--------|
 | **Subscription** | $20/month base, includes 1 monitor |
 | **Additional monitors** | $5/month each |
-| **Usage cap** | $10/month metered usage per subscriber |
+| **Usage cap** | Monthly metered usage cap per subscriber |
 | **Quota reset** | Automatic at each billing period |
 | **Overage** | No overage billing. Metered calls are rejected at 100% usage |
 
@@ -130,15 +129,14 @@ See [Billing & Usage](/guides/billing) for operation limits and usage scenarios.
 Xquik monitors X accounts in real time through a dedicated background service.
 
 ```text
-X WebSocket Stream
+X Data Stream
        │
        ▼
 ┌─────────────────┐     ┌──────────────────┐
-│  Xquik Stream   │────▶│   PostgreSQL     │
-│  (systemd svc)  │     │  events table    │
+│  Xquik Stream   │────▶│    Database      │
+│    Service      │     │  events table    │
 └────────┬────────┘     └──────────────────┘
          │
-         │ pg_notify
          ▼
 ┌─────────────────┐
 │ Webhook Delivery │
