@@ -7,10 +7,10 @@ Documentation for [Xquik](https://xquik.com) - X (Twitter) real-time data platfo
 ## Structure
 
 ```
-api-reference/     16 endpoint pages (account, api-keys, monitors, events, webhooks)
-guides/            7 guides (workflows, error-handling, rate-limits, billing, etc.)
+api-reference/     37 endpoint pages (account, api-keys, monitors, events, webhooks, draws, extractions, x, trends)
+guides/            10 guides (workflows, error-handling, rate-limits, billing, trends, extraction-workflow, architecture, troubleshooting, types)
 webhooks/          Overview + signature verification
-mcp/               MCP server overview + 9 tools reference
+mcp/               MCP server overview + 22 tools reference
 introduction.mdx   Platform overview
 quickstart.mdx     2-minute quickstart
 docs.json          Navigation + theme config
