@@ -1,6 +1,6 @@
 # Xquik Docs
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Xquik-dev/xquik-docs)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg?url=https%3A%2F%2Fgithub.com%2FXquik-dev%2Fxquik-docs)](https://deepwiki.com/Xquik-dev/xquik-docs)
 
 Public documentation for [Xquik](https://xquik.com), the X (Twitter) real-time data and automation platform. Built on [Mintlify](https://mintlify.com), deployed at **[docs.xquik.com](https://docs.xquik.com)**.
 
