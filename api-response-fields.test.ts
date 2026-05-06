@@ -23,6 +23,10 @@ const PRODUCT_X_TRENDS_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/trends/route.ts',
 );
+const PRODUCT_FOLLOW_CHECK_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/followers/check/route.ts',
+);
 const PRODUCT_TRENDS_API_PATH = join(PRODUCT_ROOT, 'lib/api/trends.ts');
 const PRODUCT_MEDIA_HANDLER_PATH = join(PRODUCT_ROOT, 'lib/media/handler.ts');
 const PRODUCT_X_API_TYPES_PATH = join(PRODUCT_ROOT, 'lib/x-api/types.ts');
@@ -96,6 +100,7 @@ const COMMUNITY_INFO_PAGE = 'api-reference/x/community-info.mdx';
 const MEDIA_DOWNLOAD_PAGE = 'api-reference/x/download-media.mdx';
 const BOOKMARK_FOLDERS_PAGE = 'api-reference/x/bookmark-folders.mdx';
 const X_TRENDS_PAGE = 'api-reference/x/trends.mdx';
+const FOLLOW_CHECK_PAGE = 'api-reference/x/check-follower.mdx';
 
 function parseYaml(source: string): OpenApiSpec {
   const bun = globalThis as {
@@ -341,6 +346,18 @@ function productXTrendsFields(): readonly string[] {
   ]);
 }
 
+function productFollowCheckFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH, 'utf8');
+  const responseStart = source.indexOf(
+    'return NextResponse.json({\n        isFollowing:',
+  );
+  if (responseStart < 0) {
+    throw new Error('Could not locate follow check success response.');
+  }
+  const responseEnd = source.indexOf('});', responseStart);
+  return objectLiteralFields(source.slice(responseStart, responseEnd + 1));
+}
+
 function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const paginatedTweets = schemaPropertyNames(spec, 'PaginatedTweets');
   const paginatedUsers = schemaPropertyNames(spec, 'PaginatedUsers');
@@ -382,6 +399,9 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const xTrendsResponse = responseSchema(spec, '/x/trends', 'get');
   const xTrends = propertyNames(xTrendsResponse);
   const xTrend = itemPropertyNamesFromProperty(spec, xTrendsResponse, 'trends');
+  const followCheck = propertyNames(
+    responseSchema(spec, '/x/followers/check', 'get'),
+  );
 
   const paginatedTweetContracts = PAGINATED_TWEET_PAGES.map(
     (page): PageContract => ({
@@ -457,6 +477,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       page: X_TRENDS_PAGE,
       requiredFields: uniqueSorted([...xTrends, ...xTrend]),
     },
+    {
+      allowedFields: followCheck,
+      page: FOLLOW_CHECK_PAGE,
+      requiredFields: followCheck,
+    },
   ];
 }
 
@@ -490,6 +515,7 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH) &&
       existsSync(PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH) &&
       existsSync(PRODUCT_X_TRENDS_ROUTE_PATH) &&
+      existsSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH) &&
       existsSync(PRODUCT_TRENDS_API_PATH) &&
       existsSync(PRODUCT_MEDIA_HANDLER_PATH) &&
       existsSync(PRODUCT_X_API_TYPES_PATH);
@@ -610,6 +636,14 @@ describe('API response field docs', (): void => {
           ),
         ]),
       ).map((field): string => `X trends is missing ${field}.`),
+      ...setDifference(
+        propertyNames(responseSchema(spec, '/x/followers/check', 'get')),
+        productFollowCheckFields(),
+      ).map((field): string => `Follow check has no product field ${field}.`),
+      ...setDifference(
+        productFollowCheckFields(),
+        propertyNames(responseSchema(spec, '/x/followers/check', 'get')),
+      ).map((field): string => `Follow check is missing ${field}.`),
     ];
 
     expect(findings).toStrictEqual([]);
