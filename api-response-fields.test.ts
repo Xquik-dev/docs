@@ -11,11 +11,28 @@ const PRODUCT_ROUTE_HELPERS_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/route-helpers.ts',
 );
+const PRODUCT_NOTIFICATIONS_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/notifications/route.ts',
+);
 
 interface OpenApiSpec {
   readonly components?: {
     readonly schemas?: Record<string, OpenApiSchema>;
   };
+  readonly paths?: Record<string, Record<string, OpenApiOperation>>;
+}
+
+interface OpenApiMediaType {
+  readonly schema?: OpenApiSchema;
+}
+
+interface OpenApiOperation {
+  readonly responses?: Record<string, OpenApiResponse>;
+}
+
+interface OpenApiResponse {
+  readonly content?: Record<string, OpenApiMediaType>;
 }
 
 interface OpenApiSchema {
@@ -38,6 +55,8 @@ const PAGINATED_TWEET_PAGES = [
   'api-reference/x/bookmarks.mdx',
   'api-reference/x/timeline.mdx',
 ] as const;
+
+const NOTIFICATION_PAGE = 'api-reference/x/notifications.mdx';
 
 function parseYaml(source: string): OpenApiSpec {
   const bun = globalThis as {
@@ -102,6 +121,30 @@ function itemPropertyNames(
   return propertyNames(resolveSchema(spec, schema?.items ?? {}));
 }
 
+function responseSchema(
+  spec: OpenApiSpec,
+  path: string,
+  method: string,
+): OpenApiSchema {
+  const schema =
+    spec.paths?.[path]?.[method]?.responses?.['200']?.content?.[
+      'application/json'
+    ]?.schema;
+  if (schema === undefined) {
+    throw new Error(`Missing 200 JSON response schema: ${method} ${path}`);
+  }
+  return resolveSchema(spec, schema);
+}
+
+function itemPropertyNamesFromProperty(
+  spec: OpenApiSpec,
+  schema: OpenApiSchema,
+  property: string,
+): readonly string[] {
+  const itemSchema = schema.properties?.[property]?.items ?? {};
+  return propertyNames(resolveSchema(spec, itemSchema));
+}
+
 function uniqueSorted(fields: readonly string[]): readonly string[] {
   return [...new Set(fields)].sort((left, right): number =>
     left.localeCompare(right),
@@ -151,6 +194,25 @@ function productMapperFields(functionName: string): readonly string[] {
   return uniqueSorted([...directFields, ...optionalFields]);
 }
 
+function productNotificationFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH, 'utf8');
+  const start = source.indexOf('notifications: result.items.map');
+  const end = source.indexOf('has_next_page:', start);
+  if (start < 0 || end < 0) {
+    throw new Error('Could not locate notification response mapper.');
+  }
+  const body = source.slice(start, end);
+  const directFields = [...body.matchAll(/^\s{10}(?<field>[A-Za-z_]\w*):/gmu)]
+    .map((match): string => match.groups?.['field'] ?? '')
+    .filter((field): boolean => field.length > 0);
+  const optionalFields = [
+    ...body.matchAll(/\{\s*(?<field>[A-Za-z_]\w*):\s*n\./gu),
+  ]
+    .map((match): string => match.groups?.['field'] ?? '')
+    .filter((field): boolean => field.length > 0);
+  return uniqueSorted([...directFields, ...optionalFields]);
+}
+
 function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const paginatedTweets = schemaPropertyNames(spec, 'PaginatedTweets');
   const searchTweet = schemaPropertyNames(spec, 'SearchTweet');
@@ -159,6 +221,13 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const tweetAuthor = schemaPropertyNames(spec, 'TweetAuthor');
   const searchTweetMedia = itemPropertyNames(spec, 'SearchTweet', 'media');
   const tweetDetailMedia = itemPropertyNames(spec, 'TweetDetail', 'media');
+  const notificationsResponse = responseSchema(spec, '/x/notifications', 'get');
+  const notifications = propertyNames(notificationsResponse);
+  const notification = itemPropertyNamesFromProperty(
+    spec,
+    notificationsResponse,
+    'notifications',
+  );
 
   const paginatedTweetContracts = PAGINATED_TWEET_PAGES.map(
     (page): PageContract => ({
@@ -201,6 +270,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       page: 'api-reference/x/get-user.mdx',
       requiredFields: userProfile,
     },
+    {
+      allowedFields: uniqueSorted([...notifications, ...notification]),
+      page: NOTIFICATION_PAGE,
+      requiredFields: uniqueSorted([...notifications, ...notification]),
+    },
   ];
 }
 
@@ -229,7 +303,9 @@ describe('API response field docs', (): void => {
   it('keeps selected X read OpenAPI schemas aligned with product mappers', (): void => {
     expect.assertions(1);
 
-    const productSourceExists = existsSync(PRODUCT_ROUTE_HELPERS_PATH);
+    const productSourceExists =
+      existsSync(PRODUCT_ROUTE_HELPERS_PATH) &&
+      existsSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH);
     if (!productSourceExists) {
       expect(productSourceExists).toBe(false);
       return;
@@ -253,6 +329,22 @@ describe('API response field docs', (): void => {
         productMapperFields('mapUser'),
         schemaPropertyNames(spec, 'UserProfile'),
       ).map((field): string => `UserProfile is missing ${field}.`),
+      ...setDifference(
+        itemPropertyNamesFromProperty(
+          spec,
+          responseSchema(spec, '/x/notifications', 'get'),
+          'notifications',
+        ),
+        productNotificationFields(),
+      ).map((field): string => `Notification has no product field ${field}.`),
+      ...setDifference(
+        productNotificationFields(),
+        itemPropertyNamesFromProperty(
+          spec,
+          responseSchema(spec, '/x/notifications', 'get'),
+          'notifications',
+        ),
+      ).map((field): string => `Notification is missing ${field}.`),
     ];
 
     expect(findings).toStrictEqual([]);
