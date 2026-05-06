@@ -30,6 +30,15 @@ interface PageContract {
   readonly requiredFields: readonly string[];
 }
 
+const PAGINATED_TWEET_PAGES = [
+  'api-reference/x/search-tweets.mdx',
+  'api-reference/x/user-tweets.mdx',
+  'api-reference/x/user-likes.mdx',
+  'api-reference/x/user-media.mdx',
+  'api-reference/x/bookmarks.mdx',
+  'api-reference/x/timeline.mdx',
+] as const;
+
 function parseYaml(source: string): OpenApiSpec {
   const bun = globalThis as {
     readonly Bun?: { readonly YAML?: { parse: (yaml: string) => unknown } };
@@ -151,21 +160,25 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const searchTweetMedia = itemPropertyNames(spec, 'SearchTweet', 'media');
   const tweetDetailMedia = itemPropertyNames(spec, 'TweetDetail', 'media');
 
-  return [
-    {
+  const paginatedTweetContracts = PAGINATED_TWEET_PAGES.map(
+    (page): PageContract => ({
       allowedFields: uniqueSorted([
         ...paginatedTweets,
         ...searchTweet,
         ...userProfile,
         ...searchTweetMedia,
       ]),
-      page: 'api-reference/x/search-tweets.mdx',
+      page,
       requiredFields: uniqueSorted([
         ...paginatedTweets,
         ...searchTweet,
         ...searchTweetMedia,
       ]),
-    },
+    }),
+  );
+
+  return [
+    ...paginatedTweetContracts,
     {
       allowedFields: uniqueSorted([
         'author',
