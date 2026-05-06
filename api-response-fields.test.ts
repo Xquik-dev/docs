@@ -15,6 +15,7 @@ const PRODUCT_NOTIFICATIONS_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/notifications/route.ts',
 );
+const PRODUCT_MEDIA_HANDLER_PATH = join(PRODUCT_ROOT, 'lib/media/handler.ts');
 const PRODUCT_X_API_TYPES_PATH = join(PRODUCT_ROOT, 'lib/x-api/types.ts');
 
 interface OpenApiSpec {
@@ -83,6 +84,7 @@ const PAGINATED_USER_PAGES = [
 
 const NOTIFICATION_PAGE = 'api-reference/x/notifications.mdx';
 const COMMUNITY_INFO_PAGE = 'api-reference/x/community-info.mdx';
+const MEDIA_DOWNLOAD_PAGE = 'api-reference/x/download-media.mdx';
 
 function parseYaml(source: string): OpenApiSpec {
   const bun = globalThis as {
@@ -257,6 +259,41 @@ function productInterfaceFields(interfaceName: string): readonly string[] {
   );
 }
 
+function objectLiteralFields(source: string): readonly string[] {
+  const start = source.indexOf('{');
+  const end = source.lastIndexOf('}');
+  if (start < 0) {
+    return [];
+  }
+  const bodyEnd = end < 0 ? source.length : end;
+  return uniqueSorted(
+    [
+      ...source
+        .slice(start + 1, bodyEnd)
+        .matchAll(/(?:^|,)\s*(?<field>[A-Za-z_]\w*)\s*(?=[:},]|$)/gu),
+    ]
+      .map((match): string => match.groups?.['field'] ?? '')
+      .filter((field): boolean => field.length > 0),
+  );
+}
+
+function productMediaDownloadFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_MEDIA_HANDLER_PATH, 'utf8');
+  const singleStart = source.indexOf(
+    'return NextResponse.json({ cacheHit: !outcome.fresh, galleryUrl, tweetId });',
+  );
+  const bulkStart = source.indexOf('return NextResponse.json({\n    galleryUrl,');
+  if (singleStart < 0 || bulkStart < 0) {
+    throw new Error('Could not locate media download success responses.');
+  }
+  const singleEnd = source.indexOf(');', singleStart);
+  const bulkEnd = source.indexOf('});', bulkStart);
+  return uniqueSorted([
+    ...objectLiteralFields(source.slice(singleStart, singleEnd)),
+    ...objectLiteralFields(source.slice(bulkStart, bulkEnd)),
+  ]);
+}
+
 function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const paginatedTweets = schemaPropertyNames(spec, 'PaginatedTweets');
   const paginatedUsers = schemaPropertyNames(spec, 'PaginatedUsers');
@@ -280,6 +317,9 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   );
   const communityInfo = propertyNames(
     resolveSchema(spec, communityInfoResponse.properties?.['community'] ?? {}),
+  );
+  const mediaDownload = propertyNames(
+    responseSchema(spec, '/x/media/download', 'post'),
   );
 
   const paginatedTweetContracts = PAGINATED_TWEET_PAGES.map(
@@ -340,6 +380,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       allowedFields: uniqueSorted(['community', ...communityInfo]),
       page: COMMUNITY_INFO_PAGE,
       requiredFields: uniqueSorted(['community', ...communityInfo]),
+    },
+    {
+      allowedFields: mediaDownload,
+      page: MEDIA_DOWNLOAD_PAGE,
+      requiredFields: mediaDownload,
     },
   ];
 }
@@ -434,6 +479,16 @@ describe('API response field docs', (): void => {
           ).properties?.['community'],
         ),
       ).map((field): string => `Community info is missing ${field}.`),
+      ...setDifference(
+        propertyNames(responseSchema(spec, '/x/media/download', 'post')),
+        productMediaDownloadFields(),
+      ).map(
+        (field): string => `Media download has no product field ${field}.`,
+      ),
+      ...setDifference(
+        productMediaDownloadFields(),
+        propertyNames(responseSchema(spec, '/x/media/download', 'post')),
+      ).map((field): string => `Media download is missing ${field}.`),
     ];
 
     expect(findings).toStrictEqual([]);
