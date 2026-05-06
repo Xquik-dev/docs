@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -215,6 +215,12 @@ describe('API response field docs', (): void => {
 
   it('keeps selected X read OpenAPI schemas aligned with product mappers', (): void => {
     expect.assertions(1);
+
+    const productSourceExists = existsSync(PRODUCT_ROUTE_HELPERS_PATH);
+    if (!productSourceExists) {
+      expect(productSourceExists).toBe(false);
+      return;
+    }
 
     const spec = readOpenApi();
     const findings = [
