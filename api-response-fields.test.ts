@@ -56,6 +56,13 @@ const PAGINATED_TWEET_PAGES = [
   'api-reference/x/timeline.mdx',
 ] as const;
 
+const PAGINATED_USER_PAGES = [
+  'api-reference/x/followers.mdx',
+  'api-reference/x/following.mdx',
+  'api-reference/x/followers-you-know.mdx',
+  'api-reference/x/verified-followers.mdx',
+] as const;
+
 const NOTIFICATION_PAGE = 'api-reference/x/notifications.mdx';
 
 function parseYaml(source: string): OpenApiSpec {
@@ -215,6 +222,7 @@ function productNotificationFields(): readonly string[] {
 
 function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const paginatedTweets = schemaPropertyNames(spec, 'PaginatedTweets');
+  const paginatedUsers = schemaPropertyNames(spec, 'PaginatedUsers');
   const searchTweet = schemaPropertyNames(spec, 'SearchTweet');
   const userProfile = schemaPropertyNames(spec, 'UserProfile');
   const tweetDetail = schemaPropertyNames(spec, 'TweetDetail');
@@ -245,9 +253,17 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       ]),
     }),
   );
+  const paginatedUserContracts = PAGINATED_USER_PAGES.map(
+    (page): PageContract => ({
+      allowedFields: uniqueSorted([...paginatedUsers, ...userProfile]),
+      page,
+      requiredFields: uniqueSorted([...paginatedUsers, ...userProfile]),
+    }),
+  );
 
   return [
     ...paginatedTweetContracts,
+    ...paginatedUserContracts,
     {
       allowedFields: uniqueSorted([
         'author',
