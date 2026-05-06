@@ -57,6 +57,7 @@ const PAGINATED_TWEET_PAGES = [
   'api-reference/x/tweet-quotes.mdx',
   'api-reference/x/tweet-replies.mdx',
   'api-reference/x/tweet-thread.mdx',
+  'api-reference/x/list-tweets.mdx',
 ] as const;
 
 const PAGINATED_USER_PAGES = [
@@ -64,6 +65,8 @@ const PAGINATED_USER_PAGES = [
   'api-reference/x/following.mdx',
   'api-reference/x/followers-you-know.mdx',
   'api-reference/x/verified-followers.mdx',
+  'api-reference/x/list-followers.mdx',
+  'api-reference/x/list-members.mdx',
 ] as const;
 
 const NOTIFICATION_PAGE = 'api-reference/x/notifications.mdx';
