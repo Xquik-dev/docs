@@ -19,6 +19,11 @@ const PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/bookmarks/folders/route.ts',
 );
+const PRODUCT_X_TRENDS_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/trends/route.ts',
+);
+const PRODUCT_TRENDS_API_PATH = join(PRODUCT_ROOT, 'lib/api/trends.ts');
 const PRODUCT_MEDIA_HANDLER_PATH = join(PRODUCT_ROOT, 'lib/media/handler.ts');
 const PRODUCT_X_API_TYPES_PATH = join(PRODUCT_ROOT, 'lib/x-api/types.ts');
 
@@ -90,6 +95,7 @@ const NOTIFICATION_PAGE = 'api-reference/x/notifications.mdx';
 const COMMUNITY_INFO_PAGE = 'api-reference/x/community-info.mdx';
 const MEDIA_DOWNLOAD_PAGE = 'api-reference/x/download-media.mdx';
 const BOOKMARK_FOLDERS_PAGE = 'api-reference/x/bookmark-folders.mdx';
+const X_TRENDS_PAGE = 'api-reference/x/trends.mdx';
 
 function parseYaml(source: string): OpenApiSpec {
   const bun = globalThis as {
@@ -246,8 +252,11 @@ function productNotificationFields(): readonly string[] {
   return uniqueSorted([...directFields, ...optionalFields]);
 }
 
-function productInterfaceFields(interfaceName: string): readonly string[] {
-  const source = readFileSync(PRODUCT_X_API_TYPES_PATH, 'utf8');
+function productInterfaceFieldsFromPath(
+  path: string,
+  interfaceName: string,
+): readonly string[] {
+  const source = readFileSync(path, 'utf8');
   const start = source.indexOf(`interface ${interfaceName} {`);
   if (start < 0) {
     throw new Error(`Missing product interface: ${interfaceName}`);
@@ -262,6 +271,10 @@ function productInterfaceFields(interfaceName: string): readonly string[] {
       (match): string => match.groups?.['field'] ?? '',
     ),
   );
+}
+
+function productInterfaceFields(interfaceName: string): readonly string[] {
+  return productInterfaceFieldsFromPath(PRODUCT_X_API_TYPES_PATH, interfaceName);
 }
 
 function objectLiteralFields(source: string): readonly string[] {
@@ -315,6 +328,19 @@ function productBookmarkFolderFields(): readonly string[] {
   ]);
 }
 
+function productXTrendsFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_X_TRENDS_ROUTE_PATH, 'utf8');
+  const responseStart = source.indexOf('return NextResponse.json({');
+  if (responseStart < 0) {
+    throw new Error('Could not locate X trends success response.');
+  }
+  const responseEnd = source.indexOf('});', responseStart);
+  return uniqueSorted([
+    ...objectLiteralFields(source.slice(responseStart, responseEnd + 1)),
+    ...productInterfaceFieldsFromPath(PRODUCT_TRENDS_API_PATH, 'TrendItem'),
+  ]);
+}
+
 function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const paginatedTweets = schemaPropertyNames(spec, 'PaginatedTweets');
   const paginatedUsers = schemaPropertyNames(spec, 'PaginatedUsers');
@@ -353,6 +379,9 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     bookmarkFoldersResponse,
     'folders',
   );
+  const xTrendsResponse = responseSchema(spec, '/x/trends', 'get');
+  const xTrends = propertyNames(xTrendsResponse);
+  const xTrend = itemPropertyNamesFromProperty(spec, xTrendsResponse, 'trends');
 
   const paginatedTweetContracts = PAGINATED_TWEET_PAGES.map(
     (page): PageContract => ({
@@ -423,6 +452,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       page: BOOKMARK_FOLDERS_PAGE,
       requiredFields: uniqueSorted([...bookmarkFolders, ...bookmarkFolder]),
     },
+    {
+      allowedFields: uniqueSorted([...xTrends, ...xTrend]),
+      page: X_TRENDS_PAGE,
+      requiredFields: uniqueSorted([...xTrends, ...xTrend]),
+    },
   ];
 }
 
@@ -455,6 +489,8 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_ROUTE_HELPERS_PATH) &&
       existsSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH) &&
       existsSync(PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_TRENDS_ROUTE_PATH) &&
+      existsSync(PRODUCT_TRENDS_API_PATH) &&
       existsSync(PRODUCT_MEDIA_HANDLER_PATH) &&
       existsSync(PRODUCT_X_API_TYPES_PATH);
     if (!productSourceExists) {
@@ -552,6 +588,28 @@ describe('API response field docs', (): void => {
           ),
         ]),
       ).map((field): string => `Bookmark folders is missing ${field}.`),
+      ...setDifference(
+        uniqueSorted([
+          ...propertyNames(responseSchema(spec, '/x/trends', 'get')),
+          ...itemPropertyNamesFromProperty(
+            spec,
+            responseSchema(spec, '/x/trends', 'get'),
+            'trends',
+          ),
+        ]),
+        productXTrendsFields(),
+      ).map((field): string => `X trends has no product field ${field}.`),
+      ...setDifference(
+        productXTrendsFields(),
+        uniqueSorted([
+          ...propertyNames(responseSchema(spec, '/x/trends', 'get')),
+          ...itemPropertyNamesFromProperty(
+            spec,
+            responseSchema(spec, '/x/trends', 'get'),
+            'trends',
+          ),
+        ]),
+      ).map((field): string => `X trends is missing ${field}.`),
     ];
 
     expect(findings).toStrictEqual([]);
