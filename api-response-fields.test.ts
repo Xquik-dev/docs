@@ -15,6 +15,10 @@ const PRODUCT_NOTIFICATIONS_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/notifications/route.ts',
 );
+const PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/bookmarks/folders/route.ts',
+);
 const PRODUCT_MEDIA_HANDLER_PATH = join(PRODUCT_ROOT, 'lib/media/handler.ts');
 const PRODUCT_X_API_TYPES_PATH = join(PRODUCT_ROOT, 'lib/x-api/types.ts');
 
@@ -85,6 +89,7 @@ const PAGINATED_USER_PAGES = [
 const NOTIFICATION_PAGE = 'api-reference/x/notifications.mdx';
 const COMMUNITY_INFO_PAGE = 'api-reference/x/community-info.mdx';
 const MEDIA_DOWNLOAD_PAGE = 'api-reference/x/download-media.mdx';
+const BOOKMARK_FOLDERS_PAGE = 'api-reference/x/bookmark-folders.mdx';
 
 function parseYaml(source: string): OpenApiSpec {
   const bun = globalThis as {
@@ -294,6 +299,22 @@ function productMediaDownloadFields(): readonly string[] {
   ]);
 }
 
+function productBookmarkFolderFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH, 'utf8');
+  const responseStart = source.indexOf('return NextResponse.json({');
+  if (responseStart < 0) {
+    throw new Error('Could not locate bookmark folder success response.');
+  }
+  const responseEnd = source.indexOf('});', responseStart);
+  const responseBody = source.slice(responseStart, responseEnd + 1);
+  const folderStart = responseBody.indexOf('=> ({');
+  const folderEnd = responseBody.indexOf('}))', folderStart);
+  return uniqueSorted([
+    ...objectLiteralFields(responseBody),
+    ...objectLiteralFields(responseBody.slice(folderStart, folderEnd)),
+  ]);
+}
+
 function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const paginatedTweets = schemaPropertyNames(spec, 'PaginatedTweets');
   const paginatedUsers = schemaPropertyNames(spec, 'PaginatedUsers');
@@ -320,6 +341,17 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   );
   const mediaDownload = propertyNames(
     responseSchema(spec, '/x/media/download', 'post'),
+  );
+  const bookmarkFoldersResponse = responseSchema(
+    spec,
+    '/x/bookmarks/folders',
+    'get',
+  );
+  const bookmarkFolders = propertyNames(bookmarkFoldersResponse);
+  const bookmarkFolder = itemPropertyNamesFromProperty(
+    spec,
+    bookmarkFoldersResponse,
+    'folders',
   );
 
   const paginatedTweetContracts = PAGINATED_TWEET_PAGES.map(
@@ -386,6 +418,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       page: MEDIA_DOWNLOAD_PAGE,
       requiredFields: mediaDownload,
     },
+    {
+      allowedFields: uniqueSorted([...bookmarkFolders, ...bookmarkFolder]),
+      page: BOOKMARK_FOLDERS_PAGE,
+      requiredFields: uniqueSorted([...bookmarkFolders, ...bookmarkFolder]),
+    },
   ];
 }
 
@@ -417,6 +454,8 @@ describe('API response field docs', (): void => {
     const productSourceExists =
       existsSync(PRODUCT_ROUTE_HELPERS_PATH) &&
       existsSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH) &&
+      existsSync(PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH) &&
+      existsSync(PRODUCT_MEDIA_HANDLER_PATH) &&
       existsSync(PRODUCT_X_API_TYPES_PATH);
     if (!productSourceExists) {
       expect(productSourceExists).toBe(false);
@@ -489,6 +528,30 @@ describe('API response field docs', (): void => {
         productMediaDownloadFields(),
         propertyNames(responseSchema(spec, '/x/media/download', 'post')),
       ).map((field): string => `Media download is missing ${field}.`),
+      ...setDifference(
+        uniqueSorted([
+          ...propertyNames(responseSchema(spec, '/x/bookmarks/folders', 'get')),
+          ...itemPropertyNamesFromProperty(
+            spec,
+            responseSchema(spec, '/x/bookmarks/folders', 'get'),
+            'folders',
+          ),
+        ]),
+        productBookmarkFolderFields(),
+      ).map(
+        (field): string => `Bookmark folders has no product field ${field}.`,
+      ),
+      ...setDifference(
+        productBookmarkFolderFields(),
+        uniqueSorted([
+          ...propertyNames(responseSchema(spec, '/x/bookmarks/folders', 'get')),
+          ...itemPropertyNamesFromProperty(
+            spec,
+            responseSchema(spec, '/x/bookmarks/folders', 'get'),
+            'folders',
+          ),
+        ]),
+      ).map((field): string => `Bookmark folders is missing ${field}.`),
     ];
 
     expect(findings).toStrictEqual([]);
