@@ -28,6 +28,10 @@ const PRODUCT_FOLLOW_CHECK_ROUTE_PATH = join(
   'app/api/v1/x/followers/check/route.ts',
 );
 const PRODUCT_TRENDS_API_PATH = join(PRODUCT_ROOT, 'lib/api/trends.ts');
+const PRODUCT_ARTICLE_FORMAT_PATH = join(
+  PRODUCT_ROOT,
+  'lib/x-api/article-format.ts',
+);
 const PRODUCT_MEDIA_HANDLER_PATH = join(PRODUCT_ROOT, 'lib/media/handler.ts');
 const PRODUCT_X_API_TYPES_PATH = join(PRODUCT_ROOT, 'lib/x-api/types.ts');
 
@@ -101,6 +105,7 @@ const MEDIA_DOWNLOAD_PAGE = 'api-reference/x/download-media.mdx';
 const BOOKMARK_FOLDERS_PAGE = 'api-reference/x/bookmark-folders.mdx';
 const X_TRENDS_PAGE = 'api-reference/x/trends.mdx';
 const FOLLOW_CHECK_PAGE = 'api-reference/x/check-follower.mdx';
+const ARTICLE_PAGE = 'api-reference/x/get-article.mdx';
 
 function parseYaml(source: string): OpenApiSpec {
   const bun = globalThis as {
@@ -236,6 +241,28 @@ function productMapperFields(functionName: string): readonly string[] {
     .map((match): string => match.groups?.['field'] ?? '')
     .filter((field): boolean => field.length > 0);
   return uniqueSorted([...directFields, ...optionalFields]);
+}
+
+function objectLiteralPropertyFields(source: string): readonly string[] {
+  return uniqueSorted(
+    [...source.matchAll(/[{,]\s*(?<field>[A-Za-z_]\w*)\s*:/gu)]
+      .map((match): string => match.groups?.['field'] ?? '')
+      .filter((field): boolean => field.length > 0),
+  );
+}
+
+function productReturnFieldsFromPath(
+  path: string,
+  functionName: string,
+): readonly string[] {
+  const source = readFileSync(path, 'utf8');
+  const body = mapFunctionBody(source, functionName);
+  const start = body.indexOf('return {');
+  const end = body.indexOf('};', start);
+  if (start < 0 || end < 0) {
+    throw new Error(`Could not locate return object: ${functionName}`);
+  }
+  return objectLiteralPropertyFields(body.slice(start, end + 1));
 }
 
 function productNotificationFields(): readonly string[] {
@@ -402,6 +429,26 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const followCheck = propertyNames(
     responseSchema(spec, '/x/followers/check', 'get'),
   );
+  const articleResponse = responseSchema(spec, '/x/articles/{tweetId}', 'get');
+  const article = propertyNames(articleResponse);
+  const articleBodySchema = resolveSchema(
+    spec,
+    articleResponse.properties?.['article'] ?? {},
+  );
+  const articleBody = propertyNames(articleBodySchema);
+  const articleContentSchema = resolveSchema(
+    spec,
+    articleBodySchema.properties?.['contents']?.items ?? {},
+  );
+  const articleContent = propertyNames(articleContentSchema);
+  const articleInlineStyle = itemPropertyNamesFromProperty(
+    spec,
+    articleContentSchema,
+    'inlineStyleRanges',
+  );
+  const articleAuthor = propertyNames(
+    resolveSchema(spec, articleResponse.properties?.['author'] ?? {}),
+  );
 
   const paginatedTweetContracts = PAGINATED_TWEET_PAGES.map(
     (page): PageContract => ({
@@ -482,6 +529,23 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       page: FOLLOW_CHECK_PAGE,
       requiredFields: followCheck,
     },
+    {
+      allowedFields: uniqueSorted([
+        ...article,
+        ...articleBody,
+        ...articleContent,
+        ...articleInlineStyle,
+        ...articleAuthor,
+      ]),
+      page: ARTICLE_PAGE,
+      requiredFields: uniqueSorted([
+        ...article,
+        ...articleBody,
+        ...articleContent,
+        ...articleInlineStyle,
+        ...articleAuthor,
+      ]),
+    },
   ];
 }
 
@@ -517,6 +581,7 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_X_TRENDS_ROUTE_PATH) &&
       existsSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH) &&
       existsSync(PRODUCT_TRENDS_API_PATH) &&
+      existsSync(PRODUCT_ARTICLE_FORMAT_PATH) &&
       existsSync(PRODUCT_MEDIA_HANDLER_PATH) &&
       existsSync(PRODUCT_X_API_TYPES_PATH);
     if (!productSourceExists) {
@@ -525,6 +590,48 @@ describe('API response field docs', (): void => {
     }
 
     const spec = readOpenApi();
+    const articleResponseSchema = responseSchema(
+      spec,
+      '/x/articles/{tweetId}',
+      'get',
+    );
+    const articleSchema = resolveSchema(
+      spec,
+      articleResponseSchema.properties?.['article'] ?? {},
+    );
+    const articleContentSchema = resolveSchema(
+      spec,
+      articleSchema.properties?.['contents']?.items ?? {},
+    );
+    const articleAuthorSchema = resolveSchema(
+      spec,
+      articleResponseSchema.properties?.['author'] ?? {},
+    );
+    const openApiArticleResponseFields = propertyNames(articleResponseSchema);
+    const openApiArticleFields = propertyNames(articleSchema);
+    const openApiArticleContentFields = itemPropertyNamesFromProperty(
+      spec,
+      articleSchema,
+      'contents',
+    );
+    const openApiArticleInlineStyleFields = itemPropertyNamesFromProperty(
+      spec,
+      articleContentSchema,
+      'inlineStyleRanges',
+    );
+    const openApiArticleAuthorFields = propertyNames(articleAuthorSchema);
+    const productArticleResponseFields = productReturnFieldsFromPath(
+      PRODUCT_ARTICLE_FORMAT_PATH,
+      'formatArticleResponse',
+    );
+    const productArticleFields = productReturnFieldsFromPath(
+      PRODUCT_ARTICLE_FORMAT_PATH,
+      'formatArticle',
+    );
+    const productArticleAuthorFields = productReturnFieldsFromPath(
+      PRODUCT_ARTICLE_FORMAT_PATH,
+      'formatAuthor',
+    );
     const findings = [
       ...setDifference(
         schemaPropertyNames(spec, 'SearchTweet'),
@@ -644,6 +751,48 @@ describe('API response field docs', (): void => {
         productFollowCheckFields(),
         propertyNames(responseSchema(spec, '/x/followers/check', 'get')),
       ).map((field): string => `Follow check is missing ${field}.`),
+      ...setDifference(
+        openApiArticleResponseFields,
+        productArticleResponseFields,
+      ).map((field): string => `Article response has no product field ${field}.`),
+      ...setDifference(
+        productArticleResponseFields,
+        openApiArticleResponseFields,
+      ).map((field): string => `Article response is missing ${field}.`),
+      ...setDifference(
+        openApiArticleFields,
+        productArticleFields,
+      ).map((field): string => `Article has no product field ${field}.`),
+      ...setDifference(
+        productArticleFields,
+        openApiArticleFields,
+      ).map((field): string => `Article is missing ${field}.`),
+      ...setDifference(
+        openApiArticleContentFields,
+        productInterfaceFields('TwitterApiArticleContent'),
+      ).map((field): string => `Article content has no product field ${field}.`),
+      ...setDifference(
+        productInterfaceFields('TwitterApiArticleContent'),
+        openApiArticleContentFields,
+      ).map((field): string => `Article content is missing ${field}.`),
+      ...setDifference(
+        openApiArticleInlineStyleFields,
+        productInterfaceFields('TwitterApiArticleInlineStyle'),
+      ).map(
+        (field): string => `Article inline style has no product field ${field}.`,
+      ),
+      ...setDifference(
+        productInterfaceFields('TwitterApiArticleInlineStyle'),
+        openApiArticleInlineStyleFields,
+      ).map((field): string => `Article inline style is missing ${field}.`),
+      ...setDifference(
+        openApiArticleAuthorFields,
+        productArticleAuthorFields,
+      ).map((field): string => `Article author has no product field ${field}.`),
+      ...setDifference(
+        productArticleAuthorFields,
+        openApiArticleAuthorFields,
+      ).map((field): string => `Article author is missing ${field}.`),
     ];
 
     expect(findings).toStrictEqual([]);
