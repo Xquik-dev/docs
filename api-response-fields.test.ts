@@ -49,6 +49,7 @@ interface PageContract {
 }
 
 const PAGINATED_TWEET_PAGES = [
+  'api-reference/x/batch-tweets.mdx',
   'api-reference/x/search-tweets.mdx',
   'api-reference/x/user-tweets.mdx',
   'api-reference/x/user-likes.mdx',
