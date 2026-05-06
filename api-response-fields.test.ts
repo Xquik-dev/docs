@@ -15,6 +15,7 @@ const PRODUCT_NOTIFICATIONS_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/notifications/route.ts',
 );
+const PRODUCT_X_API_TYPES_PATH = join(PRODUCT_ROOT, 'lib/x-api/types.ts');
 
 interface OpenApiSpec {
   readonly components?: {
@@ -58,6 +59,9 @@ const PAGINATED_TWEET_PAGES = [
   'api-reference/x/tweet-replies.mdx',
   'api-reference/x/tweet-thread.mdx',
   'api-reference/x/list-tweets.mdx',
+  'api-reference/x/community-tweets.mdx',
+  'api-reference/x/community-search.mdx',
+  'api-reference/x/search-community-tweets.mdx',
 ] as const;
 
 const PAGINATED_USER_PAGES = [
@@ -67,9 +71,12 @@ const PAGINATED_USER_PAGES = [
   'api-reference/x/verified-followers.mdx',
   'api-reference/x/list-followers.mdx',
   'api-reference/x/list-members.mdx',
+  'api-reference/x/community-members.mdx',
+  'api-reference/x/community-moderators.mdx',
 ] as const;
 
 const NOTIFICATION_PAGE = 'api-reference/x/notifications.mdx';
+const COMMUNITY_INFO_PAGE = 'api-reference/x/community-info.mdx';
 
 function parseYaml(source: string): OpenApiSpec {
   const bun = globalThis as {
@@ -226,6 +233,24 @@ function productNotificationFields(): readonly string[] {
   return uniqueSorted([...directFields, ...optionalFields]);
 }
 
+function productInterfaceFields(interfaceName: string): readonly string[] {
+  const source = readFileSync(PRODUCT_X_API_TYPES_PATH, 'utf8');
+  const start = source.indexOf(`interface ${interfaceName} {`);
+  if (start < 0) {
+    throw new Error(`Missing product interface: ${interfaceName}`);
+  }
+  const end = source.indexOf('\n}\n', start);
+  if (end < 0) {
+    throw new Error(`Could not locate product interface end: ${interfaceName}`);
+  }
+  const body = source.slice(start, end);
+  return uniqueSorted(
+    [...body.matchAll(/^\s{2}readonly (?<field>[A-Za-z_]\w*)\??:/gmu)].map(
+      (match): string => match.groups?.['field'] ?? '',
+    ),
+  );
+}
+
 function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const paginatedTweets = schemaPropertyNames(spec, 'PaginatedTweets');
   const paginatedUsers = schemaPropertyNames(spec, 'PaginatedUsers');
@@ -241,6 +266,14 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     spec,
     notificationsResponse,
     'notifications',
+  );
+  const communityInfoResponse = responseSchema(
+    spec,
+    '/x/communities/{id}/info',
+    'get',
+  );
+  const communityInfo = propertyNames(
+    resolveSchema(spec, communityInfoResponse.properties?.['community'] ?? {}),
   );
 
   const paginatedTweetContracts = PAGINATED_TWEET_PAGES.map(
@@ -297,6 +330,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       page: NOTIFICATION_PAGE,
       requiredFields: uniqueSorted([...notifications, ...notification]),
     },
+    {
+      allowedFields: uniqueSorted(['community', ...communityInfo]),
+      page: COMMUNITY_INFO_PAGE,
+      requiredFields: uniqueSorted(['community', ...communityInfo]),
+    },
   ];
 }
 
@@ -327,7 +365,8 @@ describe('API response field docs', (): void => {
 
     const productSourceExists =
       existsSync(PRODUCT_ROUTE_HELPERS_PATH) &&
-      existsSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH);
+      existsSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_API_TYPES_PATH);
     if (!productSourceExists) {
       expect(productSourceExists).toBe(false);
       return;
@@ -367,6 +406,28 @@ describe('API response field docs', (): void => {
           'notifications',
         ),
       ).map((field): string => `Notification is missing ${field}.`),
+      ...setDifference(
+        propertyNames(
+          responseSchema(
+            spec,
+            '/x/communities/{id}/info',
+            'get',
+          ).properties?.['community'],
+        ),
+        productInterfaceFields('TwitterApiCommunityInfo'),
+      ).map(
+        (field): string => `Community info has no product field ${field}.`,
+      ),
+      ...setDifference(
+        productInterfaceFields('TwitterApiCommunityInfo'),
+        propertyNames(
+          responseSchema(
+            spec,
+            '/x/communities/{id}/info',
+            'get',
+          ).properties?.['community'],
+        ),
+      ).map((field): string => `Community info is missing ${field}.`),
     ];
 
     expect(findings).toStrictEqual([]);
