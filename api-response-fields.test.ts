@@ -62,6 +62,7 @@ const PAGINATED_TWEET_PAGES = [
   'api-reference/x/community-tweets.mdx',
   'api-reference/x/community-search.mdx',
   'api-reference/x/search-community-tweets.mdx',
+  'api-reference/x/user-mentions.mdx',
 ] as const;
 
 const PAGINATED_USER_PAGES = [
@@ -73,6 +74,10 @@ const PAGINATED_USER_PAGES = [
   'api-reference/x/list-members.mdx',
   'api-reference/x/community-members.mdx',
   'api-reference/x/community-moderators.mdx',
+  'api-reference/x/retweeters.mdx',
+  'api-reference/x/favoriters.mdx',
+  'api-reference/x/search-users.mdx',
+  'api-reference/x/batch-users.mdx',
 ] as const;
 
 const NOTIFICATION_PAGE = 'api-reference/x/notifications.mdx';
