@@ -52,6 +52,10 @@ const PRODUCT_X_MEDIA_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/media/route.ts',
 );
+const PRODUCT_X_PROFILE_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/profile/route.ts',
+);
 const PRODUCT_FOLLOW_CHECK_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/followers/check/route.ts',
@@ -165,6 +169,7 @@ const ARTICLE_PAGE = 'api-reference/x/get-article.mdx';
 const DM_HISTORY_PAGE = 'api-reference/x/dm-history.mdx';
 const SEND_DM_PAGE = 'api-reference/x-write/send-dm.mdx';
 const UPLOAD_MEDIA_PAGE = 'api-reference/x-write/upload-media.mdx';
+const UPDATE_PROFILE_PAGE = 'api-reference/x-write/update-profile.mdx';
 const X_ACCOUNT_LIST_PAGE = 'api-reference/x-accounts/list.mdx';
 const X_ACCOUNT_DETAIL_PAGE = 'api-reference/x-accounts/get.mdx';
 const X_ACCOUNT_CONNECT_PAGE = 'api-reference/x-accounts/connect.mdx';
@@ -633,6 +638,41 @@ function productUploadMediaFields(): readonly string[] {
   return ['mediaId', 'mediaUrl', 'success'];
 }
 
+function productUpdateProfileFields(): readonly string[] {
+  const routeSource = readFileSync(PRODUCT_X_PROFILE_ROUTE_PATH, 'utf8');
+  if (
+    !routeSource.includes("actionType: 'update_profile'") ||
+    !routeSource.includes("apiPath: '/twitter/update_profile_v2'") ||
+    !routeSource.includes('return handleWriteAction(') ||
+    !routeSource.includes('parseUpdateProfileBody')
+  ) {
+    throw new Error('Could not verify update profile route wiring.');
+  }
+  const writeActionSource = readFileSync(
+    PRODUCT_WRITE_ACTION_HANDLER_PATH,
+    'utf8',
+  );
+  if (
+    !writeActionSource.includes('success: true') ||
+    !writeActionSource.includes('tweetId: result.tweetId') ||
+    writeActionSource.includes('userId: result.userId')
+  ) {
+    throw new Error('Could not verify update profile success response fields.');
+  }
+  const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, 'utf8');
+  if (
+    !writeSource.includes(
+      "['/twitter/update_profile_v2', buildUpdateProfileOperation]",
+    ) ||
+    !writeSource.includes(
+      "return { attempts: 0, status: 'success', message: result.userId };",
+    )
+  ) {
+    throw new Error('Could not verify update profile write-client operation.');
+  }
+  return ['success'];
+}
+
 function productBulkRetryFields(): readonly string[] {
   const source = readFileSync(PRODUCT_X_ACCOUNTS_BULK_RETRY_ROUTE_PATH, 'utf8');
   const responseStart = source.indexOf('return NextResponse.json({');
@@ -753,6 +793,9 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   );
   const sendDm = propertyNames(responseSchema(spec, '/x/dm/{userId}', 'post'));
   const uploadMedia = propertyNames(responseSchema(spec, '/x/media', 'post'));
+  const updateProfile = propertyNames(
+    responseSchema(spec, '/x/profile', 'patch'),
+  );
   const xAccount = schemaPropertyNames(spec, 'XAccount');
   const xAccountDetail = schemaPropertyNames(spec, 'XAccountDetail');
   const sanitizedXAccount = schemaPropertyNames(spec, 'SanitizedXAccount');
@@ -895,6 +938,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       requiredFields: uploadMedia,
     },
     {
+      allowedFields: updateProfile,
+      page: UPDATE_PROFILE_PAGE,
+      requiredFields: updateProfile,
+    },
+    {
       allowedFields: uniqueSorted([
         'accounts',
         ...prefixedFields('accounts[].', xAccount),
@@ -971,6 +1019,7 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_DM_HISTORY_ROUTE_PATH) &&
       existsSync(PRODUCT_SEND_DM_ROUTE_PATH) &&
       existsSync(PRODUCT_X_MEDIA_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_PROFILE_ROUTE_PATH) &&
       existsSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH) &&
       existsSync(PRODUCT_WRITE_ACTION_HANDLER_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH) &&
@@ -1048,6 +1097,10 @@ describe('API response field docs', (): void => {
       responseSchema(spec, '/x/media', 'post'),
     );
     const productUploadMediaResponseFields = productUploadMediaFields();
+    const updateProfileFields = propertyNames(
+      responseSchema(spec, '/x/profile', 'patch'),
+    );
+    const productUpdateProfileResponseFields = productUpdateProfileFields();
     const productXAccountFields = productReturnFieldsFromPath(
       PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
       'formatAccount',
@@ -1264,6 +1317,16 @@ describe('API response field docs', (): void => {
         productUploadMediaResponseFields,
         uploadMediaFields,
       ).map((field): string => `Upload media is missing ${field}.`),
+      ...setDifference(
+        updateProfileFields,
+        productUpdateProfileResponseFields,
+      ).map(
+        (field): string => `Update profile has no product field ${field}.`,
+      ),
+      ...setDifference(
+        productUpdateProfileResponseFields,
+        updateProfileFields,
+      ).map((field): string => `Update profile is missing ${field}.`),
       ...setDifference(
         openApiArticleResponseFields,
         productArticleResponseFields,
