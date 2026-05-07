@@ -22,6 +22,9 @@ const REQUIRED_README_SNIPPETS = [
   '[MCP Server](https://docs.xquik.com/mcp)',
   '[Webhooks](https://docs.xquik.com/webhooks/overview)',
   '[llms.txt](https://docs.xquik.com/llms.txt)',
+  '## Use With AI Coding Agents',
+  '[Context7 library](https://context7.com/xquik-dev/xquik-docs)',
+  '[OpenAPI spec](https://docs.xquik.com/openapi.yaml)',
 ] as const;
 
 const VAGUE_PUBLIC_POSITIONING = [

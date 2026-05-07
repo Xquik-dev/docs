@@ -15,6 +15,13 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 - [Webhooks](https://docs.xquik.com/webhooks/overview) - verify HMAC signatures and receive real-time X events.
 - [llms.txt](https://docs.xquik.com/llms.txt) - give AI coding agents the docs index.
 
+## Use With AI Coding Agents
+
+- [Context7 library](https://context7.com/xquik-dev/xquik-docs) - load indexed Xquik docs in supported coding agents.
+- [llms.txt](https://docs.xquik.com/llms.txt) - discover every public docs page before reading deeper.
+- [MCP Server](https://docs.xquik.com/mcp) - connect Xquik tools to Claude, ChatGPT, Cursor, and agent runtimes.
+- [OpenAPI spec](https://docs.xquik.com/openapi.yaml) - generate clients or inspect request and response shapes.
+
 ## Common jobs
 
 - Search tweets, fetch tweet threads, read quotes, and inspect replies.
