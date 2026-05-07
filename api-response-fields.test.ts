@@ -35,10 +35,15 @@ const PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH = join(
   PRODUCT_ROOT,
   'lib/x-accounts/accounts-route.ts',
 );
+const PRODUCT_X_ACCOUNTS_ID_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/accounts/[id]/route.ts',
+);
 const PRODUCT_X_ACCOUNTS_BULK_RETRY_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/accounts/bulk-retry/route.ts',
 );
+const PRODUCT_V1_CRUD_PATH = join(PRODUCT_ROOT, 'lib/api/v1-crud.ts');
 const PRODUCT_TRENDS_API_PATH = join(PRODUCT_ROOT, 'lib/api/trends.ts');
 const PRODUCT_ARTICLE_FORMAT_PATH = join(
   PRODUCT_ROOT,
@@ -49,6 +54,7 @@ const PRODUCT_X_API_TYPES_PATH = join(PRODUCT_ROOT, 'lib/x-api/types.ts');
 
 interface OpenApiSpec {
   readonly components?: {
+    readonly responses?: Record<string, OpenApiResponse>;
     readonly schemas?: Record<string, OpenApiSchema>;
   };
   readonly paths?: Record<string, Record<string, OpenApiOperation>>;
@@ -63,6 +69,7 @@ interface OpenApiOperation {
 }
 
 interface OpenApiResponse {
+  readonly $ref?: string;
   readonly content?: Record<string, OpenApiMediaType>;
 }
 
@@ -124,6 +131,7 @@ const X_ACCOUNT_DETAIL_PAGE = 'api-reference/x-accounts/get.mdx';
 const X_ACCOUNT_CONNECT_PAGE = 'api-reference/x-accounts/connect.mdx';
 const X_ACCOUNT_REAUTH_PAGE = 'api-reference/x-accounts/reauth.mdx';
 const X_ACCOUNT_BULK_RETRY_PAGE = 'api-reference/x-accounts/bulk-retry.mdx';
+const X_ACCOUNT_DISCONNECT_PAGE = 'api-reference/x-accounts/disconnect.mdx';
 
 function parseYaml(source: string): OpenApiSpec {
   const bun = globalThis as {
@@ -154,6 +162,25 @@ function resolveSchema(spec: OpenApiSpec, schema: OpenApiSchema): OpenApiSchema 
   }
   const name = schema.$ref.replace('#/components/schemas/', '');
   return schemaByName(spec, name);
+}
+
+function responseByName(spec: OpenApiSpec, name: string): OpenApiResponse {
+  const response = spec.components?.responses?.[name];
+  if (response === undefined) {
+    throw new Error(`Missing OpenAPI response: ${name}`);
+  }
+  return response;
+}
+
+function resolveResponse(
+  spec: OpenApiSpec,
+  response: OpenApiResponse,
+): OpenApiResponse {
+  if (response.$ref === undefined) {
+    return response;
+  }
+  const name = response.$ref.replace('#/components/responses/', '');
+  return responseByName(spec, name);
 }
 
 function schemaPropertyNames(spec: OpenApiSpec, name: string): readonly string[] {
@@ -194,9 +221,10 @@ function responseSchema(
   method: string,
 ): OpenApiSchema {
   const schema =
-    spec.paths?.[path]?.[method]?.responses?.['200']?.content?.[
-      'application/json'
-    ]?.schema;
+    resolveResponse(
+      spec,
+      spec.paths?.[path]?.[method]?.responses?.['200'] ?? {},
+    ).content?.['application/json']?.schema;
   if (schema === undefined) {
     throw new Error(`Missing 200 JSON response schema: ${method} ${path}`);
   }
@@ -436,6 +464,25 @@ function productBulkRetryFields(): readonly string[] {
   return objectLiteralFields(source.slice(responseStart, responseEnd + 1));
 }
 
+function productSuccessResponseFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_V1_CRUD_PATH, 'utf8');
+  const body = mapFunctionBody(source, 'successResponse');
+  const responseStart = body.indexOf('return NextResponse.json(');
+  if (responseStart < 0) {
+    throw new Error('Could not locate success response.');
+  }
+  const responseEnd = body.indexOf(');', responseStart);
+  return objectLiteralFields(body.slice(responseStart, responseEnd));
+}
+
+function productXAccountDisconnectFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_X_ACCOUNTS_ID_ROUTE_PATH, 'utf8');
+  if (!source.includes('return successResponse();')) {
+    throw new Error('X account disconnect route no longer uses successResponse.');
+  }
+  return productSuccessResponseFields();
+}
+
 function prefixedFields(
   prefix: string,
   fields: readonly string[],
@@ -519,6 +566,9 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const sanitizedXAccount = schemaPropertyNames(spec, 'SanitizedXAccount');
   const bulkRetry = propertyNames(
     responseSchema(spec, '/x/accounts/bulk-retry', 'post'),
+  );
+  const xAccountDisconnect = propertyNames(
+    responseSchema(spec, '/x/accounts/{id}', 'delete'),
   );
 
   const paginatedTweetContracts = PAGINATED_TWEET_PAGES.map(
@@ -653,6 +703,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       page: X_ACCOUNT_BULK_RETRY_PAGE,
       requiredFields: bulkRetry,
     },
+    {
+      allowedFields: xAccountDisconnect,
+      page: X_ACCOUNT_DISCONNECT_PAGE,
+      requiredFields: xAccountDisconnect,
+    },
   ];
 }
 
@@ -689,7 +744,9 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_DM_HISTORY_ROUTE_PATH) &&
       existsSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH) &&
+      existsSync(PRODUCT_X_ACCOUNTS_ID_ROUTE_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_BULK_RETRY_ROUTE_PATH) &&
+      existsSync(PRODUCT_V1_CRUD_PATH) &&
       existsSync(PRODUCT_TRENDS_API_PATH) &&
       existsSync(PRODUCT_ARTICLE_FORMAT_PATH) &&
       existsSync(PRODUCT_MEDIA_HANDLER_PATH) &&
@@ -764,6 +821,11 @@ describe('API response field docs', (): void => {
       responseSchema(spec, '/x/accounts/bulk-retry', 'post'),
     );
     const productBulkRetryResponseFields = productBulkRetryFields();
+    const xAccountDisconnectFields = propertyNames(
+      responseSchema(spec, '/x/accounts/{id}', 'delete'),
+    );
+    const productXAccountDisconnectResponseFields =
+      productXAccountDisconnectFields();
     const findings = [
       ...setDifference(
         schemaPropertyNames(spec, 'SearchTweet'),
@@ -967,6 +1029,16 @@ describe('API response field docs', (): void => {
         productBulkRetryResponseFields,
         bulkRetryFields,
       ).map((field): string => `Bulk retry is missing ${field}.`),
+      ...setDifference(
+        xAccountDisconnectFields,
+        productXAccountDisconnectResponseFields,
+      ).map(
+        (field): string => `X account disconnect has no product field ${field}.`,
+      ),
+      ...setDifference(
+        productXAccountDisconnectResponseFields,
+        xAccountDisconnectFields,
+      ).map((field): string => `X account disconnect is missing ${field}.`),
     ];
 
     expect(findings).toStrictEqual([]);
