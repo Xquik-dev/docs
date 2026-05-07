@@ -80,6 +80,10 @@ const PRODUCT_X_TWEET_ID_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/tweets/[id]/route.ts',
 );
+const PRODUCT_X_TWEETS_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/tweets/route.ts',
+);
 const PRODUCT_X_TWEET_LIKE_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/tweets/[id]/like/route.ts',
@@ -216,6 +220,7 @@ const CREATE_COMMUNITY_PAGE = 'api-reference/x-write/create-community.mdx';
 const DELETE_COMMUNITY_PAGE = 'api-reference/x-write/delete-community.mdx';
 const JOIN_COMMUNITY_PAGE = 'api-reference/x-write/join-community.mdx';
 const LEAVE_COMMUNITY_PAGE = 'api-reference/x-write/leave-community.mdx';
+const CREATE_TWEET_PAGE = 'api-reference/x-write/create-tweet.mdx';
 const DELETE_TWEET_PAGE = 'api-reference/x-write/delete-tweet.mdx';
 const LIKE_TWEET_PAGE = 'api-reference/x-write/like.mdx';
 const UNLIKE_TWEET_PAGE = 'api-reference/x-write/unlike.mdx';
@@ -864,6 +869,29 @@ function productDeleteCommunityFields(): readonly string[] {
   return ['success'];
 }
 
+function productCreateTweetFields(): readonly string[] {
+  const routeSource = readFileSync(PRODUCT_X_TWEETS_ROUTE_PATH, 'utf8');
+  if (
+    !routeSource.includes("actionType: 'create_tweet'") ||
+    !routeSource.includes('apiPath:') ||
+    !routeSource.includes('return handleWriteAction(') ||
+    !routeSource.includes('parseCreateTweetBody')
+  ) {
+    throw new Error('Could not verify create tweet route wiring.');
+  }
+  const writeActionSource = readFileSync(
+    PRODUCT_WRITE_ACTION_HANDLER_PATH,
+    'utf8',
+  );
+  if (
+    !writeActionSource.includes('success: true') ||
+    !writeActionSource.includes('tweetId: result.tweetId')
+  ) {
+    throw new Error('Could not verify create tweet success response fields.');
+  }
+  return ['success', 'tweetId'];
+}
+
 function productSimpleWriteFields(
   routePath: string,
   actionType: string,
@@ -1145,6 +1173,7 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const leaveCommunity = propertyNames(
     responseSchema(spec, '/x/communities/{id}/join', 'delete'),
   );
+  const createTweet = propertyNames(responseSchema(spec, '/x/tweets', 'post'));
   const deleteTweet = propertyNames(
     responseSchema(spec, '/x/tweets/{id}', 'delete'),
   );
@@ -1346,6 +1375,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       requiredFields: leaveCommunity,
     },
     {
+      allowedFields: createTweet,
+      page: CREATE_TWEET_PAGE,
+      requiredFields: createTweet,
+    },
+    {
       allowedFields: deleteTweet,
       page: DELETE_TWEET_PAGE,
       requiredFields: deleteTweet,
@@ -1469,6 +1503,7 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_X_COMMUNITY_ID_ROUTE_PATH) &&
       existsSync(PRODUCT_X_COMMUNITY_JOIN_ROUTE_PATH) &&
       existsSync(PRODUCT_X_TWEET_ID_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_TWEETS_ROUTE_PATH) &&
       existsSync(PRODUCT_X_TWEET_LIKE_ROUTE_PATH) &&
       existsSync(PRODUCT_X_TWEET_RETWEET_ROUTE_PATH) &&
       existsSync(PRODUCT_X_USER_FOLLOW_ROUTE_PATH) &&
@@ -1580,6 +1615,10 @@ describe('API response field docs', (): void => {
       responseSchema(spec, '/x/communities/{id}/join', 'delete'),
     );
     const productLeaveCommunityResponseFields = productLeaveCommunityFields();
+    const createTweetFields = propertyNames(
+      responseSchema(spec, '/x/tweets', 'post'),
+    );
+    const productCreateTweetResponseFields = productCreateTweetFields();
     const deleteTweetFields = propertyNames(
       responseSchema(spec, '/x/tweets/{id}', 'delete'),
     );
@@ -1890,6 +1929,14 @@ describe('API response field docs', (): void => {
         productLeaveCommunityResponseFields,
         leaveCommunityFields,
       ).map((field): string => `Leave community is missing ${field}.`),
+      ...setDifference(
+        createTweetFields,
+        productCreateTweetResponseFields,
+      ).map((field): string => `Create tweet has no product field ${field}.`),
+      ...setDifference(
+        productCreateTweetResponseFields,
+        createTweetFields,
+      ).map((field): string => `Create tweet is missing ${field}.`),
       ...setDifference(
         deleteTweetFields,
         productDeleteTweetResponseFields,
