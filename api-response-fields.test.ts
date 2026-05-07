@@ -31,6 +31,10 @@ const PRODUCT_FOLLOW_CHECK_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/followers/check/route.ts',
 );
+const PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH = join(
+  PRODUCT_ROOT,
+  'lib/x-accounts/accounts-route.ts',
+);
 const PRODUCT_TRENDS_API_PATH = join(PRODUCT_ROOT, 'lib/api/trends.ts');
 const PRODUCT_ARTICLE_FORMAT_PATH = join(
   PRODUCT_ROOT,
@@ -111,6 +115,8 @@ const X_TRENDS_PAGE = 'api-reference/x/trends.mdx';
 const FOLLOW_CHECK_PAGE = 'api-reference/x/check-follower.mdx';
 const ARTICLE_PAGE = 'api-reference/x/get-article.mdx';
 const DM_HISTORY_PAGE = 'api-reference/x/dm-history.mdx';
+const X_ACCOUNT_LIST_PAGE = 'api-reference/x-accounts/list.mdx';
+const X_ACCOUNT_DETAIL_PAGE = 'api-reference/x-accounts/get.mdx';
 
 function parseYaml(source: string): OpenApiSpec {
   const bun = globalThis as {
@@ -413,6 +419,13 @@ function productDmHistoryFields(): readonly string[] {
   ]);
 }
 
+function prefixedFields(
+  prefix: string,
+  fields: readonly string[],
+): readonly string[] {
+  return fields.map((field): string => `${prefix}${field}`);
+}
+
 function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const paginatedTweets = schemaPropertyNames(spec, 'PaginatedTweets');
   const paginatedUsers = schemaPropertyNames(spec, 'PaginatedUsers');
@@ -484,6 +497,8 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     dmHistoryResponse,
     'messages',
   );
+  const xAccount = schemaPropertyNames(spec, 'XAccount');
+  const xAccountDetail = schemaPropertyNames(spec, 'XAccountDetail');
 
   const paginatedTweetContracts = PAGINATED_TWEET_PAGES.map(
     (page): PageContract => ({
@@ -586,6 +601,22 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       page: DM_HISTORY_PAGE,
       requiredFields: uniqueSorted([...dmHistory, ...dmMessage]),
     },
+    {
+      allowedFields: uniqueSorted([
+        'accounts',
+        ...prefixedFields('accounts[].', xAccount),
+      ]),
+      page: X_ACCOUNT_LIST_PAGE,
+      requiredFields: uniqueSorted([
+        'accounts',
+        ...prefixedFields('accounts[].', xAccount),
+      ]),
+    },
+    {
+      allowedFields: xAccountDetail,
+      page: X_ACCOUNT_DETAIL_PAGE,
+      requiredFields: xAccountDetail,
+    },
   ];
 }
 
@@ -621,6 +652,7 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_X_TRENDS_ROUTE_PATH) &&
       existsSync(PRODUCT_DM_HISTORY_ROUTE_PATH) &&
       existsSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH) &&
       existsSync(PRODUCT_TRENDS_API_PATH) &&
       existsSync(PRODUCT_ARTICLE_FORMAT_PATH) &&
       existsSync(PRODUCT_MEDIA_HANDLER_PATH) &&
@@ -683,6 +715,10 @@ describe('API response field docs', (): void => {
       ...itemPropertyNamesFromProperty(spec, dmHistoryResponseSchema, 'messages'),
     ]);
     const productDmHistoryResponseFields = productDmHistoryFields();
+    const productXAccountFields = productReturnFieldsFromPath(
+      PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
+      'formatAccount',
+    );
     const findings = [
       ...setDifference(
         schemaPropertyNames(spec, 'SearchTweet'),
@@ -852,6 +888,22 @@ describe('API response field docs', (): void => {
         productArticleAuthorFields,
         openApiArticleAuthorFields,
       ).map((field): string => `Article author is missing ${field}.`),
+      ...setDifference(
+        schemaPropertyNames(spec, 'XAccount'),
+        productXAccountFields,
+      ).map((field): string => `XAccount has no product field ${field}.`),
+      ...setDifference(
+        productXAccountFields,
+        schemaPropertyNames(spec, 'XAccount'),
+      ).map((field): string => `XAccount is missing ${field}.`),
+      ...setDifference(
+        schemaPropertyNames(spec, 'XAccountDetail'),
+        productXAccountFields,
+      ).map((field): string => `XAccountDetail has no product field ${field}.`),
+      ...setDifference(
+        productXAccountFields,
+        schemaPropertyNames(spec, 'XAccountDetail'),
+      ).map((field): string => `XAccountDetail is missing ${field}.`),
     ];
 
     expect(findings).toStrictEqual([]);
