@@ -28,6 +28,14 @@ const PRODUCT_SUBSCRIBE_TOOL_PATH = join(
   PRODUCT_ROOT,
   'lib/mcp/subscribe-tool.ts',
 );
+const PRODUCT_API_KEYS_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/api-keys/route.ts',
+);
+const PRODUCT_API_KEY_ID_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/api-keys/[id]/route.ts',
+);
 const PRODUCT_NOTIFICATIONS_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/notifications/route.ts',
@@ -209,6 +217,9 @@ const ACCOUNT_GET_PAGE = 'api-reference/account/get.mdx';
 const ACCOUNT_UPDATE_PAGE = 'api-reference/account/update.mdx';
 const ACCOUNT_X_IDENTITY_PAGE = 'api-reference/account/x-identity.mdx';
 const SUBSCRIBE_PAGE = 'api-reference/account/subscribe.mdx';
+const API_KEYS_LIST_PAGE = 'api-reference/api-keys/list.mdx';
+const API_KEYS_CREATE_PAGE = 'api-reference/api-keys/create.mdx';
+const API_KEYS_REVOKE_PAGE = 'api-reference/api-keys/revoke.mdx';
 const ARTICLE_PAGE = 'api-reference/x/get-article.mdx';
 const DM_HISTORY_PAGE = 'api-reference/x/dm-history.mdx';
 const SEND_DM_PAGE = 'api-reference/x-write/send-dm.mdx';
@@ -322,14 +333,17 @@ function responseSchema(
   spec: OpenApiSpec,
   path: string,
   method: string,
+  status = '200',
 ): OpenApiSchema {
   const schema =
     resolveResponse(
       spec,
-      spec.paths?.[path]?.[method]?.responses?.['200'] ?? {},
+      spec.paths?.[path]?.[method]?.responses?.[status] ?? {},
     ).content?.['application/json']?.schema;
   if (schema === undefined) {
-    throw new Error(`Missing 200 JSON response schema: ${method} ${path}`);
+    throw new Error(
+      `Missing ${status} JSON response schema: ${method} ${path}`,
+    );
   }
   return resolveSchema(spec, schema);
 }
@@ -609,6 +623,49 @@ function productSubscribeFields(): readonly string[] {
     PRODUCT_SUBSCRIBE_TOOL_PATH,
     'SubscribeMcpResult',
   );
+}
+
+function productApiKeyListFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_API_KEYS_ROUTE_PATH, 'utf8');
+  const start = source.indexOf('const key: {');
+  const end = source.indexOf('\n      } = {', start);
+  if (start < 0 || end < 0) {
+    throw new Error('Could not locate API key list item fields.');
+  }
+  const itemFields = uniqueSorted(
+    [
+      ...source
+        .slice(start, end)
+        .matchAll(/^\s{8}(?<field>[A-Za-z_]\w*)\??:/gmu),
+    ]
+      .map((match): string => match.groups?.['field'] ?? '')
+      .filter((field): boolean => field.length > 0),
+  );
+  if (!source.includes('return NextResponse.json({ keys });')) {
+    throw new Error('Could not locate API key list success response.');
+  }
+  return uniqueSorted(['keys', ...itemFields]);
+}
+
+function productApiKeyCreateFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_API_KEYS_ROUTE_PATH, 'utf8');
+  const responseStart = source.indexOf('return NextResponse.json(\n      {');
+  const responseEnd = source.indexOf(
+    '\n      },\n      { status: 201 }',
+    responseStart,
+  );
+  if (responseStart < 0 || responseEnd < 0) {
+    throw new Error('Could not locate API key create success response.');
+  }
+  return objectLiteralFields(source.slice(responseStart, responseEnd));
+}
+
+function productApiKeyRevokeFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_API_KEY_ID_ROUTE_PATH, 'utf8');
+  if (!source.includes('return successResponse();')) {
+    throw new Error('API key revoke route no longer uses successResponse.');
+  }
+  return productSuccessResponseFields();
 }
 
 function productDmHistoryFields(): readonly string[] {
@@ -1123,6 +1180,18 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     responseSchema(spec, '/account/x-identity', 'put'),
   );
   const subscribe = propertyNames(responseSchema(spec, '/subscribe', 'post'));
+  const apiKey = schemaPropertyNames(spec, 'ApiKey');
+  const apiKeysListResponse = responseSchema(spec, '/api-keys', 'get');
+  const apiKeysList = uniqueSorted([
+    ...propertyNames(apiKeysListResponse),
+    ...apiKey,
+  ]);
+  const apiKeysCreate = propertyNames(
+    responseSchema(spec, '/api-keys', 'post', '201'),
+  );
+  const apiKeysRevoke = propertyNames(
+    responseSchema(spec, '/api-keys/{id}', 'delete'),
+  );
   const articleResponse = responseSchema(spec, '/x/articles/{tweetId}', 'get');
   const article = propertyNames(articleResponse);
   const articleBodySchema = resolveSchema(
@@ -1308,6 +1377,21 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       requiredFields: subscribe,
     },
     {
+      allowedFields: apiKeysList,
+      page: API_KEYS_LIST_PAGE,
+      requiredFields: apiKeysList,
+    },
+    {
+      allowedFields: apiKeysCreate,
+      page: API_KEYS_CREATE_PAGE,
+      requiredFields: apiKeysCreate,
+    },
+    {
+      allowedFields: apiKeysRevoke,
+      page: API_KEYS_REVOKE_PAGE,
+      requiredFields: apiKeysRevoke,
+    },
+    {
       allowedFields: uniqueSorted([
         ...article,
         ...articleBody,
@@ -1490,6 +1574,8 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_ACCOUNT_X_IDENTITY_ROUTE_PATH) &&
       existsSync(PRODUCT_SUBSCRIBE_ROUTE_PATH) &&
       existsSync(PRODUCT_SUBSCRIBE_TOOL_PATH) &&
+      existsSync(PRODUCT_API_KEYS_ROUTE_PATH) &&
+      existsSync(PRODUCT_API_KEY_ID_ROUTE_PATH) &&
       existsSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH) &&
       existsSync(PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH) &&
       existsSync(PRODUCT_X_TRENDS_ROUTE_PATH) &&
@@ -1688,6 +1774,19 @@ describe('API response field docs', (): void => {
       responseSchema(spec, '/subscribe', 'post'),
     );
     const productSubscribeResponseFields = productSubscribeFields();
+    const apiKeyListFields = uniqueSorted([
+      ...propertyNames(responseSchema(spec, '/api-keys', 'get')),
+      ...schemaPropertyNames(spec, 'ApiKey'),
+    ]);
+    const productApiKeyListResponseFields = productApiKeyListFields();
+    const apiKeyCreateFields = propertyNames(
+      responseSchema(spec, '/api-keys', 'post', '201'),
+    );
+    const productApiKeyCreateResponseFields = productApiKeyCreateFields();
+    const apiKeyRevokeFields = propertyNames(
+      responseSchema(spec, '/api-keys/{id}', 'delete'),
+    );
+    const productApiKeyRevokeResponseFields = productApiKeyRevokeFields();
     const findings = [
       ...setDifference(
         schemaPropertyNames(spec, 'SearchTweet'),
@@ -1843,6 +1942,30 @@ describe('API response field docs', (): void => {
         productSubscribeResponseFields,
         subscribeFields,
       ).map((field): string => `Subscribe is missing ${field}.`),
+      ...setDifference(
+        apiKeyListFields,
+        productApiKeyListResponseFields,
+      ).map((field): string => `API key list has no product field ${field}.`),
+      ...setDifference(
+        productApiKeyListResponseFields,
+        apiKeyListFields,
+      ).map((field): string => `API key list is missing ${field}.`),
+      ...setDifference(
+        apiKeyCreateFields,
+        productApiKeyCreateResponseFields,
+      ).map((field): string => `API key create has no product field ${field}.`),
+      ...setDifference(
+        productApiKeyCreateResponseFields,
+        apiKeyCreateFields,
+      ).map((field): string => `API key create is missing ${field}.`),
+      ...setDifference(
+        apiKeyRevokeFields,
+        productApiKeyRevokeResponseFields,
+      ).map((field): string => `API key revoke has no product field ${field}.`),
+      ...setDifference(
+        productApiKeyRevokeResponseFields,
+        apiKeyRevokeFields,
+      ).map((field): string => `API key revoke is missing ${field}.`),
       ...setDifference(
         openApiDmHistoryFields,
         productDmHistoryResponseFields,
