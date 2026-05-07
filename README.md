@@ -4,7 +4,25 @@
 
 Public documentation for [Xquik](https://xquik.com), the X (Twitter) real-time data and automation platform. Built on [Mintlify](https://mintlify.com), deployed at **[docs.xquik.com](https://docs.xquik.com)**.
 
-This repository powers the developer reference: REST API, webhooks, MCP server, OAuth 2.1, SDKs, glossary, comparison guides, and how-to guides. Main-domain pages should link or redirect here when the content is technical reference, implementation guidance, comparison guidance, or API documentation.
+This repository powers the developer reference for the Xquik REST API, webhooks, MCP server, OAuth 2.1, SDKs, glossary, comparison guides, and how-to guides. Use it to find implementation details for tweet search, user lookup, follower exports, media uploads, direct messages, 1-second tweet monitors, signed webhooks, SDK clients, and X automation tasks.
+
+## Start here
+
+- [Quickstart](https://docs.xquik.com/quickstart) - make the first authenticated API call.
+- [API Reference](https://docs.xquik.com/api-reference) - browse 118 OpenAPI-backed endpoint pages.
+- [SDKs](https://docs.xquik.com/sdks) - use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
+- [MCP Server](https://docs.xquik.com/mcp) - connect Claude, ChatGPT, Cursor, and other AI agents.
+- [Webhooks](https://docs.xquik.com/webhooks/overview) - verify HMAC signatures and receive real-time X events.
+- [llms.txt](https://docs.xquik.com/llms.txt) - give AI coding agents the docs index.
+
+## Common jobs
+
+- Search tweets, fetch tweet threads, read quotes, and inspect replies.
+- Look up users, export followers, list following, and check relationships.
+- Upload media, create tweets, send DMs, and update profiles.
+- Track new tweets with 1-second monitors and signed webhook delivery.
+- Export results as JSON, CSV, XLSX, or Markdown.
+- Compare Xquik with X API, social schedulers, data tools, and automation platforms.
 
 ## What's covered
 
