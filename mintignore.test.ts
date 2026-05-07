@@ -2,7 +2,11 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-const INTERNAL_DOCS_FILES = ['DOCS_QUALITY_POLL.md'] as const;
+const GIT_IGNORED_INTERNAL_FILES = ['DOCS_QUALITY_POLL.md'] as const;
+const MINTLIFY_IGNORED_SUPPORT_FILES = [
+  'AGENTS.md',
+  ...GIT_IGNORED_INTERNAL_FILES,
+] as const;
 
 function mintignoreEntries(): ReadonlySet<string> {
   return new Set(
@@ -22,20 +26,26 @@ function gitignoreEntries(): ReadonlySet<string> {
   );
 }
 
-describe('Internal docs handoff ignore rules', (): void => {
-  it('keeps internal docs poll files out of the public docs build', (): void => {
-    expect.assertions(2);
+describe('Mintlify ignore rules', (): void => {
+  it('keeps support and handoff files out of the public docs build', (): void => {
+    expect.assertions(1);
 
     const ignoredFiles = mintignoreEntries();
-    const mintlifyExposedFiles = INTERNAL_DOCS_FILES.filter(
+    const mintlifyExposedFiles = MINTLIFY_IGNORED_SUPPORT_FILES.filter(
       (file): boolean => !ignoredFiles.has(file),
-    );
-    const gitIgnoredFiles = gitignoreEntries();
-    const gitExposedFiles = INTERNAL_DOCS_FILES.filter(
-      (file): boolean => !gitIgnoredFiles.has(file),
     );
 
     expect(mintlifyExposedFiles).toStrictEqual([]);
+  });
+
+  it('keeps internal handoff files ignored by Git', (): void => {
+    expect.assertions(1);
+
+    const gitIgnoredFiles = gitignoreEntries();
+    const gitExposedFiles = GIT_IGNORED_INTERNAL_FILES.filter(
+      (file): boolean => !gitIgnoredFiles.has(file),
+    );
+
     expect(gitExposedFiles).toStrictEqual([]);
   });
 });
