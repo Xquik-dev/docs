@@ -35,6 +35,10 @@ const PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH = join(
   PRODUCT_ROOT,
   'lib/x-accounts/accounts-route.ts',
 );
+const PRODUCT_X_ACCOUNTS_BULK_RETRY_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/accounts/bulk-retry/route.ts',
+);
 const PRODUCT_TRENDS_API_PATH = join(PRODUCT_ROOT, 'lib/api/trends.ts');
 const PRODUCT_ARTICLE_FORMAT_PATH = join(
   PRODUCT_ROOT,
@@ -119,6 +123,7 @@ const X_ACCOUNT_LIST_PAGE = 'api-reference/x-accounts/list.mdx';
 const X_ACCOUNT_DETAIL_PAGE = 'api-reference/x-accounts/get.mdx';
 const X_ACCOUNT_CONNECT_PAGE = 'api-reference/x-accounts/connect.mdx';
 const X_ACCOUNT_REAUTH_PAGE = 'api-reference/x-accounts/reauth.mdx';
+const X_ACCOUNT_BULK_RETRY_PAGE = 'api-reference/x-accounts/bulk-retry.mdx';
 
 function parseYaml(source: string): OpenApiSpec {
   const bun = globalThis as {
@@ -421,6 +426,16 @@ function productDmHistoryFields(): readonly string[] {
   ]);
 }
 
+function productBulkRetryFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_X_ACCOUNTS_BULK_RETRY_ROUTE_PATH, 'utf8');
+  const responseStart = source.indexOf('return NextResponse.json({');
+  if (responseStart < 0) {
+    throw new Error('Could not locate bulk retry success response.');
+  }
+  const responseEnd = source.indexOf('});', responseStart);
+  return objectLiteralFields(source.slice(responseStart, responseEnd + 1));
+}
+
 function prefixedFields(
   prefix: string,
   fields: readonly string[],
@@ -502,6 +517,9 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const xAccount = schemaPropertyNames(spec, 'XAccount');
   const xAccountDetail = schemaPropertyNames(spec, 'XAccountDetail');
   const sanitizedXAccount = schemaPropertyNames(spec, 'SanitizedXAccount');
+  const bulkRetry = propertyNames(
+    responseSchema(spec, '/x/accounts/bulk-retry', 'post'),
+  );
 
   const paginatedTweetContracts = PAGINATED_TWEET_PAGES.map(
     (page): PageContract => ({
@@ -630,6 +648,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       page: X_ACCOUNT_REAUTH_PAGE,
       requiredFields: sanitizedXAccount,
     },
+    {
+      allowedFields: bulkRetry,
+      page: X_ACCOUNT_BULK_RETRY_PAGE,
+      requiredFields: bulkRetry,
+    },
   ];
 }
 
@@ -666,6 +689,7 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_DM_HISTORY_ROUTE_PATH) &&
       existsSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH) &&
+      existsSync(PRODUCT_X_ACCOUNTS_BULK_RETRY_ROUTE_PATH) &&
       existsSync(PRODUCT_TRENDS_API_PATH) &&
       existsSync(PRODUCT_ARTICLE_FORMAT_PATH) &&
       existsSync(PRODUCT_MEDIA_HANDLER_PATH) &&
@@ -736,6 +760,10 @@ describe('API response field docs', (): void => {
       PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
       'formatSanitizedAccount',
     );
+    const bulkRetryFields = propertyNames(
+      responseSchema(spec, '/x/accounts/bulk-retry', 'post'),
+    );
+    const productBulkRetryResponseFields = productBulkRetryFields();
     const findings = [
       ...setDifference(
         schemaPropertyNames(spec, 'SearchTweet'),
@@ -931,6 +959,14 @@ describe('API response field docs', (): void => {
         productSanitizedXAccountFields,
         schemaPropertyNames(spec, 'SanitizedXAccount'),
       ).map((field): string => `SanitizedXAccount is missing ${field}.`),
+      ...setDifference(
+        bulkRetryFields,
+        productBulkRetryResponseFields,
+      ).map((field): string => `Bulk retry has no product field ${field}.`),
+      ...setDifference(
+        productBulkRetryResponseFields,
+        bulkRetryFields,
+      ).map((field): string => `Bulk retry is missing ${field}.`),
     ];
 
     expect(findings).toStrictEqual([]);
