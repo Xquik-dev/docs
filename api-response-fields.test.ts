@@ -48,9 +48,17 @@ const PRODUCT_SEND_DM_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/dm/[userId]/route.ts',
 );
+const PRODUCT_X_MEDIA_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/media/route.ts',
+);
 const PRODUCT_FOLLOW_CHECK_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/followers/check/route.ts',
+);
+const PRODUCT_WRITE_ACTION_HANDLER_PATH = join(
+  PRODUCT_ROOT,
+  'lib/x-accounts/write-action-handler.ts',
 );
 const PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH = join(
   PRODUCT_ROOT,
@@ -156,6 +164,7 @@ const SUBSCRIBE_PAGE = 'api-reference/account/subscribe.mdx';
 const ARTICLE_PAGE = 'api-reference/x/get-article.mdx';
 const DM_HISTORY_PAGE = 'api-reference/x/dm-history.mdx';
 const SEND_DM_PAGE = 'api-reference/x-write/send-dm.mdx';
+const UPLOAD_MEDIA_PAGE = 'api-reference/x-write/upload-media.mdx';
 const X_ACCOUNT_LIST_PAGE = 'api-reference/x-accounts/list.mdx';
 const X_ACCOUNT_DETAIL_PAGE = 'api-reference/x-accounts/get.mdx';
 const X_ACCOUNT_CONNECT_PAGE = 'api-reference/x-accounts/connect.mdx';
@@ -577,6 +586,53 @@ function productSendDmFields(): readonly string[] {
   return ['messageId', 'success'];
 }
 
+function productUploadMediaFields(): readonly string[] {
+  const routeSource = readFileSync(PRODUCT_X_MEDIA_ROUTE_PATH, 'utf8');
+  if (
+    !routeSource.includes("actionType: 'upload_media'") ||
+    !routeSource.includes("apiPath: '/twitter/upload_media_v2'") ||
+    !routeSource.includes('includePublicMediaUrl: true') ||
+    !routeSource.includes('createImageUploadHandler({')
+  ) {
+    throw new Error('Could not verify upload media route wiring.');
+  }
+  const helperSource = readFileSync(PRODUCT_ROUTE_HELPERS_PATH, 'utf8');
+  if (
+    !helperSource.includes('return { mediaUrl: uploaded.url };') ||
+    !helperSource.includes(
+      'const responseFields = await buildPublicMediaResponseFields(',
+    ) ||
+    !helperSource.includes(
+      '...(responseFields === undefined ? {} : { responseFields })',
+    )
+  ) {
+    throw new Error('Could not verify upload media public URL response field.');
+  }
+  const writeActionSource = readFileSync(
+    PRODUCT_WRITE_ACTION_HANDLER_PATH,
+    'utf8',
+  );
+  if (
+    !writeActionSource.includes('success: true') ||
+    !writeActionSource.includes('mediaId: result.mediaId') ||
+    !writeActionSource.includes('...responseFields')
+  ) {
+    throw new Error('Could not verify upload media success response fields.');
+  }
+  const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, 'utf8');
+  if (
+    !writeSource.includes(
+      "['/twitter/upload_media_v2', buildUploadMediaOperation]",
+    ) ||
+    !writeSource.includes(
+      "return { attempts: 0, status: 'success', mediaId: result.mediaId };",
+    )
+  ) {
+    throw new Error('Could not verify upload media write-client operation.');
+  }
+  return ['mediaId', 'mediaUrl', 'success'];
+}
+
 function productBulkRetryFields(): readonly string[] {
   const source = readFileSync(PRODUCT_X_ACCOUNTS_BULK_RETRY_ROUTE_PATH, 'utf8');
   const responseStart = source.indexOf('return NextResponse.json({');
@@ -696,6 +752,7 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     'messages',
   );
   const sendDm = propertyNames(responseSchema(spec, '/x/dm/{userId}', 'post'));
+  const uploadMedia = propertyNames(responseSchema(spec, '/x/media', 'post'));
   const xAccount = schemaPropertyNames(spec, 'XAccount');
   const xAccountDetail = schemaPropertyNames(spec, 'XAccountDetail');
   const sanitizedXAccount = schemaPropertyNames(spec, 'SanitizedXAccount');
@@ -833,6 +890,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       requiredFields: sendDm,
     },
     {
+      allowedFields: uploadMedia,
+      page: UPLOAD_MEDIA_PAGE,
+      requiredFields: uploadMedia,
+    },
+    {
       allowedFields: uniqueSorted([
         'accounts',
         ...prefixedFields('accounts[].', xAccount),
@@ -908,7 +970,9 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_X_TRENDS_ROUTE_PATH) &&
       existsSync(PRODUCT_DM_HISTORY_ROUTE_PATH) &&
       existsSync(PRODUCT_SEND_DM_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_MEDIA_ROUTE_PATH) &&
       existsSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH) &&
+      existsSync(PRODUCT_WRITE_ACTION_HANDLER_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_ID_ROUTE_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_BULK_RETRY_ROUTE_PATH) &&
@@ -980,6 +1044,10 @@ describe('API response field docs', (): void => {
       responseSchema(spec, '/x/dm/{userId}', 'post'),
     );
     const productSendDmResponseFields = productSendDmFields();
+    const uploadMediaFields = propertyNames(
+      responseSchema(spec, '/x/media', 'post'),
+    );
+    const productUploadMediaResponseFields = productUploadMediaFields();
     const productXAccountFields = productReturnFieldsFromPath(
       PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
       'formatAccount',
@@ -1188,6 +1256,14 @@ describe('API response field docs', (): void => {
         productSendDmResponseFields,
         sendDmFields,
       ).map((field): string => `Send DM is missing ${field}.`),
+      ...setDifference(
+        uploadMediaFields,
+        productUploadMediaResponseFields,
+      ).map((field): string => `Upload media has no product field ${field}.`),
+      ...setDifference(
+        productUploadMediaResponseFields,
+        uploadMediaFields,
+      ).map((field): string => `Upload media is missing ${field}.`),
       ...setDifference(
         openApiArticleResponseFields,
         productArticleResponseFields,
