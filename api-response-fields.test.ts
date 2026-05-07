@@ -36,6 +36,10 @@ const PRODUCT_DM_HISTORY_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/dm/[userId]/history/route.ts',
 );
+const PRODUCT_SEND_DM_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/dm/[userId]/route.ts',
+);
 const PRODUCT_FOLLOW_CHECK_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/followers/check/route.ts',
@@ -60,6 +64,10 @@ const PRODUCT_ARTICLE_FORMAT_PATH = join(
 );
 const PRODUCT_MEDIA_HANDLER_PATH = join(PRODUCT_ROOT, 'lib/media/handler.ts');
 const PRODUCT_X_API_TYPES_PATH = join(PRODUCT_ROOT, 'lib/x-api/types.ts');
+const PRODUCT_X_WRITE_TWIKIT_PATH = join(
+  PRODUCT_ROOT,
+  'lib/x-api/write-client-twikit.ts',
+);
 
 interface OpenApiSpec {
   readonly components?: {
@@ -138,6 +146,7 @@ const ACCOUNT_UPDATE_PAGE = 'api-reference/account/update.mdx';
 const ACCOUNT_X_IDENTITY_PAGE = 'api-reference/account/x-identity.mdx';
 const ARTICLE_PAGE = 'api-reference/x/get-article.mdx';
 const DM_HISTORY_PAGE = 'api-reference/x/dm-history.mdx';
+const SEND_DM_PAGE = 'api-reference/x-write/send-dm.mdx';
 const X_ACCOUNT_LIST_PAGE = 'api-reference/x-accounts/list.mdx';
 const X_ACCOUNT_DETAIL_PAGE = 'api-reference/x-accounts/get.mdx';
 const X_ACCOUNT_CONNECT_PAGE = 'api-reference/x-accounts/connect.mdx';
@@ -519,6 +528,32 @@ function productDmHistoryFields(): readonly string[] {
   ]);
 }
 
+function productSendDmFields(): readonly string[] {
+  const routeSource = readFileSync(PRODUCT_SEND_DM_ROUTE_PATH, 'utf8');
+  if (
+    !routeSource.includes("actionType: 'send_dm'") ||
+    !routeSource.includes("apiPath: '/twitter/send_dm_to_user'") ||
+    !routeSource.includes('return executeWithRetry(')
+  ) {
+    throw new Error('Could not verify send DM route write-action wiring.');
+  }
+  const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, 'utf8');
+  if (
+    !writeSource.includes("path: '/twitter/send_dm_to_user'") &&
+    !writeSource.includes("['/twitter/send_dm_to_user', buildSendDmOperation]")
+  ) {
+    throw new Error('Could not verify send DM write-client operation.');
+  }
+  if (
+    !writeSource.includes(
+      "return { attempts: 0, status: 'success', messageId: result.messageId };",
+    )
+  ) {
+    throw new Error('Could not verify send DM messageId response field.');
+  }
+  return ['messageId', 'success'];
+}
+
 function productBulkRetryFields(): readonly string[] {
   const source = readFileSync(PRODUCT_X_ACCOUNTS_BULK_RETRY_ROUTE_PATH, 'utf8');
   const responseStart = source.indexOf('return NextResponse.json({');
@@ -636,6 +671,7 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     dmHistoryResponse,
     'messages',
   );
+  const sendDm = propertyNames(responseSchema(spec, '/x/dm/{userId}', 'post'));
   const xAccount = schemaPropertyNames(spec, 'XAccount');
   const xAccountDetail = schemaPropertyNames(spec, 'XAccountDetail');
   const sanitizedXAccount = schemaPropertyNames(spec, 'SanitizedXAccount');
@@ -763,6 +799,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       requiredFields: uniqueSorted([...dmHistory, ...dmMessage]),
     },
     {
+      allowedFields: sendDm,
+      page: SEND_DM_PAGE,
+      requiredFields: sendDm,
+    },
+    {
       allowedFields: uniqueSorted([
         'accounts',
         ...prefixedFields('accounts[].', xAccount),
@@ -835,6 +876,7 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH) &&
       existsSync(PRODUCT_X_TRENDS_ROUTE_PATH) &&
       existsSync(PRODUCT_DM_HISTORY_ROUTE_PATH) &&
+      existsSync(PRODUCT_SEND_DM_ROUTE_PATH) &&
       existsSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_ID_ROUTE_PATH) &&
@@ -843,7 +885,8 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_TRENDS_API_PATH) &&
       existsSync(PRODUCT_ARTICLE_FORMAT_PATH) &&
       existsSync(PRODUCT_MEDIA_HANDLER_PATH) &&
-      existsSync(PRODUCT_X_API_TYPES_PATH);
+      existsSync(PRODUCT_X_API_TYPES_PATH) &&
+      existsSync(PRODUCT_X_WRITE_TWIKIT_PATH);
     if (!productSourceExists) {
       expect(productSourceExists).toBe(false);
       return;
@@ -902,6 +945,10 @@ describe('API response field docs', (): void => {
       ...itemPropertyNamesFromProperty(spec, dmHistoryResponseSchema, 'messages'),
     ]);
     const productDmHistoryResponseFields = productDmHistoryFields();
+    const sendDmFields = propertyNames(
+      responseSchema(spec, '/x/dm/{userId}', 'post'),
+    );
+    const productSendDmResponseFields = productSendDmFields();
     const productXAccountFields = productReturnFieldsFromPath(
       PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
       'formatAccount',
@@ -1090,6 +1137,14 @@ describe('API response field docs', (): void => {
         productDmHistoryResponseFields,
         openApiDmHistoryFields,
       ).map((field): string => `DM history is missing ${field}.`),
+      ...setDifference(
+        sendDmFields,
+        productSendDmResponseFields,
+      ).map((field): string => `Send DM has no product field ${field}.`),
+      ...setDifference(
+        productSendDmResponseFields,
+        sendDmFields,
+      ).map((field): string => `Send DM is missing ${field}.`),
       ...setDifference(
         openApiArticleResponseFields,
         productArticleResponseFields,
