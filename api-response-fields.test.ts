@@ -28,6 +28,30 @@ const PRODUCT_SUBSCRIBE_TOOL_PATH = join(
   PRODUCT_ROOT,
   'lib/mcp/subscribe-tool.ts',
 );
+const PRODUCT_CREDITS_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/credits/route.ts',
+);
+const PRODUCT_CREDITS_TOPUP_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/credits/topup/route.ts',
+);
+const PRODUCT_CREDITS_TOPUP_STATUS_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/credits/topup/status/route.ts',
+);
+const PRODUCT_CREDITS_QUICK_TOPUP_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/credits/quick-topup/route.ts',
+);
+const PRODUCT_CREDITS_ROUTE_HELPER_PATH = join(
+  PRODUCT_ROOT,
+  'lib/credits/credits-route.ts',
+);
+const PRODUCT_CREDITS_TOPUP_STATUS_HELPER_PATH = join(
+  PRODUCT_ROOT,
+  'lib/credits/topup-status.ts',
+);
 const PRODUCT_API_KEYS_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/api-keys/route.ts',
@@ -164,7 +188,9 @@ interface OpenApiResponse {
 
 interface OpenApiSchema {
   readonly $ref?: string;
+  readonly anyOf?: readonly OpenApiSchema[];
   readonly items?: OpenApiSchema;
+  readonly oneOf?: readonly OpenApiSchema[];
   readonly properties?: Record<string, OpenApiSchema>;
 }
 
@@ -217,6 +243,10 @@ const ACCOUNT_GET_PAGE = 'api-reference/account/get.mdx';
 const ACCOUNT_UPDATE_PAGE = 'api-reference/account/update.mdx';
 const ACCOUNT_X_IDENTITY_PAGE = 'api-reference/account/x-identity.mdx';
 const SUBSCRIBE_PAGE = 'api-reference/account/subscribe.mdx';
+const CREDITS_PAGE = 'api-reference/credits/get.mdx';
+const CREDITS_TOPUP_PAGE = 'api-reference/credits/topup.mdx';
+const CREDITS_TOPUP_STATUS_PAGE = 'api-reference/credits/topup-status.mdx';
+const CREDITS_QUICK_TOPUP_PAGE = 'api-reference/credits/quick-topup.mdx';
 const API_KEYS_LIST_PAGE = 'api-reference/api-keys/list.mdx';
 const API_KEYS_CREATE_PAGE = 'api-reference/api-keys/create.mdx';
 const API_KEYS_REVOKE_PAGE = 'api-reference/api-keys/revoke.mdx';
@@ -308,6 +338,22 @@ function propertyNames(schema: OpenApiSchema | undefined): readonly string[] {
   return Object.keys(schema?.properties ?? {}).sort((left, right): number =>
     left.localeCompare(right),
   );
+}
+
+function responseFieldNamesFromSchema(
+  spec: OpenApiSpec,
+  schema: OpenApiSchema,
+): readonly string[] {
+  const resolved = resolveSchema(spec, schema);
+  return uniqueSorted([
+    ...propertyNames(resolved),
+    ...(resolved.oneOf ?? []).flatMap((nested): readonly string[] =>
+      responseFieldNamesFromSchema(spec, nested),
+    ),
+    ...(resolved.anyOf ?? []).flatMap((nested): readonly string[] =>
+      responseFieldNamesFromSchema(spec, nested),
+    ),
+  ]);
 }
 
 function schemaProperty(
@@ -622,6 +668,77 @@ function productSubscribeFields(): readonly string[] {
   return productInterfaceFieldsFromPath(
     PRODUCT_SUBSCRIBE_TOOL_PATH,
     'SubscribeMcpResult',
+  );
+}
+
+function productCreditsFields(): readonly string[] {
+  const routeSource = readFileSync(PRODUCT_CREDITS_ROUTE_PATH, 'utf8');
+  const responseStart = routeSource.indexOf(
+    'return NextResponse.json({\n      auto_topup_amount_dollars:',
+  );
+  const responseEnd = routeSource.indexOf('});', responseStart);
+  const helperSource = readFileSync(PRODUCT_CREDITS_ROUTE_HELPER_PATH, 'utf8');
+  const emptyStart = helperSource.indexOf('const EMPTY_CREDITS_BALANCE = {');
+  const emptyEnd = helperSource.indexOf('} as const;', emptyStart);
+  if (
+    responseStart < 0 ||
+    responseEnd < 0 ||
+    emptyStart < 0 ||
+    emptyEnd < 0 ||
+    !routeSource.includes('return NextResponse.json(EMPTY_CREDITS_BALANCE);')
+  ) {
+    throw new Error('Could not locate credits balance success responses.');
+  }
+  return uniqueSorted([
+    ...objectLiteralFields(routeSource.slice(responseStart, responseEnd + 1)),
+    ...objectLiteralFields(helperSource.slice(emptyStart, emptyEnd + 1)),
+  ]);
+}
+
+function productCreditsTopupFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_CREDITS_TOPUP_ROUTE_PATH, 'utf8');
+  const responseStart = source.indexOf(
+    'return NextResponse.json({ url: result.url });',
+  );
+  if (
+    responseStart < 0 ||
+    !source.includes('const result = await handlePostTopup(')
+  ) {
+    throw new Error('Could not locate credits top-up success response.');
+  }
+  const responseEnd = source.indexOf(');', responseStart);
+  return objectLiteralFields(source.slice(responseStart, responseEnd));
+}
+
+function productCreditsTopupStatusFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_CREDITS_TOPUP_STATUS_ROUTE_PATH, 'utf8');
+  if (!source.includes('return NextResponse.json(statusResult.payload);')) {
+    throw new Error('Could not verify credits top-up status response wiring.');
+  }
+  return productInterfaceFieldsFromPath(
+    PRODUCT_CREDITS_TOPUP_STATUS_HELPER_PATH,
+    'PublicTopupStatusPayload',
+  );
+}
+
+function productCreditsQuickTopupFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_CREDITS_QUICK_TOPUP_ROUTE_PATH, 'utf8');
+  const responseStarts = [
+    source.indexOf("return NextResponse.json({ outcome: 'no_payment_method' });"),
+    source.indexOf('return NextResponse.json({\n            clientSecret:'),
+    source.indexOf('return NextResponse.json({\n          balance:'),
+  ];
+  if (
+    responseStarts.some((start): boolean => start < 0) ||
+    !source.includes('const result = await handleQuickTopup(')
+  ) {
+    throw new Error('Could not locate credits quick top-up success responses.');
+  }
+  return uniqueSorted(
+    responseStarts.flatMap((start): readonly string[] => {
+      const end = source.indexOf(');', start);
+      return objectLiteralFields(source.slice(start, end));
+    }),
   );
 }
 
@@ -1180,6 +1297,17 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     responseSchema(spec, '/account/x-identity', 'put'),
   );
   const subscribe = propertyNames(responseSchema(spec, '/subscribe', 'post'));
+  const credits = propertyNames(responseSchema(spec, '/credits', 'get'));
+  const creditsTopup = propertyNames(
+    responseSchema(spec, '/credits/topup', 'post'),
+  );
+  const creditsTopupStatus = propertyNames(
+    responseSchema(spec, '/credits/topup/status', 'get'),
+  );
+  const creditsQuickTopup = responseFieldNamesFromSchema(
+    spec,
+    responseSchema(spec, '/credits/quick-topup', 'post'),
+  );
   const apiKey = schemaPropertyNames(spec, 'ApiKey');
   const apiKeysListResponse = responseSchema(spec, '/api-keys', 'get');
   const apiKeysList = uniqueSorted([
@@ -1375,6 +1503,26 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       allowedFields: subscribe,
       page: SUBSCRIBE_PAGE,
       requiredFields: subscribe,
+    },
+    {
+      allowedFields: credits,
+      page: CREDITS_PAGE,
+      requiredFields: credits,
+    },
+    {
+      allowedFields: creditsTopup,
+      page: CREDITS_TOPUP_PAGE,
+      requiredFields: creditsTopup,
+    },
+    {
+      allowedFields: creditsTopupStatus,
+      page: CREDITS_TOPUP_STATUS_PAGE,
+      requiredFields: creditsTopupStatus,
+    },
+    {
+      allowedFields: creditsQuickTopup,
+      page: CREDITS_QUICK_TOPUP_PAGE,
+      requiredFields: creditsQuickTopup,
     },
     {
       allowedFields: apiKeysList,
@@ -1574,6 +1722,12 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_ACCOUNT_X_IDENTITY_ROUTE_PATH) &&
       existsSync(PRODUCT_SUBSCRIBE_ROUTE_PATH) &&
       existsSync(PRODUCT_SUBSCRIBE_TOOL_PATH) &&
+      existsSync(PRODUCT_CREDITS_ROUTE_PATH) &&
+      existsSync(PRODUCT_CREDITS_TOPUP_ROUTE_PATH) &&
+      existsSync(PRODUCT_CREDITS_TOPUP_STATUS_ROUTE_PATH) &&
+      existsSync(PRODUCT_CREDITS_QUICK_TOPUP_ROUTE_PATH) &&
+      existsSync(PRODUCT_CREDITS_ROUTE_HELPER_PATH) &&
+      existsSync(PRODUCT_CREDITS_TOPUP_STATUS_HELPER_PATH) &&
       existsSync(PRODUCT_API_KEYS_ROUTE_PATH) &&
       existsSync(PRODUCT_API_KEY_ID_ROUTE_PATH) &&
       existsSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH) &&
@@ -1774,6 +1928,23 @@ describe('API response field docs', (): void => {
       responseSchema(spec, '/subscribe', 'post'),
     );
     const productSubscribeResponseFields = productSubscribeFields();
+    const creditsFields = propertyNames(responseSchema(spec, '/credits', 'get'));
+    const productCreditsResponseFields = productCreditsFields();
+    const creditsTopupFields = propertyNames(
+      responseSchema(spec, '/credits/topup', 'post'),
+    );
+    const productCreditsTopupResponseFields = productCreditsTopupFields();
+    const creditsTopupStatusFields = propertyNames(
+      responseSchema(spec, '/credits/topup/status', 'get'),
+    );
+    const productCreditsTopupStatusResponseFields =
+      productCreditsTopupStatusFields();
+    const creditsQuickTopupFields = responseFieldNamesFromSchema(
+      spec,
+      responseSchema(spec, '/credits/quick-topup', 'post'),
+    );
+    const productCreditsQuickTopupResponseFields =
+      productCreditsQuickTopupFields();
     const apiKeyListFields = uniqueSorted([
       ...propertyNames(responseSchema(spec, '/api-keys', 'get')),
       ...schemaPropertyNames(spec, 'ApiKey'),
@@ -1942,6 +2113,44 @@ describe('API response field docs', (): void => {
         productSubscribeResponseFields,
         subscribeFields,
       ).map((field): string => `Subscribe is missing ${field}.`),
+      ...setDifference(
+        creditsFields,
+        productCreditsResponseFields,
+      ).map((field): string => `Credits has no product field ${field}.`),
+      ...setDifference(
+        productCreditsResponseFields,
+        creditsFields,
+      ).map((field): string => `Credits is missing ${field}.`),
+      ...setDifference(
+        creditsTopupFields,
+        productCreditsTopupResponseFields,
+      ).map((field): string => `Credits top-up has no product field ${field}.`),
+      ...setDifference(
+        productCreditsTopupResponseFields,
+        creditsTopupFields,
+      ).map((field): string => `Credits top-up is missing ${field}.`),
+      ...setDifference(
+        creditsTopupStatusFields,
+        productCreditsTopupStatusResponseFields,
+      ).map(
+        (field): string =>
+          `Credits top-up status has no product field ${field}.`,
+      ),
+      ...setDifference(
+        productCreditsTopupStatusResponseFields,
+        creditsTopupStatusFields,
+      ).map((field): string => `Credits top-up status is missing ${field}.`),
+      ...setDifference(
+        creditsQuickTopupFields,
+        productCreditsQuickTopupResponseFields,
+      ).map(
+        (field): string =>
+          `Credits quick top-up has no product field ${field}.`,
+      ),
+      ...setDifference(
+        productCreditsQuickTopupResponseFields,
+        creditsQuickTopupFields,
+      ).map((field): string => `Credits quick top-up is missing ${field}.`),
       ...setDifference(
         apiKeyListFields,
         productApiKeyListResponseFields,
