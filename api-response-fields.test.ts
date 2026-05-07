@@ -72,6 +72,14 @@ const PRODUCT_X_COMMUNITY_ID_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/communities/[id]/route.ts',
 );
+const PRODUCT_X_TWEET_LIKE_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/tweets/[id]/like/route.ts',
+);
+const PRODUCT_X_TWEET_RETWEET_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/tweets/[id]/retweet/route.ts',
+);
 const PRODUCT_FOLLOW_CHECK_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/followers/check/route.ts',
@@ -190,6 +198,10 @@ const UPDATE_AVATAR_PAGE = 'api-reference/x-write/update-avatar.mdx';
 const UPDATE_BANNER_PAGE = 'api-reference/x-write/update-banner.mdx';
 const CREATE_COMMUNITY_PAGE = 'api-reference/x-write/create-community.mdx';
 const DELETE_COMMUNITY_PAGE = 'api-reference/x-write/delete-community.mdx';
+const LIKE_TWEET_PAGE = 'api-reference/x-write/like.mdx';
+const UNLIKE_TWEET_PAGE = 'api-reference/x-write/unlike.mdx';
+const RETWEET_PAGE = 'api-reference/x-write/retweet.mdx';
+const UNRETWEET_PAGE = 'api-reference/x-write/unretweet.mdx';
 const X_ACCOUNT_LIST_PAGE = 'api-reference/x-accounts/list.mdx';
 const X_ACCOUNT_DETAIL_PAGE = 'api-reference/x-accounts/get.mdx';
 const X_ACCOUNT_CONNECT_PAGE = 'api-reference/x-accounts/connect.mdx';
@@ -830,6 +842,82 @@ function productDeleteCommunityFields(): readonly string[] {
   return ['success'];
 }
 
+function productTweetEngagementFields(
+  routePath: string,
+  actionType: string,
+  apiPath: string,
+  operationName: string,
+): readonly string[] {
+  const routeSource = readFileSync(routePath, 'utf8');
+  if (
+    !routeSource.includes(`actionType: '${actionType}'`) ||
+    !routeSource.includes(`apiPath: '${apiPath}'`) ||
+    !routeSource.includes('createToggleHandler({') ||
+    !routeSource.includes('tweet_id: id')
+  ) {
+    throw new Error(`Could not verify ${actionType} route wiring.`);
+  }
+  const writeActionSource = readFileSync(
+    PRODUCT_WRITE_ACTION_HANDLER_PATH,
+    'utf8',
+  );
+  if (
+    !writeActionSource.includes('success: true') ||
+    !writeActionSource.includes(
+      'return buildSuccessResponse(result, context.responseFields);',
+    )
+  ) {
+    throw new Error(`Could not verify ${actionType} success response.`);
+  }
+  const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, 'utf8');
+  if (
+    !writeSource.includes(
+      `['${apiPath}', simpleIdBuilder(${operationName}, 'tweet_id')]`,
+    ) ||
+    !writeSource.includes('function buildSimpleIdOperation(') ||
+    !writeSource.includes("return { attempts: 0, status: 'success' };")
+  ) {
+    throw new Error(`Could not verify ${actionType} write-client operation.`);
+  }
+  return ['success'];
+}
+
+function productLikeTweetFields(): readonly string[] {
+  return productTweetEngagementFields(
+    PRODUCT_X_TWEET_LIKE_ROUTE_PATH,
+    'like',
+    '/twitter/like_tweet_v2',
+    'likeTweet',
+  );
+}
+
+function productUnlikeTweetFields(): readonly string[] {
+  return productTweetEngagementFields(
+    PRODUCT_X_TWEET_LIKE_ROUTE_PATH,
+    'unlike',
+    '/twitter/unlike_tweet_v2',
+    'unlikeTweet',
+  );
+}
+
+function productRetweetFields(): readonly string[] {
+  return productTweetEngagementFields(
+    PRODUCT_X_TWEET_RETWEET_ROUTE_PATH,
+    'retweet',
+    '/twitter/retweet_tweet_v2',
+    'retweet',
+  );
+}
+
+function productUnretweetFields(): readonly string[] {
+  return productTweetEngagementFields(
+    PRODUCT_X_TWEET_RETWEET_ROUTE_PATH,
+    'unretweet',
+    '/twitter/unretweet_tweet_v2',
+    'unretweet',
+  );
+}
+
 function productBulkRetryFields(): readonly string[] {
   const source = readFileSync(PRODUCT_X_ACCOUNTS_BULK_RETRY_ROUTE_PATH, 'utf8');
   const responseStart = source.indexOf('return NextResponse.json({');
@@ -964,6 +1052,18 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   );
   const deleteCommunity = propertyNames(
     responseSchema(spec, '/x/communities/{id}', 'delete'),
+  );
+  const likeTweet = propertyNames(
+    responseSchema(spec, '/x/tweets/{id}/like', 'post'),
+  );
+  const unlikeTweet = propertyNames(
+    responseSchema(spec, '/x/tweets/{id}/like', 'delete'),
+  );
+  const retweet = propertyNames(
+    responseSchema(spec, '/x/tweets/{id}/retweet', 'post'),
+  );
+  const unretweet = propertyNames(
+    responseSchema(spec, '/x/tweets/{id}/retweet', 'delete'),
   );
   const xAccount = schemaPropertyNames(spec, 'XAccount');
   const xAccountDetail = schemaPropertyNames(spec, 'XAccountDetail');
@@ -1132,6 +1232,26 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       requiredFields: deleteCommunity,
     },
     {
+      allowedFields: likeTweet,
+      page: LIKE_TWEET_PAGE,
+      requiredFields: likeTweet,
+    },
+    {
+      allowedFields: unlikeTweet,
+      page: UNLIKE_TWEET_PAGE,
+      requiredFields: unlikeTweet,
+    },
+    {
+      allowedFields: retweet,
+      page: RETWEET_PAGE,
+      requiredFields: retweet,
+    },
+    {
+      allowedFields: unretweet,
+      page: UNRETWEET_PAGE,
+      requiredFields: unretweet,
+    },
+    {
       allowedFields: uniqueSorted([
         'accounts',
         ...prefixedFields('accounts[].', xAccount),
@@ -1213,6 +1333,8 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_X_PROFILE_BANNER_ROUTE_PATH) &&
       existsSync(PRODUCT_X_COMMUNITIES_ROUTE_PATH) &&
       existsSync(PRODUCT_X_COMMUNITY_ID_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_TWEET_LIKE_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_TWEET_RETWEET_ROUTE_PATH) &&
       existsSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH) &&
       existsSync(PRODUCT_WRITE_ACTION_HANDLER_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH) &&
@@ -1312,6 +1434,22 @@ describe('API response field docs', (): void => {
     );
     const productDeleteCommunityResponseFields =
       productDeleteCommunityFields();
+    const likeTweetFields = propertyNames(
+      responseSchema(spec, '/x/tweets/{id}/like', 'post'),
+    );
+    const productLikeTweetResponseFields = productLikeTweetFields();
+    const unlikeTweetFields = propertyNames(
+      responseSchema(spec, '/x/tweets/{id}/like', 'delete'),
+    );
+    const productUnlikeTweetResponseFields = productUnlikeTweetFields();
+    const retweetFields = propertyNames(
+      responseSchema(spec, '/x/tweets/{id}/retweet', 'post'),
+    );
+    const productRetweetResponseFields = productRetweetFields();
+    const unretweetFields = propertyNames(
+      responseSchema(spec, '/x/tweets/{id}/retweet', 'delete'),
+    );
+    const productUnretweetResponseFields = productUnretweetFields();
     const productXAccountFields = productReturnFieldsFromPath(
       PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
       'formatAccount',
@@ -1574,6 +1712,38 @@ describe('API response field docs', (): void => {
         productDeleteCommunityResponseFields,
         deleteCommunityFields,
       ).map((field): string => `Delete community is missing ${field}.`),
+      ...setDifference(
+        likeTweetFields,
+        productLikeTweetResponseFields,
+      ).map((field): string => `Like tweet has no product field ${field}.`),
+      ...setDifference(
+        productLikeTweetResponseFields,
+        likeTweetFields,
+      ).map((field): string => `Like tweet is missing ${field}.`),
+      ...setDifference(
+        unlikeTweetFields,
+        productUnlikeTweetResponseFields,
+      ).map((field): string => `Unlike tweet has no product field ${field}.`),
+      ...setDifference(
+        productUnlikeTweetResponseFields,
+        unlikeTweetFields,
+      ).map((field): string => `Unlike tweet is missing ${field}.`),
+      ...setDifference(
+        retweetFields,
+        productRetweetResponseFields,
+      ).map((field): string => `Retweet has no product field ${field}.`),
+      ...setDifference(
+        productRetweetResponseFields,
+        retweetFields,
+      ).map((field): string => `Retweet is missing ${field}.`),
+      ...setDifference(
+        unretweetFields,
+        productUnretweetResponseFields,
+      ).map((field): string => `Unretweet has no product field ${field}.`),
+      ...setDifference(
+        productUnretweetResponseFields,
+        unretweetFields,
+      ).map((field): string => `Unretweet is missing ${field}.`),
       ...setDifference(
         openApiArticleResponseFields,
         productArticleResponseFields,
