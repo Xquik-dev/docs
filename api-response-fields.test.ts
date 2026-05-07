@@ -117,6 +117,8 @@ const ARTICLE_PAGE = 'api-reference/x/get-article.mdx';
 const DM_HISTORY_PAGE = 'api-reference/x/dm-history.mdx';
 const X_ACCOUNT_LIST_PAGE = 'api-reference/x-accounts/list.mdx';
 const X_ACCOUNT_DETAIL_PAGE = 'api-reference/x-accounts/get.mdx';
+const X_ACCOUNT_CONNECT_PAGE = 'api-reference/x-accounts/connect.mdx';
+const X_ACCOUNT_REAUTH_PAGE = 'api-reference/x-accounts/reauth.mdx';
 
 function parseYaml(source: string): OpenApiSpec {
   const bun = globalThis as {
@@ -499,6 +501,7 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   );
   const xAccount = schemaPropertyNames(spec, 'XAccount');
   const xAccountDetail = schemaPropertyNames(spec, 'XAccountDetail');
+  const sanitizedXAccount = schemaPropertyNames(spec, 'SanitizedXAccount');
 
   const paginatedTweetContracts = PAGINATED_TWEET_PAGES.map(
     (page): PageContract => ({
@@ -617,6 +620,16 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       page: X_ACCOUNT_DETAIL_PAGE,
       requiredFields: xAccountDetail,
     },
+    {
+      allowedFields: sanitizedXAccount,
+      page: X_ACCOUNT_CONNECT_PAGE,
+      requiredFields: sanitizedXAccount,
+    },
+    {
+      allowedFields: sanitizedXAccount,
+      page: X_ACCOUNT_REAUTH_PAGE,
+      requiredFields: sanitizedXAccount,
+    },
   ];
 }
 
@@ -718,6 +731,10 @@ describe('API response field docs', (): void => {
     const productXAccountFields = productReturnFieldsFromPath(
       PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
       'formatAccount',
+    );
+    const productSanitizedXAccountFields = productReturnFieldsFromPath(
+      PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
+      'formatSanitizedAccount',
     );
     const findings = [
       ...setDifference(
@@ -904,6 +921,16 @@ describe('API response field docs', (): void => {
         productXAccountFields,
         schemaPropertyNames(spec, 'XAccountDetail'),
       ).map((field): string => `XAccountDetail is missing ${field}.`),
+      ...setDifference(
+        schemaPropertyNames(spec, 'SanitizedXAccount'),
+        productSanitizedXAccountFields,
+      ).map(
+        (field): string => `SanitizedXAccount has no product field ${field}.`,
+      ),
+      ...setDifference(
+        productSanitizedXAccountFields,
+        schemaPropertyNames(spec, 'SanitizedXAccount'),
+      ).map((field): string => `SanitizedXAccount is missing ${field}.`),
     ];
 
     expect(findings).toStrictEqual([]);
