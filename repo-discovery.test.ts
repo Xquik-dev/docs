@@ -27,6 +27,23 @@ const REQUIRED_README_SNIPPETS = [
   '[OpenAPI spec](https://docs.xquik.com/openapi.yaml)',
 ] as const;
 
+const REQUIRED_INTRODUCTION_SNIPPETS = [
+  '## Use Xquik with AI agents',
+  '[llms.txt](/llms.txt)',
+  '[Context7 library](https://context7.com/xquik-dev/xquik-docs)',
+  '[Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper)',
+  'https://xquik.com/mcp',
+  'npx skills add Xquik-dev/x-twitter-scraper',
+] as const;
+
+const REQUIRED_LLMS_SNIPPETS = [
+  '## Agent Entry Points',
+  'https://context7.com/xquik-dev/xquik-docs',
+  'https://xquik.com/mcp',
+  'npx skills add Xquik-dev/x-twitter-scraper',
+  'https://docs.xquik.com/openapi.yaml',
+] as const;
+
 const VAGUE_PUBLIC_POSITIONING = [
   ['X-specific', 'workflows'].join(' '),
   ['workflow', 'surface'].join(' '),
@@ -55,10 +72,42 @@ function collectReadmeDiscoveryFindings(): readonly DiscoveryFinding[] {
   return findings;
 }
 
+function collectSnippetFindings(
+  source: string,
+  label: string,
+  snippets: readonly string[],
+): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const snippet of snippets) {
+    if (!source.includes(snippet)) {
+      findings.push({ issue: `${label} is missing "${snippet}".` });
+    }
+  }
+
+  return findings;
+}
+
 describe('repository discovery', (): void => {
   it('keeps the public README concrete and easy to find from GitHub search', (): void => {
     expect.assertions(1);
 
     expect(collectReadmeDiscoveryFindings()).toStrictEqual([]);
+  });
+
+  it('keeps public agent entry points visible to docs crawlers', (): void => {
+    expect.assertions(1);
+
+    const introduction = readFileSync('introduction.mdx', 'utf8');
+    const llms = readFileSync('llms.txt', 'utf8');
+
+    expect([
+      ...collectSnippetFindings(
+        introduction,
+        'Introduction',
+        REQUIRED_INTRODUCTION_SNIPPETS,
+      ),
+      ...collectSnippetFindings(llms, 'llms.txt', REQUIRED_LLMS_SNIPPETS),
+    ]).toStrictEqual([]);
   });
 });
