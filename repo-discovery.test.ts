@@ -44,6 +44,8 @@ const REQUIRED_LLMS_SNIPPETS = [
   'https://docs.xquik.com/openapi.yaml',
 ] as const;
 
+const MAX_LLMS_TXT_CHARS = 48_000;
+
 const VAGUE_PUBLIC_POSITIONING = [
   ['X-specific', 'workflows'].join(' '),
   ['workflow', 'surface'].join(' '),
@@ -109,5 +111,13 @@ describe('repository discovery', (): void => {
       ),
       ...collectSnippetFindings(llms, 'llms.txt', REQUIRED_LLMS_SNIPPETS),
     ]).toStrictEqual([]);
+  });
+
+  it('keeps llms.txt below the agent score size threshold with headroom', (): void => {
+    expect.assertions(1);
+
+    const llms = readFileSync('llms.txt', 'utf8');
+
+    expect(llms.length).toBeLessThanOrEqual(MAX_LLMS_TXT_CHARS);
   });
 });
