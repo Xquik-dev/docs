@@ -11,6 +11,10 @@ const PRODUCT_ROUTE_HELPERS_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/route-helpers.ts',
 );
+const PRODUCT_ACCOUNT_X_IDENTITY_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/account/x-identity/route.ts',
+);
 const PRODUCT_NOTIFICATIONS_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/notifications/route.ts',
@@ -124,6 +128,7 @@ const MEDIA_DOWNLOAD_PAGE = 'api-reference/x/download-media.mdx';
 const BOOKMARK_FOLDERS_PAGE = 'api-reference/x/bookmark-folders.mdx';
 const X_TRENDS_PAGE = 'api-reference/x/trends.mdx';
 const FOLLOW_CHECK_PAGE = 'api-reference/x/check-follower.mdx';
+const ACCOUNT_X_IDENTITY_PAGE = 'api-reference/account/x-identity.mdx';
 const ARTICLE_PAGE = 'api-reference/x/get-article.mdx';
 const DM_HISTORY_PAGE = 'api-reference/x/dm-history.mdx';
 const X_ACCOUNT_LIST_PAGE = 'api-reference/x-accounts/list.mdx';
@@ -441,6 +446,18 @@ function productFollowCheckFields(): readonly string[] {
   return objectLiteralFields(source.slice(responseStart, responseEnd + 1));
 }
 
+function productAccountXIdentityFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_ACCOUNT_X_IDENTITY_ROUTE_PATH, 'utf8');
+  const responseStart = source.indexOf(
+    'return NextResponse.json({ success: true, xUsername });',
+  );
+  if (responseStart < 0) {
+    throw new Error('Could not locate X identity success response.');
+  }
+  const responseEnd = source.indexOf(');', responseStart);
+  return objectLiteralFields(source.slice(responseStart, responseEnd));
+}
+
 function productDmHistoryFields(): readonly string[] {
   const source = readFileSync(PRODUCT_DM_HISTORY_ROUTE_PATH, 'utf8');
   const responseStart = source.indexOf('return NextResponse.json({');
@@ -533,6 +550,9 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const xTrend = itemPropertyNamesFromProperty(spec, xTrendsResponse, 'trends');
   const followCheck = propertyNames(
     responseSchema(spec, '/x/followers/check', 'get'),
+  );
+  const accountXIdentity = propertyNames(
+    responseSchema(spec, '/account/x-identity', 'put'),
   );
   const articleResponse = responseSchema(spec, '/x/articles/{tweetId}', 'get');
   const article = propertyNames(articleResponse);
@@ -651,6 +671,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       requiredFields: followCheck,
     },
     {
+      allowedFields: accountXIdentity,
+      page: ACCOUNT_X_IDENTITY_PAGE,
+      requiredFields: accountXIdentity,
+    },
+    {
       allowedFields: uniqueSorted([
         ...article,
         ...articleBody,
@@ -738,6 +763,7 @@ describe('API response field docs', (): void => {
 
     const productSourceExists =
       existsSync(PRODUCT_ROUTE_HELPERS_PATH) &&
+      existsSync(PRODUCT_ACCOUNT_X_IDENTITY_ROUTE_PATH) &&
       existsSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH) &&
       existsSync(PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH) &&
       existsSync(PRODUCT_X_TRENDS_ROUTE_PATH) &&
@@ -826,6 +852,11 @@ describe('API response field docs', (): void => {
     );
     const productXAccountDisconnectResponseFields =
       productXAccountDisconnectFields();
+    const accountXIdentityFields = propertyNames(
+      responseSchema(spec, '/account/x-identity', 'put'),
+    );
+    const productAccountXIdentityResponseFields =
+      productAccountXIdentityFields();
     const findings = [
       ...setDifference(
         schemaPropertyNames(spec, 'SearchTweet'),
@@ -945,6 +976,16 @@ describe('API response field docs', (): void => {
         productFollowCheckFields(),
         propertyNames(responseSchema(spec, '/x/followers/check', 'get')),
       ).map((field): string => `Follow check is missing ${field}.`),
+      ...setDifference(
+        accountXIdentityFields,
+        productAccountXIdentityResponseFields,
+      ).map(
+        (field): string => `Account X identity has no product field ${field}.`,
+      ),
+      ...setDifference(
+        productAccountXIdentityResponseFields,
+        accountXIdentityFields,
+      ).map((field): string => `Account X identity is missing ${field}.`),
       ...setDifference(
         openApiDmHistoryFields,
         productDmHistoryResponseFields,
