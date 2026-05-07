@@ -72,6 +72,14 @@ const PRODUCT_X_COMMUNITY_ID_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/communities/[id]/route.ts',
 );
+const PRODUCT_X_COMMUNITY_JOIN_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/communities/[id]/join/route.ts',
+);
+const PRODUCT_X_TWEET_ID_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/tweets/[id]/route.ts',
+);
 const PRODUCT_X_TWEET_LIKE_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/tweets/[id]/like/route.ts',
@@ -79,6 +87,14 @@ const PRODUCT_X_TWEET_LIKE_ROUTE_PATH = join(
 const PRODUCT_X_TWEET_RETWEET_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/tweets/[id]/retweet/route.ts',
+);
+const PRODUCT_X_USER_FOLLOW_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/users/[id]/follow/route.ts',
+);
+const PRODUCT_X_USER_REMOVE_FOLLOWER_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/users/[id]/remove-follower/route.ts',
 );
 const PRODUCT_FOLLOW_CHECK_ROUTE_PATH = join(
   PRODUCT_ROOT,
@@ -198,10 +214,16 @@ const UPDATE_AVATAR_PAGE = 'api-reference/x-write/update-avatar.mdx';
 const UPDATE_BANNER_PAGE = 'api-reference/x-write/update-banner.mdx';
 const CREATE_COMMUNITY_PAGE = 'api-reference/x-write/create-community.mdx';
 const DELETE_COMMUNITY_PAGE = 'api-reference/x-write/delete-community.mdx';
+const JOIN_COMMUNITY_PAGE = 'api-reference/x-write/join-community.mdx';
+const LEAVE_COMMUNITY_PAGE = 'api-reference/x-write/leave-community.mdx';
+const DELETE_TWEET_PAGE = 'api-reference/x-write/delete-tweet.mdx';
 const LIKE_TWEET_PAGE = 'api-reference/x-write/like.mdx';
 const UNLIKE_TWEET_PAGE = 'api-reference/x-write/unlike.mdx';
 const RETWEET_PAGE = 'api-reference/x-write/retweet.mdx';
 const UNRETWEET_PAGE = 'api-reference/x-write/unretweet.mdx';
+const FOLLOW_USER_PAGE = 'api-reference/x-write/follow.mdx';
+const UNFOLLOW_USER_PAGE = 'api-reference/x-write/unfollow.mdx';
+const REMOVE_FOLLOWER_PAGE = 'api-reference/x-write/remove-follower.mdx';
 const X_ACCOUNT_LIST_PAGE = 'api-reference/x-accounts/list.mdx';
 const X_ACCOUNT_DETAIL_PAGE = 'api-reference/x-accounts/get.mdx';
 const X_ACCOUNT_CONNECT_PAGE = 'api-reference/x-accounts/connect.mdx';
@@ -842,18 +864,19 @@ function productDeleteCommunityFields(): readonly string[] {
   return ['success'];
 }
 
-function productTweetEngagementFields(
+function productSimpleWriteFields(
   routePath: string,
   actionType: string,
   apiPath: string,
   operationName: string,
+  bodyKey: string,
 ): readonly string[] {
   const routeSource = readFileSync(routePath, 'utf8');
   if (
     !routeSource.includes(`actionType: '${actionType}'`) ||
     !routeSource.includes(`apiPath: '${apiPath}'`) ||
     !routeSource.includes('createToggleHandler({') ||
-    !routeSource.includes('tweet_id: id')
+    !routeSource.includes(`${bodyKey}: id`)
   ) {
     throw new Error(`Could not verify ${actionType} route wiring.`);
   }
@@ -871,9 +894,8 @@ function productTweetEngagementFields(
   }
   const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, 'utf8');
   if (
-    !writeSource.includes(
-      `['${apiPath}', simpleIdBuilder(${operationName}, 'tweet_id')]`,
-    ) ||
+    !writeSource.includes(`'${apiPath}'`) ||
+    !writeSource.includes(`simpleIdBuilder(${operationName}, '${bodyKey}')`) ||
     !writeSource.includes('function buildSimpleIdOperation(') ||
     !writeSource.includes("return { attempts: 0, status: 'success' };")
   ) {
@@ -883,38 +905,102 @@ function productTweetEngagementFields(
 }
 
 function productLikeTweetFields(): readonly string[] {
-  return productTweetEngagementFields(
+  return productSimpleWriteFields(
     PRODUCT_X_TWEET_LIKE_ROUTE_PATH,
     'like',
     '/twitter/like_tweet_v2',
     'likeTweet',
+    'tweet_id',
   );
 }
 
 function productUnlikeTweetFields(): readonly string[] {
-  return productTweetEngagementFields(
+  return productSimpleWriteFields(
     PRODUCT_X_TWEET_LIKE_ROUTE_PATH,
     'unlike',
     '/twitter/unlike_tweet_v2',
     'unlikeTweet',
+    'tweet_id',
   );
 }
 
 function productRetweetFields(): readonly string[] {
-  return productTweetEngagementFields(
+  return productSimpleWriteFields(
     PRODUCT_X_TWEET_RETWEET_ROUTE_PATH,
     'retweet',
     '/twitter/retweet_tweet_v2',
     'retweet',
+    'tweet_id',
   );
 }
 
 function productUnretweetFields(): readonly string[] {
-  return productTweetEngagementFields(
+  return productSimpleWriteFields(
     PRODUCT_X_TWEET_RETWEET_ROUTE_PATH,
     'unretweet',
     '/twitter/unretweet_tweet_v2',
     'unretweet',
+    'tweet_id',
+  );
+}
+
+function productDeleteTweetFields(): readonly string[] {
+  return productSimpleWriteFields(
+    PRODUCT_X_TWEET_ID_ROUTE_PATH,
+    'delete_tweet',
+    '/twitter/delete_tweet_v2',
+    'deleteTweet',
+    'tweet_id',
+  );
+}
+
+function productFollowUserFields(): readonly string[] {
+  return productSimpleWriteFields(
+    PRODUCT_X_USER_FOLLOW_ROUTE_PATH,
+    'follow',
+    '/twitter/follow_user_v2',
+    'followUser',
+    'user_id',
+  );
+}
+
+function productUnfollowUserFields(): readonly string[] {
+  return productSimpleWriteFields(
+    PRODUCT_X_USER_FOLLOW_ROUTE_PATH,
+    'unfollow',
+    '/twitter/unfollow_user_v2',
+    'unfollowUser',
+    'user_id',
+  );
+}
+
+function productRemoveFollowerFields(): readonly string[] {
+  return productSimpleWriteFields(
+    PRODUCT_X_USER_REMOVE_FOLLOWER_ROUTE_PATH,
+    'remove_follower',
+    '/twitter/remove_follower_v2',
+    'removeFollower',
+    'user_id',
+  );
+}
+
+function productJoinCommunityFields(): readonly string[] {
+  return productSimpleWriteFields(
+    PRODUCT_X_COMMUNITY_JOIN_ROUTE_PATH,
+    'join_community',
+    '/twitter/join_community_v2',
+    'joinCommunity',
+    'community_id',
+  );
+}
+
+function productLeaveCommunityFields(): readonly string[] {
+  return productSimpleWriteFields(
+    PRODUCT_X_COMMUNITY_JOIN_ROUTE_PATH,
+    'leave_community',
+    '/twitter/leave_community_v2',
+    'leaveCommunity',
+    'community_id',
   );
 }
 
@@ -1053,6 +1139,15 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const deleteCommunity = propertyNames(
     responseSchema(spec, '/x/communities/{id}', 'delete'),
   );
+  const joinCommunity = propertyNames(
+    responseSchema(spec, '/x/communities/{id}/join', 'post'),
+  );
+  const leaveCommunity = propertyNames(
+    responseSchema(spec, '/x/communities/{id}/join', 'delete'),
+  );
+  const deleteTweet = propertyNames(
+    responseSchema(spec, '/x/tweets/{id}', 'delete'),
+  );
   const likeTweet = propertyNames(
     responseSchema(spec, '/x/tweets/{id}/like', 'post'),
   );
@@ -1064,6 +1159,15 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   );
   const unretweet = propertyNames(
     responseSchema(spec, '/x/tweets/{id}/retweet', 'delete'),
+  );
+  const followUser = propertyNames(
+    responseSchema(spec, '/x/users/{id}/follow', 'post'),
+  );
+  const unfollowUser = propertyNames(
+    responseSchema(spec, '/x/users/{id}/follow', 'delete'),
+  );
+  const removeFollower = propertyNames(
+    responseSchema(spec, '/x/users/{id}/remove-follower', 'post'),
   );
   const xAccount = schemaPropertyNames(spec, 'XAccount');
   const xAccountDetail = schemaPropertyNames(spec, 'XAccountDetail');
@@ -1232,6 +1336,21 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       requiredFields: deleteCommunity,
     },
     {
+      allowedFields: joinCommunity,
+      page: JOIN_COMMUNITY_PAGE,
+      requiredFields: joinCommunity,
+    },
+    {
+      allowedFields: leaveCommunity,
+      page: LEAVE_COMMUNITY_PAGE,
+      requiredFields: leaveCommunity,
+    },
+    {
+      allowedFields: deleteTweet,
+      page: DELETE_TWEET_PAGE,
+      requiredFields: deleteTweet,
+    },
+    {
       allowedFields: likeTweet,
       page: LIKE_TWEET_PAGE,
       requiredFields: likeTweet,
@@ -1250,6 +1369,21 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       allowedFields: unretweet,
       page: UNRETWEET_PAGE,
       requiredFields: unretweet,
+    },
+    {
+      allowedFields: followUser,
+      page: FOLLOW_USER_PAGE,
+      requiredFields: followUser,
+    },
+    {
+      allowedFields: unfollowUser,
+      page: UNFOLLOW_USER_PAGE,
+      requiredFields: unfollowUser,
+    },
+    {
+      allowedFields: removeFollower,
+      page: REMOVE_FOLLOWER_PAGE,
+      requiredFields: removeFollower,
     },
     {
       allowedFields: uniqueSorted([
@@ -1333,8 +1467,12 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_X_PROFILE_BANNER_ROUTE_PATH) &&
       existsSync(PRODUCT_X_COMMUNITIES_ROUTE_PATH) &&
       existsSync(PRODUCT_X_COMMUNITY_ID_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_COMMUNITY_JOIN_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_TWEET_ID_ROUTE_PATH) &&
       existsSync(PRODUCT_X_TWEET_LIKE_ROUTE_PATH) &&
       existsSync(PRODUCT_X_TWEET_RETWEET_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_USER_FOLLOW_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_USER_REMOVE_FOLLOWER_ROUTE_PATH) &&
       existsSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH) &&
       existsSync(PRODUCT_WRITE_ACTION_HANDLER_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH) &&
@@ -1434,6 +1572,18 @@ describe('API response field docs', (): void => {
     );
     const productDeleteCommunityResponseFields =
       productDeleteCommunityFields();
+    const joinCommunityFields = propertyNames(
+      responseSchema(spec, '/x/communities/{id}/join', 'post'),
+    );
+    const productJoinCommunityResponseFields = productJoinCommunityFields();
+    const leaveCommunityFields = propertyNames(
+      responseSchema(spec, '/x/communities/{id}/join', 'delete'),
+    );
+    const productLeaveCommunityResponseFields = productLeaveCommunityFields();
+    const deleteTweetFields = propertyNames(
+      responseSchema(spec, '/x/tweets/{id}', 'delete'),
+    );
+    const productDeleteTweetResponseFields = productDeleteTweetFields();
     const likeTweetFields = propertyNames(
       responseSchema(spec, '/x/tweets/{id}/like', 'post'),
     );
@@ -1450,6 +1600,18 @@ describe('API response field docs', (): void => {
       responseSchema(spec, '/x/tweets/{id}/retweet', 'delete'),
     );
     const productUnretweetResponseFields = productUnretweetFields();
+    const followUserFields = propertyNames(
+      responseSchema(spec, '/x/users/{id}/follow', 'post'),
+    );
+    const productFollowUserResponseFields = productFollowUserFields();
+    const unfollowUserFields = propertyNames(
+      responseSchema(spec, '/x/users/{id}/follow', 'delete'),
+    );
+    const productUnfollowUserResponseFields = productUnfollowUserFields();
+    const removeFollowerFields = propertyNames(
+      responseSchema(spec, '/x/users/{id}/remove-follower', 'post'),
+    );
+    const productRemoveFollowerResponseFields = productRemoveFollowerFields();
     const productXAccountFields = productReturnFieldsFromPath(
       PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
       'formatAccount',
@@ -1713,6 +1875,30 @@ describe('API response field docs', (): void => {
         deleteCommunityFields,
       ).map((field): string => `Delete community is missing ${field}.`),
       ...setDifference(
+        joinCommunityFields,
+        productJoinCommunityResponseFields,
+      ).map((field): string => `Join community has no product field ${field}.`),
+      ...setDifference(
+        productJoinCommunityResponseFields,
+        joinCommunityFields,
+      ).map((field): string => `Join community is missing ${field}.`),
+      ...setDifference(
+        leaveCommunityFields,
+        productLeaveCommunityResponseFields,
+      ).map((field): string => `Leave community has no product field ${field}.`),
+      ...setDifference(
+        productLeaveCommunityResponseFields,
+        leaveCommunityFields,
+      ).map((field): string => `Leave community is missing ${field}.`),
+      ...setDifference(
+        deleteTweetFields,
+        productDeleteTweetResponseFields,
+      ).map((field): string => `Delete tweet has no product field ${field}.`),
+      ...setDifference(
+        productDeleteTweetResponseFields,
+        deleteTweetFields,
+      ).map((field): string => `Delete tweet is missing ${field}.`),
+      ...setDifference(
         likeTweetFields,
         productLikeTweetResponseFields,
       ).map((field): string => `Like tweet has no product field ${field}.`),
@@ -1744,6 +1930,30 @@ describe('API response field docs', (): void => {
         productUnretweetResponseFields,
         unretweetFields,
       ).map((field): string => `Unretweet is missing ${field}.`),
+      ...setDifference(
+        followUserFields,
+        productFollowUserResponseFields,
+      ).map((field): string => `Follow user has no product field ${field}.`),
+      ...setDifference(
+        productFollowUserResponseFields,
+        followUserFields,
+      ).map((field): string => `Follow user is missing ${field}.`),
+      ...setDifference(
+        unfollowUserFields,
+        productUnfollowUserResponseFields,
+      ).map((field): string => `Unfollow user has no product field ${field}.`),
+      ...setDifference(
+        productUnfollowUserResponseFields,
+        unfollowUserFields,
+      ).map((field): string => `Unfollow user is missing ${field}.`),
+      ...setDifference(
+        removeFollowerFields,
+        productRemoveFollowerResponseFields,
+      ).map((field): string => `Remove follower has no product field ${field}.`),
+      ...setDifference(
+        productRemoveFollowerResponseFields,
+        removeFollowerFields,
+      ).map((field): string => `Remove follower is missing ${field}.`),
       ...setDifference(
         openApiArticleResponseFields,
         productArticleResponseFields,
