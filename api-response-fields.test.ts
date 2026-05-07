@@ -23,6 +23,10 @@ const PRODUCT_X_TRENDS_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/trends/route.ts',
 );
+const PRODUCT_DM_HISTORY_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/dm/[userId]/history/route.ts',
+);
 const PRODUCT_FOLLOW_CHECK_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/followers/check/route.ts',
@@ -106,6 +110,7 @@ const BOOKMARK_FOLDERS_PAGE = 'api-reference/x/bookmark-folders.mdx';
 const X_TRENDS_PAGE = 'api-reference/x/trends.mdx';
 const FOLLOW_CHECK_PAGE = 'api-reference/x/check-follower.mdx';
 const ARTICLE_PAGE = 'api-reference/x/get-article.mdx';
+const DM_HISTORY_PAGE = 'api-reference/x/dm-history.mdx';
 
 function parseYaml(source: string): OpenApiSpec {
   const bun = globalThis as {
@@ -362,6 +367,16 @@ function productBookmarkFolderFields(): readonly string[] {
 
 function productXTrendsFields(): readonly string[] {
   const source = readFileSync(PRODUCT_X_TRENDS_ROUTE_PATH, 'utf8');
+  if (source.includes('function buildTrendsResponse')) {
+    return uniqueSorted([
+      'woeid',
+      ...productReturnFieldsFromPath(
+        PRODUCT_X_TRENDS_ROUTE_PATH,
+        'buildTrendsResponse',
+      ),
+      ...productInterfaceFieldsFromPath(PRODUCT_TRENDS_API_PATH, 'TrendItem'),
+    ]);
+  }
   const responseStart = source.indexOf('return NextResponse.json({');
   if (responseStart < 0) {
     throw new Error('Could not locate X trends success response.');
@@ -383,6 +398,19 @@ function productFollowCheckFields(): readonly string[] {
   }
   const responseEnd = source.indexOf('});', responseStart);
   return objectLiteralFields(source.slice(responseStart, responseEnd + 1));
+}
+
+function productDmHistoryFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_DM_HISTORY_ROUTE_PATH, 'utf8');
+  const responseStart = source.indexOf('return NextResponse.json({');
+  if (responseStart < 0) {
+    throw new Error('Could not locate DM history success response.');
+  }
+  const responseEnd = source.indexOf('});', responseStart);
+  return uniqueSorted([
+    ...objectLiteralFields(source.slice(responseStart, responseEnd + 1)),
+    ...productReturnFieldsFromPath(PRODUCT_DM_HISTORY_ROUTE_PATH, 'mapMessage'),
+  ]);
 }
 
 function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
@@ -448,6 +476,13 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   );
   const articleAuthor = propertyNames(
     resolveSchema(spec, articleResponse.properties?.['author'] ?? {}),
+  );
+  const dmHistoryResponse = responseSchema(spec, '/x/dm/{userId}/history', 'get');
+  const dmHistory = propertyNames(dmHistoryResponse);
+  const dmMessage = itemPropertyNamesFromProperty(
+    spec,
+    dmHistoryResponse,
+    'messages',
   );
 
   const paginatedTweetContracts = PAGINATED_TWEET_PAGES.map(
@@ -546,6 +581,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
         ...articleAuthor,
       ]),
     },
+    {
+      allowedFields: uniqueSorted([...dmHistory, ...dmMessage]),
+      page: DM_HISTORY_PAGE,
+      requiredFields: uniqueSorted([...dmHistory, ...dmMessage]),
+    },
   ];
 }
 
@@ -579,6 +619,7 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH) &&
       existsSync(PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH) &&
       existsSync(PRODUCT_X_TRENDS_ROUTE_PATH) &&
+      existsSync(PRODUCT_DM_HISTORY_ROUTE_PATH) &&
       existsSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH) &&
       existsSync(PRODUCT_TRENDS_API_PATH) &&
       existsSync(PRODUCT_ARTICLE_FORMAT_PATH) &&
@@ -632,6 +673,16 @@ describe('API response field docs', (): void => {
       PRODUCT_ARTICLE_FORMAT_PATH,
       'formatAuthor',
     );
+    const dmHistoryResponseSchema = responseSchema(
+      spec,
+      '/x/dm/{userId}/history',
+      'get',
+    );
+    const openApiDmHistoryFields = uniqueSorted([
+      ...propertyNames(dmHistoryResponseSchema),
+      ...itemPropertyNamesFromProperty(spec, dmHistoryResponseSchema, 'messages'),
+    ]);
+    const productDmHistoryResponseFields = productDmHistoryFields();
     const findings = [
       ...setDifference(
         schemaPropertyNames(spec, 'SearchTweet'),
@@ -751,6 +802,14 @@ describe('API response field docs', (): void => {
         productFollowCheckFields(),
         propertyNames(responseSchema(spec, '/x/followers/check', 'get')),
       ).map((field): string => `Follow check is missing ${field}.`),
+      ...setDifference(
+        openApiDmHistoryFields,
+        productDmHistoryResponseFields,
+      ).map((field): string => `DM history has no product field ${field}.`),
+      ...setDifference(
+        productDmHistoryResponseFields,
+        openApiDmHistoryFields,
+      ).map((field): string => `DM history is missing ${field}.`),
       ...setDifference(
         openApiArticleResponseFields,
         productArticleResponseFields,
