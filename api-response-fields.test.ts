@@ -64,6 +64,14 @@ const PRODUCT_X_PROFILE_BANNER_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/profile/banner/route.ts',
 );
+const PRODUCT_X_COMMUNITIES_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/communities/route.ts',
+);
+const PRODUCT_X_COMMUNITY_ID_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/communities/[id]/route.ts',
+);
 const PRODUCT_FOLLOW_CHECK_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/followers/check/route.ts',
@@ -180,6 +188,8 @@ const UPLOAD_MEDIA_PAGE = 'api-reference/x-write/upload-media.mdx';
 const UPDATE_PROFILE_PAGE = 'api-reference/x-write/update-profile.mdx';
 const UPDATE_AVATAR_PAGE = 'api-reference/x-write/update-avatar.mdx';
 const UPDATE_BANNER_PAGE = 'api-reference/x-write/update-banner.mdx';
+const CREATE_COMMUNITY_PAGE = 'api-reference/x-write/create-community.mdx';
+const DELETE_COMMUNITY_PAGE = 'api-reference/x-write/delete-community.mdx';
 const X_ACCOUNT_LIST_PAGE = 'api-reference/x-accounts/list.mdx';
 const X_ACCOUNT_DETAIL_PAGE = 'api-reference/x-accounts/get.mdx';
 const X_ACCOUNT_CONNECT_PAGE = 'api-reference/x-accounts/connect.mdx';
@@ -752,6 +762,74 @@ function productUpdateBannerFields(): readonly string[] {
   );
 }
 
+function productCreateCommunityFields(): readonly string[] {
+  const routeSource = readFileSync(PRODUCT_X_COMMUNITIES_ROUTE_PATH, 'utf8');
+  if (
+    !routeSource.includes("actionType: 'create_community'") ||
+    !routeSource.includes("apiPath: '/twitter/create_community_v2'") ||
+    !routeSource.includes('return handleWriteAction(') ||
+    !routeSource.includes('parseCreateCommunityBody')
+  ) {
+    throw new Error('Could not verify create community route wiring.');
+  }
+  const writeActionSource = readFileSync(
+    PRODUCT_WRITE_ACTION_HANDLER_PATH,
+    'utf8',
+  );
+  if (
+    !writeActionSource.includes('success: true') ||
+    !writeActionSource.includes('communityId: result.communityId') ||
+    !writeActionSource.includes('communityName: result.communityName')
+  ) {
+    throw new Error('Could not verify create community success response.');
+  }
+  const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, 'utf8');
+  if (
+    !writeSource.includes(
+      "['/twitter/create_community_v2', buildCreateCommunityOperation]",
+    ) ||
+    !writeSource.includes(
+      "return { attempts: 0, status: 'success', communityId: result.communityId };",
+    )
+  ) {
+    throw new Error('Could not verify create community write-client operation.');
+  }
+  return ['communityId', 'communityName', 'success'];
+}
+
+function productDeleteCommunityFields(): readonly string[] {
+  const routeSource = readFileSync(PRODUCT_X_COMMUNITY_ID_ROUTE_PATH, 'utf8');
+  if (
+    !routeSource.includes("actionType: 'delete_community'") ||
+    !routeSource.includes("apiPath: '/twitter/delete_community_v2'") ||
+    !routeSource.includes('createToggleHandler({') ||
+    !routeSource.includes('community_id: id') ||
+    !routeSource.includes("community_name: extra['community_name']")
+  ) {
+    throw new Error('Could not verify delete community route wiring.');
+  }
+  const writeActionSource = readFileSync(
+    PRODUCT_WRITE_ACTION_HANDLER_PATH,
+    'utf8',
+  );
+  if (
+    !writeActionSource.includes('success: true') ||
+    !writeActionSource.includes('communityId: result.communityId')
+  ) {
+    throw new Error('Could not verify delete community success response.');
+  }
+  const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, 'utf8');
+  if (
+    !writeSource.includes(
+      "['/twitter/delete_community_v2', buildDeleteCommunityOperation]",
+    ) ||
+    !writeSource.includes("return { attempts: 0, status: 'success' };")
+  ) {
+    throw new Error('Could not verify delete community write-client operation.');
+  }
+  return ['success'];
+}
+
 function productBulkRetryFields(): readonly string[] {
   const source = readFileSync(PRODUCT_X_ACCOUNTS_BULK_RETRY_ROUTE_PATH, 'utf8');
   const responseStart = source.indexOf('return NextResponse.json({');
@@ -880,6 +958,12 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   );
   const updateBanner = propertyNames(
     responseSchema(spec, '/x/profile/banner', 'patch'),
+  );
+  const createCommunity = propertyNames(
+    responseSchema(spec, '/x/communities', 'post'),
+  );
+  const deleteCommunity = propertyNames(
+    responseSchema(spec, '/x/communities/{id}', 'delete'),
   );
   const xAccount = schemaPropertyNames(spec, 'XAccount');
   const xAccountDetail = schemaPropertyNames(spec, 'XAccountDetail');
@@ -1038,6 +1122,16 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       requiredFields: updateBanner,
     },
     {
+      allowedFields: createCommunity,
+      page: CREATE_COMMUNITY_PAGE,
+      requiredFields: createCommunity,
+    },
+    {
+      allowedFields: deleteCommunity,
+      page: DELETE_COMMUNITY_PAGE,
+      requiredFields: deleteCommunity,
+    },
+    {
       allowedFields: uniqueSorted([
         'accounts',
         ...prefixedFields('accounts[].', xAccount),
@@ -1117,6 +1211,8 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_X_PROFILE_ROUTE_PATH) &&
       existsSync(PRODUCT_X_PROFILE_AVATAR_ROUTE_PATH) &&
       existsSync(PRODUCT_X_PROFILE_BANNER_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_COMMUNITIES_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_COMMUNITY_ID_ROUTE_PATH) &&
       existsSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH) &&
       existsSync(PRODUCT_WRITE_ACTION_HANDLER_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH) &&
@@ -1206,6 +1302,16 @@ describe('API response field docs', (): void => {
       responseSchema(spec, '/x/profile/banner', 'patch'),
     );
     const productUpdateBannerResponseFields = productUpdateBannerFields();
+    const createCommunityFields = propertyNames(
+      responseSchema(spec, '/x/communities', 'post'),
+    );
+    const productCreateCommunityResponseFields =
+      productCreateCommunityFields();
+    const deleteCommunityFields = propertyNames(
+      responseSchema(spec, '/x/communities/{id}', 'delete'),
+    );
+    const productDeleteCommunityResponseFields =
+      productDeleteCommunityFields();
     const productXAccountFields = productReturnFieldsFromPath(
       PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
       'formatAccount',
@@ -1448,6 +1554,26 @@ describe('API response field docs', (): void => {
         productUpdateBannerResponseFields,
         updateBannerFields,
       ).map((field): string => `Update banner is missing ${field}.`),
+      ...setDifference(
+        createCommunityFields,
+        productCreateCommunityResponseFields,
+      ).map(
+        (field): string => `Create community has no product field ${field}.`,
+      ),
+      ...setDifference(
+        productCreateCommunityResponseFields,
+        createCommunityFields,
+      ).map((field): string => `Create community is missing ${field}.`),
+      ...setDifference(
+        deleteCommunityFields,
+        productDeleteCommunityResponseFields,
+      ).map(
+        (field): string => `Delete community has no product field ${field}.`,
+      ),
+      ...setDifference(
+        productDeleteCommunityResponseFields,
+        deleteCommunityFields,
+      ).map((field): string => `Delete community is missing ${field}.`),
       ...setDifference(
         openApiArticleResponseFields,
         productArticleResponseFields,
