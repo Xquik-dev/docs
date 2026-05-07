@@ -20,6 +20,14 @@ const PRODUCT_ACCOUNT_X_IDENTITY_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/account/x-identity/route.ts',
 );
+const PRODUCT_SUBSCRIBE_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/subscribe/route.ts',
+);
+const PRODUCT_SUBSCRIBE_TOOL_PATH = join(
+  PRODUCT_ROOT,
+  'lib/mcp/subscribe-tool.ts',
+);
 const PRODUCT_NOTIFICATIONS_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/notifications/route.ts',
@@ -144,6 +152,7 @@ const FOLLOW_CHECK_PAGE = 'api-reference/x/check-follower.mdx';
 const ACCOUNT_GET_PAGE = 'api-reference/account/get.mdx';
 const ACCOUNT_UPDATE_PAGE = 'api-reference/account/update.mdx';
 const ACCOUNT_X_IDENTITY_PAGE = 'api-reference/account/x-identity.mdx';
+const SUBSCRIBE_PAGE = 'api-reference/account/subscribe.mdx';
 const ARTICLE_PAGE = 'api-reference/x/get-article.mdx';
 const DM_HISTORY_PAGE = 'api-reference/x/dm-history.mdx';
 const SEND_DM_PAGE = 'api-reference/x-write/send-dm.mdx';
@@ -515,6 +524,20 @@ function productAccountXIdentityFields(): readonly string[] {
   return objectLiteralFields(source.slice(responseStart, responseEnd));
 }
 
+function productSubscribeFields(): readonly string[] {
+  const routeSource = readFileSync(PRODUCT_SUBSCRIBE_ROUTE_PATH, 'utf8');
+  if (
+    !routeSource.includes('const result = await handleSubscribe(') ||
+    !routeSource.includes('return NextResponse.json(result);')
+  ) {
+    throw new Error('Could not verify subscribe route response wiring.');
+  }
+  return productInterfaceFieldsFromPath(
+    PRODUCT_SUBSCRIBE_TOOL_PATH,
+    'SubscribeMcpResult',
+  );
+}
+
 function productDmHistoryFields(): readonly string[] {
   const source = readFileSync(PRODUCT_DM_HISTORY_ROUTE_PATH, 'utf8');
   const responseStart = source.indexOf('return NextResponse.json({');
@@ -644,6 +667,7 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const accountXIdentity = propertyNames(
     responseSchema(spec, '/account/x-identity', 'put'),
   );
+  const subscribe = propertyNames(responseSchema(spec, '/subscribe', 'post'));
   const articleResponse = responseSchema(spec, '/x/articles/{tweetId}', 'get');
   const article = propertyNames(articleResponse);
   const articleBodySchema = resolveSchema(
@@ -777,6 +801,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       requiredFields: accountXIdentity,
     },
     {
+      allowedFields: subscribe,
+      page: SUBSCRIBE_PAGE,
+      requiredFields: subscribe,
+    },
+    {
       allowedFields: uniqueSorted([
         ...article,
         ...articleBody,
@@ -872,6 +901,8 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_ACCOUNT_ROUTE_PATH) &&
       existsSync(PRODUCT_ACCOUNT_QUERY_PATH) &&
       existsSync(PRODUCT_ACCOUNT_X_IDENTITY_ROUTE_PATH) &&
+      existsSync(PRODUCT_SUBSCRIBE_ROUTE_PATH) &&
+      existsSync(PRODUCT_SUBSCRIBE_TOOL_PATH) &&
       existsSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH) &&
       existsSync(PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH) &&
       existsSync(PRODUCT_X_TRENDS_ROUTE_PATH) &&
@@ -982,6 +1013,10 @@ describe('API response field docs', (): void => {
     );
     const productAccountXIdentityResponseFields =
       productAccountXIdentityFields();
+    const subscribeFields = propertyNames(
+      responseSchema(spec, '/subscribe', 'post'),
+    );
+    const productSubscribeResponseFields = productSubscribeFields();
     const findings = [
       ...setDifference(
         schemaPropertyNames(spec, 'SearchTweet'),
@@ -1129,6 +1164,14 @@ describe('API response field docs', (): void => {
         productAccountXIdentityResponseFields,
         accountXIdentityFields,
       ).map((field): string => `Account X identity is missing ${field}.`),
+      ...setDifference(
+        subscribeFields,
+        productSubscribeResponseFields,
+      ).map((field): string => `Subscribe has no product field ${field}.`),
+      ...setDifference(
+        productSubscribeResponseFields,
+        subscribeFields,
+      ).map((field): string => `Subscribe is missing ${field}.`),
       ...setDifference(
         openApiDmHistoryFields,
         productDmHistoryResponseFields,
