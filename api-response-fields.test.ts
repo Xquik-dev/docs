@@ -56,6 +56,14 @@ const PRODUCT_X_PROFILE_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/profile/route.ts',
 );
+const PRODUCT_X_PROFILE_AVATAR_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/profile/avatar/route.ts',
+);
+const PRODUCT_X_PROFILE_BANNER_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/x/profile/banner/route.ts',
+);
 const PRODUCT_FOLLOW_CHECK_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/followers/check/route.ts',
@@ -170,6 +178,8 @@ const DM_HISTORY_PAGE = 'api-reference/x/dm-history.mdx';
 const SEND_DM_PAGE = 'api-reference/x-write/send-dm.mdx';
 const UPLOAD_MEDIA_PAGE = 'api-reference/x-write/upload-media.mdx';
 const UPDATE_PROFILE_PAGE = 'api-reference/x-write/update-profile.mdx';
+const UPDATE_AVATAR_PAGE = 'api-reference/x-write/update-avatar.mdx';
+const UPDATE_BANNER_PAGE = 'api-reference/x-write/update-banner.mdx';
 const X_ACCOUNT_LIST_PAGE = 'api-reference/x-accounts/list.mdx';
 const X_ACCOUNT_DETAIL_PAGE = 'api-reference/x-accounts/get.mdx';
 const X_ACCOUNT_CONNECT_PAGE = 'api-reference/x-accounts/connect.mdx';
@@ -673,6 +683,75 @@ function productUpdateProfileFields(): readonly string[] {
   return ['success'];
 }
 
+function productProfileImageFields(
+  routePath: string,
+  actionType: string,
+  apiPath: string,
+  maxSizeBytes: string,
+  operationBuilder: string,
+  operationReturn: string,
+): readonly string[] {
+  const routeSource = readFileSync(routePath, 'utf8');
+  if (
+    !routeSource.includes(`actionType: '${actionType}'`) ||
+    !routeSource.includes(`apiPath: '${apiPath}'`) ||
+    !routeSource.includes('createProfileImageHandler(') ||
+    !routeSource.includes(maxSizeBytes)
+  ) {
+    throw new Error(`Could not verify ${actionType} route wiring.`);
+  }
+  const helperSource = readFileSync(PRODUCT_ROUTE_HELPERS_PATH, 'utf8');
+  if (
+    !helperSource.includes('function createProfileImageHandler(') ||
+    !helperSource.includes('allowedTypes: PROFILE_IMAGE_TYPES') ||
+    !helperSource.includes("'image/jpeg'") ||
+    !helperSource.includes("'image/png'")
+  ) {
+    throw new Error(`Could not verify ${actionType} upload helper wiring.`);
+  }
+  const writeActionSource = readFileSync(
+    PRODUCT_WRITE_ACTION_HANDLER_PATH,
+    'utf8',
+  );
+  if (
+    !writeActionSource.includes('success: true') ||
+    !writeActionSource.includes('tweetId: result.tweetId') ||
+    writeActionSource.includes('userId: result.userId')
+  ) {
+    throw new Error(`Could not verify ${actionType} success response fields.`);
+  }
+  const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, 'utf8');
+  if (
+    !writeSource.includes(`['${apiPath}', ${operationBuilder}]`) ||
+    !writeSource.includes(operationReturn)
+  ) {
+    throw new Error(`Could not verify ${actionType} write-client operation.`);
+  }
+  return ['success'];
+}
+
+function productUpdateAvatarFields(): readonly string[] {
+  return productProfileImageFields(
+    PRODUCT_X_PROFILE_AVATAR_ROUTE_PATH,
+    'update_avatar',
+    '/twitter/update_avatar_v2',
+    '716_800',
+    'buildUpdateAvatarOperation',
+    "return { attempts: 0, status: 'success', message: result.userId };",
+  );
+}
+
+function productUpdateBannerFields(): readonly string[] {
+  return productProfileImageFields(
+    PRODUCT_X_PROFILE_BANNER_ROUTE_PATH,
+    'update_banner',
+    '/twitter/update_banner_v2',
+    '2_097_152',
+    'buildUpdateBannerOperation',
+    "return { attempts: 0, status: 'success' };",
+  );
+}
+
 function productBulkRetryFields(): readonly string[] {
   const source = readFileSync(PRODUCT_X_ACCOUNTS_BULK_RETRY_ROUTE_PATH, 'utf8');
   const responseStart = source.indexOf('return NextResponse.json({');
@@ -795,6 +874,12 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const uploadMedia = propertyNames(responseSchema(spec, '/x/media', 'post'));
   const updateProfile = propertyNames(
     responseSchema(spec, '/x/profile', 'patch'),
+  );
+  const updateAvatar = propertyNames(
+    responseSchema(spec, '/x/profile/avatar', 'patch'),
+  );
+  const updateBanner = propertyNames(
+    responseSchema(spec, '/x/profile/banner', 'patch'),
   );
   const xAccount = schemaPropertyNames(spec, 'XAccount');
   const xAccountDetail = schemaPropertyNames(spec, 'XAccountDetail');
@@ -943,6 +1028,16 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       requiredFields: updateProfile,
     },
     {
+      allowedFields: updateAvatar,
+      page: UPDATE_AVATAR_PAGE,
+      requiredFields: updateAvatar,
+    },
+    {
+      allowedFields: updateBanner,
+      page: UPDATE_BANNER_PAGE,
+      requiredFields: updateBanner,
+    },
+    {
       allowedFields: uniqueSorted([
         'accounts',
         ...prefixedFields('accounts[].', xAccount),
@@ -1020,6 +1115,8 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_SEND_DM_ROUTE_PATH) &&
       existsSync(PRODUCT_X_MEDIA_ROUTE_PATH) &&
       existsSync(PRODUCT_X_PROFILE_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_PROFILE_AVATAR_ROUTE_PATH) &&
+      existsSync(PRODUCT_X_PROFILE_BANNER_ROUTE_PATH) &&
       existsSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH) &&
       existsSync(PRODUCT_WRITE_ACTION_HANDLER_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH) &&
@@ -1101,6 +1198,14 @@ describe('API response field docs', (): void => {
       responseSchema(spec, '/x/profile', 'patch'),
     );
     const productUpdateProfileResponseFields = productUpdateProfileFields();
+    const updateAvatarFields = propertyNames(
+      responseSchema(spec, '/x/profile/avatar', 'patch'),
+    );
+    const productUpdateAvatarResponseFields = productUpdateAvatarFields();
+    const updateBannerFields = propertyNames(
+      responseSchema(spec, '/x/profile/banner', 'patch'),
+    );
+    const productUpdateBannerResponseFields = productUpdateBannerFields();
     const productXAccountFields = productReturnFieldsFromPath(
       PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
       'formatAccount',
@@ -1327,6 +1432,22 @@ describe('API response field docs', (): void => {
         productUpdateProfileResponseFields,
         updateProfileFields,
       ).map((field): string => `Update profile is missing ${field}.`),
+      ...setDifference(
+        updateAvatarFields,
+        productUpdateAvatarResponseFields,
+      ).map((field): string => `Update avatar has no product field ${field}.`),
+      ...setDifference(
+        productUpdateAvatarResponseFields,
+        updateAvatarFields,
+      ).map((field): string => `Update avatar is missing ${field}.`),
+      ...setDifference(
+        updateBannerFields,
+        productUpdateBannerResponseFields,
+      ).map((field): string => `Update banner has no product field ${field}.`),
+      ...setDifference(
+        productUpdateBannerResponseFields,
+        updateBannerFields,
+      ).map((field): string => `Update banner is missing ${field}.`),
       ...setDifference(
         openApiArticleResponseFields,
         productArticleResponseFields,
