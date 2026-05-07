@@ -11,6 +11,10 @@ const PRODUCT_ROUTE_HELPERS_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/route-helpers.ts',
 );
+const PRODUCT_ACCOUNT_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/account/route.ts',
+);
 const PRODUCT_ACCOUNT_X_IDENTITY_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/account/x-identity/route.ts',
@@ -128,6 +132,7 @@ const MEDIA_DOWNLOAD_PAGE = 'api-reference/x/download-media.mdx';
 const BOOKMARK_FOLDERS_PAGE = 'api-reference/x/bookmark-folders.mdx';
 const X_TRENDS_PAGE = 'api-reference/x/trends.mdx';
 const FOLLOW_CHECK_PAGE = 'api-reference/x/check-follower.mdx';
+const ACCOUNT_UPDATE_PAGE = 'api-reference/account/update.mdx';
 const ACCOUNT_X_IDENTITY_PAGE = 'api-reference/account/x-identity.mdx';
 const ARTICLE_PAGE = 'api-reference/x/get-article.mdx';
 const DM_HISTORY_PAGE = 'api-reference/x/dm-history.mdx';
@@ -446,6 +451,18 @@ function productFollowCheckFields(): readonly string[] {
   return objectLiteralFields(source.slice(responseStart, responseEnd + 1));
 }
 
+function productAccountUpdateFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_ACCOUNT_ROUTE_PATH, 'utf8');
+  const responseStart = source.indexOf(
+    'return NextResponse.json({ success: true });',
+  );
+  if (responseStart < 0) {
+    throw new Error('Could not locate account update success response.');
+  }
+  const responseEnd = source.indexOf(');', responseStart);
+  return objectLiteralFields(source.slice(responseStart, responseEnd));
+}
+
 function productAccountXIdentityFields(): readonly string[] {
   const source = readFileSync(PRODUCT_ACCOUNT_X_IDENTITY_ROUTE_PATH, 'utf8');
   const responseStart = source.indexOf(
@@ -551,6 +568,7 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const followCheck = propertyNames(
     responseSchema(spec, '/x/followers/check', 'get'),
   );
+  const accountUpdate = propertyNames(responseSchema(spec, '/account', 'patch'));
   const accountXIdentity = propertyNames(
     responseSchema(spec, '/account/x-identity', 'put'),
   );
@@ -671,6 +689,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       requiredFields: followCheck,
     },
     {
+      allowedFields: accountUpdate,
+      page: ACCOUNT_UPDATE_PAGE,
+      requiredFields: accountUpdate,
+    },
+    {
       allowedFields: accountXIdentity,
       page: ACCOUNT_X_IDENTITY_PAGE,
       requiredFields: accountXIdentity,
@@ -763,6 +786,7 @@ describe('API response field docs', (): void => {
 
     const productSourceExists =
       existsSync(PRODUCT_ROUTE_HELPERS_PATH) &&
+      existsSync(PRODUCT_ACCOUNT_ROUTE_PATH) &&
       existsSync(PRODUCT_ACCOUNT_X_IDENTITY_ROUTE_PATH) &&
       existsSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH) &&
       existsSync(PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH) &&
@@ -852,6 +876,10 @@ describe('API response field docs', (): void => {
     );
     const productXAccountDisconnectResponseFields =
       productXAccountDisconnectFields();
+    const accountUpdateFields = propertyNames(
+      responseSchema(spec, '/account', 'patch'),
+    );
+    const productAccountUpdateResponseFields = productAccountUpdateFields();
     const accountXIdentityFields = propertyNames(
       responseSchema(spec, '/account/x-identity', 'put'),
     );
@@ -976,6 +1004,16 @@ describe('API response field docs', (): void => {
         productFollowCheckFields(),
         propertyNames(responseSchema(spec, '/x/followers/check', 'get')),
       ).map((field): string => `Follow check is missing ${field}.`),
+      ...setDifference(
+        accountUpdateFields,
+        productAccountUpdateResponseFields,
+      ).map(
+        (field): string => `Account update has no product field ${field}.`,
+      ),
+      ...setDifference(
+        productAccountUpdateResponseFields,
+        accountUpdateFields,
+      ).map((field): string => `Account update is missing ${field}.`),
       ...setDifference(
         accountXIdentityFields,
         productAccountXIdentityResponseFields,
