@@ -15,6 +15,7 @@ const PRODUCT_ACCOUNT_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/account/route.ts',
 );
+const PRODUCT_ACCOUNT_QUERY_PATH = join(PRODUCT_ROOT, 'lib/account/query.ts');
 const PRODUCT_ACCOUNT_X_IDENTITY_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/account/x-identity/route.ts',
@@ -132,6 +133,7 @@ const MEDIA_DOWNLOAD_PAGE = 'api-reference/x/download-media.mdx';
 const BOOKMARK_FOLDERS_PAGE = 'api-reference/x/bookmark-folders.mdx';
 const X_TRENDS_PAGE = 'api-reference/x/trends.mdx';
 const FOLLOW_CHECK_PAGE = 'api-reference/x/check-follower.mdx';
+const ACCOUNT_GET_PAGE = 'api-reference/account/get.mdx';
 const ACCOUNT_UPDATE_PAGE = 'api-reference/account/update.mdx';
 const ACCOUNT_X_IDENTITY_PAGE = 'api-reference/account/x-identity.mdx';
 const ARTICLE_PAGE = 'api-reference/x/get-article.mdx';
@@ -451,6 +453,35 @@ function productFollowCheckFields(): readonly string[] {
   return objectLiteralFields(source.slice(responseStart, responseEnd + 1));
 }
 
+function productAccountMonitorBillingFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_ACCOUNT_QUERY_PATH, 'utf8');
+  const start = source.indexOf('readonly monitorBilling: {');
+  if (start < 0) {
+    throw new Error('Could not locate account monitor billing fields.');
+  }
+  const end = source.indexOf('\n  };', start);
+  if (end < 0) {
+    throw new Error('Could not locate account monitor billing field end.');
+  }
+  const body = source.slice(start, end);
+  return uniqueSorted(
+    [...body.matchAll(/^\s{4}readonly (?<field>[A-Za-z_]\w*):/gmu)].map(
+      (match): string => match.groups?.['field'] ?? '',
+    ),
+  );
+}
+
+function productAccountInfoFields(): readonly string[] {
+  return uniqueSorted([
+    ...productInterfaceFieldsFromPath(
+      PRODUCT_ACCOUNT_QUERY_PATH,
+      'AccountInfoResult',
+    ),
+    ...productInterfaceFieldsFromPath(PRODUCT_ACCOUNT_QUERY_PATH, 'CreditInfo'),
+    ...productAccountMonitorBillingFields(),
+  ]);
+}
+
 function productAccountUpdateFields(): readonly string[] {
   const source = readFileSync(PRODUCT_ACCOUNT_ROUTE_PATH, 'utf8');
   const responseStart = source.indexOf(
@@ -568,6 +599,12 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const followCheck = propertyNames(
     responseSchema(spec, '/x/followers/check', 'get'),
   );
+  const accountGetResponse = responseSchema(spec, '/account', 'get');
+  const accountGet = uniqueSorted([
+    ...propertyNames(accountGetResponse),
+    ...propertyNames(accountGetResponse.properties?.['creditInfo']),
+    ...propertyNames(accountGetResponse.properties?.['monitorBilling']),
+  ]);
   const accountUpdate = propertyNames(responseSchema(spec, '/account', 'patch'));
   const accountXIdentity = propertyNames(
     responseSchema(spec, '/account/x-identity', 'put'),
@@ -689,6 +726,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       requiredFields: followCheck,
     },
     {
+      allowedFields: accountGet,
+      page: ACCOUNT_GET_PAGE,
+      requiredFields: accountGet,
+    },
+    {
       allowedFields: accountUpdate,
       page: ACCOUNT_UPDATE_PAGE,
       requiredFields: accountUpdate,
@@ -787,6 +829,7 @@ describe('API response field docs', (): void => {
     const productSourceExists =
       existsSync(PRODUCT_ROUTE_HELPERS_PATH) &&
       existsSync(PRODUCT_ACCOUNT_ROUTE_PATH) &&
+      existsSync(PRODUCT_ACCOUNT_QUERY_PATH) &&
       existsSync(PRODUCT_ACCOUNT_X_IDENTITY_ROUTE_PATH) &&
       existsSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH) &&
       existsSync(PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH) &&
@@ -876,6 +919,13 @@ describe('API response field docs', (): void => {
     );
     const productXAccountDisconnectResponseFields =
       productXAccountDisconnectFields();
+    const accountGetResponseSchema = responseSchema(spec, '/account', 'get');
+    const accountGetFields = uniqueSorted([
+      ...propertyNames(accountGetResponseSchema),
+      ...propertyNames(accountGetResponseSchema.properties?.['creditInfo']),
+      ...propertyNames(accountGetResponseSchema.properties?.['monitorBilling']),
+    ]);
+    const productAccountGetResponseFields = productAccountInfoFields();
     const accountUpdateFields = propertyNames(
       responseSchema(spec, '/account', 'patch'),
     );
@@ -1004,6 +1054,14 @@ describe('API response field docs', (): void => {
         productFollowCheckFields(),
         propertyNames(responseSchema(spec, '/x/followers/check', 'get')),
       ).map((field): string => `Follow check is missing ${field}.`),
+      ...setDifference(
+        accountGetFields,
+        productAccountGetResponseFields,
+      ).map((field): string => `Account info has no product field ${field}.`),
+      ...setDifference(
+        productAccountGetResponseFields,
+        accountGetFields,
+      ).map((field): string => `Account info is missing ${field}.`),
       ...setDifference(
         accountUpdateFields,
         productAccountUpdateResponseFields,
