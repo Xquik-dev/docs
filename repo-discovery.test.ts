@@ -107,8 +107,14 @@ const REQUIRED_BILLING_MONITOR_SNIPPETS = [
   'Creating or reactivating a keyword monitor also requires at least 22 available credits',
   'New active monitors are due for billing immediately',
   '`nextBillingAt`',
+  '`monitorsUsed`, `monitorBilling.activeHourlyBurn`, and `monitorBilling.activeDailyEstimate` include active account monitors and active keyword monitors.',
   'A USD 10 top-up adds 66,666 credits',
   'Eligible MPP read endpoints can also be paid per request without a subscription.',
+] as const;
+
+const REQUIRED_ACCOUNT_API_SNIPPETS = [
+  'Number of currently active account monitors and keyword monitors.',
+  '`monitorsUsed`, `monitorBilling.activeHourlyBurn`, and `monitorBilling.activeDailyEstimate` include active account monitors and active keyword monitors.',
 ] as const;
 
 const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
@@ -472,6 +478,16 @@ describe('repository discovery', (): void => {
           REQUIRED_BILLING_MONITOR_SNIPPETS,
         ),
       ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps account usage fields aligned with monitor billing behavior', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/account/get.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(source, 'Account API docs', REQUIRED_ACCOUNT_API_SNIPPETS),
     ).toStrictEqual([]);
   });
 
