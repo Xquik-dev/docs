@@ -57,6 +57,16 @@ const FORBIDDEN_MCP_CONTRACT_SNIPPETS = [
   'returns the same response shapes documented here. No field name mapping is needed.',
 ] as const;
 
+const REQUIRED_BILLING_RECOVERY_SNIPPETS = [
+  '### Recover from 402',
+  '402 no_credits',
+  '402 insufficient_credits',
+  'https://xquik.com/api/v1/credits',
+  'https://xquik.com/api/v1/credits/topup',
+  'https://xquik.com/api/v1/credits/quick-topup',
+  'If quick top-up returns `no_payment_method`, create a checkout top-up instead.',
+] as const;
+
 const MAX_LLMS_TXT_CHARS = 48_000;
 
 const VAGUE_PUBLIC_POSITIONING = [
@@ -197,6 +207,20 @@ describe('repository discovery', (): void => {
     }
 
     expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps billing recovery steps concrete for 402 failures', (): void => {
+    expect.assertions(1);
+
+    const billing = readFileSync('guides/billing.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        billing,
+        'Billing guide',
+        REQUIRED_BILLING_RECOVERY_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps comparison guides direct and value focused', (): void => {

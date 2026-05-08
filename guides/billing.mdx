@@ -112,6 +112,62 @@ If you need more credits beyond the included monthly allowance, purchase additio
 
 > **Example:** Starter tier (USD 20, 140K credits). If you consume all included credits and top up 60K more, the top-up costs 60K x USD 0.00015 = USD 9.00.
 
+### Recover from 402
+
+When a metered call returns `402 no_credits` or `402 insufficient_credits`, keep the failed request body, top up, then retry the same metered call.
+
+1. Check the current balance:
+
+```bash
+curl -s https://xquik.com/api/v1/credits \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```json
+{
+  "balance": "450",
+  "lifetime_purchased": "1000",
+  "lifetime_used": "550",
+  "auto_topup_enabled": false,
+  "auto_topup_amount_dollars": 10,
+  "auto_topup_threshold": "50000"
+}
+```
+
+2. Create a checkout top-up when no saved payment method is available:
+
+```bash
+curl -s -X POST https://xquik.com/api/v1/credits/topup \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{"dollars": 10}' | jq
+```
+
+```json
+{
+  "url": "https://xquik.com/billing/checkout/session"
+}
+```
+
+3. Use quick top-up only when the account already has a saved payment method:
+
+```bash
+curl -s -X POST https://xquik.com/api/v1/credits/quick-topup \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{"dollars": 25}' | jq
+```
+
+```json
+{
+  "outcome": "charged",
+  "balance": "1450",
+  "credits": "1000"
+}
+```
+
+If quick top-up returns `no_payment_method`, create a checkout top-up instead. If it returns `requires_action`, complete the payment confirmation flow before retrying the metered API call.
+
 ## Pay-per-use (MPP)
 
 31 X-API read-only endpoints accept [Machine Payments Protocol](/mpp/overview) payments. No subscription required - pay per call with Tempo (USDC). Media downloads require API key or session-cookie authentication because they create gallery links tied to the authenticated account.
