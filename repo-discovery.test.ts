@@ -14,6 +14,8 @@ const SKIPPED_PUBLIC_SCAN_DIRS = new Set([
   '.github',
 ] as const);
 
+const CREDITS_QUICK_TOPUP_PAGE = 'api-reference/credits/quick-topup.mdx';
+
 const REQUIRED_README_SNIPPETS = [
   'tweet search',
   'user lookup',
@@ -98,6 +100,9 @@ const REQUIRED_BILLING_RECOVERY_SNIPPETS = [
   'https://xquik.com/api/v1/credits',
   'https://xquik.com/api/v1/credits/topup',
   'https://xquik.com/api/v1/credits/quick-topup',
+  'A USD 25 quick top-up adds 166,666 credits',
+  '"balance": "167116"',
+  '"credits": "166666"',
   'If quick top-up returns `no_payment_method`, create a checkout top-up instead.',
 ] as const;
 
@@ -135,6 +140,17 @@ const FORBIDDEN_BILLING_CARRYOVER_SNIPPETS = [
   'Every subscription includes a monthly credit allowance that resets each billing period.',
   'Unused credits **do not carry over**',
   'No. Credits reset to zero each billing period.',
+] as const;
+
+const REQUIRED_QUICK_TOPUP_PAGE_SNIPPETS = [
+  'At USD 0.00015 per credit, a USD 25 quick top-up adds 166,666 credits',
+  '"balance": "466666"',
+  '"credits": "166666"',
+] as const;
+
+const FORBIDDEN_TOPUP_EXAMPLE_SNIPPETS = [
+  '"balance": "1450"',
+  '"credits": "1000"',
 ] as const;
 
 const REQUIRED_ACCOUNT_API_SNIPPETS = [
@@ -713,6 +729,33 @@ describe('repository discovery', (): void => {
 
     expect(
       collectSnippetFindings(source, 'Account API docs', REQUIRED_ACCOUNT_API_SNIPPETS),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps quick top-up examples aligned with PAYG credit conversion', (): void => {
+    expect.assertions(1);
+
+    const quickTopupPage = readFileSync(CREDITS_QUICK_TOPUP_PAGE, 'utf8');
+    const billing = readFileSync('guides/billing.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          quickTopupPage,
+          'Quick top-up API docs',
+          REQUIRED_QUICK_TOPUP_PAGE_SNIPPETS,
+        ),
+        ...FORBIDDEN_TOPUP_EXAMPLE_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            quickTopupPage.includes(snippet) || billing.includes(snippet)
+              ? [
+                  {
+                    issue: `Credit top-up docs contain stale example value ${snippet}.`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
