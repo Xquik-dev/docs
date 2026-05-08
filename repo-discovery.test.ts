@@ -108,6 +108,11 @@ const REQUIRED_BILLING_MONITOR_SNIPPETS = [
   'New active monitors are due for billing immediately',
   '`nextBillingAt`',
   '`monitorsUsed`, `monitorBilling.activeHourlyBurn`, and `monitorBilling.activeDailyEstimate` include active account monitors and active keyword monitors.',
+  '### Plan monitor credits before you monitor tweets',
+  'Use `GET /account` before creating more tweet monitors or tweet alerts.',
+  'Each active account monitor or keyword monitor adds `21` credits to `monitorBilling.activeHourlyBurn` and `500` credits to `monitorBilling.activeDailyEstimate`.',
+  '| 5 | 105 credits/hour | 2,500 credits/day | 22 |',
+  'If `creditInfo.balance` is below the next hourly burn, top up before enabling more monitors.',
   'A USD 10 top-up adds 66,666 credits',
   'Eligible MPP read endpoints can also be paid per request without a subscription.',
 ] as const;
