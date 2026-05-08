@@ -199,6 +199,17 @@ const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   'Do not pass multiple IDs, an empty array, or `reply_to_message_id`',
 ] as const;
 
+const REQUIRED_SEND_DM_API_SNIPPETS = [
+  'Twitter DM API',
+  'X direct message API',
+  'send DM with media',
+  '## Send with media',
+  'Upload media first with [Upload Media](/api-reference/x-write/upload-media)',
+  '`media_ids` must contain exactly one uploaded media ID.',
+  'Empty arrays, multiple IDs, and `reply_to_message_id` return `400 invalid_input`.',
+  'Empty arrays and multiple IDs are rejected.',
+] as const;
+
 const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   '## Integration Handoff Matrix',
   '`POST /monitors`, then `GET /events`',
@@ -642,6 +653,20 @@ describe('repository discovery', (): void => {
         source,
         'Direct message workflow guide',
         REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Send DM API page clear about media attachments', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x-write/send-dm.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Send DM API docs',
+        REQUIRED_SEND_DM_API_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
