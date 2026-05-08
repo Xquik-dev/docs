@@ -67,6 +67,15 @@ const REQUIRED_BILLING_RECOVERY_SNIPPETS = [
   'If quick top-up returns `no_payment_method`, create a checkout top-up instead.',
 ] as const;
 
+const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
+  'follower_explorer',
+  'resultsLimit',
+  'GET /extractions/{id}/export?format=csv',
+  'x_user_id',
+  'HubSpot',
+  'Salesforce Bulk API 2.0',
+] as const;
+
 const MAX_LLMS_TXT_CHARS = 48_000;
 
 const VAGUE_PUBLIC_POSITIONING = [
@@ -219,6 +228,20 @@ describe('repository discovery', (): void => {
         billing,
         'Billing guide',
         REQUIRED_BILLING_RECOVERY_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps follower export CRM handoff steps concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/follower-export-crm.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Follower export CRM guide',
+        REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
