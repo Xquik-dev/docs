@@ -76,6 +76,16 @@ const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   'Salesforce Bulk API 2.0',
 ] as const;
 
+const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
+  'API by Zapier',
+  'Webhooks by Zapier',
+  'Zapier Platform CLI',
+  'REST Hooks',
+  'bundle.targetUrl',
+  '20,000 requests every 5 minutes',
+  '/guides/zapier',
+] as const;
+
 const MAX_LLMS_TXT_CHARS = 48_000;
 
 const VAGUE_PUBLIC_POSITIONING = [
@@ -242,6 +252,20 @@ describe('repository discovery', (): void => {
         source,
         'Follower export CRM guide',
         REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps Zapier comparison workflow details source-backed', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/zapier.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Zapier alternative',
+        REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
