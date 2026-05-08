@@ -204,6 +204,11 @@ const FORBIDDEN_PUBLIC_APIFY_MARKETPLACE_SNIPPETS = [
   ['Store', 'rankings', 'change'].join(' '),
 ] as const;
 
+const FORBIDDEN_STALE_CREDIT_COST_SNIPPETS = [
+  'Credits are deducted per API call (1-10 credits depending on the operation).',
+  'Each operation costs 1-10 credits depending on the endpoint.',
+] as const;
+
 const MAX_LLMS_TXT_CHARS = 48_000;
 
 const VAGUE_PUBLIC_POSITIONING = [
@@ -290,6 +295,25 @@ function collectPublicApifyMarketplaceFindings(): readonly DiscoveryFinding[] {
         findings.push({
           file,
           issue: `Public Markdown freezes volatile Apify marketplace claim "${snippet}".`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
+function collectStaleCreditCostFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const file of listPublicMarkdownFiles()) {
+    const source = readFileSync(file, 'utf8');
+
+    for (const snippet of FORBIDDEN_STALE_CREDIT_COST_SNIPPETS) {
+      if (source.includes(snippet)) {
+        findings.push({
+          file,
+          issue: `Public Markdown contains stale credit cost wording "${snippet}".`,
         });
       }
     }
@@ -543,6 +567,12 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     expect(collectPublicApifyMarketplaceFindings()).toStrictEqual([]);
+  });
+
+  it('keeps public credit cost wording aligned with billing model', (): void => {
+    expect.assertions(1);
+
+    expect(collectStaleCreditCostFindings()).toStrictEqual([]);
   });
 
   it('keeps comparison guides direct and value focused', (): void => {
