@@ -3,7 +3,9 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const CONTEXT7_LIBRARY_URL = 'https://context7.com/xquik-dev/xquik-docs';
+const CONTEXT7_WEBSITE_URL = 'https://context7.com/websites/xquik';
 const PUBLIC_KEY_PREFIX = 'pk_';
+const CONTEXT7_PUBLIC_KEY = 'pk_oCPeRRqZFJsY4cCUSotDD';
 const REQUIRED_EXCLUDED_FILES = [
   '.gitignore',
   '.mintignore',
@@ -66,6 +68,10 @@ function readContext7Config(): Context7Config {
   return JSON.parse(readFileSync('context7.json', 'utf8')) as Context7Config;
 }
 
+function readContext7WebsiteClaim(): Context7Config {
+  return JSON.parse(readFileSync('docs/context7.json', 'utf8')) as Context7Config;
+}
+
 function missingEntries(
   actual: readonly string[] | undefined,
   expected: readonly string[],
@@ -110,5 +116,14 @@ describe('Context7 configuration', (): void => {
     );
 
     expect(missingRuleSnippets).toStrictEqual([]);
+  });
+
+  it('keeps the public website ownership claim exact', (): void => {
+    expect.assertions(2);
+
+    const claim = readContext7WebsiteClaim();
+
+    expect(claim.url).toBe(CONTEXT7_WEBSITE_URL);
+    expect(claim.public_key).toBe(CONTEXT7_PUBLIC_KEY);
   });
 });
