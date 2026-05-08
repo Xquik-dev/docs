@@ -323,6 +323,16 @@ const REQUIRED_TWEETDECK_ALTERNATIVE_SNIPPETS = [
   'Official X Premium terms',
 ] as const;
 
+const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
+  'schedule posts, review inboxes, analyze campaigns, search tweets, export followers, monitor accounts or keywords, send webhooks',
+  'Social media management, publishing, engagement, listening, analytics, ads, and enterprise collaboration suite.',
+  "Hootsuite's platform page lists social scheduling, AI writing, recommended posting times, bulk scheduling, private/public messaging inboxes, saved replies, automated tagging, assignments, listening streams, sentiment, reports, ads, and marketing integrations.",
+  'tweet IDs, author IDs, timestamps, post results, CSV/JSON/XLSX exports, webhook signatures, and error handling.',
+  'Hootsuite seats, social accounts, analytics, approvals, listening, and Enterprise add-ons',
+  'Official Hootsuite platform',
+  'Official Hootsuite plans',
+] as const;
+
 const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
   'The public Xquik profile currently shows 2 public Actors',
   '`xquik/x-tweet-scraper`',
@@ -841,6 +851,20 @@ describe('repository discovery', (): void => {
         source,
         'TweetDeck alternative',
         REQUIRED_TWEETDECK_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Hootsuite alternative focused on social-suite handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/hootsuite.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Hootsuite alternative',
+        REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
