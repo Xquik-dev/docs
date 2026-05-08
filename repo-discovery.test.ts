@@ -343,6 +343,16 @@ const REQUIRED_SPROUT_SOCIAL_ALTERNATIVE_SNIPPETS = [
   'Official Sprout Social pricing',
 ] as const;
 
+const REQUIRED_BUFFER_ALTERNATIVE_SNIPPETS = [
+  'plan posts, schedule threads, manage comments, analyze posts, search tweets, export followers, monitor accounts or keywords, send webhooks',
+  'Social media scheduling, publishing, analytics, community, and collaboration platform.',
+  "Buffer's official pages list supported channels for Bluesky, Facebook, Google Business Profile, Instagram, LinkedIn, Mastodon, Pinterest, Threads, TikTok, X, and YouTube; publishing features for queues, visual calendars, threaded posts, AI Assistant, first-comment scheduling, channel groups, and hashtag manager; Community features for cross-platform comment replies, notifications, filters, comment score, saved replies, AI replies, and turning comments into posts.",
+  'tweet IDs, author IDs, timestamps, post results, CSV/JSON/XLSX exports, webhook signatures, and error handling.',
+  'Buffer channels, scheduled-post volume, Community replies, analytics reports, approval workflows, and integrations',
+  'Official Buffer publish',
+  'Official Buffer community',
+] as const;
+
 const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
   'The public Xquik profile currently shows 2 public Actors',
   '`xquik/x-tweet-scraper`',
@@ -889,6 +899,20 @@ describe('repository discovery', (): void => {
         source,
         'Sprout Social alternative',
         REQUIRED_SPROUT_SOCIAL_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Buffer alternative focused on social-scheduling handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/buffer.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Buffer alternative',
+        REQUIRED_BUFFER_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
