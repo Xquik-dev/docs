@@ -109,6 +109,7 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'POST /support/tickets/{id}/messages',
   'POST /webhooks',
   'POST /webhooks/{id}/test',
+  'POST /x/account-connection-challenges/{id}/submit',
   'POST /x/accounts',
   'POST /x/accounts/{id}/reauth',
   'POST /x/accounts/bulk-retry',

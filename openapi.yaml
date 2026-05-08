@@ -4648,6 +4648,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SanitizedXAccount'
+        '202':
+          description: Email verification code required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/XAccountConnectionChallenge'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -4660,6 +4666,65 @@ paths:
           $ref: '#/components/responses/ConnectRateLimitExceeded'
         '502':
           $ref: '#/components/responses/ConnectUserLookupFailed'
+        '503':
+          $ref: '#/components/responses/ConnectServiceUnavailable'
+
+  /x/account-connection-challenges/{id}/submit:
+    post:
+      operationId: submitXAccountConnectionChallenge
+      summary: Submit X account email verification code
+      tags: [X Accounts]
+      security:
+        - apiKey: []
+        - oauthBearer: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        description: Email verification code requested during account connect.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email_code]
+              properties:
+                email_code:
+                  type: string
+                  description: Code sent to the account email.
+                  example: '123456'
+            example:
+              email_code: '123456'
+      responses:
+        '201':
+          description: X account connected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SanitizedXAccount'
+        '202':
+          description: Email verification code required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/XAccountConnectionChallenge'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ConnectAlreadyConnected'
+        '410':
+          description: Verification code expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/ConnectLoginFailed'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
         '503':
           $ref: '#/components/responses/ConnectServiceUnavailable'
 
@@ -8577,6 +8642,35 @@ components:
           type: string
           format: date-time
           example: '2025-03-10T08:30:00Z'
+
+    XAccountConnectionChallenge:
+      description:
+        Resumable account connection challenge. Submit the email code to finish
+        the same connection attempt.
+      type: object
+      required: [object, id, status, expiresAt, message, username]
+      properties:
+        object:
+          type: string
+          enum: [x_account_connection_challenge]
+          example: 'x_account_connection_challenge'
+        id:
+          type: string
+          example: 'xch_8vGd8Y9JvH6dV0xA'
+        status:
+          type: string
+          enum: [requires_email_code]
+          example: 'requires_email_code'
+        expiresAt:
+          type: string
+          format: date-time
+          example: '2026-05-08T12:10:00Z'
+        message:
+          type: string
+          example: 'Enter the email verification code to continue.'
+        username:
+          type: string
+          example: 'elonmusk'
 
     XAccountDetail:
       description:

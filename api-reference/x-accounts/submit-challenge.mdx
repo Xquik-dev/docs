@@ -1,0 +1,211 @@
+---
+title: "Submit X account email code"
+description: "Submit the email verification code returned during X account connection"
+api: "POST /x/account-connection-challenges/{id}/submit"
+keywords: ["x accounts", "email code", "verification", "connect", "challenge"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+<Callout icon="circle-check" color="#16a34a">
+  **Free** - does not consume credits
+</Callout>
+
+Use this endpoint after [Connect X Account](/api-reference/x-accounts/connect) returns `202 Email Code Required`. Submit the code from the account email inbox before `expiresAt`.
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://xquik.com/api/v1/x/account-connection-challenges/xch_8vGd8Y9JvH6dV0xA/submit \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{ "email_code": "123456" }' | jq
+  ```
+
+  ```javascript Node.js
+  const response = await fetch(
+    "https://xquik.com/api/v1/x/account-connection-challenges/xch_8vGd8Y9JvH6dV0xA/submit",
+    {
+      method: "POST",
+      headers: {
+        "x-api-key": "xq_YOUR_KEY_HERE",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email_code: "123456" }),
+    },
+  );
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  response = requests.post(
+      "https://xquik.com/api/v1/x/account-connection-challenges/xch_8vGd8Y9JvH6dV0xA/submit",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      json={"email_code": "123456"},
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      body, _ := json.Marshal(map[string]string{
+          "email_code": "123456",
+      })
+
+      req, err := http.NewRequest(
+          "POST",
+          "https://xquik.com/api/v1/x/account-connection-challenges/xch_8vGd8Y9JvH6dV0xA/submit",
+          bytes.NewReader(body),
+      )
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Content-Type", "application/json")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  Challenge ID returned by [Connect X Account](/api-reference/x-accounts/connect).
+</ParamField>
+
+## Body
+
+<ParamField body="email_code" type="string" required>
+  Email verification code for the pending connection. Codes from 4 to 64 characters are accepted. Spaces are stripped before submission.
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="201 Created">
+    <ResponseField name="id" type="string">Unique account ID.</ResponseField>
+    <ResponseField name="xUsername" type="string">Connected X username.</ResponseField>
+    <ResponseField name="xUserId" type="string">X user ID.</ResponseField>
+    <ResponseField name="status" type="string">Account connection status (e.g. `"active"`).</ResponseField>
+    <ResponseField name="health" type="string">Derived login/cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`. See [Account health](/api-reference/x-accounts/list#account-health) for meanings.</ResponseField>
+    <ResponseField name="createdAt" type="string">ISO 8601 timestamp of when the account was connected.</ResponseField>
+    <ResponseField name="loginCountry" type="string">Optional ISO 3166-1 alpha-2 country code (for example `"US"`). Present only when the declared proxy region was unavailable and login used a one-time US region. Omitted on normal logins.</ResponseField>
+
+    ```json
+    {
+      "id": "3",
+      "xUsername": "elonmusk",
+      "xUserId": "44196397",
+      "status": "active",
+      "health": "healthy",
+      "createdAt": "2026-02-20T08:15:00.000Z"
+    }
+    ```
+  </Tab>
+  <Tab title="202 Email Code Required">
+    <ResponseField name="object" type="string">Always `x_account_connection_challenge`.</ResponseField>
+    <ResponseField name="id" type="string">Challenge ID to submit with the next email verification code.</ResponseField>
+    <ResponseField name="status" type="string">Always `requires_email_code`.</ResponseField>
+    <ResponseField name="expiresAt" type="string">ISO 8601 expiration time for the challenge.</ResponseField>
+    <ResponseField name="message" type="string">Human-readable next step.</ResponseField>
+    <ResponseField name="username" type="string">X username being connected.</ResponseField>
+
+    ```json
+    {
+      "object": "x_account_connection_challenge",
+      "id": "xch_8vGd8Y9JvH6dV0xA",
+      "status": "requires_email_code",
+      "expiresAt": "2026-05-08T12:10:00Z",
+      "message": "Enter the email verification code to continue.",
+      "username": "elonmusk"
+    }
+    ```
+
+    The connection still needs a valid email code. Submit the new code to the same endpoint.
+  </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input", "message": "Invalid input. Check the request body." }
+    ```
+    Missing `email_code`, invalid JSON, or a code outside the accepted length.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated", "message": "Missing or invalid API key" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "connection_challenge_not_found", "message": "Connection challenge not found." }
+    ```
+    The challenge ID does not exist or does not belong to the authenticated user.
+  </Tab>
+  <Tab title="409 Conflict">
+    ```json
+    { "error": "connection_challenge_inactive", "message": "Connection challenge is no longer active." }
+    ```
+    The challenge was already completed, failed, expired, or replaced.
+  </Tab>
+  <Tab title="410 Expired">
+    ```json
+    { "error": "connection_challenge_expired", "message": "Verification code expired. Start again." }
+    ```
+    Start a new account connection to receive a fresh challenge.
+  </Tab>
+  <Tab title="422 Login Failed">
+    ```json
+    { "error": "login_failed", "message": "Login failed. Check credentials and try again." }
+    ```
+    The code or account login state was rejected. Start a new connection if the account requires fresh credentials.
+  </Tab>
+  <Tab title="429 Rate Limit Exceeded">
+    ```json
+    { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
+    ```
+    Wait for the `Retry-After` header before retrying.
+  </Tab>
+  <Tab title="503 Service Unavailable">
+    ```json
+    { "error": "service_unavailable", "message": "Service temporarily unavailable. Try again later." }
+    ```
+    Retry after a short delay.
+  </Tab>
+</Tabs>
+
+<Note>
+  **Related:** [Connect X Account](/api-reference/x-accounts/connect) starts the challenge, and [List X Accounts](/api-reference/x-accounts/list) verifies the account after connection.
+</Note>

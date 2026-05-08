@@ -273,6 +273,8 @@ const REMOVE_FOLLOWER_PAGE = 'api-reference/x-write/remove-follower.mdx';
 const X_ACCOUNT_LIST_PAGE = 'api-reference/x-accounts/list.mdx';
 const X_ACCOUNT_DETAIL_PAGE = 'api-reference/x-accounts/get.mdx';
 const X_ACCOUNT_CONNECT_PAGE = 'api-reference/x-accounts/connect.mdx';
+const X_ACCOUNT_CHALLENGE_SUBMIT_PAGE =
+  'api-reference/x-accounts/submit-challenge.mdx';
 const X_ACCOUNT_REAUTH_PAGE = 'api-reference/x-accounts/reauth.mdx';
 const X_ACCOUNT_BULK_RETRY_PAGE = 'api-reference/x-accounts/bulk-retry.mdx';
 const X_ACCOUNT_DISCONNECT_PAGE = 'api-reference/x-accounts/disconnect.mdx';
@@ -1398,6 +1400,10 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const xAccount = schemaPropertyNames(spec, 'XAccount');
   const xAccountDetail = schemaPropertyNames(spec, 'XAccountDetail');
   const sanitizedXAccount = schemaPropertyNames(spec, 'SanitizedXAccount');
+  const xAccountConnectionChallenge = schemaPropertyNames(
+    spec,
+    'XAccountConnectionChallenge',
+  );
   const bulkRetry = propertyNames(
     responseSchema(spec, '/x/accounts/bulk-retry', 'post'),
   );
@@ -1668,9 +1674,26 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       requiredFields: xAccountDetail,
     },
     {
-      allowedFields: sanitizedXAccount,
+      allowedFields: uniqueSorted([
+        ...sanitizedXAccount,
+        ...xAccountConnectionChallenge,
+      ]),
       page: X_ACCOUNT_CONNECT_PAGE,
-      requiredFields: sanitizedXAccount,
+      requiredFields: uniqueSorted([
+        ...sanitizedXAccount,
+        ...xAccountConnectionChallenge,
+      ]),
+    },
+    {
+      allowedFields: uniqueSorted([
+        ...sanitizedXAccount,
+        ...xAccountConnectionChallenge,
+      ]),
+      page: X_ACCOUNT_CHALLENGE_SUBMIT_PAGE,
+      requiredFields: uniqueSorted([
+        ...sanitizedXAccount,
+        ...xAccountConnectionChallenge,
+      ]),
     },
     {
       allowedFields: sanitizedXAccount,
@@ -1898,6 +1921,10 @@ describe('API response field docs', (): void => {
     const productSanitizedXAccountFields = productReturnFieldsFromPath(
       PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
       'formatSanitizedAccount',
+    );
+    const productXAccountConnectionChallengeFields = productReturnFieldsFromPath(
+      PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
+      'formatConnectionChallenge',
     );
     const bulkRetryFields = propertyNames(
       responseSchema(spec, '/x/accounts/bulk-retry', 'post'),
@@ -2401,6 +2428,19 @@ describe('API response field docs', (): void => {
         productSanitizedXAccountFields,
         schemaPropertyNames(spec, 'SanitizedXAccount'),
       ).map((field): string => `SanitizedXAccount is missing ${field}.`),
+      ...setDifference(
+        schemaPropertyNames(spec, 'XAccountConnectionChallenge'),
+        productXAccountConnectionChallengeFields,
+      ).map(
+        (field): string =>
+          `XAccountConnectionChallenge has no product field ${field}.`,
+      ),
+      ...setDifference(
+        productXAccountConnectionChallengeFields,
+        schemaPropertyNames(spec, 'XAccountConnectionChallenge'),
+      ).map(
+        (field): string => `XAccountConnectionChallenge is missing ${field}.`,
+      ),
       ...setDifference(
         bulkRetryFields,
         productBulkRetryResponseFields,
