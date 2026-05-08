@@ -67,6 +67,20 @@ const REQUIRED_BILLING_RECOVERY_SNIPPETS = [
   'If quick top-up returns `no_payment_method`, create a checkout top-up instead.',
 ] as const;
 
+const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
+  '## Integration readiness checklist',
+  '`x-api-key`',
+  '`xquik-api-contract: 2026-04-29`',
+  '`has_more`',
+  '`next_cursor`',
+  '`after` with `nextCursor`',
+  '`cursor` with `next_cursor`',
+  '`402 no_credits`',
+  '`402 insufficient_credits`',
+  '`Retry-After`',
+  '`202 x_write_unconfirmed`',
+] as const;
+
 const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   'follower_explorer',
   'resultsLimit',
@@ -286,6 +300,20 @@ describe('repository discovery', (): void => {
         billing,
         'Billing guide',
         REQUIRED_BILLING_RECOVERY_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the API overview integration checklist concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/overview.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'API overview',
+        REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });

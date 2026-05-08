@@ -111,6 +111,19 @@ curl -s https://xquik.com/api/v1/account \
 
 Replace `xq_YOUR_KEY_HERE` with your actual API key from the [dashboard](https://xquik.com). If you get `401`, double-check that the header name is `x-api-key` (lowercase) and the key starts with `xq_`.
 
+## Integration readiness checklist
+
+Run this checklist before connecting a production client, workflow builder, or agent to the API.
+
+| Check | Verify | Failure mode to handle |
+| --- | --- | --- |
+| Authentication | Send `x-api-key` on subscription endpoints or use the documented MPP flow on eligible X data endpoints. | `401 unauthenticated`, `402 no_subscription`, or an MPP 402 payment challenge. |
+| Response contract | Default REST examples use the v1 shape. Send `xquik-api-contract: 2026-04-29` only when your client expects snake_case, structured errors, `has_more`, and `next_cursor`. | Field-name drift between generated clients, MCP calls, and hand-written REST code. |
+| Pagination | Use `after` with `nextCursor` on events, draws, extractions, and drafts. Use `cursor` with `next_cursor` on X data endpoints. | Missing pages, duplicate records, or clients that decode opaque cursors. |
+| Billing | Handle `402 no_credits` and `402 insufficient_credits`. Estimate extraction cost before creating extraction jobs. | Partial paid result pages, failed draws, or jobs blocked by credit balance. |
+| Rate limits | Respect `Retry-After`. Read calls are 10 per 1s, write calls are 30 per 60s, and delete calls are 15 per 60s. | Repeated `429 rate_limit_exceeded` responses and avoidable retry storms. |
+| Ambiguous writes | Treat `202 x_write_unconfirmed` as a manual verification step before retrying. | Duplicate tweets, repeated actions, or inconsistent operator handoff. |
+
 ## Rate limits
 
 | Tier | Methods | Limit |
