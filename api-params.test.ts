@@ -27,6 +27,12 @@ interface FieldFinding {
   readonly operation: string;
 }
 
+interface DocumentedOperationField {
+  readonly field: string;
+  readonly method: string;
+  readonly path: string;
+}
+
 interface OpenApiParameter {
   readonly $ref?: string;
   readonly in?: string;
@@ -306,11 +312,84 @@ function collectRequiredFieldFindings(spec: OpenApiSpec): readonly FieldFinding[
   return findings;
 }
 
+function collectDocumentedRequestBodyFieldFindings(
+  spec: OpenApiSpec,
+  expectedFields: readonly DocumentedOperationField[],
+): readonly FieldFinding[] {
+  const apiDocs = readApiDocs();
+  const findings: FieldFinding[] = [];
+
+  for (const expected of expectedFields) {
+    const apiDoc = apiDocs.find(
+      (doc): boolean =>
+        doc.method === expected.method && doc.path === expected.path,
+    );
+    const operation = apiDoc === undefined ? undefined : getOperation(spec, apiDoc);
+    const operationLabel = `${expected.method.toUpperCase()} ${expected.path}`;
+
+    if (apiDoc === undefined || operation === undefined) {
+      findings.push({
+        field: expected.field,
+        file: apiDoc?.file ?? expected.path,
+        issue: 'API reference frontmatter does not match openapi.yaml.',
+        kind: 'body',
+        operation: operationLabel,
+      });
+      continue;
+    }
+
+    if (!requestBodyFields(spec, operation).properties.includes(expected.field)) {
+      findings.push({
+        field: expected.field,
+        file: apiDoc.file,
+        issue: 'Expected OpenAPI field is missing.',
+        kind: 'body',
+        operation: operationLabel,
+      });
+    }
+
+    const docsFields = documentedFields(apiDoc.source, 'body');
+    if (!docsFields.some((field): boolean => field.name === expected.field)) {
+      findings.push({
+        field: expected.field,
+        file: apiDoc.file,
+        issue: 'Expected API reference field is missing.',
+        kind: 'body',
+        operation: operationLabel,
+      });
+    }
+  }
+
+  return findings;
+}
+
 describe('API reference required fields', (): void => {
   it('documents every required OpenAPI path, query, and body field', (): void => {
     expect.assertions(1);
 
     const spec = parseYaml(readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'));
     expect(collectRequiredFieldFindings(spec)).toStrictEqual([]);
+  });
+});
+
+describe('API reference cost-control fields', (): void => {
+  it('keeps extraction resultsLimit documented and present in OpenAPI', (): void => {
+    expect.assertions(1);
+
+    const spec = parseYaml(readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'));
+    expect(
+      collectDocumentedRequestBodyFieldFindings(spec, [
+        {
+          field: 'resultsLimit',
+          method: 'post',
+          path: '/extractions',
+        },
+        {
+          field: 'resultsLimit',
+          method: 'post',
+          path: '/extractions/estimate',
+        },
+      ]),
+    ).toStrictEqual([]);
   });
 });
