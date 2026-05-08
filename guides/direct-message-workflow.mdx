@@ -1,20 +1,21 @@
 ---
 title: Send direct messages with the X API
-description: Look up a user ID, send an X direct message, attach one uploaded media item, and handle DM write errors.
-keywords: ["send direct messages", "Twitter DM API", "X direct message API", "send DM", "send DM with media", "media_ids", "X API"]
+description: Look up a user ID, read DM history, send an X direct message, attach one uploaded media item, and handle DM errors.
+keywords: ["send direct messages", "Twitter DM API", "X direct message API", "send DM", "DM history", "direct message history", "send DM with media", "media_ids", "X API"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use this workflow when a support, sales, community, or agent system needs to send direct messages from a connected X account. Xquik sends text DMs with `POST /x/dm/{userId}` and can attach one uploaded media item with `media_ids`.
+Use this workflow when a support, sales, community, or agent system needs to read direct message history and send direct messages from a connected X account. Xquik reads a participant-scoped DM conversation with `GET /x/dm/{userId}/history`, sends text DMs with `POST /x/dm/{userId}`, and can attach one uploaded media item with `media_ids`.
 
 ## When to use this workflow
 
 | Need | Use |
 |------|-----|
 | Convert a username to a recipient ID | `GET /x/users/{id}` |
+| Read direct message history | `GET /x/dm/{userId}/history` with `account` |
 | Send a text direct message | `POST /x/dm/{userId}` with `account` and `text` |
 | Send a direct message with media | Upload media first, then pass one `mediaId` in `media_ids` |
 | Avoid bad retries | Retry only `429` and `503`; fix `400`, `402`, `403`, and `422` first |
@@ -24,6 +25,7 @@ Use this workflow when a support, sales, community, or agent system needs to sen
 | Endpoint | Returned data |
 |----------|---------------|
 | `GET /x/users/{id}` | Recipient `id`, `username`, `name`, optional `canDm`, and profile fields |
+| `GET /x/dm/{userId}/history` | `messages`, `has_next_page`, and `next_cursor` |
 | `POST /x/dm/{userId}` | `messageId` and `success` |
 | `POST /x/media` | `mediaId`, `mediaUrl`, and `success` |
 
@@ -47,7 +49,35 @@ curl https://xquik.com/api/v1/x/users/xquikcom \
 
 When `canDm` is returned, use it as a preflight hint. If the field is omitted, rely on the DM write response.
 
-## Step 2: Send a text direct message
+## Step 2: Read direct message history
+
+Use the sender account as the `account` query parameter. The connected account must be a participant in the conversation, because direct messages are private and user-scoped.
+
+```bash
+curl -G https://xquik.com/api/v1/x/dm/987654321/history \
+  --data-urlencode "account=myxhandle" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```json
+{
+  "messages": [
+    {
+      "id": "1893726451029384191",
+      "text": "Can you send the setup link?",
+      "senderId": "987654321",
+      "receiverId": "123456789",
+      "createdAt": "2026-02-24T10:00:00.000Z"
+    }
+  ],
+  "has_next_page": true,
+  "next_cursor": "1893726451029384190"
+}
+```
+
+For older messages, pass the previous `next_cursor` as `cursor`. Store each message `id`, `text`, `senderId`, `receiverId`, `createdAt`, and optional `mediaUrl` in your support ticket, CRM note, or JSON export.
+
+## Step 3: Send a text direct message
 
 Use a connected account as the sender. The `account` value can be the connected account username or account ID.
 
@@ -68,7 +98,7 @@ curl -X POST https://xquik.com/api/v1/x/dm/987654321 \
 }
 ```
 
-## Step 3: Send a direct message with media
+## Step 4: Send a direct message with media
 
 Upload media first, then send exactly one uploaded media ID in `media_ids`.
 
@@ -100,6 +130,7 @@ DMs accept one uploaded media ID. Do not pass multiple IDs, an empty array, or `
 | Action | Cost |
 |--------|------|
 | Look up recipient with `GET /x/users/{id}` | 1 credit per call |
+| Read DM history with `GET /x/dm/{userId}/history` | 1 credit per message returned |
 | Upload media with `POST /x/media` | 10 credits per upload call |
 | Send DM with `POST /x/dm/{userId}` | 10 credits per call |
 
@@ -108,8 +139,10 @@ DMs accept one uploaded media ID. Do not pass multiple IDs, an empty array, or `
 | Failure | What to do |
 |---------|------------|
 | `400 invalid_input` | Check `account`, `text`, `userId`, and one-item `media_ids`. |
+| `400 account_required` | Pass the connected sender handle as `account` when reading DM history. |
 | `402 no_subscription` or `402 insufficient_credits` | Subscribe or top up credits before retrying. |
 | `403 account_needs_reauth` | Reconnect the sender account from the dashboard. |
+| `403 dm_not_permitted` | Use a connected account that participates in the conversation, or reconnect the account. |
 | `422 x_rejected` or related write codes | Check the recipient, account state, and message content before retrying. |
 | `429` or `503` | Retry with exponential backoff and respect `Retry-After` when present. |
 
@@ -119,10 +152,11 @@ DMs accept one uploaded media ID. Do not pass multiple IDs, an empty array, or `
 |---------|-----------------|
 | Sender | Connected X account username or ID in `account`. |
 | Recipient | Numeric user ID in `POST /x/dm/{userId}`. |
+| History | For DM history exports, store `messages`, `has_next_page`, and `next_cursor`; pass `cursor` to fetch older messages. |
 | Text | Required `text`, up to 10,000 characters. |
 | Media | Optional one-item `media_ids` array containing a `mediaId` from `POST /x/media`. |
 | Response | Store `messageId` for audit trails or support logs. |
 
 <Note>
-  **Related:** [Send Direct Message](/api-reference/x-write/send-dm) &middot; [Get User](/api-reference/x/get-user) &middot; [Media Upload Workflow](/guides/media-upload-workflow)
+  **Related:** [Send Direct Message](/api-reference/x-write/send-dm) &middot; [Get DM History](/api-reference/x/dm-history) &middot; [Get User](/api-reference/x/get-user) &middot; [Media Upload Workflow](/guides/media-upload-workflow)
 </Note>
