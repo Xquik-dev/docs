@@ -313,6 +313,16 @@ const REQUIRED_TALKWALKER_ALTERNATIVE_SNIPPETS = [
   'Official Talkwalker site',
 ] as const;
 
+const REQUIRED_TWEETDECK_ALTERNATIVE_SNIPPETS = [
+  'TweetDeck/X Pro is a live X workspace for columns, search, scheduled posts, and manual monitoring.',
+  'X Pro help lists a full post composer, scheduled posts, advanced search, top/latest post order, Decks, a column creator, video docking, and account switching.',
+  'search tweets, fetch users, export followers, post tweets, upload media, send DMs, monitor keywords, and receive webhook events',
+  'Compare columns, saved searches, tweet IDs, author IDs, timestamps, post results, export formats, webhook payloads, and the handoff to your production system.',
+  'Active Xquik monitors cost 21 credits per hour while enabled, and webhook plus stored-event delivery is included.',
+  'Official X Pro help',
+  'Official X Premium terms',
+] as const;
+
 const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
   'The public Xquik profile currently shows 2 public Actors',
   '`xquik/x-tweet-scraper`',
@@ -817,6 +827,20 @@ describe('repository discovery', (): void => {
         source,
         'Talkwalker alternative',
         REQUIRED_TALKWALKER_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the TweetDeck alternative current for X Pro and monitor handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/tweetdeck.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'TweetDeck alternative',
+        REQUIRED_TWEETDECK_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
