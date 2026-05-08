@@ -75,7 +75,10 @@ function verifyWebhook(req, secret) {
   const signingString = `${timestamp}.${nonce}.${rawBody}`;
   const expected =
     "sha256=" + createHmac("sha256", secret).update(signingString).digest("hex");
-  return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  const expectedBuffer = Buffer.from(expected);
+  const signatureBuffer = Buffer.from(signature);
+  if (expectedBuffer.length !== signatureBuffer.length) return false;
+  return timingSafeEqual(expectedBuffer, signatureBuffer);
 }
 
 // Express example
@@ -159,12 +162,10 @@ var (
 	seenNonces = sync.Map{}
 )
 
-func verifyWebhook(r *http.Request, secret string) bool {
-	timestamp := r.Header.Get("X-Xquik-Timestamp")
-	nonce := r.Header.Get("X-Xquik-Nonce")
-	signature := r.Header.Get("X-Xquik-Signature")
-	rawBody, _ := io.ReadAll(r.Body)
-
+func verifyWebhook(payload []byte, headers http.Header, secret string) bool {
+	timestamp := headers.Get("X-Xquik-Timestamp")
+	nonce := headers.Get("X-Xquik-Nonce")
+	signature := headers.Get("X-Xquik-Signature")
 	if timestamp == "" || nonce == "" || signature == "" {
 		return false
 	}
@@ -182,11 +183,18 @@ func verifyWebhook(r *http.Request, secret string) bool {
 		return false
 	}
 
+	seenNonces.Range(func(key, value any) bool {
+		expiresAt, ok := value.(int64)
+		if ok && expiresAt <= nowMs {
+			seenNonces.Delete(key)
+		}
+		return true
+	})
 	if _, replayed := seenNonces.LoadOrStore(nonce, nowMs+fiveMinutesMs); replayed {
 		return false
 	}
 
-	signingString := fmt.Sprintf("%s.%s.%s", timestamp, nonce, string(rawBody))
+	signingString := fmt.Sprintf("%s.%s.%s", timestamp, nonce, string(payload))
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(signingString))
 	expected := "sha256=" + hex.EncodeToString(mac.Sum(nil))
@@ -194,7 +202,12 @@ func verifyWebhook(r *http.Request, secret string) bool {
 }
 
 func webhookHandler(w http.ResponseWriter, r *http.Request) {
-	if !verifyWebhook(r, webhookSecret) {
+	payload, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	if !verifyWebhook(payload, r.Header, webhookSecret) {
 		http.Error(w, "Invalid signature", http.StatusUnauthorized)
 		return
 	}

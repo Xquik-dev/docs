@@ -1,21 +1,32 @@
 ---
 title: Workflows
-description: End-to-end integration patterns with complete code examples
-keywords: ["integration patterns", "monitor and poll", "webhooks workflow", "tweet composition", "end-to-end"]
+description: X API workflow guides for tweet monitoring, signed webhooks, MCP agents, follower exports, and tweet composition.
+keywords: ["X API workflows", "Twitter API workflows", "tweet monitoring", "signed webhooks", "follower exports", "MCP agents", "tweet composition"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-4 complete integration patterns from zero to production. Each workflow includes full code in 4 languages.
+Use these X API workflows to wire Xquik into monitoring dashboards, webhook pipelines, AI agents, data exports, and content tools. Each integration pattern includes copy-ready code in 4 languages.
 
 | Pattern | Best for | Real-time | Setup effort |
 |---------|----------|-----------|-------------|
 | Monitor & poll | Batch processing, dashboards, low-frequency checks | No (interval-based) | Low |
-| Real-time webhooks | Instant notifications, event-driven pipelines | Yes | Medium |
-| AI agent (MCP) | Natural language queries, conversational analysis | Yes | Low |
-| Tweet composition | Algorithm-optimized drafts, content workflows | N/A | Low |
+| Real-time webhooks | Alerts, queues, customer support triage, warehouse sync | Yes | Medium |
+| AI agent (MCP) | Tweet search, user lookups, follower checks, research summaries | Yes | Low |
+| Tweet composition | Draft generation, media upload handoff, reply monitoring | N/A | Low |
+
+## Choose a Workflow
+
+| Outcome | Use this path | Returned data |
+|---------|---------------|---------------|
+| Track competitor or brand posts | Monitor & poll or webhooks | Tweets, replies, quotes, retweets |
+| Send real-time alerts to Slack or a queue | Real-time webhooks | Signed event payloads |
+| Build an AI research assistant | AI agent (MCP) | Tweet search, user profiles, monitor events |
+| Export followers or audiences | Extraction workflow | CSV, JSON, XLSX, or paginated JSON |
+| Score and refine a draft tweet | Tweet composition | Algorithm guidance, refined text, score |
+| Audit giveaway activity | Draws workflow | Eligible participants, winners, archived tweet metrics |
 
 <Tabs>
 <Tab title="Monitor & Poll">
@@ -395,7 +406,10 @@ function verifyWebhook(req, secret) {
   const signingString = `${timestamp}.${nonce}.${rawBody}`;
   const expected =
     "sha256=" + createHmac("sha256", secret).update(signingString).digest("hex");
-  return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  const expectedBuffer = Buffer.from(expected);
+  const signatureBuffer = Buffer.from(signature);
+  if (expectedBuffer.length !== signatureBuffer.length) return false;
+  return timingSafeEqual(expectedBuffer, signatureBuffer);
 }
 
 app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
@@ -423,23 +437,49 @@ app.listen(3000, () => console.log("Webhook server running on :3000"));
 ```python Python (Flask)
 import hmac
 import hashlib
+import time
 from flask import Flask, request
 
 app = Flask(__name__)
 WEBHOOK_SECRET = "your_webhook_secret_here"
+FIVE_MINUTES_MS = 5 * 60 * 1000
+seen_nonces: dict[str, int] = {}
 
-def verify_signature(payload: bytes, signature: str, secret: str) -> bool:
+def verify_signature(payload: bytes, secret: str) -> bool:
+    timestamp = request.headers.get("X-Xquik-Timestamp", "")
+    nonce = request.headers.get("X-Xquik-Nonce", "")
+    signature = request.headers.get("X-Xquik-Signature", "")
+
+    if not (timestamp and nonce and signature):
+        return False
+
+    try:
+        ts = int(timestamp)
+    except ValueError:
+        return False
+
+    now_ms = int(time.time() * 1000)
+    if abs(now_ms - ts) > FIVE_MINUTES_MS:
+        return False
+
+    for key, expires_at in list(seen_nonces.items()):
+        if expires_at <= now_ms:
+            seen_nonces.pop(key, None)
+    if nonce in seen_nonces:
+        return False
+    seen_nonces[nonce] = now_ms + FIVE_MINUTES_MS
+
+    signing_string = f"{timestamp}.{nonce}.".encode() + payload
     expected = "sha256=" + hmac.new(
-        secret.encode(), payload, hashlib.sha256
+        secret.encode(), signing_string, hashlib.sha256
     ).hexdigest()
     return hmac.compare_digest(expected, signature)
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    signature = request.headers.get("X-Xquik-Signature", "")
     payload = request.get_data()
 
-    if not verify_signature(payload, signature, WEBHOOK_SECRET):
+    if not verify_signature(payload, WEBHOOK_SECRET):
         return "Invalid signature", 401
 
     event = request.get_json()
@@ -467,13 +507,52 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
+	"sync"
+	"time"
 )
 
 const webhookSecret = "your_webhook_secret_here"
+const fiveMinutesMs = int64(5 * 60 * 1000)
 
-func verifySignature(payload []byte, signature, secret string) bool {
+var seenNonces = sync.Map{}
+
+func verifySignature(payload []byte, headers http.Header, secret string) bool {
+	timestamp := headers.Get("X-Xquik-Timestamp")
+	nonce := headers.Get("X-Xquik-Nonce")
+	signature := headers.Get("X-Xquik-Signature")
+
+	if timestamp == "" || nonce == "" || signature == "" {
+		return false
+	}
+
+	ts, err := strconv.ParseInt(timestamp, 10, 64)
+	if err != nil {
+		return false
+	}
+	nowMs := time.Now().UnixMilli()
+	diff := nowMs - ts
+	if diff < 0 {
+		diff = -diff
+	}
+	if diff > fiveMinutesMs {
+		return false
+	}
+
+	seenNonces.Range(func(key, value any) bool {
+		expiresAt, ok := value.(int64)
+		if ok && expiresAt <= nowMs {
+			seenNonces.Delete(key)
+		}
+		return true
+	})
+	if _, replayed := seenNonces.LoadOrStore(nonce, nowMs+fiveMinutesMs); replayed {
+		return false
+	}
+
+	signingString := fmt.Sprintf("%s.%s.%s", timestamp, nonce, string(payload))
 	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(payload)
+	mac.Write([]byte(signingString))
 	expected := "sha256=" + hex.EncodeToString(mac.Sum(nil))
 	return hmac.Equal([]byte(expected), []byte(signature))
 }
@@ -485,8 +564,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	signature := r.Header.Get("X-Xquik-Signature")
-	if !verifySignature(payload, signature, webhookSecret) {
+	if !verifySignature(payload, r.Header, webhookSecret) {
 		http.Error(w, "Invalid signature", http.StatusUnauthorized)
 		return
 	}
@@ -514,7 +592,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/webhook", webhookHandler)
 	log.Println("Webhook server running on :3000")
-log.Fatal(http.ListenAndServe(":3000", nil))
+	log.Fatal(http.ListenAndServe(":3000", nil))
 }
 ```
 
