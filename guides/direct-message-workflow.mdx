@@ -1,0 +1,128 @@
+---
+title: Send direct messages with the X API
+description: Look up a user ID, send an X direct message, attach one uploaded media item, and handle DM write errors.
+keywords: ["send direct messages", "Twitter DM API", "X direct message API", "send DM", "send DM with media", "media_ids", "X API"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use this workflow when a support, sales, community, or agent system needs to send direct messages from a connected X account. Xquik sends text DMs with `POST /x/dm/{userId}` and can attach one uploaded media item with `media_ids`.
+
+## When to use this workflow
+
+| Need | Use |
+|------|-----|
+| Convert a username to a recipient ID | `GET /x/users/{id}` |
+| Send a text direct message | `POST /x/dm/{userId}` with `account` and `text` |
+| Send a direct message with media | Upload media first, then pass one `mediaId` in `media_ids` |
+| Avoid bad retries | Retry only `429` and `503`; fix `400`, `402`, `403`, and `422` first |
+
+## Data you get
+
+| Endpoint | Returned data |
+|----------|---------------|
+| `GET /x/users/{id}` | Recipient `id`, `username`, `name`, optional `canDm`, and profile fields |
+| `POST /x/dm/{userId}` | `messageId` and `success` |
+| `POST /x/media` | `mediaId`, `mediaUrl`, and `success` |
+
+## Step 1: Look up the recipient user ID
+
+`POST /x/dm/{userId}` requires the numeric X user ID in the path. If you only have a username, call `GET /x/users/{id}` first.
+
+```bash
+curl https://xquik.com/api/v1/x/users/xquikcom \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```json
+{
+  "id": "987654321",
+  "username": "xquikcom",
+  "name": "Xquik",
+  "canDm": true
+}
+```
+
+When `canDm` is returned, use it as a preflight hint. If the field is omitted, rely on the DM write response.
+
+## Step 2: Send a text direct message
+
+Use a connected account as the sender. The `account` value can be the connected account username or account ID.
+
+```bash
+curl -X POST https://xquik.com/api/v1/x/dm/987654321 \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account": "myxhandle",
+    "text": "Thanks for reaching out. Here is the next step."
+  }' | jq
+```
+
+```json
+{
+  "messageId": "1893726451029384192",
+  "success": true
+}
+```
+
+## Step 3: Send a direct message with media
+
+Upload media first, then send exactly one uploaded media ID in `media_ids`.
+
+```bash
+curl -X POST https://xquik.com/api/v1/x/media \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account": "myxhandle",
+    "url": "https://example.com/support-image.png"
+  }' | jq
+```
+
+```bash
+curl -X POST https://xquik.com/api/v1/x/dm/987654321 \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account": "myxhandle",
+    "text": "Here is the requested image.",
+    "media_ids": ["1893726451023847424"]
+  }' | jq
+```
+
+DMs accept one uploaded media ID. Do not pass multiple IDs, an empty array, or `reply_to_message_id`.
+
+## Costs
+
+| Action | Cost |
+|--------|------|
+| Look up recipient with `GET /x/users/{id}` | 1 credit per call |
+| Upload media with `POST /x/media` | 10 credits per upload call |
+| Send DM with `POST /x/dm/{userId}` | 10 credits per call |
+
+## Error handling
+
+| Failure | What to do |
+|---------|------------|
+| `400 invalid_input` | Check `account`, `text`, `userId`, and one-item `media_ids`. |
+| `402 no_subscription` or `402 insufficient_credits` | Subscribe or top up credits before retrying. |
+| `403 account_needs_reauth` | Reconnect the sender account from the dashboard. |
+| `422 x_rejected` or related write codes | Check the recipient, account state, and message content before retrying. |
+| `429` or `503` | Retry with exponential backoff and respect `Retry-After` when present. |
+
+## Handoff checklist
+
+| Handoff | Required detail |
+|---------|-----------------|
+| Sender | Connected X account username or ID in `account`. |
+| Recipient | Numeric user ID in `POST /x/dm/{userId}`. |
+| Text | Required `text`, up to 10,000 characters. |
+| Media | Optional one-item `media_ids` array containing a `mediaId` from `POST /x/media`. |
+| Response | Store `messageId` for audit trails or support logs. |
+
+<Note>
+  **Related:** [Send Direct Message](/api-reference/x-write/send-dm) &middot; [Get User](/api-reference/x/get-user) &middot; [Media Upload Workflow](/guides/media-upload-workflow)
+</Note>

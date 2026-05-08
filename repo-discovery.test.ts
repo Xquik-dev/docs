@@ -185,6 +185,20 @@ const REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
   'Media IDs are valid for 24 hours',
 ] as const;
 
+const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
+  'send direct messages',
+  'GET /x/users/{id}',
+  'POST /x/dm/{userId}',
+  'POST /x/media',
+  '`messageId`',
+  '`success`',
+  '`media_ids`',
+  'exactly one uploaded media ID',
+  '10 credits per call',
+  '1 credit per call',
+  'Do not pass multiple IDs, an empty array, or `reply_to_message_id`',
+] as const;
+
 const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   '## Integration Handoff Matrix',
   '`POST /monitors`, then `GET /events`',
@@ -614,6 +628,20 @@ describe('repository discovery', (): void => {
         source,
         'Media upload workflow guide',
         REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the direct message workflow aligned with DM API behavior', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/direct-message-workflow.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Direct message workflow guide',
+        REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
