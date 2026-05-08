@@ -55,6 +55,16 @@ const REQUIRED_INTRODUCTION_SNIPPETS = [
   'npx skills add Xquik-dev/x-twitter-scraper',
 ] as const;
 
+const REQUIRED_QUICKSTART_SNIPPETS = [
+  'X API quickstart',
+  '`GET /account`',
+  'monitor tweets every 1 second',
+  '`POST /monitors`',
+  '`POST /webhooks`',
+  '"isActive": true',
+  '"nextBillingAt": "2026-02-24T11:30:00.000Z"',
+] as const;
+
 const REQUIRED_LLMS_SNIPPETS = [
   '## Agent Entry Points',
   'https://context7.com/xquik-dev/xquik-docs',
@@ -344,6 +354,20 @@ describe('repository discovery', (): void => {
       ),
       ...collectSnippetFindings(llms, 'llms.txt', REQUIRED_LLMS_SNIPPETS),
     ]).toStrictEqual([]);
+  });
+
+  it('keeps the quickstart concrete and aligned with monitor response fields', (): void => {
+    expect.assertions(1);
+
+    const quickstart = readFileSync('quickstart.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        quickstart,
+        'Quickstart',
+        REQUIRED_QUICKSTART_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps llms.txt below the agent score size threshold with headroom', (): void => {
