@@ -26,6 +26,7 @@ const REQUIRED_EXCLUDED_FILES = [
   'mintignore.test.ts',
   'mpp-payment-metadata.test.ts',
   'navigation-state.test.ts',
+  'openapi-parity.test.ts',
   'package-lock.json',
   'package.json',
   'plugin-docs.test.ts',
