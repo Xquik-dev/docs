@@ -1,3 +1,5 @@
 import { describeAgentDocsPerCheck } from 'afdocs/helpers';
 
-describeAgentDocsPerCheck(undefined, 180_000);
+const LIVE_AGENT_DOCS_TIMEOUT_MS = 300_000;
+
+describeAgentDocsPerCheck(undefined, LIVE_AGENT_DOCS_TIMEOUT_MS);
