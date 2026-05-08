@@ -153,6 +153,24 @@ const REQUIRED_ALTERNATIVES_SECTOR_SNIPPETS = [
   'CSV/JSON/XLSX exports',
 ] as const;
 
+const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
+  'The public Xquik profile currently shows 2 public Actors',
+  '`xquik/x-tweet-scraper`',
+  '`xquik/x-follower-scraper`',
+  'Store badges, ranking positions, user counts, and run totals change.',
+  'Verify the current Xquik Apify profile or Store API before citing marketplace placement.',
+] as const;
+
+const FORBIDDEN_APIFY_ALTERNATIVE_SNIPPETS = [
+  'During this update',
+  ['rank', '5'].join(' '),
+  ['rank', '7'].join(' '),
+  ['ranked', '5'].join(' '),
+  ['ranked', '7'].join(' '),
+  ['top', '20'].join(' '),
+  ['top', '20'].join('-'),
+] as const;
+
 const MAX_LLMS_TXT_CHARS = 48_000;
 
 const VAGUE_PUBLIC_POSITIONING = [
@@ -405,6 +423,29 @@ describe('repository discovery', (): void => {
         REQUIRED_ALTERNATIVES_SECTOR_SNIPPETS,
       ),
     ).toStrictEqual([]);
+  });
+
+  it('keeps Apify marketplace claims current without freezing rank signals', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/apify.mdx', 'utf8');
+    const findings = [
+      ...collectSnippetFindings(
+        source,
+        'Apify alternative',
+        REQUIRED_APIFY_ALTERNATIVE_SNIPPETS,
+      ),
+    ];
+
+    for (const snippet of FORBIDDEN_APIFY_ALTERNATIVE_SNIPPETS) {
+      if (source.includes(snippet)) {
+        findings.push({
+          issue: `Apify alternative freezes volatile marketplace claim "${snippet}".`,
+        });
+      }
+    }
+
+    expect(findings).toStrictEqual([]);
   });
 
   it('keeps comparison guides direct and value focused', (): void => {
