@@ -163,6 +163,8 @@ const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
 
 const FORBIDDEN_APIFY_ALTERNATIVE_SNIPPETS = [
   'During this update',
+  ['Rising', 'star'].join(' '),
+  ['rising', 'Star'].join(''),
   ['rank', '5'].join(' '),
   ['rank', '7'].join(' '),
   ['ranked', '5'].join(' '),
