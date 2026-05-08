@@ -120,6 +120,20 @@ const REQUIRED_WORKFLOW_SHORTLIST_SNIPPETS = [
   'CSV/JSON/XLSX exports',
 ] as const;
 
+const REQUIRED_ALTERNATIVES_SECTOR_SNIPPETS = [
+  '## Sector Decision Matrix',
+  'Developer API teams',
+  '[X API](/alternatives/x-api)',
+  '[Apify](/alternatives/apify)',
+  'Xquik on Apify',
+  'Creator publishing teams',
+  'Social care and enterprise teams',
+  'Workflow automation teams',
+  'AI agent teams',
+  'signed webhooks',
+  'CSV/JSON/XLSX exports',
+] as const;
+
 const MAX_LLMS_TXT_CHARS = 48_000;
 
 const VAGUE_PUBLIC_POSITIONING = [
@@ -342,6 +356,20 @@ describe('repository discovery', (): void => {
         source,
         'Alternatives workflow shortlist',
         REQUIRED_WORKFLOW_SHORTLIST_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the alternatives sector matrix concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Alternatives sector matrix',
+        REQUIRED_ALTERNATIVES_SECTOR_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
