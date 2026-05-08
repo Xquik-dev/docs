@@ -65,7 +65,7 @@ const REQUIRED_QUICKSTART_SNIPPETS = [
   '`POST /monitors`',
   '`POST /webhooks`',
   '"isActive": true',
-  '"nextBillingAt": "2026-02-24T11:30:00.000Z"',
+  '"nextBillingAt": "2026-02-24T10:30:00.000Z"',
 ] as const;
 
 const REQUIRED_LLMS_SNIPPETS = [
@@ -96,6 +96,19 @@ const REQUIRED_BILLING_RECOVERY_SNIPPETS = [
   'https://xquik.com/api/v1/credits/topup',
   'https://xquik.com/api/v1/credits/quick-topup',
   'If quick top-up returns `no_payment_method`, create a checkout top-up instead.',
+] as const;
+
+const REQUIRED_BILLING_MONITOR_SNIPPETS = [
+  '## Subscription',
+  '### Monitor pricing',
+  '21 credits per active monitor-hour',
+  'Creating or reactivating an account monitor requires at least 22 available credits',
+  '1 credit for the username lookup',
+  'Creating or reactivating a keyword monitor also requires at least 22 available credits',
+  'New active monitors are due for billing immediately',
+  '`nextBillingAt`',
+  'A USD 10 top-up adds 66,666 credits',
+  'Eligible MPP read endpoints can also be paid per request without a subscription.',
 ] as const;
 
 const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
@@ -447,11 +460,18 @@ describe('repository discovery', (): void => {
     const billing = readFileSync('guides/billing.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        billing,
-        'Billing guide',
-        REQUIRED_BILLING_RECOVERY_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          billing,
+          'Billing guide',
+          REQUIRED_BILLING_RECOVERY_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          billing,
+          'Billing guide',
+          REQUIRED_BILLING_MONITOR_SNIPPETS,
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
