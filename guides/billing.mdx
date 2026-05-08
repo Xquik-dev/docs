@@ -1,18 +1,18 @@
 ---
 title: X API pricing, credits & billing
-description: Subscription tiers, per-operation credit costs, monitor tweets pricing, credit top-ups, and MPP pay-per-use for the Xquik API
-keywords: ["X API pricing", "Twitter API pricing", "subscription", "credits", "monitor tweets pricing", "real-time tweet monitor cost", "tweet alerts cost", "tweet search cost", "follower export cost", "top-up", "MPP pay-per-use"]
+description: Subscription tiers, credit carry-over, per-operation costs, monitor tweets pricing, credit top-ups, and MPP pay-per-use for the Xquik API
+keywords: ["X API pricing", "Twitter API pricing", "subscription", "credits", "unused credits carry over", "monitor tweets pricing", "real-time tweet monitor cost", "tweet alerts cost", "tweet search cost", "follower export cost", "top-up", "MPP pay-per-use"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik uses a flat subscription model with a monthly credit allowance for authenticated API usage. Metered reads charge per returned result or per call, writes charge per action, and active instant monitors bill hourly. Some account, webhook, stored monitor, stored event, and credit-management endpoints are free. Eligible MPP read endpoints can also be paid per request without a subscription.
+Xquik uses a flat subscription model with a monthly credit grant for authenticated API usage. Unused subscription credits carry over in the same balance, and metered reads, writes, extractions, draws, media uploads, and active instant monitors spend from that balance. Some account, webhook, stored monitor, stored event, and credit-management endpoints are free. Eligible MPP read endpoints can also be paid per request without a subscription.
 
 ## Subscription
 
-| Tier | Price | Included credits | Monitor slots | Best for |
+| Tier | Price | Monthly credits | Monitor slots | Use case |
 |------|-------|------------------|---------------|----------|
 | Starter | USD 20/month | 140,000 credits (USD 0.00014/credit) | Unlimited | Prototyping and low-volume integrations |
 | Pro | USD 99/month | 770,000 credits (USD 0.00013/credit) | Unlimited | Production workloads and growing teams |
@@ -54,15 +54,15 @@ Use `GET /account` before creating more tweet monitors or tweet alerts. Each act
 
 The daily estimate is the value returned by the account API for capacity planning. It is intentionally rounded for alerting and top-up thresholds. If `creditInfo.balance` is below the next hourly burn, top up before enabling more monitors.
 
-## Monthly credit allowance
+## Monthly credits & carry-over
 
-Every subscription includes a monthly credit allowance that resets each billing period.
+Every paid subscription invoice adds the monthly credit grant to your account balance. Subscription credits, top-up credits, and automatic top-up credits stay in that balance until you spend them.
 
 - All metered operations deduct from a **single shared pool**
 - No separate buckets per operation type
-- Unused credits **do not carry over**
+- Unused subscription credits **carry over** to the next billing period
 - API calls are also subject to [rate limits](/guides/rate-limits) (separate from credit usage)
-- At 100% usage, metered calls return `402 Payment Required` (see [error handling](/guides/error-handling#billing--subscription-errors-402) for recovery patterns)
+- When the shared balance reaches 0, metered calls return `402 Payment Required` (see [error handling](/guides/error-handling#billing--subscription-errors-402) for recovery patterns)
 - Reading and managing stored monitor records, stored events, webhooks, and account endpoints are free. Active instant monitors are billed hourly while enabled.
 
 ```json 402 response body
@@ -131,7 +131,7 @@ The following do not consume credits: reading and managing stored monitor record
 
 ## Credit top-ups
 
-If you need more credits beyond the included monthly allowance, purchase additional credits from the dashboard:
+If you need more credits beyond your current balance, purchase additional credits from the dashboard:
 
 - Use the [top-up endpoint](/api-reference/credits/topup) to redirect to checkout
 - Use the [top-up status endpoint](/api-reference/credits/topup-status) to poll checkout completion
@@ -238,7 +238,7 @@ If quick top-up returns `no_payment_method`, create a checkout top-up instead. I
 | `GET /x/users/{id}/mentions` | USD 0.00015 per tweet | session |
 | `GET /x/users/{id}/verified-followers` | USD 0.00015 per user | session |
 
-> **Note:** With a subscription, you get a monthly allowance included in the base price - metered costs only apply after that allowance is consumed. With MPP, every call is billed individually with no monthly commitment.
+> **Note:** With a subscription, a monthly credit grant is added to your balance and unused credits carry over. With MPP, every call is billed individually with no monthly commitment.
 
 Related MPP pages:
 
@@ -283,7 +283,7 @@ curl -s https://xquik.com/api/v1/account \
 
 The `creditInfo.balance` field shows how many credits remain. The automatic top-up fields show whether top-up is enabled, the charge amount, and the balance threshold. At 0, metered calls are rejected until you [top up credits](/api-reference/credits/topup).
 
-> **Tip:** Poll the account endpoint periodically to track usage. Build alerts when `creditInfo.balance` drops below 20% of your plan's allowance to avoid hitting the limit unexpectedly.
+> **Tip:** Poll the account endpoint periodically to track usage. Build alerts when `creditInfo.balance` drops below 20% of your plan's monthly credit grant to avoid hitting the limit unexpectedly.
 
 ## FAQ
 
@@ -293,7 +293,7 @@ Metered calls return `402 Payment Required`. Reading stored monitor events, webh
 
 ### Do unused credits carry over?
 
-No. Credits reset to zero each billing period.
+Yes. Subscription credits and top-up credits stay in the shared balance until you spend them.
 
 ### How do I check my credit balance?
 

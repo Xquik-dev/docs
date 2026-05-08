@@ -117,6 +117,23 @@ const REQUIRED_BILLING_MONITOR_SNIPPETS = [
   'Eligible MPP read endpoints can also be paid per request without a subscription.',
 ] as const;
 
+const REQUIRED_BILLING_CARRYOVER_SNIPPETS = [
+  '## Monthly credits & carry-over',
+  'Unused subscription credits carry over in the same balance',
+  'Every paid subscription invoice adds the monthly credit grant to your account balance.',
+  'Subscription credits, top-up credits, and automatic top-up credits stay in that balance until you spend them.',
+  'Unused subscription credits **carry over** to the next billing period',
+  'When the shared balance reaches 0, metered calls return `402 Payment Required`',
+  'a monthly credit grant is added to your balance and unused credits carry over',
+  'Yes. Subscription credits and top-up credits stay in the shared balance until you spend them.',
+] as const;
+
+const FORBIDDEN_BILLING_CARRYOVER_SNIPPETS = [
+  'Every subscription includes a monthly credit allowance that resets each billing period.',
+  'Unused credits **do not carry over**',
+  'No. Credits reset to zero each billing period.',
+] as const;
+
 const REQUIRED_ACCOUNT_API_SNIPPETS = [
   'Number of currently active account monitors and keyword monitors.',
   '`monitorsUsed`, `monitorBilling.activeHourlyBurn`, and `monitorBilling.activeDailyEstimate` include active account monitors and active keyword monitors.',
@@ -647,6 +664,21 @@ describe('repository discovery', (): void => {
           billing,
           'Billing guide',
           REQUIRED_BILLING_MONITOR_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          billing,
+          'Billing guide',
+          REQUIRED_BILLING_CARRYOVER_SNIPPETS,
+        ),
+        ...FORBIDDEN_BILLING_CARRYOVER_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            billing.includes(snippet)
+              ? [
+                  {
+                    issue: `Billing guide contains stale carry-over wording "${snippet}".`,
+                  },
+                ]
+              : [],
         ),
       ],
     ).toStrictEqual([]);
