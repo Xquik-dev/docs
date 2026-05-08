@@ -1,0 +1,122 @@
+---
+title: Scrape tweet replies to CSV
+description: Scrape tweet replies, estimate costs, run reply_extractor, and export CSV/JSON/XLSX through the Xquik API.
+keywords: ["scrape tweet replies", "tweet replies scraper", "Twitter replies export", "X replies API", "reply_extractor", "CSV export", "JSON export", "XLSX export"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use this workflow when a support, community, research, or giveaway system needs tweet replies as rows. Xquik can scrape tweet replies with `reply_extractor`, estimate the cost first, run the extraction job, then export CSV, JSON, or XLSX for analysis.
+
+## When to use this workflow
+
+| Need | Use |
+|------|-----|
+| Export replies for spreadsheets | `reply_extractor` plus CSV or XLSX export |
+| Feed replies into an app | `reply_extractor` plus paginated JSON results |
+| Read the latest page of replies only | `GET /x/tweets/{id}/replies` |
+| Control cost before scraping | `resultsLimit` on estimate and create requests |
+
+## Data you get
+
+Reply exports include base user fields, reply tweet fields, engagement counts, and metadata when available.
+
+| Data group | Fields |
+|------------|--------|
+| Reply author | User ID, username, display name, follower count, verified state, profile image |
+| Reply tweet | Tweet ID, tweet text, tweet created time |
+| Engagement | Likes, reposts, replies, quotes, views, bookmarks |
+| Metadata | Language, source app, conversation ID |
+
+## Step 1: Estimate replies and credits
+
+Call `POST /extractions/estimate` before scraping. `reply_extractor` requires `targetTweetId`. Add `resultsLimit` when you want a sample or a hard cost cap.
+
+```bash
+curl -X POST https://xquik.com/api/v1/extractions/estimate \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolType": "reply_extractor",
+    "targetTweetId": "1893704267862470862",
+    "resultsLimit": 500
+  }' | jq
+```
+
+The estimate returns `allowed`, `estimatedResults`, `creditsRequired`, `creditsAvailable`, and `source`. For reply scraping, `source` is usually `replyCount` or `resultsLimit`.
+
+## Step 2: Run the reply extraction
+
+Create the job with the same `toolType`, `targetTweetId`, and optional `resultsLimit`.
+
+```bash
+curl -X POST https://xquik.com/api/v1/extractions \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolType": "reply_extractor",
+    "targetTweetId": "1893704267862470862",
+    "resultsLimit": 500
+  }' | jq
+```
+
+```json
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "toolType": "reply_extractor",
+  "status": "running"
+}
+```
+
+## Step 3: Poll job status
+
+Poll `GET /extractions/{id}` until the job is `completed` or `failed`.
+
+```bash
+curl https://xquik.com/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+Use the paginated response when your app wants JSON rows instead of a file download.
+
+## Step 4: Export CSV, JSON, or XLSX
+
+Exports are free after the extraction job exists. Use CSV for spreadsheets, JSON for app ingestion, and XLSX for analyst handoff.
+
+```bash
+curl -X GET "https://xquik.com/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=csv" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -o tweet-replies.csv
+```
+
+```bash
+curl -X GET "https://xquik.com/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=xlsx" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -o tweet-replies.xlsx
+```
+
+## Direct replies API
+
+Use `GET /x/tweets/{id}/replies` when you need a paginated API response instead of a stored extraction job.
+
+```bash
+curl "https://xquik.com/api/v1/x/tweets/1893704267862470862/replies" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+The direct replies API returns `tweets`, `has_next_page`, and `next_cursor`. Pass `next_cursor` back as `cursor` to fetch the next page. It costs 1 credit per tweet returned.
+
+## Handoff checklist
+
+| Handoff | Use |
+|---------|-----|
+| Spreadsheet | Export `format=csv` or `format=xlsx` |
+| App ingestion | Export `format=json` or paginate `GET /extractions/{id}` |
+| Cost control | Set `resultsLimit` on both estimate and create calls |
+| Real-time replies | Create an account or keyword monitor with `tweet.reply` events |
+
+<Note>
+  **Related:** [Extraction workflow](/guides/extraction-workflow) &middot; [Create extraction](/api-reference/extractions/create) &middot; [Get tweet replies](/api-reference/x/tweet-replies)
+</Note>

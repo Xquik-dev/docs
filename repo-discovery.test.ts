@@ -140,6 +140,20 @@ const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   'Salesforce Bulk API 2.0',
 ] as const;
 
+const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
+  'scrape tweet replies',
+  '`reply_extractor`',
+  'POST /extractions/estimate',
+  'POST /extractions',
+  'GET /extractions/{id}',
+  'format=csv',
+  'format=xlsx',
+  'CSV, JSON, or XLSX',
+  '`next_cursor`',
+  '`resultsLimit`',
+  '1 credit per tweet returned',
+] as const;
+
 const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   '## Integration Handoff Matrix',
   '`POST /monitors`, then `GET /events`',
@@ -522,6 +536,20 @@ describe('repository discovery', (): void => {
         source,
         'Follower export CRM guide',
         REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps tweet replies export workflow steps concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/tweet-replies-export.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Tweet replies export guide',
+        REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
