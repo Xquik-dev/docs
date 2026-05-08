@@ -273,11 +273,22 @@ const REQUIRED_ALTERNATIVES_SECTOR_SNIPPETS = [
   '[Apify](/alternatives/apify)',
   'Xquik on Apify',
   'Creator publishing teams',
-  'Social care and enterprise teams',
+  'Social listening and enterprise teams',
+  '[Brandwatch](/alternatives/brandwatch)',
   'Workflow automation teams',
   'AI agent teams',
   'signed webhooks',
   'CSV/JSON/XLSX exports',
+] as const;
+
+const REQUIRED_BRANDWATCH_ALTERNATIVE_SNIPPETS = [
+  'social listening, consumer intelligence, or social media management workflow',
+  'search tweets, export followers, monitor accounts or keywords, send webhooks',
+  'Consumer intelligence and social media management suite.',
+  'tweet search, follower exports, monitor events, signed webhook payloads, CSV/JSON/XLSX exports',
+  'Run one social listening job',
+  'Compare tweet IDs, author IDs, timestamps, text, metrics, media links, pagination, export fields, webhook signatures, and error handling.',
+  'Official Brandwatch site',
 ] as const;
 
 const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
@@ -742,6 +753,20 @@ describe('repository discovery', (): void => {
         source,
         'Alternatives sector matrix',
         REQUIRED_ALTERNATIVES_SECTOR_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Brandwatch alternative focused on concrete social listening handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/brandwatch.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Brandwatch alternative',
+        REQUIRED_BRANDWATCH_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
