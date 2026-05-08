@@ -96,6 +96,18 @@ const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
   '/guides/pipedream',
 ] as const;
 
+const REQUIRED_WORKFLOW_SHORTLIST_SNIPPETS = [
+  '## Workflow Automation Shortlist',
+  '[n8n](/alternatives/n8n)',
+  '[Make](/alternatives/make)',
+  '[Pipedream](/alternatives/pipedream)',
+  '[Zapier](/alternatives/zapier)',
+  '[PhantomBuster](/alternatives/phantombuster)',
+  'tweet search',
+  'signed monitor webhooks',
+  'CSV/JSON/XLSX exports',
+] as const;
+
 const MAX_LLMS_TXT_CHARS = 48_000;
 
 const VAGUE_PUBLIC_POSITIONING = [
@@ -290,6 +302,20 @@ describe('repository discovery', (): void => {
         source,
         'Pipedream alternative',
         REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the alternatives workflow shortlist concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Alternatives workflow shortlist',
+        REQUIRED_WORKFLOW_SHORTLIST_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
