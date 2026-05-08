@@ -45,6 +45,18 @@ const REQUIRED_LLMS_SNIPPETS = [
   'https://docs.xquik.com/openapi.yaml',
 ] as const;
 
+const REQUIRED_MCP_CONTRACT_SNIPPETS = [
+  '`xquik.request()` uses the normalized v1 contract automatically.',
+  'has_more',
+  'next_cursor',
+  'Pass `next_cursor` back as the `cursor` query parameter',
+  'MCP server\'s `xquik.request()` tool sends that normalized contract automatically',
+] as const;
+
+const FORBIDDEN_MCP_CONTRACT_SNIPPETS = [
+  'returns the same response shapes documented here. No field name mapping is needed.',
+] as const;
+
 const MAX_LLMS_TXT_CHARS = 48_000;
 
 const VAGUE_PUBLIC_POSITIONING = [
@@ -159,6 +171,32 @@ describe('repository discovery', (): void => {
     const llms = readFileSync('llms.txt', 'utf8');
 
     expect(llms.length).toBeLessThanOrEqual(MAX_LLMS_TXT_CHARS);
+  });
+
+  it('keeps MCP response-contract docs aligned with product behavior', (): void => {
+    expect.assertions(1);
+
+    const source = [
+      readFileSync('mcp/tools.mdx', 'utf8'),
+      readFileSync('guides/types.mdx', 'utf8'),
+    ].join('\n');
+    const findings: DiscoveryFinding[] = [];
+
+    for (const snippet of REQUIRED_MCP_CONTRACT_SNIPPETS) {
+      if (!source.includes(snippet)) {
+        findings.push({ issue: `MCP contract docs are missing "${snippet}".` });
+      }
+    }
+
+    for (const snippet of FORBIDDEN_MCP_CONTRACT_SNIPPETS) {
+      if (source.includes(snippet)) {
+        findings.push({
+          issue: `MCP contract docs contain stale wording "${snippet}".`,
+        });
+      }
+    }
+
+    expect(findings).toStrictEqual([]);
   });
 
   it('keeps comparison guides direct and value focused', (): void => {

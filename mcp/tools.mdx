@@ -96,6 +96,10 @@ declare const xquik: {
 declare const spec: { endpoints: EndpointInfo[] };
 ```
 
+**Response contract:**
+
+`xquik.request()` uses the normalized v1 contract automatically. List and search responses use `has_more` and `next_cursor`, even when the REST API page shows the default `has_next_page` field. Pass `next_cursor` back as the `cursor` query parameter for most X data pages. Use `after` instead for `/api/v1/draws`, `/api/v1/extractions`, `/api/v1/events`, and `/api/v1/radar`.
+
 **Workflow Examples:**
 
 > Compose an algorithm-optimized tweet (3-step, free)
@@ -173,9 +177,62 @@ async () => {
 
 ```javascript
 async () => {
-  return xquik.request('/api/v1/x/tweets/search', {
-    query: { q: 'from:elonmusk' }
+  const tweets = [];
+  let cursor;
+
+  for (let pageNumber = 0; pageNumber < 2; pageNumber += 1) {
+    const page = await xquik.request('/api/v1/x/tweets/search', {
+      query: {
+        q: 'from:xquikcom giveaway',
+        ...(cursor ? { cursor } : {})
+      }
+    });
+
+    tweets.push(...page.tweets);
+    if (!page.has_more) break;
+    cursor = page.next_cursor;
+  }
+
+  return { tweets, next_cursor: cursor };
+}
+```
+
+> List follower pages (subscription required)
+
+```javascript
+async () => {
+  const users = [];
+  let cursor;
+
+  for (let pageNumber = 0; pageNumber < 2; pageNumber += 1) {
+    const page = await xquik.request('/api/v1/x/users/xquikcom/followers', {
+      query: {
+        pageSize: '50',
+        ...(cursor ? { cursor } : {})
+      }
+    });
+
+    users.push(...page.users);
+    if (!page.has_more) break;
+    cursor = page.next_cursor;
+  }
+
+  return { users, next_cursor: cursor };
+}
+```
+
+> Upload media from a URL (subscription required)
+
+```javascript
+async () => {
+  return xquik.request('/api/v1/x/media', {
+    method: 'POST',
+    body: {
+      account: 'myxhandle',
+      url: 'https://example.com/image.png'
+    }
   });
+  // Returns { success: true, media_id: '...', media_url: '...' }
 }
 ```
 
