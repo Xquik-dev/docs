@@ -10,6 +10,7 @@ const REQUIRED_EXCLUDED_FILES = [
   'AGENTS.md',
   'CODE_OF_CONDUCT.md',
   'CONTRIBUTING.md',
+  'DOCS_QUALITY_POLL.md',
   'LICENSE',
   'SECURITY.md',
   'agent-docs.config.yml',
