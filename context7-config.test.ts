@@ -19,9 +19,13 @@ const REQUIRED_EXCLUDED_FILES = [
   'api-params.test.ts',
   'api-response-fields.test.ts',
   'api-response-status.test.ts',
+  'alternatives.mdx',
   'context7-config.test.ts',
+  'custom.css',
+  'docs.json',
   'endpoint-strings.test.ts',
   'event-types.test.ts',
+  'favicon.svg',
   'llms-coverage.test.ts',
   'mintignore.test.ts',
   'mpp-payment-metadata.test.ts',
@@ -31,10 +35,15 @@ const REQUIRED_EXCLUDED_FILES = [
   'package.json',
   'plugin-docs.test.ts',
   'repo-discovery.test.ts',
+  'robots.txt',
   'seo-metadata.test.ts',
 ] as const;
 
-const REQUIRED_EXCLUDED_FOLDERS = ['.github', 'node_modules'] as const;
+const REQUIRED_EXCLUDED_FOLDERS = [
+  '.github',
+  'alternatives',
+  'node_modules',
+] as const;
 const REQUIRED_RULE_SNIPPETS = [
   'quickstart.mdx',
   'api-reference/overview.mdx',
