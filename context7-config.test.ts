@@ -19,6 +19,7 @@ const REQUIRED_EXCLUDED_FILES = [
   'api-params.test.ts',
   'api-response-fields.test.ts',
   'api-response-status.test.ts',
+  'context7-config.test.ts',
   'endpoint-strings.test.ts',
   'event-types.test.ts',
   'llms-coverage.test.ts',
