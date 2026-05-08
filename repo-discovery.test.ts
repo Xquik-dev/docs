@@ -333,6 +333,16 @@ const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
   'Official Hootsuite plans',
 ] as const;
 
+const REQUIRED_SPROUT_SOCIAL_ALTERNATIVE_SNIPPETS = [
+  'plan posts, manage a Smart Inbox, analyze reports, search tweets, export followers, monitor accounts or keywords, send webhooks',
+  'Social media management, publishing, engagement, analytics, listening, advocacy, influencer, and customer-care suite.',
+  "Sprout's features page lists unified social inbox, multi-profile publishing, multimedia publishing, ViralPost send-time optimization, message approval workflow, bulk scheduling, PDF/CSV reporting, X competitor reports, X keyword reports, CRM integrations, and chatbots.",
+  'tweet IDs, author IDs, timestamps, post results, CSV/JSON/XLSX exports, webhook signatures, and error handling.',
+  'Sprout seats, social profiles, Premium Analytics, Listening, Advocacy, Influencer Marketing, and Enterprise scope',
+  'Official Sprout Social features',
+  'Official Sprout Social pricing',
+] as const;
+
 const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
   'The public Xquik profile currently shows 2 public Actors',
   '`xquik/x-tweet-scraper`',
@@ -865,6 +875,20 @@ describe('repository discovery', (): void => {
         source,
         'Hootsuite alternative',
         REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Sprout Social alternative focused on social-care handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/sprout-social.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Sprout Social alternative',
+        REQUIRED_SPROUT_SOCIAL_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
