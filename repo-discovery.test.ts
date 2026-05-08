@@ -41,6 +41,12 @@ const REQUIRED_README_SNIPPETS = [
 ] as const;
 
 const REQUIRED_INTRODUCTION_SNIPPETS = [
+  'search tweets',
+  'scrape follower lists',
+  'post tweets',
+  'upload media',
+  'monitor tweets every 1 second',
+  'send signed webhooks',
   '## Use Xquik with AI agents',
   '[llms.txt](/llms.txt)',
   '[Context7 library](https://context7.com/xquik-dev/xquik-docs)',
