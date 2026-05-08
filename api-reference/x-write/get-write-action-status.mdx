@@ -1,0 +1,115 @@
+---
+title: "Get write action status"
+description: "Poll the status of an X write action after a pending confirmation response"
+api: "GET /x/write-actions/{id}"
+keywords: ["write action status", "pending confirmation", "post tweet status", "x_write_unconfirmed", "X write API"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use this endpoint after a write request returns `202 x_write_unconfirmed`. The original write may have been dispatched, so do not retry-send the same action until you inspect the status and verify the outcome.
+
+<CodeGroup>
+  ```bash cURL
+  curl https://xquik.com/api/v1/x/write-actions/42 \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+  ```
+
+  ```javascript Node.js
+  const writeActionId = "42";
+  const response = await fetch(
+    `https://xquik.com/api/v1/x/write-actions/${writeActionId}`,
+    {
+      headers: {
+        "x-api-key": "xq_YOUR_KEY_HERE",
+      },
+    },
+  );
+  const status = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  write_action_id = "42"
+  response = requests.get(
+      f"https://xquik.com/api/v1/x/write-actions/{write_action_id}",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+  )
+  status = response.json()
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported.
+</ParamField>
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+  Write action ID returned by a pending write response.
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 Success">
+    <ResponseField name="writeActionId" type="string">Write action ID.</ResponseField>
+    <ResponseField name="action" type="string">Write action type, such as `create_tweet`.</ResponseField>
+    <ResponseField name="status" type="string">Current status: `success`, `failed`, or `pending_confirmation`.</ResponseField>
+    <ResponseField name="tweetId" type="string">Tweet ID when the action created or confirmed a tweet.</ResponseField>
+    <ResponseField name="messageId" type="string">Message ID when the action sent a DM.</ResponseField>
+    <ResponseField name="targetId" type="string | null">Target user, tweet, or resource ID when available.</ResponseField>
+    <ResponseField name="charged" type="boolean">Whether the original write action was charged.</ResponseField>
+    <ResponseField name="sendDispatched" type="boolean">Whether the write was dispatched.</ResponseField>
+    <ResponseField name="retryable" type="boolean">Always `false` for this status response.</ResponseField>
+    <ResponseField name="confirmationAttempts" type="number">Number of confirmation attempts.</ResponseField>
+    <ResponseField name="confirmationSource" type="string | null">Confirmation source when available.</ResponseField>
+    <ResponseField name="createdAt" type="string">ISO timestamp for write action creation.</ResponseField>
+    <ResponseField name="sendDispatchedAt" type="string">ISO timestamp for dispatch when available.</ResponseField>
+    <ResponseField name="confirmationCheckedAt" type="string">ISO timestamp for the last confirmation check when available.</ResponseField>
+    <ResponseField name="confirmedAt" type="string">ISO timestamp for confirmation when available.</ResponseField>
+    <ResponseField name="message" type="string">Status or error message when available.</ResponseField>
+
+    ```json
+    {
+      "writeActionId": "42",
+      "action": "create_tweet",
+      "status": "pending_confirmation",
+      "charged": false,
+      "sendDispatched": true,
+      "retryable": false,
+      "confirmationAttempts": 2,
+      "confirmationSource": null,
+      "targetId": "1234567890",
+      "createdAt": "2026-05-08T20:00:00.000Z"
+    }
+    ```
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated", "message": "Missing or invalid API key" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "not_found", "message": "Write action not found." }
+    ```
+    No write action with that ID belongs to the authenticated user.
+  </Tab>
+  <Tab title="429 Rate Limited">
+    ```json
+    { "error": "rate_limit_exceeded", "retryAfter": 1 }
+    ```
+    Too many requests. Respect the `Retry-After` header when present.
+  </Tab>
+</Tabs>
+
+<Note>
+  **Related:** [Create Tweet](/api-reference/x-write/create-tweet) returns `writeActionId` when tweet confirmation is pending. [Error handling](/guides/error-handling) explains `x_write_unconfirmed`.
+</Note>

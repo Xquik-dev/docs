@@ -2868,6 +2868,46 @@ paths:
               example:
                 tweetId: '1234567890'
                 success: true
+        '202':
+          description:
+            Write was dispatched but final confirmation is still pending. Do not
+            retry-send the same write. Poll the write action status instead.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - status
+                  - writeActionId
+                  - charged
+                  - retryable
+                properties:
+                  error:
+                    type: string
+                    const: x_write_unconfirmed
+                  status:
+                    type: string
+                    const: pending_confirmation
+                  writeActionId:
+                    type: string
+                    example: '42'
+                  charged:
+                    type: boolean
+                    const: false
+                  retryable:
+                    type: boolean
+                    const: false
+                  message:
+                    type: string
+              example:
+                error: x_write_unconfirmed
+                status: pending_confirmation
+                writeActionId: '42'
+                charged: false
+                retryable: false
+                message:
+                  Action may have completed, but confirmation is still pending.
         '400':
           description: Invalid input or unsupported field
           content:
@@ -2907,6 +2947,96 @@ paths:
           $ref: '#/components/responses/TransientError'
         '500':
           $ref: '#/components/responses/WriteError'
+
+  /x/write-actions/{id}:
+    get:
+      operationId: getWriteActionStatus
+      summary: Get write action status
+      tags: [X Write]
+      security:
+        - apiKey: []
+        - oauthBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Write action ID returned by a pending write response.
+      responses:
+        '200':
+          description: Write action status
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - writeActionId
+                  - action
+                  - status
+                  - charged
+                  - sendDispatched
+                  - retryable
+                  - createdAt
+                properties:
+                  writeActionId:
+                    type: string
+                    example: '42'
+                  action:
+                    type: string
+                    example: create_tweet
+                  status:
+                    type: string
+                    enum: [success, failed, pending_confirmation]
+                  tweetId:
+                    type: string
+                  messageId:
+                    type: string
+                  targetId:
+                    type: [string, 'null']
+                    example: '1234567890'
+                  charged:
+                    type: boolean
+                  sendDispatched:
+                    type: boolean
+                  retryable:
+                    type: boolean
+                    const: false
+                  confirmationAttempts:
+                    type: integer
+                  confirmationSource:
+                    type: [string, 'null']
+                    example: read_confirmation
+                  createdAt:
+                    type: string
+                    format: date-time
+                  sendDispatchedAt:
+                    type: string
+                    format: date-time
+                  confirmationCheckedAt:
+                    type: string
+                    format: date-time
+                  confirmedAt:
+                    type: string
+                    format: date-time
+                  message:
+                    type: string
+              example:
+                writeActionId: '42'
+                action: create_tweet
+                status: pending_confirmation
+                charged: false
+                sendDispatched: true
+                retryable: false
+                confirmationAttempts: 2
+                confirmationSource: null
+                createdAt: '2026-05-08T20:00:00.000Z'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
 
   /x/trends:
     get:
