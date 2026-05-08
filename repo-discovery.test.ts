@@ -1,4 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
@@ -6,6 +7,12 @@ interface DiscoveryFinding {
   readonly file?: string;
   readonly issue: string;
 }
+
+const SKIPPED_PUBLIC_SCAN_DIRS = new Set([
+  '.git',
+  'node_modules',
+  '.github',
+] as const);
 
 const REQUIRED_README_SNIPPETS = [
   'tweet search',
@@ -162,7 +169,7 @@ const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_APIFY_ALTERNATIVE_SNIPPETS = [
-  'During this update',
+  ['During', 'this', 'update'].join(' '),
   ['Rising', 'star'].join(' '),
   ['rising', 'Star'].join(''),
   ['rank', '5'].join(' '),
@@ -171,6 +178,14 @@ const FORBIDDEN_APIFY_ALTERNATIVE_SNIPPETS = [
   ['ranked', '7'].join(' '),
   ['top', '20'].join(' '),
   ['top', '20'].join('-'),
+] as const;
+
+const FORBIDDEN_PUBLIC_APIFY_MARKETPLACE_SNIPPETS = [
+  ['During', 'this', 'update'].join(' '),
+  ['Rising', 'star'].join(' '),
+  ['rising', 'Star'].join(''),
+  ['Apify', 'Store', 'API', 'relevance', 'search'].join(' '),
+  ['Store', 'rankings', 'change'].join(' '),
 ] as const;
 
 const MAX_LLMS_TXT_CHARS = 48_000;
@@ -202,6 +217,31 @@ function listAlternativeFiles(): readonly string[] {
   ].sort();
 }
 
+function listPublicMarkdownFiles(root = '.'): readonly string[] {
+  const files: string[] = [];
+
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    if (entry.name === 'DOCS_QUALITY_POLL.md') {
+      continue;
+    }
+
+    const path = root === '.' ? entry.name : join(root, entry.name);
+
+    if (entry.isDirectory()) {
+      if (!SKIPPED_PUBLIC_SCAN_DIRS.has(entry.name)) {
+        files.push(...listPublicMarkdownFiles(path));
+      }
+      continue;
+    }
+
+    if (entry.isFile() && /\.(?:md|mdx)$/u.test(entry.name)) {
+      files.push(path);
+    }
+  }
+
+  return files.sort();
+}
+
 function collectReadmeDiscoveryFindings(): readonly DiscoveryFinding[] {
   const source = readFileSync('README.md', 'utf8');
   const findings: DiscoveryFinding[] = [];
@@ -217,6 +257,25 @@ function collectReadmeDiscoveryFindings(): readonly DiscoveryFinding[] {
       findings.push({
         issue: `README contains vague positioning phrase "${phrase}".`,
       });
+    }
+  }
+
+  return findings;
+}
+
+function collectPublicApifyMarketplaceFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const file of listPublicMarkdownFiles()) {
+    const source = readFileSync(file, 'utf8');
+
+    for (const snippet of FORBIDDEN_PUBLIC_APIFY_MARKETPLACE_SNIPPETS) {
+      if (source.includes(snippet)) {
+        findings.push({
+          file,
+          issue: `Public Markdown freezes volatile Apify marketplace claim "${snippet}".`,
+        });
+      }
     }
   }
 
@@ -448,6 +507,12 @@ describe('repository discovery', (): void => {
     }
 
     expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps volatile Apify marketplace claims out of public Markdown', (): void => {
+    expect.assertions(1);
+
+    expect(collectPublicApifyMarketplaceFindings()).toStrictEqual([]);
   });
 
   it('keeps comparison guides direct and value focused', (): void => {
