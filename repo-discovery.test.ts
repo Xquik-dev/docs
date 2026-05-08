@@ -353,6 +353,17 @@ const REQUIRED_BUFFER_ALTERNATIVE_SNIPPETS = [
   'Official Buffer community',
 ] as const;
 
+const REQUIRED_TYPEFULLY_ALTERNATIVE_SNIPPETS = [
+  'write X threads, schedule posts, cross-post content, use AI writing help, inspect analytics, search tweets, export followers, monitor accounts or keywords, send webhooks',
+  'Creator publishing, X thread scheduling, social scheduling, analytics, API, and MCP platform.',
+  "Typefully's official pages list AI writing, X thread scheduling, natural-language scheduling, content queues, realistic previews, cross-posting to LinkedIn, Threads, Bluesky, and Mastodon, detailed X analytics, draft comments, Auto-DMs, image cropping, auto-splitting, multiple connected accounts, REST API, webhooks, and MCP.",
+  'draft IDs, social sets, media IDs, queue state, analytics fields, tweet IDs, author IDs, timestamps, post results, CSV/JSON/XLSX exports',
+  'Typefully connected accounts, collaboration, analytics, API access, MCP access, Auto-DMs, and cross-posting',
+  'Official Typefully X scheduling',
+  'Official Typefully API',
+  'Official Typefully MCP',
+] as const;
+
 const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
   'The public Xquik profile currently shows 2 public Actors',
   '`xquik/x-tweet-scraper`',
@@ -913,6 +924,20 @@ describe('repository discovery', (): void => {
         source,
         'Buffer alternative',
         REQUIRED_BUFFER_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Typefully alternative focused on creator-publishing handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/typefully.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Typefully alternative',
+        REQUIRED_TYPEFULLY_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
