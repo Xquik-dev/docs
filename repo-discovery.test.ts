@@ -1,8 +1,9 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
 interface DiscoveryFinding {
+  readonly file?: string;
   readonly issue: string;
 }
 
@@ -53,6 +54,26 @@ const VAGUE_PUBLIC_POSITIONING = [
   ['high', 'tech'].join('-'),
 ] as const;
 
+const FORBIDDEN_COMPARISON_POSITIONING = [
+  ['Xquik is', 'strongest'].join(' '),
+  ['Xquik is', 'stronger'].join(' '),
+  ['Xquik is the', 'better fit'].join(' '),
+  ['best', 'fit'].join(' '),
+  ['X-specific', 'workflows'].join(' '),
+  ['workflow', 'surface'].join(' '),
+  ['operational', 'layer'].join(' '),
+  ['high', 'tech'].join('-'),
+] as const;
+
+function listAlternativeFiles(): readonly string[] {
+  return [
+    'alternatives.mdx',
+    ...readdirSync('alternatives')
+      .filter((file) => file.endsWith('.mdx'))
+      .map((file) => `alternatives/${file}`),
+  ].sort();
+}
+
 function collectReadmeDiscoveryFindings(): readonly DiscoveryFinding[] {
   const source = readFileSync('README.md', 'utf8');
   const findings: DiscoveryFinding[] = [];
@@ -90,6 +111,25 @@ function collectSnippetFindings(
   return findings;
 }
 
+function collectComparisonPositioningFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const file of listAlternativeFiles()) {
+    const source = readFileSync(file, 'utf8');
+
+    for (const phrase of FORBIDDEN_COMPARISON_POSITIONING) {
+      if (source.includes(phrase)) {
+        findings.push({
+          file,
+          issue: `Comparison guide contains vague positioning phrase "${phrase}".`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
 describe('repository discovery', (): void => {
   it('keeps the public README concrete and easy to find from GitHub search', (): void => {
     expect.assertions(1);
@@ -119,5 +159,11 @@ describe('repository discovery', (): void => {
     const llms = readFileSync('llms.txt', 'utf8');
 
     expect(llms.length).toBeLessThanOrEqual(MAX_LLMS_TXT_CHARS);
+  });
+
+  it('keeps comparison guides direct and value focused', (): void => {
+    expect.assertions(1);
+
+    expect(collectComparisonPositioningFindings()).toStrictEqual([]);
   });
 });
