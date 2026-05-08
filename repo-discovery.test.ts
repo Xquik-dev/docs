@@ -275,6 +275,7 @@ const REQUIRED_ALTERNATIVES_SECTOR_SNIPPETS = [
   'Creator publishing teams',
   'Social listening and enterprise teams',
   '[Brandwatch](/alternatives/brandwatch)',
+  '[Meltwater](/alternatives/meltwater)',
   'Workflow automation teams',
   'AI agent teams',
   'signed webhooks',
@@ -289,6 +290,16 @@ const REQUIRED_BRANDWATCH_ALTERNATIVE_SNIPPETS = [
   'Run one social listening job',
   'Compare tweet IDs, author IDs, timestamps, text, metrics, media links, pagination, export fields, webhook signatures, and error handling.',
   'Official Brandwatch site',
+] as const;
+
+const REQUIRED_MELTWATER_ALTERNATIVE_SNIPPETS = [
+  'media monitoring, social listening, or social media management workflow',
+  'search tweets, export followers, monitor accounts or keywords, send webhooks',
+  'Media intelligence, social listening, and social media management suite.',
+  'tweet search, follower exports, monitor events, signed webhook payloads, CSV/JSON/XLSX exports',
+  'Run one monitoring job',
+  'Compare tweet IDs, author IDs, timestamps, text, metrics, media links, pagination, export fields, webhook signatures, and error handling.',
+  'Official Meltwater site',
 ] as const;
 
 const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
@@ -767,6 +778,20 @@ describe('repository discovery', (): void => {
         source,
         'Brandwatch alternative',
         REQUIRED_BRANDWATCH_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Meltwater alternative focused on concrete media monitoring handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/meltwater.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Meltwater alternative',
+        REQUIRED_MELTWATER_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
