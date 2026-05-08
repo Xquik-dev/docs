@@ -14,6 +14,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 - [SDKs](https://docs.xquik.com/sdks) - use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
 - [MCP Server](https://docs.xquik.com/mcp) - connect Claude, ChatGPT, Cursor, and other AI agents.
 - [Webhooks](https://docs.xquik.com/webhooks/overview) - verify HMAC signatures and receive real-time X events.
+- [Apify Actors](https://docs.xquik.com/alternatives/apify) - run X tweet scraper and follower scraper jobs on Apify.
 - [llms.txt](https://docs.xquik.com/llms.txt) - give AI coding agents the docs index.
 
 ## Use With AI Coding Agents
@@ -30,6 +31,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 - Upload media, create tweets, send DMs, and update profiles.
 - Track new tweets with 1-second monitors and signed webhook delivery.
 - Export results as JSON, CSV, XLSX, or Markdown.
+- Run [X Tweet Scraper](https://apify.com/xquik/x-tweet-scraper) and [X Follower Scraper](https://apify.com/xquik/x-follower-scraper) Actors on Apify.
 - Compare Xquik with X API, social schedulers, data tools, and automation platforms.
 
 ## What's covered
@@ -41,6 +43,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 - **Guides** - Workflows, error handling, rate limits, billing, trends, extraction workflow, architecture, troubleshooting, types, webhook testing, and framework integrations.
 - **SDKs** - 10 generated client libraries (TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI as Go binary, Terraform provider) with auto-pagination, retry, and typed responses.
 - **Comparisons** - Factual alternatives and migration guides for X API, creator tools, social suites, data tools, and workflow platforms.
+- **Apify Actors** - Public X tweet scraper and follower scraper Actors for teams that use Apify datasets before moving deeper workflows to REST, webhooks, SDKs, or MCP.
 - **OpenAPI 3.1** - Machine-readable spec at `openapi.yaml`, used by Mintlify for endpoint pages and by Stainless for SDK generation.
 
 ## Repository layout
