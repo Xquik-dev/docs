@@ -1,20 +1,21 @@
 ---
 title: Workflows
-description: X API workflow guides for tweet monitoring, signed webhooks, MCP agents, follower exports, and tweet composition.
-keywords: ["X API workflows", "Twitter API workflows", "tweet monitoring", "signed webhooks", "follower exports", "MCP agents", "tweet composition"]
+description: X API workflow guides for tweet monitoring, signed webhooks, MCP agents, exports, post tweets, post tweet replies, media handoff, and tweet composition.
+keywords: ["X API workflows", "Twitter API workflows", "tweet monitoring", "signed webhooks", "follower exports", "post tweets", "post tweet replies", "media upload", "MCP agents", "tweet composition"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use these X API workflows to wire Xquik into monitoring dashboards, webhook pipelines, AI agents, data exports, and content tools. Each integration pattern includes copy-ready code in 4 languages.
+Use these X API workflows to wire Xquik into monitoring dashboards, webhook pipelines, AI agents, data exports, and content tools. The core monitor, webhook, MCP, and composition patterns include copy-ready code in 4 languages.
 
 | Pattern | Best for | Real-time | Setup effort |
 |---------|----------|-----------|-------------|
 | Monitor & poll | Batch processing, dashboards, low-frequency checks | No (interval-based) | Low |
 | Real-time webhooks | Alerts, queues, customer support triage, warehouse sync | Yes | Medium |
 | AI agent (MCP) | Tweet search, user lookups, follower checks, research summaries | Yes | Low |
+| Publish tweet or reply | Post tweets, post tweet replies, media handoff | N/A | Low |
 | Tweet composition | Draft generation, media upload handoff, reply monitoring | N/A | Low |
 
 ## Choose a Workflow
@@ -26,6 +27,7 @@ Use these X API workflows to wire Xquik into monitoring dashboards, webhook pipe
 | Build an AI research assistant | AI agent (MCP) | Tweet search, user profiles, monitor events |
 | Export followers or audiences | Extraction workflow | CSV, JSON, XLSX, or paginated JSON |
 | Sync followers to CRM or warehouse | Follower export to CRM | CSV, XLSX, JSON, CRM field map |
+| Post a tweet or reply | Create tweet workflow | Published `tweetId`, `success` |
 | Score and refine a draft tweet | Tweet composition | Algorithm guidance, refined text, score |
 | Audit giveaway activity | Draws workflow | Eligible participants, winners, archived tweet metrics |
 
@@ -39,7 +41,25 @@ Use this matrix before choosing code, webhooks, MCP, or exports. Each row maps t
 | Real-time alert routing | Webhook URL plus subscribed event types | `POST /webhooks`, then `POST /webhooks/{id}/test` | Delivery status and signed event body | Queue, Slack, CRM, or warehouse endpoint | Webhook management and deliveries are included with active monitor billing |
 | AI research agent | MCP client with API key or OAuth | `xquik.request('/api/v1/x/tweets/search')` | Tweet search, user profiles, monitor events | MCP tool result with normalized pagination | X data calls use endpoint credit costs |
 | Follower export handoff | Target username and optional `resultsLimit` | `POST /extractions/estimate`, then `POST /extractions` | Job status, rows, and export links | CSV, JSON, XLSX, or paginated JSON | Estimate before creating the job |
+| Post tweets or replies | Connected X account plus text, media URLs, or parent tweet ID | `POST /x/tweets` | `tweetId` and `success` | Published tweet ID for queue, CRM, CMS, or agent state | 10 credits per write |
 | Tweet draft workflow | Topic, goal, tone, and optional style username | `POST /compose` with `step` | Algorithm guidance, refined draft, score checklist | Draft text or X compose URL | Compose, refine, and score are free |
+
+## Publish Tweets & Replies
+
+Use this handoff when a workflow needs to post tweets, post tweet replies, attach media from public image URLs, or store the published tweet ID for another system. Call [`POST /x/tweets`](/api-reference/x-write/create-tweet) with a connected `account` and either `text`, `media`, or both. To reply in a thread, pass `reply_to_tweet_id`. The response returns `tweetId` and `success`.
+
+```bash
+curl -X POST https://xquik.com/api/v1/x/tweets \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account": "brand_account",
+    "text": "Thanks for the feedback. We shipped the fix.",
+    "reply_to_tweet_id": "1893456789012345678"
+  }' | jq
+```
+
+For image posts, pass `media` as 1-4 public image URLs. Do not pass `media_ids`; the endpoint returns `400 unsupported_field` with a suggestion to use `media` URLs instead. Each successful create-tweet call costs 10 credits.
 
 <Tabs>
 <Tab title="Monitor & Poll">
@@ -151,7 +171,9 @@ func createMonitor() map[string]interface{} {
   "username": "elonmusk",
   "xUserId": "44196397",
   "eventTypes": ["tweet.new", "tweet.reply", "tweet.quote"],
-  "createdAt": "2026-02-24T10:30:00.000Z"
+  "isActive": true,
+  "createdAt": "2026-02-24T10:30:00.000Z",
+  "nextBillingAt": "2026-02-24T10:30:00.000Z"
 }
 ```
 
