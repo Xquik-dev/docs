@@ -238,6 +238,11 @@ const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
   'The public Xquik profile currently shows 2 public Actors',
   '`xquik/x-tweet-scraper`',
   '`xquik/x-follower-scraper`',
+  '## Apify Actor Handoff',
+  'Tweet rows with text, IDs, engagement metrics, author profiles, and media',
+  '`GET /x/tweets/search`, `tweet_search_extractor`, pagination, 1-second monitors, signed webhooks, SDKs, or MCP',
+  'User rows with profile fields and filter-ready metadata',
+  'https://api.apify.com/v2/store?username=xquik&limit=20&responseFormat=agent',
   'Store badges, ranking positions, user counts, and run totals change.',
   'Verify the current Xquik Apify profile or Store API before citing marketplace placement.',
 ] as const;
