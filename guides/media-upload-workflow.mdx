@@ -1,0 +1,130 @@
+---
+title: Upload media for tweets and DMs
+description: Upload media by file or URL, then use mediaUrl for tweets and mediaId for one-image direct messages.
+keywords: ["media upload", "upload media", "Twitter media upload", "X media upload", "post tweets with media", "send DM with media", "mediaUrl", "mediaId"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use this workflow when a product, support, CRM, or AI agent system needs to upload media before posting tweets or sending direct messages. Xquik accepts local files with `multipart/form-data` and HTTPS media URLs with `application/json`.
+
+## When to use this workflow
+
+| Need | Use |
+|------|-----|
+| Upload a local image, GIF, or MP4 | `POST /x/media` with `multipart/form-data` |
+| Upload AI-generated media from a URL | `POST /x/media` with `application/json` |
+| Post tweets with uploaded media | Pass returned `mediaUrl` in the `media` array on `POST /x/tweets` |
+| Send a DM with uploaded media | Pass returned `mediaId` as the only item in `media_ids` on `POST /x/dm/{userId}` |
+
+## Data you get
+
+| Field | Use |
+|-------|-----|
+| `mediaId` | Uploaded media ID for one-item DM `media_ids` arrays. Media IDs are valid for 24 hours after upload. |
+| `mediaUrl` | Public media URL for tweet `media` arrays. |
+| `success` | `true` after upload completes. |
+
+## Step 1: Upload media by URL
+
+Use JSON URL upload when an AI agent, MCP client, or workflow tool already has a generated image URL.
+
+```bash
+curl -X POST https://xquik.com/api/v1/x/media \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account": "myxhandle",
+    "url": "https://example.com/image.png"
+  }' | jq
+```
+
+```json
+{
+  "mediaId": "1893726451023847424",
+  "mediaUrl": "https://media.xquik.com/uploads/1893726451023847424.png",
+  "success": true
+}
+```
+
+## Step 2: Post a tweet with mediaUrl
+
+`POST /x/tweets` accepts public image URLs in `media`. Use the `mediaUrl` returned by `POST /x/media`.
+
+```bash
+curl -X POST https://xquik.com/api/v1/x/tweets \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account": "myxhandle",
+    "text": "Product update with a new screenshot.",
+    "media": ["https://media.xquik.com/uploads/1893726451023847424.png"]
+  }' | jq
+```
+
+Do not send `media_ids` to `POST /x/tweets`. That endpoint rejects `media_ids` and expects the `media` URL array instead.
+
+## Step 3: Send a DM with mediaId
+
+`POST /x/dm/{userId}` accepts one uploaded media ID in `media_ids`. Use the `mediaId` returned by `POST /x/media`.
+
+```bash
+curl -X POST https://xquik.com/api/v1/x/dm/44196397 \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account": "myxhandle",
+    "text": "Here is the requested image.",
+    "media_ids": ["1893726451023847424"]
+  }' | jq
+```
+
+DMs accept exactly one uploaded media item. Send no `media_ids` field for text-only DMs.
+
+## Step 4: Upload a local file
+
+Use multipart upload when your app has the file bytes. Supported formats are AVIF, GIF, JPEG, PNG, WebP, and MP4.
+
+```bash
+curl -X POST https://xquik.com/api/v1/x/media \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -F "account=myxhandle" \
+  -F "file=@/path/to/image.png" | jq
+```
+
+For MP4 files longer than 140 seconds, add `is_long_video=true`.
+
+```bash
+curl -X POST https://xquik.com/api/v1/x/media \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -F "account=myxhandle" \
+  -F "file=@/path/to/video.mp4" \
+  -F "is_long_video=true" | jq
+```
+
+## Cost and error handling
+
+Upload media costs 10 credits per upload call. Posting the tweet or sending the DM is a separate metered write call.
+
+| Failure | What to do |
+|---------|------------|
+| `400 invalid_input` | Check `account`, file type, file presence, URL presence, and `is_long_video`. |
+| `402 no_subscription` or `402 insufficient_credits` | Subscribe or top up credits before retrying. |
+| `403 account_needs_reauth` | Reconnect the X account from the dashboard. |
+| `422 media_download_failed` | Use an HTTPS URL that returns a supported media file, or switch to multipart upload. |
+| `429` or `503` | Retry with exponential backoff and respect `Retry-After` when present. |
+
+## Handoff checklist
+
+| Handoff | Required detail |
+|---------|-----------------|
+| Tweet workflow | Save `mediaUrl` and pass it to `POST /x/tweets` as `media`. |
+| DM workflow | Save `mediaId` and pass it to `POST /x/dm/{userId}` as one `media_ids` item. |
+| Agent workflow | Prefer JSON URL upload when the agent produces a hosted image URL. |
+| File workflow | Prefer multipart upload when your app owns the file bytes. |
+
+<Note>
+  **Related:** [Upload Media](/api-reference/x-write/upload-media) &middot; [Create Tweet](/api-reference/x-write/create-tweet) &middot; [Send Direct Message](/api-reference/x-write/send-dm)
+</Note>

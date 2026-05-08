@@ -169,6 +169,22 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   '1 credit per tweet returned',
 ] as const;
 
+const REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
+  'media upload',
+  'POST /x/media',
+  'multipart/form-data',
+  'application/json',
+  '`mediaUrl`',
+  '`mediaId`',
+  'POST /x/tweets',
+  'POST /x/dm/{userId}',
+  '`media_ids`',
+  'Do not send `media_ids` to `POST /x/tweets`',
+  '10 credits per upload call',
+  'AVIF, GIF, JPEG, PNG, WebP, and MP4',
+  'Media IDs are valid for 24 hours',
+] as const;
+
 const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   '## Integration Handoff Matrix',
   '`POST /monitors`, then `GET /events`',
@@ -584,6 +600,20 @@ describe('repository discovery', (): void => {
         source,
         'Tweet search export guide',
         REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the media upload handoff clear for tweets and DMs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/media-upload-workflow.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Media upload workflow guide',
+        REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
