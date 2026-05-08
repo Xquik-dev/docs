@@ -1,7 +1,7 @@
 ---
 title: Error handling
-description: Error recovery patterns, retry strategies, and rate limit handling
-keywords: ["error codes", "retry", "exponential backoff", "rate limit", "error recovery"]
+description: Error recovery patterns for X API writes, pending tweet confirmation, billing, retries, and rate limits
+keywords: ["error codes", "retry", "exponential backoff", "rate limit", "error recovery", "x_write_unconfirmed", "writeActionId", "post tweet status", "pending confirmation"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -46,12 +46,12 @@ Every Xquik API error returns a consistent JSON body with an `error` code. Use t
 | `x_auth_failure` | 401 | No | Re-authenticate X account from the dashboard. |
 | `no_subscription` | 402 | No | Subscribe from the dashboard. |
 | `subscription_inactive` | 402 | No | Reactivate subscription from the dashboard. |
-| `no_addon` | 402 | No | Add a monitor addon from the dashboard. |
+| `no_addon` | 402 | No | Check billing status. Current plans include unlimited monitor slots. |
 | `payment_failed` | 402 | No | Update payment method from the dashboard. |
 | `no_credits` | 402 | No | Purchase credits or subscribe. |
 | `insufficient_credits` | 402 | No | Top up credits from the dashboard. |
 | `api_key_limit_reached` | 403 | No | Delete an existing key before creating a new one. |
-| `monitor_limit_reached` | 403 | No | Delete a monitor or add capacity ($5/month). |
+| `monitor_limit_reached` | 403 | No | Check billing status. Current plans include unlimited monitor slots. |
 | `account_needs_reauth` | 403 | No | Re-authenticate X account from the dashboard. |
 | `account_restricted` | 403 | No | Resolve account issue on x.com (locked, suspended, or temporary restriction), then retry. |
 | `not_found` | 404 | No | Verify the resource ID. |
@@ -70,7 +70,7 @@ Every Xquik API error returns a consistent JSON body with an `error` code. Use t
 | `x_target_not_found` | 422 | No | Verify target ID or username. |
 | `x_content_too_long` | 422 | No | Shorten tweet to 280 characters or fewer. |
 | `x_rejected` | 422 | No | Check request parameters. Contact support if persistent. |
-| `x_write_unconfirmed` | 202 | No | Verify outcome on X before retrying. |
+| `x_write_unconfirmed` | 202 | No | Poll `GET /x/write-actions/{id}` with `writeActionId` before retrying. |
 | `rate_limit_exceeded` | 429 | Yes | Retry with exponential backoff. Respect `Retry-After`. |
 | `login_cooldown` | 429 | No | Wait out the cooldown reported in `retryAfterMs`, then retry. |
 | `x_api_rate_limited` | 502 | Yes | Retry in a few minutes. |
@@ -134,7 +134,7 @@ Some errors include additional context fields (e.g. `limit`, `retryAfter`).
     |------|-------------|-------------------|
     | `no_subscription` | No active subscription | Subscribe from the [dashboard](https://xquik.com/dashboard). |
     | `subscription_inactive` | Subscription is not active | Reactivate from the [dashboard](https://xquik.com/dashboard). |
-    | `no_addon` | No monitor addon on subscription | Add a monitor addon from the [dashboard](https://xquik.com/dashboard). |
+    | `no_addon` | Legacy monitor add-on state | Check billing status. Current plans include unlimited monitor slots. |
     | `payment_failed` | Payment processing failed | Update payment method from the [dashboard](https://xquik.com/subscription). |
     | `no_credits` | No credits available | Purchase credits or subscribe from the [dashboard](https://xquik.com/dashboard). |
     | `insufficient_credits` | Not enough credits for this operation | Check balance via [Get Account](/api-reference/account/get). [Top up credits](/api-reference/credits/topup) from the dashboard. |
@@ -146,7 +146,7 @@ Some errors include additional context fields (e.g. `limit`, `retryAfter`).
     | Code | Description | Recommended Action |
     |------|-------------|-------------------|
     | `api_key_limit_reached` | API key limit reached (100 max) | Delete an existing key before creating a new one. |
-    | `monitor_limit_reached` | Plan monitor limit exceeded | Delete an existing monitor or add capacity ($5/month per extra monitor). |
+    | `monitor_limit_reached` | Legacy monitor slot limit reached | Check billing status. Current plans include unlimited monitor slots. |
     | `account_needs_reauth` | Connected X account needs re-authentication | Re-authenticate the X account from the [dashboard](https://xquik.com/dashboard). |
     | `account_restricted` | Connected X account is restricted (locked, suspended, recovering, or temporary issue) | Check account health in the [dashboard](https://xquik.com/dashboard) and resolve on x.com before retrying. |
   </Accordion>
@@ -188,11 +188,11 @@ Some errors include additional context fields (e.g. `limit`, `retryAfter`).
   </Accordion>
 
   <Accordion title="Unconfirmed write (202)">
-    The write action may have completed but confirmation could not be obtained. Do not retry without verifying the outcome first.
+    The write action was dispatched, but final confirmation is still pending. The response includes `status: "pending_confirmation"`, `writeActionId`, `charged: false`, and `retryable: false`.
 
     | Code | Description | Recommended Action |
     |------|-------------|-------------------|
-    | `x_write_unconfirmed` | Action may have been completed but could not be confirmed | Check the X account timeline or profile to verify before retrying. Do not retry without checking first to avoid duplicates. Not retryable. |
+    | `x_write_unconfirmed` | Action may have been completed but could not be confirmed | Store `writeActionId`, call [Get Write Action Status](/api-reference/x-write/get-write-action-status), and do not retry-send while status is `pending_confirmation`. |
   </Accordion>
 
   <Accordion title="Rate limit errors (429)">

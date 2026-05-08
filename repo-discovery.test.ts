@@ -74,6 +74,9 @@ const REQUIRED_LLMS_SNIPPETS = [
   'https://xquik.com/mcp',
   'npx skills add Xquik-dev/x-twitter-scraper',
   'https://docs.xquik.com/openapi.yaml',
+  '"status": "pending_confirmation"',
+  '"writeActionId": "42"',
+  '`GET /x/write-actions/{id}`',
 ] as const;
 
 const REQUIRED_MCP_CONTRACT_SNIPPETS = [
@@ -151,6 +154,25 @@ const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
   '`402 insufficient_credits`',
   '`Retry-After`',
   '`202 x_write_unconfirmed`',
+  '`GET /x/write-actions/{id}`',
+  '`writeActionId`',
+  '`pending_confirmation`',
+] as const;
+
+const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
+  'post tweet status',
+  '`x_write_unconfirmed` | 202 | No | Poll `GET /x/write-actions/{id}` with `writeActionId` before retrying.',
+  'The write action was dispatched, but final confirmation is still pending.',
+  'The response includes `status: "pending_confirmation"`, `writeActionId`, `charged: false`, and `retryable: false`.',
+  'Store `writeActionId`, call [Get Write Action Status](/api-reference/x-write/get-write-action-status), and do not retry-send while status is `pending_confirmation`.',
+  '`no_addon` | 402 | No | Check billing status. Current plans include unlimited monitor slots.',
+  '`monitor_limit_reached` | 403 | No | Check billing status. Current plans include unlimited monitor slots.',
+] as const;
+
+const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
+  'Add a monitor addon from the dashboard.',
+  'Delete a monitor or add capacity ($5/month).',
+  'add capacity ($5/month per extra monitor)',
 ] as const;
 
 const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
@@ -705,6 +727,32 @@ describe('repository discovery', (): void => {
         'API overview',
         REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS,
       ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps write confirmation recovery current in error handling', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/error-handling.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'Error handling guide',
+          REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS,
+        ),
+        ...FORBIDDEN_ERROR_HANDLING_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Error handling guide contains stale recovery wording "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 

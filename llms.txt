@@ -112,14 +112,14 @@ All errors return JSON:
 Some errors include additional context:
 
 ```json
-{ "error": "monitor_limit_reached", "limit": 1 }
+{ "error": "x_write_unconfirmed", "status": "pending_confirmation", "writeActionId": "42", "charged": false, "retryable": false }
 ```
 
 HTTP status codes: `400` (validation), `401` (unauthenticated), `402` (no subscription / insufficient credits), `403` (limit reached), `404` (not found), `409` (conflict), `429` (rate limited), `500` (server error), `502` (temporarily unavailable).
 
 Common error codes: `invalid_input`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`, `invalid_username`, `invalid_tool_type`, `invalid_format`, `invalid_params`, `missing_query`, `missing_params`, `webhook_inactive`, `api_key_limit_reached`, `unauthenticated`, `no_subscription`, `subscription_inactive`, `no_credits`, `insufficient_credits`, `no_addon`, `monitor_limit_reached`, `not_found`, `user_not_found`, `tweet_not_found`, `monitor_already_exists`, `x_api_rate_limited`, `x_daily_limit`, `x_write_unconfirmed`, `internal_error`, `x_api_unavailable`, `x_api_unauthorized`.
 
-Write-specific error codes: `x_daily_limit` (429) - X account reached daily posting limit, wait 24 hours, not retryable. `x_write_unconfirmed` (202) - action may have completed but could not be confirmed, verify on X before retrying to avoid duplicates, not retryable.
+Write-specific error codes: `x_daily_limit` (429) - X account reached daily posting limit, wait 24 hours, not retryable. `x_write_unconfirmed` (202) - action was dispatched but confirmation is pending; store `writeActionId`, call `GET /x/write-actions/{id}`, and do not retry-send while status is `pending_confirmation`.
 
 Retry strategy: retry only on `429` and `5xx`. Formula: `delay = baseDelay * 2^attempt + random(0, jitter)`. Max 3 retries. Respect `Retry-After` header.
 
