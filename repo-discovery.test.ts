@@ -187,6 +187,16 @@ const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
   'Verify the current Xquik Apify profile or Store API before citing marketplace placement.',
 ] as const;
 
+const REQUIRED_X_API_ALTERNATIVE_SNIPPETS = [
+  'Twitter API alternative',
+  'post tweets',
+  'send direct messages',
+  'Owned Reads',
+  'USD 0.001 per resource',
+  'posts, bookmarks, followers, likes, lists',
+  'Developer Console',
+] as const;
+
 const FORBIDDEN_APIFY_ALTERNATIVE_SNIPPETS = [
   ['During', 'this', 'update'].join(' '),
   ['Rising', 'star'].join(' '),
@@ -564,6 +574,20 @@ describe('repository discovery', (): void => {
     }
 
     expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps the X API alternative aligned with current official pricing signals', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/x-api.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'X API alternative',
+        REQUIRED_X_API_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps volatile Apify marketplace claims out of public Markdown', (): void => {
