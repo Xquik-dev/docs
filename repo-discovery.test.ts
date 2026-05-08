@@ -154,6 +154,21 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
   '1 credit per tweet returned',
 ] as const;
 
+const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
+  'scrape tweets',
+  '`tweet_search_extractor`',
+  'POST /extractions/estimate',
+  'POST /extractions',
+  'GET /extractions/{id}',
+  'GET /x/tweets/search',
+  'format=csv',
+  'format=xlsx',
+  'CSV, JSON, or XLSX',
+  '`next_cursor`',
+  '`resultsLimit`',
+  '1 credit per tweet returned',
+] as const;
+
 const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   '## Integration Handoff Matrix',
   '`POST /monitors`, then `GET /events`',
@@ -550,6 +565,20 @@ describe('repository discovery', (): void => {
         source,
         'Tweet replies export guide',
         REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps tweet search export workflow steps concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/tweet-search-export.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Tweet search export guide',
+        REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
