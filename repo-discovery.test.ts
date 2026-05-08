@@ -86,6 +86,16 @@ const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
   '/guides/zapier',
 ] as const;
 
+const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
+  'Pipedream Workflows',
+  'one credit per 30 seconds',
+  'HTTP trigger',
+  'steps.trigger.event',
+  'Pipedream CLI',
+  'pd publish',
+  '/guides/pipedream',
+] as const;
+
 const MAX_LLMS_TXT_CHARS = 48_000;
 
 const VAGUE_PUBLIC_POSITIONING = [
@@ -266,6 +276,20 @@ describe('repository discovery', (): void => {
         source,
         'Zapier alternative',
         REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps Pipedream comparison workflow details source-backed', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/pipedream.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Pipedream alternative',
+        REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
