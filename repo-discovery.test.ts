@@ -76,6 +76,18 @@ const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   'Salesforce Bulk API 2.0',
 ] as const;
 
+const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
+  '## Integration Handoff Matrix',
+  '`POST /monitors`, then `GET /events`',
+  '`POST /webhooks`, then `POST /webhooks/{id}/test`',
+  "`xquik.request('/api/v1/x/tweets/search')`",
+  '`POST /extractions/estimate`, then `POST /extractions`',
+  '`POST /compose` with `step`',
+  'CSV, JSON, XLSX, or paginated JSON',
+  '21 credits per hour',
+  'Compose, refine, and score are free',
+] as const;
+
 const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
   'API by Zapier',
   'Webhooks by Zapier',
@@ -274,6 +286,20 @@ describe('repository discovery', (): void => {
         source,
         'Follower export CRM guide',
         REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the workflows overview handoff matrix concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/workflows.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Workflows overview',
+        REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
