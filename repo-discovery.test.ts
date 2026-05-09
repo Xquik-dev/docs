@@ -517,6 +517,20 @@ const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
   '/guides/pipedream',
 ] as const;
 
+const REQUIRED_N8N_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed n8n scope',
+  "n8n's official X node docs list built-in operations for direct messages",
+  'creating or replying to tweets, deleting tweets, searching tweets, liking tweets, retweeting tweets',
+  "n8n's official HTTP Request node docs describe REST calls to any app or service with a REST API",
+  'query parameters, headers, form, form-data, JSON, binary-file, and raw request bodies',
+  'production executions started automatically by triggers, schedules, or polling',
+  'projects, sharing, external credential storage, log streaming, multi-main mode, SSO, and Git version control',
+  'n8n HTTP Request node',
+  'n8n executions',
+  'n8n Community Edition',
+  '/guides/n8n',
+] as const;
+
 const REQUIRED_MAKE_ALTERNATIVE_SNIPPETS = [
   '## Source-backed Make scope',
   "Make's official pricing page says each module action in a scenario counts as one credit, Free includes 1,000 credits/month",
@@ -1459,6 +1473,20 @@ describe('repository discovery', (): void => {
         source,
         'Alternatives workflow shortlist',
         REQUIRED_WORKFLOW_SHORTLIST_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the n8n alternative focused on source-backed workflow handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/n8n.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'n8n alternative',
+        REQUIRED_N8N_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
