@@ -498,12 +498,21 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed Zapier scope',
   'API by Zapier',
   'Webhooks by Zapier',
+  'Zaps, Agents, and Zapier MCP',
+  'OAuth2, static headers, or no authentication',
+  'New Item from API, API Request, exact request passthrough, JQ extraction',
   'Zapier Platform CLI',
   'REST Hooks',
   'bundle.targetUrl',
+  '`performSubscribe`',
+  '`performUnsubscribe`',
   '20,000 requests every 5 minutes',
+  '1,000 requests every 5 minutes',
+  'task tiers from 100 tasks/month through custom task limits',
+  'MCP tool calls that use two tasks from the plan quota',
   '/guides/zapier',
 ] as const;
 
