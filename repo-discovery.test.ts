@@ -687,6 +687,21 @@ const REQUIRED_ZERNIO_ALTERNATIVE_SNIPPETS = [
   'account connection, post scheduling, media upload, analytics, ads, messages, comments, reviews, webhooks, and account settings',
 ] as const;
 
+const REQUIRED_TWSCRAPE_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed twscrape scope',
+  "twscrape's official GitHub README describes it as a Twitter GraphQL API implementation with SNScrape data models",
+  'Installation uses `pip install twscrape`',
+  'Search and GraphQL Twitter APIs, async/await functions that can run multiple scrapers in parallel',
+  'login flow with email verification, saved account sessions, raw Twitter API responses, SNScrape models',
+  'requires authorized X/Twitter accounts to work with the API',
+  'adding accounts with cookies or login credentials, login and relogin CLI commands, account status inspection',
+  'search tabs for Top, Latest, and Media; tweet details; retweeters; tweet replies; user lookup by login or ID',
+  'followers; verified followers; subscriptions; user tweets; user replies; user media; list timelines; trends; raw responses',
+  'one-document-per-line stdout output, raw output, desired `limit`, and per-endpoint pagination behavior',
+  'request limits reset every 15 minutes per endpoint',
+  '`user_tweets` and `user_tweets_and_replies` can return about 3,200 tweets maximum',
+] as const;
+
 const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
   'schedule posts, review inboxes, analyze campaigns, search tweets, export followers, monitor accounts or keywords, send webhooks',
   'Social media management, publishing, engagement, listening, analytics, ads, and enterprise collaboration suite.',
@@ -1669,6 +1684,20 @@ describe('repository discovery', (): void => {
         source,
         'Zernio alternative',
         REQUIRED_ZERNIO_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the twscrape alternative current for library handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/twscrape.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'twscrape alternative',
+        REQUIRED_TWSCRAPE_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
