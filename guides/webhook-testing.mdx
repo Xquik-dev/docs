@@ -1,14 +1,44 @@
 ---
 title: Webhook testing
-description: Test webhook integrations locally with ngrok, RequestBin, and CLI tools
-keywords: ["webhook testing", "ngrok", "local development", "signature verification", "webhook.site"]
+description: Test webhook integrations with signed test deliveries, ngrok, webhook.site, and CLI tools
+keywords: ["webhook testing", "signed webhook", "ngrok", "local development", "signature verification", "webhook.site"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Test your webhook integration before deploying to production. Use these tools to receive real deliveries locally, inspect payloads, and debug failures.
+Test your webhook integration before deploying to production. Use Xquik's signed test delivery, local HTTPS tunnels, payload inspectors, and delivery logs to verify handlers before real monitor events arrive.
+
+## Test with Xquik first
+
+Use the [Test Webhook](/api-reference/webhooks/test) endpoint after you create a webhook. Xquik sends a real `webhook.test` delivery to the configured URL with the same `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` headers used for production monitor events.
+
+```bash
+curl -X POST https://xquik.com/api/v1/webhooks/15/test \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+**Response when your endpoint accepts the delivery:**
+
+```json
+{
+  "success": true,
+  "statusCode": 200
+}
+```
+
+**Response when your endpoint rejects the delivery:**
+
+```json
+{
+  "success": false,
+  "statusCode": 500,
+  "error": "HTTP 500"
+}
+```
+
+Check your server logs for the `webhook.test` payload, verify the HMAC before processing it, and return a 2xx response only after your handler accepts the event.
 
 ## Local testing with ngrok
 
@@ -63,6 +93,16 @@ Test your webhook integration before deploying to production. Use these tools to
 
     Save the `secret` from the response for signature verification.
   </Step>
+  <Step title="Send a signed test delivery">
+    Trigger a signed `webhook.test` request through the tunnel before waiting for real tweet events:
+
+    ```bash
+    curl -X POST https://xquik.com/api/v1/webhooks/15/test \
+      -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+    ```
+
+    Inspect your app logs and the ngrok web inspector at `http://localhost:4040`.
+  </Step>
   <Step title="Trigger events">
     When a monitored account posts a tweet, Xquik delivers the event through ngrok to your local server. Check your server logs and the ngrok web inspector at `http://localhost:4040`.
   </Step>
@@ -106,7 +146,7 @@ Use [webhook.site](https://webhook.site) to inspect webhook payloads without run
 
 ## Sending test payloads
 
-Simulate a webhook delivery to your local handler without waiting for real events. This is useful for testing signature verification and event processing logic.
+Simulate a webhook delivery to your local handler without calling Xquik. This is useful for unit tests or offline debugging. For end-to-end verification of the configured webhook URL, prefer `POST /webhooks/{id}/test`.
 
 ```bash
 # Generate a test signature

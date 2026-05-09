@@ -247,10 +247,9 @@ import { createHash } from "node:crypto";
 const processedPayloads = new Set();
 
 app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
-  const signature = req.headers["x-xquik-signature"];
   const payload = req.body.toString();
 
-  if (!verifyWebhookSignature(payload, signature, WEBHOOK_SECRET)) {
+  if (!verifyWebhook(req, WEBHOOK_SECRET)) {
     return res.status(401).send("Invalid signature");
   }
 
@@ -278,10 +277,9 @@ processed_payloads = set()
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    signature = request.headers.get("X-Xquik-Signature", "")
     payload = request.get_data()
 
-    if not verify_webhook_signature(payload, signature, WEBHOOK_SECRET):
+    if not verify_webhook(request, WEBHOOK_SECRET):
         return "Invalid signature", 401
 
     # Deduplicate by hashing the raw payload

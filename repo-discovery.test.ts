@@ -265,6 +265,26 @@ const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   'Do not pass multiple IDs, an empty array, or `reply_to_message_id`',
 ] as const;
 
+const REQUIRED_WEBHOOK_TESTING_SNIPPETS = [
+  'Test with Xquik first',
+  'POST /webhooks/{id}/test',
+  '`webhook.test` delivery',
+  '`X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce`',
+  '"success": true',
+  '"statusCode": 200',
+  'For end-to-end verification of the configured webhook URL, prefer `POST /webhooks/{id}/test`.',
+] as const;
+
+const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
+  'if (!verifyWebhook(req, WEBHOOK_SECRET))',
+  'if not verify_webhook(request, WEBHOOK_SECRET):',
+] as const;
+
+const FORBIDDEN_WEBHOOK_VERIFICATION_SNIPPETS = [
+  'verifyWebhookSignature(',
+  'verify_webhook_signature(',
+] as const;
+
 const REQUIRED_SEND_DM_API_SNIPPETS = [
   'Twitter DM API',
   'X direct message API',
@@ -872,6 +892,38 @@ describe('repository discovery', (): void => {
         'Direct message workflow guide',
         REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS,
       ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps webhook testing and verification examples runnable', (): void => {
+    expect.assertions(1);
+
+    const testing = readFileSync('guides/webhook-testing.mdx', 'utf8');
+    const verification = readFileSync('webhooks/verification.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          testing,
+          'Webhook testing guide',
+          REQUIRED_WEBHOOK_TESTING_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          verification,
+          'Webhook verification guide',
+          REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS,
+        ),
+        ...FORBIDDEN_WEBHOOK_VERIFICATION_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            verification.includes(snippet)
+              ? [
+                  {
+                    issue: `Webhook verification guide references undefined helper "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
