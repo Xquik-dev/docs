@@ -798,6 +798,22 @@ const REQUIRED_TRYPOST_ALTERNATIVE_SNIPPETS = [
   'REST API. They also list Build with AI for connecting AI assistants through MCP.',
 ] as const;
 
+const REQUIRED_XANGUARD_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed Xanguard scope',
+  'sub-second Twitter/X alerts for crypto',
+  'Telegram, REST API, HMAC-signed webhooks, and WebSocket streaming on B2B plans',
+  '14 REST API endpoints, 4 delivery channels, HMAC-SHA256 webhook signatures',
+  'plans from USD 19/month paid in SOL',
+  'keyword filters, mute rules, reply and repost exclusions, contract detection',
+  '4 real-time modules in one connection: tweets, follows, profile changes, and community monitoring',
+  'full untruncated text, media URLs, quoted tweet content, and contract address extraction',
+  'wss://api.xanguard.tech/v1/dt/realtime/ws',
+  'RT 25 at USD 49/month for 25 tracked accounts',
+  'RT 100 at USD 149/month for 100 tracked accounts',
+  'RT 500 at USD 499/month for 500 tracked accounts',
+  'plans are payable with SOL and Telegram Stars',
+] as const;
+
 const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
   'schedule posts, review inboxes, analyze campaigns, search tweets, export followers, monitor accounts or keywords, send webhooks',
   'Social media management, publishing, engagement, listening, analytics, ads, and enterprise collaboration suite.',
@@ -1878,6 +1894,20 @@ describe('repository discovery', (): void => {
         source,
         'TryPost alternative',
         REQUIRED_TRYPOST_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Xanguard alternative current for crypto-alert handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/xanguard.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Xanguard alternative',
+        REQUIRED_XANGUARD_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
