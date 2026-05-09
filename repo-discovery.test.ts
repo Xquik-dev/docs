@@ -90,6 +90,26 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
   'transform the same records into CSV or XLSX',
 ] as const;
 
+const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
+  '## Workflow: Search Tweets to CSV',
+  '`client.x.tweets.search`',
+  '`GET /x/tweets/search`',
+  '`TweetSearchParams`',
+  '`q`',
+  '`limit`',
+  '`cursor`',
+  '`since_time`',
+  '`until_time`',
+  '`query_type`',
+  '`PaginatedTweets`',
+  '`page.tweets`',
+  '`page.has_next_page`',
+  '`page.next_cursor`',
+  'Tweet search costs 1 credit per tweet returned.',
+  'Write `page.tweets` to CSV for analysts',
+  'call `.to_json()` for JSON export',
+] as const;
+
 const REQUIRED_LLMS_SNIPPETS = [
   '## Agent Entry Points',
   'https://context7.com/xquik-dev/xquik-docs',
@@ -1392,6 +1412,20 @@ describe('repository discovery', (): void => {
         source,
         'Go SDK workflow docs',
         REQUIRED_GO_SDK_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Python SDK page useful for tweet search handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('sdks/python.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Python SDK workflow docs',
+        REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });

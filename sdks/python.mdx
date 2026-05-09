@@ -11,6 +11,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Use the Python SDK for typed sync or async access to Xquik from scripts, workers, notebooks, and backend services.
 
+Use this page when you need Python to search tweets, scrape tweets to CSV or JSON, export followers, upload media, send direct messages, monitor tweets, or hand X data to pandas, a warehouse, a queue, or an agent workflow.
+
 ## Install
 
 ```bash
@@ -60,6 +62,94 @@ async def main() -> None:
 
 asyncio.run(main())
 ```
+
+## Workflow: Search Tweets to CSV
+
+This job is for data scripts, notebooks, and scheduled workers that need tweet search results in a file analysts can open. It calls `GET /x/tweets/search` through `client.x.tweets.search`, uses the generated `TweetSearchParams` shape, and writes one CSV row per returned tweet.
+
+```python
+import csv
+from pathlib import Path
+
+from x_twitter_scraper import XTwitterScraper
+
+client = XTwitterScraper()
+output = Path("xquik-tweet-search.csv")
+cursor = None
+
+with output.open("w", newline="", encoding="utf-8") as file:
+    writer = csv.DictWriter(
+        file,
+        fieldnames=[
+            "id",
+            "text",
+            "author_username",
+            "created_at",
+            "like_count",
+            "reply_count",
+            "retweet_count",
+            "quote_count",
+            "view_count",
+        ],
+    )
+    writer.writeheader()
+
+    while True:
+        page = client.x.tweets.search(
+            q="from:xquikcom webhook OR SDK",
+            limit=100,
+            query_type="Latest",
+            cursor=cursor,
+        )
+
+        for tweet in page.tweets:
+            writer.writerow(
+                {
+                    "id": tweet.id,
+                    "text": tweet.text,
+                    "author_username": tweet.author.username if tweet.author else "",
+                    "created_at": tweet.created_at or "",
+                    "like_count": tweet.like_count or 0,
+                    "reply_count": tweet.reply_count or 0,
+                    "retweet_count": tweet.retweet_count or 0,
+                    "quote_count": tweet.quote_count or 0,
+                    "view_count": tweet.view_count or 0,
+                }
+            )
+
+        if not page.has_next_page or not page.next_cursor:
+            break
+        cursor = page.next_cursor
+```
+
+The method accepts the same query inputs as the REST endpoint:
+
+| Python argument | REST query parameter | Use it for |
+| --- | --- | --- |
+| `q` | `q` | Required X search query with keywords, handles, hashtags, or operators. |
+| `limit` | `limit` | Page size from 1 to 200. Remaining credits can lower the returned count. |
+| `cursor` | `cursor` | Opaque cursor from `page.next_cursor` for the next page. |
+| `since_time` | `sinceTime` | ISO 8601 lower time bound. |
+| `until_time` | `untilTime` | ISO 8601 upper time bound. |
+| `query_type` | `queryType` | `Latest` for chronological results or `Top` for engagement-ranked results. |
+
+## Returned Data & Handoff
+
+`client.x.tweets.search` returns a `PaginatedTweets` Pydantic model:
+
+| Python field | JSON field | Handoff value |
+| --- | --- | --- |
+| `page.tweets` | `tweets` | List of `SearchTweet` records. Each tweet includes `id`, `text`, optional `author`, `created_at`, `like_count`, `reply_count`, `retweet_count`, `quote_count`, `bookmark_count`, `view_count`, and `is_note_tweet` when available. |
+| `page.has_next_page` | `has_next_page` | Boolean that tells your script whether another page exists. |
+| `page.next_cursor` | `next_cursor` | Cursor to store with the job checkpoint and pass back as `cursor`. |
+
+Write `page.tweets` to CSV for analysts, call `.to_json()` for JSON export, call `.to_dict()` before loading a warehouse, or pass `id`, `text`, `author.username`, `created_at`, and engagement counts to a CRM or enrichment job.
+
+## Cost, Limits & Retries
+
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. Read calls are rate-limited, and `429` responses include `Retry-After`.
+
+The client retries connection errors, 408, 409, 429, and 5xx responses by default. Handle `RateLimitError` with backoff, and fix 400, 401, 403, 404, or 422 responses before retrying.
 
 ## Error Handling
 
