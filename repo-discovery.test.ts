@@ -620,11 +620,18 @@ const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
 const REQUIRED_SPROUT_SOCIAL_ALTERNATIVE_SNIPPETS = [
   'plan posts, manage a Smart Inbox, analyze reports, search tweets, export followers, monitor accounts or keywords, send webhooks',
   'Social media management, publishing, engagement, analytics, listening, advocacy, influencer, and customer-care suite.',
-  "Sprout's features page lists unified social inbox, multi-profile publishing, multimedia publishing, ViralPost send-time optimization, message approval workflow, bulk scheduling, PDF/CSV reporting, X competitor reports, X keyword reports, CRM integrations, and chatbots.",
+  '## Source-backed Sprout Social scope',
+  'Brand Keywords with keyword, hashtag, and location searches across X',
+  'Optimal Send Times based on 16 weeks of audience data',
+  'network, cross-network, paid, competitive, and internal reports',
+  'Premium Analytics, Listening, Advocacy, Influencer Marketing, and Enterprise options',
+  "Sprout's official pages describe Smart Inbox, Brand Keywords for X, multi-profile publishing, approval workflows, analytics reports, listening, Premium Analytics, Advocacy, Influencer Marketing, Enterprise options, CRM integrations, and chatbots.",
   'tweet IDs, author IDs, timestamps, post results, CSV/JSON/XLSX exports, webhook signatures, and error handling.',
   'Sprout seats, social profiles, Premium Analytics, Listening, Advocacy, Influencer Marketing, and Enterprise scope',
   'Official Sprout Social features',
   'Official Sprout Social pricing',
+  'Sprout Social publishing',
+  'Sprout Social analytics',
 ] as const;
 
 const REQUIRED_BUFFER_ALTERNATIVE_SNIPPETS = [
