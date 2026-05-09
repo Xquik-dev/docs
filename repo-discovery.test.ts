@@ -792,6 +792,27 @@ const REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS = [
   'Validate REST, SDK, webhook, and MCP handoff needs before buying.',
 ] as const;
 
+const REQUIRED_TWEETSTREAM_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed TweetStream scope',
+  'Twitter WebSocket API for crypto traders that streams structured JSON for tracked accounts',
+  'track accounts with keyword filters',
+  'OCR text, detected crypto assets, live prices, and Polymarket detection',
+  'Basic annual plan at USD 139/month billed annually with 3 WebSocket connections and 50 monitored X/Twitter accounts',
+  'Elite annual plan at USD 349/month billed annually with 10 WebSocket connections and 250 monitored accounts',
+  'monthly Basic pricing from USD 199/month and Elite pricing at USD 499/month',
+  '`wss://ws.tweetstream.io/ws`, protocol `tweetstream.v1`, and an auth subprotocol',
+  'Bearer auth headers and query parameters are accepted',
+  '`v`, `t`, `op`, `ts`, and `d`',
+  '`tweet`, `account`, or `control`',
+  '`content`, `meta`, `update`, `delete`, `profile_update`, `follow`, `auth_ping`, `auth_pong`, and `twitter_handles_result`',
+  'tweet events send a `content` message first, optional `update` messages, and a `meta` message when enrichment is ready',
+  '`tweetId`, `text`, `createdAt`, `author`, optional `link`, optional `media`, and optional `ref`',
+  'profile updates and follow notifications',
+  'avatar, banner, bio, handle, location, and name',
+  'OCR text and detected crypto assets, centralized-exchange markets, and prediction markets',
+  '`tweetId`, `body`, `time`, `receivedTime`, `link`, `messageType`, `twitterHandle`, `twitterId`, `content`, and optional `meta`',
+] as const;
+
 const REQUIRED_TWEET_HUNTER_ALTERNATIVE_SNIPPETS = [
   '## Source-backed Tweet Hunter scope',
   'all-in-one AI X tool for growing an audience and brand on X',
@@ -1940,6 +1961,20 @@ describe('repository discovery', (): void => {
         source,
         'Hypefury alternative',
         REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the TweetStream alternative current for WebSocket alert handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/tweetstream.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'TweetStream alternative',
+        REQUIRED_TWEETSTREAM_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
