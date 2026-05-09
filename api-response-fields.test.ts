@@ -61,6 +61,11 @@ const PRODUCT_API_KEY_ID_ROUTE_PATH = join(
   'app/api/v1/api-keys/[id]/route.ts',
 );
 const PRODUCT_DRAFT_FORMAT_PATH = join(PRODUCT_ROOT, 'lib/api/draft-format.ts');
+const PRODUCT_STYLE_COLUMNS_PATH = join(PRODUCT_ROOT, 'lib/styles/columns.ts');
+const PRODUCT_STYLE_PERFORMANCE_ROUTE_PATH = join(
+  PRODUCT_ROOT,
+  'app/api/v1/styles/[id]/performance/route.ts',
+);
 const PRODUCT_NOTIFICATIONS_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/notifications/route.ts',
@@ -254,6 +259,12 @@ const API_KEYS_REVOKE_PAGE = 'api-reference/api-keys/revoke.mdx';
 const DRAFTS_LIST_PAGE = 'api-reference/drafts/list.mdx';
 const DRAFTS_CREATE_PAGE = 'api-reference/drafts/create.mdx';
 const DRAFTS_GET_PAGE = 'api-reference/drafts/get.mdx';
+const STYLES_ANALYZE_PAGE = 'api-reference/styles/analyze.mdx';
+const STYLES_SAVE_PAGE = 'api-reference/styles/save.mdx';
+const STYLES_GET_PAGE = 'api-reference/styles/get.mdx';
+const STYLES_LIST_PAGE = 'api-reference/styles/list.mdx';
+const STYLES_COMPARE_PAGE = 'api-reference/styles/compare.mdx';
+const STYLES_PERFORMANCE_PAGE = 'api-reference/styles/performance.mdx';
 const ARTICLE_PAGE = 'api-reference/x/get-article.mdx';
 const DM_HISTORY_PAGE = 'api-reference/x/dm-history.mdx';
 const SEND_DM_PAGE = 'api-reference/x-write/send-dm.mdx';
@@ -1222,6 +1233,33 @@ function productBulkRetryFields(): readonly string[] {
   return objectLiteralFields(source.slice(responseStart, responseEnd + 1));
 }
 
+function productStylePerformanceFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_STYLE_PERFORMANCE_ROUTE_PATH, 'utf8');
+  const responseStart = source.indexOf('return NextResponse.json({\n        tweets,');
+  if (responseStart < 0) {
+    throw new Error('Could not locate style performance success response.');
+  }
+  const responseEnd = source.indexOf('});', responseStart);
+  const tweetTypeStart = source.indexOf('const tweets: Array<{');
+  if (tweetTypeStart < 0) {
+    throw new Error('Could not locate style performance tweet fields.');
+  }
+  const tweetTypeEnd = source.indexOf('}> = [];', tweetTypeStart);
+  if (tweetTypeEnd < 0) {
+    throw new Error('Could not locate style performance tweet field end.');
+  }
+  const tweetFields = [
+    ...source
+      .slice(tweetTypeStart, tweetTypeEnd)
+      .matchAll(/readonly (?<field>[A-Za-z_]\w*):/gu),
+  ].map((match): string => match.groups?.['field'] ?? '');
+
+  return uniqueSorted([
+    ...objectLiteralFields(source.slice(responseStart, responseEnd + 1)),
+    ...tweetFields,
+  ]);
+}
+
 function productSuccessResponseFields(): readonly string[] {
   const source = readFileSync(PRODUCT_V1_CRUD_PATH, 'utf8');
   const body = mapFunctionBody(source, 'successResponse');
@@ -1765,6 +1803,53 @@ describe('API response field docs', (): void => {
       ),
       ...setDifference(draftFields, getFields).map(
         (field): string => `${DRAFTS_GET_PAGE} is missing ${field}.`,
+      ),
+    ]).toStrictEqual([]);
+  });
+
+  it('keeps style response fields aligned with product style formatting', (): void => {
+    expect.assertions(1);
+
+    const productSourceExists =
+      existsSync(PRODUCT_STYLE_COLUMNS_PATH) &&
+      existsSync(PRODUCT_STYLE_PERFORMANCE_ROUTE_PATH);
+    if (!productSourceExists) {
+      expect(productSourceExists).toBe(false);
+      return;
+    }
+
+    const detailFields = productReturnFieldsFromPath(
+      PRODUCT_STYLE_COLUMNS_PATH,
+      'formatStyleCacheRow',
+    );
+    const summaryFields = detailFields.filter(
+      (field): boolean => field !== 'tweets',
+    );
+    const performanceFields = productStylePerformanceFields();
+
+    expect([
+      ...setDifference(detailFields, responseFields(STYLES_ANALYZE_PAGE)).map(
+        (field): string => `${STYLES_ANALYZE_PAGE} is missing ${field}.`,
+      ),
+      ...setDifference(detailFields, responseFields(STYLES_SAVE_PAGE)).map(
+        (field): string => `${STYLES_SAVE_PAGE} is missing ${field}.`,
+      ),
+      ...setDifference(detailFields, responseFields(STYLES_GET_PAGE)).map(
+        (field): string => `${STYLES_GET_PAGE} is missing ${field}.`,
+      ),
+      ...setDifference(
+        ['styles', ...summaryFields],
+        responseFields(STYLES_LIST_PAGE),
+      ).map((field): string => `${STYLES_LIST_PAGE} is missing ${field}.`),
+      ...setDifference(
+        ['style1', 'style2', ...detailFields],
+        responseFields(STYLES_COMPARE_PAGE),
+      ).map((field): string => `${STYLES_COMPARE_PAGE} is missing ${field}.`),
+      ...setDifference(
+        performanceFields,
+        responseFields(STYLES_PERFORMANCE_PAGE),
+      ).map(
+        (field): string => `${STYLES_PERFORMANCE_PAGE} is missing ${field}.`,
       ),
     ]).toStrictEqual([]);
   });
