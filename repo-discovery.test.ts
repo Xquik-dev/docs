@@ -766,6 +766,23 @@ const REQUIRED_TAPLIO_ALTERNATIVE_SNIPPETS = [
   'Use current Taplio plan limits when the job is LinkedIn content or lead engagement.',
 ] as const;
 
+const REQUIRED_POSTWISE_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed Postwise scope',
+  'integrations for Twitter, LinkedIn, and Meta Threads',
+  'Basic is listed at USD 37/month',
+  '3 social accounts, 500 AI-generated posts/month, 3 months scheduling, 3 custom AI voices',
+  'Boss is listed at USD 59/month',
+  '5 social accounts, 1,000 AI-generated posts/month, 12 months scheduling',
+  'The top visible plan is listed at USD 97/month',
+  'no social-account cap, no AI-generated-post cap, no scheduling cap',
+  'GhostWriter AI on all plans, Basic, Advanced, and Enterprise-grade analytics tiers',
+  'annual subscriptions receive a 20% discount',
+  'the 7-day trial converts to the selected plan',
+  'AI content creation, scheduling across platforms, viral post repurposing, engagement tracking, and a multi-platform dashboard',
+  'smart scheduling, analytics and insights, team collaboration, multi-account management, tweet threading, and retweet scheduling',
+  'Confirm current limits at checkout because official pages expose more than one plan grid.',
+] as const;
+
 const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
   'schedule posts, review inboxes, analyze campaigns, search tweets, export followers, monitor accounts or keywords, send webhooks',
   'Social media management, publishing, engagement, listening, analytics, ads, and enterprise collaboration suite.',
@@ -1818,6 +1835,20 @@ describe('repository discovery', (): void => {
         source,
         'Taplio alternative',
         REQUIRED_TAPLIO_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Postwise alternative current for creator-scheduling handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/postwise.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Postwise alternative',
+        REQUIRED_POSTWISE_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
