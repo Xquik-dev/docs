@@ -529,6 +529,22 @@ const REQUIRED_WORKFLOW_SHORTLIST_SNIPPETS = [
   'CSV/JSON/XLSX exports',
 ] as const;
 
+const REQUIRED_PHANTOMBUSTER_ALTERNATIVE_SNIPPETS = [
+  'collect profiles, send outreach, export followers, search tweets, monitor accounts, trigger webhooks, or hand data to an app or AI agent',
+  'No-code cloud automation platform with Phantoms, Flows, execution time, and automation slots.',
+  '## Source-backed PhantomBuster scope',
+  'Trial, Start, Grow, and Scale plans with automation slots, monthly execution time, email credits, AI credits, URL finder credits, integrations',
+  'data extraction across 15+ platforms, 100+ automations and workflows, scheduled auto-refresh, and export limits',
+  'CSV combines results from all runs so far, JSON covers the most recent run, Free plan and Free Trial exports are limited to 10 rows',
+  'paid plans unlock full CSV files, JSON files, and CSV URLs for Google Sheets or integrations',
+  'successful launches return status `200` with a Container ID, and Workflows cannot be launched through the API',
+  'Twitter Follower Collector, Twitter Following Collector, Twitter Hashtag Collector, Twitter Auto Unfollow, and Twitter Search Export',
+  "PhantomBuster's official API help describes launching an individual Phantom through `POST /agents/launch` with an Agent ID.",
+  'PhantomBuster export help',
+  'PhantomBuster API launch help',
+  'PhantomBuster rate limits',
+] as const;
+
 const REQUIRED_ALTERNATIVES_SECTOR_SNIPPETS = [
   '## Sector Decision Matrix',
   'Developer API teams',
@@ -1431,6 +1447,20 @@ describe('repository discovery', (): void => {
         source,
         'Alternatives workflow shortlist',
         REQUIRED_WORKFLOW_SHORTLIST_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the PhantomBuster alternative focused on no-code automation handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/phantombuster.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'PhantomBuster alternative',
+        REQUIRED_PHANTOMBUSTER_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
