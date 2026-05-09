@@ -130,6 +130,28 @@ const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
   'call `to_json` for JSON export',
 ] as const;
 
+const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
+  '## Workflow: Search Tweets to JSON Lines',
+  '`x-twitter-scraper x:tweets search`',
+  '`GET /x/tweets/search`',
+  '`--q`',
+  '`--limit`',
+  '`--cursor`',
+  '`--since-time`',
+  '`--until-time`',
+  '`--query-type`',
+  '`--format json`',
+  '`.tweets[]`',
+  '`.has_next_page`',
+  '`.next_cursor`',
+  'Tweet search costs 1 credit per tweet returned.',
+  'Write one JSON object per line for downstream jobs',
+  '`--format-error json`',
+  '`x-twitter-scraper x:users retrieve-followers`',
+  '`x-twitter-scraper x:media upload`',
+  '`x-twitter-scraper x:dm send`',
+] as const;
+
 const REQUIRED_LLMS_SNIPPETS = [
   '## Agent Entry Points',
   'https://context7.com/xquik-dev/xquik-docs',
@@ -1460,6 +1482,20 @@ describe('repository discovery', (): void => {
         source,
         'Ruby SDK workflow docs',
         REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the CLI SDK page useful for tweet search handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('sdks/cli.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'CLI SDK workflow docs',
+        REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });

@@ -1,15 +1,15 @@
 ---
-title: CLI
+title: X API CLI
 sidebarTitle: CLI
-description: Install and use the official Xquik command-line SDK for shell workflows and scripted API calls.
-keywords: ["Xquik CLI", "Twitter scraper CLI", "X API command line", "Go CLI"]
+description: Use the Xquik CLI to search tweets, export JSON or CSV, post tweets, send DMs, monitor tweets, and script X API workflows from a terminal.
+keywords: ["Xquik CLI", "Twitter scraper CLI", "X API command line", "tweet search CLI", "tweet scraper CLI", "JSON export", "CSV export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the CLI for shell workflows, cron jobs, local debugging, JSON output, and quick API calls without writing application code.
+Use the CLI when a shell script, cron job, CI workflow, or operations runbook needs X API data without an application wrapper. It can search tweets, scrape tweets to JSON, export follower data, upload media, post tweets, post tweet replies, send direct messages, monitor tweets, and hand results to `jq`, Python, a warehouse loader, or a queue worker.
 
 ## Install
 
@@ -46,13 +46,77 @@ Use `--help` at any level:
 x-twitter-scraper x:tweets search --help
 ```
 
+## Workflow: Search Tweets to JSON Lines
+
+Use this workflow when an analyst, data engineer, or growth operator needs tweets from an X search query in a file that can be loaded into a warehouse, spreadsheet pipeline, CRM enrichment job, or queue.
+
+The CLI command below calls `GET /x/tweets/search`. It maps the same REST API query parameters to flags: `--q`, `--limit`, `--cursor`, `--since-time`, `--until-time`, and `--query-type`.
+
+```bash
+x-twitter-scraper x:tweets search \
+  --q "from:xquikcom webhook OR SDK" \
+  --query-type Latest \
+  --limit 100 \
+  --format json > first-page.json
+```
+
+The response includes `.tweets[]`, `.has_next_page`, and `.next_cursor`. Each tweet can include `id`, `text`, `createdAt`, engagement counts, `author`, `media`, `quoted_tweet`, and `retweeted_tweet`, depending on what X returns for the result.
+
+Write one JSON object per line for downstream jobs:
+
+```bash
+jq -c '.tweets[] | {
+  id,
+  text,
+  author_username: (.author.username // ""),
+  created_at: (.createdAt // ""),
+  like_count: (.likeCount // 0),
+  reply_count: (.replyCount // 0),
+  retweet_count: (.retweetCount // 0),
+  quote_count: (.quoteCount // 0),
+  view_count: (.viewCount // 0)
+}' first-page.json > tweets.jsonl
+```
+
+Save the cursor with the job checkpoint before requesting the next page:
+
+```bash
+cursor="$(jq -r '.next_cursor // empty' first-page.json)"
+
+if [ -n "$cursor" ]; then
+  x-twitter-scraper x:tweets search \
+    --q "from:xquikcom webhook OR SDK" \
+    --cursor "$cursor" \
+    --limit 100 \
+    --format json > next-page.json
+fi
+```
+
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `--limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. Use `--format-error json` so batch jobs can branch on `status` and `code`, and retry `429` or temporary `5xx` responses with backoff.
+
+For CSV or XLSX handoff, keep `tweets.jsonl` as the source of truth and convert it in your pipeline. For example, a Python step can load each JSON Lines row and write selected columns to CSV for analysts, or to XLSX for account management workflows.
+
+## Useful Commands
+
+| Job | CLI command | Returned data |
+| --- | --- | --- |
+| Search tweets or scrape tweets | `x-twitter-scraper x:tweets search` | Tweet objects, author objects, metrics, media, `has_next_page`, `next_cursor` |
+| Fetch one tweet | `x-twitter-scraper x:tweets retrieve` | Full tweet text, author, metrics, media, quoted tweet, retweeted tweet |
+| Get tweet replies | `x-twitter-scraper x:tweets get-replies` | Reply tweets plus cursor fields |
+| Export followers | `x-twitter-scraper x:users retrieve-followers` | User profiles, follower counts, cursor fields |
+| Upload media | `x-twitter-scraper x:media upload` | Media ID and upload metadata for a later post |
+| Post a tweet or reply | `x-twitter-scraper x:tweets create` | Created tweet ID and write status |
+| Send a direct message | `x-twitter-scraper x:dm send` | Direct message result and write status |
+
+Use `--format json` for scripts, `--format yaml` for readable operations output, and `--transform` with GJSON syntax when you only need one field from the response.
+
 ## Error Handling
 
 The CLI writes API errors to stderr and exits non-zero for failed requests. Use `--format-error json` when scripts need machine-readable errors.
 
 ```bash
-x-twitter-scraper x:users get \
-  --username not-a-real-user \
+x-twitter-scraper x:users retrieve-search \
+  --q not-a-real-user \
   --format json \
   --format-error json
 ```
