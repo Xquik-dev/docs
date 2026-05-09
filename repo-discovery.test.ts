@@ -792,6 +792,26 @@ const REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS = [
   'Validate REST, SDK, webhook, and MCP handoff needs before buying.',
 ] as const;
 
+const REQUIRED_ANTWORK_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed Antwork scope',
+  'social media infrastructure that connects AI agents and workflows to social platforms for scheduling, publishing, and analytics',
+  'LinkedIn, X, Instagram, Facebook, YouTube, TikTok, Threads, and Pinterest',
+  'Claude Code, Claude Desktop, Cursor, ChatGPT, VS Code, Windsurf, Gemini CLI, OpenClaw, and JetBrains',
+  '`https://api.antwork.io/mcp`',
+  'setup uses OAuth in the browser',
+  'connecting at least one social account',
+  'letting Antwork learn brand voice from existing content',
+  '`create_post`, `get_performance`, `get_brand_dna`, `list_social_accounts`, `schedule_post`, and `get_optimal_posting_times`',
+  'brand DNA extraction, AI content generation, 30+ post campaign generation, smart scheduling, media library, team collaboration, and analytics',
+  'Free plan at USD 0/month with 2 social accounts, 20 posts/month, 5 AI images/month, brand DNA and voice, and all MCP tools',
+  'Solo is USD 19/month with 5 social accounts, 100 posts/month, 50 AI images/month, 5 AI videos/month, brand DNA and voice, and all MCP tools',
+  'Grow is USD 49/month with 15 social accounts, no listed post-count cap, 200 AI images/month, 20 AI videos/month, brand DNA and voice, and all MCP tools',
+  'Scale is USD 99/month with 50 social accounts, no listed post-count cap, 500 AI images/month, 50 AI videos/month, brand DNA and voice, all MCP tools, and priority support',
+  'Price by plan, social-account count, monthly post allowance, AI image allowance, and AI video allowance',
+  'Antwork exposes MCP tools through `https://api.antwork.io/mcp` with OAuth setup',
+  'Search tweets and follower exports cost 1 credit/result, with CSV, JSON, XLSX, Markdown, API, SDK, and MCP handoff options.',
+] as const;
+
 const REQUIRED_TWEETSTREAM_ALTERNATIVE_SNIPPETS = [
   '## Source-backed TweetStream scope',
   'Twitter WebSocket API for crypto traders that streams structured JSON for tracked accounts',
@@ -1961,6 +1981,20 @@ describe('repository discovery', (): void => {
         source,
         'Hypefury alternative',
         REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Antwork alternative current for AI-agent publishing handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/antwork.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Antwork alternative',
+        REQUIRED_ANTWORK_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
