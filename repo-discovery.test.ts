@@ -624,6 +624,21 @@ const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
   'Hootsuite Enterprise',
 ] as const;
 
+const REQUIRED_SPRINKLR_ALTERNATIVE_SNIPPETS = [
+  'search tweets, export followers, monitor accounts or keywords, publish actions, send webhooks, and connect apps or agents',
+  'Enterprise social media management, listening, publishing, engagement, analytics, advertising, care, and compliance suite.',
+  '## Source-backed Sprinklr scope',
+  "Sprinklr's official Social page describes publishing, engagement, listening, paid media, compliance, and analytics across 30+ channels",
+  'content planning, a digital asset manager, an editorial calendar, an omnichannel publisher, an engagement dashboard, reporting and analytics, UGC management, granular access controls, custom approval workflows',
+  'real-time listening across 30+ social and digital channels, visual brand mentions, sentiment analysis, emotion analysis, entity identification, text classification, competitor benchmarking, crisis alerts, report scheduling, and report exports',
+  'REST JSON APIs, OAuth 2.0, a developer portal, Enterprise license requirements, pre-approved use cases, and extra enablement for Twitter Syndication, Case Compliance API, or Listening API',
+  'Sprinklr official pages describe publishing, engagement, listening, paid media, compliance, analytics, integrations, approval workflows, crisis workflows, reports, exports, and Enterprise API access.',
+  'Official Sprinklr Social',
+  'Sprinklr publishing',
+  'Sprinklr social listening',
+  'Sprinklr APIs',
+] as const;
+
 const REQUIRED_SPROUT_SOCIAL_ALTERNATIVE_SNIPPETS = [
   'plan posts, manage a Smart Inbox, analyze reports, search tweets, export followers, monitor accounts or keywords, send webhooks',
   'Social media management, publishing, engagement, analytics, listening, advocacy, influencer, and customer-care suite.',
@@ -1500,6 +1515,20 @@ describe('repository discovery', (): void => {
         source,
         'Hootsuite alternative',
         REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Sprinklr alternative focused on enterprise social handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/sprinklr.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Sprinklr alternative',
+        REQUIRED_SPRINKLR_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
