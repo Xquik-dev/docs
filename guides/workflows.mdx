@@ -635,6 +635,12 @@ func main() {
   We recommend responding within 10 seconds. If your handler is slow, acknowledge the delivery immediately and process the event asynchronously.
 </Note>
 
+### Step 4: Queue the handoff
+
+After signature verification, persist `deliveryId` as the idempotency key and enqueue the delivery for the downstream system. Include `streamEventId`, `eventType`, `occurredAt`, `schemaVersion`, `username` for account monitor events, `query` for keyword monitor events, and `data` for the tweet payload.
+
+Return `2xx` before slow CRM, warehouse, Slack, or queue work starts. Xquik retries network failures and non-`2xx` responses up to 10 attempts. Return `410 Gone` only when Xquik should stop retrying that delivery immediately.
+
 </Tab>
 <Tab title="AI Agent (MCP)">
 

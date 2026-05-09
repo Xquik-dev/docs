@@ -429,6 +429,14 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   'CSV, JSON, XLSX, or paginated JSON',
   '21 credits per hour',
   'Compose, refine, and score are free',
+  '### Step 4: Queue the handoff',
+  'persist `deliveryId` as the idempotency key',
+  '`streamEventId`, `eventType`, `occurredAt`, `schemaVersion`',
+  '`username` for account monitor events',
+  '`query` for keyword monitor events',
+  'Return `2xx` before slow CRM, warehouse, Slack, or queue work starts.',
+  'retries network failures and non-`2xx` responses up to 10 attempts',
+  'Return `410 Gone` only when Xquik should stop retrying that delivery immediately.',
 ] as const;
 
 const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
