@@ -396,6 +396,17 @@ const REQUIRED_SEND_DM_API_SNIPPETS = [
   'Empty arrays and multiple IDs are rejected.',
 ] as const;
 
+const REQUIRED_COMPOSE_STYLE_SNIPPETS = [
+  'savedStyles',
+  'savedStyles[].username',
+  'savedStyles[].tweetCount',
+  'styleTweets',
+  'styleNote',
+  'Present when `styleUsername` matches a cached style.',
+  '`compose` returns algorithm rules, follow-up questions, and an `intentUrl` built from the topic',
+  'Compose responses can include `savedStyles`, `styleTweets`, or `styleNote` depending on the cached style state.',
+] as const;
+
 const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   '## Integration Handoff Matrix',
   '`POST /monitors`, then `GET /events`',
@@ -1070,6 +1081,23 @@ describe('repository discovery', (): void => {
         source,
         'Types guide draft object',
         REQUIRED_DRAFT_TYPES_GUIDE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps compose style response fields visible to API users', (): void => {
+    expect.assertions(1);
+
+    const source = [
+      readFileSync('api-reference/compose/create.mdx', 'utf8'),
+      readFileSync('guides/types.mdx', 'utf8'),
+    ].join('\n');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Compose API docs',
+        REQUIRED_COMPOSE_STYLE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
