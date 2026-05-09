@@ -324,12 +324,30 @@ const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
   'After the 10th failed attempt, the delivery is marked as `exhausted`.',
   'A `410 Gone` response exhausts the delivery immediately.',
   'Other non-`2xx` responses and network failures retry until the delivery is exhausted.',
+  '`deliveryId` | string | Webhook delivery attempt ID.',
+  '`streamEventId` | string | Stored event ID.',
+  '`schemaVersion` | number | Webhook payload schema version.',
+  '`query` | string | Keyword query that matched the event.',
+  'Omitted for keyword-only monitor events and `webhook.test`.',
+] as const;
+
+const REQUIRED_WEBHOOK_TYPES_SNIPPETS = [
+  'schemaVersion: 1;',
+  'deliveryId: string;',
+  'streamEventId: string;',
+  'occurredAt: string;',
+  'query?: string;',
+  'interface WebhookTestPayload',
+  'eventType: "webhook.test";',
+  'Account monitor events include `username`; keyword monitor events include `query`.',
+  '`webhook.test` payloads include `timestamp` and omit monitor-only fields',
 ] as const;
 
 const FORBIDDEN_WEBHOOK_OVERVIEW_SNIPPETS = [
   'After 5 failed attempts',
   'Client errors (400',
   'automatically disabled after 5 consecutive',
+  'Present on all event types except `webhook.test`',
 ] as const;
 
 const FORBIDDEN_WEBHOOK_VERIFICATION_SNIPPETS = [
@@ -988,6 +1006,7 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     const testing = readFileSync('guides/webhook-testing.mdx', 'utf8');
+    const types = readFileSync('guides/types.mdx', 'utf8');
     const overview = readFileSync('webhooks/overview.mdx', 'utf8');
     const verification = readFileSync('webhooks/verification.mdx', 'utf8');
 
@@ -997,6 +1016,11 @@ describe('repository discovery', (): void => {
           overview,
           'Webhook overview',
           REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          types,
+          'Types guide webhook payload',
+          REQUIRED_WEBHOOK_TYPES_SNIPPETS,
         ),
         ...collectSnippetFindings(
           testing,

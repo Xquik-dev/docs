@@ -131,9 +131,19 @@ Copy-pasteable TypeScript types for every Xquik API object. Use these in your cl
 
     interface WebhookPayload {
       eventType: EventType;
-      username?: string;
+      schemaVersion: 1;
+      deliveryId: string;
+      streamEventId: string;
+      occurredAt: string;
       data: EventData;
-      timestamp?: string;
+      username?: string;
+      query?: string;
+    }
+
+    interface WebhookTestPayload {
+      eventType: "webhook.test";
+      data: { message: string };
+      timestamp: string;
     }
 
     // ─── Draws ──────────────────────────────────────────────
@@ -717,10 +727,10 @@ Each `Delivery` represents one attempt to send an event to a webhook endpoint. S
 
 ### Webhook payload
 
-The `WebhookPayload` type describes the JSON body your endpoint receives on each delivery. It contains the event type, the monitored username, and the event data. Verify its authenticity using the `X-Xquik-Signature` header and your webhook secret. See [Webhook Verification](/webhooks/verification) for implementation details.
+The `WebhookPayload` type describes the JSON body your endpoint receives on each delivery. Normal monitor events include `schemaVersion`, `deliveryId`, `streamEventId`, `occurredAt`, `eventType`, and `data`. Account monitor events include `username`; keyword monitor events include `query`. Verify authenticity with the `X-Xquik-Signature` header and your webhook secret. See [Webhook Verification](/webhooks/verification) for implementation details.
 
 <Note>
-  `webhook.test` payloads include `timestamp` but omit `username` since they are not tied to a real monitor event. In normal event payloads, `username` is present and `timestamp` is omitted.
+  `webhook.test` payloads include `timestamp` and omit monitor-only fields because they are not tied to a stored event. In normal event payloads, `timestamp` is omitted.
 </Note>
 
 ### Draws
