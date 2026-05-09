@@ -318,6 +318,20 @@ const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
   'if not verify_webhook(request, WEBHOOK_SECRET):',
 ] as const;
 
+const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
+  'base 1 second, multiplier 2x, max 60 seconds',
+  '| 10 | Final attempt |',
+  'After the 10th failed attempt, the delivery is marked as `exhausted`.',
+  'A `410 Gone` response exhausts the delivery immediately.',
+  'Other non-`2xx` responses and network failures retry until the delivery is exhausted.',
+] as const;
+
+const FORBIDDEN_WEBHOOK_OVERVIEW_SNIPPETS = [
+  'After 5 failed attempts',
+  'Client errors (400',
+  'automatically disabled after 5 consecutive',
+] as const;
+
 const FORBIDDEN_WEBHOOK_VERIFICATION_SNIPPETS = [
   'verifyWebhookSignature(',
   'verify_webhook_signature(',
@@ -974,10 +988,16 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     const testing = readFileSync('guides/webhook-testing.mdx', 'utf8');
+    const overview = readFileSync('webhooks/overview.mdx', 'utf8');
     const verification = readFileSync('webhooks/verification.mdx', 'utf8');
 
     expect(
       [
+        ...collectSnippetFindings(
+          overview,
+          'Webhook overview',
+          REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS,
+        ),
         ...collectSnippetFindings(
           testing,
           'Webhook testing guide',
@@ -994,6 +1014,17 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Webhook verification guide references undefined helper "${snippet}".`,
+                  },
+              ]
+              : [],
+        ),
+        ...FORBIDDEN_WEBHOOK_OVERVIEW_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            overview.includes(snippet)
+              ? [
+                  {
+                    label: 'Webhook overview',
+                    snippet,
                   },
                 ]
               : [],

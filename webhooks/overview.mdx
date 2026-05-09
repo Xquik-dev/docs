@@ -249,7 +249,7 @@ A test payload sent via the [Test Webhook](/api-reference/webhooks/test) endpoin
 
 ## Retry policy
 
-Failed deliveries are retried with exponential backoff (base 1s, multiplier 2x):
+Failed deliveries are retried with exponential backoff (base 1 second, multiplier 2x, max 60 seconds):
 
 | Attempt | Delay |
 |---------|-------|
@@ -258,26 +258,27 @@ Failed deliveries are retried with exponential backoff (base 1s, multiplier 2x):
 | 3 | 4 seconds |
 | 4 | 8 seconds |
 | 5 | 16 seconds |
+| 6 | 32 seconds |
+| 7 | 60 seconds |
+| 8 | 60 seconds |
+| 9 | 60 seconds |
+| 10 | Final attempt |
 
-After 5 failed attempts, the delivery is marked as `exhausted`. Check delivery status via the [deliveries endpoint](/api-reference/webhooks/deliveries).
+After the 10th failed attempt, the delivery is marked as `exhausted`. A `410 Gone` response exhausts the delivery immediately. Check delivery status via the [deliveries endpoint](/api-reference/webhooks/deliveries).
 
 <Note>
   Retries are processed in batches, so actual delay may be slightly longer than shown.
 </Note>
 
 <Warning>
-  **Permanent failures:** Client errors (400–499, except 429 Too Many Requests) are treated as permanent failures and are **not retried**. Ensure your webhook endpoint returns appropriate status codes.
-</Warning>
-
-<Warning>
-  **Auto-disable:** Endpoints are automatically disabled after 5 consecutive failed deliveries (across different events). Re-enable a disabled endpoint via the [Update Webhook](/api-reference/webhooks/update) endpoint by setting `isActive` to `true`.
+  **Terminal failures:** Return `410 Gone` only when Xquik should stop retrying that delivery. Other non-`2xx` responses and network failures retry until the delivery is exhausted.
 </Warning>
 
 ## Requirements
 
 - Endpoint **must** use HTTPS
 - Endpoint **must not** resolve to a private or internal IP address (localhost, 10.x.x.x, 172.16-31.x.x, 192.168.x.x, 169.254.x.x)
-- Endpoints should respond promptly with a `2xx` status code. Non-`2xx` responses (except 429) count as failures and trigger retries
+- Endpoints should respond promptly with a `2xx` status code. Non-`2xx` responses count as failures and trigger retries
 
 ## Where to go next
 
