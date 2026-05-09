@@ -6,6 +6,12 @@ import { describe, expect, it } from 'vitest';
 const PROJECT_ROOT = process.cwd();
 const API_REFERENCE_DIR = join(PROJECT_ROOT, 'api-reference');
 const FRONTMATTER_API_PATTERN = /^api:\s*"([A-Z]+) ([^"]+)"/mu;
+const UNIX_TIMESTAMP_FILTER_ENDPOINTS: ReadonlySet<string> = new Set([
+  'GET /x/lists/{id}/tweets',
+  'GET /x/tweets/{id}/quotes',
+  'GET /x/tweets/{id}/replies',
+  'GET /x/users/{id}/mentions',
+] as const);
 
 interface ContentFinding {
   readonly file: string;
@@ -31,6 +37,14 @@ function isApiEndpointPage(source: string): boolean {
   return FRONTMATTER_API_PATTERN.test(source);
 }
 
+function operationKey(source: string): string | undefined {
+  const match = FRONTMATTER_API_PATTERN.exec(source);
+  if (match?.[1] === undefined || match[2] === undefined) {
+    return undefined;
+  }
+  return `${match[1]} ${match[2]}`;
+}
+
 function collectContentFindings(): readonly ContentFinding[] {
   const findings: ContentFinding[] = [];
 
@@ -54,6 +68,18 @@ function collectContentFindings(): readonly ContentFinding[] {
 
     if (!/<Tab title="2\d\d\b/u.test(source)) {
       findings.push({ file, issue: 'Missing successful response tab.' });
+    }
+
+    const key = operationKey(source);
+    if (
+      key !== undefined &&
+      UNIX_TIMESTAMP_FILTER_ENDPOINTS.has(key) &&
+      source.includes('ISO 8601 timestamp')
+    ) {
+      findings.push({
+        file,
+        issue: 'sinceTime/untilTime must document Unix timestamp filters.',
+      });
     }
   }
 
