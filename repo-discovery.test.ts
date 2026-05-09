@@ -702,6 +702,20 @@ const REQUIRED_TWSCRAPE_ALTERNATIVE_SNIPPETS = [
   '`user_tweets` and `user_tweets_and_replies` can return about 3,200 tweets maximum',
 ] as const;
 
+const REQUIRED_POSTPROXY_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed Postproxy scope',
+  'one API for creating social posts across Facebook, Instagram, TikTok, LinkedIn, YouTube, X, Threads, and Pinterest',
+  'MCP, skills, n8n, Zapier, Make, Needle, and other workflow tools as publishing integrations',
+  'built-in scheduling, error handling, retry management, authentication, and a connected social account requirement',
+  'Free includes 2 profile groups and 10 posts/month',
+  'Build lists 10 profile groups, 120 posts/month, comments, analytics, 30-day publish logs, and webhooks at USD 17/month',
+  'Scale lists 50 profile groups, no listed monthly post-count cap, 180-day publish logs, webhooks, and priority support at USD 99/month',
+  'Enterprise starts at USD 699/month',
+  'one published post counts as one post even when cross-posted to multiple platforms',
+  '`post.processed`, `platform_post.published`, `platform_post.failed`, `platform_post.failed_waiting_for_retry`, `platform_post.insights`, `profile.disconnected`, `profile.connected`, and `media.failed`',
+  'BYO developer credentials guide says connecting X profiles with your own X developer credentials exempts those profiles from the shared 24-hour posting quota',
+] as const;
+
 const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
   'schedule posts, review inboxes, analyze campaigns, search tweets, export followers, monitor accounts or keywords, send webhooks',
   'Social media management, publishing, engagement, listening, analytics, ads, and enterprise collaboration suite.',
@@ -1698,6 +1712,20 @@ describe('repository discovery', (): void => {
         source,
         'twscrape alternative',
         REQUIRED_TWSCRAPE_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Postproxy alternative current for publishing handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/postproxy.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Postproxy alternative',
+        REQUIRED_POSTPROXY_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
