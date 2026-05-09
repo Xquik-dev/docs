@@ -485,6 +485,17 @@ const REQUIRED_X_API_ALTERNATIVE_SNIPPETS = [
   'Developer Console',
 ] as const;
 
+const REQUIRED_AUDIENSE_ALTERNATIVE_SNIPPETS = [
+  'audience intelligence, influencer discovery, tweet search, follower export, account or keyword monitoring, signed webhooks, API access, and agent handoff',
+  'Audiense public pages describe consumer segmentation, cultural insights, X community management, follower analytics, hashtag analytics, and influencer discovery.',
+  '## Audience & influencer handoff',
+  'Use this section when the search intent is "Audiense alternative for influencer discovery", "X audience intelligence", "export X followers", or "turn X audiences into CRM data".',
+  'Use Audiense influencer views, filters, affinity sorting, uniqueness sorting, and paid-plan XLS export.',
+  'Use follower exports, tweet search, verified follower exports, and engagement fields to build your own scoring model.',
+  'Audiense prioritizes influencer discovery. Xquik prioritizes data ownership and downstream automation.',
+  'Use keyword monitors, tweet search exports, signed webhooks, and `GET /events` for real-time records.',
+] as const;
+
 const FORBIDDEN_APIFY_ALTERNATIVE_SNIPPETS = [
   ['During', 'this', 'update'].join(' '),
   ['Rising', 'star'].join(' '),
@@ -1199,6 +1210,20 @@ describe('repository discovery', (): void => {
         source,
         'X API alternative',
         REQUIRED_X_API_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Audiense alternative focused on audience intelligence handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/audiense.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Audiense alternative',
+        REQUIRED_AUDIENSE_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
