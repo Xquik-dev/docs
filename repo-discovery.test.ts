@@ -654,12 +654,20 @@ const REQUIRED_BUFFER_ALTERNATIVE_SNIPPETS = [
 const REQUIRED_TYPEFULLY_ALTERNATIVE_SNIPPETS = [
   'write X threads, schedule posts, cross-post content, use AI writing help, inspect analytics, search tweets, export followers, monitor accounts or keywords, send webhooks',
   'Creator publishing, X thread scheduling, social scheduling, analytics, API, and MCP platform.',
-  "Typefully's official pages list AI writing, X thread scheduling, natural-language scheduling, content queues, realistic previews, cross-posting to LinkedIn, Threads, Bluesky, and Mastodon, detailed X analytics, draft comments, Auto-DMs, image cropping, auto-splitting, multiple connected accounts, REST API, webhooks, and MCP.",
+  '## Source-backed Typefully scope',
+  "Typefully's official X scheduling page describes AI writing help, X post and thread scheduling, natural-language scheduling, predefined time slots, content calendar, cross-posting to LinkedIn, Threads, Bluesky, and other platforms",
+  'posting to X, LinkedIn, Threads, Bluesky, and Mastodon; media uploads for images, videos, GIFs, and PDFs; tags; social sets; draft comments; webhooks for draft created, published, scheduled, status changed, tags changed, and deleted events',
+  'Natural Posting Times with up to 4 minutes of variation',
+  'Auto-DM triggers for replies, retweets, or follows, 3 simultaneous Auto-DM campaigns, 30 DMs/minute, 100 DMs/hour, 500 DMs/day, 4-day Auto-DM duration',
+  "Typefully's official pages describe AI writing, X thread scheduling, content calendars, saved slots, suggested times, cross-posting, X analytics, Auto-DMs, draft comments, social sets, media uploads, REST API, webhooks, MCP, and agent skills.",
   'draft IDs, social sets, media IDs, queue state, analytics fields, tweet IDs, author IDs, timestamps, post results, CSV/JSON/XLSX exports',
   'Typefully connected accounts, collaboration, analytics, API access, MCP access, Auto-DMs, and cross-posting',
   'Official Typefully X scheduling',
   'Official Typefully API',
   'Official Typefully MCP',
+  'Typefully scheduling help',
+  'Typefully analytics help',
+  'Typefully Auto-DM help',
 ] as const;
 
 const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
