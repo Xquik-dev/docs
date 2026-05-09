@@ -186,6 +186,17 @@ const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
   '`pending_confirmation`',
 ] as const;
 
+const REQUIRED_MONITOR_TYPES_GUIDE_SNIPPETS = [
+  'interface Monitor',
+  'xUserId: string;',
+  'nextBillingAt: string;',
+  'interface KeywordMonitor',
+  'query: string;',
+  'Account monitor endpoints return `Monitor`.',
+  'Keyword monitor endpoints return `KeywordMonitor` with the normalized X search `query`.',
+  'Both monitor types include `eventTypes`, `isActive`, `createdAt`, and `nextBillingAt`',
+] as const;
+
 const REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS = [
   'monitorType: "account" | "keyword";',
   'username?: string;',
@@ -1009,6 +1020,20 @@ describe('repository discovery', (): void => {
         source,
         'Direct message workflow guide',
         REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps shared monitor types aligned with account and keyword monitor APIs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/types.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Types guide monitor objects',
+        REQUIRED_MONITOR_TYPES_GUIDE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
