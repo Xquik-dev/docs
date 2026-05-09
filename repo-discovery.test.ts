@@ -732,6 +732,23 @@ const REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS = [
   'Validate REST, SDK, webhook, and MCP handoff needs before buying.',
 ] as const;
 
+const REQUIRED_TWEET_HUNTER_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed Tweet Hunter scope',
+  'all-in-one AI X tool for growing an audience and brand on X',
+  'Discover is listed at USD 29/month under the visible offer and includes 1 X account, an over 12M viral tweets library',
+  '3,000 Auto-DMs/month, auto-plug, auto-retweet, and complete X analytics',
+  'Grow is listed at USD 49/month under the visible offer and includes 5 X accounts',
+  '7,500 Auto-DMs/month, paid partnership labels on posts, daily AI-written tweets',
+  'Enterprise is displayed at roughly USD 199/month in the visible offer',
+  '15,000 Auto-DMs/month, ghostwriting mode, priority support, custom trained AI, smart AI reply generation',
+  'Auto-DM can send a Direct Message based on likes, replies, or retweets',
+  'Auto-DM works for the first 72 hours of a tweet',
+  'checks new engagements every minute during the first 24 hours',
+  'has a 500 DMs/tweet cap',
+  'requires transparent wording that tells people they will receive a DM when they interact',
+  'Search tweets and follower exports cost 1 credit/result, with CSV, JSON, XLSX, Markdown, API, SDK, and MCP handoff options.',
+] as const;
+
 const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
   'schedule posts, review inboxes, analyze campaigns, search tweets, export followers, monitor accounts or keywords, send webhooks',
   'Social media management, publishing, engagement, listening, analytics, ads, and enterprise collaboration suite.',
@@ -1756,6 +1773,20 @@ describe('repository discovery', (): void => {
         source,
         'Hypefury alternative',
         REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Tweet Hunter alternative current for creator-growth handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/tweet-hunter.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Tweet Hunter alternative',
+        REQUIRED_TWEET_HUNTER_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
