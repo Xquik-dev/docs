@@ -79,6 +79,7 @@ const REQUIRED_LLMS_SNIPPETS = [
   '"status": "pending_confirmation"',
   '"writeActionId": "42"',
   '`GET /x/write-actions/{id}`',
+  'opt in to the normalized v1 response contract',
 ] as const;
 
 const REQUIRED_MCP_CONTRACT_SNIPPETS = [
@@ -189,11 +190,13 @@ const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
   '`GET /x/write-actions/{id}`',
   '`writeActionId`',
   '`pending_confirmation`',
+  'opt in to the normalized v1 response contract',
   '| 502 | `x_api_unavailable` | Read service temporarily unavailable - retry |',
   '"message": "Read service temporarily unavailable. Retry shortly."',
 ] as const;
 
 const FORBIDDEN_API_OVERVIEW_SNIPPETS = [
+  'best-practice response contract',
   '| 502 | `x_api_unavailable` | X data source temporarily unavailable - retry |',
   '"message": "X data source temporarily unavailable. Retry shortly."',
 ] as const;
