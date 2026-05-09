@@ -253,7 +253,7 @@ const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
   '`x_api_rate_limited` | Read service rate limited | Retry in a few minutes. The read service is temporarily throttled. |',
   '`x_api_unavailable` | Read service temporarily unavailable | Retry with backoff. |',
   '`x_api_unauthorized` | Read service authentication failed | Retry later. [Contact support](mailto:support@xquik.com) if persistent. |',
-  '`x_transient_error` | Read service timeout or temporary failure | Retry with backoff. The read service is experiencing intermittent issues. |',
+  '`x_transient_error` | Write service timeout or temporary failure | Retry with backoff. The write service is experiencing intermittent issues. |',
   'The read service is temporarily unavailable. This is usually transient.',
   'the read service may be experiencing an outage',
 ] as const;
@@ -265,6 +265,7 @@ const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   'X data source',
   'Server & upstream errors',
   'Upstream timeout or temporary failure',
+  '`x_transient_error` | Read service timeout or temporary failure',
   'data source may be experiencing an outage',
 ] as const;
 
