@@ -610,11 +610,18 @@ const REQUIRED_TWEETDECK_ALTERNATIVE_SNIPPETS = [
 const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
   'schedule posts, review inboxes, analyze campaigns, search tweets, export followers, monitor accounts or keywords, send webhooks',
   'Social media management, publishing, engagement, listening, analytics, ads, and enterprise collaboration suite.',
-  "Hootsuite's platform page lists social scheduling, AI writing, recommended posting times, bulk scheduling, private/public messaging inboxes, saved replies, automated tagging, assignments, listening streams, sentiment, reports, ads, and marketing integrations.",
+  '## Source-backed Hootsuite scope',
+  'Standard with up to 10 social accounts, unlimited post scheduling, recommended posting times, AI image and caption generation',
+  'bulk scheduling for up to 350 posts, automatic message routing and tagging, 20 competitor benchmarks, report export, email, and scheduling',
+  'analytics report exports as PDF, PPT, CSV, XLSX, and scheduled email',
+  'custom approval workflows; task assignment; posting-time recommendations based on audience data',
+  "Hootsuite's official pages describe social scheduling, AI content help, recommended posting times, bulk scheduling, calendar and list views, approval workflows, inboxes, saved replies, automated responses, automated routing, analytics exports, competitor benchmarks, listening, SSO, advanced inbox, compliance integration, chatbot, and Salesforce integration.",
   'tweet IDs, author IDs, timestamps, post results, CSV/JSON/XLSX exports, webhook signatures, and error handling.',
   'Hootsuite seats, social accounts, analytics, approvals, listening, and Enterprise add-ons',
   'Official Hootsuite platform',
   'Official Hootsuite plans',
+  'Hootsuite publishing',
+  'Hootsuite Enterprise',
 ] as const;
 
 const REQUIRED_SPROUT_SOCIAL_ALTERNATIVE_SNIPPETS = [
