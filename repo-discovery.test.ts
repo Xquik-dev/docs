@@ -517,6 +517,18 @@ const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
   '/guides/pipedream',
 ] as const;
 
+const REQUIRED_MAKE_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed Make scope',
+  "Make's official pricing page says each module action in a scenario counts as one credit, Free includes 1,000 credits/month",
+  "Make's official HTTP app documentation says the HTTP app can call services without a native Make integration",
+  'offset, page, URL/link, or cursor-style pagination',
+  'instant webhooks, custom webhooks, webhook queues, response handling',
+  'action, search, polling trigger, instant trigger, universal, and responder module types',
+  'Make webhooks',
+  'Make custom app modules',
+  '/guides/make',
+] as const;
+
 const REQUIRED_WORKFLOW_SHORTLIST_SNIPPETS = [
   '## Workflow Automation Shortlist',
   '[n8n](/alternatives/n8n)',
@@ -1447,6 +1459,20 @@ describe('repository discovery', (): void => {
         source,
         'Alternatives workflow shortlist',
         REQUIRED_WORKFLOW_SHORTLIST_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Make alternative focused on source-backed workflow handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/make.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Make alternative',
+        REQUIRED_MAKE_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
