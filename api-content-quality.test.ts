@@ -12,6 +12,10 @@ const UNIX_TIMESTAMP_FILTER_ENDPOINTS: ReadonlySet<string> = new Set([
   'GET /x/tweets/{id}/replies',
   'GET /x/users/{id}/mentions',
 ] as const);
+const FORBIDDEN_PUBLIC_ENDPOINT_SNIPPETS = [
+  'shared read pool',
+  'read pool',
+] as const;
 
 interface ContentFinding {
   readonly file: string;
@@ -71,6 +75,15 @@ function collectContentFindings(): readonly ContentFinding[] {
     }
 
     const key = operationKey(source);
+    for (const snippet of FORBIDDEN_PUBLIC_ENDPOINT_SNIPPETS) {
+      if (source.includes(snippet)) {
+        findings.push({
+          file,
+          issue: `Public endpoint page exposes internal wording "${snippet}".`,
+        });
+      }
+    }
+
     if (
       key !== undefined &&
       UNIX_TIMESTAMP_FILTER_ENDPOINTS.has(key) &&
