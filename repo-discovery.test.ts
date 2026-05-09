@@ -103,7 +103,9 @@ const REQUIRED_BILLING_RECOVERY_SNIPPETS = [
   'A USD 25 quick top-up adds 166,666 credits',
   '"balance": "167116"',
   '"credits": "166666"',
+  'Only the `charged` quick top-up outcome grants credits.',
   'If quick top-up returns `no_payment_method`, create a checkout top-up instead.',
+  'If it returns `requires_action`, complete the payment confirmation flow before retrying the metered API call.',
 ] as const;
 
 const REQUIRED_BILLING_MONITOR_SNIPPETS = [
@@ -155,6 +157,9 @@ const FORBIDDEN_BILLING_CARRYOVER_SNIPPETS = [
 
 const REQUIRED_QUICK_TOPUP_PAGE_SNIPPETS = [
   'At USD 0.00015 per credit, a USD 25 quick top-up adds 166,666 credits',
+  'Only the `charged` outcome grants credits and updates `balance`.',
+  'If the endpoint returns `requires_action`, complete payment authentication with `clientSecret` before retrying the metered API call.',
+  'If it returns `no_payment_method`, create a checkout top-up instead.',
   '"balance": "466666"',
   '"credits": "166666"',
 ] as const;
