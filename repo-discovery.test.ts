@@ -656,6 +656,15 @@ const REQUIRED_TALKWALKER_ALTERNATIVE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWEETDECK_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed TweetDeck/X Pro scope',
+  "X's official X Pro help describes X Pro as the global replacement for TweetDeck",
+  'multi-column workspace that incorporates more of X.com',
+  'full post composer, scheduled posts, advanced search, top/latest post order, Decks',
+  'column types for home, notifications, search, lists, communities, explore, bookmarks, profiles, messages, and scheduled posts',
+  'X Premium as an optional paid subscription with Basic, Premium, and Premium+ tiers',
+  'Premium features are subject to change',
+  'delegate account access without sharing sign-in credentials',
+  'does not support scheduled Direct Messages',
   'TweetDeck/X Pro is a live X workspace for columns, search, scheduled posts, and manual monitoring.',
   'X Pro help lists a full post composer, scheduled posts, advanced search, top/latest post order, Decks, a column creator, video docking, and account switching.',
   'search tweets, fetch users, export followers, post tweets, upload media, send DMs, monitor keywords, and receive webhook events',
