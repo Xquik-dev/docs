@@ -751,6 +751,12 @@ const REQUIRED_TYPEFULLY_ALTERNATIVE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed Apify scope',
+  "Apify's official Actors docs define Actors as serverless programs for workflow automation and data extraction.",
+  'structured JSON input',
+  'exported as `json`, `jsonl`, `csv`, `html`, `xlsx`, `xml`, or `rss`',
+  '`/v2/store` lists public Actors',
+  'Actor run events include created, succeeded, failed, aborted, timed out, and resurrected states.',
   'The public Xquik profile currently shows 2 public Actors',
   '`xquik/x-tweet-scraper`',
   '`xquik/x-follower-scraper`',
