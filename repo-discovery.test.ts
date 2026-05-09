@@ -771,6 +771,16 @@ const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
 
 const REQUIRED_X_API_ALTERNATIVE_SNIPPETS = [
   'Twitter API alternative',
+  '## Source-backed X API scope',
+  "X's official overview describes the X API as programmatic access to public conversation",
+  'Bearer Token authentication tied to the developer App for reading public information',
+  '`GET /2/tweets/search/recent`',
+  '`GET /2/tweets/search/all`',
+  'Recent search is available to all developers and supports up to 100 posts per request',
+  '`GET /2/users/:id/followers`',
+  '`POST /2/users/:id/following`',
+  'read the next-page cursor from `meta`, send it on the following request',
+  '24-hour UTC deduplication for billable resources',
   'post tweets',
   'send direct messages',
   'Owned Reads',
