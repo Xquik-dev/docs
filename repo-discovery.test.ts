@@ -789,6 +789,22 @@ const REQUIRED_X_API_ALTERNATIVE_SNIPPETS = [
   'Developer Console',
 ] as const;
 
+const REQUIRED_TWITTER_API_PRO_ALTERNATIVE_SNIPPETS = [
+  'Twitter API Pro alternative',
+  '## Source-backed Twitter API Pro scope',
+  'X API v2 as the recommended API version for new projects',
+  'Treat "Twitter API Pro" as a legacy comparison term',
+  'programmatic access for reading posts, publishing content, managing users',
+  'Bearer Token access for reading public data',
+  'OAuth user-context access for posting, liking, following, and accessing DMs',
+  '`GET /2/tweets/search/recent`',
+  '`GET /2/tweets/search/all`',
+  'Recent search supports up to 100 posts per request',
+  'Owned Reads at USD 0.001 per resource',
+  '24-hour UTC deduplication for billable resources',
+  'read the next-page cursor from response metadata',
+] as const;
+
 const REQUIRED_AUDIENSE_ALTERNATIVE_SNIPPETS = [
   'audience intelligence, influencer discovery, tweet search, follower export, account or keyword monitoring, signed webhooks, API access, and agent handoff',
   '## Source-backed Audiense scope',
@@ -1724,6 +1740,20 @@ describe('repository discovery', (): void => {
         source,
         'X API alternative',
         REQUIRED_X_API_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Twitter API Pro alternative aligned with current official X API scope', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/twitter-api-pro.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Twitter API Pro alternative',
+        REQUIRED_TWITTER_API_PRO_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
