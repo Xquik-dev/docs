@@ -637,11 +637,18 @@ const REQUIRED_SPROUT_SOCIAL_ALTERNATIVE_SNIPPETS = [
 const REQUIRED_BUFFER_ALTERNATIVE_SNIPPETS = [
   'plan posts, schedule threads, manage comments, analyze posts, search tweets, export followers, monitor accounts or keywords, send webhooks',
   'Social media scheduling, publishing, analytics, community, and collaboration platform.',
-  "Buffer's official pages list supported channels for Bluesky, Facebook, Google Business Profile, Instagram, LinkedIn, Mastodon, Pinterest, Threads, TikTok, X, and YouTube; publishing features for queues, visual calendars, threaded posts, AI Assistant, first-comment scheduling, channel groups, and hashtag manager; Community features for cross-platform comment replies, notifications, filters, comment score, saved replies, AI replies, and turning comments into posts.",
+  '## Source-backed Buffer scope',
+  'Free plan for up to 3 channels with 10 scheduled posts per channel',
+  '5,000-post fair-use cap per channel',
+  'supported channels for Bluesky, Facebook, Google Business Profile, Instagram, LinkedIn, Mastodon, Pinterest, Threads, TikTok, X, and YouTube',
+  'Community pages describe comment management across Instagram, Facebook, LinkedIn, Threads, Bluesky, X, TikTok, Google Business Profile, YouTube, and Mastodon',
+  "Buffer's official pages describe supported channels, queues, calendars, channel-specific posts, threaded posts, AI Assistant, first-comment scheduling, hashtag manager, Community replies, notifications, filters, comment score, saved replies, AI replies, and approval workflows.",
   'tweet IDs, author IDs, timestamps, post results, CSV/JSON/XLSX exports, webhook signatures, and error handling.',
   'Buffer channels, scheduled-post volume, Community replies, analytics reports, approval workflows, and integrations',
   'Official Buffer publish',
   'Official Buffer community',
+  'Buffer scheduling limits',
+  'Buffer Community help',
 ] as const;
 
 const REQUIRED_TYPEFULLY_ALTERNATIVE_SNIPPETS = [
