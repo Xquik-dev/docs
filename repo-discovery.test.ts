@@ -195,6 +195,28 @@ const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
   'transform the same rows into CSV for analysts',
 ] as const;
 
+const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
+  '## Workflow: Search Tweets to JSON Lines',
+  '`client.x().tweets().search`',
+  '`GET /x/tweets/search`',
+  '`TweetSearchParams`',
+  '`.q()`',
+  '`.limit()`',
+  '`.cursor()`',
+  '`.sinceTime()`',
+  '`.untilTime()`',
+  '`.queryType()`',
+  '`QueryType.LATEST`',
+  '`PaginatedTweets`',
+  '`page.tweets()`',
+  '`page.hasNextPage()`',
+  '`page.nextCursor()`',
+  '`SearchTweet`',
+  'Tweet search costs 1 credit per tweet returned.',
+  'Write `page.tweets()` as JSON Lines for queues and data lakes',
+  'transform the same records into CSV for analysts',
+] as const;
+
 const REQUIRED_LLMS_SNIPPETS = [
   '## Agent Entry Points',
   'https://context7.com/xquik-dev/xquik-docs',
@@ -1567,6 +1589,20 @@ describe('repository discovery', (): void => {
         source,
         'PHP SDK workflow docs',
         REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Java SDK page useful for tweet search handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('sdks/java.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Java SDK workflow docs',
+        REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });

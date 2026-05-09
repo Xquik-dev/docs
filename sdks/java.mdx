@@ -1,15 +1,15 @@
 ---
 title: Java SDK
 sidebarTitle: Java
-description: Build and use the official Xquik Java SDK while Maven Central publication is pending.
-keywords: ["Java SDK", "X API Java", "JVM client", "source build"]
+description: Use the official Xquik Java SDK to search tweets, export JSON Lines or CSV, monitor tweets, post tweets, upload media, and build JVM X API workers.
+keywords: ["Java SDK", "X API Java", "JVM client", "tweet search Java", "Twitter API Java", "JSON export", "source build"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the Java SDK for generated JVM models, builders, sync calls, async calls, and typed exceptions in Java 8+ applications.
+Use the Java SDK for generated JVM models, builders, sync calls, async calls, typed exceptions, retries, and file upload helpers in Java 8+ applications. It is useful when a JVM service, Spring worker, queue consumer, or cron job needs to search tweets, scrape tweets to JSON Lines or CSV, export followers, monitor tweets, post tweets, upload media, send direct messages, or hand X API data to analytics and CRM systems.
 
 ## Install
 
@@ -60,6 +60,90 @@ TweetSearchParams params = TweetSearchParams.builder()
 
 PaginatedTweets tweets = client.x().tweets().search(params);
 ```
+
+## Workflow: Search Tweets to JSON Lines
+
+Use this workflow when a Java service, Spring Batch job, scheduled worker, or queue consumer needs tweet search results in a durable handoff file for a data lake, CRM enrichment step, analyst CSV export, or downstream processor.
+
+`client.x().tweets().search` calls `GET /x/tweets/search`. Build `TweetSearchParams` with the same query parameters the REST API accepts: `.q()`, `.limit()`, `.cursor()`, `.sinceTime()`, `.untilTime()`, and `.queryType()`.
+
+```java
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.x_twitter_scraper.api.client.XTwitterScraperClient;
+import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient;
+import com.x_twitter_scraper.api.models.PaginatedTweets;
+import com.x_twitter_scraper.api.models.SearchTweet;
+import com.x_twitter_scraper.api.models.x.tweets.TweetSearchParams;
+import com.x_twitter_scraper.api.models.x.tweets.TweetSearchParams.QueryType;
+import java.io.BufferedWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+XTwitterScraperClient client = XTwitterScraperOkHttpClient.fromEnv();
+ObjectMapper objectMapper = new ObjectMapper();
+
+String cursor = null;
+try (BufferedWriter writer = Files.newBufferedWriter(
+    Paths.get("tweets.jsonl"),
+    StandardCharsets.UTF_8
+)) {
+    do {
+        TweetSearchParams.Builder builder = TweetSearchParams.builder()
+            .q("from:xquikcom webhook OR SDK")
+            .limit(100L)
+            .queryType(QueryType.LATEST);
+
+        if (cursor != null && !cursor.isEmpty()) {
+            builder.cursor(cursor);
+        }
+
+        PaginatedTweets page = client.x().tweets().search(builder.build());
+
+        for (SearchTweet tweet : page.tweets()) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("id", tweet.id());
+            row.put("text", tweet.text());
+            row.put(
+                "author_username",
+                tweet.author().map(author -> author.username()).orElse(null)
+            );
+            row.put("created_at", tweet.createdAt().orElse(null));
+            row.put("like_count", tweet.likeCount().orElse(null));
+            row.put("reply_count", tweet.replyCount().orElse(null));
+            row.put("retweet_count", tweet.retweetCount().orElse(null));
+            row.put("quote_count", tweet.quoteCount().orElse(null));
+            row.put("view_count", tweet.viewCount().orElse(null));
+
+            writer.write(objectMapper.writeValueAsString(row));
+            writer.newLine();
+        }
+
+        cursor = page.hasNextPage() ? page.nextCursor() : null;
+    } while (cursor != null && !cursor.isEmpty());
+}
+```
+
+### Request Mapping
+
+| SDK builder method | REST query parameter | Use |
+| --- | --- | --- |
+| `.q()` | `q` | X search query such as `from:username`, a keyword, hashtag, or boolean operator query. |
+| `.limit()` | `limit` | Maximum tweets to return for the page. |
+| `.cursor()` | `cursor` | Opaque cursor from `page.nextCursor()` for the next page. |
+| `.sinceTime()` | `sinceTime` | ISO 8601 lower bound for tweet creation time. |
+| `.untilTime()` | `untilTime` | ISO 8601 upper bound for tweet creation time. |
+| `.queryType()` | `queryType` | `QueryType.LATEST` for chronological search or `QueryType.TOP` for engagement-ranked search. |
+
+### Returned Data & Handoff
+
+`client.x().tweets().search` returns `PaginatedTweets`. Use `page.tweets()` for the tweet list, `page.hasNextPage()` to decide whether another page exists, and `page.nextCursor()` as the checkpoint for the next request.
+
+Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, `createdAt()`, `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, and `viewCount()` when available. Write `page.tweets()` as JSON Lines for queues and data lakes, transform the same records into CSV for analysts, or produce XLSX from the projected rows when account teams need spreadsheets.
+
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For longer workers, set an explicit retry limit and persist `page.nextCursor()` after each page.
 
 ## Error Handling
 
