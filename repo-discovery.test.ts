@@ -208,6 +208,14 @@ const REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS = [
   'Use `nextCursor` with the `after` query parameter to fetch subsequent pages.',
 ] as const;
 
+const REQUIRED_DRAFT_TYPES_GUIDE_SNIPPETS = [
+  'interface Draft',
+  'updatedAt: string;',
+  'List, create, and get responses include `id`, `text`, `createdAt`, and `updatedAt`.',
+  'Optional `topic` and `goal` fields are omitted (not null) when not set.',
+  'Use `nextCursor` with the `afterCursor` query parameter to fetch subsequent pages.',
+] as const;
+
 const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   'post tweet status',
   '`x_write_unconfirmed` | 202 | No | Poll `GET /x/write-actions/{id}` with `writeActionId` before retrying.',
@@ -1048,6 +1056,20 @@ describe('repository discovery', (): void => {
         source,
         'Types guide event object',
         REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps shared draft types aligned with draft API formatting', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/types.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Types guide draft object',
+        REQUIRED_DRAFT_TYPES_GUIDE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
