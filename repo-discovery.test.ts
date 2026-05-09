@@ -351,6 +351,11 @@ const REQUIRED_WEBHOOK_TESTING_SNIPPETS = [
 const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
   'if (!verifyWebhook(req, WEBHOOK_SECRET))',
   'if not verify_webhook(request, WEBHOOK_SECRET):',
+  'Use `deliveryId` as the webhook delivery idempotency key.',
+  'Use `streamEventId` when your system should process one monitor event only once across webhook retries or endpoint changes.',
+  'Do not hash the raw request body when `deliveryId` is available.',
+  'processedDeliveries.add(event.deliveryId)',
+  'processed_events.add(event["streamEventId"])',
 ] as const;
 
 const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
@@ -399,6 +404,11 @@ const FORBIDDEN_WEBHOOK_ARCHITECTURE_SNIPPETS = [
 const FORBIDDEN_WEBHOOK_VERIFICATION_SNIPPETS = [
   'verifyWebhookSignature(',
   'verify_webhook_signature(',
+  'payload does not include a built-in delivery ID',
+  'compute a hash of the raw request body to deduplicate events',
+  'Deduplicate by hashing the raw payload',
+  'processedPayloads',
+  'processed_payloads',
 ] as const;
 
 const REQUIRED_SEND_DM_API_SNIPPETS = [

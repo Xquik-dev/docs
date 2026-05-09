@@ -237,14 +237,13 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 
 ## Idempotency
 
-Webhook deliveries can be retried on failure, so your endpoint may receive the same event multiple times. The payload does not include a built-in delivery ID, so compute a hash of the raw request body to deduplicate events.
+Webhook deliveries can be retried on failure, so your endpoint may receive the same event multiple times. Use `deliveryId` as the webhook delivery idempotency key. Use `streamEventId` when your system should process one monitor event only once across webhook retries or endpoint changes. Do not hash the raw request body when `deliveryId` is available.
 
 <CodeGroup>
 
 ```javascript Node.js
-import { createHash } from "node:crypto";
-
-const processedPayloads = new Set();
+const processedDeliveries = new Set();
+const processedEvents = new Set();
 
 app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
   const payload = req.body.toString();
@@ -253,17 +252,19 @@ app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
     return res.status(401).send("Invalid signature");
   }
 
-  // Deduplicate by hashing the raw payload
-  const payloadHash = createHash("sha256").update(payload).digest("hex");
+  const event = JSON.parse(payload);
 
-  if (processedPayloads.has(payloadHash)) {
-    return res.status(200).send("Already processed");
+  if (processedDeliveries.has(event.deliveryId)) {
+    return res.status(200).send("Delivery already processed");
   }
 
-  processedPayloads.add(payloadHash);
+  processedDeliveries.add(event.deliveryId);
 
-  const event = JSON.parse(payload);
-  // Process event...
+  if (processedEvents.has(event.streamEventId)) {
+    return res.status(200).send("Event already processed");
+  }
+
+  processedEvents.add(event.streamEventId);
   handleEvent(event);
 
   res.status(200).send("OK");
@@ -271,9 +272,8 @@ app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
 ```
 
 ```python Python
-import hashlib
-
-processed_payloads = set()
+processed_deliveries = set()
+processed_events = set()
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -282,16 +282,18 @@ def webhook():
     if not verify_webhook(request, WEBHOOK_SECRET):
         return "Invalid signature", 401
 
-    # Deduplicate by hashing the raw payload
-    payload_hash = hashlib.sha256(payload).hexdigest()
-
-    if payload_hash in processed_payloads:
-        return "Already processed", 200
-
-    processed_payloads.add(payload_hash)
-
     event = request.get_json()
-    # Process event...
+
+    if event["deliveryId"] in processed_deliveries:
+        return "Delivery already processed", 200
+
+    processed_deliveries.add(event["deliveryId"])
+
+    if event["streamEventId"] in processed_events:
+        return "Event already processed", 200
+
+    processed_events.add(event["streamEventId"])
+
     handle_event(event)
 
     return "OK", 200
@@ -300,5 +302,5 @@ def webhook():
 </CodeGroup>
 
 <Warning>
-  The in-memory examples above work for single-process servers. In production, use a persistent store (database, Redis) to track processed payload hashes across restarts and multiple instances.
+  The in-memory examples above work for single-process servers. In production, use a persistent store (database, Redis) to track processed delivery IDs and event IDs across restarts and multiple instances.
 </Warning>
