@@ -783,6 +783,21 @@ const REQUIRED_POSTWISE_ALTERNATIVE_SNIPPETS = [
   'Confirm current limits at checkout because official pages expose more than one plan grid.',
 ] as const;
 
+const REQUIRED_TRYPOST_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed TryPost scope',
+  'one workspace includes all features and connects to all 10 social networks',
+  'USD 16/month per workspace when billed annually, or USD 192/year',
+  '20% yearly saving and a 7-day free trial',
+  'all social networks, no listed scheduled-post cap, a visual content calendar, media library',
+  'post preview for all networks, no listed team-member cap, and chat support',
+  'Instagram, Facebook, LinkedIn personal and company pages, X (Twitter), TikTok, YouTube Shorts, Pinterest, Threads, Bluesky, and Mastodon',
+  'each additional workspace is billed separately and gives 3 workspaces as USD 48/month',
+  'cloud-hosted SaaS and self-hosted open-source software',
+  'FSL-1.1-MIT, self-hosting is available at no cost',
+  'scheduling and auto-publishing across multiple platforms, a drag-and-drop visual calendar',
+  'REST API. They also list Build with AI for connecting AI assistants through MCP.',
+] as const;
+
 const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
   'schedule posts, review inboxes, analyze campaigns, search tweets, export followers, monitor accounts or keywords, send webhooks',
   'Social media management, publishing, engagement, listening, analytics, ads, and enterprise collaboration suite.',
@@ -1849,6 +1864,20 @@ describe('repository discovery', (): void => {
         source,
         'Postwise alternative',
         REQUIRED_POSTWISE_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the TryPost alternative current for open-source scheduler handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/trypost.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'TryPost alternative',
+        REQUIRED_TRYPOST_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
