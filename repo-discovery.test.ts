@@ -549,11 +549,18 @@ const REQUIRED_ALTERNATIVES_SECTOR_SNIPPETS = [
 const REQUIRED_BRANDWATCH_ALTERNATIVE_SNIPPETS = [
   'social listening, consumer intelligence, or social media management workflow',
   'search tweets, export followers, monitor accounts or keywords, send webhooks',
+  '## Source-backed Brandwatch scope',
+  'official firehose access to Twitter, Tumblr, and Reddit',
+  'dashboards, audience demographics, influencers, image analysis, Signals alerts, Excel/PPT/PDF exports, and Brandwatch API access',
+  'content calendar, publishing workflows, approval flows, an Engage inbox, sentiment and spam detection, helpdesk integration',
   'Consumer intelligence and social media management suite.',
   'tweet search, follower exports, monitor events, signed webhook payloads, CSV/JSON/XLSX exports',
   'Run one social listening job',
   'Compare tweet IDs, author IDs, timestamps, text, metrics, media links, pagination, export fields, webhook signatures, and error handling.',
   'Official Brandwatch site',
+  'Brandwatch Consumer Intelligence',
+  'Brandwatch Consumer Research features',
+  'Brandwatch Social Media Management',
 ] as const;
 
 const REQUIRED_MELTWATER_ALTERNATIVE_SNIPPETS = [
