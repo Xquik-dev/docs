@@ -517,12 +517,19 @@ const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed Pipedream scope',
   'Pipedream Workflows',
   'one credit per 30 seconds',
+  'does not charge by number of steps',
+  'development and testing in the workflow builder are free',
   'HTTP trigger',
   'steps.trigger.event',
+  'method, payload, headers, path, query, URL',
+  '`413 Payload Too Large`',
   'Pipedream CLI',
   'pd publish',
+  'use npm packages without a package file',
+  'add app props for managed auth',
   '/guides/pipedream',
 ] as const;
 
