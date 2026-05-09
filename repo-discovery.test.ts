@@ -749,6 +749,23 @@ const REQUIRED_TWEET_HUNTER_ALTERNATIVE_SNIPPETS = [
   'Search tweets and follower exports cost 1 credit/result, with CSV, JSON, XLSX, Markdown, API, SDK, and MCP handoff options.',
 ] as const;
 
+const REQUIRED_TAPLIO_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed Taplio scope',
+  'all-in-one AI-powered tool to grow a brand on LinkedIn',
+  'Starter is listed at USD 39/month or USD 32/month when billed yearly',
+  '0 AI credits, 0 comment credits, 1-click post scheduling, 5M+ post ideas',
+  'Growth is listed at USD 69/month or USD 49/month when billed yearly',
+  '250 AI credits, 500 comment credits',
+  'hook and post generation, repurposing viral posts or content, AI copilot writing',
+  'Pro is listed at USD 199/month or USD 149/month when billed yearly',
+  'no AI credit cap, no comment credit cap, no AI or comment cap',
+  'dynamic 3M+ lead database, Auto-DM for likers and commenters, mass DMs to an audience, and automated connection requests',
+  'saved posts, draft Kanban, post scheduling, monthly and daily schedules, analytics, writer collaboration, organization management, Zapier integration',
+  '7-day free trial gives Pro access during the trial and then switches to the originally selected plan',
+  'Taplio X Chrome extension brings Taplio into LinkedIn with instant stats, high-performing posts, trending content, and quick saves',
+  'Use current Taplio plan limits when the job is LinkedIn content or lead engagement.',
+] as const;
+
 const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
   'schedule posts, review inboxes, analyze campaigns, search tweets, export followers, monitor accounts or keywords, send webhooks',
   'Social media management, publishing, engagement, listening, analytics, ads, and enterprise collaboration suite.',
@@ -1787,6 +1804,20 @@ describe('repository discovery', (): void => {
         source,
         'Tweet Hunter alternative',
         REQUIRED_TWEET_HUNTER_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Taplio alternative current for LinkedIn handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/taplio.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Taplio alternative',
+        REQUIRED_TAPLIO_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
