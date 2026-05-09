@@ -94,6 +94,32 @@ Start with `tweet_explore` so the agent can discover the right method, path, par
 Use tweet_explore to find the endpoint for user lookup, then call tweet_read for @xquikcom.
 ```
 
+## Runtime Diagnostics
+
+For scriptable checks, use `hermes tools list`. Bare `hermes tools` opens the interactive tool UI and requires a TTY. The list command reports plugin toolsets, so confirm `hermes-tweet` appears before testing calls.
+
+```bash
+hermes tools list
+```
+
+Run a non-mutating one-shot probe after the plugin is enabled:
+
+```bash
+hermes -z "Use tweet_explore, then read /api/v1/account. Do not call tweet_action." --toolsets hermes-tweet
+```
+
+Expected behavior:
+
+- `tweet_explore` can inspect catalog endpoints without an API key.
+- Without `XQUIK_API_KEY`, a non-mutating Hermes probe exposes `tweet_explore` only.
+- After `XQUIK_API_KEY` is configured and the CLI is reloaded, or the gateway or cron process is restarted, `tweet_read` can read `/api/v1/account`.
+- `tweet_action` stays hidden or disabled unless `HERMES_TWEET_ENABLE_ACTIONS=true`.
+- `/xstatus` and `/xtrends` appear in the Hermes plugin command registry.
+
+Hermes one-shot prompts do not dispatch `/xstatus` as an interactive slash command. Verify slash commands in an active CLI or gateway session, and use `hermes -z` for tool-call probes.
+
+Non-interactive installs cannot prompt for credentials; set `XQUIK_API_KEY` in the process environment or `~/.hermes/.env`.
+
 ## Slash Commands
 
 | Command | Purpose |
