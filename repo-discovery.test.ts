@@ -191,6 +191,16 @@ const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
   '`pending_confirmation`',
 ] as const;
 
+const REQUIRED_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
+  'Respect `Retry-After`; otherwise start at 1 second, add jitter, and stop after 3 retries.',
+  'Requests sent before the fixed window resets keep returning `429` until `Retry-After` elapses.',
+] as const;
+
+const FORBIDDEN_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
+  'max 5 retries',
+  'Sending requests before the window resets may extend your cooldown.',
+] as const;
+
 const REQUIRED_MONITOR_TYPES_GUIDE_SNIPPETS = [
   'interface Monitor',
   'xUserId: string;',
@@ -952,6 +962,35 @@ describe('repository discovery', (): void => {
         'API overview',
         REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS,
       ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps rate-limit troubleshooting aligned with fixed-window behavior', (): void => {
+    expect.assertions(1);
+
+    const source = [
+      readFileSync('guides/troubleshooting.mdx', 'utf8'),
+      readFileSync('guides/rate-limits.mdx', 'utf8'),
+    ].join('\n');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'Rate-limit troubleshooting docs',
+          REQUIRED_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS,
+        ),
+        ...FORBIDDEN_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Rate-limit troubleshooting docs contain stale wording "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
