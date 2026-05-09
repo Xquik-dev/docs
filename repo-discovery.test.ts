@@ -366,6 +366,11 @@ const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
   'Omitted for keyword-only monitor events and `webhook.test`.',
 ] as const;
 
+const REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS = [
+  '| **Retries** | 10 attempts with exponential backoff: base 1 second, multiplier 2x, max 60 seconds. `410 Gone` exhausts immediately. |',
+  '| **Webhook retries** | 10 attempts maximum. After exhaustion, the delivery is marked as `exhausted`. `410 Gone` marks a delivery exhausted immediately. |',
+] as const;
+
 const REQUIRED_WEBHOOK_TYPES_SNIPPETS = [
   'schemaVersion: 1;',
   'deliveryId: string;',
@@ -383,6 +388,12 @@ const FORBIDDEN_WEBHOOK_OVERVIEW_SNIPPETS = [
   'Client errors (400',
   'automatically disabled after 5 consecutive',
   'Present on all event types except `webhook.test`',
+] as const;
+
+const FORBIDDEN_WEBHOOK_ARCHITECTURE_SNIPPETS = [
+  '5 retries, exp.',
+  '5 attempts with exponential backoff',
+  '5 attempts maximum',
 ] as const;
 
 const FORBIDDEN_WEBHOOK_VERIFICATION_SNIPPETS = [
@@ -1122,6 +1133,7 @@ describe('repository discovery', (): void => {
     const types = readFileSync('guides/types.mdx', 'utf8');
     const overview = readFileSync('webhooks/overview.mdx', 'utf8');
     const verification = readFileSync('webhooks/verification.mdx', 'utf8');
+    const architecture = readFileSync('guides/architecture.mdx', 'utf8');
 
     expect(
       [
@@ -1129,6 +1141,11 @@ describe('repository discovery', (): void => {
           overview,
           'Webhook overview',
           REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          architecture,
+          'Architecture guide webhook retries',
+          REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS,
         ),
         ...collectSnippetFindings(
           types,
@@ -1152,7 +1169,18 @@ describe('repository discovery', (): void => {
                   {
                     issue: `Webhook verification guide references undefined helper "${snippet}".`,
                   },
-              ]
+                ]
+              : [],
+        ),
+        ...FORBIDDEN_WEBHOOK_ARCHITECTURE_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            architecture.includes(snippet)
+              ? [
+                  {
+                    label: 'Architecture guide webhook retries',
+                    snippet,
+                  },
+                ]
               : [],
         ),
         ...FORBIDDEN_WEBHOOK_OVERVIEW_SNIPPETS.flatMap(
