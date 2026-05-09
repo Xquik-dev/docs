@@ -839,6 +839,31 @@ const REQUIRED_CHIRRAPP_ALTERNATIVE_SNIPPETS = [
   'Search tweets and follower exports cost 1 credit/result, with CSV, JSON, XLSX, Markdown, API, SDK, and MCP handoff options.',
 ] as const;
 
+const REQUIRED_BLACK_MAGIC_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed Black Magic scope',
+  'Twitter analytics, engagement growth, Twitter CRM, and scheduling plus publishing',
+  'browser extensions for Chrome, Firefox, and Safari plus iOS and Android apps',
+  'tracks tweet performance over time',
+  'compares tweets against account averages',
+  'tracks consistency, followers, engagements, and reports why a tweet takes off',
+  'sync Twitter Lists',
+  'track whether a person liked, retweeted, or replied to previous tweets',
+  'write private notes, set reminders for DMs or follow-up, see past interactions',
+  'schedule tweets and threads',
+  'daily or weekly email reports, tweet performance reports, record-breaking tweets, new notable followers, and account summaries',
+  'prices are in USD, subscriptions are tied to one Twitter account',
+  'Personal at USD 16.25/month with USD 195 billed annually',
+  'Professional at USD 32.41/month with USD 389 billed annually',
+  'Business at USD 124.91/month with USD 1499 billed annually',
+  'Professional includes engagement tracking, active followers tracking, real-time tweet metrics, engagement heatmap, tweet replies search, quick reply, schedule tweets, schedule threads',
+  'Business adds priority support, data export, and custom setup plus reports',
+  'extra Twitter accounts are not included in Personal',
+  'Professional lists additional accounts at USD 19.99/month per account or USD 179.91 annually',
+  'Business lists additional accounts at USD 69.99/month per account or USD 629.91 annually',
+  'Personal does not list schedule tweets or schedule threads; Professional and Business include them.',
+  'Search tweets and follower exports cost 1 credit/result, with CSV, JSON, XLSX, Markdown, API, SDK, and MCP handoff options.',
+] as const;
+
 const REQUIRED_TWEETSTREAM_ALTERNATIVE_SNIPPETS = [
   '## Source-backed TweetStream scope',
   'Twitter WebSocket API for crypto traders that streams structured JSON for tracked accounts',
@@ -2036,6 +2061,20 @@ describe('repository discovery', (): void => {
         source,
         'ChirrApp alternative',
         REQUIRED_CHIRRAPP_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Black Magic alternative current for creator CRM handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/black-magic.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Black Magic alternative',
+        REQUIRED_BLACK_MAGIC_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
