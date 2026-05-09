@@ -271,6 +271,11 @@ const REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
   '10 credits per upload call',
   'AVIF, GIF, JPEG, PNG, WebP, and MP4',
   'Media IDs are valid for 24 hours',
+  'The URL must use HTTPS, resolve to a public address, return a supported media content type, finish within 30 seconds, and stay under the 15,728,640-byte URL download cap.',
+  '### URL upload checklist',
+  'Non-HTTPS URLs return `422 media_download_failed`.',
+  'Private or reserved IP targets are rejected.',
+  'Slow origins can time out before upload starts.',
 ] as const;
 
 const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
