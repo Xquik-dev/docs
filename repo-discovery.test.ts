@@ -108,6 +108,17 @@ const REQUIRED_BILLING_RECOVERY_SNIPPETS = [
 
 const REQUIRED_BILLING_MONITOR_SNIPPETS = [
   '## Subscription',
+  '### Pick a billing path by job',
+  'Search tweets or scrape tweets to CSV',
+  'Export followers or follower export',
+  'Post tweets or post tweet replies',
+  'Upload media for tweets or DMs',
+  'Monitor tweets or send tweet alerts',
+  '1 credit per tweet returned or extracted',
+  '1 credit per follower returned',
+  '10 credits per post tweet call',
+  '10 credits per media upload call',
+  'Checkout top-ups start at USD 10; quick top-up charges a saved payment method for USD 10-500',
   '### Monitor pricing',
   '21 credits per active monitor-hour',
   'Creating or reactivating an account monitor requires at least 22 available credits',
