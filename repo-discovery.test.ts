@@ -674,6 +674,19 @@ const REQUIRED_TWEETDECK_ALTERNATIVE_SNIPPETS = [
   'Official X Premium terms',
 ] as const;
 
+const REQUIRED_ZERNIO_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed Zernio scope',
+  "Zernio's official rebrand page says Late is now Zernio",
+  'same API, team, webhooks, `/api/v1` endpoints, route parameters, and response schemas',
+  '`getlate.dev` redirects to `zernio.com`',
+  'Bearer authentication, profile creation, scheduled posts, immediate posts, and cross-posting to multiple accounts',
+  'first 2 connected accounts are free, accounts 3-10 cost USD 6/account/month, accounts 11-100 cost USD 3/account/month, accounts 101-2,000 cost USD 1/account/month',
+  'analytics, comments, DMs, ads, webhooks, MCP server, CLI, SDKs, dashboard, and team members are included per connected account',
+  'X/Twitter usage is passed through separately at USD 0.005/read, USD 0.010/write, and USD 0.015/DM',
+  'Twitter/X limitations for DMs and cached reply search',
+  'account connection, post scheduling, media upload, analytics, ads, messages, comments, reviews, webhooks, and account settings',
+] as const;
+
 const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
   'schedule posts, review inboxes, analyze campaigns, search tweets, export followers, monitor accounts or keywords, send webhooks',
   'Social media management, publishing, engagement, listening, analytics, ads, and enterprise collaboration suite.',
@@ -1642,6 +1655,20 @@ describe('repository discovery', (): void => {
         source,
         'TweetDeck alternative',
         REQUIRED_TWEETDECK_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Zernio alternative current for social API handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/late.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Zernio alternative',
+        REQUIRED_ZERNIO_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
