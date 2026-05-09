@@ -732,6 +732,27 @@ const REQUIRED_POST_BRIDGE_ALTERNATIVE_SNIPPETS = [
   '8MB maximum per image, and 35 total images',
 ] as const;
 
+const REQUIRED_SOCIALCRAWL_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed SocialCrawl scope',
+  'unified social media data API for developers and AI agents',
+  'the docs introduction says 21 platforms and 108 endpoints, while the pricing page says 27 platforms and 133 APIs',
+  '`engagement_rate`, `language`, `content_category`, and `estimated_reach`',
+  'requests use the `x-api-key` header',
+  '`401 MISSING_API_KEY` or `401 INVALID_API_KEY`',
+  'accounts can keep up to 5 active keys',
+  'credit-based pay-as-you-go billing with a 50 concurrent request ceiling per credential',
+  'Standard requests cost 1 credit across 84 endpoints, Advanced requests cost 5 credits across 18 endpoints, and Premium requests cost 10 credits across 6 endpoints',
+  '`success`, `platform`, `endpoint`, `data`, `credits_used`, `credits_remaining`, `request_id`, and `cached`',
+  'List endpoints return `items`, optional `next_cursor`, and optional `total`',
+  'cache hits cost 0 credits',
+  '`GET /v1/credits/balance` costs 0 credits',
+  'idempotent replays deduct 0 new credits within a 24-hour TTL',
+  'Free with 400 one-time credits, Starter with 2,500 credits for GBP 15, Growth with 20,000 credits for GBP 49, Pro with 150,000 credits for GBP 299',
+  'publish `/llms.txt`, `/llms-full.txt`, OpenAPI JSON and YAML, plus per-platform llms files',
+  'profile, user tweets, tweet detail, community detail, community tweets, video transcript, and AI-powered X search endpoints',
+  '`socialcrawl_list_platforms`, `socialcrawl_list_endpoints`, `socialcrawl_request`, and `socialcrawl_get_docs`',
+] as const;
+
 const REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS = [
   '## Source-backed Hypefury scope',
   'Starter is USD 29/month and includes scheduling up to 1 month, 6 social accounts with 1 X account',
@@ -1854,6 +1875,20 @@ describe('repository discovery', (): void => {
         source,
         'Post Bridge alternative',
         REQUIRED_POST_BRIDGE_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the SocialCrawl alternative current for social data API handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/socialcrawl.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'SocialCrawl alternative',
+        REQUIRED_SOCIALCRAWL_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
