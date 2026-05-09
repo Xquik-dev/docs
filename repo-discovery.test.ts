@@ -812,6 +812,33 @@ const REQUIRED_ANTWORK_ALTERNATIVE_SNIPPETS = [
   'Search tweets and follower exports cost 1 credit/result, with CSV, JSON, XLSX, Markdown, API, SDK, and MCP handoff options.',
 ] as const;
 
+const REQUIRED_CHIRRAPP_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed ChirrApp scope',
+  'write and schedule Twitter threads in a distraction-free editor',
+  'drafts, schedule, history, analytics, reply to a tweet, numbering, media upload, split text, tips, and focus controls',
+  'repurpose blog content with auto-split, save and share drafts of tweets and threads, add images, videos, and GIFs',
+  'cross-post to LinkedIn and Mastodon',
+  'connect multiple accounts',
+  'split it into 280-character tweets',
+  'preview the thread before publishing',
+  'import article text with the browser extension',
+  'autosave drafts',
+  'schedule at a specific date and time, add content to a fixed queue, share next, or pick a scheduled slot',
+  'queues default to 9 am, noon, and 4 pm and can be adjusted by day',
+  'add up to 4 images to each tweet',
+  'add a GIF or video, quote tweets, add emojis, and automatically number new tweets in a thread',
+  'published threads can be cross-posted to LinkedIn, but LinkedIn scheduling is not currently supported there',
+  'offers LinkedIn cross-posts but not Instagram or Facebook cross-posts',
+  'analytics can show a heatmap of when content gets engagement',
+  'show scheduled content in queue/week/month views',
+  'organize drafts with stars and folders',
+  'loop saved tweets or threads through an evergreen content pool',
+  'does not expose stable plan prices in public text',
+  'Validate ChirrApp paid scheduling, team, account, analytics, and API availability at checkout before buying.',
+  'Price by scheduling access, thread length, media limits, draft workflow, and connected accounts.',
+  'Search tweets and follower exports cost 1 credit/result, with CSV, JSON, XLSX, Markdown, API, SDK, and MCP handoff options.',
+] as const;
+
 const REQUIRED_TWEETSTREAM_ALTERNATIVE_SNIPPETS = [
   '## Source-backed TweetStream scope',
   'Twitter WebSocket API for crypto traders that streams structured JSON for tracked accounts',
@@ -1995,6 +2022,20 @@ describe('repository discovery', (): void => {
         source,
         'Antwork alternative',
         REQUIRED_ANTWORK_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the ChirrApp alternative current for thread-publishing handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/chirrapp.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'ChirrApp alternative',
+        REQUIRED_CHIRRAPP_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
