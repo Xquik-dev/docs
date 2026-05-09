@@ -732,6 +732,29 @@ const REQUIRED_POST_BRIDGE_ALTERNATIVE_SNIPPETS = [
   '8MB maximum per image, and 35 total images',
 ] as const;
 
+const REQUIRED_OUTSTAND_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed Outstand scope',
+  'unified social media API for builders with 10 platforms, 1 API, and pay-per-post pricing',
+  'one API call can post to X, LinkedIn, Instagram, and 7 other platforms',
+  'X, LinkedIn, Instagram, TikTok, Facebook, Threads, Bluesky, YouTube, Pinterest, and Google Business',
+  'USD 5/month with 1,000 included posts and USD 0.01 per post over 1,000',
+  'connected accounts without a visible account cap, all 10 platforms, webhooks, MCP, and BYO credentials',
+  'social accounts, posts, scheduling, first comment scheduling, and media attachment as core features',
+  '`GET /v1/social-accounts` for connected accounts and `POST /v1/posts` with `containers`, `socialAccountIds`, and optional `scheduledAt`',
+  'supports one authentication method, passes a Bearer credential in the `Authorization` header',
+  'allows multiple named credentials per organization',
+  '25 tools for posting, scheduling, analytics, media management, account management, and social network configuration',
+  '`create_post`, `list_posts`, `get_post`, `get_post_analytics`, `delete_post`, `create_reply`, and `get_replies`',
+  '`scheduled_at` up to 30 days ahead',
+  'uses `upload_media`, HTTP PUT to the upload URL, `confirm_media_upload`, then `create_post` with the media ID',
+  'Confirmed media files are retained for 60 days',
+  'per-account `status`, `error`, `platformPostId`, and `publishedAt`',
+  'scheduled publishing starts at the scheduled time with a 30-second tolerance',
+  '`post.published` and `post.error` events plus an account re-authentication event',
+  '`X-Outstand-Signature: sha256=<signature>`',
+  'HMAC-SHA256 over the raw request body',
+] as const;
+
 const REQUIRED_SOCIALCRAWL_ALTERNATIVE_SNIPPETS = [
   '## Source-backed SocialCrawl scope',
   'unified social media data API for developers and AI agents',
@@ -1889,6 +1912,20 @@ describe('repository discovery', (): void => {
         source,
         'SocialCrawl alternative',
         REQUIRED_SOCIALCRAWL_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Outstand alternative current for social publishing handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/outstand.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Outstand alternative',
+        REQUIRED_OUTSTAND_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
