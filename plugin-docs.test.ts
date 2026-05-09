@@ -87,6 +87,12 @@ describe('Plugin docs', (): void => {
       '`tweetclaw`',
       '`/xstatus`',
       '`/xtrends`',
+      '## Runtime Diagnostics',
+      'TweetClaw can be installed before credentials are configured.',
+      'Live API calls return setup guidance until you add an API key or MPP signing key.',
+      'openclaw plugins inspect tweetclaw --runtime',
+      'openclaw skills info tweetclaw',
+      'TweetClaw requires an HTTPS base URL with no embedded credentials.',
     ];
 
     expect(fileIncludes(guide, expected)).toStrictEqual([]);
