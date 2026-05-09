@@ -583,11 +583,18 @@ const REQUIRED_MELTWATER_ALTERNATIVE_SNIPPETS = [
 const REQUIRED_TALKWALKER_ALTERNATIVE_SNIPPETS = [
   'social listening, consumer intelligence, or social media analytics workflow',
   'search tweets, export followers, monitor accounts or keywords, send webhooks',
+  '## Source-backed Talkwalker scope',
+  'tracking keywords and mentions across 30 social networks, 150+ million websites, videos, images, podcasts, reviews, surveys, and support interactions',
+  'visual listening, customizable dashboards, real-time alerts, conversation clusters, sentiment analysis, AI summaries, virality maps',
+  'Social Listening, Social Benchmarking, Media Monitoring, Customer Feedback Analytics',
   'Consumer intelligence, social listening, and social media analytics platform.',
   'tweet search, follower exports, monitor events, signed webhook payloads, CSV/JSON/XLSX exports',
   'Run one listening job',
   'Compare tweet IDs, author IDs, timestamps, text, metrics, media links, pagination, export fields, webhook signatures, and error handling.',
   'Official Talkwalker site',
+  'Talkwalker Social Listening',
+  'Talkwalker products',
+  'Talkwalker data coverage',
 ] as const;
 
 const REQUIRED_TWEETDECK_ALTERNATIVE_SNIPPETS = [
