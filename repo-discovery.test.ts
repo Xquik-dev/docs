@@ -702,13 +702,19 @@ const REQUIRED_X_API_ALTERNATIVE_SNIPPETS = [
 
 const REQUIRED_AUDIENSE_ALTERNATIVE_SNIPPETS = [
   'audience intelligence, influencer discovery, tweet search, follower export, account or keyword monitoring, signed webhooks, API access, and agent handoff',
-  'Audiense public pages describe consumer segmentation, cultural insights, X community management, follower analytics, hashtag analytics, and influencer discovery.',
+  '## Source-backed Audiense scope',
+  "Audiense's official Insights page describes audience intelligence for customer insights, creative decisions, influencer discovery, consumer segments, cultural insights, affinities, demographics, interests, personas, advertising targeting, SEO and keyword research, content ideation, and influencer outreach.",
+  'Its current public pricing page lists a Social Intelligence Insights monthly plan with 5 reports per month, an annual plan with 60 reports per year, onboarding, a dedicated account manager, and refresher trainings.',
+  'Audiense official pages describe audience segments, cultural insights, affinities, demographics, interests, personas, influencer discovery, report exports, audience member XLS exports, influencer XLS exports, and targeting-pack downloads.',
   '## Audience & influencer handoff',
   'Use this section when the search intent is "Audiense alternative for influencer discovery", "X audience intelligence", "export X followers", or "turn X audiences into CRM data".',
   'Use Audiense influencer views, filters, affinity sorting, uniqueness sorting, and paid-plan XLS export.',
   'Use follower exports, tweet search, verified follower exports, and engagement fields to build your own scoring model.',
   'Audiense prioritizes influencer discovery. Xquik prioritizes data ownership and downstream automation.',
   'Use keyword monitors, tweet search exports, signed webhooks, and `GET /events` for real-time records.',
+  'Audiense pricing',
+  'Audiense data sources',
+  'Audiense report exports',
 ] as const;
 
 const FORBIDDEN_APIFY_ALTERNATIVE_SNIPPETS = [
