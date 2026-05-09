@@ -566,11 +566,18 @@ const REQUIRED_BRANDWATCH_ALTERNATIVE_SNIPPETS = [
 const REQUIRED_MELTWATER_ALTERNATIVE_SNIPPETS = [
   'media monitoring, social listening, or social media management workflow',
   'search tweets, export followers, monitor accounts or keywords, send webhooks',
+  '## Source-backed Meltwater scope',
+  'coverage across major social networks, blogs, forums, podcasts, online news, reviews, owned channels, and public social content',
+  'Boolean-style searches, sentiment views, share-of-voice and benchmarking metrics, dashboards, reports, real-time alerts, exportable charts, visual enrichments, influencer discovery',
+  'Export API for exporting media articles and social mentions from existing searches',
   'Media intelligence, social listening, and social media management suite.',
   'tweet search, follower exports, monitor events, signed webhook payloads, CSV/JSON/XLSX exports',
   'Run one monitoring job',
   'Compare tweet IDs, author IDs, timestamps, text, metrics, media links, pagination, export fields, webhook signatures, and error handling.',
   'Official Meltwater site',
+  'Meltwater media monitoring',
+  'Meltwater social management',
+  'Meltwater Export API',
 ] as const;
 
 const REQUIRED_TALKWALKER_ALTERNATIVE_SNIPPETS = [
