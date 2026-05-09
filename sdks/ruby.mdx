@@ -11,6 +11,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Use the Ruby SDK for Ruby 3.2+ applications that need typed REST access, retries, Yard docs, RBS, RBI, and connection pooling.
 
+Use this page when you need a Ruby app, Rails job, or Sidekiq worker to search tweets, scrape tweets to CSV or JSON, export followers, upload media, send direct messages, monitor tweets, or hand X data to a warehouse, CRM, queue, or agent workflow.
+
 ## Install
 
 ```bash
@@ -41,6 +43,89 @@ client = XTwitterScraper::Client.new(
 tweets = client.x.tweets.search(q: "from:elonmusk", limit: 10)
 puts(tweets.has_next_page)
 ```
+
+## Workflow: Search Tweets to CSV
+
+This job is for Ruby workers that need tweet search results in a file for analysts, CRM import, or downstream enrichment. It calls `GET /x/tweets/search` through `client.x.tweets.search`, uses the generated `XTwitterScraper::X::TweetSearchParams` shape, and writes one CSV row per returned tweet.
+
+```ruby
+require "csv"
+require "x_twitter_scraper"
+
+client = XTwitterScraper::Client.new(
+  api_key: ENV["X_TWITTER_SCRAPER_API_KEY"]
+)
+
+cursor = nil
+
+CSV.open("xquik-tweet-search.csv", "w", write_headers: true, headers: [
+  "id",
+  "text",
+  "author_username",
+  "created_at",
+  "like_count",
+  "reply_count",
+  "retweet_count",
+  "quote_count",
+  "view_count"
+]) do |csv|
+  loop do
+    page = client.x.tweets.search(
+      q: "from:xquikcom webhook OR SDK",
+      limit: 100,
+      query_type: :Latest,
+      cursor: cursor
+    )
+
+    page.tweets.each do |tweet|
+      csv << [
+        tweet.id,
+        tweet.text,
+        tweet.author&.username,
+        tweet.created_at,
+        tweet.like_count || 0,
+        tweet.reply_count || 0,
+        tweet.retweet_count || 0,
+        tweet.quote_count || 0,
+        tweet.view_count || 0
+      ]
+    end
+
+    break unless page.has_next_page && page.next_cursor != ""
+
+    cursor = page.next_cursor
+  end
+end
+```
+
+The generated params map directly to the REST endpoint:
+
+| Ruby keyword | REST query parameter | Use it for |
+| --- | --- | --- |
+| `q` | `q` | Required X search query with keywords, handles, hashtags, or operators. |
+| `limit` | `limit` | Page size from 1 to 200. Remaining credits can lower the returned count. |
+| `cursor` | `cursor` | Opaque cursor from `page.next_cursor` for the next page. |
+| `since_time` | `sinceTime` | ISO 8601 lower time bound. |
+| `until_time` | `untilTime` | ISO 8601 upper time bound. |
+| `query_type` | `queryType` | `:Latest` for chronological results or `:Top` for engagement-ranked results. |
+
+## Returned Data & Handoff
+
+`client.x.tweets.search` returns `XTwitterScraper::PaginatedTweets`:
+
+| Ruby field | JSON field | Handoff value |
+| --- | --- | --- |
+| `page.tweets` | `tweets` | Array of `SearchTweet` records. Each tweet includes `id`, `text`, optional `author`, `created_at`, `like_count`, `reply_count`, `retweet_count`, `quote_count`, `bookmark_count`, `view_count`, and `is_note_tweet` when available. |
+| `page.has_next_page` | `has_next_page` | Boolean that tells your worker whether another page exists. |
+| `page.next_cursor` | `next_cursor` | Cursor to store with the job checkpoint and pass back as `cursor`. |
+
+Write `page.tweets` to CSV for analysts, call `to_json` for JSON export, call `to_h` or `deep_to_h` before loading a warehouse, or pass `id`, `text`, `author.username`, `created_at`, and engagement counts to a CRM or enrichment job.
+
+## Cost, Limits & Retries
+
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. Read calls are rate-limited, and `429` responses include `Retry-After`.
+
+The client retries connection errors, timeouts, 408, 409, 429, and 5xx responses by default. Handle `XTwitterScraper::Errors::RateLimitError` with backoff, and fix 400, 401, 403, 404, or 422 responses before retrying.
 
 ## Error Handling
 
