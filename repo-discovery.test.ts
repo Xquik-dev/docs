@@ -152,6 +152,27 @@ const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
   '`x-twitter-scraper x:dm send`',
 ] as const;
 
+const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
+  '## Workflow: Search Tweets to JSON Lines',
+  '`client.X.Tweets.Search`',
+  '`GET /x/tweets/search`',
+  '`TweetSearchParams`',
+  '`Q`',
+  '`Limit`',
+  '`Cursor`',
+  '`SinceTime`',
+  '`UntilTime`',
+  '`QueryType`',
+  '`PaginatedTweets`',
+  '`page.Tweets`',
+  '`page.HasNextPage`',
+  '`page.NextCursor`',
+  '`SearchTweet`',
+  'Tweet search costs 1 credit per tweet returned.',
+  'Write `page.Tweets` as JSON Lines for queues and data lakes',
+  'transform the same rows into CSV for analysts',
+] as const;
+
 const REQUIRED_LLMS_SNIPPETS = [
   '## Agent Entry Points',
   'https://context7.com/xquik-dev/xquik-docs',
@@ -1496,6 +1517,20 @@ describe('repository discovery', (): void => {
         source,
         'CLI SDK workflow docs',
         REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the C# SDK page useful for tweet search handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('sdks/csharp.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'C# SDK workflow docs',
+        REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
