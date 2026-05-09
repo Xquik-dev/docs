@@ -77,6 +77,16 @@ curl -G https://xquik.com/api/v1/x/dm/987654321/history \
 
 For older messages, pass the previous `next_cursor` as `cursor`. Store each message `id`, `text`, `senderId`, `receiverId`, `createdAt`, and optional `mediaUrl` in your support ticket, CRM note, or JSON export.
 
+### Sync and retry rules
+
+| Rule | Why it matters |
+|------|----------------|
+| Treat `next_cursor` as opaque | Pass it back as `cursor` for the next page. Do not decode it or build your own cursor. |
+| Store every message `id` | Use the ID to dedupe support tickets, CRM notes, warehouse rows, or JSON exports. |
+| Use a participant account | `GET /x/dm/{userId}/history` returns `400 account_required` without `account` and `403 dm_not_permitted` when the connected account is not in the conversation. |
+| Avoid legacy pagination in new code | Use `cursor`; keep `maxId` only for older integrations that already depend on it. |
+| Retry only transient failures | Retry `429` and `503`; do not retry `403 dm_not_permitted` with the same non-participant account. |
+
 ## Step 3: Send a text direct message
 
 Use a connected account as the sender. The `account` value can be the connected account username or account ID.
