@@ -716,6 +716,22 @@ const REQUIRED_POSTPROXY_ALTERNATIVE_SNIPPETS = [
   'BYO developer credentials guide says connecting X profiles with your own X developer credentials exempts those profiles from the shared 24-hour posting quota',
 ] as const;
 
+const REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed Hypefury scope',
+  'Starter is USD 29/month and includes scheduling up to 1 month, 6 social accounts with 1 X account',
+  '1 Auto-DM tweet per week with a 100 DMs/day limit',
+  'Creator is USD 65/month and includes scheduling up to 3 months, 30 social accounts with 5 X accounts',
+  'Business is USD 97/month with 60 social accounts, 10 X accounts, 300 Auto-DMs/day',
+  'Agency is USD 199/month with 90 social accounts, 15 X accounts, 400 Auto-DMs/day',
+  'Hypefury no longer offers a free plan, but offers a 7-day trial on Starter',
+  'Instagram, Facebook Pages, LinkedIn, Threads, and TikTok',
+  'creating content once, scheduling it, and distributing it to other social channels',
+  'inspiration from 15+ hand-curated niches, 30+ tweet templates, and recurrent posting plans',
+  'DMs run in batches every 30 minutes, campaigns last 3 days',
+  'edited tweets can break Auto DM because the tweet ID changes, and DM recipients must follow the account',
+  'Validate REST, SDK, webhook, and MCP handoff needs before buying.',
+] as const;
+
 const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
   'schedule posts, review inboxes, analyze campaigns, search tweets, export followers, monitor accounts or keywords, send webhooks',
   'Social media management, publishing, engagement, listening, analytics, ads, and enterprise collaboration suite.',
@@ -1726,6 +1742,20 @@ describe('repository discovery', (): void => {
         source,
         'Postproxy alternative',
         REQUIRED_POSTPROXY_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Hypefury alternative current for creator-publishing handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/hypefury.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Hypefury alternative',
+        REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
