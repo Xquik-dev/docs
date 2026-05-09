@@ -716,6 +716,22 @@ const REQUIRED_POSTPROXY_ALTERNATIVE_SNIPPETS = [
   'BYO developer credentials guide says connecting X profiles with your own X developer credentials exempts those profiles from the shared 24-hour posting quota',
 ] as const;
 
+const REQUIRED_POST_BRIDGE_ALTERNATIVE_SNIPPETS = [
+  '## Source-backed Post Bridge scope',
+  'API access requires an active Post Bridge subscription and the API add-on',
+  'USD 5/month in addition to the plan subscription',
+  'dashboard page for API credentials, API documentation, and Discord support through a dedicated API channel',
+  'upload video content once, connect each social media account, and Post Bridge distributes the content to connected platforms',
+  'content must be uploaded directly through Post Bridge',
+  'does not support reposting Instagram collaborative reels, already-live social posts, or videos from other platforms or channels',
+  'does not currently support Twitter/X threads, Instagram Threads threaded posts, or split tweets',
+  'schedule individual posts to X and Instagram Threads',
+  '100 scheduled posts/hour per user',
+  'MP4 or MOV video uploads, 9:16, 16:9, 1:1, and 4:3 video ratios',
+  '3-second minimum and 300-second maximum videos',
+  '8MB maximum per image, and 35 total images',
+] as const;
+
 const REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS = [
   '## Source-backed Hypefury scope',
   'Starter is USD 29/month and includes scheduling up to 1 month, 6 social accounts with 1 X account',
@@ -1824,6 +1840,20 @@ describe('repository discovery', (): void => {
         source,
         'Postproxy alternative',
         REQUIRED_POSTPROXY_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Post Bridge alternative current for scheduler API handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/post-bridge.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Post Bridge alternative',
+        REQUIRED_POST_BRIDGE_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
