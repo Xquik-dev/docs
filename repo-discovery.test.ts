@@ -229,6 +229,23 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   '1 credit per tweet returned',
 ] as const;
 
+const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
+  'Scrape tweets, export followers, estimate credits, start extraction jobs, paginate JSON results, and export CSV, JSON, or XLSX files',
+  'Use this workflow to scrape tweets, export followers, pull tweet replies, save CSV/JSON/XLSX files, or hand paginated JSON to a CRM, warehouse, queue, or AI agent.',
+  '## Data handoff',
+  '`job`, `results`, `hasMore`, `nextCursor`',
+  'Use `limit` up to 1,000 and pass `nextCursor` as `after`',
+  '`xUserId`, `xUsername`, `tweetId`, `tweetText`, `createdAt`',
+  'Paginated JSON is not row-capped by the export limit.',
+  'File exports are capped at 100,000 rows, and PDF exports are capped at 10,000 rows.',
+  'Use structured fields first for common jobs such as search tweets from a user, search tweet replies, scrape tweets with images, or export posts in a date range.',
+  'Use `advancedQuery` only when you already know the X search operator string you want to append.',
+] as const;
+
+const FORBIDDEN_EXTRACTION_WORKFLOW_SNIPPETS = [
+  'quota',
+] as const;
+
 const REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
   'media upload',
   'POST /x/media',
@@ -864,6 +881,32 @@ describe('repository discovery', (): void => {
         'Tweet search export guide',
         REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS,
       ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the extraction workflow concrete for credits, JSON, and file handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/extraction-workflow.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'Extraction workflow guide',
+          REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS,
+        ),
+        ...FORBIDDEN_EXTRACTION_WORKFLOW_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Extraction workflow guide contains stale wording "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
