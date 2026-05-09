@@ -60,6 +60,7 @@ const PRODUCT_API_KEY_ID_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/api-keys/[id]/route.ts',
 );
+const PRODUCT_DRAFT_FORMAT_PATH = join(PRODUCT_ROOT, 'lib/api/draft-format.ts');
 const PRODUCT_NOTIFICATIONS_ROUTE_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/notifications/route.ts',
@@ -250,6 +251,9 @@ const CREDITS_QUICK_TOPUP_PAGE = 'api-reference/credits/quick-topup.mdx';
 const API_KEYS_LIST_PAGE = 'api-reference/api-keys/list.mdx';
 const API_KEYS_CREATE_PAGE = 'api-reference/api-keys/create.mdx';
 const API_KEYS_REVOKE_PAGE = 'api-reference/api-keys/revoke.mdx';
+const DRAFTS_LIST_PAGE = 'api-reference/drafts/list.mdx';
+const DRAFTS_CREATE_PAGE = 'api-reference/drafts/create.mdx';
+const DRAFTS_GET_PAGE = 'api-reference/drafts/get.mdx';
 const ARTICLE_PAGE = 'api-reference/x/get-article.mdx';
 const DM_HISTORY_PAGE = 'api-reference/x/dm-history.mdx';
 const SEND_DM_PAGE = 'api-reference/x-write/send-dm.mdx';
@@ -1733,6 +1737,36 @@ describe('API response field docs', (): void => {
     );
 
     expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps draft response fields aligned with product draft formatting', (): void => {
+    expect.assertions(1);
+
+    if (!existsSync(PRODUCT_DRAFT_FORMAT_PATH)) {
+      expect(existsSync(PRODUCT_DRAFT_FORMAT_PATH)).toBe(false);
+      return;
+    }
+
+    const draftFields = productInterfaceFieldsFromPath(
+      PRODUCT_DRAFT_FORMAT_PATH,
+      'FormattedDraft',
+    );
+    const listFields = responseFields(DRAFTS_LIST_PAGE);
+    const createFields = responseFields(DRAFTS_CREATE_PAGE);
+    const getFields = responseFields(DRAFTS_GET_PAGE);
+    const listDraftFields = prefixedFields('drafts[].', draftFields);
+
+    expect([
+      ...setDifference(listDraftFields, listFields).map(
+        (field): string => `${DRAFTS_LIST_PAGE} is missing ${field}.`,
+      ),
+      ...setDifference(draftFields, createFields).map(
+        (field): string => `${DRAFTS_CREATE_PAGE} is missing ${field}.`,
+      ),
+      ...setDifference(draftFields, getFields).map(
+        (field): string => `${DRAFTS_GET_PAGE} is missing ${field}.`,
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps selected X read OpenAPI schemas aligned with product mappers', (): void => {
