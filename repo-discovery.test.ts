@@ -189,6 +189,13 @@ const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
   '`GET /x/write-actions/{id}`',
   '`writeActionId`',
   '`pending_confirmation`',
+  '| 502 | `x_api_unavailable` | Read service temporarily unavailable - retry |',
+  '"message": "Read service temporarily unavailable. Retry shortly."',
+] as const;
+
+const FORBIDDEN_API_OVERVIEW_SNIPPETS = [
+  '| 502 | `x_api_unavailable` | X data source temporarily unavailable - retry |',
+  '"message": "X data source temporarily unavailable. Retry shortly."',
 ] as const;
 
 const REQUIRED_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
@@ -971,11 +978,23 @@ describe('repository discovery', (): void => {
     const source = readFileSync('api-reference/overview.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'API overview',
-        REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'API overview',
+          REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS,
+        ),
+        ...FORBIDDEN_API_OVERVIEW_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `API overview contains stale read-service wording "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
