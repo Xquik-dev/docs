@@ -15,6 +15,7 @@ const UNIX_TIMESTAMP_FILTER_ENDPOINTS: ReadonlySet<string> = new Set([
 const FORBIDDEN_PUBLIC_ENDPOINT_SNIPPETS = [
   'shared read pool',
   'read pool',
+  'A transient upstream issue occurred. Safe to retry with exponential backoff.',
 ] as const;
 
 interface ContentFinding {
