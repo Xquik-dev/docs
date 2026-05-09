@@ -1,15 +1,15 @@
 ---
 title: PHP SDK
 sidebarTitle: PHP
-description: Install and use the official Xquik PHP SDK with Composer.
-keywords: ["PHP SDK", "Composer Twitter scraper", "X API PHP", "PHP API client"]
+description: Use the official Xquik PHP SDK to search tweets, export JSON Lines or CSV, monitor tweets, post tweets, upload media, and build PHP X API workers.
+keywords: ["PHP SDK", "Composer Twitter scraper", "X API PHP", "PHP API client", "tweet search PHP", "Twitter API PHP", "JSON export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the PHP SDK for PHP 8.1+ applications with named parameters, generated models, typed exceptions, retries, and file upload helpers.
+Use the PHP SDK for PHP 8.1+ applications with named parameters, generated models, typed exceptions, retries, and file upload helpers. It is useful when a PHP app or worker needs to search tweets, scrape tweets to JSON Lines or CSV, export followers, monitor tweets, post tweets, upload media, send direct messages, or hand X API data to a queue, CRM, or reporting pipeline.
 
 ## Install
 
@@ -38,8 +38,90 @@ $client = new Client(
 
 $tweets = $client->x->tweets->search(q: 'from:elonmusk', limit: 10);
 
-var_export($tweets->has_next_page);
+var_export($tweets->hasNextPage);
 ```
+
+## Workflow: Search Tweets to JSON Lines
+
+Use this workflow when a PHP worker, Laravel command, Symfony console command, or cron job needs tweet search results in a durable file for a queue, warehouse loader, analyst CSV export, or CRM enrichment step.
+
+`$client->x->tweets->search()` calls `GET /x/tweets/search`. The generated parameter model is `TweetSearchParams`, and the service method exposes the same request controls as named arguments: `q`, `limit`, `cursor`, `sinceTime`, `untilTime`, and `queryType`.
+
+```php
+<?php
+
+use XTwitterScraper\Client;
+use XTwitterScraper\PaginatedTweets;
+use XTwitterScraper\SearchTweet;
+use XTwitterScraper\X\Tweets\TweetSearchParams\QueryType;
+
+$client = new Client(
+  apiKey: getenv('X_TWITTER_SCRAPER_API_KEY') ?: ''
+);
+
+$cursor = null;
+$handle = fopen('tweets.jsonl', 'wb');
+
+if (false === $handle) {
+  throw new RuntimeException('Could not open tweets.jsonl');
+}
+
+try {
+  do {
+    /** @var PaginatedTweets $page */
+    $page = $client->x->tweets->search(
+      q: 'from:xquikcom webhook OR SDK',
+      limit: 100,
+      cursor: $cursor,
+      queryType: QueryType::LATEST,
+    );
+
+    foreach ($page->tweets as $tweet) {
+      /** @var SearchTweet $tweet */
+      fwrite(
+        $handle,
+        json_encode(
+          [
+            'id' => $tweet->id,
+            'text' => $tweet->text,
+            'author_username' => $tweet->author?->username,
+            'created_at' => $tweet->createdAt,
+            'like_count' => $tweet->likeCount,
+            'reply_count' => $tweet->replyCount,
+            'retweet_count' => $tweet->retweetCount,
+            'quote_count' => $tweet->quoteCount,
+            'view_count' => $tweet->viewCount,
+          ],
+          JSON_THROW_ON_ERROR
+        ) . PHP_EOL
+      );
+    }
+
+    $cursor = $page->hasNextPage ? $page->nextCursor : null;
+  } while (null !== $cursor && '' !== $cursor);
+} finally {
+  fclose($handle);
+}
+```
+
+### Request Mapping
+
+| SDK argument | REST query parameter | Use |
+| --- | --- | --- |
+| `q` | `q` | X search query such as `from:username`, a keyword, hashtag, or boolean operator query. |
+| `limit` | `limit` | Maximum tweets to return for the page. |
+| `cursor` | `cursor` | Opaque cursor from `$page->nextCursor` for the next page. |
+| `sinceTime` | `sinceTime` | ISO 8601 lower bound for tweet creation time. |
+| `untilTime` | `untilTime` | ISO 8601 upper bound for tweet creation time. |
+| `queryType` | `queryType` | `QueryType::LATEST` for chronological search or `QueryType::TOP` for engagement-ranked search. |
+
+### Returned Data & Handoff
+
+`$client->x->tweets->search()` returns `PaginatedTweets`. Use `$page->tweets` for the tweet array, `$page->hasNextPage` to decide whether another page exists, and `$page->nextCursor` as the checkpoint for the next request.
+
+Each `SearchTweet` includes typed properties such as `$id`, `$text`, `$author`, `$createdAt`, `$likeCount`, `$replyCount`, `$retweetCount`, `$quoteCount`, and `$viewCount` when available. Write `$page->tweets` as JSON Lines for queues and data lakes, transform the same rows into CSV for analysts, or generate XLSX from the projected rows when account teams need spreadsheets.
+
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, timeouts, 408, 409, 429, and 5xx responses 2 times by default. For long-running workers, pass `requestOptions: ['maxRetries' => 5]` and persist `$page->nextCursor` after each page.
 
 ## Error Handling
 
@@ -72,14 +154,14 @@ try {
 
 ## Pagination
 
-Paginated responses expose fields such as `has_next_page`. Pass the endpoint's cursor fields when requesting more pages.
+Paginated responses expose fields such as `hasNextPage`. Pass the endpoint's cursor fields when requesting more pages.
 
 ```php
 <?php
 
 $page = $client->x->tweets->search(q: 'xquik', limit: 20);
 
-if ($page->has_next_page) {
+if ($page->hasNextPage) {
   fwrite(STDERR, "More results are available\n");
 }
 ```
