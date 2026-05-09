@@ -70,6 +70,26 @@ const REQUIRED_QUICKSTART_SNIPPETS = [
   '"nextBillingAt": "2026-02-24T10:30:00.000Z"',
 ] as const;
 
+const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
+  '## Workflow: Search Tweets to JSON Lines',
+  '`client.X.Tweets.Search`',
+  '`GET /x/tweets/search`',
+  '`XTweetSearchParams`',
+  '`Q`',
+  '`Limit`',
+  '`Cursor`',
+  '`SinceTime`',
+  '`UntilTime`',
+  '`QueryType`',
+  '`PaginatedTweets`',
+  '`Tweets`',
+  '`HasNextPage`',
+  '`NextCursor`',
+  'Tweet search costs 1 credit per tweet returned.',
+  'Write `Tweets` as JSON Lines for queues and data lakes',
+  'transform the same records into CSV or XLSX',
+] as const;
+
 const REQUIRED_LLMS_SNIPPETS = [
   '## Agent Entry Points',
   'https://context7.com/xquik-dev/xquik-docs',
@@ -1358,6 +1378,20 @@ describe('repository discovery', (): void => {
         quickstart,
         'Quickstart',
         REQUIRED_QUICKSTART_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Go SDK page useful for tweet search handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('sdks/go.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Go SDK workflow docs',
+        REQUIRED_GO_SDK_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });

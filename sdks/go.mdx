@@ -11,6 +11,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Use the Go SDK when you want typed parameters, context-aware requests, generated response models, and Go-native error handling.
 
+Use this page when you need a Go service to search tweets, scrape tweets to JSON, export follower or profile data, post tweets, upload media, send DMs, monitor tweets, or hand X data to another system through SDK calls.
+
 ## Install
 
 ```bash
@@ -56,6 +58,88 @@ func main() {
 	fmt.Printf("%+v\n", tweets.HasNextPage)
 }
 ```
+
+## Workflow: Search Tweets to JSON Lines
+
+This job is for backend workers that need searchable tweet data in a stable handoff format. It calls `GET /x/tweets/search` through `client.X.Tweets.Search`, requests the newest matching tweets, and writes each returned tweet as one JSON object per line.
+
+```go
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"os"
+
+	"github.com/Xquik-dev/x-twitter-scraper-go"
+	"github.com/Xquik-dev/x-twitter-scraper-go/option"
+)
+
+func main() {
+	client := xtwitterscraper.NewClient(
+		option.WithAPIKey(os.Getenv("X_TWITTER_SCRAPER_API_KEY")),
+	)
+
+	encoder := json.NewEncoder(os.Stdout)
+	cursor := ""
+
+	for {
+		params := xtwitterscraper.XTweetSearchParams{
+			Q:         "from:xquikcom webhook OR SDK",
+			Limit:     xtwitterscraper.Int(100),
+			QueryType: xtwitterscraper.XTweetSearchParamsQueryTypeLatest,
+		}
+		if cursor != "" {
+			params.Cursor = xtwitterscraper.String(cursor)
+		}
+
+		page, err := client.X.Tweets.Search(context.Background(), params)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, tweet := range page.Tweets {
+			if err := encoder.Encode(tweet); err != nil {
+				panic(err)
+			}
+		}
+
+		if !page.HasNextPage || page.NextCursor == "" {
+			break
+		}
+		cursor = page.NextCursor
+	}
+}
+```
+
+The example builds an `XTweetSearchParams` request so the Go fields stay aligned with `GET /x/tweets/search`. The generated params map directly to the REST endpoint:
+
+| Go field | REST query parameter | Use it for |
+| --- | --- | --- |
+| `Q` | `q` | Required X search query with keywords, handles, hashtags, or operators. |
+| `Limit` | `limit` | Page size from 1 to 200. Remaining credits can lower the returned count. |
+| `Cursor` | `cursor` | Opaque cursor from `NextCursor` for the next page. |
+| `SinceTime` | `sinceTime` | ISO 8601 lower time bound. |
+| `UntilTime` | `untilTime` | ISO 8601 upper time bound. |
+| `QueryType` | `queryType` | `Latest` for chronological results or `Top` for engagement-ranked results. |
+
+## Returned Data & Handoff
+
+`client.X.Tweets.Search` returns `PaginatedTweets`:
+
+| Go field | JSON field | Handoff value |
+| --- | --- | --- |
+| `Tweets` | `tweets` | Array of tweet records. Each tweet includes `ID`, `Text`, `Author`, `CreatedAt`, `LikeCount`, `ReplyCount`, `RetweetCount`, `QuoteCount`, `BookmarkCount`, `ViewCount`, and `IsNoteTweet` when available. |
+| `HasNextPage` | `has_next_page` | Boolean that tells your worker whether another page exists. |
+| `NextCursor` | `next_cursor` | Cursor to store with the job checkpoint and pass back as `Cursor`. |
+
+Write `Tweets` as JSON Lines for queues and data lakes, transform the same records into CSV or XLSX for analysts, or pass `ID`, `Text`, `Author.Username`, `CreatedAt`, and engagement counts into your CRM or enrichment pipeline.
+
+## Cost, Limits & Retries
+
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `Limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. Read calls are rate-limited, and `429` responses include `Retry-After`.
+
+Generated Go methods return `error` for connection failures and non-success responses. Retry connection errors, 408, 409, 429, and 5xx responses with backoff. Do not retry 400, 401, 403, 404, or 422 until the request, authentication, permission, or input issue is fixed.
 
 ## Error Handling
 
