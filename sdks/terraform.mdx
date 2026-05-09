@@ -1,15 +1,15 @@
 ---
 title: Terraform Provider
 sidebarTitle: Terraform
-description: Install and use the Xquik Terraform provider while registry publication is pending.
-keywords: ["Terraform provider", "Xquik Terraform", "Twitter scraper Terraform", "infrastructure as code"]
+description: Build the Xquik Terraform provider locally and manage X monitors, signed webhooks, tweet actions, API keys, and automation state as infrastructure.
+keywords: ["Terraform provider", "Xquik Terraform", "Twitter scraper Terraform", "X API Terraform", "monitor tweets Terraform", "webhooks Terraform", "infrastructure as code"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the Terraform provider when Xquik resources need to live beside the rest of your infrastructure code.
+Use the Terraform provider when Xquik resources need to live beside the rest of your infrastructure code. It is useful when platform teams want repeatable account monitors, HMAC webhooks, API keys, drafts, tweet actions, profile updates, and support workflows in the same review and state process as the rest of their deployment.
 
 <Note>
 Terraform Registry publication is pending. Until the provider appears in the registry, build it locally and use a Terraform CLI development override.
@@ -72,6 +72,74 @@ Use variables or environment variables for credentials:
 export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 export X_TWITTER_SCRAPER_BEARER_TOKEN="YOUR_OAUTH_TOKEN"
 ```
+
+Prefer environment variables for credentials. If you pass credentials through Terraform variables, mark them `sensitive = true` and use an encrypted remote state backend.
+
+## Workflow: Monitor Tweets to Signed Webhooks
+
+Use this workflow when Terraform should own a production tweet monitor and the webhook endpoint that receives signed events for queues, incident tools, social listening dashboards, or CRM enrichment.
+
+The provider resources map to the REST API: `x-twitter-scraper_monitor` creates an account monitor through `POST /monitors`, and `x-twitter-scraper_webhook` creates a signed webhook through `POST /webhooks`. Both resources use Terraform snake_case arguments that map to the API request fields.
+
+```hcl
+variable "webhook_url" {
+  type = string
+}
+
+variable "xquik_api_key" {
+  type      = string
+  sensitive = true
+}
+
+provider "x-twitter-scraper" {
+  api_key = var.xquik_api_key
+}
+
+resource "x-twitter-scraper_webhook" "alerts" {
+  url         = var.webhook_url
+  event_types = ["tweet.new", "tweet.reply"]
+  is_active   = true
+}
+
+resource "x-twitter-scraper_monitor" "xquik_account" {
+  username    = "xquikcom"
+  event_types = ["tweet.new", "tweet.reply"]
+  is_active   = true
+}
+
+output "monitor_id" {
+  value = x-twitter-scraper_monitor.xquik_account.id
+}
+
+output "webhook_id" {
+  value = x-twitter-scraper_webhook.alerts.id
+}
+
+output "webhook_secret" {
+  value     = x-twitter-scraper_webhook.alerts.secret
+  sensitive = true
+}
+```
+
+### Request Mapping
+
+| Terraform block | REST endpoint | Required arguments | Returned state |
+| --- | --- | --- | --- |
+| `x-twitter-scraper_monitor` | `POST /monitors` | `username`, `event_types` | `id`, `x_user_id`, `is_active`, `created_at` |
+| `x-twitter-scraper_webhook` | `POST /webhooks` | `url`, `event_types` | `id`, `secret`, `created_at` |
+| `x-twitter-scraper_event` data source | Stored monitor events | none in generated schema | `type`, `username`, `monitor_id`, `occurred_at`, `data` |
+
+Valid monitor and webhook event types are `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.retweet`. Webhook URLs must be HTTPS and must be reachable from the public internet.
+
+### Returned Data & Handoff
+
+After `terraform apply`, hand `monitor_id` to operators who need to pause, update, or delete the monitor through Terraform. Hand `webhook_id` to delivery dashboards and support playbooks. Store `webhook_secret` in a secret manager and use it to verify `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` on every delivery.
+
+Webhook operations are free. Active instant monitors check every 1 second and cost 21 credits per active monitor-hour. Creating an account monitor requires enough credits for the username lookup and the first active monitor hour. If credits run out, active monitors may pause until credits are available.
+
+### State & Secrets
+
+Terraform state can contain the webhook `secret` returned at creation time. Use an encrypted backend, restrict state access, and mark every output that references the secret as `sensitive = true`. If the secret is lost or exposed, delete and recreate the webhook so Terraform receives a new signing secret.
 
 ## Error Handling
 

@@ -217,6 +217,25 @@ const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
   'transform the same records into CSV for analysts',
 ] as const;
 
+const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
+  '## Workflow: Monitor Tweets to Signed Webhooks',
+  '`x-twitter-scraper_monitor`',
+  '`x-twitter-scraper_webhook`',
+  '`POST /monitors`',
+  '`POST /webhooks`',
+  '`username`',
+  '`event_types`',
+  '`url`',
+  '`secret`',
+  '`x-twitter-scraper_event`',
+  '`tweet.new`',
+  '`tweet.reply`',
+  'Webhook operations are free.',
+  'Active instant monitors check every 1 second and cost 21 credits per active monitor-hour.',
+  'Terraform state can contain the webhook `secret` returned at creation time.',
+  '`sensitive = true`',
+] as const;
+
 const REQUIRED_LLMS_SNIPPETS = [
   '## Agent Entry Points',
   'https://context7.com/xquik-dev/xquik-docs',
@@ -1603,6 +1622,20 @@ describe('repository discovery', (): void => {
         source,
         'Java SDK workflow docs',
         REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Terraform provider page useful for monitor webhook handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('sdks/terraform.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Terraform provider workflow docs',
+        REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
