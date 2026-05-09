@@ -241,10 +241,24 @@ const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   '`monitor_limit_reached` | 403 | No | Check billing status. Current plans include unlimited monitor slots.',
 ] as const;
 
+const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
+  '<Accordion title="Server & service errors (500/502)">',
+  '`x_api_rate_limited` | Read service rate limited | Retry in a few minutes. The read service is temporarily throttled. |',
+  '`x_api_unavailable` | Read service temporarily unavailable | Retry with backoff. |',
+  '`x_api_unauthorized` | Read service authentication failed | Retry later. [Contact support](mailto:support@xquik.com) if persistent. |',
+  '`x_transient_error` | Read service timeout or temporary failure | Retry with backoff. The read service is experiencing intermittent issues. |',
+  'The read service is temporarily unavailable. This is usually transient.',
+  'the read service may be experiencing an outage',
+] as const;
+
 const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   'Add a monitor addon from the dashboard.',
   'Delete a monitor or add capacity ($5/month).',
   'add capacity ($5/month per extra monitor)',
+  'X data source',
+  'Server & upstream errors',
+  'Upstream timeout or temporary failure',
+  'data source may be experiencing an outage',
 ] as const;
 
 const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
@@ -997,7 +1011,10 @@ describe('repository discovery', (): void => {
   it('keeps write confirmation recovery current in error handling', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('guides/error-handling.mdx', 'utf8');
+    const source = [
+      readFileSync('guides/error-handling.mdx', 'utf8'),
+      readFileSync('guides/troubleshooting.mdx', 'utf8'),
+    ].join('\n');
 
     expect(
       [
@@ -1005,6 +1022,11 @@ describe('repository discovery', (): void => {
           source,
           'Error handling guide',
           REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          source,
+          'Service error guide wording',
+          REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS,
         ),
         ...FORBIDDEN_ERROR_HANDLING_SNIPPETS.flatMap(
           (snippet): readonly DiscoveryFinding[] =>
