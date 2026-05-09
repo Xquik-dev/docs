@@ -186,6 +186,17 @@ const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
   '`pending_confirmation`',
 ] as const;
 
+const REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS = [
+  'monitorType: "account" | "keyword";',
+  'username?: string;',
+  'query?: string;',
+  'keywordMonitorId?: string;',
+  'xEventId?: string;',
+  '`monitorType` is `account` or `keyword`; `monitorId` points to the source monitor.',
+  'Account events include `username`; keyword events include `query` and `keywordMonitorId`.',
+  'Use `nextCursor` with the `after` query parameter to fetch subsequent pages.',
+] as const;
+
 const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   'post tweet status',
   '`x_write_unconfirmed` | 202 | No | Poll `GET /x/write-actions/{id}` with `writeActionId` before retrying.',
@@ -998,6 +1009,20 @@ describe('repository discovery', (): void => {
         source,
         'Direct message workflow guide',
         REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps shared event types aligned with account and keyword monitor events', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/types.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Types guide event object',
+        REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
