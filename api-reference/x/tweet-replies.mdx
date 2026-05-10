@@ -1,8 +1,8 @@
 ---
-title: "Get tweet replies"
-description: "Retrieve tweet replies from the X API with cursor pagination, Unix timestamp filters, and 1-credit-per-reply billing"
+title: "Tweet replies API"
+description: "Scrape tweet replies from the X API with cursor pagination, Unix timestamp filters, returned reply fields, and 1-credit-per-reply billing"
 api: "GET /x/tweets/{id}/replies"
-keywords: ["tweet replies", "scrape tweet replies", "Twitter replies API", "X API replies", "reply export", "cursor pagination"]
+keywords: ["tweet replies", "scrape tweet replies", "tweet replies API", "Twitter replies API", "X API replies", "reply export", "JSON export", "CSV export", "moderation queue"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -43,6 +43,25 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   print(data)
   ```
 </CodeGroup>
+
+## Direct replies handoff
+
+Use `GET /x/tweets/{id}/replies` when a support, community, moderation, giveaway, or agent workflow needs the newest reply page as JSON. It returns one page of replies for a single tweet. For larger CSV, JSON, or XLSX exports with an estimate and saved job, use [`reply_extractor`](/guides/tweet-replies-export).
+
+| Store this field | Why it matters |
+|------------------|----------------|
+| `tweets[]` | Reply rows for moderation queues, support triage, giveaway audits, or agents |
+| `tweets[].id` | Stable reply key for dedupe, labels, and follow-up actions |
+| `tweets[].text` and `tweets[].createdAt` | Reply context and time ordering |
+| `tweets[].author.id` and `tweets[].author.username` | Stable author key and readable handle |
+| `tweets[].inReplyToId` and `conversationId` | Parent tweet and thread joins |
+| Engagement counts | Prioritize high-signal or high-risk replies |
+| `tweets[].media`, `quoted_tweet`, `retweeted_tweet` | Preserve attachments and relationship context when available |
+| `has_next_page` and `next_cursor` | Fetch older reply pages by passing `next_cursor` as `cursor` |
+
+`sinceTime` and `untilTime` are Unix timestamps in seconds. Use them to bound moderation windows, campaign periods, or giveaway audit ranges. Direct replies calls use the default paid page size; use `reply_extractor` with `resultsLimit` when you need a predictable file export cap.
+
+Direct replies cost 1 credit per tweet returned. Low credit balances can return fewer replies than a full page; zero affordable results return `402 insufficient_credits`. Retry `429` with the `Retry-After` header, and retry `424` or `502` after a short backoff.
 
 ## Path parameters
 

@@ -531,6 +531,24 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
   '`424` or `502` | `x_api_unavailable`',
 ] as const;
 
+const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
+  '## Direct replies handoff',
+  '`GET /x/tweets/{id}/replies`',
+  'support, community, moderation, giveaway, or agent workflow',
+  '`reply_extractor`',
+  '`tweets[]`',
+  '`tweets[].id`',
+  '`tweets[].author.id` and `tweets[].author.username`',
+  '`tweets[].inReplyToId` and `conversationId`',
+  '`has_next_page` and `next_cursor`',
+  '`sinceTime` and `untilTime` are Unix timestamps in seconds',
+  'Direct replies calls use the default paid page size',
+  '`resultsLimit`',
+  '1 credit per tweet returned',
+  '`402 insufficient_credits`',
+  '`Retry-After`',
+] as const;
+
 const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   'scrape tweets',
   '`tweet_search_extractor`',
@@ -2017,6 +2035,20 @@ describe('repository discovery', (): void => {
         source,
         'Tweet replies export guide',
         REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the tweet replies API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/tweet-replies.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Tweet replies API page',
+        REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
