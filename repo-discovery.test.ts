@@ -641,6 +641,27 @@ const REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
   'Slow origins can time out before upload starts.',
 ] as const;
 
+const REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
+  'Upload media API',
+  'post tweet with media',
+  'post tweet replies with media',
+  'send DM with media',
+  '## Media upload handoff',
+  '`POST /x/media`',
+  'local file or hosted HTTPS media URL',
+  '`mediaUrl` | Tweet and reply attachments. Pass it in the `media` array on `POST /x/tweets`. |',
+  '`mediaId` | Direct message attachments. Pass it as the only item in `media_ids` on `POST /x/dm/{userId}`. |',
+  'For tweets and replies, call [`POST /x/tweets`](/api-reference/x-write/create-tweet) after upload and pass `media: ["<mediaUrl>"]`.',
+  'To post a media reply, also pass `reply_to_tweet_id`.',
+  'Do not send `media_ids` to `POST /x/tweets`; that endpoint returns `400 unsupported_field`',
+  'For DMs, call [`POST /x/dm/{userId}`](/api-reference/x-write/send-dm) after upload and pass `media_ids: ["<mediaId>"]`.',
+  'DMs accept exactly 1 uploaded media ID.',
+  'resolve to a public address',
+  '15,728,640 bytes',
+  '422 media_download_failed',
+  'Posting the tweet, posting the reply, or sending the DM is a separate 10-credit write call.',
+] as const;
+
 const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   'send direct messages',
   'GET /x/users/{id}',
@@ -2186,6 +2207,20 @@ describe('repository discovery', (): void => {
         source,
         'Media upload workflow guide',
         REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the upload media API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x-write/upload-media.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Upload media API page',
+        REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
