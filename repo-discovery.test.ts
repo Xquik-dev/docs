@@ -92,6 +92,7 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
 
 const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
   '## Workflow: Search Tweets to CSV',
+  '## Workflow: Post Image Tweets and DM Attachments',
   '`client.x.tweets.search`',
   '`GET /x/tweets/search`',
   '`TweetSearchParams`',
@@ -108,6 +109,15 @@ const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
   'Tweet search costs 1 credit per tweet returned.',
   'Write `page.tweets` to CSV for analysts',
   'call `.to_json()` for JSON export',
+  '`client.x.tweets.create`',
+  '`reply_to_tweet_id`',
+  '`media` with public image URLs',
+  '`client.x.media.upload`',
+  '`media.media_id`',
+  '`client.x.dm.send`',
+  '`media_ids`',
+  '`dm.message_id`',
+  'Do not pass uploaded `media.media_id` values to `client.x.tweets.create`',
 ] as const;
 
 const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
