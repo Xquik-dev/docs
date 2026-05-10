@@ -20,6 +20,17 @@ Use this workflow when a sales, support, research, or marketing system needs an 
 | Export | `GET /extractions/{id}/export?format=csv` | CSV, XLSX, JSON, Markdown, PDF, TXT, or MD document |
 | Import | Map `User ID` to a CRM unique field | CRM import, upsert, segment, or warehouse load |
 
+## Choose the right path
+
+| Job | Endpoint path | Use this when |
+|-----|---------------|---------------|
+| Saved follower export | `POST /extractions/estimate`, then `POST /extractions` with `follower_explorer` | You need a reusable job ID, cost preview, and CSV/JSON/XLSX files. |
+| Paginated saved rows | `GET /extractions/{id}?limit=1000&after={nextCursor}` | You want saved results as JSON pages for a CRM sync, warehouse load, queue, or agent. |
+| Live follower page | `GET /x/users/{id}/followers?pageSize=200&cursor={next_cursor}` | You need the current follower page without creating an extraction job. |
+| Shell or SDK handoff | [CLI](/sdks/cli), [TypeScript](/sdks/typescript), [Python](/sdks/python), or [Go](/sdks/go) | You want code-owned JSON Lines, CSV, or XLSX files for scheduled imports. |
+
+Use extraction jobs for repeatable exports, cost preview, audit trails, and file downloads. Use the direct followers API for low-latency pages and small app handoffs.
+
 ## Step 1: Estimate cost
 
 Estimate first so the workflow can stop before spending credits.
@@ -189,6 +200,25 @@ Use `GET /extractions/{id}` when a custom CRM sync, warehouse load, queue, or ag
 
 Use `limit` up to `1000` and pass `nextCursor` as `after` until `hasMore` is `false`. For CRM or warehouse rows, map `xUserId` to `x_user_id`, `xUsername` to `x_username`, `xDisplayName` to `display_name`, `xFollowersCount` to `followers_count`, `xVerified` to `verified`, and `enrichmentData.user.description` or `enrichmentData.user.location` to optional enrichment columns.
 
+Normalize each follower row before sending it downstream:
+
+```json
+{
+  "job": "follower_export",
+  "source_username": "elonmusk",
+  "result_id": "1001",
+  "x_user_id": "44196397",
+  "x_username": "xquikcom",
+  "display_name": "Xquik",
+  "followers_count": 2400,
+  "verified": true,
+  "profile_image_url": "https://pbs.twimg.com/profile_images/xquik.jpg",
+  "bio": "X automation platform",
+  "location": "San Francisco",
+  "handoff_format": "json"
+}
+```
+
 ## Step 4: Export the CRM file
 
 Use CSV for most CRM imports, XLSX for analyst review, or JSON for a data pipeline.
@@ -262,12 +292,16 @@ Use this handoff when the export runs on a schedule:
 3. Download `format=json` for code pipelines or `format=csv` for CRM import tools.
 4. Upsert by `x_user_id`, not by display name or username.
 5. Save the Xquik job ID, export format, row count, and import result for audit.
+6. For JSON Lines, write one normalized follower object per line to `xquik-follower-export.jsonl`.
 
 ## Related
 
 <CardGroup cols={2}>
   <Card title="Extraction workflow" icon="download" href="/guides/extraction-workflow">
     Estimate costs, run jobs, paginate results, and export files.
+  </Card>
+  <Card title="Followers API" icon="users" href="/api-reference/x/followers">
+    Fetch one live follower page with `users`, `has_next_page`, and `next_cursor`.
   </Card>
   <Card title="n8n guide" icon="workflow" href="/guides/n8n">
     Send extraction rows into Sheets, Slack, and downstream automation.
