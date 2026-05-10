@@ -549,6 +549,22 @@ const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   '`Retry-After`',
 ] as const;
 
+const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
+  '## Direct follower handoff',
+  '`GET /x/users/{id}/followers`',
+  'CRM, warehouse, audience, or agent workflow',
+  '`follower_explorer`',
+  '`users[]`',
+  '`users[].id`',
+  '`x_user_id`',
+  '`users[].username` and `users[].name`',
+  '`has_next_page` and `next_cursor`',
+  '`pageSize` from 20 to 200',
+  '1 credit per result returned',
+  '`402 insufficient_credits`',
+  'USD 0.00015 per user returned',
+] as const;
+
 const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   'scrape tweets',
   '`tweet_search_extractor`',
@@ -2049,6 +2065,20 @@ describe('repository discovery', (): void => {
         source,
         'Tweet replies API page',
         REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the followers API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/followers.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Followers API page',
+        REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });

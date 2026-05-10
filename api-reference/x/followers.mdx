@@ -1,8 +1,8 @@
 ---
-title: "Get followers"
-description: "Retrieve followers of an X user with profile details and configurable page size"
+title: "Get followers API"
+description: "Export X followers as paginated JSON for CRM, warehouse, audience, and agent workflows"
 api: "GET /x/users/{id}/followers"
-keywords: ["followers", "users", "profile", "x api"]
+keywords: ["follower export", "Twitter followers API", "X followers API", "CRM export", "JSON export", "MPP"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -10,7 +10,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <LlmsDirective />
 
 <Callout icon="coins" color="#5c3327">
-  **1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+  **1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Accepts [MPP](/mpp/overview)
 </Callout>
 
 <CodeGroup>
@@ -39,6 +39,22 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   print(data)
   ```
 </CodeGroup>
+
+## Direct follower handoff
+
+Use `GET /x/users/{id}/followers` when a CRM, warehouse, audience, or agent workflow needs one paginated JSON page now. Use [`follower_explorer`](/guides/follower-export-crm) when you need an estimated job, saved extraction, or CSV/JSON/XLSX file export.
+
+| Store this field | Use it for |
+| --- | --- |
+| `users[]` | The follower profile rows returned on this page. |
+| `users[].id` | Stable X user key for upserts. Store it as `x_user_id`. |
+| `users[].username` and `users[].name` | Handle and display name for CRM labels, enrichment, and dedupe. |
+| `users[].description`, `location`, and `url` | Profile enrichment columns. These fields are omitted when empty. |
+| `users[].followers`, `users[].following`, `verified`, and `verifiedType` | Segmentation, scoring, and account-quality filters. |
+| `users[].profilePicture` and `coverPicture` | Profile media URLs for enrichment or review queues. |
+| `has_next_page` and `next_cursor` | Cursor handoff. Continue only when `has_next_page` is true, and pass `next_cursor` back as `cursor`. |
+
+`pageSize` from 20 to 200 is an upper bound. Paid authenticated calls can return fewer rows when the remaining credit balance is lower than the requested page size. A balance that cannot afford any result returns `402 insufficient_credits`. For MPP callers, this endpoint is billed as a session at USD 0.00015 per user returned.
 
 ## Path parameters
 
@@ -148,6 +164,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     { "error": "no_subscription" }
     ```
     No active subscription or insufficient credits. Possible error values: `no_subscription`, `subscription_inactive`, `no_credits`, `insufficient_credits`.
+
+    For [MPP](/mpp/overview) requests without a valid payment credential, 402 returns a `WWW-Authenticate: Payment` challenge header instead.
   </Tab>
   <Tab title="502 X API unavailable">
     ```json
