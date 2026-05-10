@@ -321,14 +321,26 @@ async () => {
 
 MCP returns JSON. Use extraction export endpoints when you need Xquik to generate CSV, JSON, XLSX, Markdown, or PDF files. For agent queues, CRMs, and warehouses, return a small object with the original job, the route used, the rows or IDs to store, and the next cursor or write action to poll.
 
-| Job | MCP call | Store for handoff | Cost model |
-| --- | --- | --- | --- |
-| Scrape tweets or search tweets to JSON | `GET /api/v1/x/tweets/search` | `tweets[].id`, `tweets[].text`, `tweets[].author`, `tweets[].created`, `has_more`, `next_cursor`, and original `q` | 1 credit per tweet returned |
-| Export followers to CRM | `GET /api/v1/x/users/{id}/followers` or `POST /api/v1/extractions` with `follower_explorer` | `users[].id`, `users[].username`, `users[].name`, `users[].followers`, `has_more`, and `next_cursor` | 1 credit per follower returned or extracted |
-| Post tweets and replies with image URLs | `POST /api/v1/x/tweets` with `media: ["https://..."]` | `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `account`, and original `media` URLs | 10 credits per write call |
-| Upload media for DMs | `POST /api/v1/x/media`, then `POST /api/v1/x/dm/{userId}` with one `media_ids` value | `media_id`, `media_url`, `message_id`, `user_id`, `account`, and source URL or filename | 10 credits per media upload call plus 10 credits per DM send |
-| Post tweets and replies | `POST /api/v1/x/tweets`, then `GET /api/v1/x/write-actions/{id}` when pending | `tweet_id`, `reply_to_tweet_id`, `write_action_id`, `status`, and `charged` | 10 credits per write call |
-| Monitor tweets to signed webhooks | `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then `POST /api/v1/webhooks` | `monitor.id`, `event_types`, `next_billing_at`, `webhook.id`, and the webhook URL | 21 credits per active monitor-hour; webhook delivery is included |
+<CardGroup cols={2}>
+  <Card title="Search tweets to JSON" icon="search">
+    Call `GET /api/v1/x/tweets/search`. Store `tweets[].id`, `tweets[].text`, `tweets[].author`, `tweets[].created`, `has_more`, `next_cursor`, and the original `q`. Cost: 1 credit per tweet returned.
+  </Card>
+  <Card title="Export followers to CRM" icon="users">
+    Call `GET /api/v1/x/users/{id}/followers` or `POST /api/v1/extractions` with `follower_explorer`. Store `users[].id`, `users[].username`, `users[].name`, `users[].followers`, `has_more`, and `next_cursor`. Cost: 1 credit per follower returned or extracted.
+  </Card>
+  <Card title="Post image tweets or replies" icon="image">
+    Call `POST /api/v1/x/tweets` with `media: ["https://..."]`. Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `account`, and the original `media` URLs. Cost: 10 credits per write call.
+  </Card>
+  <Card title="Send DMs with media" icon="send">
+    Call `POST /api/v1/x/media`, then `POST /api/v1/x/dm/{userId}` with one `media_ids` value. Store `media_id`, `media_url`, `message_id`, `user_id`, `account`, and source URL or filename. Cost: 10 credits per media upload plus 10 credits per DM send.
+  </Card>
+  <Card title="Track tweet or reply writes" icon="activity">
+    Call `POST /api/v1/x/tweets`, then `GET /api/v1/x/write-actions/{id}` when pending. Store `tweet_id`, `reply_to_tweet_id`, `write_action_id`, `status`, and `charged`. Cost: 10 credits per write call.
+  </Card>
+  <Card title="Monitor tweets to webhooks" icon="radio">
+    Call `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then `POST /api/v1/webhooks`. Store `monitor.id`, `event_types`, `next_billing_at`, `webhook.id`, and the webhook URL. Cost: 21 credits per active monitor-hour; webhook delivery is included.
+  </Card>
+</CardGroup>
 
 Do not upload media before posting tweets or replies. `POST /api/v1/x/tweets` rejects `media_ids` with `400 unsupported_field`; pass public image URLs in `media` instead. Reserve uploaded `media_id` values for direct messages.
 
