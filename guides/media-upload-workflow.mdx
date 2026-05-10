@@ -85,13 +85,27 @@ curl -X POST https://xquik.com/api/v1/x/media \
 
 ### URL upload checklist
 
-| Requirement | Why it matters |
-|-------------|----------------|
-| HTTPS URL | Non-HTTPS URLs return `422 media_download_failed`. |
-| Public host | Private or reserved IP targets are rejected. |
-| Supported content type | AVIF, GIF, JPEG, PNG, WebP, and MP4 are accepted. |
-| 15,728,640 bytes or less | Larger URL downloads return `422 media_download_failed`. |
-| 30-second response window | Slow origins can time out before upload starts. |
+<CardGroup cols={2}>
+  <Card title="HTTPS URL" icon="lock">
+    Non-HTTPS URLs return `422 media_download_failed`.
+  </Card>
+
+  <Card title="Public host" icon="globe">
+    Private or reserved IP targets are rejected.
+  </Card>
+
+  <Card title="Supported content type" icon="file-image">
+    AVIF, GIF, JPEG, PNG, WebP, and MP4 are accepted.
+  </Card>
+
+  <Card title="Size cap" icon="gauge">
+    Larger URL downloads than 15,728,640 bytes return `422 media_download_failed`.
+  </Card>
+
+  <Card title="30-second response window" icon="timer">
+    Slow origins can time out before upload starts.
+  </Card>
+</CardGroup>
 
 ## Step 2: Post a tweet or reply with mediaUrl
 
@@ -187,24 +201,55 @@ curl -X POST https://xquik.com/api/v1/x/media \
 
 Upload media costs 10 credits per upload call. Posting the tweet, posting the reply, or sending the DM is a separate 10-credit write call.
 
-| Failure | What to do |
-|---------|------------|
-| `400 invalid_input` | Check `account`, file type, file presence, URL presence, and `is_long_video`. |
-| `402 no_subscription` or `402 insufficient_credits` | Subscribe or top up credits before retrying. |
-| `403 account_needs_reauth` | Reconnect the X account from the dashboard. |
-| `422 media_download_failed` | Use an HTTPS URL that returns a supported media file, or switch to multipart upload. |
-| `429` or `503` | Retry with exponential backoff and respect `Retry-After` when present. |
+<CardGroup cols={2}>
+  <Card title="Invalid input" icon="circle-alert">
+    Status `400`. Error `invalid_input`. Check `account`, file type, file presence, URL presence, and `is_long_video`.
+  </Card>
+
+  <Card title="Billing or credits" icon="credit-card">
+    Status `402`. Errors `no_subscription` or `insufficient_credits`. Subscribe or top up credits before retrying.
+  </Card>
+
+  <Card title="Reconnect account" icon="refresh-cw">
+    Status `403`. Error `account_needs_reauth`. Reconnect the X account from the dashboard.
+  </Card>
+
+  <Card title="Media download failed" icon="file-warning">
+    Status `422`. Error `media_download_failed`. Use an HTTPS URL that returns a supported media file, or switch to multipart upload.
+  </Card>
+
+  <Card title="Rate limit or temporary failure" icon="timer-reset">
+    Status `429` or `503`. Retry with exponential backoff and respect `Retry-After` when present.
+  </Card>
+</CardGroup>
 
 ## Handoff checklist
 
-| Handoff | Required detail |
-|---------|-----------------|
-| Tweet workflow | Save `mediaUrl` and pass it to `POST /x/tweets` as `media`. |
-| Reply workflow | Save the parent tweet ID, `mediaUrl`, returned `tweetId`, and any `writeActionId`. |
-| DM workflow | Save `mediaId` and pass it to `POST /x/dm/{userId}` as one `media_ids` item. |
-| JSON Lines | Store upload, tweet/reply, or DM handoff rows in `xquik-media-handoff.jsonl` with `media_id` and `media_url`. |
-| Agent workflow | Prefer JSON URL upload when the agent produces a hosted image URL. |
-| File workflow | Prefer multipart upload when your app owns the file bytes. |
+<CardGroup cols={2}>
+  <Card title="Tweet workflow" icon="send">
+    Save `mediaUrl` and pass it to `POST /x/tweets` as `media`.
+  </Card>
+
+  <Card title="Reply workflow" icon="message-square">
+    Save the parent tweet ID, `mediaUrl`, returned `tweetId`, and any `writeActionId`.
+  </Card>
+
+  <Card title="DM workflow" icon="mail">
+    Save `mediaId` and pass it to `POST /x/dm/{userId}` as one `media_ids` item.
+  </Card>
+
+  <Card title="JSON Lines" icon="braces">
+    Store upload, tweet/reply, or DM handoff rows in `xquik-media-handoff.jsonl` with `media_id` and `media_url`.
+  </Card>
+
+  <Card title="Agent workflow" icon="bot">
+    Prefer JSON URL upload when the agent produces a hosted image URL.
+  </Card>
+
+  <Card title="File workflow" icon="folder-open">
+    Prefer multipart upload when your app owns the file bytes.
+  </Card>
+</CardGroup>
 
 <Note>
   **Related:** [Upload Media](/api-reference/x-write/upload-media) &middot; [Create Tweet](/api-reference/x-write/create-tweet) &middot; [Send Direct Message](/api-reference/x-write/send-dm)
