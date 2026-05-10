@@ -241,6 +241,21 @@ const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
   'Tweet search costs 1 credit per tweet returned.',
   'Write `page.Tweets` as JSON Lines for queues and data lakes',
   'transform the same rows into CSV for analysts',
+  '## Workflow: Post Image Tweets and DM Attachments',
+  '`client.X.Tweets.Create`',
+  '`POST /x/tweets`',
+  '`Media`',
+  '`ReplyToTweetID`',
+  '`tweet.TweetID`',
+  '`reply.TweetID`',
+  '`client.X.Media.Upload`',
+  '`POST /x/media`',
+  '`media.MediaID`',
+  '`MediaIds`',
+  '`client.X.Dm.Send`',
+  '`dm.MessageID`',
+  'Each tweet or reply write costs 10 credits.',
+  'Do not pass uploaded `media.MediaID` values to `client.X.Tweets.Create`',
 ] as const;
 
 const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [

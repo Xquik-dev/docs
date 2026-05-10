@@ -113,6 +113,70 @@ Each `SearchTweet` includes typed properties such as `ID`, `Text`, `Author`, `Cr
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `Limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, 408, 409, 429, and 5xx responses 2 times by default. For longer workers, set `MaxRetries` on the client and persist `NextCursor` after each page.
 
+## Workflow: Post Image Tweets and DM Attachments
+
+Use this workflow when a .NET worker needs to publish an image tweet, reply with an image, or send a direct message with an uploaded local file. `client.X.Tweets.Create` maps to `POST /x/tweets`; pass public image URLs through `Media`. For replies, set `ReplyToTweetID` to the parent tweet ID. `client.X.Media.Upload` maps to `POST /x/media`; use `media.MediaID` only for the one-item `MediaIds` handoff on `client.X.Dm.Send`.
+
+```csharp
+using System.IO;
+using System.Text.Json;
+using XTwitterScraper;
+using XTwitterScraper.Models.X.Dm;
+using XTwitterScraper.Models.X.Media;
+using XTwitterScraper.Models.X.Tweets;
+
+XTwitterScraperClient client = new();
+
+TweetCreateResponse tweet = await client.X.Tweets.Create(
+    new TweetCreateParams
+    {
+        Account = "@xquikcom",
+        Text = "Shipping the weekly X API export.",
+        Media = new[] { "https://static.example.com/reports/x-api-export.png" },
+    }
+);
+
+TweetCreateResponse reply = await client.X.Tweets.Create(
+    new TweetCreateParams
+    {
+        Account = "@xquikcom",
+        Text = "Here is the chart behind the update.",
+        Media = new[] { "https://static.example.com/reports/reply-chart.png" },
+        ReplyToTweetID = tweet.TweetID,
+    }
+);
+
+await using FileStream localFile = File.OpenRead("handoff.png");
+MediaUploadResponse media = await client.X.Media.Upload(
+    new MediaUploadParams
+    {
+        Account = "@xquikcom",
+        File = localFile,
+    }
+);
+
+DmSendResponse dm = await client.X.Dm.Send(
+    "44196397",
+    new DmSendParams
+    {
+        Account = "@xquikcom",
+        Text = "Here is the requested asset.",
+        MediaIds = new[] { media.MediaID },
+    }
+);
+
+var handoff = new
+{
+    tweet_id = tweet.TweetID,
+    reply_tweet_id = reply.TweetID,
+    dm_message_id = dm.MessageID,
+};
+
+await Console.Out.WriteLineAsync(JsonSerializer.Serialize(handoff));
+```
+
+Store `tweet.TweetID` and `reply.TweetID` on the CMS, queue job, or agent state before scheduling follow-up work. Store `dm.MessageID` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.MediaID` values to `client.X.Tweets.Create`; that method uses `Media` with public image URLs.
+
 ## Error Handling
 
 The C# SDK throws generated exception types for non-success responses and connection failures.
