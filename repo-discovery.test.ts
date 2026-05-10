@@ -472,6 +472,8 @@ const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
   '`url`',
   '`secret`',
   '`x-twitter-scraper_event`',
+  'Terraform data source `x-twitter-scraper_event` reads one stored monitor event.',
+  'It requires `id` and returns `type`, `username`, `monitor_id`, `occurred_at`, `x_event_id`, and `data`.',
   '`tweet.new`',
   '`tweet.reply`',
   'Webhook operations are free.',
