@@ -115,14 +115,26 @@ Replace `xq_YOUR_KEY_HERE` with your actual API key from the [dashboard](https:/
 
 Run this checklist before connecting a production client, workflow builder, or agent to the API.
 
-| Check | Verify | Failure mode to handle |
-| --- | --- | --- |
-| Authentication | Send `x-api-key` on subscription endpoints or use the documented MPP flow on eligible X data endpoints. | `401 unauthenticated`, `402 no_subscription`, or an MPP 402 payment challenge. |
-| Response contract | Default REST examples use the v1 shape. Send `xquik-api-contract: 2026-04-29` only when your client expects snake_case, structured errors, `has_more`, and `next_cursor`. | Field-name drift between generated clients, MCP calls, and hand-written REST code. |
-| Pagination | Use `after` with `nextCursor` on events, draws, extractions, and drafts. Use `cursor` with `next_cursor` on X data endpoints. | Missing pages, duplicate records, or clients that decode opaque cursors. |
-| Billing | Handle `402 no_credits` and `402 insufficient_credits`. Estimate extraction cost before creating extraction jobs. | Partial paid result pages, failed draws, or jobs blocked by credit balance. |
-| Rate limits | Respect `Retry-After`. Read calls are 10 per 1s, write calls are 30 per 60s, and delete calls are 15 per 60s. | Repeated `429 rate_limit_exceeded` responses and avoidable retry storms. |
-| Ambiguous writes | Treat `202 x_write_unconfirmed` as pending confirmation. Store `writeActionId`, call `GET /x/write-actions/{id}`, and do not retry-send while status is `pending_confirmation`. | Duplicate tweets, repeated actions, or inconsistent operator handoff. |
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key">
+    Send `x-api-key` on subscription endpoints or use the documented MPP flow on eligible X data endpoints. Handle `401 unauthenticated`, `402 no_subscription`, or an MPP 402 payment challenge.
+  </Card>
+  <Card title="Response contract" icon="file-json">
+    Default REST examples use the v1 shape. Send `xquik-api-contract: 2026-04-29` only when your client expects snake_case, structured errors, `has_more`, and `next_cursor`. This prevents field-name drift between generated clients, MCP calls, and hand-written REST code.
+  </Card>
+  <Card title="Pagination" icon="list">
+    Use `after` with `nextCursor` on events, draws, extractions, and drafts. Use `cursor` with `next_cursor` on X data endpoints. Handle missing pages, duplicate records, and opaque cursors.
+  </Card>
+  <Card title="Billing" icon="credit-card">
+    Handle `402 no_credits` and `402 insufficient_credits`. Estimate extraction cost before creating extraction jobs so partial paid result pages, failed draws, or blocked jobs are expected states.
+  </Card>
+  <Card title="Rate limits" icon="timer">
+    Respect `Retry-After`. Read calls are 10 per 1s, write calls are 30 per 60s, and delete calls are 15 per 60s. Back off on repeated `429 rate_limit_exceeded` responses.
+  </Card>
+  <Card title="Ambiguous writes" icon="activity">
+    Treat `202 x_write_unconfirmed` as pending confirmation. Store `writeActionId`, call `GET /x/write-actions/{id}`, and do not retry-send while status is `pending_confirmation`.
+  </Card>
+</CardGroup>
 
 ## Rate limits
 
