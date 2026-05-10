@@ -1,8 +1,8 @@
 ---
 title: "Get write action status"
-description: "Poll the status of an X write action after a pending confirmation response"
+description: "Poll post tweet, tweet reply, and DM write actions after pending confirmation responses"
 api: "GET /x/write-actions/{id}"
-keywords: ["write action status", "pending confirmation", "post tweet status", "x_write_unconfirmed", "X write API"]
+keywords: ["write action status", "pending confirmation", "post tweet status", "tweet reply status", "x_write_unconfirmed", "X write API"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -109,6 +109,29 @@ Use this endpoint after a write request returns `202 x_write_unconfirmed`. The o
     Too many requests. Respect the `Retry-After` header when present.
   </Tab>
 </Tabs>
+
+## Resolve the write queue
+
+Use `GET /x/write-actions/{id}` to close the queue record created after `202 x_write_unconfirmed` from tweet posts, tweet replies, DMs, or other write endpoints.
+
+| Status | What to store | Next step |
+| --- | --- | --- |
+| `success` | `writeActionId`, `action`, `charged`, and returned `tweetId`, `messageId`, or `resultId` | Mark the original job as complete. |
+| `pending_confirmation` | `writeActionId`, `sendDispatched`, `confirmationAttempts`, `confirmationCheckedAt`, `targetId`, and `message` when present | Keep the job pending and poll again with backoff. Do not retry-send the same body. |
+| `failed` | `writeActionId`, `action`, `sendDispatched`, `targetId`, `message`, and `charged` | Mark the job failed. Fix the account, target, content, or billing state before sending a new request. |
+
+For tweet replies, `targetId` is the parent tweet ID when available. For DMs, `targetId` is the recipient user ID when available. `retryable` is always `false` on this status response because replay decisions belong in your queue logic, not in automatic HTTP retries.
+
+```json
+{
+  "job_id": "reply-queue-184",
+  "write_action_id": "42",
+  "status": "success",
+  "published_tweet_id": "2052816150136832166",
+  "reply_to_tweet_id": "1893456789012345678",
+  "charged": true
+}
+```
 
 <Note>
   **Related:** [Create Tweet](/api-reference/x-write/create-tweet) returns `writeActionId` when tweet confirmation is pending. [Error handling](/guides/error-handling) explains `x_write_unconfirmed`.

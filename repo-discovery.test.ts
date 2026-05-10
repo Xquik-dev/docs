@@ -438,6 +438,23 @@ const REQUIRED_CREATE_TWEET_API_SNIPPETS = [
   'If polling later returns `status: "success"` with `tweetId`, update the same record to `posted`.',
 ] as const;
 
+const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
+  'Poll post tweet, tweet reply, and DM write actions after pending confirmation responses',
+  '"tweet reply status"',
+  '`GET /x/write-actions/{id}`',
+  '## Resolve the write queue',
+  '`202 x_write_unconfirmed`',
+  '| `success` | `writeActionId`, `action`, `charged`, and returned `tweetId`, `messageId`, or `resultId` | Mark the original job as complete. |',
+  '| `pending_confirmation` | `writeActionId`, `sendDispatched`, `confirmationAttempts`, `confirmationCheckedAt`, `targetId`, and `message` when present | Keep the job pending and poll again with backoff. Do not retry-send the same body. |',
+  '| `failed` | `writeActionId`, `action`, `sendDispatched`, `targetId`, `message`, and `charged` | Mark the job failed. Fix the account, target, content, or billing state before sending a new request. |',
+  'For tweet replies, `targetId` is the parent tweet ID when available.',
+  'For DMs, `targetId` is the recipient user ID when available.',
+  '`retryable` is always `false` on this status response',
+  '"job_id": "reply-queue-184"',
+  '"published_tweet_id": "2052816150136832166"',
+  '"reply_to_tweet_id": "1893456789012345678"',
+] as const;
+
 const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
   '<Accordion title="Server & service errors (500/502)">',
   '`x_api_rate_limited` | Read service rate limited | Retry in a few minutes. The read service is temporarily throttled. |',
@@ -2169,6 +2186,23 @@ describe('repository discovery', (): void => {
         source,
         'Create tweet API docs',
         REQUIRED_CREATE_TWEET_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the write action status API page useful for queue handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x-write/get-write-action-status.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Get write action status API docs',
+        REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
