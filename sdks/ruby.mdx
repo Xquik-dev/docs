@@ -121,6 +121,59 @@ The generated params map directly to the REST endpoint:
 
 Write `page.tweets` to CSV for analysts, call `to_json` for JSON export, call `to_h` or `deep_to_h` before loading a warehouse, or pass `id`, `text`, `author.username`, `created_at`, and engagement counts to a CRM or enrichment job.
 
+## Workflow: Post Image Tweets and DM Attachments
+
+Use this workflow when a Ruby app, Rails job, Sidekiq worker, or agent service needs to post an image-backed tweet, reply with an image, or send one uploaded media item in a DM.
+
+Tweet and reply image posts use public image URLs directly on `client.x.tweets.create`. Do not upload first when the image URL is already public.
+
+```ruby
+tweet = client.x.tweets.create(
+  account: "@xquikcom",
+  text: "New export workflow is live.",
+  media: ["https://example.com/export-preview.png"]
+)
+
+puts(tweet.tweet_id)
+```
+
+To post an image reply, add `reply_to_tweet_id`:
+
+```ruby
+reply = client.x.tweets.create(
+  account: "@xquikcom",
+  text: "Here is the requested screenshot.",
+  reply_to_tweet_id: "1893704267862470862",
+  media: ["https://example.com/export-preview.png"]
+)
+
+puts(reply.tweet_id)
+```
+
+For DM attachments, upload the local file first and pass the returned `media.media_id` as the only `media_ids` item:
+
+```ruby
+File.open("./handoff.png", "rb") do |file|
+  media = client.x.media.upload(
+    account: "@xquikcom",
+    file: file
+  )
+
+  dm = client.x.dm.send_(
+    "44196397",
+    account: "@xquikcom",
+    text: "Here is the asset.",
+    media_ids: [media.media_id]
+  )
+
+  puts(dm.message_id)
+end
+```
+
+`client.x.tweets.create` returns `tweet.tweet_id` for confirmed posts. `client.x.media.upload` returns `media.media_id` for DM attachments, and `client.x.dm.send_` returns `dm.message_id` for support tickets, CRM records, queue jobs, or agent memory.
+
+Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.media_id` values to `client.x.tweets.create`; that method uses `media` with public image URLs.
+
 ## Cost, Limits & Retries
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. Read calls are rate-limited, and `429` responses include `Retry-After`.
