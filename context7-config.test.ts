@@ -54,6 +54,8 @@ const REQUIRED_RULE_SNIPPETS = [
   'api-reference/overview.mdx',
   '120 documented REST operations',
   '31 MPP-eligible X API endpoints',
+  '118 REST operations',
+  '32 MPP read endpoints',
   'sdks/',
   'mcp/',
   'webhooks/',
