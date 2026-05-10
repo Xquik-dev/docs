@@ -801,15 +801,30 @@ const FORBIDDEN_WEBHOOK_VERIFICATION_SNIPPETS = [
 ] as const;
 
 const REQUIRED_SEND_DM_API_SNIPPETS = [
+  'Send DM API',
   'Twitter DM API',
   'X direct message API',
   'send DM with media',
+  'messageId',
   '## Send with media',
   'Upload media first with [Upload Media](/api-reference/x-write/upload-media)',
   '`media_ids` must contain exactly one uploaded media ID.',
   'Empty arrays, multiple IDs, and `reply_to_message_id` return `400 invalid_input`.',
+  '## Direct message handoff',
+  'support, sales, community, CRM, or agent workflow',
+  '[`GET /x/users/{id}`](/api-reference/x/get-user)',
+  '[`GET /x/dm/{userId}/history`](/api-reference/x/dm-history)',
+  '`messageId` | Outbound DM ID. Store it as the external message ID for support logs, CRM records, queues, or agent memory. |',
+  '`success` | Mark the send job complete after a `200 OK` response. |',
+  '`userId` | Recipient X user ID from the path. |',
+  '`account` | Connected X account that sent the DM. |',
+  '`text` | Exact message text sent. Store your own timestamp if downstream systems need `sent_at`. |',
+  '`media_ids[0]` | Uploaded media ID when the DM includes one attachment from [`POST /x/media`](/api-reference/x-write/upload-media). |',
+  'This endpoint costs 10 credits per send.',
+  'Uploading media first with `POST /x/media` is a separate 10-credit call.',
   '`x_dm_not_allowed`',
   'the recipient may not accept messages from this connected account; do not retry unchanged.',
+  'Do not retry `422 x_dm_not_allowed` unchanged',
   'Empty arrays and multiple IDs are rejected.',
 ] as const;
 

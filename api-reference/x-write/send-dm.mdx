@@ -1,8 +1,8 @@
 ---
-title: "Send direct message"
-description: "Send an X direct message from a connected account, with optional one-item media_ids attachment"
+title: "Send DM API"
+description: "Send X direct messages from a connected account, store messageId, and attach one uploaded media ID"
 api: "POST /x/dm/{userId}"
-keywords: ["dm", "direct message", "send DM", "Twitter DM API", "X direct message API", "send DM with media", "media_ids", "write", "connected account"]
+keywords: ["send direct messages", "Twitter DM API", "X direct message API", "send DM", "send DM with media", "DM history", "messageId", "media_ids", "connected account"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -109,6 +109,21 @@ curl -X POST https://xquik.com/api/v1/x/dm/44196397 \
 <Tip>
   `media_ids` must contain exactly one uploaded media ID. Empty arrays, multiple IDs, and `reply_to_message_id` return `400 invalid_input`.
 </Tip>
+
+## Direct message handoff
+
+Use `POST /x/dm/{userId}` when a support, sales, community, CRM, or agent workflow needs to send an auditable direct message from a connected X account. If you only have a username, look up the recipient first with [`GET /x/users/{id}`](/api-reference/x/get-user). If the workflow needs conversation context, read the latest messages with [`GET /x/dm/{userId}/history`](/api-reference/x/dm-history) before sending.
+
+| Store this value | Use it for |
+| --- | --- |
+| `messageId` | Outbound DM ID. Store it as the external message ID for support logs, CRM records, queues, or agent memory. |
+| `success` | Mark the send job complete after a `200 OK` response. |
+| `userId` | Recipient X user ID from the path. |
+| `account` | Connected X account that sent the DM. |
+| `text` | Exact message text sent. Store your own timestamp if downstream systems need `sent_at`. |
+| `media_ids[0]` | Uploaded media ID when the DM includes one attachment from [`POST /x/media`](/api-reference/x-write/upload-media). |
+
+This endpoint costs 10 credits per send. Uploading media first with `POST /x/media` is a separate 10-credit call. Do not retry `422 x_dm_not_allowed` unchanged; use another permitted connected account or ask the recipient to allow messages.
 
 ## Headers
 
