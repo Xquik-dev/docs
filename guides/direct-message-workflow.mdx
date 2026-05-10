@@ -1,6 +1,6 @@
 ---
 title: Send direct messages with the X API
-description: Look up a user ID, read DM history, send an X direct message, attach one uploaded media item, and handle DM errors.
+description: Look up a user ID, read DM history, send an X direct message, store the returned message ID, attach one uploaded media item, and handle DM errors.
 keywords: ["send direct messages", "Twitter DM API", "X direct message API", "send DM", "DM history", "direct message history", "send DM with media", "media_ids", "X API"]
 ---
 
@@ -108,6 +108,23 @@ curl -X POST https://xquik.com/api/v1/x/dm/987654321 \
 }
 ```
 
+### Store the outbound handoff
+
+After a `200` response, persist one outbound record before handing control back to a CRM, ticket, queue, or agent. `POST /x/dm/{userId}` returns `messageId` and `success`; use your own job timestamp if the downstream system needs `sent_at`.
+
+```json
+{
+  "status": "sent",
+  "recipient_user_id": "987654321",
+  "sender_account": "myxhandle",
+  "message_id": "1893726451029384192",
+  "message_text": "Thanks for reaching out. Here is the next step.",
+  "media_id": null
+}
+```
+
+When you also sync history, normalize each `messages[]` item separately with `message_id`, `sender_id`, `receiver_id`, `created_at`, optional `media_url`, and `conversation_user_id`.
+
 ## Step 4: Send a direct message with media
 
 Upload media first, then send exactly one uploaded media ID in `media_ids`.
@@ -165,7 +182,7 @@ DMs accept one uploaded media ID. Do not pass multiple IDs, an empty array, or `
 | History | For DM history exports, store `messages`, `has_next_page`, and `next_cursor`; pass `cursor` to fetch older messages. |
 | Text | Required `text`, up to 10,000 characters. |
 | Media | Optional one-item `media_ids` array containing a `mediaId` from `POST /x/media`. |
-| Response | Store `messageId` for audit trails or support logs. |
+| Response | Store `messageId`, `recipient_user_id`, `sender_account`, `message_text`, and optional `media_id` for audit trails or support logs. |
 
 <Note>
   **Related:** [Send Direct Message](/api-reference/x-write/send-dm) &middot; [Get DM History](/api-reference/x/dm-history) &middot; [Get User](/api-reference/x/get-user) &middot; [Media Upload Workflow](/guides/media-upload-workflow)
