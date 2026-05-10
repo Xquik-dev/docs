@@ -650,6 +650,23 @@ const REQUIRED_WEBHOOK_CREATE_API_SNIPPETS = [
   '[Signature Verification](/webhooks/verification)',
 ] as const;
 
+const REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS = [
+  '## Operational handoff',
+  'It returns the 100 most recent delivery records for one webhook, newest first.',
+  '| `id` | Delivery-level idempotency and support lookup |',
+  '| `streamEventId` | Joining back to the stored monitor event with `GET /events/{id}` |',
+  '| `status` | Routing `pending`, `failed`, and `exhausted` deliveries to the right queue |',
+  '| `attempts` | Deciding whether a failed delivery is early, repeated, or at the retry cap |',
+  '| `lastStatusCode` | Separating receiver errors such as `500` from unreachable endpoints with status `0` |',
+  '| `lastError` | Showing the most recent failure reason to an operator |',
+  '| `createdAt` and `deliveredAt` | Measuring delivery latency and recovery time |',
+  'Failures retry up to 10 attempts with exponential backoff, starting at 1 second and capped at 60 seconds.',
+  'A `410 Gone` response marks the delivery `exhausted` immediately.',
+  'Other non-`2xx` responses and network failures stay `failed` until they are delivered or exhaust all attempts.',
+  'page on `exhausted`, warn on repeated `failed`, and ignore `delivered`.',
+  '[`POST /webhooks/{id}/test`](/api-reference/webhooks/test)',
+] as const;
+
 const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
   'if (!verifyWebhook(req, WEBHOOK_SECRET))',
   'if not verify_webhook(request, WEBHOOK_SECRET):',
@@ -2128,6 +2145,10 @@ describe('repository discovery', (): void => {
       'api-reference/webhooks/create.mdx',
       'utf8',
     );
+    const deliveriesApi = readFileSync(
+      'api-reference/webhooks/deliveries.mdx',
+      'utf8',
+    );
 
     expect(
       [
@@ -2135,6 +2156,11 @@ describe('repository discovery', (): void => {
           createWebhookApi,
           'Create webhook API docs',
           REQUIRED_WEBHOOK_CREATE_API_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          deliveriesApi,
+          'Webhook deliveries API docs',
+          REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS,
         ),
         ...collectSnippetFindings(
           overview,

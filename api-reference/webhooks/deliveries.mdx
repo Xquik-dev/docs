@@ -85,6 +85,26 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   Your API key.
 </ParamField>
 
+## Operational handoff
+
+Use this endpoint when your queue, CRM, warehouse, or alerting system needs to reconcile webhook delivery health. It returns the 100 most recent delivery records for one webhook, newest first.
+
+Store these fields for support and retry triage:
+
+| Field | Use it for |
+| --- | --- |
+| `id` | Delivery-level idempotency and support lookup |
+| `streamEventId` | Joining back to the stored monitor event with `GET /events/{id}` |
+| `status` | Routing `pending`, `failed`, and `exhausted` deliveries to the right queue |
+| `attempts` | Deciding whether a failed delivery is early, repeated, or at the retry cap |
+| `lastStatusCode` | Separating receiver errors such as `500` from unreachable endpoints with status `0` |
+| `lastError` | Showing the most recent failure reason to an operator |
+| `createdAt` and `deliveredAt` | Measuring delivery latency and recovery time |
+
+Failures retry up to 10 attempts with exponential backoff, starting at 1 second and capped at 60 seconds. A `410 Gone` response marks the delivery `exhausted` immediately. Other non-`2xx` responses and network failures stay `failed` until they are delivered or exhaust all attempts.
+
+For incident response, page on `exhausted`, warn on repeated `failed`, and ignore `delivered`. Fix the receiving endpoint, then use [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) to confirm it accepts signed requests before waiting for the next production event.
+
 ## Response
 
 <Tabs>
