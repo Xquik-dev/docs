@@ -1916,6 +1916,10 @@ const FORBIDDEN_STALE_CREDIT_COST_SNIPPETS = [
   ].join(' '),
 ] as const;
 
+const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
+  ['proxy', 'service'].join(' '),
+] as const;
+
 const EXPECTED_OPENAPI_OPERATION_COUNT = 120;
 
 const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
@@ -2049,6 +2053,25 @@ function collectStaleCreditCostFindings(): readonly DiscoveryFinding[] {
   return findings;
 }
 
+function collectPublicConfidentialityWordingFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const file of listPublicMarkdownFiles()) {
+    const source = readFileSync(file, 'utf8');
+
+    for (const snippet of FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING) {
+      if (source.includes(snippet)) {
+        findings.push({
+          file,
+          issue: `Public Markdown contains deprecated confidentiality wording "${snippet}".`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
 function getOpenApiOperationCount(): number {
   const openApi = readFileSync('openapi.yaml', 'utf8');
   return openApi.match(/^\s+operationId:/gmu)?.length ?? 0;
@@ -2139,6 +2162,12 @@ describe('repository discovery', (): void => {
 
     expect(getOpenApiOperationCount()).toBe(EXPECTED_OPENAPI_OPERATION_COUNT);
     expect(collectStaleOperationCountFindings()).toStrictEqual([]);
+  });
+
+  it('keeps public confidentiality wording generic and product-approved', (): void => {
+    expect.assertions(1);
+
+    expect(collectPublicConfidentialityWordingFindings()).toStrictEqual([]);
   });
 
   it('keeps public agent entry points visible to docs crawlers', (): void => {
