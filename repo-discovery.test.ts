@@ -774,6 +774,9 @@ const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
 
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct follower handoff',
+  '<CardGroup cols={2}>',
+  '<Card title="Follower rows"',
+  '<Card title="Next page"',
   '`GET /x/users/{id}/followers`',
   'CRM, warehouse, audience, or agent workflow',
   '`follower_explorer`',
