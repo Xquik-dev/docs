@@ -1,8 +1,8 @@
 ---
 title: "Create tweet"
-description: "Post a new tweet from a connected X account with optional media, replies, and quote tweets"
+description: "Post tweets and replies from a connected X account with media URLs, write-status polling, and audit handoff"
 api: "POST /x/tweets"
-keywords: ["tweet", "post", "create", "write", "x account"]
+keywords: ["post tweets", "post tweet replies", "tweet replies", "Twitter API", "X API", "media upload", "write actions"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -231,6 +231,42 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     { "error": "x_write_failed", "message": "Failed to post tweet" }
     ```
     The tweet could not be posted. The connected account may be suspended, rate-limited, or the content may violate platform policies. Try again later.
+  </Tab>
+</Tabs>
+
+## Store the post handoff
+
+Store a compact record after every tweet or reply so queues, CRMs, support tools, and agents can reconcile the write without scraping the timeline.
+
+<Tabs>
+  <Tab title="Posted">
+    ```json
+    {
+      "status": "posted",
+      "tweet_id": "1895432178065391234",
+      "account": "brand_account",
+      "reply_to_tweet_id": "1893456789012345678",
+      "media": ["https://cdn.example.com/release-card.png"],
+      "cost_credits": 10
+    }
+    ```
+
+    Copy `tweetId` from the response into `tweet_id`. Keep `reply_to_tweet_id` when the post is a reply, and store the public media URLs you sent in `media`.
+  </Tab>
+  <Tab title="Pending Confirmation">
+    ```json
+    {
+      "status": "pending_confirmation",
+      "write_action_id": "42",
+      "account": "brand_account",
+      "reply_to_tweet_id": "1893456789012345678",
+      "charged": false,
+      "retryable": false,
+      "poll": "GET /x/write-actions/{id}"
+    }
+    ```
+
+    Store `writeActionId` as `write_action_id`, poll [Get Write Action Status](/api-reference/x-write/get-write-action-status), and do not retry-send the same body while status is `pending_confirmation`. If polling later returns `status: "success"` with `tweetId`, update the same record to `posted`.
   </Tab>
 </Tabs>
 

@@ -418,6 +418,26 @@ const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   '`monitor_limit_reached` | 403 | No | Check billing status. Current plans include unlimited monitor slots.',
 ] as const;
 
+const REQUIRED_CREATE_TWEET_API_SNIPPETS = [
+  'Post tweets and replies from a connected X account with media URLs, write-status polling, and audit handoff',
+  '"post tweet replies"',
+  '`reply_to_tweet_id`',
+  '`media`',
+  '## Store the post handoff',
+  '"status": "posted"',
+  '"tweet_id": "1895432178065391234"',
+  '"reply_to_tweet_id": "1893456789012345678"',
+  '"cost_credits": 10',
+  '"status": "pending_confirmation"',
+  '"write_action_id": "42"',
+  '"charged": false',
+  '"retryable": false',
+  '"poll": "GET /x/write-actions/{id}"',
+  'Store `writeActionId` as `write_action_id`',
+  'do not retry-send the same body while status is `pending_confirmation`',
+  'If polling later returns `status: "success"` with `tweetId`, update the same record to `posted`.',
+] as const;
+
 const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
   '<Accordion title="Server & service errors (500/502)">',
   '`x_api_rate_limited` | Read service rate limited | Retry in a few minutes. The read service is temporarily throttled. |',
@@ -2132,6 +2152,23 @@ describe('repository discovery', (): void => {
         source,
         'Send DM API docs',
         REQUIRED_SEND_DM_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the create tweet API page useful for post and reply handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x-write/create-tweet.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Create tweet API docs',
+        REQUIRED_CREATE_TWEET_API_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
