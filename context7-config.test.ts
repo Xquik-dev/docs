@@ -8,6 +8,7 @@ const CONTEXT7_REFRESH_WORKFLOW = '.github/workflows/context7-refresh.yml';
 const PUBLIC_KEY_PREFIX = 'pk_';
 const CONTEXT7_PUBLIC_KEY = 'pk_oCPeRRqZFJsY4cCUSotDD';
 const REQUIRED_EXCLUDED_FILES = [
+  '.env.local',
   '.gitignore',
   '.mintignore',
   'AGENTS.md',
@@ -29,6 +30,7 @@ const REQUIRED_EXCLUDED_FILES = [
   'endpoint-strings.test.ts',
   'event-types.test.ts',
   'favicon.svg',
+  'guides/hermes-tweet.mdx',
   'llms-coverage.test.ts',
   'mintignore.test.ts',
   'mpp-payment-metadata.test.ts',
