@@ -413,6 +413,7 @@ const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   'The write action was dispatched, but final confirmation is still pending.',
   'The response includes `status: "pending_confirmation"`, `writeActionId`, `charged: false`, and `retryable: false`.',
   'Store `writeActionId`, call [Get Write Action Status](/api-reference/x-write/get-write-action-status), and do not retry-send while status is `pending_confirmation`.',
+  '`x_dm_not_allowed` | 422 | No | The recipient may not accept DMs from this account. Use another permitted account or ask the recipient to allow messages.',
   '`no_addon` | 402 | No | Check billing status. Current plans include unlimited monitor slots.',
   '`monitor_limit_reached` | 403 | No | Check billing status. Current plans include unlimited monitor slots.',
 ] as const;
@@ -557,6 +558,8 @@ const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   '1 credit per message returned',
   '`400 account_required`',
   '`403 dm_not_permitted`',
+  '`422 x_dm_not_allowed`',
+  'The recipient may not accept DMs from this connected account. Do not retry unchanged',
   '`messageId`',
   '`success`',
   '### Store the outbound handoff',
@@ -652,6 +655,8 @@ const REQUIRED_SEND_DM_API_SNIPPETS = [
   'Upload media first with [Upload Media](/api-reference/x-write/upload-media)',
   '`media_ids` must contain exactly one uploaded media ID.',
   'Empty arrays, multiple IDs, and `reply_to_message_id` return `400 invalid_input`.',
+  '`x_dm_not_allowed`',
+  'the recipient may not accept messages from this connected account; do not retry unchanged.',
   'Empty arrays and multiple IDs are rejected.',
 ] as const;
 
