@@ -417,6 +417,9 @@ const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
   '`.untilTime()`',
   '`.queryType()`',
   '`QueryType.LATEST`',
+  'Kotlin builder method `.q()` maps to REST `q`.',
+  'Kotlin builder method `.cursor()` maps to REST `cursor`.',
+  'Kotlin builder method `.queryType()` maps to REST `queryType`.',
   '`PaginatedTweets`',
   '`page.tweets()`',
   '`page.hasNextPage()`',
@@ -441,6 +444,9 @@ const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
   '`dm.messageId()`',
   'Each tweet or reply write costs 10 credits.',
   'Do not pass uploaded `media.mediaId()` values to `client.x().tweets().create`',
+  'Throws `BadRequestException`.',
+  'Throws `RateLimitException`.',
+  'Throws `InternalServerException`.',
 ] as const;
 
 const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
