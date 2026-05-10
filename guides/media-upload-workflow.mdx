@@ -8,7 +8,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use this workflow when a product, support, CRM, or AI agent system needs to upload media before posting tweets or sending direct messages. Xquik accepts local files with `multipart/form-data` and HTTPS media URLs with `application/json`.
+Use this workflow when a product, support, CRM, or AI agent system needs a hosted media URL for tweet posts or an uploaded media ID for direct messages. Xquik accepts local files with `multipart/form-data` and HTTPS media URLs with `application/json`.
+
+If you already have public image URLs for a tweet or reply, skip `POST /x/media` and pass those URLs directly in the `media` array on `POST /x/tweets`. Use `POST /x/media` when you need Xquik to host a local file, validate a generated media URL, or produce a `mediaId` for a DM attachment.
 
 ## When to use this workflow
 
@@ -16,7 +18,8 @@ Use this workflow when a product, support, CRM, or AI agent system needs to uplo
 |------|-----|
 | Upload a local image, GIF, or MP4 | `POST /x/media` with `multipart/form-data` |
 | Upload AI-generated media from a URL | `POST /x/media` with `application/json` |
-| Post tweets with uploaded media | Pass returned `mediaUrl` in the `media` array on `POST /x/tweets` |
+| Post tweets with public image URLs | Pass the URLs directly in the `media` array on `POST /x/tweets` |
+| Post tweets with media uploaded through Xquik | Pass returned `mediaUrl` in the `media` array on `POST /x/tweets` |
 | Post tweet replies with uploaded media | Pass `mediaUrl` plus `reply_to_tweet_id` on `POST /x/tweets` |
 | Send a DM with uploaded media | Pass returned `mediaId` as the only item in `media_ids` on `POST /x/dm/{userId}` |
 
@@ -31,7 +34,7 @@ Use this workflow when a product, support, CRM, or AI agent system needs to uplo
 
 ## Step 1: Upload media by URL
 
-Use JSON URL upload when an AI agent, MCP client, or workflow tool already has a generated image URL.
+Use JSON URL upload when an AI agent, MCP client, or workflow tool has a generated image URL that Xquik should validate and host. For tweet-only workflows with an already public image URL, call `POST /x/tweets` directly with `media`.
 The URL must use HTTPS, resolve to a public address, return a supported media content type, finish within 30 seconds, and stay under the 15,728,640-byte URL download cap.
 
 ```bash
