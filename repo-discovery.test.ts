@@ -1046,6 +1046,30 @@ const FORBIDDEN_WEBHOOK_VERIFICATION_SNIPPETS = [
   'processed_payloads',
 ] as const;
 
+const REQUIRED_DM_HISTORY_API_SNIPPETS = [
+  'Get DM history',
+  'GET /x/dm/{userId}/history',
+  'Requires a connected X account passed via the `account` query parameter.',
+  'DM history is participant-scoped',
+  'params={"account": "your_handle"}',
+  '<ParamField query="account" type="string" required>',
+  'Pass the `next_cursor` value from the previous response to fetch older messages.',
+  'Legacy pagination cursor. Use `cursor` for new integrations.',
+  'messages',
+  'has_next_page',
+  'next_cursor',
+  'senderId',
+  'receiverId',
+  'createdAt',
+  'mediaUrl',
+  '{ "error": "account_required"',
+  '{ "error": "dm_not_permitted"',
+  '{ "error": "account_needs_reauth" }',
+  'account_not_found',
+  '424 Dependency Failed',
+  '1 credit per result returned',
+] as const;
+
 const REQUIRED_SEND_DM_API_SNIPPETS = [
   'Send DM API',
   'Twitter DM API',
@@ -2627,6 +2651,20 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     expect(collectUnsupportedDmHistorySdkExampleFindings()).toStrictEqual([]);
+  });
+
+  it('keeps the DM history API page aligned with participant-scoped reads', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/dm-history.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'DM history API docs',
+        REQUIRED_DM_HISTORY_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps shared monitor types aligned with account and keyword monitor APIs', (): void => {
