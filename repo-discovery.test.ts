@@ -300,6 +300,21 @@ const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
   'Tweet search costs 1 credit per tweet returned.',
   'Write `page.tweets()` as JSON Lines for queues and data lakes',
   'transform the same records into CSV for analysts',
+  '## Workflow: Post Image Tweets and DM Attachments',
+  '`client.x().tweets().create`',
+  '`POST /x/tweets`',
+  '`.addMedia()`',
+  '`.replyToTweetId()`',
+  '`tweet.tweetId()`',
+  '`reply.tweetId()`',
+  '`client.x().media().upload`',
+  '`POST /x/media`',
+  '.file(Paths.get("handoff.png"))',
+  '`media.mediaId()`',
+  '`.addMediaId()`',
+  '`dm.messageId()`',
+  'Each tweet or reply write costs 10 credits.',
+  'Do not pass uploaded `media.mediaId()` values to `client.x().tweets().create`',
 ] as const;
 
 const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [

@@ -145,6 +145,69 @@ Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `autho
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For longer workers, set an explicit retry limit and persist `page.nextCursor()` after each page.
 
+## Workflow: Post Image Tweets and DM Attachments
+
+Use this workflow when a JVM service needs to publish an image tweet, reply with an image, or send a direct message with an uploaded local file. `client.x().tweets().create` maps to `POST /x/tweets`; pass public image URLs through `.addMedia()` or `.media()`. For replies, set `.replyToTweetId()` to the parent tweet ID. `client.x().media().upload` maps to `POST /x/media`; use `media.mediaId()` only for the one-item DM `.addMediaId()` handoff.
+
+```java
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.x_twitter_scraper.api.client.XTwitterScraperClient;
+import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient;
+import com.x_twitter_scraper.api.models.x.dm.DmSendParams;
+import com.x_twitter_scraper.api.models.x.dm.DmSendResponse;
+import com.x_twitter_scraper.api.models.x.media.MediaUploadParams;
+import com.x_twitter_scraper.api.models.x.media.MediaUploadResponse;
+import com.x_twitter_scraper.api.models.x.tweets.TweetCreateParams;
+import com.x_twitter_scraper.api.models.x.tweets.TweetCreateResponse;
+import java.nio.file.Paths;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+XTwitterScraperClient client = XTwitterScraperOkHttpClient.fromEnv();
+
+TweetCreateResponse tweet = client.x().tweets().create(
+    TweetCreateParams.builder()
+        .account("@xquikcom")
+        .text("Shipping the weekly X API export.")
+        .addMedia("https://static.example.com/reports/x-api-export.png")
+        .build()
+);
+
+TweetCreateResponse reply = client.x().tweets().create(
+    TweetCreateParams.builder()
+        .account("@xquikcom")
+        .text("Here is the chart behind the update.")
+        .addMedia("https://static.example.com/reports/reply-chart.png")
+        .replyToTweetId(tweet.tweetId())
+        .build()
+);
+
+MediaUploadResponse media = client.x().media().upload(
+    MediaUploadParams.builder()
+        .account("@xquikcom")
+        .file(Paths.get("handoff.png"))
+        .build()
+);
+
+DmSendResponse dm = client.x().dm().send(
+    "44196397",
+    DmSendParams.builder()
+        .account("@xquikcom")
+        .text("Here is the requested asset.")
+        .addMediaId(media.mediaId())
+        .build()
+);
+
+Map<String, Object> handoff = new LinkedHashMap<>();
+handoff.put("tweet_id", tweet.tweetId());
+handoff.put("reply_tweet_id", reply.tweetId());
+handoff.put("dm_message_id", dm.messageId());
+
+System.out.println(new ObjectMapper().writeValueAsString(handoff));
+```
+
+Store `tweet.tweetId()` and `reply.tweetId()` on the CMS, queue job, or agent state before scheduling follow-up work. Store `dm.messageId()` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.mediaId()` values to `client.x().tweets().create`; that method uses public image URLs through `media`.
+
 ## Error Handling
 
 The Java SDK throws unchecked exceptions.
