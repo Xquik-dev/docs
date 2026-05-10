@@ -200,7 +200,7 @@ const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
-  '## Workflow: Search Tweets to JSON Lines',
+  '## Workflow: Search Tweets to JSON Lines, CSV, or XLSX',
   '## Workflow: Post Image Tweets, Replies, and DM Attachments',
   '`x-twitter-scraper x:tweets search`',
   '`GET /x/tweets/search`',
@@ -216,6 +216,9 @@ const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
   '`.next_cursor`',
   'Tweet search costs 1 credit per tweet returned.',
   'Write one JSON object per line for downstream jobs',
+  '`xquik-tweet-search.jsonl`',
+  'projected records to CSV for analysts',
+  'produce XLSX from those rows',
   '`--format-error json`',
   '`x-twitter-scraper x:tweets create`',
   '`--media`',
