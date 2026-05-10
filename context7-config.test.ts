@@ -50,6 +50,8 @@ const REQUIRED_EXCLUDED_FOLDERS = [
 const REQUIRED_RULE_SNIPPETS = [
   'quickstart.mdx',
   'api-reference/overview.mdx',
+  '120 documented REST operations',
+  '31 MPP-eligible X API endpoints',
   'sdks/',
   'mcp/',
   'webhooks/',
