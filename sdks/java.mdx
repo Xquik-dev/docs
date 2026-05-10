@@ -1,15 +1,15 @@
 ---
 title: Java SDK
 sidebarTitle: Java
-description: Use the official Xquik Java SDK to search tweets, export JSON Lines or CSV, monitor tweets, post tweets, upload media, and build JVM X API workers.
-keywords: ["Java SDK", "X API Java", "JVM client", "tweet search Java", "Twitter API Java", "JSON export", "source build"]
+description: Use the Xquik Java SDK to search tweets, export JSON Lines, CSV, or XLSX, post image tweets, upload media, send DMs, and run JVM X API workers.
+keywords: ["Java SDK", "X API Java", "JVM client", "tweet search Java", "Twitter API Java", "JSON export", "CSV export", "XLSX export", "source build"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the Java SDK for generated JVM models, builders, sync calls, async calls, typed exceptions, retries, and file upload helpers in Java 8+ applications. It is useful when a JVM service, Spring worker, queue consumer, or cron job needs to search tweets, scrape tweets to JSON Lines or CSV, export followers, monitor tweets, post tweets, upload media, send direct messages, or hand X API data to analytics and CRM systems.
+Use the Java SDK for generated JVM models, builders, sync calls, async calls, typed exceptions, retries, and file upload helpers in Java 8+ applications. It is useful when a JVM service, Spring worker, queue consumer, or cron job needs to search tweets, scrape tweets to JSON Lines, CSV, or XLSX, export followers, monitor tweets, post image tweets, upload media, send direct messages, or hand X API data to analytics and CRM systems.
 
 ## Install
 
@@ -61,9 +61,9 @@ TweetSearchParams params = TweetSearchParams.builder()
 PaginatedTweets tweets = client.x().tweets().search(params);
 ```
 
-## Workflow: Search Tweets to JSON Lines
+## Workflow: Search Tweets to JSON Lines, CSV, or XLSX
 
-Use this workflow when a Java service, Spring Batch job, scheduled worker, or queue consumer needs tweet search results in a durable handoff file for a data lake, CRM enrichment step, analyst CSV export, or downstream processor.
+Use this workflow when a Java service, Spring Batch job, scheduled worker, or queue consumer needs tweet search results in a durable handoff file for a data lake, CRM enrichment step, analyst CSV export, XLSX workbook, or downstream processor.
 
 `client.x().tweets().search` calls `GET /x/tweets/search`. Build `TweetSearchParams` with the same query parameters the REST API accepts: `.q()`, `.limit()`, `.cursor()`, `.sinceTime()`, `.untilTime()`, and `.queryType()`.
 
@@ -87,7 +87,7 @@ ObjectMapper objectMapper = new ObjectMapper();
 
 String cursor = null;
 try (BufferedWriter writer = Files.newBufferedWriter(
-    Paths.get("tweets.jsonl"),
+    Paths.get("xquik-tweet-search.jsonl"),
     StandardCharsets.UTF_8
 )) {
     do {
@@ -141,7 +141,7 @@ try (BufferedWriter writer = Files.newBufferedWriter(
 
 `client.x().tweets().search` returns `PaginatedTweets`. Use `page.tweets()` for the tweet list, `page.hasNextPage()` to decide whether another page exists, and `page.nextCursor()` as the checkpoint for the next request.
 
-Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, `createdAt()`, `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, and `viewCount()` when available. Write `page.tweets()` as JSON Lines for queues and data lakes, transform the same records into CSV for analysts, or produce XLSX from the projected rows when account teams need spreadsheets.
+Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, `createdAt()`, `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, and `viewCount()` when available. Write `page.tweets()` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the same projected records into CSV for analysts, or produce XLSX from those rows when account teams need a workbook.
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For longer workers, set an explicit retry limit and persist `page.nextCursor()` after each page.
 
@@ -237,6 +237,9 @@ if (tweets.hasNextPage()) {
 ## Webhooks & References
 
 - [Search Tweets](/api-reference/x/search-tweets)
+- [Create Tweet](/api-reference/x-write/create-tweet)
+- [Upload Media](/api-reference/x-write/upload-media)
+- [Send Direct Message](/api-reference/x-write/send-dm)
 - [Create Monitor](/api-reference/monitors/create)
 - [Webhook Overview](/webhooks/overview)
 - [Verify HMAC Signatures](/webhooks/verification)
