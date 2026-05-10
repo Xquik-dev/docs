@@ -14,7 +14,7 @@ public-facing unless it is explicitly a standard open-source project file.
   internal cost units, or deployment-only operational details.
 - Use generic public wording when implementation context is useful: "own
   infrastructure", "read service", "write service", "browser service", or
-  "proxy service".
+  "network egress service".
 - Before staging or committing, inspect the staged diff for confidential
   implementation details. If a detail is not meant for customers, remove it or
   replace it with generic public wording before committing.
