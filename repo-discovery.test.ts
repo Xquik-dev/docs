@@ -748,10 +748,10 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
   'Estimate is free.',
   'Exports are free after the extraction job exists.',
   '1 credit per tweet returned',
-  '`400` | `invalid_tweet_id`',
-  '`402` | `no_subscription`, `subscription_inactive`, `no_credits`, or `insufficient_credits`',
-  '`429` | `rate_limit_exceeded`',
-  '`424` or `502` | `x_api_unavailable`',
+  'Status `400`. Error `invalid_tweet_id`.',
+  'Status `402`. Errors `no_subscription`, `subscription_inactive`, `no_credits`, or `insufficient_credits`.',
+  'Status `429`. Error `rate_limit_exceeded`.',
+  'Status `424` or `502`. Error `x_api_unavailable`.',
 ] as const;
 
 const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
