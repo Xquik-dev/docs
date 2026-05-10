@@ -292,6 +292,41 @@ async () => {
 }
 ```
 
+## Agent handoff patterns
+
+MCP returns JSON. Use extraction export endpoints when you need Xquik to generate CSV, JSON, XLSX, Markdown, or PDF files. For agent queues, CRMs, and warehouses, return a small object with the original job, the route used, the rows or IDs to store, and the next cursor or write action to poll.
+
+| Job | MCP call | Store for handoff | Cost model |
+| --- | --- | --- | --- |
+| Scrape tweets or search tweets to JSON | `GET /api/v1/x/tweets/search` | `tweets[].id`, `tweets[].text`, `tweets[].author`, `tweets[].created`, `has_more`, `next_cursor`, and original `q` | 1 credit per tweet returned |
+| Export followers to CRM | `GET /api/v1/x/users/{id}/followers` or `POST /api/v1/extractions` with `follower_explorer` | `users[].id`, `users[].username`, `users[].name`, `users[].followers`, `has_more`, and `next_cursor` | 1 credit per follower returned or extracted |
+| Upload media before posting | `POST /api/v1/x/media`, then `POST /api/v1/x/tweets` | `media_url`, `media_id`, `tweet_id` or `write_action_id`, `account`, and original `media` URL | 10 credits per media upload call plus 10 credits per post tweet call |
+| Post tweets and replies | `POST /api/v1/x/tweets`, then `GET /api/v1/x/write-actions/{id}` when pending | `tweet_id`, `reply_to_tweet_id`, `write_action_id`, `status`, and `charged` | 10 credits per write call |
+| Monitor tweets to signed webhooks | `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then `POST /api/v1/webhooks` | `monitor.id`, `event_types`, `next_billing_at`, `webhook.id`, and the webhook URL | 21 credits per active monitor-hour; webhook delivery is included |
+
+```javascript
+async () => {
+  const page = await xquik.request('/api/v1/x/tweets/search', {
+    query: { q: 'from:xquikcom giveaway', limit: '50' }
+  });
+
+  return {
+    source: 'xquik_mcp',
+    job: 'tweet_search',
+    query: 'from:xquikcom giveaway',
+    rows: page.tweets.map(tweet => ({
+      tweet_id: tweet.id,
+      text: tweet.text,
+      author: tweet.author,
+      created: tweet['created'],
+      url: tweet.url
+    })),
+    has_more: page.has_more,
+    next_cursor: page.next_cursor
+  };
+}
+```
+
 > Subscribe (free, returns checkout or billing portal URL)
 
 ```javascript
@@ -304,7 +339,7 @@ async () => {
 
 ## API endpoints
 
-The server covers 118 documented operations across 10 categories:
+The server covers 120 operations across 10 categories:
 
 | Category | Endpoints | Examples |
 |----------|-----------|---------|
@@ -315,8 +350,8 @@ The server covers 118 documented operations across 10 categories:
 | **media** | 1 | Media download |
 | **monitoring** | 18 | Account monitors, keyword monitors, events, webhooks, deliveries |
 | **support** | 5 | Support tickets |
-| **twitter** | 37 | Tweet search, get tweet/batch, get article, user lookup/batch/search, follow check, trending topics, bookmarks/folders, notifications, timeline, DM history, likes, media, favoriters, followers-you-know, verified followers, user tweets, mentions, followers, following, quotes, replies, retweeters, thread, communities, lists |
-| **x-accounts** | 6 | Connect, list, get, disconnect, reauth, bulk retry |
+| **twitter** | 38 | Tweet search, get tweet/batch, get article, user lookup/batch/search, follow check, trending topics, bookmarks/folders, notifications, timeline, DM history, likes, media, favoriters, followers-you-know, verified followers, user tweets, mentions, followers, following, quotes, replies, retweeters, thread, communities, lists |
+| **x-accounts** | 7 | Connect, list, get, disconnect, reauth, bulk retry, connection challenge |
 | **x-write** | 18 | Tweet, like, retweet, unretweet, follow, remove follower, DM, media upload, community membership |
 
 Use `explore` to browse the full catalog with parameters and response shapes.

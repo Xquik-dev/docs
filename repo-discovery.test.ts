@@ -254,6 +254,19 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'next_cursor',
   'Pass `next_cursor` back as the `cursor` query parameter',
   'MCP server\'s `xquik.request()` tool sends that normalized contract automatically',
+  '## Agent handoff patterns',
+  'MCP returns JSON.',
+  'Use extraction export endpoints when you need Xquik to generate CSV, JSON, XLSX, Markdown, or PDF files.',
+  '| Scrape tweets or search tweets to JSON | `GET /api/v1/x/tweets/search` | `tweets[].id`, `tweets[].text`, `tweets[].author`, `tweets[].created`, `has_more`, `next_cursor`, and original `q` | 1 credit per tweet returned |',
+  '| Export followers to CRM | `GET /api/v1/x/users/{id}/followers` or `POST /api/v1/extractions` with `follower_explorer` |',
+  '| Upload media before posting | `POST /api/v1/x/media`, then `POST /api/v1/x/tweets` | `media_url`, `media_id`, `tweet_id` or `write_action_id`, `account`, and original `media` URL | 10 credits per media upload call plus 10 credits per post tweet call |',
+  '| Post tweets and replies | `POST /api/v1/x/tweets`, then `GET /api/v1/x/write-actions/{id}` when pending | `tweet_id`, `reply_to_tweet_id`, `write_action_id`, `status`, and `charged` | 10 credits per write call |',
+  '| Monitor tweets to signed webhooks | `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then `POST /api/v1/webhooks` |',
+  "source: 'xquik_mcp'",
+  "job: 'tweet_search'",
+  'The server covers 120 operations across 10 categories:',
+  '| **twitter** | 38 |',
+  '| **x-accounts** | 7 |',
 ] as const;
 
 const FORBIDDEN_MCP_CONTRACT_SNIPPETS = [
