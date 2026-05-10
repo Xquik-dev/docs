@@ -10,7 +10,7 @@ metadata:
 
 ## Product summary
 
-Xquik is a real-time X (Twitter) data platform with 118 documented REST API operations, webhooks, and an MCP server for AI agent integration. Use it to extract followers, replies, retweets, and other X data; monitor accounts and keywords for real-time events; run transparent giveaway draws; compose algorithm-optimized tweets; and build X integrations. The REST API base URL is `https://xquik.com/api/v1`. Authenticate with the `x-api-key` header. Primary docs: https://docs.xquik.com
+Xquik is a real-time X (Twitter) data platform with 120 documented REST API operations, webhooks, and an MCP server for AI agent integration. Use it to extract followers, replies, retweets, and other X data; monitor accounts and keywords for real-time events; run transparent giveaway draws; compose algorithm-optimized tweets; and build X integrations. The REST API base URL is `https://xquik.com/api/v1`. Authenticate with the `x-api-key` header. Primary docs: https://docs.xquik.com
 
 ## When to use
 
@@ -46,7 +46,7 @@ Reach for Xquik when:
 
 Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Retry only on `429` and `5xx` responses.
 
-### API endpoints (118 documented operations)
+### API endpoints (120 documented operations)
 
 - **Monitors and Events**: Create account and keyword monitors, retrieve events, and manage webhooks.
 - **Extractions**: 23 tools for bulk data extraction.

@@ -10,7 +10,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 ## Start here
 
 - [Quickstart](https://docs.xquik.com/quickstart) - make the first authenticated API call.
-- [API Reference](https://docs.xquik.com/api-reference) - browse 118 OpenAPI-backed endpoint pages.
+- [API Reference](https://docs.xquik.com/api-reference) - browse 120 OpenAPI-backed operations.
 - [SDKs](https://docs.xquik.com/sdks) - use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
 - [MCP Server](https://docs.xquik.com/mcp) - connect Claude, ChatGPT, Cursor, and other AI agents.
 - [Webhooks](https://docs.xquik.com/webhooks/overview) - verify HMAC signatures and receive real-time X events.
@@ -36,7 +36,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 
 ## What's covered
 
-- **REST API** - 118 endpoint pages spanning account, api-keys, monitors, events, webhooks, draws, extractions, x, trends, radar, styles, drafts, compose, x-accounts, x-write, support, and integrations.
+- **REST API** - 120 operations spanning account, api-keys, monitors, events, webhooks, draws, extractions, x, trends, radar, styles, drafts, compose, x-accounts, x-write, support, and integrations.
 - **Webhooks** - HMAC SHA-256 signature verification, retry semantics, payload schemas.
 - **MCP server** - Model Context Protocol integration for Claude, ChatGPT, Cursor, and other AI agents. Tool reference + setup.
 - **OAuth 2.1** - Authorization Code + PKCE flow, scopes, token refresh.
@@ -49,7 +49,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 ## Repository layout
 
 ```
-api-reference/      118 endpoint pages, grouped by resource
+api-reference/      120 OpenAPI operations, grouped by resource
 guides/             Workflow, operations, and framework guides
 webhooks/           Overview + signature verification
 mcp/                MCP server overview + tool reference

@@ -31,6 +31,8 @@ const REQUIRED_README_SNIPPETS = [
   'NHS Agentic Readiness Score',
   '[Quickstart](https://docs.xquik.com/quickstart)',
   '[API Reference](https://docs.xquik.com/api-reference)',
+  'browse 120 OpenAPI-backed operations',
+  '**REST API** - 120 operations',
   '[SDKs](https://docs.xquik.com/sdks)',
   '[MCP Server](https://docs.xquik.com/mcp)',
   '[Webhooks](https://docs.xquik.com/webhooks/overview)',
@@ -1864,6 +1866,18 @@ const FORBIDDEN_STALE_CREDIT_COST_SNIPPETS = [
   'Each operation costs 1-10 credits depending on the endpoint.',
 ] as const;
 
+const EXPECTED_OPENAPI_OPERATION_COUNT = 120;
+
+const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
+  '118 REST operations',
+  '118 REST API operations',
+  '118 REST endpoints',
+  '118 API endpoints',
+  '118 documented operations',
+  '118 documented REST API operations',
+  '118 endpoint pages',
+] as const;
+
 const MAX_LLMS_TXT_CHARS = 48_000;
 
 const VAGUE_PUBLIC_POSITIONING = [
@@ -1977,6 +1991,30 @@ function collectStaleCreditCostFindings(): readonly DiscoveryFinding[] {
   return findings;
 }
 
+function getOpenApiOperationCount(): number {
+  const openApi = readFileSync('openapi.yaml', 'utf8');
+  return openApi.match(/^\s+operationId:/gmu)?.length ?? 0;
+}
+
+function collectStaleOperationCountFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const file of listPublicMarkdownFiles()) {
+    const source = readFileSync(file, 'utf8');
+
+    for (const snippet of FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS) {
+      if (source.includes(snippet)) {
+        findings.push({
+          file,
+          issue: `Public Markdown contains stale operation count "${snippet}".`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
 function collectSnippetFindings(
   source: string,
   label: string,
@@ -2017,6 +2055,13 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     expect(collectReadmeDiscoveryFindings()).toStrictEqual([]);
+  });
+
+  it('keeps public REST operation counts aligned with OpenAPI', (): void => {
+    expect.assertions(2);
+
+    expect(getOpenApiOperationCount()).toBe(EXPECTED_OPENAPI_OPERATION_COUNT);
+    expect(collectStaleOperationCountFindings()).toStrictEqual([]);
   });
 
   it('keeps public agent entry points visible to docs crawlers', (): void => {
