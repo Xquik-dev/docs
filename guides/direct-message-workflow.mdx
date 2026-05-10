@@ -125,6 +125,39 @@ After a `200` response, persist one outbound record before handing control back 
 
 When you also sync history, normalize each `messages[]` item separately with `message_id`, `sender_id`, `receiver_id`, `created_at`, optional `media_url`, and `conversation_user_id`.
 
+### JSON Lines handoff
+
+For queue, warehouse, CRM, or agent memory, write one record per history message or outbound send to `xquik-dm-handoff.jsonl`.
+
+```json
+{
+  "record_type": "dm_history",
+  "conversation_user_id": "987654321",
+  "sender_account": "myxhandle",
+  "message_id": "1893726451029384191",
+  "sender_id": "987654321",
+  "receiver_id": "123456789",
+  "created_at": "2026-02-24T10:00:00.000Z",
+  "message_text": "Can you send the setup link?",
+  "media_url": null,
+  "page_next_cursor": "1893726451029384190"
+}
+```
+
+```json
+{
+  "record_type": "dm_send",
+  "status": "sent",
+  "conversation_user_id": "987654321",
+  "sender_account": "myxhandle",
+  "recipient_user_id": "987654321",
+  "message_id": "1893726451029384192",
+  "message_text": "Thanks for reaching out. Here is the next step.",
+  "media_id": null,
+  "handoff_format": "jsonl"
+}
+```
+
 ## Step 4: Send a direct message with media
 
 Upload media first, then send exactly one uploaded media ID in `media_ids`.
@@ -184,6 +217,7 @@ DMs accept one uploaded media ID. Do not pass multiple IDs, an empty array, or `
 | Text | Required `text`, up to 10,000 characters. |
 | Media | Optional one-item `media_ids` array containing a `mediaId` from `POST /x/media`. |
 | Response | Store `messageId`, `recipient_user_id`, `sender_account`, `message_text`, and optional `media_id` for audit trails or support logs. |
+| JSON Lines | Store history and send records in `xquik-dm-handoff.jsonl` for queues, warehouse loads, CRM syncs, or agent memory. |
 
 <Note>
   **Related:** [Send Direct Message](/api-reference/x-write/send-dm) &middot; [Get DM History](/api-reference/x/dm-history) &middot; [Get User](/api-reference/x/get-user) &middot; [Media Upload Workflow](/guides/media-upload-workflow)
