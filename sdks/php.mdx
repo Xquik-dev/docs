@@ -123,6 +123,70 @@ Each `SearchTweet` includes typed properties such as `$id`, `$text`, `$author`, 
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, timeouts, 408, 409, 429, and 5xx responses 2 times by default. For long-running workers, pass `requestOptions: ['maxRetries' => 5]` and persist `$page->nextCursor` after each page.
 
+## Workflow: Post Image Tweets and DM Attachments
+
+Use this workflow when a PHP app needs to publish an image tweet, reply with an image, or send a direct message with an uploaded local file. `$client->x->tweets->create()` maps to `POST /x/tweets`; pass public image URLs through `media`. For replies, set `replyToTweetID` to the parent tweet ID. `$client->x->media->upload()` maps to `POST /x/media`; use its `$media->mediaID` only for the one-item `mediaIDs` array on `$client->x->dm->send()`.
+
+```php
+<?php
+
+use XTwitterScraper\Client;
+use XTwitterScraper\Core\FileParam;
+
+$client = new Client(
+  apiKey: getenv('X_TWITTER_SCRAPER_API_KEY') ?: ''
+);
+
+$tweet = $client->x->tweets->create(
+  account: '@xquikcom',
+  text: 'Shipping the weekly X API export.',
+  media: ['https://static.example.com/reports/x-api-export.png'],
+);
+
+$reply = $client->x->tweets->create(
+  account: '@xquikcom',
+  text: 'Here is the chart behind the update.',
+  media: ['https://static.example.com/reports/reply-chart.png'],
+  replyToTweetID: $tweet->tweetID,
+);
+
+$localFile = fopen('handoff.png', 'rb');
+
+if (false === $localFile) {
+  throw new RuntimeException('Could not open handoff.png');
+}
+
+try {
+  $media = $client->x->media->upload(
+    account: '@xquikcom',
+    file: FileParam::fromResource($localFile),
+  );
+} finally {
+  fclose($localFile);
+}
+
+$dm = $client->x->dm->send(
+  '44196397',
+  account: '@xquikcom',
+  text: 'Here is the requested asset.',
+  mediaIDs: [$media->mediaID],
+);
+
+fwrite(
+  STDOUT,
+  json_encode(
+    [
+      'tweet_id' => $tweet->tweetID,
+      'reply_tweet_id' => $reply->tweetID,
+      'dm_message_id' => $dm->messageID,
+    ],
+    JSON_THROW_ON_ERROR
+  ) . PHP_EOL
+);
+```
+
+Store `$tweet->tweetID` and `$reply->tweetID` on the CMS, queue job, or agent state before scheduling follow-up work. Store `$dm->messageID` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `$media->mediaID` values to `$client->x->tweets->create()`; that method uses `media` with public image URLs.
+
 ## Error Handling
 
 The SDK throws subclasses of `XTwitterScraper\Core\Exceptions\APIException`.

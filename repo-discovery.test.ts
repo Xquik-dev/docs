@@ -263,6 +263,21 @@ const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
   'Tweet search costs 1 credit per tweet returned.',
   'Write `$page->tweets` as JSON Lines for queues and data lakes',
   'transform the same rows into CSV for analysts',
+  '## Workflow: Post Image Tweets and DM Attachments',
+  '`$client->x->tweets->create()`',
+  '`POST /x/tweets`',
+  '`media`',
+  '`replyToTweetID`',
+  '`$tweet->tweetID`',
+  '`$reply->tweetID`',
+  '`$client->x->media->upload()`',
+  '`POST /x/media`',
+  '`$media->mediaID`',
+  '`mediaIDs`',
+  '`$client->x->dm->send()`',
+  '`$dm->messageID`',
+  'Each tweet or reply write costs 10 credits.',
+  'Do not pass uploaded `$media->mediaID` values to `$client->x->tweets->create()`',
 ] as const;
 
 const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
