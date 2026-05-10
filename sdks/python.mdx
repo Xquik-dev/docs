@@ -128,24 +128,42 @@ with csv_output.open("w", newline="", encoding="utf-8") as csv_file, jsonl_outpu
 
 The method accepts the same query inputs as the REST endpoint:
 
-| Python argument | REST query parameter | Use it for |
-| --- | --- | --- |
-| `q` | `q` | Required X search query with keywords, handles, hashtags, or operators. |
-| `limit` | `limit` | Page size from 1 to 200. Remaining credits can lower the returned count. |
-| `cursor` | `cursor` | Opaque cursor from `page.next_cursor` for the next page. |
-| `since_time` | `sinceTime` | ISO 8601 lower time bound. |
-| `until_time` | `untilTime` | ISO 8601 upper time bound. |
-| `query_type` | `queryType` | `Latest` for chronological results or `Top` for engagement-ranked results. |
+<CardGroup cols={2}>
+  <Card title="q" icon="search">
+    Python argument `q` maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.
+  </Card>
+  <Card title="limit" icon="list">
+    Python argument `limit` maps to REST `limit`. Use it for the page size from 1 to 200. Remaining credits can lower the returned count.
+  </Card>
+  <Card title="cursor" icon="arrow-right">
+    Python argument `cursor` maps to REST `cursor`. Pass the opaque cursor from `page.next_cursor` to request the next page.
+  </Card>
+  <Card title="since_time" icon="clock">
+    Python argument `since_time` maps to REST `sinceTime`. Use it as the ISO 8601 lower time bound.
+  </Card>
+  <Card title="until_time" icon="clock">
+    Python argument `until_time` maps to REST `untilTime`. Use it as the ISO 8601 upper time bound.
+  </Card>
+  <Card title="query_type" icon="sliders-horizontal">
+    Python argument `query_type` maps to REST `queryType`. Use `Latest` for chronological results or `Top` for engagement-ranked results.
+  </Card>
+</CardGroup>
 
 ## Returned Data & Handoff
 
 `client.x.tweets.search` returns a `PaginatedTweets` Pydantic model:
 
-| Python field | JSON field | Handoff value |
-| --- | --- | --- |
-| `page.tweets` | `tweets` | List of `SearchTweet` records. Each tweet includes `id`, `text`, optional `author`, `created_at`, `like_count`, `reply_count`, `retweet_count`, `quote_count`, `bookmark_count`, `view_count`, and `is_note_tweet` when available. |
-| `page.has_next_page` | `has_next_page` | Boolean that tells your script whether another page exists. |
-| `page.next_cursor` | `next_cursor` | Cursor to store with the job checkpoint and pass back as `cursor`. |
+<CardGroup cols={2}>
+  <Card title="page.tweets" icon="message-square-text">
+    JSON field `tweets`. Contains `SearchTweet` records with `id`, `text`, optional `author`, `created_at`, `like_count`, `reply_count`, `retweet_count`, `quote_count`, `bookmark_count`, `view_count`, and `is_note_tweet` when available.
+  </Card>
+  <Card title="page.has_next_page" icon="circle-check">
+    Python field `page.has_next_page`. JSON field `has_next_page`. Tells your script whether another page exists.
+  </Card>
+  <Card title="page.next_cursor" icon="arrow-right">
+    JSON field `next_cursor`. Store it with the job checkpoint and pass it back as `cursor`.
+  </Card>
+</CardGroup>
 
 Write `page.tweets` to CSV for analysts. Write JSON Lines for queues and data lakes to `xquik-tweet-search.jsonl` with `tweet.to_json(indent=None)`, or use `.to_dict()` records before loading a warehouse. Load the projected rows into pandas or openpyxl when account teams need an XLSX workbook. Pass `id`, `text`, `author.username`, `created_at`, and engagement counts to a CRM or enrichment job.
 
@@ -216,15 +234,29 @@ The client retries connection errors, 408, 409, 429, and 5xx responses by defaul
 
 All SDK exceptions inherit from `x_twitter_scraper.APIError`.
 
-| Status | Error class |
-| --- | --- |
-| 400 | `BadRequestError` |
-| 401 | `AuthenticationError` |
-| 403 | `PermissionDeniedError` |
-| 404 | `NotFoundError` |
-| 422 | `UnprocessableEntityError` |
-| 429 | `RateLimitError` |
-| 5xx | `InternalServerError` |
+<CardGroup cols={2}>
+  <Card title="400 Bad Request" icon="triangle-alert">
+    Throws `BadRequestError`.
+  </Card>
+  <Card title="401 Unauthenticated" icon="lock">
+    Throws `AuthenticationError`.
+  </Card>
+  <Card title="403 Permission Denied" icon="shield">
+    Throws `PermissionDeniedError`.
+  </Card>
+  <Card title="404 Not Found" icon="circle-x">
+    Throws `NotFoundError`.
+  </Card>
+  <Card title="422 Unprocessable Entity" icon="file-warning">
+    Throws `UnprocessableEntityError`.
+  </Card>
+  <Card title="429 Rate Limited" icon="gauge">
+    Throws `RateLimitError`.
+  </Card>
+  <Card title="5xx Server Error" icon="server">
+    Throws `InternalServerError`.
+  </Card>
+</CardGroup>
 
 ```python
 import x_twitter_scraper

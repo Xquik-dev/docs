@@ -174,10 +174,14 @@ const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
   '`since_time`',
   '`until_time`',
   '`query_type`',
+  'Python argument `q` maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.',
+  'Python argument `cursor` maps to REST `cursor`. Pass the opaque cursor from `page.next_cursor` to request the next page.',
   '`PaginatedTweets`',
   '`page.tweets`',
   '`page.has_next_page`',
   '`page.next_cursor`',
+  'JSON field `tweets`. Contains `SearchTweet` records with `id`, `text`, optional `author`, `created_at`, `like_count`, `reply_count`, `retweet_count`, `quote_count`, `bookmark_count`, `view_count`, and `is_note_tweet` when available.',
+  'JSON field `next_cursor`. Store it with the job checkpoint and pass it back as `cursor`.',
   'Tweet search costs 1 credit per tweet returned.',
   'Write `page.tweets` to CSV for analysts',
   'JSON Lines for queues and data lakes',
@@ -193,6 +197,9 @@ const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
   '`media_ids`',
   '`dm.message_id`',
   'Do not pass uploaded `media.media_id` values to `client.x.tweets.create`',
+  'Throws `BadRequestError`.',
+  'Throws `RateLimitError`.',
+  'Throws `InternalServerError`.',
 ] as const;
 
 const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
