@@ -858,6 +858,16 @@ const REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
   'Non-HTTPS URLs return `422 media_download_failed`.',
   'Private or reserved IP targets are rejected.',
   'Slow origins can time out before upload starts.',
+  '### JSON Lines handoff',
+  '`xquik-media-handoff.jsonl`',
+  '"record_type":"media_upload"',
+  '"record_type":"tweet_media_post"',
+  '"record_type":"dm_media_send"',
+  '"tweet_media_field":"media"',
+  '"dm_media_field":"media_ids[0]"',
+  '"handoff_format":"jsonl"',
+  'Use `media_url` for tweet and reply `media` arrays. Use `media_id` for the single DM `media_ids` item.',
+  'Store upload, tweet/reply, or DM handoff rows in `xquik-media-handoff.jsonl` with `media_id` and `media_url`.',
 ] as const;
 
 const REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [

@@ -122,6 +122,18 @@ curl -X POST https://xquik.com/api/v1/x/dm/44196397 \
 
 DMs accept exactly one uploaded media item. Send no `media_ids` field for text-only DMs.
 
+### JSON Lines handoff
+
+For queues, CRM syncs, warehouse loads, or agent memory, write one record per upload and downstream write to `xquik-media-handoff.jsonl`.
+
+```json
+{"record_type":"media_upload","account":"myxhandle","source":"https://example.com/image.png","media_id":"1893726451023847424","media_url":"https://media.xquik.com/uploads/1893726451023847424.png","media_id_expires_in_hours":24,"tweet_media_field":"media","dm_media_field":"media_ids[0]","handoff_format":"jsonl"}
+{"record_type":"tweet_media_post","account":"myxhandle","tweet_id":"1895432178065391234","reply_to_tweet_id":"1893704267862470862","media_url":"https://media.xquik.com/uploads/1893726451023847424.png","write_status":"posted","handoff_format":"jsonl"}
+{"record_type":"dm_media_send","account":"myxhandle","recipient_user_id":"44196397","message_id":"1893726451029384192","media_id":"1893726451023847424","write_status":"sent","handoff_format":"jsonl"}
+```
+
+Use `media_url` for tweet and reply `media` arrays. Use `media_id` for the single DM `media_ids` item.
+
 ## Step 4: Upload a local file
 
 Use multipart upload when your app has the file bytes. Supported formats are AVIF, GIF, JPEG, PNG, WebP, and MP4.
@@ -162,6 +174,7 @@ Upload media costs 10 credits per upload call. Posting the tweet, posting the re
 | Tweet workflow | Save `mediaUrl` and pass it to `POST /x/tweets` as `media`. |
 | Reply workflow | Save the parent tweet ID, `mediaUrl`, returned `tweetId`, and any `writeActionId`. |
 | DM workflow | Save `mediaId` and pass it to `POST /x/dm/{userId}` as one `media_ids` item. |
+| JSON Lines | Store upload, tweet/reply, or DM handoff rows in `xquik-media-handoff.jsonl` with `media_id` and `media_url`. |
 | Agent workflow | Prefer JSON URL upload when the agent produces a hosted image URL. |
 | File workflow | Prefer multipart upload when your app owns the file bytes. |
 
