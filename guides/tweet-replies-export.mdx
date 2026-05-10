@@ -100,6 +100,35 @@ curl -X GET "https://xquik.com/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234
   -o tweet-replies.xlsx
 ```
 
+```bash
+curl -X GET "https://xquik.com/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=json" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -o tweet-replies.json
+```
+
+### Saved export JSON Lines handoff
+
+Use this after `format=json` when a warehouse, queue, CRM, or AI agent needs one reply per line with stable field names.
+
+```bash
+jq -c --arg extraction_id "a1b2c3d4-e5f6-7890-abcd-ef1234567890" \
+  '.[] | {
+    job: "reply_export",
+    extraction_id: $extraction_id,
+    reply_tweet_id: .tweetId,
+    reply_text: .tweetText,
+    reply_author_id: .xUserId,
+    reply_author_username: .xUsername,
+    created_at: .tweetCreatedAt,
+    conversation_id: .conversationId,
+    like_count: .likeCount,
+    reply_count: .replyCount,
+    quote_count: .quoteCount,
+    view_count: .viewCount,
+    handoff_format: "jsonl"
+  }' tweet-replies.json > tweet-replies.jsonl
+```
+
 ## Direct replies API
 
 Use `GET /x/tweets/{id}/replies` when you need a paginated API response instead of a stored extraction job.
@@ -183,7 +212,7 @@ Handle common errors before retrying:
 | Handoff | Use |
 |---------|-----|
 | Spreadsheet | Export `format=csv` or `format=xlsx` |
-| App ingestion | Export `format=json` or paginate `GET /extractions/{id}` |
+| App ingestion | Export `format=json`, convert to `tweet-replies.jsonl`, or paginate `GET /extractions/{id}` |
 | Cost control | Set `resultsLimit` on both estimate and create calls |
 | Real-time replies | Create an account or keyword monitor with `tweet.reply` events |
 
