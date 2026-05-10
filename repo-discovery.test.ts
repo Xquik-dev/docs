@@ -1901,6 +1901,9 @@ const FORBIDDEN_STALE_CREDIT_COST_SNIPPETS = [
 const EXPECTED_OPENAPI_OPERATION_COUNT = 120;
 
 const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
+  '100+ REST API endpoints',
+  '100+ API endpoints',
+  '100+ endpoints',
   '118 REST operations',
   '118 REST API operations',
   '118 REST endpoints',
@@ -1908,6 +1911,11 @@ const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
   '118 documented operations',
   '118 documented REST API operations',
   '118 endpoint pages',
+  '32 pay-per-use',
+  '32 read-only endpoints',
+  '32 X-API endpoints',
+  '32 MPP',
+  '32 pay-per-call',
 ] as const;
 
 const MAX_LLMS_TXT_CHARS = 48_000;
