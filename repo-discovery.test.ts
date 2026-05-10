@@ -132,6 +132,7 @@ const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
 
 const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
   '## Workflow: Search Tweets to JSON Lines',
+  '## Workflow: Post Image Tweets, Replies, and DM Attachments',
   '`x-twitter-scraper x:tweets search`',
   '`GET /x/tweets/search`',
   '`--q`',
@@ -147,9 +148,18 @@ const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
   'Tweet search costs 1 credit per tweet returned.',
   'Write one JSON object per line for downstream jobs',
   '`--format-error json`',
+  '`x-twitter-scraper x:tweets create`',
+  '`--media`',
+  '`--reply-to-tweet-id`',
+  'store `writeActionId` and poll `GET /x/write-actions/{id}`',
   '`x-twitter-scraper x:users retrieve-followers`',
   '`x-twitter-scraper x:media upload`',
+  '`--file`',
+  '`--transform mediaId`',
   '`x-twitter-scraper x:dm send`',
+  '`--media-id`',
+  'DMs accept exactly 1 uploaded media ID.',
+  'Do not pass uploaded `mediaId` values to `x:tweets create`',
 ] as const;
 
 const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [

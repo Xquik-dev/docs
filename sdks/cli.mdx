@@ -96,6 +96,54 @@ Tweet search costs 1 credit per tweet returned. If remaining credits cannot cove
 
 For CSV or XLSX handoff, keep `tweets.jsonl` as the source of truth and convert it in your pipeline. For example, a Python step can load each JSON Lines row and write selected columns to CSV for analysts, or to XLSX for account management workflows.
 
+## Workflow: Post Image Tweets, Replies, and DM Attachments
+
+Use this workflow when an operator, support queue, or agent needs to publish an image-backed tweet, reply with an image, or send one media attachment in a DM from a connected X account.
+
+Tweet and reply image posts use public media URLs directly on `x:tweets create`. Do not upload first when you already have public image URLs.
+
+```bash
+x-twitter-scraper x:tweets create \
+  --account @xquikcom \
+  --text "New export workflow is live." \
+  --media https://example.com/export-preview.png \
+  --format json > posted-tweet.json
+```
+
+To reply with media, add the parent tweet ID. The `--reply-to-tweet-id` flag maps to `reply_to_tweet_id`, and `--media` maps to the public URL array on `POST /x/tweets`.
+
+```bash
+x-twitter-scraper x:tweets create \
+  --account @xquikcom \
+  --text "Here is the requested screenshot." \
+  --reply-to-tweet-id 1893704267862470862 \
+  --media https://example.com/export-preview.png \
+  --format json > posted-reply.json
+```
+
+The response returns `tweetId` and `success`. If the API returns `202 x_write_unconfirmed`, store `writeActionId` and poll `GET /x/write-actions/{id}` before sending another write. Each create-tweet call costs 10 credits.
+
+Use `x:media upload` when you need an uploaded media ID for a DM attachment. The CLI upload command accepts a local file through `--file`; `--transform mediaId` extracts the upload response ID for scripts.
+
+```bash
+media_id="$(x-twitter-scraper x:media upload \
+  --account @xquikcom \
+  --file ./handoff.png \
+  --transform mediaId \
+  --raw-output)"
+
+x-twitter-scraper x:dm send \
+  --account @xquikcom \
+  --user-id 44196397 \
+  --text "Here is the asset." \
+  --media-id "$media_id" \
+  --format json > sent-dm.json
+```
+
+The `--media-id` flag maps to the REST `media_ids` body field. DMs accept exactly 1 uploaded media ID. Store `messageId` from the DM response on the support ticket, CRM record, queue job, or agent memory. Uploading media costs 10 credits, and sending the DM costs 10 credits.
+
+Do not pass uploaded `mediaId` values to `x:tweets create`; that command uses `--media` with public image URLs.
+
 ## Useful Commands
 
 | Job | CLI command | Returned data |
@@ -104,9 +152,9 @@ For CSV or XLSX handoff, keep `tweets.jsonl` as the source of truth and convert 
 | Fetch one tweet | `x-twitter-scraper x:tweets retrieve` | Full tweet text, author, metrics, media, quoted tweet, retweeted tweet |
 | Get tweet replies | `x-twitter-scraper x:tweets get-replies` | Reply tweets plus cursor fields |
 | Export followers | `x-twitter-scraper x:users retrieve-followers` | User profiles, follower counts, cursor fields |
-| Upload media | `x-twitter-scraper x:media upload` | Media ID and upload metadata for a later post |
-| Post a tweet or reply | `x-twitter-scraper x:tweets create` | Created tweet ID and write status |
-| Send a direct message | `x-twitter-scraper x:dm send` | Direct message result and write status |
+| Post a tweet or reply | `x-twitter-scraper x:tweets create` | `tweetId` and `success`, or `writeActionId` when confirmation is pending |
+| Upload media for a DM attachment | `x-twitter-scraper x:media upload` | `mediaId` for one-item DM `media_ids`, `mediaUrl` for tweet `media` URL handoff |
+| Send a direct message | `x-twitter-scraper x:dm send` | `messageId` and `success` |
 
 Use `--format json` for scripts, `--format yaml` for readable operations output, and `--transform` with GJSON syntax when you only need one field from the response.
 
