@@ -132,6 +132,24 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   `webhook.test` is sent only by the [Test Webhook](/api-reference/webhooks/test) endpoint. It is not a subscribable `eventTypes` value.
 </Note>
 
+## Integration handoff
+
+Use this endpoint after creating an account monitor with [`POST /monitors`](/api-reference/monitors/create) or a keyword monitor with [`POST /monitors/keywords`](/api-reference/monitors/create-keyword). The webhook stores the HTTPS endpoint and event-type filter. Active monitors produce the events; webhook delivery is included with monitor billing.
+
+Store these fields immediately after creation:
+
+| Field | Store it for |
+| --- | --- |
+| `id` | Testing with `POST /webhooks/{id}/test`, updating, deleting, and listing deliveries |
+| `url` | Auditing which queue, CRM, warehouse, or app endpoint receives events |
+| `eventTypes` | Verifying that the webhook subscribes to the same event types as the monitor |
+| `secret` | Verifying `X-Xquik-Signature`; returned only once |
+| `createdAt` | Audit logs and configuration drift checks |
+
+Every delivery is an HTTPS `POST` with JSON body and `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` headers. Production payloads include `eventType`, `schemaVersion`, `deliveryId`, `streamEventId`, `occurredAt`, `data`, and either `username` for account monitors or `query` for keyword monitors. Use `deliveryId` as the per-endpoint idempotency key and `streamEventId` when one monitor event must be processed once across retries or endpoints.
+
+Test the endpoint with [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) before routing production events. Return a `2xx` response within 10 seconds, then process slow Slack, CRM, warehouse, or queue work asynchronously. Use [Signature Verification](/webhooks/verification) to validate the raw request body before processing.
+
 ## Response
 
 <Tabs>

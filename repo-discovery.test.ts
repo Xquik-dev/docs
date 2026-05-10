@@ -634,6 +634,22 @@ const REQUIRED_WEBHOOK_TESTING_SNIPPETS = [
   'For end-to-end verification of the configured webhook URL, prefer `POST /webhooks/{id}/test`.',
 ] as const;
 
+const REQUIRED_WEBHOOK_CREATE_API_SNIPPETS = [
+  '## Integration handoff',
+  'Use this endpoint after creating an account monitor with [`POST /monitors`](/api-reference/monitors/create) or a keyword monitor with [`POST /monitors/keywords`](/api-reference/monitors/create-keyword).',
+  'Active monitors produce the events; webhook delivery is included with monitor billing.',
+  '| `id` | Testing with `POST /webhooks/{id}/test`, updating, deleting, and listing deliveries |',
+  '| `secret` | Verifying `X-Xquik-Signature`; returned only once |',
+  '| `createdAt` | Audit logs and configuration drift checks |',
+  '`X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` headers',
+  '`eventType`, `schemaVersion`, `deliveryId`, `streamEventId`, `occurredAt`, `data`',
+  '`username` for account monitors or `query` for keyword monitors',
+  'Use `deliveryId` as the per-endpoint idempotency key',
+  '`streamEventId` when one monitor event must be processed once across retries or endpoints.',
+  'Return a `2xx` response within 10 seconds',
+  '[Signature Verification](/webhooks/verification)',
+] as const;
+
 const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
   'if (!verifyWebhook(req, WEBHOOK_SECRET))',
   'if not verify_webhook(request, WEBHOOK_SECRET):',
@@ -2108,9 +2124,18 @@ describe('repository discovery', (): void => {
     const overview = readFileSync('webhooks/overview.mdx', 'utf8');
     const verification = readFileSync('webhooks/verification.mdx', 'utf8');
     const architecture = readFileSync('guides/architecture.mdx', 'utf8');
+    const createWebhookApi = readFileSync(
+      'api-reference/webhooks/create.mdx',
+      'utf8',
+    );
 
     expect(
       [
+        ...collectSnippetFindings(
+          createWebhookApi,
+          'Create webhook API docs',
+          REQUIRED_WEBHOOK_CREATE_API_SNIPPETS,
+        ),
         ...collectSnippetFindings(
           overview,
           'Webhook overview',
