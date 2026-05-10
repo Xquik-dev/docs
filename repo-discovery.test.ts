@@ -1901,21 +1901,21 @@ const FORBIDDEN_STALE_CREDIT_COST_SNIPPETS = [
 const EXPECTED_OPENAPI_OPERATION_COUNT = 120;
 
 const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
-  '100+ REST API endpoints',
-  '100+ API endpoints',
-  '100+ endpoints',
-  '118 REST operations',
-  '118 REST API operations',
-  '118 REST endpoints',
-  '118 API endpoints',
-  '118 documented operations',
-  '118 documented REST API operations',
-  '118 endpoint pages',
-  '32 pay-per-use',
-  '32 read-only endpoints',
-  '32 X-API endpoints',
-  '32 MPP',
-  '32 pay-per-call',
+  ['100+', 'REST', 'API', 'endpoints'].join(' '),
+  ['100+', 'API', 'endpoints'].join(' '),
+  ['100+', 'endpoints'].join(' '),
+  ['118', 'REST', 'operations'].join(' '),
+  ['118', 'REST', 'API', 'operations'].join(' '),
+  ['118', 'REST', 'endpoints'].join(' '),
+  ['118', 'API', 'endpoints'].join(' '),
+  ['118', 'documented', 'operations'].join(' '),
+  ['118', 'documented', 'REST', 'API', 'operations'].join(' '),
+  ['118', 'endpoint', 'pages'].join(' '),
+  ['32', 'pay-per-use'].join(' '),
+  ['32', 'read-only', 'endpoints'].join(' '),
+  ['32', 'X-API', 'endpoints'].join(' '),
+  ['32', 'MPP'].join(' '),
+  ['32', 'pay-per-call'].join(' '),
 ] as const;
 
 const MAX_LLMS_TXT_CHARS = 48_000;
