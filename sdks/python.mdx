@@ -1,17 +1,17 @@
 ---
 title: Python SDK
 sidebarTitle: Python
-description: Install and use the official Xquik Python SDK for sync and async X API workflows.
-keywords: ["Python SDK", "Twitter scraper Python", "X API Python", "async SDK"]
+description: Use the Xquik Python SDK to search tweets, export CSV, JSON Lines, or XLSX, post tweets, upload media, send DMs, and build X API workers.
+keywords: ["Python SDK", "Twitter scraper Python", "X API Python", "tweet search Python", "CSV export", "JSON export", "XLSX export", "async SDK"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the Python SDK for typed sync or async access to Xquik from scripts, workers, notebooks, and backend services.
+Use the Python SDK for typed sync or async access to Xquik from scripts, notebooks, workers, agent tools, and backend services.
 
-Use this page when you need Python to search tweets, scrape tweets to CSV or JSON, export followers, upload media, send direct messages, monitor tweets, or hand X data to pandas, a warehouse, a queue, or an agent workflow.
+Use this page when you need Python to search tweets, scrape tweets to CSV, JSON Lines, or XLSX, export followers, post tweets, upload media, send direct messages, monitor tweets, or hand X data to pandas, a warehouse, a queue, CRM, or an agent workflow.
 
 ## Install
 
@@ -63,9 +63,9 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-## Workflow: Search Tweets to CSV
+## Workflow: Search Tweets to CSV, JSON Lines, or XLSX
 
-This job is for data scripts, notebooks, and scheduled workers that need tweet search results in a file analysts can open. It calls `GET /x/tweets/search` through `client.x.tweets.search`, uses the generated `TweetSearchParams` shape, and writes one CSV row per returned tweet.
+This job is for data scripts, notebooks, scheduled workers, and agent tools that need tweet search results in a durable handoff file. It calls `GET /x/tweets/search` through `client.x.tweets.search`, uses the generated `TweetSearchParams` shape, and writes analyst-friendly CSV plus JSON Lines for queues, warehouses, and replayable processing.
 
 ```python
 import csv
@@ -74,12 +74,16 @@ from pathlib import Path
 from x_twitter_scraper import XTwitterScraper
 
 client = XTwitterScraper()
-output = Path("xquik-tweet-search.csv")
+csv_output = Path("xquik-tweet-search.csv")
+jsonl_output = Path("xquik-tweet-search.jsonl")
 cursor = None
 
-with output.open("w", newline="", encoding="utf-8") as file:
+with csv_output.open("w", newline="", encoding="utf-8") as csv_file, jsonl_output.open(
+    "w",
+    encoding="utf-8",
+) as jsonl_file:
     writer = csv.DictWriter(
-        file,
+        csv_file,
         fieldnames=[
             "id",
             "text",
@@ -103,19 +107,19 @@ with output.open("w", newline="", encoding="utf-8") as file:
         )
 
         for tweet in page.tweets:
-            writer.writerow(
-                {
-                    "id": tweet.id,
-                    "text": tweet.text,
-                    "author_username": tweet.author.username if tweet.author else "",
-                    "created_at": tweet.created_at or "",
-                    "like_count": tweet.like_count or 0,
-                    "reply_count": tweet.reply_count or 0,
-                    "retweet_count": tweet.retweet_count or 0,
-                    "quote_count": tweet.quote_count or 0,
-                    "view_count": tweet.view_count or 0,
-                }
-            )
+            row = {
+                "id": tweet.id,
+                "text": tweet.text,
+                "author_username": tweet.author.username if tweet.author else "",
+                "created_at": tweet.created_at or "",
+                "like_count": tweet.like_count or 0,
+                "reply_count": tweet.reply_count or 0,
+                "retweet_count": tweet.retweet_count or 0,
+                "quote_count": tweet.quote_count or 0,
+                "view_count": tweet.view_count or 0,
+            }
+            writer.writerow(row)
+            jsonl_file.write(tweet.to_json(indent=None) + "\n")
 
         if not page.has_next_page or not page.next_cursor:
             break
@@ -143,7 +147,7 @@ The method accepts the same query inputs as the REST endpoint:
 | `page.has_next_page` | `has_next_page` | Boolean that tells your script whether another page exists. |
 | `page.next_cursor` | `next_cursor` | Cursor to store with the job checkpoint and pass back as `cursor`. |
 
-Write `page.tweets` to CSV for analysts, call `.to_json()` for JSON export, call `.to_dict()` before loading a warehouse, or pass `id`, `text`, `author.username`, `created_at`, and engagement counts to a CRM or enrichment job.
+Write `page.tweets` to CSV for analysts. Write JSON Lines for queues and data lakes to `xquik-tweet-search.jsonl` with `tweet.to_json(indent=None)`, or use `.to_dict()` records before loading a warehouse. Load the projected rows into pandas or openpyxl when account teams need an XLSX workbook. Pass `id`, `text`, `author.username`, `created_at`, and engagement counts to a CRM or enrichment job.
 
 ## Workflow: Post Image Tweets and DM Attachments
 
@@ -248,6 +252,10 @@ if page.has_next_page:
 
 ## Webhooks & References
 
+- [Search Tweets](/api-reference/x/search-tweets)
+- [Create Tweet](/api-reference/x-write/create-tweet)
+- [Upload Media](/api-reference/x-write/upload-media)
+- [Send Direct Message](/api-reference/x-write/send-dm)
 - [Webhook Overview](/webhooks/overview)
 - [Verify HMAC Signatures](/webhooks/verification)
 - [REST API Overview](/api-reference/overview)

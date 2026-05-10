@@ -131,7 +131,7 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
-  '## Workflow: Search Tweets to CSV',
+  '## Workflow: Search Tweets to CSV, JSON Lines, or XLSX',
   '## Workflow: Post Image Tweets and DM Attachments',
   '`client.x.tweets.search`',
   '`GET /x/tweets/search`',
@@ -148,7 +148,10 @@ const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
   '`page.next_cursor`',
   'Tweet search costs 1 credit per tweet returned.',
   'Write `page.tweets` to CSV for analysts',
-  'call `.to_json()` for JSON export',
+  'JSON Lines for queues and data lakes',
+  '`tweet.to_json(indent=None)`',
+  'Load the projected rows into pandas or openpyxl when account teams need an XLSX workbook.',
+  '`xquik-tweet-search.jsonl`',
   '`client.x.tweets.create`',
   '`reply_to_tweet_id`',
   '`media` with public image URLs',
