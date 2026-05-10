@@ -1894,8 +1894,26 @@ const FORBIDDEN_PUBLIC_APIFY_MARKETPLACE_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_STALE_CREDIT_COST_SNIPPETS = [
-  'Credits are deducted per API call (1-10 credits depending on the operation).',
-  'Each operation costs 1-10 credits depending on the endpoint.',
+  [
+    'Credits',
+    'are',
+    'deducted',
+    'per',
+    'API',
+    'call',
+    '(1-10',
+    'credits',
+  ].join(' '),
+  ['Each', 'operation', 'costs', '1-10', 'credits'].join(' '),
+  [
+    'The',
+    'API',
+    'uses',
+    'credit-based',
+    'billing',
+    '(1-10',
+    'credits',
+  ].join(' '),
 ] as const;
 
 const EXPECTED_OPENAPI_OPERATION_COUNT = 120;
