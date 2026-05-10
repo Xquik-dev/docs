@@ -70,6 +70,27 @@ const REQUIRED_QUICKSTART_SNIPPETS = [
   '"nextBillingAt": "2026-02-24T10:30:00.000Z"',
 ] as const;
 
+const REQUIRED_SDK_OVERVIEW_SNIPPETS = [
+  'tweet search exports',
+  'JSON Lines, CSV, or XLSX',
+  '`xquik-tweet-search.jsonl`',
+  '[TypeScript](/sdks/typescript)',
+  '[Python](/sdks/python)',
+  '[Go](/sdks/go)',
+  '[CLI](/sdks/cli)',
+  '[Search Tweets](/api-reference/x/search-tweets)',
+  '[Create Tweet](/api-reference/x-write/create-tweet)',
+  '[Upload Media](/api-reference/x-write/upload-media)',
+  '[Send Direct Message](/api-reference/x-write/send-dm)',
+  'public image URLs',
+  'one-item `media_ids`',
+  'Tweet search costs 1 credit per tweet returned.',
+  'Each tweet or reply write costs 10 credits.',
+  'Media upload and DM send calls each cost 10 credits.',
+  'Active instant monitors cost 21 credits per active monitor-hour.',
+  '[MCP Server](/mcp/overview)',
+] as const;
+
 const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
   '## Workflow: Search Tweets to JSON Lines, CSV, or XLSX',
   '## Workflow: Post Image Tweets and DM Attachments',
@@ -1974,6 +1995,20 @@ describe('repository discovery', (): void => {
         quickstart,
         'Quickstart',
         REQUIRED_QUICKSTART_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the SDK overview useful for choosing SDK, CLI, and MCP handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('sdks.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'SDK overview docs',
+        REQUIRED_SDK_OVERVIEW_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
