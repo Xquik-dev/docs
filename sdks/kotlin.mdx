@@ -1,15 +1,15 @@
 ---
 title: Kotlin SDK
 sidebarTitle: Kotlin
-description: Build and use the official Xquik Kotlin SDK while Maven Central publication is pending.
-keywords: ["Kotlin SDK", "Kotlin Twitter scraper", "X API Kotlin", "JVM SDK", "source build"]
+description: Use the Xquik Kotlin SDK to search tweets, export JSON Lines or CSV, post tweets, upload media, send DMs, and build JVM X API workers.
+keywords: ["Kotlin SDK", "X API Kotlin", "JVM client", "tweet search Kotlin", "Twitter API Kotlin", "JSON export", "source build"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the Kotlin SDK when you want generated JVM models with Kotlin-friendly nullable values, sequences, and suspend-ready client surfaces.
+Use the Kotlin SDK for generated JVM models, Kotlin nullable values, builders, sync calls, async calls, typed exceptions, retries, and file upload helpers. It is useful when a JVM service, Ktor worker, Spring job, queue consumer, or cron task needs to search tweets, scrape tweets to JSON Lines or CSV, export followers, monitor tweets, post tweets, upload media, send direct messages, or hand X API data to analytics and CRM systems.
 
 ## Install
 
@@ -61,6 +61,144 @@ val params: TweetSearchParams = TweetSearchParams.builder()
 val tweets: PaginatedTweets = client.x().tweets().search(params)
 ```
 
+## Workflow: Search Tweets to JSON Lines
+
+Use this workflow when a Kotlin service, scheduled worker, queue consumer, or agent needs tweet search results in a durable handoff file for a data lake, CRM enrichment step, analyst CSV export, or downstream processor.
+
+`client.x().tweets().search` calls `GET /x/tweets/search`. Build `TweetSearchParams` with the same query parameters the REST API accepts: `.q()`, `.limit()`, `.cursor()`, `.sinceTime()`, `.untilTime()`, and `.queryType()`.
+
+```kotlin
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.x_twitter_scraper.api.client.XTwitterScraperClient
+import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient
+import com.x_twitter_scraper.api.models.PaginatedTweets
+import com.x_twitter_scraper.api.models.SearchTweet
+import com.x_twitter_scraper.api.models.x.tweets.TweetSearchParams
+import com.x_twitter_scraper.api.models.x.tweets.TweetSearchParams.QueryType
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Paths
+
+val client: XTwitterScraperClient = XTwitterScraperOkHttpClient.fromEnv()
+val objectMapper = ObjectMapper()
+
+var cursor: String? = null
+Files.newBufferedWriter(Paths.get("tweets.jsonl"), StandardCharsets.UTF_8).use { writer ->
+    do {
+        val builder = TweetSearchParams.builder()
+            .q("from:xquikcom webhook OR SDK")
+            .limit(100L)
+            .queryType(QueryType.LATEST)
+
+        if (!cursor.isNullOrEmpty()) {
+            builder.cursor(cursor)
+        }
+
+        val page: PaginatedTweets = client.x().tweets().search(builder.build())
+
+        for (tweet: SearchTweet in page.tweets()) {
+            val row = linkedMapOf<String, Any?>(
+                "id" to tweet.id(),
+                "text" to tweet.text(),
+                "author_username" to tweet.author()?.username(),
+                "created_at" to tweet.createdAt(),
+                "like_count" to tweet.likeCount(),
+                "reply_count" to tweet.replyCount(),
+                "retweet_count" to tweet.retweetCount(),
+                "quote_count" to tweet.quoteCount(),
+                "view_count" to tweet.viewCount(),
+            )
+
+            writer.write(objectMapper.writeValueAsString(row))
+            writer.newLine()
+        }
+
+        cursor = if (page.hasNextPage()) page.nextCursor() else null
+    } while (!cursor.isNullOrEmpty())
+}
+```
+
+### Request Mapping
+
+| SDK builder method | REST query parameter | Use |
+| --- | --- | --- |
+| `.q()` | `q` | X search query such as `from:username`, a keyword, hashtag, or boolean operator query. |
+| `.limit()` | `limit` | Maximum tweets to return for the page. |
+| `.cursor()` | `cursor` | Opaque cursor from `page.nextCursor()` for the next page. |
+| `.sinceTime()` | `sinceTime` | ISO 8601 lower bound for tweet creation time. |
+| `.untilTime()` | `untilTime` | ISO 8601 upper bound for tweet creation time. |
+| `.queryType()` | `queryType` | `QueryType.LATEST` for chronological search or `QueryType.TOP` for engagement-ranked search. |
+
+### Returned Data & Handoff
+
+`client.x().tweets().search` returns `PaginatedTweets`. Use `page.tweets()` for the tweet list, `page.hasNextPage()` to decide whether another page exists, and `page.nextCursor()` as the checkpoint for the next request.
+
+Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, `createdAt()`, `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, and `viewCount()` when available. Write `page.tweets()` as JSON Lines for queues and data lakes, transform the same records into CSV for analysts, or produce XLSX from the projected rows when account teams need spreadsheets.
+
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For longer workers, set an explicit retry limit and persist `page.nextCursor()` after each page.
+
+## Workflow: Post Image Tweets and DM Attachments
+
+Use this workflow when a Kotlin service needs to publish an image tweet, reply with an image, or send a direct message with an uploaded local file. `client.x().tweets().create` maps to `POST /x/tweets`; pass public image URLs through `.addMedia()` or `.media()`. For replies, set `.replyToTweetId()` to the parent tweet ID. `client.x().media().upload` maps to `POST /x/media`; use `media.mediaId()` only for the one-item DM `.addMediaId()` handoff.
+
+```kotlin
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.x_twitter_scraper.api.client.XTwitterScraperClient
+import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient
+import com.x_twitter_scraper.api.models.x.dm.DmSendParams
+import com.x_twitter_scraper.api.models.x.dm.DmSendResponse
+import com.x_twitter_scraper.api.models.x.media.MediaUploadParams
+import com.x_twitter_scraper.api.models.x.media.MediaUploadResponse
+import com.x_twitter_scraper.api.models.x.tweets.TweetCreateParams
+import com.x_twitter_scraper.api.models.x.tweets.TweetCreateResponse
+import java.nio.file.Paths
+
+val client: XTwitterScraperClient = XTwitterScraperOkHttpClient.fromEnv()
+
+val tweet: TweetCreateResponse = client.x().tweets().create(
+    TweetCreateParams.builder()
+        .account("@xquikcom")
+        .text("Shipping the weekly X API export.")
+        .addMedia("https://static.example.com/reports/x-api-export.png")
+        .build()
+)
+
+val reply: TweetCreateResponse = client.x().tweets().create(
+    TweetCreateParams.builder()
+        .account("@xquikcom")
+        .text("Here is the chart behind the update.")
+        .addMedia("https://static.example.com/reports/reply-chart.png")
+        .replyToTweetId(tweet.tweetId())
+        .build()
+)
+
+val media: MediaUploadResponse = client.x().media().upload(
+    MediaUploadParams.builder()
+        .account("@xquikcom")
+        .file(Paths.get("handoff.png"))
+        .build()
+)
+
+val dm: DmSendResponse = client.x().dm().send(
+    "44196397",
+    DmSendParams.builder()
+        .account("@xquikcom")
+        .text("Here is the requested asset.")
+        .addMediaId(media.mediaId())
+        .build()
+)
+
+val handoff = linkedMapOf<String, Any?>(
+    "tweet_id" to tweet.tweetId(),
+    "reply_tweet_id" to reply.tweetId(),
+    "dm_message_id" to dm.messageId(),
+)
+
+println(ObjectMapper().writeValueAsString(handoff))
+```
+
+Store `tweet.tweetId()` and `reply.tweetId()` on the CMS, queue job, or agent state before scheduling follow-up work. Store `dm.messageId()` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.mediaId()` values to `client.x().tweets().create`; that method uses public image URLs through `media`.
+
 ## Error Handling
 
 The Kotlin SDK uses the same generated exception hierarchy as the Java SDK.
@@ -90,6 +228,9 @@ if (tweets.hasNextPage()) {
 ## Webhooks & References
 
 - [Search Tweets](/api-reference/x/search-tweets)
+- [Create Tweet](/api-reference/x-write/create-tweet)
+- [Upload Media](/api-reference/x-write/upload-media)
+- [Send Direct Message](/api-reference/x-write/send-dm)
 - [Create Monitor](/api-reference/monitors/create)
 - [Webhook Overview](/webhooks/overview)
 - [Verify HMAC Signatures](/webhooks/verification)
