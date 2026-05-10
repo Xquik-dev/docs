@@ -19,6 +19,17 @@ Use this workflow when a research, sales, support, or monitoring system needs tw
 | Read the latest search page only | `GET /x/tweets/search` |
 | Control cost before scraping | `resultsLimit` on estimate and create requests |
 
+## Choose the right path
+
+| Job | Endpoint path | Use this when |
+|-----|---------------|---------------|
+| Saved tweet search export | `POST /extractions/estimate`, then `POST /extractions` | You need a reusable job ID, cost preview, CSV, JSON, or XLSX download. |
+| Paginated extraction rows | `GET /extractions/{id}?limit=1000&after={nextCursor}` | You want saved results as JSON pages for a CRM, warehouse, queue, or agent. |
+| Live direct API page | `GET /x/tweets/search?q={query}&limit={n}` | You need the latest matching tweets without a stored extraction job. |
+| Shell or SDK handoff | [CLI](/sdks/cli), [TypeScript](/sdks/typescript), [Python](/sdks/python), or [Go](/sdks/go) | You want code-owned JSON Lines, CSV, or XLSX files such as `xquik-tweet-search.jsonl`. |
+
+Use extraction jobs for repeatable exports and audit trails. Use the direct API for low-latency pages or small app handoffs.
+
 ## Data you get
 
 Tweet search exports include base user fields, tweet fields, engagement counts, and metadata when available.
@@ -89,7 +100,7 @@ Use the paginated response when your app wants JSON rows instead of a file downl
 
 ## Step 4: Export CSV, JSON, or XLSX
 
-Exports are free after the extraction job exists. Use CSV for spreadsheets, JSON for app ingestion, and XLSX for analyst handoff.
+Exports are free after the extraction job exists. Use CSV for spreadsheets, JSON for app ingestion, and XLSX for analyst handoff. CSV, JSON, and XLSX exports are capped at 100,000 rows.
 
 ```bash
 curl -X GET "https://xquik.com/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=csv" \
@@ -98,10 +109,39 @@ curl -X GET "https://xquik.com/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234
 ```
 
 ```bash
+curl -X GET "https://xquik.com/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=json" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -o tweet-search.json
+```
+
+```bash
 curl -X GET "https://xquik.com/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=xlsx" \
   -H "x-api-key: xq_YOUR_KEY_HERE" \
   -o tweet-search.xlsx
 ```
+
+## Step 5: Hand off rows
+
+For API handoff, call `GET /extractions/{id}` with `limit` up to `1000` and pass `nextCursor` as `after` until `hasMore` is `false`. Store `job`, `results`, `hasMore`, and `nextCursor`.
+
+Normalize each tweet row before sending it downstream:
+
+```json
+{
+  "job": "tweet_search_export",
+  "search_query": "launch announcement",
+  "result_id": "b2c3d4e5-f6a1-7890-abcd-ef2345678901",
+  "tweet_id": "1893710452812718080",
+  "tweet_text": "We launched the new workflow today.",
+  "tweet_created_at": "2026-05-01T10:05:00.000Z",
+  "author_user_id": "44196397",
+  "author_username": "xquikcom",
+  "source": "tweet_search_extractor",
+  "export_format": "json"
+}
+```
+
+For direct API handoff, normalize `tweets[].id`, `tweets[].text`, `tweets[].createdAt`, `tweets[].author.id`, `tweets[].author.username`, `has_next_page`, and `next_cursor`. For JSON Lines, write one normalized tweet object per line to `xquik-tweet-search.jsonl`.
 
 ## Direct tweet search API
 
@@ -121,10 +161,11 @@ The direct search API returns `tweets`, `has_next_page`, and `next_cursor`. Pass
 | Handoff | Use |
 |---------|-----|
 | Spreadsheet | Export `format=csv` or `format=xlsx` |
-| App ingestion | Export `format=json` or paginate `GET /extractions/{id}` |
+| App ingestion | Export `format=json`, paginate `GET /extractions/{id}`, or normalize direct `tweets[]` pages |
+| Queue or data lake | Write normalized rows to `xquik-tweet-search.jsonl` |
 | Cost control | Set `resultsLimit` on both estimate and create calls |
 | Live monitoring | Create an account or keyword monitor with signed webhooks |
 
 <Note>
-  **Related:** [Extraction workflow](/guides/extraction-workflow) &middot; [Create extraction](/api-reference/extractions/create) &middot; [Search tweets](/api-reference/x/search-tweets)
+  **Related:** [Extraction workflow](/guides/extraction-workflow) &middot; [Create extraction](/api-reference/extractions/create) &middot; [Get extraction](/api-reference/extractions/get) &middot; [Search tweets](/api-reference/x/search-tweets) &middot; [SDKs](/sdks)
 </Note>
