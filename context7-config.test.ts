@@ -53,6 +53,12 @@ const REQUIRED_RULE_SNIPPETS = [
   'sdks/',
   'mcp/',
   'webhooks/',
+  'guides/workflows.mdx',
+  'guides/tweet-search-export.mdx',
+  'guides/tweet-replies-export.mdx',
+  'guides/follower-export-crm.mdx',
+  'guides/media-upload-workflow.mdx',
+  'guides/direct-message-workflow.mdx',
 ] as const;
 const REQUIRED_REFRESH_WORKFLOW_SNIPPETS = [
   'CONTEXT7_API_KEY: ${{ secrets.CONTEXT7_API_KEY }}',
