@@ -525,8 +525,12 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   "source: 'xquik_mcp'",
   "job: 'tweet_search'",
   'The server covers 120 operations across 10 categories:',
-  '| **twitter** | 38 |',
-  '| **x-accounts** | 7 |',
+  '<Card title="X data reads" icon="search">',
+  '38 operations in `twitter`: tweet search, tweet and article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, followers, replies, communities, and lists.',
+  '<Card title="X accounts and writes" icon="send">',
+  '25 operations across `x-accounts` and `x-write`: connect accounts, retry connection issues, post tweets, like, retweet, follow, remove followers, send DMs, upload media, update profiles, and manage community membership.',
+  '<Card title="Monitor billing" icon="radio">',
+  'Active instant monitors cost 21 credits per active monitor-hour. Creating monitors requires a subscription and available credits.',
 ] as const;
 
 const FORBIDDEN_MCP_CONTRACT_SNIPPETS = [
