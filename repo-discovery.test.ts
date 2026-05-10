@@ -873,6 +873,26 @@ const REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS = [
   '"message": "Monitor already exists."',
 ] as const;
 
+const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
+  'monitor tweets',
+  'signed webhooks',
+  '## Account monitor handoff',
+  '`POST /monitors`',
+  'queue, CRM, warehouse, Slack alert, or agent',
+  '[`POST /webhooks`](/api-reference/webhooks/create)',
+  '[`POST /webhooks/{id}/test`](/api-reference/webhooks/test)',
+  '`id` | Account monitor ID. Use it as `monitorId` for `GET /events`, updates, pauses, and deletes. |',
+  '`username` | Stored X username after trimming and removing the `@` prefix. |',
+  '`xUserId` | Resolved X user ID. Use it for joins, dedupe, and downstream identity mapping. |',
+  '`eventTypes` | Event filter to match against webhook subscriptions. |',
+  '`deliveryId`, `streamEventId`, `eventType`, `occurredAt`, `username`, and `data`',
+  'Use `deliveryId` for receiver idempotency and `streamEventId` to join back to `GET /events/{id}`.',
+  'Active account monitors check every 1 second and cost 21 credits per active monitor-hour.',
+  'Creation or reactivation requires 22 available credits: 1 credit for the username lookup plus 21 credits for the first active monitor hour.',
+  '`PATCH /monitors/{id}`',
+  '"message": "Monitor already exists."',
+] as const;
+
 const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
   '## Source-backed Zapier scope',
   'API by Zapier',
@@ -2408,6 +2428,20 @@ describe('repository discovery', (): void => {
         source,
         'Create keyword monitor API page',
         REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the account monitor API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/monitors/create.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Create account monitor API page',
+        REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
