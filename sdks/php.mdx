@@ -1,15 +1,15 @@
 ---
 title: PHP SDK
 sidebarTitle: PHP
-description: Use the official Xquik PHP SDK to search tweets, export JSON Lines or CSV, monitor tweets, post tweets, upload media, and build PHP X API workers.
-keywords: ["PHP SDK", "Composer Twitter scraper", "X API PHP", "PHP API client", "tweet search PHP", "Twitter API PHP", "JSON export"]
+description: Use the Xquik PHP SDK to search tweets, export JSON Lines, CSV, or XLSX, post image tweets, upload media, send DMs, and run PHP X API workers.
+keywords: ["PHP SDK", "Composer Twitter scraper", "X API PHP", "PHP API client", "tweet search PHP", "Twitter API PHP", "JSON export", "CSV export", "XLSX export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the PHP SDK for PHP 8.1+ applications with named parameters, generated models, typed exceptions, retries, and file upload helpers. It is useful when a PHP app or worker needs to search tweets, scrape tweets to JSON Lines or CSV, export followers, monitor tweets, post tweets, upload media, send direct messages, or hand X API data to a queue, CRM, or reporting pipeline.
+Use the PHP SDK for PHP 8.1+ applications with named parameters, generated models, typed exceptions, retries, and file upload helpers. It is useful when a PHP app or worker needs to search tweets, scrape tweets to JSON Lines, CSV, or XLSX, export followers, monitor tweets, post image tweets, upload media, send direct messages, or hand X API data to a queue, CRM, or reporting pipeline.
 
 ## Install
 
@@ -41,9 +41,9 @@ $tweets = $client->x->tweets->search(q: 'from:elonmusk', limit: 10);
 var_export($tweets->hasNextPage);
 ```
 
-## Workflow: Search Tweets to JSON Lines
+## Workflow: Search Tweets to JSON Lines, CSV, or XLSX
 
-Use this workflow when a PHP worker, Laravel command, Symfony console command, or cron job needs tweet search results in a durable file for a queue, warehouse loader, analyst CSV export, or CRM enrichment step.
+Use this workflow when a PHP worker, Laravel command, Symfony console command, or cron job needs tweet search results in a durable file for a queue, warehouse loader, analyst CSV export, XLSX workbook, or CRM enrichment step.
 
 `$client->x->tweets->search()` calls `GET /x/tweets/search`. The generated parameter model is `TweetSearchParams`, and the service method exposes the same request controls as named arguments: `q`, `limit`, `cursor`, `sinceTime`, `untilTime`, and `queryType`.
 
@@ -60,10 +60,10 @@ $client = new Client(
 );
 
 $cursor = null;
-$handle = fopen('tweets.jsonl', 'wb');
+$handle = fopen('xquik-tweet-search.jsonl', 'wb');
 
 if (false === $handle) {
-  throw new RuntimeException('Could not open tweets.jsonl');
+  throw new RuntimeException('Could not open xquik-tweet-search.jsonl');
 }
 
 try {
@@ -119,7 +119,7 @@ try {
 
 `$client->x->tweets->search()` returns `PaginatedTweets`. Use `$page->tweets` for the tweet array, `$page->hasNextPage` to decide whether another page exists, and `$page->nextCursor` as the checkpoint for the next request.
 
-Each `SearchTweet` includes typed properties such as `$id`, `$text`, `$author`, `$createdAt`, `$likeCount`, `$replyCount`, `$retweetCount`, `$quoteCount`, and `$viewCount` when available. Write `$page->tweets` as JSON Lines for queues and data lakes, transform the same rows into CSV for analysts, or generate XLSX from the projected rows when account teams need spreadsheets.
+Each `SearchTweet` includes typed properties such as `$id`, `$text`, `$author`, `$createdAt`, `$likeCount`, `$replyCount`, `$retweetCount`, `$quoteCount`, and `$viewCount` when available. Write `$page->tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the same projected rows into CSV for analysts, or generate XLSX from those rows when account teams need a workbook.
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, timeouts, 408, 409, 429, and 5xx responses 2 times by default. For long-running workers, pass `requestOptions: ['maxRetries' => 5]` and persist `$page->nextCursor` after each page.
 
@@ -233,6 +233,9 @@ if ($page->hasNextPage) {
 ## Webhooks & References
 
 - [Search Tweets](/api-reference/x/search-tweets)
+- [Create Tweet](/api-reference/x-write/create-tweet)
+- [Upload Media](/api-reference/x-write/upload-media)
+- [Send Direct Message](/api-reference/x-write/send-dm)
 - [Create Monitor](/api-reference/monitors/create)
 - [Webhook Overview](/webhooks/overview)
 - [Verify HMAC Signatures](/webhooks/verification)
