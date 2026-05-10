@@ -791,6 +791,26 @@ const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   'USD 0.00015 per user returned',
 ] as const;
 
+const REQUIRED_VERIFIED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
+  '## Direct verified followers handoff',
+  '`GET /x/users/{id}/verified-followers`',
+  'CRM, warehouse, scoring, enrichment, or agent workflow',
+  '`verified_follower_explorer`',
+  'CSV/JSON/XLSX file export',
+  '<CardGroup cols={2}>',
+  '<Card title="Verified rows"',
+  '<Card title="Verification signals"',
+  '`users[]`',
+  '`users[].id`',
+  '`x_user_id`',
+  '`users[].username` and `users[].name`',
+  '`users[].verified` and `verifiedType`',
+  '`has_next_page` and `next_cursor`',
+  '1 credit per user returned',
+  '`402 insufficient_credits`',
+  'USD 0.00015 per user returned',
+] as const;
+
 const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   'scrape tweets',
   '## Choose the right path',
@@ -2612,6 +2632,20 @@ describe('repository discovery', (): void => {
         source,
         'Followers API page',
         REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the verified followers API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/verified-followers.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Verified followers API page',
+        REQUIRED_VERIFIED_FOLLOWERS_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
