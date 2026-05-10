@@ -1,8 +1,8 @@
 ---
 title: Ruby SDK
 sidebarTitle: Ruby
-description: Install and use the official Xquik Ruby SDK for typed X API calls.
-keywords: ["Ruby SDK", "Ruby Twitter scraper", "X API Ruby", "Ruby gem"]
+description: Use the Xquik Ruby SDK to search tweets, export CSV, JSON Lines, or XLSX, post tweets, upload media, send DMs, and run Rails or Sidekiq X API jobs.
+keywords: ["Ruby SDK", "Ruby Twitter scraper", "X API Ruby", "tweet search Ruby", "CSV export", "JSON export", "XLSX export", "Ruby gem"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -11,7 +11,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Use the Ruby SDK for Ruby 3.2+ applications that need typed REST access, retries, Yard docs, RBS, RBI, and connection pooling.
 
-Use this page when you need a Ruby app, Rails job, or Sidekiq worker to search tweets, scrape tweets to CSV or JSON, export followers, upload media, send direct messages, monitor tweets, or hand X data to a warehouse, CRM, queue, or agent workflow.
+Use this page when you need a Ruby app, Rails job, or Sidekiq worker to search tweets, scrape tweets to CSV, JSON Lines, or XLSX, export followers, upload media, send direct messages, monitor tweets, or hand X data to a warehouse, CRM, queue, or agent workflow.
 
 ## Install
 
@@ -44,12 +44,13 @@ tweets = client.x.tweets.search(q: "from:elonmusk", limit: 10)
 puts(tweets.has_next_page)
 ```
 
-## Workflow: Search Tweets to CSV
+## Workflow: Search Tweets to CSV, JSON Lines, or XLSX
 
-This job is for Ruby workers that need tweet search results in a file for analysts, CRM import, or downstream enrichment. It calls `GET /x/tweets/search` through `client.x.tweets.search`, uses the generated `XTwitterScraper::X::TweetSearchParams` shape, and writes one CSV row per returned tweet.
+This job is for Ruby workers, Rails jobs, Sidekiq queues, and agent tools that need tweet search results in durable handoff files. It calls `GET /x/tweets/search` through `client.x.tweets.search`, uses the generated `XTwitterScraper::X::TweetSearchParams` shape, and writes analyst-friendly CSV plus JSON Lines for queues, warehouses, and replayable processing.
 
 ```ruby
 require "csv"
+require "json"
 require "x_twitter_scraper"
 
 client = XTwitterScraper::Client.new(
@@ -58,7 +59,7 @@ client = XTwitterScraper::Client.new(
 
 cursor = nil
 
-CSV.open("xquik-tweet-search.csv", "w", write_headers: true, headers: [
+headers = [
   "id",
   "text",
   "author_username",
@@ -68,32 +69,39 @@ CSV.open("xquik-tweet-search.csv", "w", write_headers: true, headers: [
   "retweet_count",
   "quote_count",
   "view_count"
-]) do |csv|
-  loop do
-    page = client.x.tweets.search(
-      q: "from:xquikcom webhook OR SDK",
-      limit: 100,
-      query_type: :Latest,
-      cursor: cursor
-    )
+]
 
-    page.tweets.each do |tweet|
-      csv << [
-        tweet.id,
-        tweet.text,
-        tweet.author&.username,
-        tweet.created_at,
-        tweet.like_count || 0,
-        tweet.reply_count || 0,
-        tweet.retweet_count || 0,
-        tweet.quote_count || 0,
-        tweet.view_count || 0
-      ]
+CSV.open("xquik-tweet-search.csv", "w", write_headers: true, headers: headers) do |csv|
+  File.open("xquik-tweet-search.jsonl", "w") do |jsonl|
+    loop do
+      page = client.x.tweets.search(
+        q: "from:xquikcom webhook OR SDK",
+        limit: 100,
+        query_type: :Latest,
+        cursor: cursor
+      )
+
+      page.tweets.each do |tweet|
+        row = [
+          tweet.id,
+          tweet.text,
+          tweet.author&.username,
+          tweet.created_at,
+          tweet.like_count || 0,
+          tweet.reply_count || 0,
+          tweet.retweet_count || 0,
+          tweet.quote_count || 0,
+          tweet.view_count || 0
+        ]
+
+        csv << row
+        jsonl.puts(tweet.to_json)
+      end
+
+      break unless page.has_next_page && page.next_cursor != ""
+
+      cursor = page.next_cursor
     end
-
-    break unless page.has_next_page && page.next_cursor != ""
-
-    cursor = page.next_cursor
   end
 end
 ```
@@ -119,7 +127,7 @@ The generated params map directly to the REST endpoint:
 | `page.has_next_page` | `has_next_page` | Boolean that tells your worker whether another page exists. |
 | `page.next_cursor` | `next_cursor` | Cursor to store with the job checkpoint and pass back as `cursor`. |
 
-Write `page.tweets` to CSV for analysts, call `to_json` for JSON export, call `to_h` or `deep_to_h` before loading a warehouse, or pass `id`, `text`, `author.username`, `created_at`, and engagement counts to a CRM or enrichment job.
+Write `page.tweets` to CSV for analysts. Write JSON Lines for queues and data lakes to `xquik-tweet-search.jsonl` with `tweet.to_json`, or call `tweet.deep_to_h` before loading a warehouse. Load the projected rows into an XLSX writer when account teams need a workbook. Pass `id`, `text`, `author.username`, `created_at`, and engagement counts to a CRM or enrichment job.
 
 ## Workflow: Post Image Tweets and DM Attachments
 
@@ -216,6 +224,9 @@ puts("More results are available") if page.has_next_page
 ## Webhooks & References
 
 - [Search Tweets](/api-reference/x/search-tweets)
+- [Create Tweet](/api-reference/x-write/create-tweet)
+- [Upload Media](/api-reference/x-write/upload-media)
+- [Send Direct Message](/api-reference/x-write/send-dm)
 - [Create Monitor](/api-reference/monitors/create)
 - [Webhook Overview](/webhooks/overview)
 - [Verify HMAC Signatures](/webhooks/verification)
