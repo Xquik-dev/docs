@@ -854,6 +854,25 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   'Return `410 Gone` only when Xquik should stop retrying that delivery immediately.',
 ] as const;
 
+const REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS = [
+  'monitor tweets',
+  'signed webhooks',
+  '## Keyword monitor handoff',
+  '`POST /monitors/keywords`',
+  'queue, CRM, warehouse, Slack alert, or agent',
+  '[`POST /webhooks`](/api-reference/webhooks/create)',
+  '[`POST /webhooks/{id}/test`](/api-reference/webhooks/test)',
+  '`id` | Keyword monitor ID. Use it as `monitorId` for `GET /events`, updates, pauses, and deletes. |',
+  '`query` | Normalized X search query. It is also included on keyword monitor events and webhook payloads. |',
+  '`eventTypes` | Event filter to match against webhook subscriptions. |',
+  '`deliveryId`, `streamEventId`, `eventType`, `occurredAt`, `query`, and `data`',
+  'Use `deliveryId` for receiver idempotency and `streamEventId` to join back to `GET /events/{id}`.',
+  'Active keyword monitors check every 1 second and cost 21 credits per active monitor-hour.',
+  'Creation or reactivation requires 22 available credits.',
+  '`PATCH /monitors/keywords/{id}`',
+  '"message": "Monitor already exists."',
+] as const;
+
 const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
   '## Source-backed Zapier scope',
   'API by Zapier',
@@ -2372,6 +2391,23 @@ describe('repository discovery', (): void => {
         source,
         'Workflows overview',
         REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the keyword monitor API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/monitors/create-keyword.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Create keyword monitor API page',
+        REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
