@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const CONTEXT7_LIBRARY_URL = 'https://context7.com/xquik-dev/xquik-docs';
 const CONTEXT7_WEBSITE_URL = 'https://context7.com/websites/xquik';
+const CONTEXT7_REFRESH_WORKFLOW = '.github/workflows/context7-refresh.yml';
 const PUBLIC_KEY_PREFIX = 'pk_';
 const CONTEXT7_PUBLIC_KEY = 'pk_oCPeRRqZFJsY4cCUSotDD';
 const REQUIRED_EXCLUDED_FILES = [
@@ -52,6 +53,15 @@ const REQUIRED_RULE_SNIPPETS = [
   'sdks/',
   'mcp/',
   'webhooks/',
+] as const;
+const REQUIRED_REFRESH_WORKFLOW_SNIPPETS = [
+  'CONTEXT7_API_KEY: ${{ secrets.CONTEXT7_API_KEY }}',
+  '::warning ::CONTEXT7_API_KEY secret is not configured.',
+  'exit 0',
+  'https://context7.com/api/v1/refresh',
+  '{"libraryName": "/xquik-dev/xquik-docs"}',
+  'Context7 refresh is not due yet.',
+  'Context7 refresh is rate limited.',
 ] as const;
 
 interface Context7Config {
@@ -125,5 +135,16 @@ describe('Context7 configuration', (): void => {
 
     expect(claim.url).toBe(CONTEXT7_WEBSITE_URL);
     expect(claim.public_key).toBe(CONTEXT7_PUBLIC_KEY);
+  });
+
+  it('keeps skipped Context7 refreshes visible in GitHub Actions', (): void => {
+    expect.assertions(1);
+
+    const workflow = readFileSync(CONTEXT7_REFRESH_WORKFLOW, 'utf8');
+    const missingSnippets = REQUIRED_REFRESH_WORKFLOW_SNIPPETS.filter(
+      (snippet): boolean => !workflow.includes(snippet),
+    );
+
+    expect(missingSnippets).toStrictEqual([]);
   });
 });
