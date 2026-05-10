@@ -1085,6 +1085,14 @@ const REQUIRED_COMPOSE_STYLE_SNIPPETS = [
   'Compose responses can include `savedStyles`, `styleTweets`, or `styleNote` depending on the cached style state.',
 ] as const;
 
+const FORBIDDEN_DM_HISTORY_SDK_EXAMPLE_SNIPPETS = [
+  'client.x.dm.retrieveHistory(',
+  'client.x.dm.retrieve_history(',
+  'client.X.Dm.GetHistory(',
+  'x-twitter-scraper x:dm retrieve-history',
+  'x:dm retrieve-history',
+] as const;
+
 const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   '## Integration Handoff Matrix',
   '## High-Value Workflows First',
@@ -2015,6 +2023,25 @@ function collectStaleOperationCountFindings(): readonly DiscoveryFinding[] {
   return findings;
 }
 
+function collectUnsupportedDmHistorySdkExampleFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const file of listPublicMarkdownFiles()) {
+    const source = readFileSync(file, 'utf8');
+
+    for (const snippet of FORBIDDEN_DM_HISTORY_SDK_EXAMPLE_SNIPPETS) {
+      if (source.includes(snippet)) {
+        findings.push({
+          file,
+          issue: `Public Markdown contains unsupported DM history SDK/CLI example "${snippet}". Use raw REST until generated clients expose the required account query.`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
 function collectSnippetFindings(
   source: string,
   label: string,
@@ -2594,6 +2621,12 @@ describe('repository discovery', (): void => {
         REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
+  });
+
+  it('keeps DM history examples on raw REST until generated clients expose account query support', (): void => {
+    expect.assertions(1);
+
+    expect(collectUnsupportedDmHistorySdkExampleFindings()).toStrictEqual([]);
   });
 
   it('keeps shared monitor types aligned with account and keyword monitor APIs', (): void => {
