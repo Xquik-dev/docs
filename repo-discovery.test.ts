@@ -70,6 +70,36 @@ const REQUIRED_QUICKSTART_SNIPPETS = [
   '"nextBillingAt": "2026-02-24T10:30:00.000Z"',
 ] as const;
 
+const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
+  '## Workflow: Search Tweets to JSON Lines',
+  '## Workflow: Post Image Tweets and DM Attachments',
+  '`client.x.tweets.search`',
+  '`GET /x/tweets/search`',
+  '`TweetSearchParams`',
+  '`q`',
+  '`limit`',
+  '`cursor`',
+  '`sinceTime`',
+  '`untilTime`',
+  '`queryType`',
+  '`PaginatedTweets`',
+  '`page.tweets`',
+  '`page.has_next_page`',
+  '`page.next_cursor`',
+  'Tweet search costs 1 credit per tweet returned.',
+  'Write `page.tweets` as JSON Lines',
+  'transform the same records into CSV or XLSX',
+  '`client.x.tweets.create`',
+  '`reply_to_tweet_id`',
+  '`media` with public image URLs',
+  '`client.x.media.upload`',
+  '`media.mediaId`',
+  '`client.x.dm.send`',
+  '`media_ids`',
+  '`dm.messageId`',
+  'Do not pass uploaded `media.mediaId` values to `client.x.tweets.create`',
+] as const;
+
 const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
   '## Workflow: Search Tweets to JSON Lines',
   '## Workflow: Post Image Tweets and DM Attachments',
@@ -1836,6 +1866,20 @@ describe('repository discovery', (): void => {
         quickstart,
         'Quickstart',
         REQUIRED_QUICKSTART_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the TypeScript SDK page useful for tweet search handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('sdks/typescript.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'TypeScript SDK workflow docs',
+        REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
