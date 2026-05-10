@@ -87,7 +87,7 @@ Get webhooks working in 3 steps:
 ## How it works
 
 ```text
-X Account Activity → Xquik Stream → Your Webhook Endpoint
+Monitor event -> Xquik -> Your Webhook Endpoint
 ```
 
 ## Delivery format
@@ -96,13 +96,27 @@ Webhook events are delivered as HTTPS POST requests.
 
 ### Headers
 
-| Header | Value | Description |
-|--------|-------|-------------|
-| `Content-Type` | `application/json` | Payload is always JSON |
-| `User-Agent` | `xquik-webhooks/1.0 (+https://xquik.com)` | Identifies Xquik traffic |
-| `X-Xquik-Timestamp` | unix epoch milliseconds | Used in the signing string and for replay window enforcement |
-| `X-Xquik-Nonce` | 16 random bytes (hex) | Unique per request; reject duplicates within the replay window |
-| `X-Xquik-Signature` | `sha256=HMAC_HEX_DIGEST` | HMAC-SHA256 of `<timestamp>.<nonce>.<rawBody>` |
+<CardGroup cols={2}>
+  <Card title="Content-Type" icon="file-json">
+    `application/json`. Payloads are always JSON.
+  </Card>
+
+  <Card title="User-Agent" icon="id-card">
+    `xquik-webhooks/1.0 (+https://xquik.com)`. Identifies Xquik traffic.
+  </Card>
+
+  <Card title="X-Xquik-Timestamp" icon="clock">
+    Unix epoch milliseconds. Used in the signing string and for replay window enforcement.
+  </Card>
+
+  <Card title="X-Xquik-Nonce" icon="fingerprint">
+    16 random bytes in hex. Reject duplicates within the replay window.
+  </Card>
+
+  <Card title="X-Xquik-Signature" icon="shield-check">
+    `sha256=HMAC_HEX_DIGEST`. HMAC-SHA256 of `<timestamp>.<nonce>.<rawBody>`.
+  </Card>
+</CardGroup>
 
 ### Payload body
 
@@ -130,19 +144,42 @@ Webhook events are delivered as HTTPS POST requests.
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `eventType` | string | Event type (see below) |
-| `schemaVersion` | number | Webhook payload schema version. Current value is `1`. |
-| `deliveryId` | string | Webhook delivery attempt ID. Use this for delivery-log correlation. |
-| `streamEventId` | string | Stored event ID. Use this to match the payload to event history. |
-| `occurredAt` | string | ISO timestamp for when the event occurred. |
-| `username` | string | X username for account monitor events. Omitted for keyword-only monitor events and `webhook.test`. |
-| `query` | string | Keyword query that matched the event. Present for keyword monitor events. |
-| `data` | object | Raw event object from the X real-time stream |
+<CardGroup cols={2}>
+  <Card title="eventType" icon="radio">
+    Type `string`. Event type, such as `tweet.new`, `tweet.reply`, `tweet.quote`, or `tweet.retweet`.
+  </Card>
+
+  <Card title="schemaVersion" icon="badge-check">
+    Type `number`. Webhook payload schema version. Current value is `1`.
+  </Card>
+
+  <Card title="deliveryId" icon="truck">
+    Type `string`. Webhook delivery attempt ID. Use this for delivery-log correlation.
+  </Card>
+
+  <Card title="streamEventId" icon="link">
+    Type `string`. Stored event ID. Use this to match the payload to event history.
+  </Card>
+
+  <Card title="occurredAt" icon="clock">
+    Type `string`. ISO timestamp for when the event occurred.
+  </Card>
+
+  <Card title="username" icon="user">
+    Type `string`. X username for account monitor events. Omitted for keyword-only monitor events and `webhook.test`.
+  </Card>
+
+  <Card title="query" icon="search">
+    Type `string`. Keyword query that matched the event. Present for keyword monitor events.
+  </Card>
+
+  <Card title="data" icon="braces">
+    Type `object`. Raw event object for the monitored tweet activity.
+  </Card>
+</CardGroup>
 
 <Note>
-  The `data` field contains the raw tweet object as received from the X real-time stream. Fields may vary by tweet type.
+  The `data` field contains the raw tweet object for the monitor event. Fields may vary by tweet type.
 </Note>
 
 ## Event data shapes
@@ -271,18 +308,23 @@ A test payload sent via the [Test Webhook](/api-reference/webhooks/test) endpoin
 
 Failed deliveries are retried with exponential backoff (base 1 second, multiplier 2x, max 60 seconds):
 
-| Attempt | Delay |
-|---------|-------|
-| 1 | 1 second |
-| 2 | 2 seconds |
-| 3 | 4 seconds |
-| 4 | 8 seconds |
-| 5 | 16 seconds |
-| 6 | 32 seconds |
-| 7 | 60 seconds |
-| 8 | 60 seconds |
-| 9 | 60 seconds |
-| 10 | Final attempt |
+<CardGroup cols={2}>
+  <Card title="Attempts 1-3" icon="timer">
+    Delays: 1 second, 2 seconds, then 4 seconds.
+  </Card>
+
+  <Card title="Attempts 4-6" icon="timer-reset">
+    Delays: 8 seconds, 16 seconds, then 32 seconds.
+  </Card>
+
+  <Card title="Attempts 7-9" icon="hourglass">
+    Delay: 60 seconds for each attempt after the cap is reached.
+  </Card>
+
+  <Card title="Attempt 10" icon="circle-stop">
+    Final attempt. If it fails, the delivery is marked as `exhausted`.
+  </Card>
+</CardGroup>
 
 After the 10th failed attempt, the delivery is marked as `exhausted`. A `410 Gone` response exhausts the delivery immediately. Check delivery status via the [deliveries endpoint](/api-reference/webhooks/deliveries).
 
@@ -302,19 +344,24 @@ After the 10th failed attempt, the delivery is marked as `exhausted`. A `410 Gon
 
 ## Where to go next
 
-| Goal | Resource |
-|------|----------|
-| Full REST API reference for webhooks | [Create Webhook](/api-reference/webhooks/create), [List Webhooks](/api-reference/webhooks/list), [Delivery Logs](/api-reference/webhooks/deliveries) |
-| Verify HMAC signatures and implement idempotency | [Signature Verification](/webhooks/verification) |
-| Test webhook delivery locally with tunnels | [Webhook Testing](/guides/webhook-testing) |
-| MCP equivalent | Use the `xquik` MCP tool: `xquik.request('/api/v1/webhooks', ...)` for create, list, update, delete, and test ([MCP Tools](/mcp/tools)) |
-| Monitor setup | [Create Monitor](/api-reference/monitors/create) |
-
 <CardGroup cols={2}>
+  <Card title="Webhook API reference" icon="book-open" href="/api-reference/webhooks/create">
+    Create, list, update, deactivate, test, and inspect webhook deliveries.
+  </Card>
+
   <Card title="Signature Verification" icon="shield-check" href="/webhooks/verification">
     Verify HMAC-SHA256 signatures and implement idempotency.
   </Card>
+
   <Card title="Testing Webhooks" icon="flask-conical" href="/guides/webhook-testing">
     Test webhook delivery locally with tunnels and mock payloads.
+  </Card>
+
+  <Card title="MCP equivalent" icon="bot" href="/mcp/tools">
+    Use `xquik.request('/api/v1/webhooks', ...)` for create, list, update, delete, and test.
+  </Card>
+
+  <Card title="Monitor setup" icon="radio" href="/api-reference/monitors/create">
+    Create account monitors that emit events for webhook delivery.
   </Card>
 </CardGroup>

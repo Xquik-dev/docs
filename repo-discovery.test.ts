@@ -1044,14 +1044,14 @@ const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
 
 const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
   'base 1 second, multiplier 2x, max 60 seconds',
-  '| 10 | Final attempt |',
+  'Final attempt. If it fails, the delivery is marked as `exhausted`.',
   'After the 10th failed attempt, the delivery is marked as `exhausted`.',
   'A `410 Gone` response exhausts the delivery immediately.',
   'Other non-`2xx` responses and network failures retry until the delivery is exhausted.',
-  '`deliveryId` | string | Webhook delivery attempt ID.',
-  '`streamEventId` | string | Stored event ID.',
-  '`schemaVersion` | number | Webhook payload schema version.',
-  '`query` | string | Keyword query that matched the event.',
+  'Type `string`. Webhook delivery attempt ID.',
+  'Type `string`. Stored event ID.',
+  'Type `number`. Webhook payload schema version.',
+  'Type `string`. Keyword query that matched the event.',
   'Omitted for keyword-only monitor events and `webhook.test`.',
 ] as const;
 
