@@ -44,6 +44,101 @@ Use this matrix before choosing code, webhooks, MCP, or exports. Each row maps t
 | Post tweets or replies | Connected X account plus text, media URLs, or parent tweet ID | `POST /x/tweets` | `tweetId` and `success` | Published tweet ID for queue, CRM, CMS, or agent state | 10 credits per write |
 | Tweet draft workflow | Topic, goal, tone, and optional style username | `POST /compose` with `step` | Algorithm guidance, refined draft, score checklist | Draft text or X compose URL | Compose, refine, and score are free |
 
+## High-Value Workflows First
+
+Start here when you need to decide which Xquik tools to build around first. These jobs create the most reusable handoffs: rows for analysts, IDs for systems of record, events for queues, and published action IDs for audit trails.
+
+| Priority | Workflow | Why it is valuable | First endpoint | Returned handoff | Cost model |
+|----------|----------|--------------------|----------------|------------------|------------|
+| 1 | Scrape tweets to CSV, JSON, or XLSX | Turns search intent into rows for research, lead lists, support triage, and AI retrieval | `POST /extractions/estimate` with `tweet_search_extractor` | Export file, paginated JSON, or direct `GET /x/tweets/search` page | 1 credit per tweet returned or extracted |
+| 2 | Export followers to CRM or warehouse | Builds owned audience tables with stable X user IDs for import and upsert | `POST /extractions/estimate` with `follower_explorer` | CSV, JSON, XLSX, or CRM field map keyed by `x_user_id` | 1 credit per follower returned |
+| 3 | Monitor tweets to signed webhooks | Delivers new posts, replies, quotes, and retweets to queues without polling | `POST /monitors`, then `POST /webhooks` | Signed payload with `deliveryId`, `streamEventId`, `eventType`, and tweet data | 21 credits per active monitor-hour; webhook delivery is included |
+| 4 | Upload media before posting tweets | Converts generated images or local files into publishable tweet media | `POST /x/media`, then `POST /x/tweets` | `mediaUrl`, `mediaId`, `tweetId`, and `success` | 10 credits per media upload call plus 10 credits per post tweet call |
+| 5 | Send direct messages with returned IDs | Lets support, sales, and agent systems read a conversation and store the outbound message ID | `GET /x/dm/{userId}/history`, then `POST /x/dm/{userId}` | `messages`, `has_next_page`, `next_cursor`, `messageId`, and `success` | 1 credit per message returned; 10 credits per DM send |
+
+### 1. Scrape tweets to CSV, JSON, or XLSX
+
+Use this when a user asks to scrape tweets, search tweets, build a tweet scraper, export hashtag results, or hand matching posts to an analyst. Estimate first, create the extraction job, poll it, then export the file format your downstream system expects. For tweet replies, use `reply_extractor` with `targetTweetId` and export the same CSV, JSON, or XLSX formats.
+
+```bash
+curl -X POST https://xquik.com/api/v1/extractions/estimate \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolType": "tweet_search_extractor",
+    "searchQuery": "from:xquikcom webhook OR SDK",
+    "language": "en",
+    "resultsLimit": 500
+  }' | jq
+```
+
+The extraction returns a job ID. `GET /extractions/{id}` returns `job`, `results`, `hasMore`, and `nextCursor`; `GET /extractions/{id}/export?format=csv` downloads the rows. For live pagination without a stored job, call `GET /x/tweets/search` with `q`, `limit`, and optional `cursor`; it returns `tweets`, `has_next_page`, and `next_cursor`.
+
+### 2. Export followers to CRM or warehouse
+
+Use this when the real job is follower export, audience ownership, CRM import, or warehouse sync. Keep `resultsLimit` on both estimate and create calls so the first run has a predictable credit cap.
+
+```bash
+curl -X POST https://xquik.com/api/v1/extractions \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolType": "follower_explorer",
+    "targetUsername": "xquikcom",
+    "resultsLimit": 10000
+  }' | jq
+```
+
+After `status` becomes `completed`, export `format=csv` for CRM import, `format=xlsx` for analyst review, or `format=json` for a pipeline. Map stable `User ID` values to a CRM field such as `x_user_id`; do not key imports by display name.
+
+### 3. Monitor tweets to signed webhooks
+
+Use this when a workflow needs tweet alerts, support routing, warehouse ingest, or queue fanout within seconds. Create the monitor, register the webhook URL, test delivery, then process signed events asynchronously.
+
+```bash
+curl -X POST https://xquik.com/api/v1/monitors \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "xquikcom",
+    "eventTypes": ["tweet.new", "tweet.reply", "tweet.quote"]
+  }' | jq
+```
+
+Webhook payloads include durable IDs for downstream systems: persist `deliveryId` for delivery-level idempotency and `streamEventId` when the same monitor event must be processed once across retries or endpoints. Return `2xx` before slow CRM, Slack, warehouse, or queue work starts.
+
+### 4. Upload media before posting tweets
+
+Use this when an agent or app generates an image, accepts a local file, or needs a media handoff before posting a tweet or reply. `POST /x/media` returns `mediaUrl` for tweet posts and `mediaId` for one-item DM `media_ids` arrays.
+
+```bash
+curl -X POST https://xquik.com/api/v1/x/media \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account": "brand_account",
+    "url": "https://example.com/product-screenshot.png"
+  }' | jq
+```
+
+Pass the returned `mediaUrl` to `POST /x/tweets` as a `media` array. To post a reply, also pass `reply_to_tweet_id`; the response returns `tweetId` and `success`. Do not send `media_ids` to `POST /x/tweets`.
+
+### 5. Send direct messages with returned IDs
+
+Use this when a support, sales, or agent workflow needs direct messages with audit trails. Look up the recipient user ID, read history when needed, then send the DM from a connected account.
+
+```bash
+curl -X POST https://xquik.com/api/v1/x/dm/987654321 \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account": "brand_account",
+    "text": "Thanks for reaching out. Here is the next step."
+  }' | jq
+```
+
+`GET /x/dm/{userId}/history` returns `messages`, `has_next_page`, and `next_cursor`; pass `next_cursor` back as `cursor` for older messages. `POST /x/dm/{userId}` returns `messageId` and `success`, which you should store on the support ticket, CRM note, or agent state.
+
 ## Publish Tweets & Replies
 
 Use this handoff when a workflow needs to post tweets, post tweet replies, attach media from public image URLs, or store the published tweet ID for another system. Call [`POST /x/tweets`](/api-reference/x-write/create-tweet) with a connected `account` and either `text`, `media`, or both. To reply in a thread, pass `reply_to_tweet_id`. The response returns `tweetId` and `success`.
