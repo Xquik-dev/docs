@@ -341,6 +341,9 @@ const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
   '`untilTime`',
   '`queryType`',
   '`QueryType::LATEST`',
+  'PHP argument `q` maps to REST `q`.',
+  'PHP argument `cursor` maps to REST `cursor`.',
+  'PHP argument `queryType` maps to REST `queryType`.',
   '`PaginatedTweets`',
   '`$page->tweets`',
   '`$page->hasNextPage`',
@@ -365,6 +368,9 @@ const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
   '`$dm->messageID`',
   'Each tweet or reply write costs 10 credits.',
   'Do not pass uploaded `$media->mediaID` values to `$client->x->tweets->create()`',
+  'Throws `BadRequestException`.',
+  'Throws `RateLimitException`.',
+  'Throws `InternalServerException`.',
 ] as const;
 
 const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
