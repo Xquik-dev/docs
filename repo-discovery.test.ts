@@ -105,10 +105,14 @@ const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
   '`sinceTime`',
   '`untilTime`',
   '`queryType`',
+  'Maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.',
+  'Maps to REST `cursor`. Pass the opaque cursor from `page.next_cursor` to request the next page.',
   '`PaginatedTweets`',
   '`page.tweets`',
   '`page.has_next_page`',
   '`page.next_cursor`',
+  'JSON field `tweets`. Contains tweet records with `id`, `text`, optional `author`, `createdAt`, `likeCount`, `replyCount`, `retweetCount`, `quoteCount`, `bookmarkCount`, `viewCount`, and `isNoteTweet` when available.',
+  'JSON field `next_cursor`. Store it with the job checkpoint and pass it back as `cursor`.',
   'Tweet search costs 1 credit per tweet returned.',
   'Write `page.tweets` as JSON Lines to `xquik-tweet-search.jsonl`',
   'projected records into CSV for analysts',
@@ -122,6 +126,9 @@ const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
   '`media_ids`',
   '`dm.messageId`',
   'Do not pass uploaded `media.mediaId` values to `client.x.tweets.create`',
+  'Throws `BadRequestError`.',
+  'Throws `RateLimitError`.',
+  'Throws `InternalServerError`.',
 ] as const;
 
 const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
