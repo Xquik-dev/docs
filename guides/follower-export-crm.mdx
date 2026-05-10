@@ -145,6 +145,50 @@ curl -s "https://xquik.com/api/v1/extractions/77777?limit=1000" \
 
 The job is ready for file export when `status` is `completed`.
 
+### Paginated JSON handoff
+
+Use `GET /extractions/{id}` when a custom CRM sync, warehouse load, queue, or agent needs rows before a file export. The API returns camelCase JSON fields. Only `id` and `xUserId` are guaranteed on every result; optional profile and enrichment fields are omitted when unavailable.
+
+```json
+{
+  "job": {
+    "id": "77777",
+    "toolType": "follower_explorer",
+    "status": "completed",
+    "totalResults": 10000,
+    "targetUsername": "elonmusk",
+    "createdAt": "2026-05-08T13:46:00.000Z",
+    "completedAt": "2026-05-08T13:51:00.000Z"
+  },
+  "results": [
+    {
+      "id": "1001",
+      "xUserId": "44196397",
+      "xUsername": "xquikcom",
+      "xDisplayName": "Xquik",
+      "xFollowersCount": 2400,
+      "xVerified": true,
+      "xProfileImageUrl": "https://pbs.twimg.com/profile_images/xquik.jpg",
+      "enrichmentData": {
+        "user": {
+          "followingCount": 120,
+          "statusesCount": 830,
+          "description": "X automation platform",
+          "location": "San Francisco",
+          "coverPicture": "https://pbs.twimg.com/profile_banners/xquik"
+        },
+        "tweet": {}
+      },
+      "createdAt": "2026-05-08T13:51:00.000Z"
+    }
+  ],
+  "hasMore": true,
+  "nextCursor": "1001"
+}
+```
+
+Use `limit` up to `1000` and pass `nextCursor` as `after` until `hasMore` is `false`. For CRM or warehouse rows, map `xUserId` to `x_user_id`, `xUsername` to `x_username`, `xDisplayName` to `display_name`, `xFollowersCount` to `followers_count`, `xVerified` to `verified`, and `enrichmentData.user.description` or `enrichmentData.user.location` to optional enrichment columns.
+
 ## Step 4: Export the CRM file
 
 Use CSV for most CRM imports, XLSX for analyst review, or JSON for a data pipeline.
