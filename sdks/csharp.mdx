@@ -1,15 +1,15 @@
 ---
 title: C# SDK
 sidebarTitle: C# / .NET
-description: Use the official Xquik C# SDK to search tweets, export JSON Lines or CSV, monitor tweets, post tweets, and build .NET X API workers.
-keywords: ["C# SDK", ".NET Twitter scraper SDK", "NuGet X API", "X API C#", "tweet search C#", "Twitter API C#", "JSON export"]
+description: Use the Xquik C# SDK to search tweets, export JSON Lines, CSV, or XLSX, post image tweets, upload media, send DMs, and run .NET X API workers.
+keywords: ["C# SDK", ".NET Twitter scraper SDK", "NuGet X API", "X API C#", "tweet search C#", "Twitter API C#", "JSON export", "CSV export", "XLSX export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the C# SDK for typed .NET Standard 2.0+ access to Xquik from services, workers, console tools, and ASP.NET backends. It is useful when a .NET job needs to search tweets, scrape tweets to JSON Lines or CSV, export followers, monitor tweets, post tweets, upload media, send direct messages, or hand X API data to queues and internal reporting systems.
+Use the C# SDK for typed .NET Standard 2.0+ access to Xquik from services, workers, console tools, and ASP.NET backends. It is useful when a .NET job needs to search tweets, scrape tweets to JSON Lines, CSV, or XLSX, export followers, monitor tweets, post image tweets, upload media, send direct messages, or hand X API data to queues, CRMs, and reporting systems.
 
 ## Install
 
@@ -42,9 +42,9 @@ TweetSearchParams parameters = new()
 var tweets = await client.X.Tweets.Search(parameters);
 ```
 
-## Workflow: Search Tweets to JSON Lines
+## Workflow: Search Tweets to JSON Lines, CSV, or XLSX
 
-Use this workflow when a .NET worker, console job, or ASP.NET background service needs tweet search results in a durable handoff format for a queue, data lake, analyst CSV export, or CRM enrichment step.
+Use this workflow when a .NET worker, console job, or ASP.NET background service needs tweet search results in a durable handoff format for a queue, data lake, analyst CSV export, XLSX workbook, or CRM enrichment step.
 
 `client.X.Tweets.Search` calls `GET /x/tweets/search`. Build a `TweetSearchParams` object with the same query parameters the REST API accepts: `Q`, `Limit`, `Cursor`, `SinceTime`, `UntilTime`, and `QueryType`.
 
@@ -58,7 +58,7 @@ using XTwitterScraper.Models.X.Tweets;
 XTwitterScraperClient client = new();
 
 string? cursor = null;
-using StreamWriter writer = File.CreateText("tweets.jsonl");
+using StreamWriter writer = File.CreateText("xquik-tweet-search.jsonl");
 
 do
 {
@@ -109,7 +109,7 @@ do
 
 `client.X.Tweets.Search` returns `PaginatedTweets`. Use `page.Tweets` for the tweet array, `page.HasNextPage` to decide whether another page exists, and `page.NextCursor` as the checkpoint for the next request.
 
-Each `SearchTweet` includes typed properties such as `ID`, `Text`, `Author`, `CreatedAt`, `LikeCount`, `ReplyCount`, `RetweetCount`, `QuoteCount`, and `ViewCount` when available. Write `page.Tweets` as JSON Lines for queues and data lakes, transform the same rows into CSV for analysts, or write XLSX from the projected rows when account managers need a spreadsheet.
+Each `SearchTweet` includes typed properties such as `ID`, `Text`, `Author`, `CreatedAt`, `LikeCount`, `ReplyCount`, `RetweetCount`, `QuoteCount`, and `ViewCount` when available. Write `page.Tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the same projected rows into CSV for analysts, or write XLSX from those rows when account managers need a workbook.
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `Limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, 408, 409, 429, and 5xx responses 2 times by default. For longer workers, set `MaxRetries` on the client and persist `NextCursor` after each page.
 
@@ -207,6 +207,9 @@ if (tweets.HasNextPage)
 ## Webhooks & References
 
 - [Search Tweets](/api-reference/x/search-tweets)
+- [Create Tweet](/api-reference/x-write/create-tweet)
+- [Upload Media](/api-reference/x-write/upload-media)
+- [Send Direct Message](/api-reference/x-write/send-dm)
 - [Create Monitor](/api-reference/monitors/create)
 - [Webhook Overview](/webhooks/overview)
 - [Verify HMAC Signatures](/webhooks/verification)
