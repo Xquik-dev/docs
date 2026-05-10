@@ -15,8 +15,8 @@ Use these X API workflows to wire Xquik into monitoring dashboards, webhook pipe
 | Monitor & poll | Batch processing, dashboards, low-frequency checks | No (interval-based) | Low |
 | Real-time webhooks | Alerts, queues, customer support triage, warehouse sync | Yes | Medium |
 | AI agent (MCP) | Tweet search, user lookups, follower checks, research summaries | Yes | Low |
-| Publish tweet or reply | Post tweets, post tweet replies, media handoff | N/A | Low |
-| Tweet composition | Draft generation, media upload handoff, reply monitoring | N/A | Low |
+| Publish tweet or reply | Post tweets, post tweet replies, public image URL handoff | N/A | Low |
+| Tweet composition | Draft generation, reply monitoring | N/A | Low |
 
 ## Choose a Workflow
 
@@ -53,7 +53,7 @@ Start here when you need to decide which Xquik tools to build around first. Thes
 | 1 | Scrape tweets to CSV, JSON, or XLSX | Turns search intent into rows for research, lead lists, support triage, and AI retrieval | `POST /extractions/estimate` with `tweet_search_extractor` | Export file, paginated JSON, or direct `GET /x/tweets/search` page | 1 credit per tweet returned or extracted |
 | 2 | Export followers to CRM or warehouse | Builds owned audience tables with stable X user IDs for import and upsert | `POST /extractions/estimate` with `follower_explorer` | CSV, JSON, XLSX, or CRM field map keyed by `x_user_id` | 1 credit per follower returned |
 | 3 | Monitor tweets to signed webhooks | Delivers new posts, replies, quotes, and retweets to queues without polling | `POST /monitors`, then `POST /webhooks` | Signed payload with `deliveryId`, `streamEventId`, `eventType`, and tweet data | 21 credits per active monitor-hour; webhook delivery is included |
-| 4 | Upload media before posting tweets | Converts generated images or local files into publishable tweet media | `POST /x/media`, then `POST /x/tweets` | `mediaUrl`, `mediaId`, `tweetId`, and `success` | 10 credits per media upload call plus 10 credits per post tweet call |
+| 4 | Post image tweets or replies | Publishes media-backed tweets or replies from public image URLs without a separate upload step | `POST /x/tweets` with `media` | `tweetId`, `success`, original `media` URLs, and optional `reply_to_tweet_id` | 10 credits per post tweet call |
 | 5 | Send direct messages with returned IDs | Lets support, sales, and agent systems read a conversation and store the outbound message ID | `GET /x/dm/{userId}/history`, then `POST /x/dm/{userId}` | `messages`, `has_next_page`, `next_cursor`, `messageId`, and `success` | 1 credit per message returned; 10 credits per DM send |
 
 ### 1. Scrape tweets to CSV, JSON, or XLSX
@@ -107,21 +107,23 @@ curl -X POST https://xquik.com/api/v1/monitors \
 
 Webhook payloads include durable IDs for downstream systems: persist `deliveryId` for delivery-level idempotency and `streamEventId` when the same monitor event must be processed once across retries or endpoints. Return `2xx` before slow CRM, Slack, warehouse, or queue work starts.
 
-### 4. Upload media before posting tweets
+### 4. Post image tweets or replies
 
-Use this when an agent or app generates an image, accepts a local file, or needs a media handoff before posting a tweet or reply. `POST /x/media` returns `mediaUrl` for tweet posts and `mediaId` for one-item DM `media_ids` arrays.
+Use this when an agent or app has public image URLs and needs to post a tweet or reply. Pass those URLs directly in the `media` array on `POST /x/tweets`. Do not call `POST /x/media` first for tweet posts; `POST /x/tweets` rejects `media_ids` with `400 unsupported_field`.
 
 ```bash
-curl -X POST https://xquik.com/api/v1/x/media \
+curl -X POST https://xquik.com/api/v1/x/tweets \
   -H "x-api-key: xq_YOUR_KEY_HERE" \
   -H "Content-Type: application/json" \
   -d '{
     "account": "brand_account",
-    "url": "https://example.com/product-screenshot.png"
+    "text": "Product screenshot from today",
+    "reply_to_tweet_id": "1893456789012345678",
+    "media": ["https://example.com/product-screenshot.png"]
   }' | jq
 ```
 
-Pass the returned `mediaUrl` to `POST /x/tweets` as a `media` array. To post a reply, also pass `reply_to_tweet_id`; the response returns `tweetId` and `success`. Do not send `media_ids` to `POST /x/tweets`.
+The response returns `tweetId` and `success`, or `202 x_write_unconfirmed` with `writeActionId` if final confirmation is still pending. Store the original media URLs next to `tweetId`, `reply_to_tweet_id`, or `writeActionId`. Use `POST /x/media` only when you need a one-item `media_ids` array for [`POST /x/dm/{userId}`](/api-reference/x-write/send-dm).
 
 ### 5. Send direct messages with returned IDs
 

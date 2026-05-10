@@ -221,11 +221,28 @@ async () => {
 }
 ```
 
-> Upload media from a URL (subscription required)
+> Post a tweet or reply with public image URLs (subscription required)
 
 ```javascript
 async () => {
-  return xquik.request('/api/v1/x/media', {
+  return xquik.request('/api/v1/x/tweets', {
+    method: 'POST',
+    body: {
+      account: 'myxhandle',
+      text: 'Launch image is ready',
+      reply_to_tweet_id: '1893456789012345678',
+      media: ['https://example.com/image.png']
+    }
+  });
+  // Returns { success: true, tweet_id: '...' } or a pending write_action_id
+}
+```
+
+> Upload media for a DM (subscription required)
+
+```javascript
+async () => {
+  const media = await xquik.request('/api/v1/x/media', {
     method: 'POST',
     body: {
       account: 'myxhandle',
@@ -233,6 +250,14 @@ async () => {
     }
   });
   // Returns { success: true, media_id: '...', media_url: '...' }
+  return xquik.request('/api/v1/x/dm/44196397', {
+    method: 'POST',
+    body: {
+      account: 'myxhandle',
+      text: 'Here is the asset',
+      media_ids: [media.media_id]
+    }
+  });
 }
 ```
 
@@ -300,9 +325,12 @@ MCP returns JSON. Use extraction export endpoints when you need Xquik to generat
 | --- | --- | --- | --- |
 | Scrape tweets or search tweets to JSON | `GET /api/v1/x/tweets/search` | `tweets[].id`, `tweets[].text`, `tweets[].author`, `tweets[].created`, `has_more`, `next_cursor`, and original `q` | 1 credit per tweet returned |
 | Export followers to CRM | `GET /api/v1/x/users/{id}/followers` or `POST /api/v1/extractions` with `follower_explorer` | `users[].id`, `users[].username`, `users[].name`, `users[].followers`, `has_more`, and `next_cursor` | 1 credit per follower returned or extracted |
-| Upload media before posting | `POST /api/v1/x/media`, then `POST /api/v1/x/tweets` | `media_url`, `media_id`, `tweet_id` or `write_action_id`, `account`, and original `media` URL | 10 credits per media upload call plus 10 credits per post tweet call |
+| Post tweets and replies with image URLs | `POST /api/v1/x/tweets` with `media: ["https://..."]` | `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `account`, and original `media` URLs | 10 credits per write call |
+| Upload media for DMs | `POST /api/v1/x/media`, then `POST /api/v1/x/dm/{userId}` with one `media_ids` value | `media_id`, `media_url`, `message_id`, `user_id`, `account`, and source URL or filename | 10 credits per media upload call plus 10 credits per DM send |
 | Post tweets and replies | `POST /api/v1/x/tweets`, then `GET /api/v1/x/write-actions/{id}` when pending | `tweet_id`, `reply_to_tweet_id`, `write_action_id`, `status`, and `charged` | 10 credits per write call |
 | Monitor tweets to signed webhooks | `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then `POST /api/v1/webhooks` | `monitor.id`, `event_types`, `next_billing_at`, `webhook.id`, and the webhook URL | 21 credits per active monitor-hour; webhook delivery is included |
+
+Do not upload media before posting tweets or replies. `POST /api/v1/x/tweets` rejects `media_ids` with `400 unsupported_field`; pass public image URLs in `media` instead. Reserve uploaded `media_id` values for direct messages.
 
 ```javascript
 async () => {
