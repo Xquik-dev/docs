@@ -1,15 +1,15 @@
 ---
 title: Kotlin SDK
 sidebarTitle: Kotlin
-description: Use the Xquik Kotlin SDK to search tweets, export JSON Lines or CSV, post tweets, upload media, send DMs, and build JVM X API workers.
-keywords: ["Kotlin SDK", "X API Kotlin", "JVM client", "tweet search Kotlin", "Twitter API Kotlin", "JSON export", "source build"]
+description: Use the Xquik Kotlin SDK to search tweets, export JSON Lines, CSV, or XLSX, post image tweets, upload media, send DMs, and build JVM X API workers.
+keywords: ["Kotlin SDK", "X API Kotlin", "JVM client", "tweet search Kotlin", "Twitter API Kotlin", "JSON export", "CSV export", "XLSX export", "source build"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the Kotlin SDK for generated JVM models, Kotlin nullable values, builders, sync calls, async calls, typed exceptions, retries, and file upload helpers. It is useful when a JVM service, Ktor worker, Spring job, queue consumer, or cron task needs to search tweets, scrape tweets to JSON Lines or CSV, export followers, monitor tweets, post tweets, upload media, send direct messages, or hand X API data to analytics and CRM systems.
+Use the Kotlin SDK for generated JVM models, Kotlin nullable values, builders, sync calls, async calls, typed exceptions, retries, and file upload helpers. It is useful when a JVM service, Ktor worker, Spring job, queue consumer, or cron task needs to search tweets, scrape tweets to JSON Lines, CSV, or XLSX, export followers, monitor tweets, post image tweets, upload media, send direct messages, or hand X API data to analytics and CRM systems.
 
 ## Install
 
@@ -61,9 +61,9 @@ val params: TweetSearchParams = TweetSearchParams.builder()
 val tweets: PaginatedTweets = client.x().tweets().search(params)
 ```
 
-## Workflow: Search Tweets to JSON Lines
+## Workflow: Search Tweets to JSON Lines, CSV, or XLSX
 
-Use this workflow when a Kotlin service, scheduled worker, queue consumer, or agent needs tweet search results in a durable handoff file for a data lake, CRM enrichment step, analyst CSV export, or downstream processor.
+Use this workflow when a Kotlin service, scheduled worker, queue consumer, or agent needs tweet search results in a durable handoff file for a data lake, CRM enrichment step, analyst CSV export, XLSX workbook, or downstream processor.
 
 `client.x().tweets().search` calls `GET /x/tweets/search`. Build `TweetSearchParams` with the same query parameters the REST API accepts: `.q()`, `.limit()`, `.cursor()`, `.sinceTime()`, `.untilTime()`, and `.queryType()`.
 
@@ -83,7 +83,7 @@ val client: XTwitterScraperClient = XTwitterScraperOkHttpClient.fromEnv()
 val objectMapper = ObjectMapper()
 
 var cursor: String? = null
-Files.newBufferedWriter(Paths.get("tweets.jsonl"), StandardCharsets.UTF_8).use { writer ->
+Files.newBufferedWriter(Paths.get("xquik-tweet-search.jsonl"), StandardCharsets.UTF_8).use { writer ->
     do {
         val builder = TweetSearchParams.builder()
             .q("from:xquikcom webhook OR SDK")
@@ -133,7 +133,7 @@ Files.newBufferedWriter(Paths.get("tweets.jsonl"), StandardCharsets.UTF_8).use {
 
 `client.x().tweets().search` returns `PaginatedTweets`. Use `page.tweets()` for the tweet list, `page.hasNextPage()` to decide whether another page exists, and `page.nextCursor()` as the checkpoint for the next request.
 
-Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, `createdAt()`, `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, and `viewCount()` when available. Write `page.tweets()` as JSON Lines for queues and data lakes, transform the same records into CSV for analysts, or produce XLSX from the projected rows when account teams need spreadsheets.
+Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, `createdAt()`, `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, and `viewCount()` when available. Write `page.tweets()` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets.
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For longer workers, set an explicit retry limit and persist `page.nextCursor()` after each page.
 

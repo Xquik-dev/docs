@@ -343,7 +343,7 @@ const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
-  '## Workflow: Search Tweets to JSON Lines',
+  '## Workflow: Search Tweets to JSON Lines, CSV, or XLSX',
   '`client.x().tweets().search`',
   '`GET /x/tweets/search`',
   '`TweetSearchParams`',
@@ -360,8 +360,9 @@ const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
   '`page.nextCursor()`',
   '`SearchTweet`',
   'Tweet search costs 1 credit per tweet returned.',
-  'Write `page.tweets()` as JSON Lines for queues and data lakes',
-  'transform the same records into CSV for analysts',
+  'Write `page.tweets()` as JSON Lines to `xquik-tweet-search.jsonl`',
+  'projected records into CSV for analysts',
+  'produce XLSX from those rows',
   '## Workflow: Post Image Tweets and DM Attachments',
   '`client.x().tweets().create`',
   '`POST /x/tweets`',
