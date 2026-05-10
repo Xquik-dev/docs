@@ -297,6 +297,9 @@ const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
   '`SinceTime`',
   '`UntilTime`',
   '`QueryType`',
+  'C# property `Q` maps to REST `q`.',
+  'C# property `Cursor` maps to REST `cursor`.',
+  'C# property `QueryType` maps to REST `queryType`.',
   '`PaginatedTweets`',
   '`page.Tweets`',
   '`page.HasNextPage`',
@@ -321,6 +324,9 @@ const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
   '`dm.MessageID`',
   'Each tweet or reply write costs 10 credits.',
   'Do not pass uploaded `media.MediaID` values to `client.X.Tweets.Create`',
+  'Throws `XTwitterScraperBadRequestException`.',
+  'Throws `XTwitterScraperRateLimitException`.',
+  'Throws `XTwitterScraper5xxException`.',
 ] as const;
 
 const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
