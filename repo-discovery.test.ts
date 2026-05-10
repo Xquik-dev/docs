@@ -72,6 +72,7 @@ const REQUIRED_QUICKSTART_SNIPPETS = [
 
 const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
   '## Workflow: Search Tweets to JSON Lines',
+  '## Workflow: Post Image Tweets and DM Attachments',
   '`client.X.Tweets.Search`',
   '`GET /x/tweets/search`',
   '`XTweetSearchParams`',
@@ -88,6 +89,15 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
   'Tweet search costs 1 credit per tweet returned.',
   'Write `Tweets` as JSON Lines for queues and data lakes',
   'transform the same records into CSV or XLSX',
+  '`client.X.Tweets.New`',
+  '`ReplyToTweetID`',
+  '`Media` with public image URLs',
+  '`client.X.Media.Upload`',
+  '`media.MediaID`',
+  '`client.X.Dm.Send`',
+  '`MediaIDs`',
+  '`dm.MessageID`',
+  'Do not pass uploaded `MediaID` values to `client.X.Tweets.New`',
 ] as const;
 
 const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
