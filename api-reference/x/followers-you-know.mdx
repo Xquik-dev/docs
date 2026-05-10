@@ -1,8 +1,8 @@
 ---
 title: "Get followers you know"
-description: "Retrieve mutual followers between the authenticated account and a target X user"
+description: "Export mutual X followers as paginated JSON for warm-intro, CRM, scoring, and agent workflows"
 api: "GET /x/users/{id}/followers-you-know"
-keywords: ["followers", "mutual", "followers you know", "x api"]
+keywords: ["mutual followers", "followers you know", "Twitter mutual followers API", "X mutual followers API", "warm intro", "CRM enrichment", "MPP"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -14,7 +14,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 </Note>
 
 <Callout icon="coins" color="#5c3327">
-  **1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+  **1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Accepts [MPP](/mpp/overview)
 </Callout>
 
 <CodeGroup>
@@ -66,6 +66,36 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       print(data["users"])
   ```
 </CodeGroup>
+
+## Direct mutual followers handoff
+
+Use `GET /x/users/{id}/followers-you-know` when a sales, community, recruiting, support, CRM, or agent workflow needs one JSON page of mutual followers for a target user. The endpoint returns people who follow both the authenticated context and the target user.
+
+<CardGroup cols={2}>
+  <Card title="Mutual rows" icon="users-round">
+    Store `users[]` as the mutual follower profile rows returned on this page.
+  </Card>
+  <Card title="Stable upserts" icon="key-round">
+    Store `users[].id` as `x_user_id` for CRM, warehouse, scoring, and agent dedupe.
+  </Card>
+  <Card title="Warm-intro labels" icon="badge">
+    Store `users[].username` and `users[].name` for handles, owner review, routing, and handoff labels.
+  </Card>
+  <Card title="Profile context" icon="file-text">
+    Store `users[].description`, `location`, `url`, `profilePicture`, and `coverPicture` when returned.
+  </Card>
+  <Card title="Priority signals" icon="chart-no-axes-combined">
+    Store `users[].followers`, `users[].following`, `verified`, and `verifiedType` for scoring and queue priority.
+  </Card>
+  <Card title="DM preflight" icon="message-square">
+    Store `users[].canDm` when returned, then use the DM endpoints only after a user-approved message flow.
+  </Card>
+  <Card title="Next page" icon="arrow-right">
+    Store `has_next_page` and `next_cursor`; pass `next_cursor` back as `cursor` only when `has_next_page` is true.
+  </Card>
+</CardGroup>
+
+Direct mutual followers cost 1 credit per user returned. Low credit balances can return fewer users than a full page; zero affordable results return `402 insufficient_credits`. For MPP callers, this endpoint is billed as a session at USD 0.00015 per user returned.
 
 ## Path parameters
 

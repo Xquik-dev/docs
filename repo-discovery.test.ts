@@ -811,6 +811,26 @@ const REQUIRED_VERIFIED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   'USD 0.00015 per user returned',
 ] as const;
 
+const REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS = [
+  '## Direct mutual followers handoff',
+  '`GET /x/users/{id}/followers-you-know`',
+  'sales, community, recruiting, support, CRM, or agent workflow',
+  'people who follow both the authenticated context and the target user',
+  '<CardGroup cols={2}>',
+  '<Card title="Mutual rows"',
+  '<Card title="Warm-intro labels"',
+  '<Card title="DM preflight"',
+  '`users[]`',
+  '`users[].id`',
+  '`x_user_id`',
+  '`users[].username` and `users[].name`',
+  '`users[].canDm`',
+  '`has_next_page` and `next_cursor`',
+  '1 credit per user returned',
+  '`402 insufficient_credits`',
+  'USD 0.00015 per user returned',
+] as const;
+
 const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   'scrape tweets',
   '## Choose the right path',
@@ -2646,6 +2666,20 @@ describe('repository discovery', (): void => {
         source,
         'Verified followers API page',
         REQUIRED_VERIFIED_FOLLOWERS_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the followers you know API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/followers-you-know.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Followers you know API page',
+        REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
