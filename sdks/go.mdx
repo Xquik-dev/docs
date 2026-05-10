@@ -1,8 +1,8 @@
 ---
 title: Go SDK
 sidebarTitle: Go
-description: Install and use the official Xquik Go SDK for typed X API calls from Go services and workers.
-keywords: ["Go SDK", "Golang Twitter scraper SDK", "X API Go", "Go client"]
+description: Use the Xquik Go SDK to search tweets, export JSON Lines, CSV, or XLSX, post image tweets, upload media, send DMs, and run Go X API workers.
+keywords: ["Go SDK", "Golang Twitter scraper SDK", "X API Go", "Go client", "tweet search SDK", "CSV export", "XLSX export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -11,7 +11,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Use the Go SDK when you want typed parameters, context-aware requests, generated response models, and Go-native error handling.
 
-Use this page when you need a Go service to search tweets, scrape tweets to JSON, export follower or profile data, post tweets, upload media, send DMs, monitor tweets, or hand X data to another system through SDK calls.
+Use this page when you need a Go service to search tweets, scrape tweets to JSON Lines, CSV, or XLSX, export follower or profile data, post image tweets, upload media, send DMs, monitor tweets, or hand X data to another system through SDK calls.
 
 ## Install
 
@@ -59,9 +59,9 @@ func main() {
 }
 ```
 
-## Workflow: Search Tweets to JSON Lines
+## Workflow: Search Tweets to JSON Lines, CSV, or XLSX
 
-This job is for backend workers that need searchable tweet data in a stable handoff format. It calls `GET /x/tweets/search` through `client.X.Tweets.Search`, requests the newest matching tweets, and writes each returned tweet as one JSON object per line.
+This job is for backend workers that need searchable tweet data in a stable handoff format for queues, data lakes, analyst CSV files, or XLSX workbooks. It calls `GET /x/tweets/search` through `client.X.Tweets.Search`, requests the newest matching tweets, and writes each returned tweet as one JSON object per line.
 
 ```go
 package main
@@ -80,7 +80,13 @@ func main() {
 		option.WithAPIKey(os.Getenv("X_TWITTER_SCRAPER_API_KEY")),
 	)
 
-	encoder := json.NewEncoder(os.Stdout)
+	out, err := os.Create("xquik-tweet-search.jsonl")
+	if err != nil {
+		panic(err)
+	}
+	defer out.Close()
+
+	encoder := json.NewEncoder(out)
 	cursor := ""
 
 	for {
@@ -133,7 +139,7 @@ The example builds an `XTweetSearchParams` request so the Go fields stay aligned
 | `HasNextPage` | `has_next_page` | Boolean that tells your worker whether another page exists. |
 | `NextCursor` | `next_cursor` | Cursor to store with the job checkpoint and pass back as `Cursor`. |
 
-Write `Tweets` as JSON Lines for queues and data lakes, transform the same records into CSV or XLSX for analysts, or pass `ID`, `Text`, `Author.Username`, `CreatedAt`, and engagement counts into your CRM or enrichment pipeline.
+Write `Tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets. Pass `ID`, `Text`, `Author.Username`, `CreatedAt`, and engagement counts into your CRM or enrichment pipeline.
 
 ## Workflow: Post Image Tweets and DM Attachments
 
@@ -228,6 +234,9 @@ if tweets.HasNextPage {
 ## Webhooks & References
 
 - [Search Tweets](/api-reference/x/search-tweets)
+- [Create Tweet](/api-reference/x-write/create-tweet)
+- [Upload Media](/api-reference/x-write/upload-media)
+- [Send Direct Message](/api-reference/x-write/send-dm)
 - [Webhook Overview](/webhooks/overview)
 - [Verify HMAC Signatures](/webhooks/verification)
 - [REST API Overview](/api-reference/overview)

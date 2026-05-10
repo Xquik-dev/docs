@@ -102,7 +102,7 @@ const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
-  '## Workflow: Search Tweets to JSON Lines',
+  '## Workflow: Search Tweets to JSON Lines, CSV, or XLSX',
   '## Workflow: Post Image Tweets and DM Attachments',
   '`client.X.Tweets.Search`',
   '`GET /x/tweets/search`',
@@ -118,8 +118,9 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
   '`HasNextPage`',
   '`NextCursor`',
   'Tweet search costs 1 credit per tweet returned.',
-  'Write `Tweets` as JSON Lines for queues and data lakes',
-  'transform the same records into CSV or XLSX',
+  'Write `Tweets` as JSON Lines to `xquik-tweet-search.jsonl`',
+  'projected records into CSV for analysts',
+  'produce XLSX from those rows',
   '`client.X.Tweets.New`',
   '`ReplyToTweetID`',
   '`Media` with public image URLs',
