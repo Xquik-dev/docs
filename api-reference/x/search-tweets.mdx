@@ -1,8 +1,8 @@
 ---
-title: "Search tweets"
-description: "Search tweets by keyword, hashtag, or advanced query with filters for date range and tweet type"
+title: "Search tweets API"
+description: "Search tweets by keyword, hashtag, or X query operator and return paginated tweet data for CSV, JSON, XLSX, CRM, or agent handoff"
 api: "GET /x/tweets/search"
-keywords: ["search", "tweets", "query", "x api"]
+keywords: ["search tweets", "tweet scraper", "scrape tweets", "Twitter API search", "X API search", "CSV export", "JSON export", "XLSX export", "agent handoff"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -110,6 +110,24 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   }
   ```
 </CodeGroup>
+
+## Direct API handoff
+
+Use `GET /x/tweets/search` when an app, queue worker, CRM enrichment job, or agent needs the latest matching tweets without creating a stored extraction job. It is the fastest path for live search pages, JSON ingestion, and small CSV or XLSX projections. For large file exports with a saved job, use [`tweet_search_extractor`](/guides/tweet-search-export) instead.
+
+| Store this field | Why it matters |
+|------------------|----------------|
+| `tweets[]` | Matching tweet rows for app ingestion, analyst export, or retrieval |
+| `tweets[].id` | Stable tweet key for dedupe, CRM notes, queues, and follow-up lookups |
+| `tweets[].text` and `tweets[].createdAt` | Search hit context and time ordering |
+| `tweets[].author.id` and `tweets[].author.username` | Stable author join key and readable handle |
+| Engagement counts | Scoring, routing, and prioritization |
+| `tweets[].media`, `quoted_tweet`, `retweeted_tweet` | Preserve attached media and relationship context when available |
+| `has_next_page` and `next_cursor` | Cursor handoff for the next request |
+
+`limit` is an upper bound from 1 to 200. Omit it for a single page, or pass it when you want Xquik to page internally up to the requested count. For cursor pagination, pass the previous response's `next_cursor` as `cursor`.
+
+Tweet search costs 1 credit per tweet returned. Low credit balances can return fewer tweets than `limit`; zero affordable results return `402 insufficient_credits`. Retry `429` with the `Retry-After` header, and retry `424` or `502` after a short backoff.
 
 ## Query parameters
 

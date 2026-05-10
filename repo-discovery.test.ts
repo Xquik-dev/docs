@@ -546,6 +546,21 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   '1 credit per tweet returned',
 ] as const;
 
+const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
+  '## Direct API handoff',
+  '`GET /x/tweets/search`',
+  'app, queue worker, CRM enrichment job, or agent',
+  '`tweet_search_extractor`',
+  '`tweets[]`',
+  '`tweets[].id`',
+  '`tweets[].author.id` and `tweets[].author.username`',
+  '`has_next_page` and `next_cursor`',
+  '`limit` is an upper bound from 1 to 200',
+  '1 credit per tweet returned',
+  '`402 insufficient_credits`',
+  '`Retry-After`',
+] as const;
+
 const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   'Scrape tweets, export followers, estimate credits, start extraction jobs, paginate JSON results, and export CSV, JSON, or XLSX files',
   'Use this workflow to scrape tweets, export followers, pull tweet replies, save CSV/JSON/XLSX files, or hand paginated JSON to a CRM, warehouse, queue, or AI agent.',
@@ -2016,6 +2031,20 @@ describe('repository discovery', (): void => {
         source,
         'Tweet search export guide',
         REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the search tweets API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/search-tweets.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Search tweets API page',
+        REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
