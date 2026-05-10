@@ -1914,6 +1914,7 @@ const FORBIDDEN_STALE_CREDIT_COST_SNIPPETS = [
     '(1-10',
     'credits',
   ].join(' '),
+  ['Extractions', 'consume', '1-10', 'credits', 'per', 'result'].join(' '),
 ] as const;
 
 const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
