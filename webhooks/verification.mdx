@@ -14,13 +14,32 @@ stale or replayed requests before processing events.
 
 ## Headers sent with every delivery
 
-| Header | Description |
-| --- | --- |
-| `X-Xquik-Timestamp` | Unix epoch milliseconds when Xquik signed the request. |
-| `X-Xquik-Nonce` | 16 random bytes (hex) unique per request. |
-| `X-Xquik-Signature` | `sha256=<hex>` HMAC of `<timestamp>.<nonce>.<rawBody>` keyed with the endpoint secret. |
-| `Content-Type` | Always `application/json`. |
-| `User-Agent` | `xquik-webhooks/1.0 (+https://xquik.com)`. |
+Read these headers from each webhook `POST` before parsing the JSON body. The
+signature is the trust boundary; use `Content-Type` and `User-Agent` only for
+handler routing and logs.
+
+<CardGroup cols={2}>
+  <Card title="Timestamp" icon="clock">
+    `X-Xquik-Timestamp` is Unix epoch milliseconds. Reject requests outside the
+    5-minute tolerance window.
+  </Card>
+  <Card title="Nonce" icon="key-round">
+    `X-Xquik-Nonce` is 16 random bytes in hex. Store recent values for 5
+    minutes and reject repeats.
+  </Card>
+  <Card title="Signature" icon="shield-check">
+    `X-Xquik-Signature` is `sha256=<hex>` over
+    `<timestamp>.<nonce>.<rawBody>` keyed with the endpoint secret.
+  </Card>
+  <Card title="Raw JSON body" icon="database">
+    `Content-Type` is always `application/json`. Verify the raw body bytes
+    before parsing or re-serializing JSON.
+  </Card>
+  <Card title="Sender logs" icon="radio">
+    `User-Agent` is `xquik-webhooks/1.0 (+https://xquik.com)`. Log it for
+    diagnostics, but never trust it instead of the signature.
+  </Card>
+</CardGroup>
 
 ## How it works
 
