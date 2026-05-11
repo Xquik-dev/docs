@@ -295,12 +295,26 @@ The endpoint returns `202 Accepted` with the job in `running` status. Poll `GET 
 
 Choose the handoff based on the system that consumes the extraction.
 
-| Consumer | Recommended handoff | Fields to store | Notes |
-|----------|---------------------|-----------------|-------|
-| App or API pipeline | `GET /extractions/{id}` | `job`, `results`, `hasMore`, `nextCursor` | Use `limit` up to 1,000 and pass `nextCursor` as `after` |
-| CRM import | `GET /extractions/{id}/export?format=csv` | `User ID`, `Username`, `Display Name`, `Followers`, `Verified` | Upsert by stable X user ID when possible |
-| Warehouse or queue | `GET /extractions/{id}/export?format=json` or paginated JSON | `xUserId`, `xUsername`, `tweetId`, `tweetText`, `createdAt` | Keep the extraction ID with each load for replay and audit |
-| Analyst review | `GET /extractions/{id}/export?format=xlsx` | Export columns plus enrichment fields | Use CSV/JSON for automation and XLSX for manual review |
+<CardGroup cols={2}>
+  <Card title="App or API pipeline" icon="code">
+    Use `GET /extractions/{id}`. Store `job`, `results`, `hasMore`, `nextCursor`.
+    Use `limit` up to 1,000 and pass `nextCursor` as `after`.
+  </Card>
+  <Card title="CRM import" icon="users">
+    Use `GET /extractions/{id}/export?format=csv`. Store `User ID`,
+    `Username`, `Display Name`, `Followers`, and `Verified`. Upsert by stable X
+    user ID when possible.
+  </Card>
+  <Card title="Warehouse or queue" icon="database">
+    Use `GET /extractions/{id}/export?format=json` or paginated JSON. Store
+    `xUserId`, `xUsername`, `tweetId`, `tweetText`, `createdAt`. Keep the
+    extraction ID with each load for replay and audit.
+  </Card>
+  <Card title="Analyst review" icon="file-spreadsheet">
+    Use `GET /extractions/{id}/export?format=xlsx`. Store export columns plus
+    enrichment fields. Use CSV/JSON for automation and XLSX for manual review.
+  </Card>
+</CardGroup>
 
 Paginated JSON is not row-capped by the export limit. File exports are capped at 100,000 rows, and PDF exports are capped at 10,000 rows.
 
@@ -471,15 +485,36 @@ io.Copy(file, resp.Body)
 ```
 </CodeGroup>
 
-| Format | Content-Type | Use Case |
-|--------|-------------|----------|
-| `csv` | `text/csv; charset=utf-8` | Spreadsheets, data pipelines |
-| `json` | `application/json; charset=utf-8` | APIs, programmatic processing |
-| `md` | `text/markdown; charset=utf-8` | Documentation, GitHub issues |
-| `md-document` | `text/markdown; charset=utf-8` | Long-form markdown documents |
-| `pdf` | `application/pdf` | Reports, sharing (max 10,000 rows) |
-| `txt` | `text/plain; charset=utf-8` | Plain text, logs |
-| `xlsx` | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | Excel, formatted reports |
+<CardGroup cols={2}>
+  <Card title="CSV" icon="table">
+    `format=csv` returns `text/csv; charset=utf-8` for spreadsheets and data
+    pipelines.
+  </Card>
+  <Card title="JSON" icon="braces">
+    `format=json` returns `application/json; charset=utf-8` for API clients and
+    programmatic processing.
+  </Card>
+  <Card title="Markdown" icon="file-text">
+    `format=md` returns `text/markdown; charset=utf-8` for documentation and
+    issue handoffs.
+  </Card>
+  <Card title="Markdown document" icon="file-text">
+    `format=md-document` returns `text/markdown; charset=utf-8` for longer
+    markdown documents.
+  </Card>
+  <Card title="PDF" icon="file-down">
+    `format=pdf` returns `application/pdf` for reports and sharing. PDF exports
+    are capped at `10,000` rows.
+  </Card>
+  <Card title="TXT" icon="file">
+    `format=txt` returns `text/plain; charset=utf-8` for plain text and logs.
+  </Card>
+  <Card title="XLSX" icon="file-spreadsheet">
+    `format=xlsx` returns
+    `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` for
+    Excel and formatted reports.
+  </Card>
+</CardGroup>
 
 <Warning>
   Exports are capped at 100,000 rows (10,000 for PDF). For larger extractions, use the paginated API to retrieve all results.
