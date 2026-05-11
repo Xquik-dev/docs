@@ -651,6 +651,14 @@ const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
   '<Card title="502 read service retry" icon="rotate-ccw">',
   '`x_api_unavailable` means the read service is temporarily unavailable',
   '"message": "Read service temporarily unavailable. Retry shortly."',
+  '<Card title="tweet.new" icon="bell">',
+  'no reply, quote, or retweet signal is present.',
+  '<Card title="tweet.quote" icon="quote">',
+  'when quote metadata is present.',
+  '<Card title="tweet.reply" icon="message-circle">',
+  'reply flags or reply target IDs.',
+  '<Card title="tweet.retweet" icon="repeat-2">',
+  'retweet flags or `RT @` text.',
 ] as const;
 
 const FORBIDDEN_API_OVERVIEW_SNIPPETS = [
