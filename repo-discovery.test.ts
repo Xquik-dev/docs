@@ -1169,6 +1169,17 @@ const REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS = [
   'Other non-`2xx` responses and network failures stay `failed` until they are delivered or exhaust all attempts.',
   'page on `exhausted`, warn on repeated `failed`, and ignore `delivered`.',
   '[`POST /webhooks/{id}/test`](/api-reference/webhooks/test)',
+  '## Delivery statuses',
+  '<Card title="pending" icon="clock">',
+  'Delivery is queued and waiting for the next attempt.',
+  '<Card title="delivered" icon="circle-check">',
+  'Your endpoint returned `2xx`. Delivery is complete.',
+  '<Card title="failed" icon="triangle-alert">',
+  'the endpoint returned non-`2xx`',
+  'Xquik retries with exponential backoff.',
+  '<Card title="exhausted" icon="circle-x">',
+  'All retry attempts have been used.',
+  'Xquik will not retry this delivery.',
 ] as const;
 
 const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
