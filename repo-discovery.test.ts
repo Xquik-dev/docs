@@ -960,7 +960,8 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   'File exports are capped at 100,000 rows, and PDF exports are capped at 10,000 rows.',
   'Use structured fields first for common jobs such as search tweets from a user, search tweet replies, scrape tweets with images, or export posts in a date range.',
   'Use `advancedQuery` only when you already know the X search operator string you want to append.',
-  '| `502 x_api_unavailable` | Read service temporarily unavailable | Retry with exponential backoff |',
+  '`502 x_api_unavailable` means the read service is temporarily unavailable.',
+  'Retry with exponential backoff, then contact support if the error persists.',
 ] as const;
 
 const FORBIDDEN_EXTRACTION_WORKFLOW_SNIPPETS = [
