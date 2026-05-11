@@ -150,15 +150,37 @@ Use this endpoint after creating an account monitor with [`POST /monitors`](/api
 
 Store these fields immediately after creation:
 
-| Field | Store it for |
-| --- | --- |
-| `id` | Testing with `POST /webhooks/{id}/test`, updating, deleting, and listing deliveries |
-| `url` | Auditing which queue, CRM, warehouse, or app endpoint receives events |
-| `eventTypes` | Verifying that the webhook subscribes to the same event types as the monitor |
-| `secret` | Verifying `X-Xquik-Signature`; returned only once |
-| `createdAt` | Audit logs and configuration drift checks |
+<CardGroup cols={2}>
+  <Card title="Webhook ID" icon="fingerprint">
+    Store `id` for `POST /webhooks/{id}/test`, updates, deletes, and delivery
+    lookups.
+  </Card>
+  <Card title="Delivery URL" icon="link">
+    Store `url` to audit which queue, CRM, warehouse, or app endpoint receives
+    monitor events.
+  </Card>
+  <Card title="Event Filter" icon="filter">
+    Store `eventTypes`; keep the webhook filter aligned with the account or
+    keyword monitor event types.
+  </Card>
+  <Card title="Signing Secret" icon="shield-check">
+    Store `secret` once and use it to verify `X-Xquik-Signature` on the raw
+    request body.
+  </Card>
+  <Card title="Created At" icon="calendar-clock">
+    Store `createdAt` for audit logs and configuration drift checks.
+  </Card>
+  <Card title="Delivery Payload" icon="webhook">
+    Expect HTTPS `POST` bodies with `eventType`, `schemaVersion`, `deliveryId`,
+    `streamEventId`, `occurredAt`, `data`, plus `username` for account monitor
+    events or `query` for keyword monitor events.
+  </Card>
+</CardGroup>
 
-Every delivery is an HTTPS `POST` with JSON body and `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` headers. Production payloads include `eventType`, `schemaVersion`, `deliveryId`, `streamEventId`, `occurredAt`, `data`, and either `username` for account monitors or `query` for keyword monitors. Use `deliveryId` as the per-endpoint idempotency key and `streamEventId` when one monitor event must be processed once across retries or endpoints.
+Every delivery includes `X-Xquik-Signature`, `X-Xquik-Timestamp`, and
+`X-Xquik-Nonce` headers. Use `deliveryId` as the per-endpoint idempotency key
+and `streamEventId` when one monitor event must be processed once across retries
+or endpoints.
 
 Test the endpoint with [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) before routing production events. Return a `2xx` response within 10 seconds, then process slow Slack, CRM, warehouse, or queue work asynchronously. Use [Signature Verification](/webhooks/verification) to validate the raw request body before processing.
 
