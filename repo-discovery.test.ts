@@ -1124,6 +1124,19 @@ const REQUIRED_WEBHOOK_CREATE_API_SNIPPETS = [
   '[Signature Verification](/webhooks/verification)',
 ] as const;
 
+const REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS = [
+  'Updated event types to subscribe to. Replaces the existing list. At least 1 required when provided.',
+  '<Card title="tweet.new" icon="bell">',
+  'new posts that are not replies, quotes, or retweets.',
+  '<Card title="tweet.quote" icon="quote">',
+  'downstream systems handle quote payloads.',
+  '<Card title="tweet.reply" icon="message-circle">',
+  'reply alerts or support routing should continue.',
+  '<Card title="tweet.retweet" icon="repeat-2">',
+  'repost activity should keep triggering deliveries.',
+  '`webhook.test` is generated only by the [Test Webhook](/api-reference/webhooks/test) endpoint.',
+] as const;
+
 const REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS = [
   '## Operational handoff',
   'It returns the 100 most recent delivery records for one webhook, newest first.',
@@ -2985,6 +2998,10 @@ describe('repository discovery', (): void => {
       'api-reference/webhooks/create.mdx',
       'utf8',
     );
+    const updateWebhookApi = readFileSync(
+      'api-reference/webhooks/update.mdx',
+      'utf8',
+    );
     const deliveriesApi = readFileSync(
       'api-reference/webhooks/deliveries.mdx',
       'utf8',
@@ -2996,6 +3013,11 @@ describe('repository discovery', (): void => {
           createWebhookApi,
           'Create webhook API docs',
           REQUIRED_WEBHOOK_CREATE_API_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          updateWebhookApi,
+          'Update webhook API docs',
+          REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS,
         ),
         ...collectSnippetFindings(
           deliveriesApi,
