@@ -114,11 +114,22 @@ Use this endpoint after a write request returns `202 x_write_unconfirmed`. The o
 
 Use `GET /x/write-actions/{id}` to close the queue record created after `202 x_write_unconfirmed` from tweet posts, tweet replies, DMs, or other write endpoints.
 
-| Status | What to store | Next step |
-| --- | --- | --- |
-| `success` | `writeActionId`, `action`, `charged`, and returned `tweetId`, `messageId`, or `resultId` | Mark the original job as complete. |
-| `pending_confirmation` | `writeActionId`, `sendDispatched`, `confirmationAttempts`, `confirmationCheckedAt`, `targetId`, and `message` when present | Keep the job pending and poll again with backoff. Do not retry-send the same body. |
-| `failed` | `writeActionId`, `action`, `sendDispatched`, `targetId`, `message`, and `charged` | Mark the job failed. Fix the account, target, content, or billing state before sending a new request. |
+<CardGroup cols={2}>
+  <Card title="success" icon="circle-check">
+    Store `writeActionId`, `action`, `charged`, and the returned `tweetId`,
+    `messageId`, or `resultId`. Mark the original job as complete.
+  </Card>
+  <Card title="pending_confirmation" icon="clock">
+    Store `writeActionId`, `sendDispatched`, `confirmationAttempts`,
+    `confirmationCheckedAt`, `targetId`, and `message` when present. Keep the
+    job pending, poll again with backoff, and do not retry-send the same body.
+  </Card>
+  <Card title="failed" icon="triangle-alert">
+    Store `writeActionId`, `action`, `sendDispatched`, `targetId`, `message`,
+    and `charged`. Mark the job failed, then fix the account, target, content,
+    or billing state before sending a new request.
+  </Card>
+</CardGroup>
 
 For tweet replies, `targetId` is the parent tweet ID when available. For DMs, `targetId` is the recipient user ID when available. `retryable` is always `false` on this status response because replay decisions belong in your queue logic, not in automatic HTTP retries.
 
