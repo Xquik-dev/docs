@@ -13,8 +13,11 @@ const UNIX_TIMESTAMP_FILTER_ENDPOINTS: ReadonlySet<string> = new Set([
   'GET /x/users/{id}/mentions',
 ] as const);
 const FORBIDDEN_PUBLIC_ENDPOINT_SNIPPETS = [
-  'shared read pool',
-  'read pool',
+  ['shared', 'read', 'pool'].join(' '),
+  ['read', 'pool'].join(' '),
+  ['participant', 'session'].join(' '),
+  ['session', 'reads', 'the', 'conversation'].join(' '),
+  ['whose', 'session', 'reads'].join(' '),
   'A transient upstream issue occurred. Safe to retry with exponential backoff.',
   'The X data source returned an error. Retry after a short delay.',
   'The best-practice response contract can return 424 when the upstream X data source fails.',

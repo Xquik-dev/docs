@@ -1182,6 +1182,7 @@ const REQUIRED_DM_HISTORY_API_SNIPPETS = [
   'GET /x/dm/{userId}/history',
   'Requires a connected X account passed via the `account` query parameter.',
   'DM history is participant-scoped',
+  'DM history requires a connected participant account.',
   'params={"account": "your_handle"}',
   '<ParamField query="account" type="string" required>',
   'Pass the `next_cursor` value from the previous response to fetch older messages.',
@@ -2050,6 +2051,10 @@ const FORBIDDEN_STALE_CREDIT_COST_SNIPPETS = [
 
 const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
   ['proxy', 'service'].join(' '),
+  ['participant', 'session'].join(' '),
+  ['session', 'reads', 'the', 'conversation'].join(' '),
+  ['shared', 'read', 'pool'].join(' '),
+  ['whose', 'session', 'reads'].join(' '),
 ] as const;
 
 const EXPECTED_OPENAPI_OPERATION_COUNT = 120;
