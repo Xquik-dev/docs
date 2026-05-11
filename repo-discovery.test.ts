@@ -1127,6 +1127,20 @@ const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   '10 credits per call',
   '1 credit per call',
   'Do not pass multiple IDs, an empty array, or `reply_to_message_id`',
+  '<Card title="Sender" icon="user-check">',
+  'Store the connected X account username or ID sent in `account`.',
+  '<Card title="Recipient" icon="user">',
+  'Store the numeric user ID from `POST /x/dm/{userId}`.',
+  '<Card title="History" icon="history">',
+  'For DM history exports, store `messages`, `has_next_page`, and',
+  '<Card title="Text" icon="message-square">',
+  'It can contain up to 10,000 characters.',
+  '<Card title="Media" icon="image">',
+  'Store the optional one-item `media_ids` array containing a `mediaId` from',
+  '<Card title="Response" icon="circle-check">',
+  'Store `messageId`, `recipient_user_id`, `sender_account`, `message_text`,',
+  '<Card title="JSON Lines" icon="file-json">',
+  'Store history and send records in `xquik-dm-handoff.jsonl`',
 ] as const;
 
 const REQUIRED_WEBHOOK_TESTING_SNIPPETS = [
