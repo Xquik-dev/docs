@@ -2193,14 +2193,14 @@ function collectStaleCreditCostFindings(): readonly DiscoveryFinding[] {
 function collectPublicConfidentialityWordingFindings(): readonly DiscoveryFinding[] {
   const findings: DiscoveryFinding[] = [];
 
-  for (const file of listPublicMarkdownFiles()) {
+  for (const file of [...listPublicMarkdownFiles(), 'openapi.yaml']) {
     const source = readFileSync(file, 'utf8');
 
     for (const snippet of FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING) {
       if (source.includes(snippet)) {
         findings.push({
           file,
-          issue: `Public Markdown contains deprecated confidentiality wording "${snippet}".`,
+          issue: `Public file contains deprecated confidentiality wording "${snippet}".`,
         });
       }
     }
