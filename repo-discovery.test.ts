@@ -1573,6 +1573,14 @@ const REQUIRED_N8N_ALTERNATIVE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_N8N_GUIDE_SNIPPETS = [
+  'Create a reusable n8n credential for Xquik:',
+  '<Card title="Authentication" icon="key-round">',
+  'Select Header Auth for the HTTP Request credential.',
+  '<Card title="Header name" icon="braces">',
+  'Set the header name to `x-api-key`.',
+  '<Card title="Header value" icon="shield-check">',
+  'Paste your Xquik API key as the credential value.',
+  'Use that credential in every HTTP Request node that calls `https://xquik.com/api/v1`.',
   'Handle these response classes explicitly:',
   '<Card title="400 invalid input" icon="circle-alert">',
   'Surface the Xquik `error` and `message` fields in the failed item.',
