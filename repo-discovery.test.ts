@@ -771,6 +771,24 @@ const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
   '"reply_to_tweet_id": "1893456789012345678"',
 ] as const;
 
+const REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS = [
+  'Retrieve all connected X accounts for your Xquik account',
+  'Derived login/cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`.',
+  '## Account health',
+  '<Card title="healthy" icon="circle-check">',
+  'Cookies are valid. Writes can proceed.',
+  '<Card title="needsReauth" icon="refresh-cw">',
+  '[reauth](/api-reference/x-accounts/reauth)',
+  '<Card title="locked" icon="lock">',
+  '`x.com/account/access`',
+  '<Card title="suspended" icon="circle-x">',
+  'writes will not recover automatically',
+  '<Card title="recovering" icon="activity">',
+  'Xquik will auto-retry on next use.',
+  '<Card title="temporaryIssue" icon="triangle-alert">',
+  'Transient service problem. Retry shortly.',
+] as const;
+
 const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
   '<Accordion title="Server & service errors (500/502)">',
   '`x_api_rate_limited` | Read service rate limited | Retry in a few minutes. The read service is temporarily throttled. |',
@@ -3204,6 +3222,20 @@ describe('repository discovery', (): void => {
         source,
         'Get write action status API docs',
         REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the X accounts list API page clear about health states', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x-accounts/list.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'List X accounts API docs',
+        REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
