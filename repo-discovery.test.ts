@@ -640,7 +640,16 @@ const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
   '`writeActionId`',
   '`pending_confirmation`',
   'opt in to the normalized v1 response contract',
-  '| 502 | `x_api_unavailable` | Read service temporarily unavailable - retry |',
+  '<Card title="400 validation" icon="circle-alert">',
+  '`invalid_input` means the request body, query, or path failed',
+  '<Card title="401 authentication" icon="key-round">',
+  '`unauthenticated` means the API key or bearer token is missing',
+  '<Card title="402 billing state" icon="credit-card">',
+  '`no_subscription`, `no_credits`, and `insufficient_credits`',
+  '<Card title="429 rate limit" icon="timer">',
+  '`rate_limit_exceeded` includes `Retry-After` and JSON `retryAfter`',
+  '<Card title="502 read service retry" icon="rotate-ccw">',
+  '`x_api_unavailable` means the read service is temporarily unavailable',
   '"message": "Read service temporarily unavailable. Retry shortly."',
 ] as const;
 
