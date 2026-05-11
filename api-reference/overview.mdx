@@ -138,13 +138,22 @@ Run this checklist before connecting a production client, workflow builder, or a
 
 ## Rate limits
 
-| Tier | Methods | Limit |
-|------|---------|-------|
-| Read | GET, HEAD, OPTIONS | 10 per 1s |
-| Write | POST, PUT, PATCH | 30 per 60s |
-| Delete | DELETE | 15 per 60s |
+<CardGroup cols={3}>
+  <Card title="Read requests" icon="database">
+    `GET`, `HEAD`, and `OPTIONS` requests share a 10 per 1s user bucket.
+    Standard read throttles return `Retry-After: 1`.
+  </Card>
+  <Card title="Write requests" icon="pen-line">
+    `POST`, `PUT`, and `PATCH` requests share a 30 per 60s user bucket.
+    Throttled writes return `Retry-After: 60`.
+  </Card>
+  <Card title="Delete requests" icon="trash">
+    `DELETE` requests use a separate 15 per 60s user bucket. Throttled deletes
+    return `Retry-After: 60`.
+  </Card>
+</CardGroup>
 
-Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. See the [Rate Limits guide](/guides/rate-limits) for backoff implementations in multiple languages.
+Exceeding limits returns `429 rate_limit_exceeded` with `Retry-After` and a JSON `retryAfter` field. See the [Rate Limits guide](/guides/rate-limits) for backoff implementations in multiple languages.
 
 ## Conventions
 
