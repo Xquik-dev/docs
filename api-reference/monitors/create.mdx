@@ -99,15 +99,32 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Use `POST /monitors` when a queue, CRM, warehouse, Slack alert, or agent needs real-time tweet alerts from one X account. Create the monitor first, then create a signed webhook with [`POST /webhooks`](/api-reference/webhooks/create) and test it with [`POST /webhooks/{id}/test`](/api-reference/webhooks/test).
 
-| Store this field | Use it for |
-| --- | --- |
-| `id` | Account monitor ID. Use it as `monitorId` for `GET /events`, updates, pauses, and deletes. |
-| `username` | Stored X username after trimming and removing the `@` prefix. |
-| `xUserId` | Resolved X user ID. Use it for joins, dedupe, and downstream identity mapping. |
-| `eventTypes` | Event filter to match against webhook subscriptions. |
-| `isActive` | Whether Xquik is checking the account and sending events. |
-| `nextBillingAt` | Next hourly billing time for the active monitor. |
-| `deliveryId`, `streamEventId`, `eventType`, `occurredAt`, `username`, and `data` | Downstream webhook handoff fields. Use `deliveryId` for receiver idempotency and `streamEventId` to join back to `GET /events/{id}`. |
+<CardGroup cols={2}>
+  <Card title="Monitor ID" icon="fingerprint">
+    Store `id` as `monitorId` for `GET /events`, updates, pauses, and deletes.
+  </Card>
+  <Card title="Stored Account" icon="user">
+    Store `username` after trimming the `@` prefix and `xUserId` for identity
+    joins, dedupe, and downstream account mapping.
+  </Card>
+  <Card title="Event Filter" icon="filter">
+    Store `eventTypes`; subscribe webhooks to matching event types so expected
+    account activity delivers.
+  </Card>
+  <Card title="Active State" icon="clock">
+    Read `isActive` and `nextBillingAt` before enabling alerts or estimating
+    hourly monitor burn.
+  </Card>
+  <Card title="Stored Event Join" icon="link">
+    Use `monitorType: "account"`, `monitorId`, and `username` from `GET /events`
+    to join stored events back to the monitored account.
+  </Card>
+  <Card title="Webhook Delivery Join" icon="webhook">
+    Use `deliveryId` for receiver idempotency and `streamEventId` to join the
+    signed webhook back to `GET /events/{id}`. Store `eventType`, `occurredAt`,
+    and `data` with the downstream job.
+  </Card>
+</CardGroup>
 
 Active account monitors check every 1 second and cost 21 credits per active monitor-hour. Creation or reactivation requires 22 available credits: 1 credit for the username lookup plus 21 credits for the first active monitor hour. Pause with `PATCH /monitors/{id}` and `{ "isActive": false }` when the alert should stop.
 
