@@ -1572,6 +1572,20 @@ const REQUIRED_N8N_ALTERNATIVE_SNIPPETS = [
   '/guides/n8n',
 ] as const;
 
+const REQUIRED_N8N_GUIDE_SNIPPETS = [
+  'Handle these response classes explicitly:',
+  '<Card title="400 invalid input" icon="circle-alert">',
+  'Surface the Xquik `error` and `message` fields in the failed item.',
+  '<Card title="401 authentication" icon="key-round">',
+  'Ask the user to check the Header Auth credential and `x-api-key` value.',
+  '<Card title="402 billing state" icon="credit-card">',
+  'Route to subscription or credit setup before retrying the node.',
+  '<Card title="429 rate limit" icon="timer">',
+  'Read `Retry-After` from response headers and wait before retrying.',
+  '<Card title="5xx transient" icon="refresh-cw">',
+  'Enable n8n Retry on Fail with exponential backoff, then fail the item.',
+] as const;
+
 const REQUIRED_MAKE_ALTERNATIVE_SNIPPETS = [
   '## Source-backed Make scope',
   "Make's official pricing page says each module action in a scenario counts as one credit, Free includes 1,000 credits/month",
@@ -3376,6 +3390,20 @@ describe('repository discovery', (): void => {
         source,
         'n8n alternative',
         REQUIRED_N8N_ALTERNATIVE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the n8n guide response handling concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/n8n.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'n8n guide',
+        REQUIRED_N8N_GUIDE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
