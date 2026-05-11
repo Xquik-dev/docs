@@ -653,6 +653,16 @@ const FORBIDDEN_API_OVERVIEW_SNIPPETS = [
 const REQUIRED_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
   'Respect `Retry-After`; otherwise start at 1 second, add jitter, and stop after 3 retries.',
   'Requests sent before the fixed window resets keep returning `429` until `Retry-After` elapses.',
+  '<Card title="Retry-After header" icon="timer">',
+  'Standard read throttles return `Retry-After: 1`. Write and delete throttles return `Retry-After: 60`. Account connection cooldowns return `Retry-After: 900`.',
+  '<Card title="JSON retry field" icon="file-json">',
+  '`error: "rate_limit_exceeded"`',
+  '<Card title="Node.js libraries" icon="package">',
+  '`npm install bottleneck`',
+  '<Card title="Python library" icon="package">',
+  '`pip install ratelimit`',
+  '<Card title="Go library" icon="package">',
+  '`go get golang.org/x/time/rate`',
 ] as const;
 
 const FORBIDDEN_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
