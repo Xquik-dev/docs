@@ -1661,6 +1661,26 @@ const REQUIRED_N8N_GUIDE_SNIPPETS = [
   'Register signed delivery URLs with `POST /webhooks`.',
 ] as const;
 
+const REQUIRED_MAKE_GUIDE_SNIPPETS = [
+  '## App Shape',
+  '<Card title="Connection" icon="key-round">',
+  'Use an API key parameter named `apiKey` and inject it as `x-api-key`.',
+  '<Card title="Base URL" icon="link">',
+  'Call Xquik REST modules from `https://xquik.com/api/v1`.',
+  '<Card title="Modules" icon="boxes">',
+  'Start with Search Tweets, Get Tweet, Get User, Get Trends, Create Tweet, Create Extraction, Create Monitor, Create Webhook, and Make an API Call.',
+  '<Card title="Triggers" icon="radio">',
+  'Support Monitor Event instant webhooks and Extraction Completed polling.',
+  '<Card title="Error handling" icon="circle-alert">',
+  'Map `401`, `402`, `429`, and `5xx` to short scenario messages.',
+  "Use Xquik's `/account` endpoint as the connection test because it validates the API key without mutating data.",
+  '`GET /x/tweets/search`',
+  '`POST /x/tweets`',
+  '`POST /extractions`',
+  '`POST /monitors`',
+  '`POST /webhooks`',
+] as const;
+
 const REQUIRED_MAKE_ALTERNATIVE_SNIPPETS = [
   '## Source-backed Make scope',
   "Make's official pricing page says each module action in a scenario counts as one credit, Free includes 1,000 credits/month",
@@ -3479,6 +3499,20 @@ describe('repository discovery', (): void => {
         source,
         'n8n guide',
         REQUIRED_N8N_GUIDE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Make guide app shape concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/make.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Make guide',
+        REQUIRED_MAKE_GUIDE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
