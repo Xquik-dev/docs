@@ -1604,6 +1604,31 @@ const REQUIRED_PIPEDREAM_GUIDE_SNIPPETS = [
   'Map `data.text` as the tweet body.',
   '<Card title="Author Username" icon="user-round">',
   'Map `data.author.userName` when present. Use `username` as the monitored-account fallback.',
+  '## Recipes',
+  '<Card title="Schedule Trigger" icon="calendar-clock">',
+  'Run the workflow on the reporting cadence.',
+  '<Card title="Xquik Search Tweets" icon="search">',
+  'Call the Search Tweets action and return recent matching posts.',
+  '<Card title="Engagement Filter" icon="funnel">',
+  'Keep only tweets that meet the minimum engagement threshold.',
+  '<Card title="Slack Send Message" icon="message-square">',
+  'Send the selected tweet text, author, and link to the channel.',
+  '<Card title="Monitor Event Source" icon="radio">',
+  'Receive Xquik monitor events from the webhook source.',
+  '<Card title="Event Type Filter" icon="funnel">',
+  'Route `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.retweet` events separately.',
+  '<Card title="Get User Enrichment" icon="user">',
+  'Enrich the event with the Get User action before CRM routing.',
+  '<Card title="CRM Upsert" icon="database">',
+  'Upsert by user ID to avoid duplicate account records.',
+  '<Card title="Create Extraction" icon="database">',
+  'Start the extraction job with `POST /extractions`.',
+  '<Card title="Extraction Completed Source" icon="radio">',
+  'Poll for completed jobs before loading rows downstream.',
+  '<Card title="Fetch Extraction Detail" icon="file-text">',
+  'Fetch the completed extraction detail and result rows.',
+  '<Card title="Warehouse Destination" icon="database">',
+  'Send normalized rows to the warehouse destination.',
 ] as const;
 
 const REQUIRED_N8N_ALTERNATIVE_SNIPPETS = [
@@ -3612,7 +3637,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Pipedream guide setup cards source-backed', (): void => {
-    expect.assertions(4);
+    expect.assertions(5);
 
     const source = readFileSync('guides/pipedream.mdx', 'utf8');
 
@@ -3626,6 +3651,7 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('| Surface | Initial scope |');
     expect(source).not.toContain('| Action | Method and path | Output |');
     expect(source).not.toContain('| Pipedream field | Xquik payload field |');
+    expect(source).not.toContain('| Step | Pipedream component |');
   });
 
   it('keeps the alternatives workflow shortlist concrete', (): void => {
