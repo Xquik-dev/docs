@@ -1574,6 +1574,21 @@ const REQUIRED_ZAPIER_GUIDE_SNIPPETS = [
   'Call `POST /monitors` with username and event types.',
   '<Card title="Create Webhook" icon="webhook">',
   'Call `POST /webhooks` with callback URL and event types.',
+  '## Test Coverage',
+  '<Card title="Auth Header Injection" icon="shield-check">',
+  'Every request includes `x-api-key` from `bundle.authData.apiKey`.',
+  '<Card title="Invalid Key" icon="key-round">',
+  '`401` returns "Authentication failed. Check the Xquik API key."',
+  '<Card title="Rate Limit" icon="timer">',
+  '`429` includes `Retry-After` in the user-facing message when present.',
+  '<Card title="REST Hook Subscribe" icon="webhook">',
+  '`POST /webhooks` sends `bundle.targetUrl` and selected event types.',
+  '<Card title="REST Hook Unsubscribe" icon="radio">',
+  '`DELETE /webhooks/{id}` uses `bundle.subscribeData.id`.',
+  '<Card title="Sample Output" icon="database">',
+  'Trigger samples include `id`, `eventType`, `occurredAt`, tweet text, and author username.',
+  '<Card title="Search Action" icon="search">',
+  'Search returns an array of tweets with stable IDs.',
 ] as const;
 
 const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
@@ -3673,7 +3688,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Zapier guide setup cards source-backed', (): void => {
-    expect.assertions(3);
+    expect.assertions(4);
 
     const source = readFileSync('guides/zapier.mdx', 'utf8');
 
@@ -3686,6 +3701,7 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(source).not.toContain('| Surface | Initial scope |');
     expect(source).not.toContain('| Action | Method and path | Notes |');
+    expect(source).not.toContain('| Test | Expected assertion |');
   });
 
   it('keeps Pipedream comparison workflow details source-backed', (): void => {
