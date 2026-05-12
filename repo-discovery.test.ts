@@ -1629,6 +1629,22 @@ const REQUIRED_N8N_GUIDE_SNIPPETS = [
   'Use IF to continue only when `job.status` is `completed`.',
   '<Card title="Append rows" icon="file-spreadsheet">',
   'Use Google Sheets Append Row with the mapped result fields below.',
+  '<Card title="Get tweet" icon="message-circle">',
+  'Read one or more posts with `GET /x/tweets?ids=<id>`.',
+  '<Card title="Search tweets" icon="search">',
+  'Run X query searches with `GET /x/tweets/search?q=<query>`.',
+  '<Card title="Get user" icon="user-round">',
+  'Fetch an X profile with `GET /x/users/{id}`.',
+  '<Card title="Get trends" icon="trending-up">',
+  'Read regional X trends with `GET /x/trends`.',
+  '<Card title="Create tweet" icon="send">',
+  'Publish text or media posts with `POST /x/tweets`.',
+  '<Card title="Create extraction" icon="boxes">',
+  'Start bulk export jobs with `POST /extractions`.',
+  '<Card title="Create monitor" icon="radio">',
+  'Watch accounts or keywords with `POST /monitors`.',
+  '<Card title="Create webhook" icon="webhook">',
+  'Register signed delivery URLs with `POST /webhooks`.',
 ] as const;
 
 const REQUIRED_MAKE_ALTERNATIVE_SNIPPETS = [
