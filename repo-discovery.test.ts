@@ -1189,7 +1189,7 @@ const REQUIRED_WEBHOOK_CREATE_API_SNIPPETS = [
   'Store `id` for `POST /webhooks/{id}/test`, updates, deletes, and delivery',
   '<Card title="Delivery URL" icon="link">',
   'queue, CRM, warehouse, or app endpoint receives',
-  '<Card title="Event Filter" icon="filter">',
+  '<Card title="Event Filter" icon="funnel">',
   'keep the webhook filter aligned with the account or',
   '<Card title="Signing Secret" icon="shield-check">',
   'Store `secret` once and use it to verify `X-Xquik-Signature`',
@@ -1464,7 +1464,7 @@ const REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS = [
   'Store `id` as `monitorId` for `GET /events`, updates, pauses, and deletes.',
   '<Card title="Normalized Query" icon="search">',
   'webhook payloads.',
-  '<Card title="Event Filter" icon="filter">',
+  '<Card title="Event Filter" icon="funnel">',
   'subscribe webhooks to matching event types',
   '<Card title="Active State" icon="clock">',
   'Read `isActive` and `nextBillingAt`',
@@ -1499,7 +1499,7 @@ const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
   'Store `id` as `monitorId` for `GET /events`, updates, pauses, and deletes.',
   '<Card title="Stored Account" icon="user">',
   'Store `username` after trimming the `@` prefix and `xUserId`',
-  '<Card title="Event Filter" icon="filter">',
+  '<Card title="Event Filter" icon="funnel">',
   'subscribe webhooks to matching event types',
   '<Card title="Active State" icon="clock">',
   'Read `isActive` and `nextBillingAt`',
@@ -2406,6 +2406,14 @@ const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
   ['whose', 'session', 'reads'].join(' '),
 ] as const;
 
+const FORBIDDEN_PUBLIC_CARD_ICON_SNIPPETS = [
+  {
+    reason: 'filter.svg returns 403 from the Mintlify Lucide asset CDN',
+    replacement: 'icon="funnel"',
+    snippet: 'icon="filter"',
+  },
+] as const;
+
 const EXPECTED_OPENAPI_OPERATION_COUNT = 120;
 
 const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
@@ -2531,6 +2539,25 @@ function collectStaleCreditCostFindings(): readonly DiscoveryFinding[] {
         findings.push({
           file,
           issue: `Public Markdown contains stale credit cost wording "${snippet}".`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
+function collectForbiddenPublicCardIconFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const file of listPublicMarkdownFiles()) {
+    const source = readFileSync(file, 'utf8');
+
+    for (const { reason, replacement, snippet } of FORBIDDEN_PUBLIC_CARD_ICON_SNIPPETS) {
+      if (source.includes(snippet)) {
+        findings.push({
+          file,
+          issue: `Public Markdown uses ${snippet}; use ${replacement} because ${reason}.`,
         });
       }
     }
@@ -4052,6 +4079,12 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     expect(collectStaleCreditCostFindings()).toStrictEqual([]);
+  });
+
+  it('keeps public card icons on loadable Lucide assets', (): void => {
+    expect.assertions(1);
+
+    expect(collectForbiddenPublicCardIconFindings()).toStrictEqual([]);
   });
 
   it('keeps comparison guides direct and value focused', (): void => {
