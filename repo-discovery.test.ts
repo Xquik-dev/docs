@@ -1616,6 +1616,19 @@ const REQUIRED_N8N_GUIDE_SNIPPETS = [
   'Use Set to build Slack text from `data`, with `username` as fallback.',
   '<Card title="Post alert" icon="message-square">',
   'Send the formatted message to Slack after the webhook and monitor exist.',
+  'Use this when a team needs bulk follower, reply, quote, media, list, community, or search results in a spreadsheet.',
+  '<Card title="Schedule Trigger" icon="calendar-clock">',
+  'Run daily or hourly exports; execute manually while testing.',
+  '<Card title="Create extraction" icon="send">',
+  'Use HTTP Request to call `POST /extractions` and store the returned `id`.',
+  '<Card title="Wait before polling" icon="timer">',
+  'Pause before the first status check so the extraction can start.',
+  '<Card title="Fetch results" icon="list-checks">',
+  'Use HTTP Request to call `GET /extractions/{id}` and read `job.status`.',
+  '<Card title="Gate completed jobs" icon="filter">',
+  'Use IF to continue only when `job.status` is `completed`.',
+  '<Card title="Append rows" icon="file-spreadsheet">',
+  'Use Google Sheets Append Row with the mapped result fields below.',
 ] as const;
 
 const REQUIRED_MAKE_ALTERNATIVE_SNIPPETS = [
