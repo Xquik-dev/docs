@@ -1629,6 +1629,21 @@ const REQUIRED_PIPEDREAM_GUIDE_SNIPPETS = [
   'Fetch the completed extraction detail and result rows.',
   '<Card title="Warehouse Destination" icon="database">',
   'Send normalized rows to the warehouse destination.',
+  '## Test Coverage',
+  '<Card title="Auth Injection" icon="shield-check">',
+  'Every request includes `x-api-key` and never logs the key.',
+  '<Card title="Invalid Key" icon="key-round">',
+  '`401` produces "Authentication failed. Check the Xquik API key."',
+  '<Card title="Rate Limit" icon="timer">',
+  '`429` includes `Retry-After` when present.',
+  '<Card title="Search Action" icon="search">',
+  'Returns an array with stable tweet IDs.',
+  '<Card title="Create Webhook" icon="webhook">',
+  'Sends callback URL and selected event types.',
+  '<Card title="Webhook Source" icon="radio">',
+  'Emits one event per payload with a stable ID.',
+  '<Card title="Polling Source" icon="database">',
+  'Emits only completed extraction jobs.',
 ] as const;
 
 const REQUIRED_N8N_ALTERNATIVE_SNIPPETS = [
@@ -3637,7 +3652,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Pipedream guide setup cards source-backed', (): void => {
-    expect.assertions(5);
+    expect.assertions(6);
 
     const source = readFileSync('guides/pipedream.mdx', 'utf8');
 
@@ -3652,6 +3667,7 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('| Action | Method and path | Output |');
     expect(source).not.toContain('| Pipedream field | Xquik payload field |');
     expect(source).not.toContain('| Step | Pipedream component |');
+    expect(source).not.toContain('| Test | Expected assertion |');
   });
 
   it('keeps the alternatives workflow shortlist concrete', (): void => {
