@@ -1541,6 +1541,22 @@ const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
   '/guides/zapier',
 ] as const;
 
+const REQUIRED_ZAPIER_GUIDE_SNIPPETS = [
+  '## Integration Shape',
+  '<Card title="Auth" icon="key-round">',
+  'API key field named `apiKey`, injected as `x-api-key`.',
+  '<Card title="Base URL" icon="link">',
+  '`https://xquik.com/api/v1`',
+  '<Card title="Request Helper" icon="workflow">',
+  'JSON requests, structured Xquik errors, and `Retry-After` handling.',
+  '<Card title="Actions" icon="play">',
+  'Search Tweets, Get Tweet, Get User, Get Trends, Create Tweet, Create Reply,',
+  'Create Extraction, Create Monitor, and Create Webhook.',
+  '<Card title="Triggers" icon="radio">',
+  'New Matching Tweet polling, Monitor Event instant trigger, Extraction',
+  'Completed polling, and Webhook Delivery Failure polling.',
+] as const;
+
 const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
   '## Source-backed Pipedream scope',
   'Pipedream Workflows',
@@ -3635,6 +3651,21 @@ describe('repository discovery', (): void => {
         REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
+  });
+
+  it('keeps the Zapier guide integration cards source-backed', (): void => {
+    expect.assertions(2);
+
+    const source = readFileSync('guides/zapier.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Zapier guide',
+        REQUIRED_ZAPIER_GUIDE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(source).not.toContain('| Surface | Initial scope |');
   });
 
   it('keeps Pipedream comparison workflow details source-backed', (): void => {
