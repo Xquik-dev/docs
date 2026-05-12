@@ -2412,6 +2412,11 @@ const FORBIDDEN_PUBLIC_CARD_ICON_SNIPPETS = [
     replacement: 'icon="funnel"',
     snippet: 'icon="filter"',
   },
+  {
+    reason: 'circle-exclamation.svg returns 403 from the Mintlify Lucide asset CDN',
+    replacement: 'icon="circle-alert"',
+    snippet: 'icon="circle-exclamation"',
+  },
 ] as const;
 
 const EXPECTED_OPENAPI_OPERATION_COUNT = 120;
