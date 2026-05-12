@@ -1558,6 +1558,22 @@ const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
   '/guides/pipedream',
 ] as const;
 
+const REQUIRED_PIPEDREAM_GUIDE_SNIPPETS = [
+  '## Component Shape',
+  '<Card title="App" icon="app-window">',
+  '`components/xquik/app/xquik.app.ts`',
+  '<Card title="Auth" icon="key-round">',
+  'API key prop injected as `x-api-key`.',
+  '<Card title="Base URL" icon="link">',
+  '`https://xquik.com/api/v1`',
+  '<Card title="Actions" icon="play">',
+  'Get Tweet, Search Tweets, Get User, Get Trends, Create Tweet, Create Extraction, Create Monitor, and Create Webhook.',
+  '<Card title="Sources" icon="radio">',
+  'Monitor Event Webhook and Extraction Completed Polling.',
+  '<Card title="Shared helper" icon="workflow">',
+  'JSON requests, structured Xquik errors, and `Retry-After` handling.',
+] as const;
+
 const REQUIRED_N8N_ALTERNATIVE_SNIPPETS = [
   '## Source-backed n8n scope',
   "n8n's official X node docs list built-in operations for direct messages",
@@ -3561,6 +3577,21 @@ describe('repository discovery', (): void => {
         REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS,
       ),
     ).toStrictEqual([]);
+  });
+
+  it('keeps the Pipedream guide component shape card-based', (): void => {
+    expect.assertions(2);
+
+    const source = readFileSync('guides/pipedream.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Pipedream guide',
+        REQUIRED_PIPEDREAM_GUIDE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(source).not.toContain('| Surface | Initial scope |');
   });
 
   it('keeps the alternatives workflow shortlist concrete', (): void => {
