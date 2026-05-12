@@ -1555,6 +1555,25 @@ const REQUIRED_ZAPIER_GUIDE_SNIPPETS = [
   '<Card title="Triggers" icon="radio">',
   'New Matching Tweet polling, Monitor Event instant trigger, Extraction',
   'Completed polling, and Webhook Delivery Failure polling.',
+  '## Starter Actions',
+  '<Card title="Search Tweets" icon="search">',
+  'Call `GET /x/tweets/search` with `q`, `limit`, and optional `cursor`.',
+  '<Card title="Get Tweet" icon="message-square">',
+  'Call `GET /x/tweets/{id}` with a tweet ID.',
+  '<Card title="Get User" icon="user">',
+  'Call `GET /x/users/{id}` with a user ID.',
+  '<Card title="Get Trends" icon="trending-up">',
+  'Call `GET /x/trends` with optional `woeid` and `count`.',
+  '<Card title="Create Tweet" icon="send">',
+  'Call `POST /x/tweets` with account, text, and optional public media URLs.',
+  '<Card title="Create Reply" icon="reply">',
+  'Call `POST /x/tweets` with account, text, and `reply_to_tweet_id`.',
+  '<Card title="Create Extraction" icon="database">',
+  'Call `POST /extractions` with `toolType`, query fields, and result limit.',
+  '<Card title="Create Monitor" icon="radio">',
+  'Call `POST /monitors` with username and event types.',
+  '<Card title="Create Webhook" icon="webhook">',
+  'Call `POST /webhooks` with callback URL and event types.',
 ] as const;
 
 const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
@@ -3653,8 +3672,8 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
   });
 
-  it('keeps the Zapier guide integration cards source-backed', (): void => {
-    expect.assertions(2);
+  it('keeps the Zapier guide setup cards source-backed', (): void => {
+    expect.assertions(3);
 
     const source = readFileSync('guides/zapier.mdx', 'utf8');
 
@@ -3666,6 +3685,7 @@ describe('repository discovery', (): void => {
       ),
     ).toStrictEqual([]);
     expect(source).not.toContain('| Surface | Initial scope |');
+    expect(source).not.toContain('| Action | Method and path | Notes |');
   });
 
   it('keeps Pipedream comparison workflow details source-backed', (): void => {
