@@ -1605,6 +1605,17 @@ const REQUIRED_N8N_GUIDE_SNIPPETS = [
   'Read `Retry-After` from response headers and wait before retrying.',
   '<Card title="5xx transient" icon="refresh-cw">',
   'Enable n8n Retry on Fail with exponential backoff, then fail the item.',
+  'Use this when a Slack channel should receive new tweets, replies, quotes, or retweets from monitored accounts.',
+  '<Card title="Webhook Trigger" icon="webhook">',
+  'Receive Xquik monitor events on the production Webhook URL.',
+  '<Card title="Create webhook" icon="send">',
+  'Use HTTP Request to call `POST /webhooks` with the Webhook Trigger URL.',
+  '<Card title="Create monitor" icon="radio">',
+  'Use HTTP Request to call `POST /monitors` for the username and event types.',
+  '<Card title="Format alert" icon="text">',
+  'Use Set to build Slack text from `data`, with `username` as fallback.',
+  '<Card title="Post alert" icon="message-square">',
+  'Send the formatted message to Slack after the webhook and monitor exist.',
 ] as const;
 
 const REQUIRED_MAKE_ALTERNATIVE_SNIPPETS = [
