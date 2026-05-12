@@ -1572,6 +1572,23 @@ const REQUIRED_PIPEDREAM_GUIDE_SNIPPETS = [
   'Monitor Event Webhook and Extraction Completed Polling.',
   '<Card title="Shared helper" icon="workflow">',
   'JSON requests, structured Xquik errors, and `Retry-After` handling.',
+  '## Starter Actions',
+  '<Card title="Get Tweet" icon="message-square">',
+  'Call `GET /x/tweets/{id}` and return one tweet.',
+  '<Card title="Search Tweets" icon="search">',
+  'Call `GET /x/tweets/search` and return an array of tweets.',
+  '<Card title="Get User" icon="user">',
+  'Call `GET /x/users/{id}` and return one user.',
+  '<Card title="Get Trends" icon="trending-up">',
+  'Call `GET /x/trends` and return a trend list.',
+  '<Card title="Create Tweet" icon="send">',
+  'Call `POST /x/tweets` and return created tweet metadata.',
+  '<Card title="Create Extraction" icon="database">',
+  'Call `POST /extractions` and return the job ID and status.',
+  '<Card title="Create Monitor" icon="radio">',
+  'Call `POST /monitors` and return the monitor ID and status.',
+  '<Card title="Create Webhook" icon="webhook">',
+  'Call `POST /webhooks` and return the webhook ID and signing secret.',
 ] as const;
 
 const REQUIRED_N8N_ALTERNATIVE_SNIPPETS = [
@@ -3579,8 +3596,8 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
   });
 
-  it('keeps the Pipedream guide component shape card-based', (): void => {
-    expect.assertions(2);
+  it('keeps the Pipedream guide setup cards source-backed', (): void => {
+    expect.assertions(3);
 
     const source = readFileSync('guides/pipedream.mdx', 'utf8');
 
@@ -3592,6 +3609,7 @@ describe('repository discovery', (): void => {
       ),
     ).toStrictEqual([]);
     expect(source).not.toContain('| Surface | Initial scope |');
+    expect(source).not.toContain('| Action | Method and path | Output |');
   });
 
   it('keeps the alternatives workflow shortlist concrete', (): void => {
