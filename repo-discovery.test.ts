@@ -1589,6 +1589,21 @@ const REQUIRED_PIPEDREAM_GUIDE_SNIPPETS = [
   'Call `POST /monitors` and return the monitor ID and status.',
   '<Card title="Create Webhook" icon="webhook">',
   'Call `POST /webhooks` and return the webhook ID and signing secret.',
+  '## Source 1: Monitor Event Webhook',
+  '<Card title="Event ID" icon="fingerprint">',
+  'Map Pipedream `id` to `streamEventId` for event-level de-dupe, or `deliveryId` for endpoint-level de-dupe.',
+  '<Card title="Event Type" icon="bell">',
+  'Map `eventType` to route `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.retweet` events.',
+  '<Card title="Occurred At" icon="calendar-clock">',
+  'Map `occurredAt` as the event timestamp.',
+  '<Card title="Username" icon="at-sign">',
+  'Map `username` for account monitor events.',
+  '<Card title="Tweet ID" icon="hash">',
+  'Map `data.id` as the tweet identifier.',
+  '<Card title="Text" icon="type">',
+  'Map `data.text` as the tweet body.',
+  '<Card title="Author Username" icon="user-round">',
+  'Map `data.author.userName` when present. Use `username` as the monitored-account fallback.',
 ] as const;
 
 const REQUIRED_N8N_ALTERNATIVE_SNIPPETS = [
@@ -3597,7 +3612,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Pipedream guide setup cards source-backed', (): void => {
-    expect.assertions(3);
+    expect.assertions(4);
 
     const source = readFileSync('guides/pipedream.mdx', 'utf8');
 
@@ -3610,6 +3625,7 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(source).not.toContain('| Surface | Initial scope |');
     expect(source).not.toContain('| Action | Method and path | Output |');
+    expect(source).not.toContain('| Pipedream field | Xquik payload field |');
   });
 
   it('keeps the alternatives workflow shortlist concrete', (): void => {
