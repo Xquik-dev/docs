@@ -1718,7 +1718,7 @@ const REQUIRED_MAKE_GUIDE_SNIPPETS = [
   '## Recipes',
   '<Card title="Monitor Event Trigger" icon="radio">',
   'Start from the Xquik Monitor Event instant trigger for `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.retweet`.',
-  '<Card title="Topic Filter" icon="filter">',
+  '<Card title="Topic Filter" icon="funnel">',
   'Filter on `eventType`, `username`, and `data.text` before routing alerts.',
   '<Card title="Slack Message" icon="message-square">',
   'Create a Slack message from `data.text`, `data.id`, `data.author.userName`, and `occurredAt`.',
