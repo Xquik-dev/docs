@@ -1763,11 +1763,11 @@ const REQUIRED_MAKE_ALTERNATIVE_SNIPPETS = [
 
 const REQUIRED_WORKFLOW_SHORTLIST_SNIPPETS = [
   '## Workflow Automation Shortlist',
-  '[n8n](/alternatives/n8n)',
-  '[Make](/alternatives/make)',
-  '[Pipedream](/alternatives/pipedream)',
-  '[Zapier](/alternatives/zapier)',
-  '[PhantomBuster](/alternatives/phantombuster)',
+  '<Card title="n8n" icon="workflow" href="/alternatives/n8n">',
+  '<Card title="Make" icon="route" href="/alternatives/make">',
+  '<Card title="Pipedream" icon="code" href="/alternatives/pipedream">',
+  '<Card title="Zapier" icon="zap" href="/alternatives/zapier">',
+  '<Card title="PhantomBuster" icon="timer" href="/alternatives/phantombuster">',
   'tweet search',
   'signed monitor webhooks',
   'CSV/JSON/XLSX exports',
@@ -3564,7 +3564,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the alternatives workflow shortlist concrete', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('alternatives.mdx', 'utf8');
 
@@ -3575,6 +3575,9 @@ describe('repository discovery', (): void => {
         REQUIRED_WORKFLOW_SHORTLIST_SNIPPETS,
       ),
     ).toStrictEqual([]);
+    expect(source).not.toContain(
+      '| Tool | Use it for | Put Xquik behind it when |',
+    );
   });
 
   it('keeps the n8n alternative focused on source-backed workflow handoffs', (): void => {
