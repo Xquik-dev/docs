@@ -1791,19 +1791,21 @@ const REQUIRED_PHANTOMBUSTER_ALTERNATIVE_SNIPPETS = [
 
 const REQUIRED_ALTERNATIVES_SECTOR_SNIPPETS = [
   '## Sector Decision Matrix',
-  'Developer API teams',
+  '<Card title="Developer API teams" icon="code">',
+  '<Card title="Scraping and dataset teams" icon="database">',
+  '<Card title="Creator publishing teams" icon="pen-line">',
+  '<Card title="Social listening and enterprise teams" icon="building-2">',
+  '<Card title="Workflow automation teams" icon="workflow">',
+  '<Card title="AI agent teams" icon="bot">',
   '[X API](/alternatives/x-api)',
   '[Apify](/alternatives/apify)',
   'Xquik on Apify',
-  'Creator publishing teams',
-  'Social listening and enterprise teams',
   '[Brandwatch](/alternatives/brandwatch)',
   '[Meltwater](/alternatives/meltwater)',
   '[Talkwalker](/alternatives/talkwalker)',
-  'Workflow automation teams',
-  'AI agent teams',
   'signed webhooks',
   'CSV/JSON/XLSX exports',
+  'Test MCP tool result, tweet search records, user profile fields, and compose score.',
 ] as const;
 
 const REQUIRED_BRANDWATCH_ALTERNATIVE_SNIPPETS = [
@@ -3646,7 +3648,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the alternatives sector matrix concrete', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('alternatives.mdx', 'utf8');
 
@@ -3657,6 +3659,9 @@ describe('repository discovery', (): void => {
         REQUIRED_ALTERNATIVES_SECTOR_SNIPPETS,
       ),
     ).toStrictEqual([]);
+    expect(source).not.toContain(
+      '| Sector | Start with | Choose Xquik when | Output to test |',
+    );
   });
 
   it('keeps the Brandwatch alternative focused on concrete social listening handoffs', (): void => {
