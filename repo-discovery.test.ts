@@ -1060,6 +1060,40 @@ const REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS = [
   'Results are capped at 100,000 rows (10,000 for PDF).',
 ] as const;
 
+const REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS = [
+  'File format changes serialization only. The selected columns depend on the extraction tool type.',
+  'All extraction tools except `article_extractor` use the default result column set.',
+  'Some enrichment columns may be empty when the result does not include that data.',
+  '<Card title="User identity" icon="user">',
+  '`User ID`, `Username`, `Display Name`, `Verified`, and `Profile Image`.',
+  '<Card title="Audience metrics" icon="chart-no-axes-column">',
+  '`Followers`, `Following`, `Posts`, `Media Count`, and `Favorites`.',
+  '<Card title="Profile context" icon="file-text">',
+  '`Description`, `Location`, and `Cover Picture`.',
+  '<Card title="Tweet content" icon="message-square">',
+  '`Tweet ID`, `Tweet Text`, and `Tweet Created At`.',
+  '<Card title="Tweet engagement" icon="activity">',
+  '`Likes`, `Reposts`, `Replies`, `Quotes`, `Views`, and `Bookmarks`.',
+  '<Card title="Tweet metadata" icon="braces">',
+  '`Language`, `Source`, and `Conversation ID`.',
+  '<Card title="Article metadata" icon="file-text">',
+  '`Article Title`, `Article Preview`, and `Article Body`.',
+  '`article_extractor` uses a shorter article-focused column set.',
+  '<Card title="Article identity" icon="file-text">',
+  '`Article Title`, `Cover Image`, and `Article Body`.',
+  '<Card title="Author identity" icon="user">',
+  '`Author`, `Username`, and `Verified`.',
+  '<Card title="Author reach" icon="chart-no-axes-column">',
+  '<Card title="Article engagement" icon="activity">',
+] as const;
+
+const FORBIDDEN_EXTRACTION_EXPORT_COLUMNS_SNIPPETS = [
+  'All export formats include the same columns in this order.',
+  '| Column | Description |',
+  'Article Body Text',
+  'Article Preview Text',
+] as const;
+
 const FORBIDDEN_EXTRACTION_WORKFLOW_SNIPPETS = [
   'quota',
   '| `502 x_api_unavailable` | X data source temporarily down | Retry with exponential backoff |',
@@ -3530,6 +3564,33 @@ describe('repository discovery', (): void => {
       ),
     ).toStrictEqual([]);
     expect(source).not.toContain('| Format | Content-Type | Filename Example |');
+  });
+
+  it('keeps extraction export columns source-backed and mobile friendly', (): void => {
+    expect.assertions(2);
+
+    const source = readFileSync('api-reference/extractions/export.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'Extraction export columns',
+          REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS,
+        ),
+        ...FORBIDDEN_EXTRACTION_EXPORT_COLUMNS_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Extraction export columns contain stale table or column copy "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
+    expect(source).not.toContain('|--------|-------------|');
   });
 
   it('keeps the media upload handoff clear for tweets and DMs', (): void => {
