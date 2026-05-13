@@ -216,6 +216,25 @@ page = await search_recent_tweets(
 
 Respect `Retry-After` for repeated `429` responses, and keep `limit` at or below `200` for tweet search pages.
 
+## Failure Routing
+
+`XquikError` exposes `status_code` and `response_text` when an HTTP response is available. Use them to decide whether the flow should fail fast, pause for account action, or retry later.
+
+<CardGroup cols={2}>
+  <Card title="Inspect Status" icon="route">
+    Catch `XquikError` and branch on `status_code`. Store `response_text` with the failed run for debugging.
+  </Card>
+  <Card title="Fix Inputs" icon="circle-x">
+    Treat `400` and `404` as non-retryable. Fix the query, ID, username, or cursor before rerunning.
+  </Card>
+  <Card title="Pause Billing Stops" icon="credit-card">
+    Treat `402` as an account action. Check subscription or credits before the next schedule.
+  </Card>
+  <Card title="Back Off Reads" icon="timer">
+    Treat `429`, `500`, `502`, and `503` as retryable with Prefect retry settings and slower schedules.
+  </Card>
+</CardGroup>
+
 ## Pagination Handoff
 
 Xquik returns cursor fields for paginated reads. Store the cursor in your task result or downstream state, then pass it back unchanged on the next run.
