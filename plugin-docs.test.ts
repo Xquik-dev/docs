@@ -60,7 +60,7 @@ function hermesTweetSourceExists(): boolean {
 
 describe('Plugin docs', (): void => {
   it('keeps the TweetClaw guide aligned with the local plugin package', (): void => {
-    expect.assertions(tweetclawSourceExists() ? 2 : 1);
+    expect.assertions(tweetclawSourceExists() ? 3 : 1);
 
     if (!tweetclawSourceExists()) {
       expect(tweetclawSourceExists()).toBe(false);
@@ -91,8 +91,13 @@ describe('Plugin docs', (): void => {
       '<Card title="tweetclaw" icon="terminal">',
       'Call catalog-listed Xquik endpoints with structured method, path, query, and',
       'body input. This tool can make network requests.',
-      '`/xstatus`',
-      '`/xtrends`',
+      '<Card title="/xstatus" icon="terminal">',
+      'Show the connected X account, email, locale, subscription status, plan, and',
+      'usage when API key auth is configured.',
+      '<Card title="/xtrends" icon="trending-up">',
+      'Show current topics from Xquik Radar.',
+      '<Card title="/xtrends tech" icon="search">',
+      'Show current Xquik Radar topics filtered by the `tech` category.',
       '## Runtime Diagnostics',
       'TweetClaw can be installed before credentials are configured.',
       'Live API calls return setup guidance until you add an API key or MPP signing key.',
@@ -103,6 +108,7 @@ describe('Plugin docs', (): void => {
 
     expect(fileIncludes(guide, expected)).toStrictEqual([]);
     expect(guide).not.toContain('| Tool | Purpose | Network Access |');
+    expect(guide).not.toContain('| Command | Purpose |');
   });
 
   it('keeps the Hermes Tweet guide aligned with the local plugin package', (): void => {
