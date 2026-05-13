@@ -1138,6 +1138,33 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   'Retry with exponential backoff, then contact support if the error persists.',
 ] as const;
 
+const REQUIRED_TRENDS_REGION_SNIPPETS = [
+  '<CardGroup cols={3}>',
+  '<Card title="Global & Americas" icon="globe">',
+  '`1` - Worldwide',
+  '`23424977` - United States',
+  '`23424775` - Canada',
+  '`23424900` - Mexico',
+  '`23424768` - Brazil',
+  '<Card title="Europe" icon="map-pin">',
+  '`23424975` - United Kingdom',
+  '`23424969` - Turkey',
+  '`23424950` - Spain',
+  '`23424829` - Germany',
+  '`23424819` - France',
+  '<Card title="Asia" icon="building-2">',
+  '`23424856` - Japan',
+  '`23424848` - India',
+] as const;
+
+const FORBIDDEN_TRENDS_REGION_SNIPPETS = [
+  '| WOEID | Region |',
+  '|-------|--------|',
+  '| `23424977` | United States |',
+  '| `23424975` | United Kingdom |',
+  'cached in-process',
+] as const;
+
 const REQUIRED_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
   'Each extraction job needs one target field based on `toolType`.',
   '`resultsLimit`',
@@ -3923,6 +3950,47 @@ describe('repository discovery', (): void => {
         ),
       ],
     ).toStrictEqual([]);
+  });
+
+  it('keeps trends WOEID regions mobile friendly', (): void => {
+    expect.assertions(3);
+
+    const trendPages = [
+      {
+        label: 'Trends guide',
+        source: readFileSync('guides/trends.mdx', 'utf8'),
+      },
+      {
+        label: 'Trends API page',
+        source: readFileSync('api-reference/trends/list.mdx', 'utf8'),
+      },
+    ] as const;
+
+    expect(
+      trendPages.flatMap(
+        ({ label, source }): readonly DiscoveryFinding[] => [
+          ...collectSnippetFindings(
+            source,
+            label,
+            REQUIRED_TRENDS_REGION_SNIPPETS,
+          ),
+          ...FORBIDDEN_TRENDS_REGION_SNIPPETS.flatMap(
+            (snippet): readonly DiscoveryFinding[] =>
+              source.includes(snippet)
+                ? [
+                    {
+                      issue: `${label} contains stale regions table or cache wording "${snippet}".`,
+                    },
+                  ]
+                : [],
+          ),
+        ],
+      ),
+    ).toStrictEqual([]);
+    expect(trendPages[0].source).toContain(
+      'Results are cached briefly to keep responses fast.',
+    );
+    expect(trendPages[1].source).toContain('See supported regions below.');
   });
 
   it('keeps extraction export response formats mobile friendly', (): void => {
