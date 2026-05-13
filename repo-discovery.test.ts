@@ -3612,6 +3612,25 @@ function collectComparisonPositioningFindings(): readonly DiscoveryFinding[] {
   return findings;
 }
 
+function collectAlternativesOverviewCardParagraphFindings(): readonly DiscoveryFinding[] {
+  const source = readFileSync('alternatives.mdx', 'utf8');
+  const findings: DiscoveryFinding[] = [];
+  const cardPattern = /<Card title="([^"]+)"[^>]*>([\s\S]*?)<\/Card>/gu;
+
+  for (const match of source.matchAll(cardPattern)) {
+    const title = match[1] ?? 'untitled card';
+    const body = match[2] ?? '';
+
+    if (/\n\s*\n/u.test(body.trim())) {
+      findings.push({
+        issue: `Alternatives card "${title}" uses multiple paragraphs; keep card body text in one paragraph for Markdown/HTML parity.`,
+      });
+    }
+  }
+
+  return findings;
+}
+
 describe('repository discovery', (): void => {
   it('keeps the public README concrete and easy to find from GitHub search', (): void => {
     expect.assertions(1);
@@ -5034,9 +5053,7 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain(
       '| Sector | Start with | Choose Xquik when | Output to test |',
     );
-    expect(source).not.toMatch(
-      /<Card title="[^"]+"[^>]*>[\s\S]*?\n\n\s+(?:Choose Xquik|Put Xquik)/,
-    );
+    expect(collectAlternativesOverviewCardParagraphFindings()).toStrictEqual([]);
   });
 
   it('keeps the Brandwatch alternative focused on concrete social listening handoffs', (): void => {
