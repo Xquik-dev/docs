@@ -99,7 +99,7 @@ describe('Plugin docs', (): void => {
   });
 
   it('keeps the Hermes Tweet guide aligned with the local plugin package', (): void => {
-    expect.assertions(hermesTweetSourceExists() ? 3 : 1);
+    expect.assertions(hermesTweetSourceExists() ? 4 : 1);
 
     if (!hermesTweetSourceExists()) {
       expect(hermesTweetSourceExists()).toBe(false);
@@ -149,10 +149,15 @@ describe('Plugin docs', (): void => {
       'Show Xquik account, subscription, and usage status in an active Hermes CLI or gateway session.',
       '<Card title="/xtrends" icon="trending-up">',
       'Show current X trends from the plugin command registry.',
+      '<Card title="Public Reads" icon="search">',
+      'Tweet search, tweet lookup, user lookup, timelines, articles, and trends.',
+      '<Card title="Actions" icon="trending-up">',
+      'Tweet, reply, like, retweet, follow, DM, profile, media, and communities.',
     ];
 
     expect(fileIncludes(guide, expected)).toStrictEqual([]);
     expect(guide).not.toContain('| Tool | Purpose | Enabled By Default |');
     expect(guide).not.toContain('| Command | Purpose |');
+    expect(guide).not.toContain('| Area | Examples |');
   });
 });
