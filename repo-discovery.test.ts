@@ -5035,7 +5035,7 @@ describe('repository discovery', (): void => {
       '| Sector | Start with | Choose Xquik when | Output to test |',
     );
     expect(source).not.toMatch(
-      /<Card title="(?:Developer API teams|Scraping and dataset teams|Creator publishing teams|Social listening and enterprise teams|Workflow automation teams|AI agent teams)"[^>]*>[\s\S]*?\n\n\s+Choose Xquik/,
+      /<Card title="[^"]+"[^>]*>[\s\S]*?\n\n\s+(?:Choose Xquik|Put Xquik)/,
     );
   });
 
