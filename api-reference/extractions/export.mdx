@@ -21,6 +21,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 
   ```javascript Node.js
+  import { writeFile } from "node:fs/promises";
+
   const extractionId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
   const response = await fetch(
     `https://xquik.com/api/v1/extractions/${extractionId}/export?format=csv`,
@@ -32,8 +34,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     },
   );
 
-  const blob = await response.blob();
-  // Save to file or process as needed
+  if (!response.ok) {
+    throw new Error(`Export failed with ${response.status}`);
+  }
+
+  const bytes = Buffer.from(await response.arrayBuffer());
+  await writeFile("extraction-reply_extractor.csv", bytes);
   ```
 
   ```python Python

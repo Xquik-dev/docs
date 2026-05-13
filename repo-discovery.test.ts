@@ -1100,6 +1100,10 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS = [
+  'import { writeFile } from "node:fs/promises";',
+  'const bytes = Buffer.from(await response.arrayBuffer());',
+  'await writeFile("extraction-reply_extractor.csv", bytes);',
+  'throw new Error(`Export failed with ${response.status}`);',
   'Returns a file download. The response includes a `Content-Disposition` header with the filename.',
   '<CardGroup cols={2}>',
   '<Card title="CSV" icon="table">',
@@ -3682,7 +3686,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps extraction export response formats mobile friendly', (): void => {
-    expect.assertions(2);
+    expect.assertions(3);
 
     const source = readFileSync('api-reference/extractions/export.mdx', 'utf8');
 
@@ -3694,6 +3698,7 @@ describe('repository discovery', (): void => {
       ),
     ).toStrictEqual([]);
     expect(source).not.toContain('| Format | Content-Type | Filename Example |');
+    expect(source).not.toContain('const blob = await response.blob();');
   });
 
   it('keeps draw export response formats mobile friendly', (): void => {
