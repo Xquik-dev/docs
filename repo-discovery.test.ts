@@ -16,6 +16,17 @@ const SKIPPED_PUBLIC_SCAN_DIRS = new Set([
 
 const CREDITS_QUICK_TOPUP_PAGE = 'api-reference/credits/quick-topup.mdx';
 
+const REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS = [
+  '/* Keep mobile guide content inside the viewport. */',
+  '@media (max-width: 640px)',
+  '#content-area',
+  'width: calc(100vw - 2rem) !important;',
+  'max-width: calc(100vw - 2rem) !important;',
+  '#header .prose > *',
+  '#content > span[data-as="p"]',
+  'overflow-wrap: anywhere;',
+] as const;
+
 const REQUIRED_README_SNIPPETS = [
   'tweet search',
   'user lookup',
@@ -3815,6 +3826,20 @@ describe('repository discovery', (): void => {
               : [],
         ),
       ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps mobile guide content constrained to the viewport', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('custom.css', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Custom CSS mobile viewport guard',
+        REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS,
+      ),
     ).toStrictEqual([]);
   });
 
