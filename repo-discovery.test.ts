@@ -1138,6 +1138,56 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   'Retry with exponential backoff, then contact support if the error persists.',
 ] as const;
 
+const REQUIRED_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
+  'Each extraction job needs one target field based on `toolType`.',
+  '`resultsLimit`',
+  '<Card title="Tweet target" icon="message-circle">',
+  'Use `targetTweetId` for tweet-centered jobs:',
+  '`article_extractor` extracts article content from a tweet.',
+  '`favoriters` extracts users who liked a tweet.',
+  '`quote_extractor` extracts users who quote-tweeted a tweet.',
+  '`reply_extractor` extracts users who replied to a tweet.',
+  '`repost_extractor` extracts users who retweeted a tweet.',
+  '`thread_extractor` extracts all tweets in a thread.',
+  '<Card title="Username target" icon="user">',
+  'Use `targetUsername` for account-centered jobs:',
+  '`follower_explorer` extracts followers of an account.',
+  '`following_explorer` extracts accounts followed by a user.',
+  '`mention_extractor` extracts tweets mentioning an account.',
+  '`post_extractor` extracts posts from an account.',
+  '`user_likes` extracts tweets liked by a user.',
+  '`user_media` extracts media posts from a user.',
+  '`verified_follower_explorer` extracts verified followers of an account.',
+  '<Card title="Community target" icon="users">',
+  'Use `targetCommunityId` for community jobs:',
+  '`community_extractor` extracts members of a community.',
+  '`community_moderator_explorer` extracts moderators of a community.',
+  '`community_post_extractor` extracts posts from a community.',
+  '<Card title="Search query" icon="search">',
+  'Use `searchQuery` for keyword jobs:',
+  '`community_search` searches posts within a community.',
+  '`people_search` searches for users by keyword.',
+  '`tweet_search_extractor` searches and extracts tweets by keyword or hashtag.',
+  '<Card title="List target" icon="list">',
+  'Use `targetListId` for X List jobs:',
+  '`list_follower_explorer` extracts followers of a list.',
+  '`list_member_extractor` extracts members of a list.',
+  '`list_post_extractor` extracts posts from a list.',
+  '<Card title="Space target" icon="radio">',
+  'Use `targetSpaceId` for Space jobs:',
+  '`space_explorer` extracts participants of a Space.',
+] as const;
+
+const FORBIDDEN_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
+  '| Tool Type | Required Field | Description |',
+  '| `article_extractor` | `targetTweetId` |',
+  '| `follower_explorer` | `targetUsername` |',
+  '| `community_extractor` | `targetCommunityId` |',
+  '| `tweet_search_extractor` | `searchQuery` |',
+  '| `list_member_extractor` | `targetListId` |',
+  '| `space_explorer` | `targetSpaceId` |',
+] as const;
+
 const REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS = [
   'curl --fail -X GET',
   'import { writeFile } from "node:fs/promises";',
@@ -3889,6 +3939,33 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(source).not.toContain('| Format | Content-Type | Filename Example |');
     expect(source).not.toContain('const blob = await response.blob();');
+  });
+
+  it('keeps extraction create tool types grouped by required field', (): void => {
+    expect.assertions(2);
+
+    const source = readFileSync('api-reference/extractions/create.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'Extraction create tool types',
+          REQUIRED_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS,
+        ),
+        ...FORBIDDEN_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Extraction create tool types contain stale table copy "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
+    expect(source).not.toContain('|-----------|---------------|-------------|');
   });
 
   it('keeps draw export response formats mobile friendly', (): void => {
