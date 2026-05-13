@@ -963,6 +963,18 @@ const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
   'the read service may be experiencing an outage',
 ] as const;
 
+const REQUIRED_AUTHENTICATION_ERROR_GUIDE_SNIPPETS = [
+  '<Accordion title="Authentication errors (401)">',
+  '<Card title="unauthenticated" icon="key-round">',
+  'API key or bearer token is missing or invalid.',
+  'Send `x-api-key` or',
+  'regenerate a revoked key.',
+  '<Card title="x_auth_failure" icon="refresh-cw">',
+  'Connected X account session expired or was invalidated.',
+  'Re-authenticate',
+  'the account from the [dashboard](https://xquik.com/dashboard).',
+] as const;
+
 const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   'Error recovery patterns for X API writes, pending tweet confirmation, billing, retries, and rate limits',
   'Every Xquik API error returns a consistent JSON body with an `error` code.',
@@ -983,6 +995,8 @@ const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   '`x_transient_error` | Read service timeout or temporary failure',
   '| `x_api_rate_limited` | Read service rate limited | Retry in a few minutes.',
   '| `x_transient_error` | Write service timeout or temporary failure |',
+  '| `unauthenticated` | Missing or invalid API key |',
+  '| `x_auth_failure` | X account session expired or invalid |',
   'data source may be experiencing an outage',
 ] as const;
 
@@ -3870,6 +3884,11 @@ describe('repository discovery', (): void => {
           source,
           'Service error guide wording',
           REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          source,
+          'Authentication error guide wording',
+          REQUIRED_AUTHENTICATION_ERROR_GUIDE_SNIPPETS,
         ),
         ...FORBIDDEN_ERROR_HANDLING_SNIPPETS.flatMap(
           (snippet): readonly DiscoveryFinding[] =>
