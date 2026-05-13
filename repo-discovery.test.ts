@@ -1100,10 +1100,15 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS = [
+  'curl --fail -X GET',
   'import { writeFile } from "node:fs/promises";',
   'const bytes = Buffer.from(await response.arrayBuffer());',
   'await writeFile("extraction-reply_extractor.csv", bytes);',
   'throw new Error(`Export failed with ${response.status}`);',
+  'response.raise_for_status()',
+  '"fmt"',
+  'if resp.StatusCode < 200 || resp.StatusCode >= 300',
+  'panic(fmt.Sprintf("export failed with %d", resp.StatusCode))',
   'Returns a file download. The response includes a `Content-Disposition` header with the filename.',
   '<CardGroup cols={2}>',
   '<Card title="CSV" icon="table">',
