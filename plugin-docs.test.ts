@@ -99,7 +99,7 @@ describe('Plugin docs', (): void => {
   });
 
   it('keeps the Hermes Tweet guide aligned with the local plugin package', (): void => {
-    expect.assertions(hermesTweetSourceExists() ? 2 : 1);
+    expect.assertions(hermesTweetSourceExists() ? 3 : 1);
 
     if (!hermesTweetSourceExists()) {
       expect(hermesTweetSourceExists()).toBe(false);
@@ -145,9 +145,14 @@ describe('Plugin docs', (): void => {
       'Call catalog-listed read-only endpoints after `XQUIK_API_KEY` is configured.',
       '<Card title="tweet_action" icon="shield-check">',
       'Call write-like or private endpoints only when `HERMES_TWEET_ENABLE_ACTIONS=true`.',
+      '<Card title="/xstatus" icon="terminal">',
+      'Show Xquik account, subscription, and usage status in an active Hermes CLI or gateway session.',
+      '<Card title="/xtrends" icon="trending-up">',
+      'Show current X trends from the plugin command registry.',
     ];
 
     expect(fileIncludes(guide, expected)).toStrictEqual([]);
     expect(guide).not.toContain('| Tool | Purpose | Enabled By Default |');
+    expect(guide).not.toContain('| Command | Purpose |');
   });
 });
