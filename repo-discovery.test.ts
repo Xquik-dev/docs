@@ -754,13 +754,25 @@ const REQUIRED_DRAFT_TYPES_GUIDE_SNIPPETS = [
 
 const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   'post tweet status',
-  '`x_write_unconfirmed` | 202 | No | Poll `GET /x/write-actions/{id}` with `writeActionId` before retrying.',
+  'Start with the HTTP family, then apply the recovery rule.',
+  '<Card title="400 request validation" icon="circle-alert">',
+  '`invalid_json`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`',
+  '<Card title="402 billing and credits" icon="credit-card">',
+  '`payment_failed`, `no_credits`, and `insufficient_credits`.',
+  '<Card title="403 permissions and account health" icon="shield-alert">',
+  '`api_key_limit_reached`, `monitor_limit_reached`, `account_needs_reauth`',
+  '<Card title="422 write validation" icon="message-circle-warning">',
+  '`x_dm_not_allowed`, `x_target_not_found`, `x_content_too_long`',
+  '<Card title="202 pending confirmation" icon="clock">',
+  'Store `writeActionId`, poll',
+  'and do not retry-send while status is `pending_confirmation`.',
+  '<Card title="429 rate limit or cooldown" icon="timer">',
+  '`Retry-After` or exponential backoff',
+  '<Card title="500, 502, and 503 transient failures" icon="rotate-ccw">',
+  'Stop after 3 attempts.',
   'The write action was dispatched, but final confirmation is still pending.',
   'The response includes `status: "pending_confirmation"`, `writeActionId`, `charged: false`, and `retryable: false`.',
   'Store `writeActionId`, call [Get Write Action Status](/api-reference/x-write/get-write-action-status), and do not retry-send while status is `pending_confirmation`.',
-  '`x_dm_not_allowed` | 422 | No | The recipient may not accept DMs from this account. Use another permitted account or ask the recipient to allow messages.',
-  '`no_addon` | 402 | No | Check billing status. Current plans include unlimited monitor slots.',
-  '`monitor_limit_reached` | 403 | No | Check billing status. Current plans include unlimited monitor slots.',
 ] as const;
 
 const REQUIRED_CREATE_TWEET_API_SNIPPETS = [
@@ -835,6 +847,7 @@ const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
+  '| Code | HTTP | Retryable | Quick fix |',
   'Add a monitor addon from the dashboard.',
   'Delete a monitor or add capacity ($5/month).',
   'add capacity ($5/month per extra monitor)',

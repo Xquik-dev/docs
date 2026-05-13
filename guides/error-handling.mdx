@@ -24,66 +24,69 @@ Every Xquik API error returns a consistent JSON body with an `error` code. Use t
 
 ## Quick reference
 
-| Code | HTTP | Retryable | Quick fix |
-|------|------|-----------|-----------|
-| `invalid_input` | 400 | No | Fix request body. Check required fields and types. |
-| `invalid_json` | 400 | No | Send valid JSON in the request body. |
-| `invalid_id` | 400 | No | Use a numeric string for the ID path parameter. |
-| `invalid_tweet_url` | 400 | No | Use full URL format: `https://x.com/user/status/ID`. |
-| `invalid_tweet_id` | 400 | No | Provide a valid numeric tweet ID. |
-| `invalid_username` | 400 | No | Provide a valid X username without `@`. |
-| `invalid_user_id` | 400 | No | User not found or invalid user ID. Check the username or ID. |
-| `invalid_tool_type` | 400 | No | Use a valid extraction tool type. |
-| `invalid_format` | 400 | No | Use `csv`, `json`, `md`, `md-document`, `pdf`, `txt`, or `xlsx`. |
-| `invalid_params` | 400 | No | Check `format` and `type` values. |
-| `missing_query` | 400 | No | Include the required `q` parameter. |
-| `missing_ids` | 400 | No | Provide a comma-separated `ids` query parameter. |
-| `missing_params` | 400 | No | Check endpoint docs for required parameters. |
-| `too_many_ids` | 400 | No | Split the request into groups of 100 IDs or fewer. |
-| `webhook_inactive` | 400 | No | Reactivate the webhook before testing. |
-| `unsupported_field` | 400 | No | Remove the unsupported field (e.g. `media_ids` on POST /x/tweets). |
-| `unauthenticated` | 401 | No | Check `x-api-key` header. Regenerate if revoked. |
-| `x_auth_failure` | 401 | No | Re-authenticate X account from the dashboard. |
-| `no_subscription` | 402 | No | Subscribe from the dashboard. |
-| `subscription_inactive` | 402 | No | Reactivate subscription from the dashboard. |
-| `no_addon` | 402 | No | Check billing status. Current plans include unlimited monitor slots. |
-| `payment_failed` | 402 | No | Update payment method from the dashboard. |
-| `no_credits` | 402 | No | Purchase credits or subscribe. |
-| `insufficient_credits` | 402 | No | Top up credits from the dashboard. |
-| `api_key_limit_reached` | 403 | No | Delete an existing key before creating a new one. |
-| `monitor_limit_reached` | 403 | No | Check billing status. Current plans include unlimited monitor slots. |
-| `account_needs_reauth` | 403 | No | Re-authenticate X account from the dashboard. |
-| `account_restricted` | 403 | No | Resolve account issue on x.com (locked, suspended, or temporary restriction), then retry. |
-| `not_found` | 404 | No | Verify the resource ID. |
-| `user_not_found` | 404 | No | Check the username. Account may be suspended. |
-| `tweet_not_found` | 404 | No | Check the tweet ID. Tweet may be deleted. |
-| `no_media` | 404 | No | Tweet has no media attachments. |
-| `article_not_found` | 404 | No | Tweet has no linked article. |
-| `draft_not_found` | 404 | No | Verify the draft ID. |
-| `style_not_found` | 404 | No | Analyze the user's style first via `POST /api/v1/styles`. |
-| `no_cached_style` | 404 | No | Analyze the user's style first via `POST /api/v1/styles`. |
-| `monitor_already_exists` | 409 | No | Use the existing monitor. |
-| `x_account_feature_required` | 422 | No | Upgrade to X Premium on the target account. |
-| `x_account_suspended` | 422 | No | Check account status on X. |
-| `x_account_protected` | 422 | No | Request to follow the protected account first. |
-| `x_duplicate_action` | 422 | No | Action already completed. No retry needed. |
-| `x_dm_not_allowed` | 422 | No | The recipient may not accept DMs from this account. Use another permitted account or ask the recipient to allow messages. |
-| `x_target_not_found` | 422 | No | Verify target ID or username. |
-| `x_content_too_long` | 422 | No | Shorten tweet to 280 characters or fewer. |
-| `x_rejected` | 422 | No | Check request parameters. Contact support if persistent. |
-| `x_write_unconfirmed` | 202 | No | Poll `GET /x/write-actions/{id}` with `writeActionId` before retrying. |
-| `rate_limit_exceeded` | 429 | Yes | Retry with exponential backoff. Respect `Retry-After`. |
-| `login_cooldown` | 429 | No | Wait out the cooldown reported in `retryAfterMs`, then retry. |
-| `x_api_rate_limited` | 502 | Yes | Retry in a few minutes. |
-| `x_rate_limited` | 429 | Yes | Wait a few minutes and retry. |
-| `x_daily_limit` | 429 | No | Wait 24 hours or use a different X account. |
-| `internal_error` | 500 | Yes | Retry with backoff. Contact support if persistent. |
-| `x_api_unavailable` | 502 | Yes | Retry with backoff. |
-| `x_api_unauthorized` | 502 | Yes | Retry later. Contact support if persistent. |
-| `x_write_failed` | 500 | Yes | Retry the request. Contact support if persistent. |
-| `x_write_ambiguous` | 500 | No | Verify the action result manually. |
-| `x_transient_error` | 503 | Yes | Retry with backoff. |
-| `media_download_failed` | 422 | No | Fix the URL or pass the file via multipart/form-data. Do not retry the same URL. |
+Start with the HTTP family, then apply the recovery rule. Retry only when a
+card says the error is retryable.
+
+<CardGroup cols={2}>
+  <Card title="400 request validation" icon="circle-alert">
+    Retry: no. Fix the body, query, or path. Covers `invalid_input`,
+    `invalid_json`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`,
+    `invalid_username`, `invalid_user_id`, `invalid_tool_type`,
+    `invalid_format`, `invalid_params`, `missing_query`, `missing_ids`,
+    `missing_params`, `too_many_ids`, `webhook_inactive`, and
+    `unsupported_field`.
+  </Card>
+  <Card title="401 authentication" icon="key-round">
+    Retry: no. Check `x-api-key`, regenerate revoked keys, or re-authenticate
+    the connected X account. Covers `unauthenticated` and `x_auth_failure`.
+  </Card>
+  <Card title="402 billing and credits" icon="credit-card">
+    Retry: no. Subscribe, reactivate billing, update payment, or top up credits.
+    Covers `no_subscription`, `subscription_inactive`, `no_addon`,
+    `payment_failed`, `no_credits`, and `insufficient_credits`.
+  </Card>
+  <Card title="403 permissions and account health" icon="shield-alert">
+    Retry: no. Delete an extra key, check billing status, re-authenticate the X
+    account, or resolve the account restriction on x.com. Covers
+    `api_key_limit_reached`, `monitor_limit_reached`, `account_needs_reauth`,
+    and `account_restricted`.
+  </Card>
+  <Card title="404 missing resource" icon="search-x">
+    Retry: no. Verify the resource ID, username, tweet ID, media, article,
+    draft, or cached style. Covers `not_found`, `user_not_found`,
+    `tweet_not_found`, `no_media`, `article_not_found`, `draft_not_found`,
+    `style_not_found`, and `no_cached_style`.
+  </Card>
+  <Card title="409 duplicate monitor" icon="copy-check">
+    Retry: no. Use the existing monitor or update it. Covers
+    `monitor_already_exists`.
+  </Card>
+  <Card title="422 write validation" icon="message-circle-warning">
+    Retry: no. Fix the account capability, target, content, DM permissions, or
+    media URL before sending again. Covers `x_account_feature_required`,
+    `x_account_suspended`, `x_account_protected`, `x_duplicate_action`,
+    `x_dm_not_allowed`, `x_target_not_found`, `x_content_too_long`,
+    `x_rejected`, and `media_download_failed`.
+  </Card>
+  <Card title="202 pending confirmation" icon="clock">
+    Retry: no. Store `writeActionId`, poll
+    [Get Write Action Status](/api-reference/x-write/get-write-action-status),
+    and do not retry-send while status is `pending_confirmation`. Covers
+    `x_write_unconfirmed`.
+  </Card>
+  <Card title="429 rate limit or cooldown" icon="timer">
+    Retry: mixed. Retry `rate_limit_exceeded` and `x_rate_limited` after
+    `Retry-After` or exponential backoff. Wait out `login_cooldown` via
+    `retryAfterMs`. Do not retry `x_daily_limit` on the same X account for 24
+    hours.
+  </Card>
+  <Card title="500, 502, and 503 transient failures" icon="rotate-ccw">
+    Retry: yes for `internal_error`, `x_api_rate_limited`,
+    `x_api_unavailable`, `x_api_unauthorized`, `x_write_failed`, and
+    `x_transient_error`. Stop after 3 attempts. For `x_write_ambiguous`, verify
+    the result manually before sending anything again.
+  </Card>
+</CardGroup>
 
 ## Error codes (detailed)
 
