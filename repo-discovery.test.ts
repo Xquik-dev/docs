@@ -1818,6 +1818,19 @@ const REQUIRED_WEBHOOK_CREATE_API_SNIPPETS = [
   '[Signature Verification](/webhooks/verification)',
 ] as const;
 
+const REQUIRED_WEBHOOK_LIST_API_SNIPPETS = [
+  '## Inventory handoff',
+  'Store `webhooks[].id` for updates, deletes, test deliveries, and delivery',
+  'Store `webhooks[].url` so configuration reviews can detect stale receiver',
+  'Store `webhooks[].eventTypes` and compare it with monitor event types',
+  'expecting `tweet.new`, `tweet.quote`, `tweet.reply`, or `tweet.retweet`.',
+  'Store `webhooks[].isActive`; inactive webhooks do not receive monitor',
+  'Store `webhooks[].createdAt` for audit logs and configuration drift checks.',
+  'The signing `secret` is not listed.',
+  '[Create Webhook](/api-reference/webhooks/create)',
+  '[Signature Verification](/webhooks/verification)',
+] as const;
+
 const REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS = [
   'Updated event types to subscribe to. Replaces the existing list. At least 1 required when provided.',
   '<Card title="tweet.new" icon="bell">',
@@ -4625,6 +4638,10 @@ describe('repository discovery', (): void => {
       'api-reference/webhooks/create.mdx',
       'utf8',
     );
+    const listWebhookApi = readFileSync(
+      'api-reference/webhooks/list.mdx',
+      'utf8',
+    );
     const updateWebhookApi = readFileSync(
       'api-reference/webhooks/update.mdx',
       'utf8',
@@ -4640,6 +4657,11 @@ describe('repository discovery', (): void => {
           createWebhookApi,
           'Create webhook API docs',
           REQUIRED_WEBHOOK_CREATE_API_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          listWebhookApi,
+          'List webhook API docs',
+          REQUIRED_WEBHOOK_LIST_API_SNIPPETS,
         ),
         ...collectSnippetFindings(
           updateWebhookApi,
