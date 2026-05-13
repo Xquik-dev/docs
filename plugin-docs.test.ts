@@ -60,7 +60,7 @@ function hermesTweetSourceExists(): boolean {
 
 describe('Plugin docs', (): void => {
   it('keeps the TweetClaw guide aligned with the local plugin package', (): void => {
-    expect.assertions(1);
+    expect.assertions(tweetclawSourceExists() ? 2 : 1);
 
     if (!tweetclawSourceExists()) {
       expect(tweetclawSourceExists()).toBe(false);
@@ -85,6 +85,12 @@ describe('Plugin docs', (): void => {
       `${endpointCount} agent-callable endpoints`,
       '`explore`',
       '`tweetclaw`',
+      '<Card title="explore" icon="search">',
+      'Search the bundled Xquik endpoint catalog and inspect parameters.',
+      'does not call the network.',
+      '<Card title="tweetclaw" icon="terminal">',
+      'Call catalog-listed Xquik endpoints with structured method, path, query, and',
+      'body input. This tool can make network requests.',
       '`/xstatus`',
       '`/xtrends`',
       '## Runtime Diagnostics',
@@ -96,6 +102,7 @@ describe('Plugin docs', (): void => {
     ];
 
     expect(fileIncludes(guide, expected)).toStrictEqual([]);
+    expect(guide).not.toContain('| Tool | Purpose | Network Access |');
   });
 
   it('keeps the Hermes Tweet guide aligned with the local plugin package', (): void => {
