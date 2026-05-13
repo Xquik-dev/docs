@@ -1010,6 +1010,20 @@ const REQUIRED_PERMISSION_ERROR_GUIDE_SNIPPETS = [
   'Resolve account health on x.com or wait before retrying.',
 ] as const;
 
+const REQUIRED_RATE_LIMIT_ERROR_GUIDE_SNIPPETS = [
+  '<Accordion title="Rate limit errors (429)">',
+  '<Card title="rate_limit_exceeded" icon="timer">',
+  'Wait the `Retry-After` seconds',
+  'JSON also includes `retryAfter` when available.',
+  '<Card title="login_cooldown" icon="clock">',
+  'Wait `retryAfterMs` or the',
+  '`Retry-After` header before reconnecting or reauthenticating.',
+  '<Card title="x_rate_limited" icon="gauge">',
+  'Wait 2-3 minutes, avoid rapid consecutive',
+  '<Card title="x_daily_limit" icon="calendar-x">',
+  'Connected X account reached its daily posting limit.',
+] as const;
+
 const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   'Error recovery patterns for X API writes, pending tweet confirmation, billing, retries, and rate limits',
   'Every Xquik API error returns a consistent JSON body with an `error` code.',
@@ -1042,6 +1056,10 @@ const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   '| `monitor_limit_reached` | Legacy monitor slot limit reached |',
   '| `account_needs_reauth` | Connected X account needs re-authentication |',
   '| `account_restricted` | Connected X account is restricted',
+  '| `rate_limit_exceeded` | API rate limited |',
+  '| `login_cooldown` | X account is on login cooldown after a flagged attempt |',
+  '| `x_rate_limited` | X rate-limited the write request |',
+  '| `x_daily_limit` | X account reached daily posting limit |',
   'data source may be experiencing an outage',
 ] as const;
 
@@ -3944,6 +3962,11 @@ describe('repository discovery', (): void => {
           source,
           'Permission error guide wording',
           REQUIRED_PERMISSION_ERROR_GUIDE_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          source,
+          'Rate limit error guide wording',
+          REQUIRED_RATE_LIMIT_ERROR_GUIDE_SNIPPETS,
         ),
         ...FORBIDDEN_ERROR_HANDLING_SNIPPETS.flatMap(
           (snippet): readonly DiscoveryFinding[] =>

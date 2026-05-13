@@ -253,12 +253,24 @@ Some errors include additional context fields (e.g. `limit`, `retryAfter`).
   <Accordion title="Rate limit errors (429)">
     Request rate exceeded. See [Rate Limits](/guides/rate-limits) for tier details.
 
-    | Code | Description | Recommended Action |
-    |------|-------------|-------------------|
-    | `rate_limit_exceeded` | API rate limited | Retry with exponential backoff. Respect the `Retry-After` header. Response includes `retryAfter` (seconds). |
-    | `login_cooldown` | X account is on login cooldown after a flagged attempt | Wait out the cooldown reported in `retryAfterMs` before retrying. Response includes a `Retry-After` header in seconds and a `reason` field. Not retryable until the cooldown ends. |
-    | `x_rate_limited` | X rate-limited the write request | Wait a few minutes and retry. The platform is throttling write operations. |
-    | `x_daily_limit` | X account reached daily posting limit | Wait 24 hours before retrying with this account. Use a different X account if available. Not retryable. |
+    <CardGroup cols={2}>
+      <Card title="rate_limit_exceeded" icon="timer">
+        Xquik tier or action limit was reached. Wait the `Retry-After` seconds
+        from the response; JSON also includes `retryAfter` when available.
+      </Card>
+      <Card title="login_cooldown" icon="clock">
+        A recent login attempt triggered cooldown. Wait `retryAfterMs` or the
+        `Retry-After` header before reconnecting or reauthenticating.
+      </Card>
+      <Card title="x_rate_limited" icon="gauge">
+        X throttled the write. Wait 2-3 minutes, avoid rapid consecutive
+        requests to the same account, then retry with backoff.
+      </Card>
+      <Card title="x_daily_limit" icon="calendar-x">
+        Connected X account reached its daily posting limit. Wait 24 hours
+        before retrying that account, or use another connected account.
+      </Card>
+    </CardGroup>
   </Accordion>
 
   <Accordion title="Server & service errors (500/502/503)">
