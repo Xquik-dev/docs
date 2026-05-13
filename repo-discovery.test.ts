@@ -642,6 +642,13 @@ const REQUIRED_BILLING_MONITOR_SNIPPETS = [
   'Hourly burn: 210 credits/hour. Daily estimate: 5,000 credits/day.',
   'Keep at least 22 credits before creating or reactivating one more monitor.',
   'If `creditInfo.balance` is below the next hourly burn, top up before enabling more monitors.',
+  '### Extractions & draws',
+  '<Card title="Tweet-style results" icon="message-square">',
+  '1 credit per result. Includes tweets, replies, quotes, mentions, posts, likes, media, and search exports.',
+  '<Card title="People results" icon="users">',
+  '1 credit per result. Includes followers, following, favoriters, retweeters, community members, people search, list members, list followers, and verified followers.',
+  '<Card title="Article results" icon="file-text">',
+  '5 credits per result. Applies to article extractions.',
   'A USD 10 top-up adds 66,666 credits',
   'Eligible MPP read endpoints can also be paid per request without a subscription.',
 ] as const;
@@ -669,6 +676,8 @@ const FORBIDDEN_BILLING_CARRYOVER_SNIPPETS = [
   '| Account monitor slots | Unlimited |',
   '| Active monitors | Hourly burn | Daily estimate | Credits needed before creating or reactivating one more monitor |',
   '| 5 | 105 credits/hour | 2,500 credits/day | 22 |',
+  '| Credit cost | Extraction types |',
+  '| 1 per result | Tweets, replies, quotes, mentions, posts, likes, media, search |',
 ] as const;
 
 const REQUIRED_QUICK_TOPUP_PAGE_SNIPPETS = [
