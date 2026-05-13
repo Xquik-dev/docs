@@ -78,6 +78,11 @@ const REQUIRED_SDK_OVERVIEW_SNIPPETS = [
   'tweet search exports',
   'JSON Lines, CSV, or XLSX',
   '`xquik-tweet-search.jsonl`',
+  '<Card title="Tweet search exports" icon="search">',
+  '<Card title="Post image tweets or replies" icon="image">',
+  '<Card title="Upload DM attachments" icon="message-circle">',
+  '<Card title="Monitor tweets to webhooks" icon="radio">',
+  '<Card title="Agent handoff" icon="bot">',
   '[TypeScript](/sdks/typescript)',
   '[Python](/sdks/python)',
   '[Go](/sdks/go)',
@@ -87,12 +92,21 @@ const REQUIRED_SDK_OVERVIEW_SNIPPETS = [
   '[Upload Media](/api-reference/x-write/upload-media)',
   '[Send Direct Message](/api-reference/x-write/send-dm)',
   'public image URLs',
+  '`mediaId` as the one-item `media_ids` value',
+  'store `mediaUrl` and the',
   'one-item `media_ids`',
-  'Tweet search costs 1 credit per tweet returned.',
-  'Each tweet or reply write costs 10 credits.',
-  'Media upload and DM send calls each cost 10 credits.',
-  'Active instant monitors cost 21 credits per active monitor-hour.',
+  'Cost: 1 credit per',
+  'Cost: 10 credits per tweet or reply write.',
+  'Cost: 10 credits per media upload plus 10 credits per',
+  'instant monitors cost 21 credits per active monitor-hour.',
   '[MCP Server](/mcp/overview)',
+] as const;
+
+const FORBIDDEN_SDK_OVERVIEW_SNIPPETS = [
+  '| Job | Start here | Handoff & Cost |',
+  '| Tweet search exports | [TypeScript](/sdks/typescript), [Python](/sdks/python), [Go](/sdks/go), or [CLI](/sdks/cli) with [Search Tweets](/api-reference/x/search-tweets) |',
+  '| Post image tweets or replies | [TypeScript](/sdks/typescript), [Go](/sdks/go), or [CLI](/sdks/cli) with [Create Tweet](/api-reference/x-write/create-tweet) |',
+  '| Upload DM attachments | [Upload Media](/api-reference/x-write/upload-media), then [Send Direct Message](/api-reference/x-write/send-dm) |',
 ] as const;
 
 const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
@@ -3341,11 +3355,24 @@ describe('repository discovery', (): void => {
     const source = readFileSync('sdks.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'SDK overview docs',
-        REQUIRED_SDK_OVERVIEW_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'SDK overview docs',
+          REQUIRED_SDK_OVERVIEW_SNIPPETS,
+        ),
+        ...FORBIDDEN_SDK_OVERVIEW_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    label: 'SDK overview docs',
+                    snippet,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
