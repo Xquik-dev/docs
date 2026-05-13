@@ -2109,6 +2109,10 @@ const REQUIRED_SEND_DM_API_SNIPPETS = [
   'the recipient may not accept messages from this connected account; do not retry unchanged.',
   'Do not retry `422 x_dm_not_allowed` unchanged',
   'Empty arrays and multiple IDs are rejected.',
+  '[Direct Message Workflow](/guides/direct-message-workflow)',
+  '[Get DM History](/api-reference/x/dm-history)',
+  '[Upload Media](/api-reference/x-write/upload-media)',
+  'to create the one `mediaId` allowed in `media_ids`.',
 ] as const;
 
 const REQUIRED_COMPOSE_STYLE_SNIPPETS = [
