@@ -1421,7 +1421,35 @@ const REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS = [
   'Webhook receivers should return `2xx` within 10 seconds.',
   '<Card title="Event propagation" icon="activity">',
   'Events usually appear within seconds to minutes',
-  '| **Webhook retries** | 10 attempts maximum. After exhaustion, the delivery is marked as `exhausted`. `410 Gone` marks a delivery exhausted immediately. |',
+] as const;
+
+const REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS = [
+  '<Card title="Single region" icon="map-pin">',
+  'Do not assume',
+  'multi-region',
+  'replication.',
+  '<Card title="Bookmarked tweets" icon="bookmark">',
+  'Bookmarks and bookmark folders require a connected X account.',
+  '[bookmarks](/api-reference/x/bookmarks)',
+  '[bookmark folders](/api-reference/x/bookmark-folders)',
+  '<Card title="Export caps" icon="download">',
+  'Extraction exports are capped at 100,000 rows.',
+  'PDF exports are capped at',
+  '10,000 rows.',
+  '<Card title="Webhook retries" icon="rotate-ccw">',
+  'Webhook deliveries try up to 10 attempts.',
+  '`410 Gone` exhausts immediately;',
+  'other failures retry until delivered or exhausted.',
+  '<Card title="Monitor slots" icon="activity">',
+  'Active instant monitors check every 1 second',
+  'cost 21 credits per active monitor-hour.',
+] as const;
+
+const FORBIDDEN_ARCHITECTURE_LIMITATION_SNIPPETS = [
+  '| Limitation | Detail |',
+  '|------------|--------|',
+  '| **Bookmarked tweets** | Bookmarks require an authenticated X account connection |',
+  '| **Export cap** | File exports are capped at 100,000 rows per extraction (10,000 for PDF). Formats: CSV, JSON, MD, MD Document, PDF, TXT, XLSX |',
 ] as const;
 
 const REQUIRED_WEBHOOK_TYPES_SNIPPETS = [
@@ -3831,12 +3859,28 @@ describe('repository discovery', (): void => {
           'Architecture guide webhook retries',
           REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS,
         ),
+        ...collectSnippetFindings(
+          architecture,
+          'Architecture guide platform limitations',
+          REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS,
+        ),
         ...FORBIDDEN_WEBHOOK_ARCHITECTURE_SNIPPETS.flatMap(
           (snippet): readonly DiscoveryFinding[] =>
             architecture.includes(snippet)
               ? [
                   {
                     issue: `Architecture guide contains stale webhook architecture table wording "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+        ...FORBIDDEN_ARCHITECTURE_LIMITATION_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            architecture.includes(snippet)
+              ? [
+                  {
+                    label: 'Architecture guide platform limitations',
+                    snippet,
                   },
                 ]
               : [],
