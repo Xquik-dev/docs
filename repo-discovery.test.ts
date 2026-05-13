@@ -1279,6 +1279,8 @@ const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   '`sinceTime` and `untilTime` are Unix timestamps in seconds',
   'Direct replies calls use the default paid page size',
   '`resultsLimit`',
+  '[Tweet Replies Export Workflow](/guides/tweet-replies-export)',
+  'saved CSV, JSON, or XLSX files',
   '1 credit per tweet returned',
   '`402 insufficient_credits`',
   '`Retry-After`',
