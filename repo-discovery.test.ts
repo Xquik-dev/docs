@@ -1024,6 +1024,30 @@ const REQUIRED_RATE_LIMIT_ERROR_GUIDE_SNIPPETS = [
   'Connected X account reached its daily posting limit.',
 ] as const;
 
+const REQUIRED_WRITE_VALIDATION_ERROR_GUIDE_SNIPPETS = [
+  '<Accordion title="Validation errors (422)">',
+  'Write validation failed. Change the account, target, content, DM',
+  '<Card title="x_account_feature_required" icon="lock-keyhole">',
+  'Use an account with the required',
+  '<Card title="x_account_suspended" icon="shield-alert">',
+  'Resolve account status',
+  '<Card title="x_account_protected" icon="lock">',
+  'Target account is protected.',
+  '<Card title="x_duplicate_action" icon="copy-check">',
+  'Do not retry unchanged; check the target',
+  '<Card title="x_dm_not_allowed" icon="message-circle">',
+  'Recipient does not accept DMs from this account.',
+  '<Card title="x_target_not_found" icon="search-x">',
+  'Verify the ID or username before',
+  '<Card title="x_content_too_long" icon="message-circle-warning">',
+  'Content exceeds the character limit.',
+  '<Card title="x_rejected" icon="circle-x">',
+  'wait 2-3 minutes after rapid attempts',
+  '<Card title="media_download_failed" icon="image">',
+  'Fix the HTTPS URL or pass the',
+  'file via multipart/form-data. Do not retry the same URL.',
+] as const;
+
 const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   'Error recovery patterns for X API writes, pending tweet confirmation, billing, retries, and rate limits',
   'Every Xquik API error returns a consistent JSON body with an `error` code.',
@@ -1060,6 +1084,15 @@ const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   '| `login_cooldown` | X account is on login cooldown after a flagged attempt |',
   '| `x_rate_limited` | X rate-limited the write request |',
   '| `x_daily_limit` | X account reached daily posting limit |',
+  '| `x_account_feature_required` | X Premium required for this action |',
+  '| `x_account_suspended` | X account suspended or restricted |',
+  '| `x_account_protected` | Target account is',
+  '| `x_duplicate_action` | Action already performed',
+  '| `x_dm_not_allowed` | Recipient does not accept DMs from this account |',
+  '| `x_target_not_found` | Tweet or user target does not exist |',
+  '| `x_content_too_long` | Tweet exceeds character limit |',
+  '| `x_rejected` | X rejected the write with an unknown reason |',
+  '| `media_download_failed` | Failed to download media from URL',
   'data source may be experiencing an outage',
 ] as const;
 
@@ -3967,6 +4000,11 @@ describe('repository discovery', (): void => {
           source,
           'Rate limit error guide wording',
           REQUIRED_RATE_LIMIT_ERROR_GUIDE_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          source,
+          'Write validation error guide wording',
+          REQUIRED_WRITE_VALIDATION_ERROR_GUIDE_SNIPPETS,
         ),
         ...FORBIDDEN_ERROR_HANDLING_SNIPPETS.flatMap(
           (snippet): readonly DiscoveryFinding[] =>
