@@ -1411,7 +1411,16 @@ const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS = [
-  '| **Retries** | 10 attempts with exponential backoff: base 1 second, multiplier 2x, max 60 seconds. `410 Gone` exhausts immediately. |',
+  '<Card title="Event types" icon="radio">',
+  'Account monitors emit `tweet.new`, `tweet.reply`, `tweet.quote`, and',
+  '<Card title="Signed delivery" icon="shield-check">',
+  'Verify `X-Xquik-Signature`, `X-Xquik-Timestamp`, and',
+  '<Card title="Retry schedule" icon="rotate-ccw">',
+  'Failed deliveries retry up to 10 attempts with exponential backoff: base 1',
+  '<Card title="Receiver timeout" icon="timer">',
+  'Webhook receivers should return `2xx` within 10 seconds.',
+  '<Card title="Event propagation" icon="activity">',
+  'Events usually appear within seconds to minutes',
   '| **Webhook retries** | 10 attempts maximum. After exhaustion, the delivery is marked as `exhausted`. `410 Gone` marks a delivery exhausted immediately. |',
 ] as const;
 
@@ -1438,6 +1447,8 @@ const FORBIDDEN_WEBHOOK_ARCHITECTURE_SNIPPETS = [
   '5 retries, exp.',
   '5 attempts with exponential backoff',
   '5 attempts maximum',
+  '| **Delivery** | HMAC-SHA256 signed HTTPS POST to registered webhook endpoints |',
+  '| **Retries** | 10 attempts with exponential backoff: base 1 second, multiplier 2x, max 60 seconds. `410 Gone` exhausts immediately. |',
 ] as const;
 
 const FORBIDDEN_WEBHOOK_VERIFICATION_SNIPPETS = [
@@ -3819,6 +3830,16 @@ describe('repository discovery', (): void => {
           architecture,
           'Architecture guide webhook retries',
           REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS,
+        ),
+        ...FORBIDDEN_WEBHOOK_ARCHITECTURE_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            architecture.includes(snippet)
+              ? [
+                  {
+                    issue: `Architecture guide contains stale webhook architecture table wording "${snippet}".`,
+                  },
+                ]
+              : [],
         ),
         ...collectSnippetFindings(
           types,
