@@ -1512,6 +1512,21 @@ const REQUIRED_ARCHITECTURE_AUTHENTICATION_SNIPPETS = [
   'API-key creation and revocation',
 ] as const;
 
+const REQUIRED_ARCHITECTURE_DATA_ISOLATION_SNIPPETS = [
+  '<Card title="Monitors" icon="radio">',
+  'Account and keyword monitors are scoped to the creating user account.',
+  '<Card title="Events" icon="activity">',
+  'Stored events resolve through account or keyword monitor ownership',
+  '<Card title="Webhooks" icon="webhook">',
+  'Webhook endpoints, signing configuration, and delivery logs belong to one',
+  '<Card title="Extractions" icon="archive">',
+  'Extraction jobs, result pages, and exports belong to the user that created',
+  '<Card title="Draws" icon="gift">',
+  'Giveaway draws, entries, and winner lists belong to the user that created',
+  '<Card title="API keys" icon="key-round">',
+  'API-key listing, creation, and revocation filter by the authenticated user',
+] as const;
+
 const REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS = [
   '<Card title="Single region" icon="map-pin">',
   'Do not assume',
@@ -1553,6 +1568,14 @@ const FORBIDDEN_ARCHITECTURE_AUTHENTICATION_SNIPPETS = [
   '| **Header** | `x-api-key`',
   '| **Key format** | `xq_` prefix + 64 hex characters |',
   '| **OAuth 2.1** | MCP server supports',
+] as const;
+
+const FORBIDDEN_ARCHITECTURE_DATA_ISOLATION_SNIPPETS = [
+  '| Resource | Isolation |',
+  '|----------|-----------|',
+  '| **Monitors** | Each user sees only their own monitors |',
+  "| **Events** | Events are scoped to the user's monitors |",
+  '| **API Keys** | Users manage only their own keys (session auth required) |',
 ] as const;
 
 const REQUIRED_WEBHOOK_TYPES_SNIPPETS = [
@@ -3975,6 +3998,11 @@ describe('repository discovery', (): void => {
         ),
         ...collectSnippetFindings(
           architecture,
+          'Architecture guide data isolation',
+          REQUIRED_ARCHITECTURE_DATA_ISOLATION_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          architecture,
           'Architecture guide platform limitations',
           REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS,
         ),
@@ -3995,6 +4023,17 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     label: 'Architecture guide authentication',
+                    snippet,
+                  },
+                ]
+              : [],
+        ),
+        ...FORBIDDEN_ARCHITECTURE_DATA_ISOLATION_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            architecture.includes(snippet)
+              ? [
+                  {
+                    label: 'Architecture guide data isolation',
                     snippet,
                   },
                 ]
