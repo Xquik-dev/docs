@@ -1,0 +1,237 @@
+---
+title: Prefect
+description: Run scheduled Xquik read workflows in Prefect with a credentials block, async tasks, retries, and raw JSON handoffs
+keywords: ["prefect", "workflow orchestration", "python", "twitter", "x", "xquik"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use the [`prefect-xquik`](https://github.com/Xquik-dev/prefect-xquik) collection when a Prefect flow needs scheduled X (Twitter) reads: tweet search, tweet lookup, user search, user lookup, user timelines, or regional trends.
+
+The current `0.1.2` release is read-focused. It ships one credentials block, an async Xquik client, and 6 Prefect tasks that return raw Xquik JSON dictionaries for downstream tasks, warehouses, dashboards, or alerts.
+
+## Prerequisites
+
+- [Xquik API key](/quickstart)
+- Python 3.10+
+- Prefect 3
+- Prefect work pool or local runner for scheduled deployments
+
+## Install
+
+PyPI publication is pending. Install the pinned GitHub release wheel:
+
+```bash
+pip install \
+  https://github.com/Xquik-dev/prefect-xquik/releases/download/v0.1.2/prefect_xquik-0.1.2-py3-none-any.whl
+```
+
+Register the block type with Prefect:
+
+```bash
+prefect block register -m prefect_xquik
+```
+
+## Credential Block
+
+Store the API key in a Prefect block, not in flow source files. Set `base_url` to the public Xquik REST base URL when creating the block.
+
+```python
+from prefect_xquik import XquikCredentials
+
+credentials = XquikCredentials(
+    api_key="xq_YOUR_KEY_HERE",
+    base_url="https://xquik.com/api/v1",
+)
+credentials.save("xquik", overwrite=True)
+```
+
+If you create the block in the Prefect UI, use these values:
+
+<CardGroup cols={2}>
+  <Card title="Block Type" icon="blocks">
+    `Xquik Credentials`
+  </Card>
+  <Card title="API Key" icon="key-round">
+    Paste an Xquik API key from the dashboard.
+  </Card>
+  <Card title="Base URL" icon="link">
+    `https://xquik.com/api/v1`
+  </Card>
+  <Card title="API Contract" icon="file-json">
+    Keep `2026-04-29` unless you intentionally pin a different public contract.
+  </Card>
+</CardGroup>
+
+## Collection Shape
+
+<CardGroup cols={2}>
+  <Card title="Credentials" icon="key-round">
+    `XquikCredentials` stores the API key, base URL, contract header, and timeout.
+  </Card>
+  <Card title="Client" icon="terminal">
+    `XquikClient` uses `httpx.AsyncClient`, sends `x-api-key`, and raises `XquikError` for request or response failures.
+  </Card>
+  <Card title="Tasks" icon="workflow">
+    6 async Prefect tasks cover read workflows for tweets, users, user timelines, and trends.
+  </Card>
+  <Card title="Returns" icon="file-json">
+    Tasks return raw Xquik JSON dictionaries. Shape rows in later Prefect tasks.
+  </Card>
+  <Card title="Retries" icon="refresh-cw">
+    Use Prefect task options for retry policy and delay.
+  </Card>
+  <Card title="Scope" icon="shield-check">
+    Version `0.1.2` is read-only. Use REST, SDKs, or MCP for writes, monitors, webhooks, and extraction jobs.
+  </Card>
+</CardGroup>
+
+## Tasks
+
+<CardGroup cols={2}>
+  <Card title="Search Tweets" icon="search">
+    `search_tweets(credentials, query, limit=25, query_type="Latest")` calls `GET /x/tweets/search`.
+  </Card>
+  <Card title="Get Tweet" icon="message-square">
+    `get_tweet(credentials, tweet_id)` calls `GET /x/tweets/{id}`.
+  </Card>
+  <Card title="Search Users" icon="users">
+    `search_users(credentials, query, cursor=None)` calls `GET /x/users/search`.
+  </Card>
+  <Card title="Get User" icon="user-round">
+    `get_user(credentials, user_id)` calls `GET /x/users/{id}`. Usernames may include `@`.
+  </Card>
+  <Card title="Get User Tweets" icon="list">
+    `get_user_tweets(credentials, user_id, include_replies=False)` calls `GET /x/users/{id}/tweets`.
+  </Card>
+  <Card title="Get Trends" icon="trending-up">
+    `get_trends(credentials, woeid=1, count=30)` calls `GET /x/trends`.
+  </Card>
+</CardGroup>
+
+## Copy-Ready Flow
+
+Use this flow when a scheduled job should capture current posts and worldwide trends for a reporting task.
+
+```python
+from __future__ import annotations
+
+from prefect import flow
+from prefect_xquik import XquikCredentials, get_trends, search_tweets
+
+
+@flow
+async def social_signal_flow() -> dict[str, object]:
+    credentials = XquikCredentials.load("xquik")
+
+    tweets = await search_tweets(
+        credentials,
+        query='"prefect" OR "workflow orchestration"',
+        query_type="Latest",
+        limit=25,
+    )
+    trends = await get_trends(credentials, woeid=1, count=10)
+
+    return {"tweets": tweets, "trends": trends}
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(social_signal_flow())
+```
+
+Run it locally:
+
+```bash
+python social_signal_flow.py
+```
+
+Create a Prefect deployment when the flow is ready for a schedule:
+
+```bash
+prefect deploy social_signal_flow.py:social_signal_flow --name xquik-social-signals
+```
+
+## Retry Pattern
+
+Wrap the task with Prefect options when you want retries around transient API, network, or rate-limit failures.
+
+```python
+from prefect_xquik import search_tweets
+
+search_recent_tweets = search_tweets.with_options(
+    name="Search Recent X Posts",
+    retries=2,
+    retry_delay_seconds=10,
+)
+```
+
+Then call the configured task inside a flow:
+
+```python
+page = await search_recent_tweets(
+    credentials,
+    query="workflow orchestration lang:en",
+    query_type="Latest",
+    limit=100,
+)
+```
+
+Respect `Retry-After` for repeated `429` responses, and keep `limit` at or below `200` for tweet search pages.
+
+## Pagination Handoff
+
+Xquik returns cursor fields for paginated reads. Store the cursor in your task result or downstream state, then pass it back unchanged on the next run.
+
+```python
+first_page = await search_tweets(
+    credentials,
+    query="prefect lang:en",
+    limit=100,
+)
+
+next_cursor = first_page.get("next_cursor") or first_page.get("nextCursor")
+
+if next_cursor:
+    second_page = await search_tweets(
+        credentials,
+        query="prefect lang:en",
+        cursor=str(next_cursor),
+        limit=100,
+    )
+```
+
+Do not decode cursors. Treat them as opaque strings.
+
+## Production Notes
+
+<CardGroup cols={2}>
+  <Card title="Credentials" icon="shield-check">
+    Store API keys in Prefect blocks. Do not put API keys in deployment YAML, repository files, or logs.
+  </Card>
+  <Card title="Billing" icon="credit-card">
+    X data reads use credits. Handle `402 no_subscription`, `402 no_credits`, and `402 insufficient_credits` before retrying.
+  </Card>
+  <Card title="Rate Limits" icon="timer">
+    Read endpoints share a 10 per 1s user bucket. Retry only after the `Retry-After` window.
+  </Card>
+  <Card title="Raw JSON" icon="file-json">
+    Shape records in follow-up tasks before writing to Slack, Sheets, a warehouse, or a dashboard.
+  </Card>
+  <Card title="Read Scope" icon="database">
+    Use this collection for reads. Use REST, SDKs, or MCP when a flow needs writes, monitors, webhooks, or extraction jobs.
+  </Card>
+  <Card title="Version Pin" icon="tag">
+    Pin the release wheel in production images until PyPI publication is available.
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+- Read [Rate Limits](/guides/rate-limits) for retry and backoff guidance.
+- Read [Error Handling](/guides/error-handling) for `401`, `402`, `429`, and `5xx` recovery.
+- Use [Extraction Workflow](/guides/extraction-workflow) when a job needs durable CSV, JSON, XLSX, Markdown, or PDF exports.
+- Use [MCP Tools](/mcp/tools) when an AI agent should decide which Xquik endpoint to call.

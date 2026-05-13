@@ -1729,6 +1729,42 @@ const REQUIRED_PIPEDREAM_GUIDE_SNIPPETS = [
   'Emits only completed extraction jobs.',
 ] as const;
 
+const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
+  'Use the [`prefect-xquik`](https://github.com/Xquik-dev/prefect-xquik) collection',
+  'The current `0.1.2` release is read-focused.',
+  'https://github.com/Xquik-dev/prefect-xquik/releases/download/v0.1.2/prefect_xquik-0.1.2-py3-none-any.whl',
+  'prefect block register -m prefect_xquik',
+  'credentials = XquikCredentials(',
+  'base_url="https://xquik.com/api/v1"',
+  '## Collection Shape',
+  '<Card title="Credentials" icon="key-round">',
+  '`XquikCredentials` stores the API key, base URL, contract header, and timeout.',
+  '<Card title="Client" icon="terminal">',
+  '`XquikClient` uses `httpx.AsyncClient`, sends `x-api-key`, and raises `XquikError` for request or response failures.',
+  '<Card title="Tasks" icon="workflow">',
+  '6 async Prefect tasks cover read workflows for tweets, users, user timelines, and trends.',
+  '<Card title="Scope" icon="shield-check">',
+  'Version `0.1.2` is read-only. Use REST, SDKs, or MCP for writes, monitors, webhooks, and extraction jobs.',
+  '## Tasks',
+  '<Card title="Search Tweets" icon="search">',
+  '`search_tweets(credentials, query, limit=25, query_type="Latest")` calls `GET /x/tweets/search`.',
+  '<Card title="Get Tweet" icon="message-square">',
+  '`get_tweet(credentials, tweet_id)` calls `GET /x/tweets/{id}`.',
+  '<Card title="Search Users" icon="users">',
+  '`search_users(credentials, query, cursor=None)` calls `GET /x/users/search`.',
+  '<Card title="Get User" icon="user-round">',
+  '`get_user(credentials, user_id)` calls `GET /x/users/{id}`.',
+  '<Card title="Get User Tweets" icon="list">',
+  '`get_user_tweets(credentials, user_id, include_replies=False)` calls `GET /x/users/{id}/tweets`.',
+  '<Card title="Get Trends" icon="trending-up">',
+  '`get_trends(credentials, woeid=1, count=30)` calls `GET /x/trends`.',
+  'search_recent_tweets = search_tweets.with_options(',
+  'Respect `Retry-After` for repeated `429` responses, and keep `limit` at or below `200` for tweet search pages.',
+  'Do not decode cursors. Treat them as opaque strings.',
+  '<Card title="Version Pin" icon="tag">',
+  'Pin the release wheel in production images until PyPI publication is available.',
+] as const;
+
 const REQUIRED_N8N_ALTERNATIVE_SNIPPETS = [
   '## Source-backed n8n scope',
   "n8n's official X node docs list built-in operations for direct messages",
@@ -3820,6 +3856,22 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('| Pipedream field | Xquik payload field |');
     expect(source).not.toContain('| Step | Pipedream component |');
     expect(source).not.toContain('| Test | Expected assertion |');
+  });
+
+  it('keeps the Prefect guide aligned with the current collection scope', (): void => {
+    expect.assertions(3);
+
+    const source = readFileSync('guides/prefect.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Prefect guide',
+        REQUIRED_PREFECT_GUIDE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(source).not.toContain('|');
+    expect(source).not.toContain('https://api.xquik.com');
   });
 
   it('keeps the alternatives workflow shortlist concrete', (): void => {
