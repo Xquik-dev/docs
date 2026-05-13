@@ -1733,8 +1733,8 @@ const REQUIRED_PIPEDREAM_GUIDE_SNIPPETS = [
 
 const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
   'Use the [`prefect-xquik`](https://github.com/Xquik-dev/prefect-xquik) collection',
-  'The current `0.1.2` release is read-focused.',
-  'https://github.com/Xquik-dev/prefect-xquik/releases/download/v0.1.2/prefect_xquik-0.1.2-py3-none-any.whl',
+  'The current `0.1.4` release is read-focused.',
+  'https://github.com/Xquik-dev/prefect-xquik/releases/download/v0.1.4/prefect_xquik-0.1.4-py3-none-any.whl',
   'prefect block register -m prefect_xquik',
   'credentials = XquikCredentials(',
   'base_url="https://xquik.com/api/v1"',
@@ -1746,7 +1746,7 @@ const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
   '<Card title="Tasks" icon="workflow">',
   '6 async Prefect tasks cover read workflows for tweets, users, user timelines, and trends.',
   '<Card title="Scope" icon="shield-check">',
-  'Version `0.1.2` is read-only. Use REST, SDKs, or MCP for writes, monitors, webhooks, and extraction jobs.',
+  'Version `0.1.4` is read-only. Use REST, SDKs, or MCP for writes, monitors, webhooks, and extraction jobs.',
   '## Tasks',
   '<Card title="Search Tweets" icon="search">',
   '`search_tweets(credentials, query, limit=25, query_type="Latest")` calls `GET /x/tweets/search`.',
@@ -3861,7 +3861,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Prefect guide aligned with the current collection scope', (): void => {
-    expect.assertions(3);
+    expect.assertions(4);
 
     const source = readFileSync('guides/prefect.mdx', 'utf8');
 
@@ -3874,6 +3874,7 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(source).not.toContain('|');
     expect(source).not.toContain('https://api.xquik.com');
+    expect(source).not.toContain('0.1.2');
   });
 
   it('keeps the alternatives workflow shortlist concrete', (): void => {
