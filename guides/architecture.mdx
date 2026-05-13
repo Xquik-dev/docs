@@ -153,11 +153,23 @@ Xquik uses a flat permission model: no roles, no RBAC, no team workspaces.
 
 Rate limits are enforced per user account using a **fixed-window counter** algorithm. Each tier has an independent counter. Read counters reset every 1 second; write and delete counters reset every 60 seconds.
 
-| Tier | Methods | Limit |
-|------|---------|-------|
-| **Read** | `GET`, `HEAD`, `OPTIONS` | 10 per 1s |
-| **Write** | `POST`, `PUT`, `PATCH` | 30 per 60s |
-| **Delete** | `DELETE` | 15 per 60s |
+<CardGroup cols={2}>
+  <Card title="Read bucket" icon="database">
+    `GET`, `HEAD`, and `OPTIONS` share a standard user limit of 10 requests per
+    1 second.
+  </Card>
+  <Card title="Write bucket" icon="pen-line">
+    `POST`, `PUT`, and `PATCH` share a standard user limit of 30 requests per
+    60 seconds.
+  </Card>
+  <Card title="Delete bucket" icon="circle-x">
+    `DELETE` requests are limited to 15 requests per 60 seconds.
+  </Card>
+  <Card title="Retry window" icon="timer">
+    Throttled reads return `Retry-After: 1`; throttled writes and deletes
+    return `Retry-After: 60`.
+  </Card>
+</CardGroup>
 
 When the limit is reached, requests return `429 Too Many Requests` with a `Retry-After` header. Read throttles return `Retry-After: 1`; write and delete throttles return `Retry-After: 60`.
 

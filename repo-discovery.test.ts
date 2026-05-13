@@ -1527,6 +1527,17 @@ const REQUIRED_ARCHITECTURE_DATA_ISOLATION_SNIPPETS = [
   'API-key listing, creation, and revocation filter by the authenticated user',
 ] as const;
 
+const REQUIRED_ARCHITECTURE_RATE_LIMIT_SNIPPETS = [
+  '<Card title="Read bucket" icon="database">',
+  '`GET`, `HEAD`, and `OPTIONS` share a standard user limit of 10 requests per',
+  '<Card title="Write bucket" icon="pen-line">',
+  '`POST`, `PUT`, and `PATCH` share a standard user limit of 30 requests per',
+  '<Card title="Delete bucket" icon="circle-x">',
+  '`DELETE` requests are limited to 15 requests per 60 seconds.',
+  '<Card title="Retry window" icon="timer">',
+  'Throttled reads return `Retry-After: 1`; throttled writes and deletes',
+] as const;
+
 const REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS = [
   '<Card title="Single region" icon="map-pin">',
   'Do not assume',
@@ -1576,6 +1587,14 @@ const FORBIDDEN_ARCHITECTURE_DATA_ISOLATION_SNIPPETS = [
   '| **Monitors** | Each user sees only their own monitors |',
   "| **Events** | Events are scoped to the user's monitors |",
   '| **API Keys** | Users manage only their own keys (session auth required) |',
+] as const;
+
+const FORBIDDEN_ARCHITECTURE_RATE_LIMIT_SNIPPETS = [
+  '| Tier | Methods | Limit |',
+  '|------|---------|-------|',
+  '| **Read** | `GET`, `HEAD`, `OPTIONS` | 10 per 1s |',
+  '| **Write** | `POST`, `PUT`, `PATCH` | 30 per 60s |',
+  '| **Delete** | `DELETE` | 15 per 60s |',
 ] as const;
 
 const REQUIRED_WEBHOOK_TYPES_SNIPPETS = [
@@ -4003,6 +4022,11 @@ describe('repository discovery', (): void => {
         ),
         ...collectSnippetFindings(
           architecture,
+          'Architecture guide rate limits',
+          REQUIRED_ARCHITECTURE_RATE_LIMIT_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          architecture,
           'Architecture guide platform limitations',
           REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS,
         ),
@@ -4034,6 +4058,17 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     label: 'Architecture guide data isolation',
+                    snippet,
+                  },
+                ]
+              : [],
+        ),
+        ...FORBIDDEN_ARCHITECTURE_RATE_LIMIT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            architecture.includes(snippet)
+              ? [
+                  {
+                    label: 'Architecture guide rate limits',
                     snippet,
                   },
                 ]
