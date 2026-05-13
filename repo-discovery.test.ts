@@ -860,7 +860,11 @@ const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   '<Card title="Retry-After header" icon="timer">',
   'The `Retry-After` header gives seconds to wait before sending the same',
   'The write action was dispatched, but final confirmation is still pending.',
-  'The response includes `status: "pending_confirmation"`, `writeActionId`, `charged: false`, and `retryable: false`.',
+  '<Card title="x_write_unconfirmed" icon="clock">',
+  'Action may have completed but could not be confirmed. The response',
+  'includes `status: "pending_confirmation"`, `writeActionId`,',
+  '`charged: false`, and `retryable: false`.',
+  '<Card title="Recovery" icon="circle-check">',
   'Store `writeActionId`, call [Get Write Action Status](/api-reference/x-write/get-write-action-status), and do not retry-send while status is `pending_confirmation`.',
 ] as const;
 
@@ -939,6 +943,7 @@ const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   '| Code | HTTP | Retryable | Quick fix |',
   '| Signal | Value |',
   '|--------|-------|',
+  '| `x_write_unconfirmed` | Action may have been completed but could not be confirmed |',
   'Add a monitor addon from the dashboard.',
   'Delete a monitor or add capacity ($5/month).',
   'add capacity ($5/month per extra monitor)',
