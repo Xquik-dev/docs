@@ -34,6 +34,8 @@ const REQUIRED_README_SNIPPETS = [
   'browse 120 OpenAPI-backed operations',
   '**REST API** - 120 operations',
   '[SDKs](https://docs.xquik.com/sdks)',
+  '[Prefect](https://docs.xquik.com/guides/prefect)',
+  'schedule tweet, user, timeline, and trend reads in Prefect flows',
   '[MCP Server](https://docs.xquik.com/mcp)',
   '[Webhooks](https://docs.xquik.com/webhooks/overview)',
   '[Apify Actors](https://docs.xquik.com/alternatives/apify)',

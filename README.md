@@ -13,6 +13,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 - [Quickstart](https://docs.xquik.com/quickstart) - make the first authenticated API call.
 - [API Reference](https://docs.xquik.com/api-reference) - browse 120 OpenAPI-backed operations.
 - [SDKs](https://docs.xquik.com/sdks) - use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
+- [Prefect](https://docs.xquik.com/guides/prefect) - schedule tweet, user, timeline, and trend reads in Prefect flows.
 - [MCP Server](https://docs.xquik.com/mcp) - connect Claude, ChatGPT, Cursor, and other AI agents.
 - [Webhooks](https://docs.xquik.com/webhooks/overview) - verify HMAC signatures and receive real-time X events.
 - [Apify Actors](https://docs.xquik.com/alternatives/apify) - run X tweet scraper and follower scraper jobs on Apify.
