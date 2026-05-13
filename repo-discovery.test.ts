@@ -864,7 +864,8 @@ const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   '<Card title="402 billing and credits" icon="credit-card">',
   '`payment_failed`, `no_credits`, and `insufficient_credits`.',
   '<Card title="403 permissions and account health" icon="shield-alert">',
-  '`api_key_limit_reached`, `monitor_limit_reached`, `account_needs_reauth`',
+  '`api_key_limit_reached`, `monitor_limit_reached`,',
+  '`dm_not_permitted`, `account_needs_reauth`, and `account_restricted`.',
   '<Card title="422 write validation" icon="message-circle-warning">',
   '`x_dm_not_allowed`, `x_target_not_found`, `x_content_too_long`',
   '<Card title="202 pending confirmation" icon="clock">',
@@ -993,6 +994,22 @@ const REQUIRED_BILLING_ERROR_GUIDE_SNIPPETS = [
   '[Top Up Credits](/api-reference/credits/topup)',
 ] as const;
 
+const REQUIRED_PERMISSION_ERROR_GUIDE_SNIPPETS = [
+  '<Accordion title="Permission errors (403)">',
+  '`dm_not_permitted`, `account_needs_reauth`, and `account_restricted`.',
+  '<Card title="api_key_limit_reached" icon="key-round">',
+  'The account already has 100 API keys.',
+  '<Card title="monitor_limit_reached" icon="users">',
+  'current plans include',
+  'unlimited monitor slots.',
+  '<Card title="dm_not_permitted" icon="message-circle">',
+  'DM history requires a connected account that participates in the',
+  '<Card title="account_needs_reauth" icon="refresh-cw">',
+  'Connected X account session needs re-authentication.',
+  '<Card title="account_restricted" icon="shield-alert">',
+  'Resolve account health on x.com or wait before retrying.',
+] as const;
+
 const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   'Error recovery patterns for X API writes, pending tweet confirmation, billing, retries, and rate limits',
   'Every Xquik API error returns a consistent JSON body with an `error` code.',
@@ -1021,6 +1038,10 @@ const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   '| `payment_failed` | Payment processing failed |',
   '| `no_credits` | No credits available |',
   '| `insufficient_credits` | Not enough credits for this operation |',
+  '| `api_key_limit_reached` | API key limit reached (100 max) |',
+  '| `monitor_limit_reached` | Legacy monitor slot limit reached |',
+  '| `account_needs_reauth` | Connected X account needs re-authentication |',
+  '| `account_restricted` | Connected X account is restricted',
   'data source may be experiencing an outage',
 ] as const;
 
@@ -3918,6 +3939,11 @@ describe('repository discovery', (): void => {
           source,
           'Billing error guide wording',
           REQUIRED_BILLING_ERROR_GUIDE_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          source,
+          'Permission error guide wording',
+          REQUIRED_PERMISSION_ERROR_GUIDE_SNIPPETS,
         ),
         ...FORBIDDEN_ERROR_HANDLING_SNIPPETS.flatMap(
           (snippet): readonly DiscoveryFinding[] =>
