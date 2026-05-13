@@ -1551,6 +1551,22 @@ const REQUIRED_ARCHITECTURE_BILLING_SNIPPETS = [
   '[Billing & Usage](/guides/billing#credit-top-ups).',
 ] as const;
 
+const REQUIRED_ARCHITECTURE_USAGE_SNIPPETS = [
+  '<Card title="Credit-metered work" icon="gauge">',
+  'Paid X reads, media downloads, trends, extraction estimates, extraction',
+  'creation, monitor creation, active monitor hours, and draw execution can',
+  'consume credits.',
+  '<Card title="Subscription-gated work" icon="lock-keyhole">',
+  'Tweet search, user and follower lookup, article lookup, media download,',
+  'trends, draw creation, and publish actions require an active subscription.',
+  '<Card title="Free management paths" icon="list-check">',
+  'List, read, update, delete, export, test, and delivery-history paths stay',
+  'free for draws, extractions, monitors, events, and webhooks.',
+  '<Card title="Free utilities" icon="sparkles">',
+  'Compose, cached styles, drafts, radar, account, API keys, X accounts,',
+  'support, credit balance, and credit top-up endpoints are free.',
+] as const;
+
 const REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS = [
   '<Card title="Single region" icon="map-pin">',
   'Do not assume',
@@ -1616,6 +1632,14 @@ const FORBIDDEN_ARCHITECTURE_BILLING_SNIPPETS = [
   '| **Subscription** | USD 20-199/month. Includes a monthly credit allowance |',
   '| **Active monitors** | Unlimited slots. Active instant monitors cost 21 credits per hour |',
   '| **Credit top-ups** | Purchase additional credits at USD 0.00015/credit via the dashboard.',
+] as const;
+
+const FORBIDDEN_ARCHITECTURE_USAGE_SNIPPETS = [
+  '| Metered (consumes quota) | Free (unlimited) |',
+  '|--------------------------|------------------|',
+  '| Tweet searches | Monitor management |',
+  '| User lookups | Event retrieval |',
+  '| Write actions (tweet, like, retweet, follow, DM, profile, media) | Radar |',
 ] as const;
 
 const REQUIRED_WEBHOOK_TYPES_SNIPPETS = [
@@ -4053,6 +4077,11 @@ describe('repository discovery', (): void => {
         ),
         ...collectSnippetFindings(
           architecture,
+          'Architecture guide usage categories',
+          REQUIRED_ARCHITECTURE_USAGE_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          architecture,
           'Architecture guide platform limitations',
           REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS,
         ),
@@ -4106,6 +4135,17 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     label: 'Architecture guide usage billing',
+                    snippet,
+                  },
+                ]
+              : [],
+        ),
+        ...FORBIDDEN_ARCHITECTURE_USAGE_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            architecture.includes(snippet)
+              ? [
+                  {
+                    label: 'Architecture guide usage categories',
                     snippet,
                   },
                 ]
