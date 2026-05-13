@@ -1480,6 +1480,21 @@ const REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS = [
   'Events usually appear within seconds to minutes',
 ] as const;
 
+const REQUIRED_ARCHITECTURE_COMPONENT_SNIPPETS = [
+  '<Card title="REST API" icon="braces">',
+  '120 documented operations at `https://xquik.com/api/v1/*`',
+  '<Card title="MCP server" icon="bot">',
+  '2 tools, `explore` and `xquik`, at `https://xquik.com/mcp`',
+  '<Card title="Dashboard" icon="layout-dashboard">',
+  'Manage API keys, connected X accounts, monitors, extractions, draws,',
+  '<Card title="Monitoring & webhooks" icon="radio">',
+  'Track accounts or keywords, store events, and deliver HMAC-signed webhook',
+  '<Card title="Extractions & draws" icon="archive">',
+  'Run stored jobs for followers, replies, quotes, retweeters, favoriters,',
+  '<Card title="Write actions" icon="send">',
+  'Post tweets and replies, upload media, send DMs, follow, like, retweet,',
+] as const;
+
 const REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS = [
   '<Card title="Single region" icon="map-pin">',
   'Do not assume',
@@ -1507,6 +1522,14 @@ const FORBIDDEN_ARCHITECTURE_LIMITATION_SNIPPETS = [
   '|------------|--------|',
   '| **Bookmarked tweets** | Bookmarks require an authenticated X account connection |',
   '| **Export cap** | File exports are capped at 100,000 rows per extraction (10,000 for PDF). Formats: CSV, JSON, MD, MD Document, PDF, TXT, XLSX |',
+] as const;
+
+const FORBIDDEN_ARCHITECTURE_COMPONENT_SNIPPETS = [
+  '| Component | Role |',
+  '|-----------|------|',
+  'for programmatic access |',
+  'for AI agent integration |',
+  'Web UI for managing monitors, running extractions, viewing results |',
 ] as const;
 
 const REQUIRED_WEBHOOK_TYPES_SNIPPETS = [
@@ -3919,8 +3942,24 @@ describe('repository discovery', (): void => {
         ),
         ...collectSnippetFindings(
           architecture,
+          'Architecture guide components',
+          REQUIRED_ARCHITECTURE_COMPONENT_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          architecture,
           'Architecture guide platform limitations',
           REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS,
+        ),
+        ...FORBIDDEN_ARCHITECTURE_COMPONENT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            architecture.includes(snippet)
+              ? [
+                  {
+                    label: 'Architecture guide components',
+                    snippet,
+                  },
+                ]
+              : [],
         ),
         ...FORBIDDEN_WEBHOOK_ARCHITECTURE_SNIPPETS.flatMap(
           (snippet): readonly DiscoveryFinding[] =>
