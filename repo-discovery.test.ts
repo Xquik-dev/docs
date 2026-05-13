@@ -1040,6 +1040,26 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   'Retry with exponential backoff, then contact support if the error persists.',
 ] as const;
 
+const REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS = [
+  'Returns a file download. The response includes a `Content-Disposition` header with the filename.',
+  '<CardGroup cols={2}>',
+  '<Card title="CSV" icon="table">',
+  '`format=csv` returns `text/csv; charset=utf-8` with filenames like',
+  '<Card title="JSON" icon="braces">',
+  '`format=json` returns `application/json; charset=utf-8` with filenames',
+  '<Card title="Markdown" icon="file-text">',
+  '`format=md` returns `text/markdown; charset=utf-8` with filenames like',
+  '<Card title="Markdown document" icon="file-text">',
+  '`format=md-document` returns `text/markdown; charset=utf-8` with',
+  '<Card title="PDF" icon="file-down">',
+  '`format=pdf` returns `application/pdf` with filenames like',
+  '<Card title="TXT" icon="file">',
+  '`format=txt` returns `text/plain; charset=utf-8` with filenames like',
+  '<Card title="XLSX" icon="file-spreadsheet">',
+  '`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`',
+  'Results are capped at 100,000 rows (10,000 for PDF).',
+] as const;
+
 const FORBIDDEN_EXTRACTION_WORKFLOW_SNIPPETS = [
   'quota',
   '| `502 x_api_unavailable` | X data source temporarily down | Retry with exponential backoff |',
@@ -3495,6 +3515,21 @@ describe('repository discovery', (): void => {
         ),
       ],
     ).toStrictEqual([]);
+  });
+
+  it('keeps extraction export response formats mobile friendly', (): void => {
+    expect.assertions(2);
+
+    const source = readFileSync('api-reference/extractions/export.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Extraction export API response',
+        REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(source).not.toContain('| Format | Content-Type | Filename Example |');
   });
 
   it('keeps the media upload handoff clear for tweets and DMs', (): void => {
