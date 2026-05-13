@@ -83,15 +83,9 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 
 ## Decision guidance
 
-| Scenario | Use REST API | Use MCP Server | Use Webhooks |
-|----------|--------------|----------------|--------------|
-| Backend service or automation script | Yes | No | Optional |
-| AI agent in Claude, ChatGPT, Cursor, VS Code, or Codex | Optional | Yes | Optional |
-| Real-time event delivery | No | No | Yes |
-| Polling for events on interval | Yes | Yes | No |
-| File export as CSV, XLSX, JSON, Markdown, PDF, or text | Yes | Optional | No |
-| Natural language queries | No | Yes | No |
-| Fine-grained pagination and request control | Yes | Optional | No |
+- **Use the REST API** for backend services, automation scripts, interval polling, file exports, and fine-grained pagination or request control.
+- **Use the MCP server** for AI agents in Claude, ChatGPT, Cursor, VS Code, Codex, and similar clients, especially natural language queries.
+- **Use webhooks** when monitor events must reach an HTTPS endpoint in real time. Add them to REST or MCP workflows when pushed events are better than polling.
 
 ## Workflows
 

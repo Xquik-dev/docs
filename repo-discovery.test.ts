@@ -509,6 +509,24 @@ const FORBIDDEN_SKILL_RATE_LIMIT_SNIPPETS = [
   '| Delete | DELETE | 15 per 60s |',
 ] as const;
 
+const REQUIRED_SKILL_DECISION_GUIDANCE_SNIPPETS = [
+  '## Decision guidance',
+  '- **Use the REST API** for backend services, automation scripts, interval polling, file exports, and fine-grained pagination or request control.',
+  '- **Use the MCP server** for AI agents in Claude, ChatGPT, Cursor, VS Code, Codex, and similar clients, especially natural language queries.',
+  '- **Use webhooks** when monitor events must reach an HTTPS endpoint in real time. Add them to REST or MCP workflows when pushed events are better than polling.',
+] as const;
+
+const FORBIDDEN_SKILL_DECISION_GUIDANCE_SNIPPETS = [
+  '| Scenario | Use REST API | Use MCP Server | Use Webhooks |',
+  '| Backend service or automation script | Yes | No | Optional |',
+  '| AI agent in Claude, ChatGPT, Cursor, VS Code, or Codex | Optional | Yes | Optional |',
+  '| Real-time event delivery | No | No | Yes |',
+  '| Polling for events on interval | Yes | Yes | No |',
+  '| File export as CSV, XLSX, JSON, Markdown, PDF, or text | Yes | Optional | No |',
+  '| Natural language queries | No | Yes | No |',
+  '| Fine-grained pagination and request control | Yes | Optional | No |',
+] as const;
+
 const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   '`xquik.request()` uses the normalized v1 contract automatically.',
   'has_more',
@@ -2877,6 +2895,32 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Public skill rate limits contain table snippet "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the public skill decision guidance scan-friendly', (): void => {
+    expect.assertions(1);
+
+    const skill = readFileSync('skill.md', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          skill,
+          'Public skill decision guidance',
+          REQUIRED_SKILL_DECISION_GUIDANCE_SNIPPETS,
+        ),
+        ...FORBIDDEN_SKILL_DECISION_GUIDANCE_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            skill.includes(snippet)
+              ? [
+                  {
+                    issue: `Public skill decision guidance contains table snippet "${snippet}".`,
                   },
                 ]
               : [],
