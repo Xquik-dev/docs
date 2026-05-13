@@ -5020,7 +5020,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the alternatives sector matrix concrete', (): void => {
-    expect.assertions(2);
+    expect.assertions(3);
 
     const source = readFileSync('alternatives.mdx', 'utf8');
 
@@ -5033,6 +5033,9 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(source).not.toContain(
       '| Sector | Start with | Choose Xquik when | Output to test |',
+    );
+    expect(source).not.toMatch(
+      /<Card title="(?:Developer API teams|Scraping and dataset teams|Creator publishing teams|Social listening and enterprise teams|Workflow automation teams|AI agent teams)"[^>]*>[\s\S]*?\n\n\s+Choose Xquik/,
     );
   });
 
