@@ -1308,6 +1308,26 @@ const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   'USD 0.00015 per user returned',
 ] as const;
 
+const REQUIRED_FOLLOWING_API_HANDOFF_SNIPPETS = [
+  '## Direct following handoff',
+  '<CardGroup cols={2}>',
+  '<Card title="Following rows"',
+  '<Card title="Next page"',
+  '`GET /x/users/{id}/following`',
+  'CRM, warehouse, audience, or agent workflow',
+  '`following_explorer`',
+  'CSV/JSON/XLSX file export',
+  '`users[]`',
+  '`users[].id`',
+  '`x_user_id`',
+  '`users[].username` and `users[].name`',
+  '`has_next_page` and `next_cursor`',
+  '`pageSize` from 20 to 200',
+  '1 credit per user returned',
+  '`402 insufficient_credits`',
+  'USD 0.00015 per user returned',
+] as const;
+
 const REQUIRED_VERIFIED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct verified followers handoff',
   '`GET /x/users/{id}/verified-followers`',
@@ -4229,6 +4249,20 @@ describe('repository discovery', (): void => {
         source,
         'Followers API page',
         REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the following API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/following.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Following API page',
+        REQUIRED_FOLLOWING_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
