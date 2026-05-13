@@ -929,6 +929,10 @@ const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
   '"job_id": "reply-queue-184"',
   '"published_tweet_id": "2052816150136832166"',
   '"reply_to_tweet_id": "1893456789012345678"',
+  '[Send DM](/api-reference/x-write/send-dm)',
+  '[Direct Message Workflow](/guides/direct-message-workflow)',
+  'returns `messageId` after a confirmed direct message send.',
+  'shows how to store DM `messageId` values.',
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS = [
