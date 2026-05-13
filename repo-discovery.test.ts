@@ -1157,12 +1157,26 @@ const REQUIRED_TRENDS_REGION_SNIPPETS = [
   '`23424848` - India',
 ] as const;
 
+const REQUIRED_TRENDS_GUIDE_COPY_SNIPPETS = [
+  'description: "Find ranked X trends by WOEID region and search tweets from each topic"',
+  'Xquik returns ranked X trends for 12 supported WOEID regions.',
+  "Use each trend's",
+  '`query` with [Search Tweets](/api-reference/x/search-tweets)',
+  'Each trend includes a `name`, optional `description`, optional `rank`, and',
+  'optional `query` string',
+  'Defaults to',
+  '`30`; valid values are `1` through `50`.',
+] as const;
+
 const FORBIDDEN_TRENDS_REGION_SNIPPETS = [
   '| WOEID | Region |',
   '|-------|--------|',
   '| `23424977` | United States |',
   '| `23424975` | United Kingdom |',
   'cached in-process',
+  'tweet volumes',
+  'tweet volume',
+  'Data refreshes with each request',
 ] as const;
 
 const REQUIRED_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
@@ -3953,7 +3967,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps trends WOEID regions mobile friendly', (): void => {
-    expect.assertions(3);
+    expect.assertions(4);
 
     const trendPages = [
       {
@@ -3985,6 +3999,13 @@ describe('repository discovery', (): void => {
                 : [],
           ),
         ],
+      ),
+    ).toStrictEqual([]);
+    expect(
+      collectSnippetFindings(
+        trendPages[0].source,
+        'Trends guide first viewport',
+        REQUIRED_TRENDS_GUIDE_COPY_SNIPPETS,
       ),
     ).toStrictEqual([]);
     expect(trendPages[0].source).toContain(
