@@ -634,7 +634,13 @@ const REQUIRED_BILLING_MONITOR_SNIPPETS = [
   '### Plan monitor credits before you monitor tweets',
   'Use `GET /account` before creating more tweet monitors or tweet alerts.',
   'Each active account monitor or keyword monitor adds `21` credits to `monitorBilling.activeHourlyBurn` and `500` credits to `monitorBilling.activeDailyEstimate`.',
-  '| 5 | 105 credits/hour | 2,500 credits/day | 22 |',
+  '<Card title="1 active monitor" icon="radio">',
+  'Hourly burn: 21 credits/hour. Daily estimate: 500 credits/day.',
+  '<Card title="5 active monitors" icon="activity">',
+  'Hourly burn: 105 credits/hour. Daily estimate: 2,500 credits/day.',
+  '<Card title="10 active monitors" icon="gauge">',
+  'Hourly burn: 210 credits/hour. Daily estimate: 5,000 credits/day.',
+  'Keep at least 22 credits before creating or reactivating one more monitor.',
   'If `creditInfo.balance` is below the next hourly burn, top up before enabling more monitors.',
   'A USD 10 top-up adds 66,666 credits',
   'Eligible MPP read endpoints can also be paid per request without a subscription.',
@@ -661,6 +667,8 @@ const FORBIDDEN_BILLING_CARRYOVER_SNIPPETS = [
   '| Search tweets or scrape tweets to CSV | [`GET /x/tweets/search`](/api-reference/x/search-tweets) or [extractions](/guides/extraction-workflow) | 1 credit per tweet returned or extracted |',
   '| Monitor item | Billing behavior |',
   '| Account monitor slots | Unlimited |',
+  '| Active monitors | Hourly burn | Daily estimate | Credits needed before creating or reactivating one more monitor |',
+  '| 5 | 105 credits/hour | 2,500 credits/day | 22 |',
 ] as const;
 
 const REQUIRED_QUICK_TOPUP_PAGE_SNIPPETS = [
