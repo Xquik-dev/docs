@@ -1072,6 +1072,15 @@ const REQUIRED_NOT_FOUND_ERROR_GUIDE_SNIPPETS = [
   'No cached writing style exists for username lookup.',
 ] as const;
 
+const REQUIRED_CONFLICT_ERROR_GUIDE_SNIPPETS = [
+  '<Accordion title="Conflict errors (409)">',
+  'handoff to the existing monitor instead of retrying creation.',
+  '<Card title="monitor_already_exists" icon="copy-check">',
+  'Duplicate account or keyword monitor.',
+  '[Update Monitor](/api-reference/monitors/update)',
+  '[Update Keyword Monitor](/api-reference/monitors/update-keyword)',
+] as const;
+
 const REQUIRED_RATE_LIMIT_ERROR_GUIDE_SNIPPETS = [
   '<Accordion title="Rate limit errors (429)">',
   '<Card title="rate_limit_exceeded" icon="timer">',
@@ -1179,6 +1188,7 @@ const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   '| `draft_not_found` | Draft does not exist |',
   '| `style_not_found` | No cached writing style |',
   '| `no_cached_style` | No cached writing style for username lookup |',
+  '| `monitor_already_exists` | Duplicate monitor for this X account |',
   'data source may be experiencing an outage',
 ] as const;
 
@@ -4091,6 +4101,11 @@ describe('repository discovery', (): void => {
           source,
           'Not found error guide wording',
           REQUIRED_NOT_FOUND_ERROR_GUIDE_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          source,
+          'Conflict error guide wording',
+          REQUIRED_CONFLICT_ERROR_GUIDE_SNIPPETS,
         ),
         ...collectSnippetFindings(
           source,
