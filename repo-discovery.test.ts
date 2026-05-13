@@ -1010,6 +1010,31 @@ const REQUIRED_PERMISSION_ERROR_GUIDE_SNIPPETS = [
   'Resolve account health on x.com or wait before retrying.',
 ] as const;
 
+const REQUIRED_NOT_FOUND_ERROR_GUIDE_SNIPPETS = [
+  '<Card title="404 missing resource" icon="search-x">',
+  '`account_not_found`, `user_not_found`, `tweet_not_found`, `no_media`,',
+  '<Accordion title="Not found errors (404)">',
+  'is not the expected X object type.',
+  '<Card title="not_found" icon="search-x">',
+  'Verify the ID belongs to your account',
+  '<Card title="account_not_found" icon="users">',
+  '[List X Accounts](/api-reference/x-accounts/list)',
+  '<Card title="user_not_found" icon="users">',
+  'does not resolve. Confirm the username',
+  '<Card title="tweet_not_found" icon="message-circle">',
+  'Check the numeric tweet ID',
+  '<Card title="no_media" icon="image">',
+  'no downloadable media attachments.',
+  '<Card title="article_not_found" icon="file-text">',
+  'not an X Article.',
+  '<Card title="draft_not_found" icon="file-text">',
+  'Verify the draft ID',
+  '<Card title="style_not_found" icon="pen-line">',
+  '[Analyze Style](/api-reference/styles/analyze)',
+  '<Card title="no_cached_style" icon="pen-line">',
+  'No cached writing style exists for username lookup.',
+] as const;
+
 const REQUIRED_RATE_LIMIT_ERROR_GUIDE_SNIPPETS = [
   '<Accordion title="Rate limit errors (429)">',
   '<Card title="rate_limit_exceeded" icon="timer">',
@@ -1093,6 +1118,14 @@ const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   '| `x_content_too_long` | Tweet exceeds character limit |',
   '| `x_rejected` | X rejected the write with an unknown reason |',
   '| `media_download_failed` | Failed to download media from URL',
+  '| `not_found` | Resource does not exist |',
+  '| `user_not_found` | X user not found |',
+  '| `tweet_not_found` | Tweet not found |',
+  '| `no_media` | Tweet has no downloadable media |',
+  '| `article_not_found` | Tweet has no linked article |',
+  '| `draft_not_found` | Draft does not exist |',
+  '| `style_not_found` | No cached writing style |',
+  '| `no_cached_style` | No cached writing style for username lookup |',
   'data source may be experiencing an outage',
 ] as const;
 
@@ -3995,6 +4028,11 @@ describe('repository discovery', (): void => {
           source,
           'Permission error guide wording',
           REQUIRED_PERMISSION_ERROR_GUIDE_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          source,
+          'Not found error guide wording',
+          REQUIRED_NOT_FOUND_ERROR_GUIDE_SNIPPETS,
         ),
         ...collectSnippetFindings(
           source,
