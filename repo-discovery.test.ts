@@ -494,6 +494,21 @@ const REQUIRED_LLMS_SNIPPETS = [
   'opt in to the normalized v1 response contract',
 ] as const;
 
+const REQUIRED_SKILL_RATE_LIMIT_SNIPPETS = [
+  '### Rate limits',
+  '- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 10 per 1s user bucket.',
+  '- **Write**: `POST`, `PUT`, and `PATCH` share a 30 per 60s user bucket.',
+  '- **Delete**: `DELETE` requests use a 15 per 60s user bucket.',
+  'Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header.',
+] as const;
+
+const FORBIDDEN_SKILL_RATE_LIMIT_SNIPPETS = [
+  '| Tier | Methods | Limit |',
+  '| Read | GET, HEAD, OPTIONS | 10 per 1s |',
+  '| Write | POST, PUT, PATCH | 30 per 60s |',
+  '| Delete | DELETE | 15 per 60s |',
+] as const;
+
 const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   '`xquik.request()` uses the normalized v1 contract automatically.',
   'has_more',
@@ -2842,6 +2857,32 @@ describe('repository discovery', (): void => {
       ),
       ...collectSnippetFindings(llms, 'llms.txt', REQUIRED_LLMS_SNIPPETS),
     ]).toStrictEqual([]);
+  });
+
+  it('keeps the public skill rate limits scan-friendly and source-backed', (): void => {
+    expect.assertions(1);
+
+    const skill = readFileSync('skill.md', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          skill,
+          'Public skill rate limits',
+          REQUIRED_SKILL_RATE_LIMIT_SNIPPETS,
+        ),
+        ...FORBIDDEN_SKILL_RATE_LIMIT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            skill.includes(snippet)
+              ? [
+                  {
+                    issue: `Public skill rate limits contain table snippet "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
   });
 
   it('keeps the quickstart concrete and aligned with monitor response fields', (): void => {
