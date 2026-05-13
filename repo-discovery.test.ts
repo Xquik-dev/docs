@@ -1060,6 +1060,36 @@ const REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS = [
   'Results are capped at 100,000 rows (10,000 for PDF).',
 ] as const;
 
+const REQUIRED_DRAW_EXPORT_RESPONSE_SNIPPETS = [
+  'Returns a file download. The response includes a `Content-Disposition`',
+  'header with the filename.',
+  '<CardGroup cols={2}>',
+  '<Card title="CSV" icon="table">',
+  '`format=csv` returns `text/csv; charset=utf-8` with filenames like',
+  '`draw-winners-*.csv`.',
+  '<Card title="JSON" icon="braces">',
+  '`format=json` returns `application/json; charset=utf-8` with filenames',
+  '`draw-winners-*.json`.',
+  '<Card title="Markdown" icon="file-text">',
+  '`format=md` returns `text/markdown; charset=utf-8` with filenames like',
+  '`draw-winners-*.md`.',
+  '<Card title="Markdown document" icon="file-text">',
+  '`format=md-document` returns `text/markdown; charset=utf-8` with',
+  '<Card title="PDF" icon="file-down">',
+  '`format=pdf` returns `application/pdf` with filenames like',
+  '`draw-winners-*.pdf`.',
+  '<Card title="TXT" icon="file">',
+  '`format=txt` returns `text/plain; charset=utf-8` with filenames like',
+  '`draw-winners-*.txt`.',
+  '<Card title="XLSX" icon="file-spreadsheet">',
+  '`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`',
+  '`draw-winners-*.xlsx`.',
+  'Entry exports use the same suffix pattern with `draw-entries-*` filenames.',
+  '**Winner export columns:** Position, Username, Text, Backup',
+  '**Entry export columns:** Username, Text, Passed Filter, Language',
+  'Entry exports are capped at 100,000 rows (10,000 for PDF).',
+] as const;
+
 const REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS = [
   'File format changes serialization only. The selected columns depend on the extraction tool type.',
   'All extraction tools except `article_extractor` use the default result column set.',
@@ -3564,6 +3594,21 @@ describe('repository discovery', (): void => {
       ),
     ).toStrictEqual([]);
     expect(source).not.toContain('| Format | Content-Type | Filename Example |');
+  });
+
+  it('keeps draw export response formats mobile friendly', (): void => {
+    expect.assertions(2);
+
+    const source = readFileSync('api-reference/draws/export.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Draw export API response',
+        REQUIRED_DRAW_EXPORT_RESPONSE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(source).not.toContain('| Format | Content-Type | Filename |');
   });
 
   it('keeps extraction export columns source-backed and mobile friendly', (): void => {
