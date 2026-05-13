@@ -589,6 +589,15 @@ const REQUIRED_BILLING_RECOVERY_SNIPPETS = [
 
 const REQUIRED_BILLING_MONITOR_SNIPPETS = [
   '## Subscription',
+  '<Card title="Starter" icon="rocket">',
+  'USD 20/month. Includes 140,000 monthly credits (USD 0.00014/credit).',
+  'Prototyping and low-volume integrations. Monitor slots are unlimited.',
+  '<Card title="Pro" icon="gauge">',
+  'USD 99/month. Includes 770,000 monthly credits (USD 0.00013/credit).',
+  'Production workloads and growing teams. Monitor slots are unlimited.',
+  '<Card title="Business" icon="building-2">',
+  'USD 199/month. Includes 1,670,000 monthly credits (USD 0.00012/credit).',
+  'High-volume automation and enterprise use. Monitor slots are unlimited.',
   '### Pick a billing path by job',
   'Search tweets or scrape tweets to CSV',
   'Export followers or follower export',
@@ -632,6 +641,8 @@ const FORBIDDEN_BILLING_CARRYOVER_SNIPPETS = [
   'Every subscription includes a monthly credit allowance that resets each billing period.',
   'Unused credits **do not carry over**',
   'No. Credits reset to zero each billing period.',
+  '| Tier | Price | Monthly credits | Monitor slots | Use case |',
+  '| Starter | USD 20/month | 140,000 credits (USD 0.00014/credit) | Unlimited | Prototyping and low-volume integrations |',
 ] as const;
 
 const REQUIRED_QUICK_TOPUP_PAGE_SNIPPETS = [
