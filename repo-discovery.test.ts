@@ -1495,6 +1495,23 @@ const REQUIRED_ARCHITECTURE_COMPONENT_SNIPPETS = [
   'Post tweets and replies, upload media, send DMs, follow, like, retweet,',
 ] as const;
 
+const REQUIRED_ARCHITECTURE_AUTHENTICATION_SNIPPETS = [
+  '<Card title="API header" icon="key-round">',
+  'Send `x-api-key` on every REST API request.',
+  '<Card title="Key format" icon="fingerprint">',
+  'Keys start with `xq_` followed by 64 hex characters.',
+  '<Card title="Stored hash" icon="shield-check">',
+  'Xquik stores the SHA-256 key hash and display prefix',
+  '<Card title="Revocation" icon="ban">',
+  'Revoked or inactive keys stop authenticating immediately',
+  '<Card title="Audit trail" icon="clock">',
+  'Successful API-key checks update `lastUsedAt`',
+  '<Card title="OAuth 2.1" icon="lock-keyhole">',
+  '[OAuth 2.1 with S256 PKCE](/oauth/overview)',
+  '<Card title="Session auth" icon="cookie">',
+  'API-key creation and revocation',
+] as const;
+
 const REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS = [
   '<Card title="Single region" icon="map-pin">',
   'Do not assume',
@@ -1530,6 +1547,12 @@ const FORBIDDEN_ARCHITECTURE_COMPONENT_SNIPPETS = [
   'for programmatic access |',
   'for AI agent integration |',
   'Web UI for managing monitors, running extractions, viewing results |',
+] as const;
+
+const FORBIDDEN_ARCHITECTURE_AUTHENTICATION_SNIPPETS = [
+  '| **Header** | `x-api-key`',
+  '| **Key format** | `xq_` prefix + 64 hex characters |',
+  '| **OAuth 2.1** | MCP server supports',
 ] as const;
 
 const REQUIRED_WEBHOOK_TYPES_SNIPPETS = [
@@ -3947,6 +3970,11 @@ describe('repository discovery', (): void => {
         ),
         ...collectSnippetFindings(
           architecture,
+          'Architecture guide authentication',
+          REQUIRED_ARCHITECTURE_AUTHENTICATION_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          architecture,
           'Architecture guide platform limitations',
           REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS,
         ),
@@ -3956,6 +3984,17 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     label: 'Architecture guide components',
+                    snippet,
+                  },
+                ]
+              : [],
+        ),
+        ...FORBIDDEN_ARCHITECTURE_AUTHENTICATION_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            architecture.includes(snippet)
+              ? [
+                  {
+                    label: 'Architecture guide authentication',
                     snippet,
                   },
                 ]
