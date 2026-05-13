@@ -99,7 +99,7 @@ describe('Plugin docs', (): void => {
   });
 
   it('keeps the Hermes Tweet guide aligned with the local plugin package', (): void => {
-    expect.assertions(hermesTweetSourceExists() ? 4 : 1);
+    expect.assertions(hermesTweetSourceExists() ? 5 : 1);
 
     if (!hermesTweetSourceExists()) {
       expect(hermesTweetSourceExists()).toBe(false);
@@ -153,11 +153,16 @@ describe('Plugin docs', (): void => {
       'Tweet search, tweet lookup, user lookup, timelines, articles, and trends.',
       '<Card title="Actions" icon="trending-up">',
       'Tweet, reply, like, retweet, follow, DM, profile, media, and communities.',
+      '<Card title="Tools Missing" icon="terminal">',
+      'Run `hermes plugins enable hermes-tweet`, then confirm `hermes-tweet` appears in `hermes tools list`.',
+      '<Card title="Risky Writes" icon="shield-check">',
+      'Keep `HERMES_TWEET_ENABLE_ACTIONS=false` and use read tools only.',
     ];
 
     expect(fileIncludes(guide, expected)).toStrictEqual([]);
     expect(guide).not.toContain('| Tool | Purpose | Enabled By Default |');
     expect(guide).not.toContain('| Command | Purpose |');
     expect(guide).not.toContain('| Area | Examples |');
+    expect(guide).not.toContain('| Symptom | Fix |');
   });
 });
