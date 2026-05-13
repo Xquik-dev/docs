@@ -50,6 +50,43 @@ function regexValue(source: string, regex: RegExp, label: string): string {
   return value;
 }
 
+function tweetclawCategoryCounts(apiSpec: string): ReadonlyMap<string, number> {
+  const constants = new Map<string, string>([
+    ['CATEGORY_X_ACCOUNTS', 'x-accounts'],
+    ['CATEGORY_X_WRITE', 'x-write'],
+  ]);
+  const counts = new Map<string, number>();
+
+  for (const entry of apiSpec.split(/\n\s*\{\n/gu).slice(1)) {
+    if (/^\s+agentProhibited: true/gmu.test(entry)) {
+      continue;
+    }
+
+    const hasPath = /^\s+path: '/gmu.test(entry);
+    const categoryMatch = /^\s+category: (?:'([^']+)'|(CATEGORY_[A-Z_]+))/gmu.exec(entry);
+    const literalCategory = categoryMatch?.[1];
+    const constantCategory =
+      categoryMatch?.[2] === undefined ? undefined : constants.get(categoryMatch[2]);
+    const category = literalCategory ?? constantCategory;
+
+    if (!hasPath || category === undefined) {
+      continue;
+    }
+
+    counts.set(category, (counts.get(category) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
+function categoryCount(counts: ReadonlyMap<string, number>, category: string): number {
+  const count = counts.get(category);
+  if (count === undefined) {
+    throw new Error(`Could not read TweetClaw category count for ${category}.`);
+  }
+  return count;
+}
+
 function tweetclawSourceExists(): boolean {
   return existsSync(TWEETCLAW_PACKAGE) && existsSync(TWEETCLAW_API_SPEC);
 }
@@ -60,7 +97,7 @@ function hermesTweetSourceExists(): boolean {
 
 describe('Plugin docs', (): void => {
   it('keeps the TweetClaw guide aligned with the local plugin package', (): void => {
-    expect.assertions(tweetclawSourceExists() ? 3 : 1);
+    expect.assertions(tweetclawSourceExists() ? 4 : 1);
 
     if (!tweetclawSourceExists()) {
       expect(tweetclawSourceExists()).toBe(false);
@@ -76,6 +113,7 @@ describe('Plugin docs', (): void => {
       [...apiSpec.matchAll(/^\s+path: '/gmu)].length -
       [...apiSpec.matchAll(/^\s+agentProhibited: true/gmu)].length;
     const mppEndpointCount = [...apiSpec.matchAll(/^\s+mpp: /gmu)].length;
+    const categoryCounts = tweetclawCategoryCounts(apiSpec);
     const expected = [
       `OpenClaw \`${packageJson.openclaw?.compat?.minGatewayVersion}\` or newer`,
       `Node.js \`${packageJson.engines?.node?.replace('>=', '')}\` or newer`,
@@ -98,6 +136,27 @@ describe('Plugin docs', (): void => {
       'Show current topics from Xquik Radar.',
       '<Card title="/xtrends tech" icon="search">',
       'Show current Xquik Radar topics filtered by the `tech` category.',
+      '<Card title="account" icon="user">',
+      `${categoryCount(categoryCounts, 'account')} endpoint for account status and usage.`,
+      '<Card title="composition" icon="pen-line">',
+      `${categoryCount(categoryCounts, 'composition')} endpoints for compose, drafts, writing styles, and radar.`,
+      '<Card title="credits" icon="coins">',
+      `${categoryCount(categoryCounts, 'credits')} endpoint for credit balance reads.`,
+      '<Card title="extraction" icon="file-spreadsheet">',
+      `${categoryCount(categoryCounts, 'extraction')} endpoints for extraction jobs, giveaway draws, and exports.`,
+      '<Card title="media" icon="image">',
+      `${categoryCount(categoryCounts, 'media')} endpoint for authenticated tweet media downloads and gallery links.`,
+      '<Card title="monitoring" icon="radio">',
+      `${categoryCount(categoryCounts, 'monitoring')} endpoints for account monitors, keyword monitors, events, and webhooks.`,
+      '<Card title="twitter" icon="search">',
+      `${categoryCount(categoryCounts, 'twitter')} endpoints for search, lookups, timelines, articles, trends, bookmarks,`,
+      'and notifications.',
+      '<Card title="x-accounts" icon="users">',
+      `${categoryCount(categoryCounts, 'x-accounts')} endpoint for listing connected accounts before explicit user-selected`,
+      'actions.',
+      '<Card title="x-write" icon="send">',
+      `${categoryCount(categoryCounts, 'x-write')} endpoints for post, reply, like, retweet, follow, remove follower, DM,`,
+      'profile, media, and community actions.',
       '## Runtime Diagnostics',
       'TweetClaw can be installed before credentials are configured.',
       'Live API calls return setup guidance until you add an API key or MPP signing key.',
@@ -109,6 +168,7 @@ describe('Plugin docs', (): void => {
     expect(fileIncludes(guide, expected)).toStrictEqual([]);
     expect(guide).not.toContain('| Tool | Purpose | Network Access |');
     expect(guide).not.toContain('| Command | Purpose |');
+    expect(guide).not.toContain('| Category | Examples |');
   });
 
   it('keeps the Hermes Tweet guide aligned with the local plugin package', (): void => {
