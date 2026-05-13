@@ -1831,6 +1831,17 @@ const REQUIRED_WEBHOOK_LIST_API_SNIPPETS = [
   '[Signature Verification](/webhooks/verification)',
 ] as const;
 
+const REQUIRED_WEBHOOK_TEST_API_SNIPPETS = [
+  '## Test result handoff',
+  'Treat `success: true` and a `2xx` `statusCode` as proof',
+  'Treat `success: false` with a non-`2xx` `statusCode` as a receiver error.',
+  'Treat `statusCode: 0` as a network or reachability failure.',
+  'Store `error` with your deployment logs',
+  '`webhook_inactive` means no test was sent.',
+  '[Update Webhook](/api-reference/webhooks/update)',
+  'Validate `X-Xquik-Signature` on the raw request body',
+] as const;
+
 const REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS = [
   'Updated event types to subscribe to. Replaces the existing list. At least 1 required when provided.',
   '<Card title="tweet.new" icon="bell">',
@@ -4646,6 +4657,10 @@ describe('repository discovery', (): void => {
       'api-reference/webhooks/update.mdx',
       'utf8',
     );
+    const testWebhookApi = readFileSync(
+      'api-reference/webhooks/test.mdx',
+      'utf8',
+    );
     const deliveriesApi = readFileSync(
       'api-reference/webhooks/deliveries.mdx',
       'utf8',
@@ -4667,6 +4682,11 @@ describe('repository discovery', (): void => {
           updateWebhookApi,
           'Update webhook API docs',
           REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          testWebhookApi,
+          'Test webhook API docs',
+          REQUIRED_WEBHOOK_TEST_API_SNIPPETS,
         ),
         ...collectSnippetFindings(
           deliveriesApi,
