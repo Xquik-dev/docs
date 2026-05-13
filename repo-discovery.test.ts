@@ -975,6 +975,24 @@ const REQUIRED_AUTHENTICATION_ERROR_GUIDE_SNIPPETS = [
   'the account from the [dashboard](https://xquik.com/dashboard).',
 ] as const;
 
+const REQUIRED_BILLING_ERROR_GUIDE_SNIPPETS = [
+  '<Accordion title="Billing & subscription errors (402)">',
+  '<Card title="no_subscription" icon="badge-x">',
+  '[Subscribe](/api-reference/account/subscribe)',
+  '<Card title="subscription_inactive" icon="badge-alert">',
+  'Reactivate billing from the',
+  '<Card title="no_addon" icon="archive">',
+  'current plans include',
+  'unlimited monitor slots.',
+  '<Card title="payment_failed" icon="credit-card">',
+  'Update the payment method from the',
+  '<Card title="no_credits" icon="coins">',
+  'No credit balance is available.',
+  '<Card title="insufficient_credits" icon="wallet-cards">',
+  'Balance is below the required operation cost.',
+  '[Top Up Credits](/api-reference/credits/topup)',
+] as const;
+
 const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   'Error recovery patterns for X API writes, pending tweet confirmation, billing, retries, and rate limits',
   'Every Xquik API error returns a consistent JSON body with an `error` code.',
@@ -997,6 +1015,12 @@ const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   '| `x_transient_error` | Write service timeout or temporary failure |',
   '| `unauthenticated` | Missing or invalid API key |',
   '| `x_auth_failure` | X account session expired or invalid |',
+  '| `no_subscription` | No active subscription |',
+  '| `subscription_inactive` | Subscription is not active |',
+  '| `no_addon` | Legacy monitor add-on state |',
+  '| `payment_failed` | Payment processing failed |',
+  '| `no_credits` | No credits available |',
+  '| `insufficient_credits` | Not enough credits for this operation |',
   'data source may be experiencing an outage',
 ] as const;
 
@@ -3889,6 +3913,11 @@ describe('repository discovery', (): void => {
           source,
           'Authentication error guide wording',
           REQUIRED_AUTHENTICATION_ERROR_GUIDE_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          source,
+          'Billing error guide wording',
+          REQUIRED_BILLING_ERROR_GUIDE_SNIPPETS,
         ),
         ...FORBIDDEN_ERROR_HANDLING_SNIPPETS.flatMap(
           (snippet): readonly DiscoveryFinding[] =>
