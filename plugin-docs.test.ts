@@ -97,7 +97,7 @@ function hermesTweetSourceExists(): boolean {
 
 describe('Plugin docs', (): void => {
   it('keeps the TweetClaw guide aligned with the local plugin package', (): void => {
-    expect.assertions(tweetclawSourceExists() ? 4 : 1);
+    expect.assertions(tweetclawSourceExists() ? 5 : 1);
 
     if (!tweetclawSourceExists()) {
       expect(tweetclawSourceExists()).toBe(false);
@@ -163,12 +163,29 @@ describe('Plugin docs', (): void => {
       'openclaw plugins inspect tweetclaw --runtime',
       'openclaw skills info tweetclaw',
       'TweetClaw requires an HTTPS base URL with no embedded credentials.',
+      '<Card title="Tools Missing" icon="terminal">',
+      'Add `explore` and `tweetclaw` to `tools.alsoAllow`, run the runtime',
+      'inspection commands, then restart OpenClaw.',
+      '<Card title="Auth Fails" icon="key-round">',
+      'Create a fresh Xquik API key and update',
+      '`plugins.entries.tweetclaw.config.apiKey`.',
+      '<Card title="MPP Setup Fails" icon="wallet">',
+      'Install `mppx` and `viem`, fund the MPP account, and call only',
+      'MPP-eligible read endpoints.',
+      '<Card title="Monitor Alerts Missing" icon="radio">',
+      'Set `pollingEnabled` to `true` and keep `pollingInterval` at 60 seconds or',
+      'higher.',
+      '<Card title="Write Approval Required" icon="shield-check">',
+      'Review the structured request and approve only the exact intended post,',
+      'delete, follow, DM, monitor, extraction, webhook, profile, or community',
+      'action.',
     ];
 
     expect(fileIncludes(guide, expected)).toStrictEqual([]);
     expect(guide).not.toContain('| Tool | Purpose | Network Access |');
     expect(guide).not.toContain('| Command | Purpose |');
     expect(guide).not.toContain('| Category | Examples |');
+    expect(guide).not.toContain('| Symptom | Fix |');
   });
 
   it('keeps the Hermes Tweet guide aligned with the local plugin package', (): void => {
