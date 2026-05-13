@@ -1374,6 +1374,8 @@ const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   '`tweets[].author.id` and `tweets[].author.username`',
   '`has_next_page` and `next_cursor`',
   '`limit` is an upper bound from 1 to 200',
+  '[Tweet Search Export Workflow](/guides/tweet-search-export)',
+  'saved CSV, JSON, or XLSX files',
   '1 credit per tweet returned',
   '`402 insufficient_credits`',
   '`Retry-After`',
