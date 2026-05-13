@@ -615,7 +615,16 @@ const REQUIRED_BILLING_MONITOR_SNIPPETS = [
   '<Card title="Recover from 402" icon="credit-card">',
   'Checkout top-ups start at USD 10; quick top-up charges a saved payment method for USD 10-500',
   '### Monitor pricing',
-  '21 credits per active monitor-hour',
+  '<Card title="Account monitor slots" icon="users">',
+  'Account monitor slots are unlimited.',
+  '<Card title="Keyword monitor slots" icon="search">',
+  'Keyword monitor slots are unlimited.',
+  '<Card title="Active monitor hour" icon="clock">',
+  'Each active instant monitor costs 21 credits per active monitor-hour.',
+  '<Card title="Check interval" icon="timer">',
+  'Instant monitors check every 1 second while active.',
+  '<Card title="Webhook and event delivery" icon="radio">',
+  'Webhook and event deliveries are included in active monitor billing.',
   'Creating or reactivating an account monitor requires at least 22 available credits',
   '1 credit for the username lookup',
   'Creating or reactivating a keyword monitor also requires at least 22 available credits',
@@ -650,6 +659,8 @@ const FORBIDDEN_BILLING_CARRYOVER_SNIPPETS = [
   '| Starter | USD 20/month | 140,000 credits (USD 0.00014/credit) | Unlimited | Prototyping and low-volume integrations |',
   '| Job users search for | Use this API path | Credit behavior |',
   '| Search tweets or scrape tweets to CSV | [`GET /x/tweets/search`](/api-reference/x/search-tweets) or [extractions](/guides/extraction-workflow) | 1 credit per tweet returned or extracted |',
+  '| Monitor item | Billing behavior |',
+  '| Account monitor slots | Unlimited |',
 ] as const;
 
 const REQUIRED_QUICK_TOPUP_PAGE_SNIPPETS = [
