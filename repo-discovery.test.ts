@@ -855,6 +855,10 @@ const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   '`Retry-After` or exponential backoff',
   '<Card title="500, 502, and 503 transient failures" icon="rotate-ccw">',
   'Stop after 3 attempts.',
+  '<Card title="HTTP status" icon="gauge">',
+  '`429 Too Many Requests` means the request is rate limited or waiting on an',
+  '<Card title="Retry-After header" icon="timer">',
+  'The `Retry-After` header gives seconds to wait before sending the same',
   'The write action was dispatched, but final confirmation is still pending.',
   'The response includes `status: "pending_confirmation"`, `writeActionId`, `charged: false`, and `retryable: false`.',
   'Store `writeActionId`, call [Get Write Action Status](/api-reference/x-write/get-write-action-status), and do not retry-send while status is `pending_confirmation`.',
@@ -933,6 +937,8 @@ const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
 
 const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   '| Code | HTTP | Retryable | Quick fix |',
+  '| Signal | Value |',
+  '|--------|-------|',
   'Add a monitor addon from the dashboard.',
   'Delete a monitor or add capacity ($5/month).',
   'add capacity ($5/month per extra monitor)',
