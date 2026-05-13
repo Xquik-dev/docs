@@ -1538,6 +1538,19 @@ const REQUIRED_ARCHITECTURE_RATE_LIMIT_SNIPPETS = [
   'Throttled reads return `Retry-After: 1`; throttled writes and deletes',
 ] as const;
 
+const REQUIRED_ARCHITECTURE_BILLING_SNIPPETS = [
+  '<Card title="Subscriptions" icon="credit-card">',
+  'Starter, Pro, and Business plans run from USD 20 to USD 199 per month',
+  'include monthly credits.',
+  '<Card title="Active monitors" icon="radio">',
+  'Monitor slots are unlimited. Active instant monitors check every 1 second',
+  'cost 21 credits per active monitor-hour.',
+  '<Card title="Credit top-ups" icon="wallet">',
+  'Top up from USD 10.',
+  'Credits are priced at USD 0.00015 each.',
+  '[Billing & Usage](/guides/billing#credit-top-ups).',
+] as const;
+
 const REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS = [
   '<Card title="Single region" icon="map-pin">',
   'Do not assume',
@@ -1595,6 +1608,14 @@ const FORBIDDEN_ARCHITECTURE_RATE_LIMIT_SNIPPETS = [
   '| **Read** | `GET`, `HEAD`, `OPTIONS` | 10 per 1s |',
   '| **Write** | `POST`, `PUT`, `PATCH` | 30 per 60s |',
   '| **Delete** | `DELETE` | 15 per 60s |',
+] as const;
+
+const FORBIDDEN_ARCHITECTURE_BILLING_SNIPPETS = [
+  '| Aspect | Detail |',
+  '|--------|--------|',
+  '| **Subscription** | USD 20-199/month. Includes a monthly credit allowance |',
+  '| **Active monitors** | Unlimited slots. Active instant monitors cost 21 credits per hour |',
+  '| **Credit top-ups** | Purchase additional credits at USD 0.00015/credit via the dashboard.',
 ] as const;
 
 const REQUIRED_WEBHOOK_TYPES_SNIPPETS = [
@@ -4027,6 +4048,11 @@ describe('repository discovery', (): void => {
         ),
         ...collectSnippetFindings(
           architecture,
+          'Architecture guide usage billing',
+          REQUIRED_ARCHITECTURE_BILLING_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          architecture,
           'Architecture guide platform limitations',
           REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS,
         ),
@@ -4069,6 +4095,17 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     label: 'Architecture guide rate limits',
+                    snippet,
+                  },
+                ]
+              : [],
+        ),
+        ...FORBIDDEN_ARCHITECTURE_BILLING_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            architecture.includes(snippet)
+              ? [
+                  {
+                    label: 'Architecture guide usage billing',
                     snippet,
                   },
                 ]
