@@ -838,6 +838,9 @@ const REQUIRED_DRAFT_TYPES_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
+  'description: Recover from Xquik API errors, billing failures, retries & rate limits',
+  'Every Xquik API error includes an `error` code.',
+  'Use it to choose the right recovery path.',
   'post tweet status',
   'Start with the HTTP family, then apply the recovery rule.',
   '<Card title="400 request validation" icon="circle-alert">',
@@ -940,6 +943,9 @@ const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
+  'Error recovery patterns for X API writes, pending tweet confirmation, billing, retries, and rate limits',
+  'Every Xquik API error returns a consistent JSON body with an `error` code.',
+  'Use these codes to build reliable integrations with automatic recovery.',
   '| Code | HTTP | Retryable | Quick fix |',
   '| Signal | Value |',
   '|--------|-------|',
