@@ -2081,6 +2081,11 @@ const REQUIRED_DM_HISTORY_API_SNIPPETS = [
   'account_not_found',
   '424 Dependency Failed',
   '1 credit per result returned',
+  '[Direct Message Workflow](/guides/direct-message-workflow)',
+  '[Get User](/api-reference/x/get-user)',
+  '[Send DM](/api-reference/x-write/send-dm)',
+  '[Upload Media](/api-reference/x-write/upload-media)',
+  'participant-scoped history sync',
 ] as const;
 
 const REQUIRED_SEND_DM_API_SNIPPETS = [
