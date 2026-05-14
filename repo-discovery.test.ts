@@ -1851,6 +1851,29 @@ const REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
   'Posting the tweet, posting the reply, or sending the DM is a separate 10-credit write call.',
 ] as const;
 
+const REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
+  'Download media',
+  '## Media download handoff',
+  'Use this endpoint when your agent needs a saved gallery for tweet images, videos, or GIFs.',
+  '<Card title="Gallery URL" icon="images">',
+  'Store `galleryUrl` as the durable link for downloaded media.',
+  '<Card title="Single tweet" icon="message-square">',
+  'Store `tweetId` and `cacheHit`.',
+  '`cacheHit: true` means the single-tweet request used cached media and is free.',
+  '<Card title="Bulk result" icon="list-checks">',
+  'Store `totalTweets` and `totalMedia`.',
+  '`totalTweets` counts successful tweets with media after invalid or failed IDs are skipped.',
+  '<Card title="Input mode" icon="list-filter">',
+  'When it contains at least 1 string, bulk mode ignores `tweetInput`, `tweetId`, and `tweetUrl`.',
+  '<Card title="Batch limit" icon="list-ordered">',
+  'Keep `tweetIds` at 50 items or fewer.',
+  '<Card title="Write handoff" icon="send">',
+  'This endpoint creates a gallery download, not an uploaded media ID.',
+  '[Upload Media](/api-reference/x-write/upload-media)',
+  'Fresh downloads cost 1 credit per tweet processed with media.',
+  'Bulk responses do not return `freshCount`',
+] as const;
+
 const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   'send direct messages',
   'GET /x/users/{id}',
@@ -5006,6 +5029,20 @@ describe('repository discovery', (): void => {
         source,
         'Upload media API page',
         REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the download media API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/download-media.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Download media API page',
+        REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
