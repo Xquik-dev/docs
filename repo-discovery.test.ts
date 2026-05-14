@@ -2477,7 +2477,7 @@ const REQUIRED_SEND_DM_API_SNIPPETS = [
   'After the media DM send returns `200 OK`',
   '"record_type": "dm_media_send"',
   '"message_id": "1893726451029384192"',
-  '"upload_media_id": "1893726451023847424"',
+  '"media_id": "1893726451023847424"',
   'Keep `media_ids` as a one-item array in the request',
   'use `message_id` as the external DM identifier',
   '## Direct message handoff',
