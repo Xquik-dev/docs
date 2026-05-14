@@ -641,6 +641,8 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'Call `POST /api/v1/x/tweets`, then `GET /api/v1/x/write-actions/{id}` when pending. Store `tweet_id`, `reply_to_tweet_id`, `write_action_id`, `status`, and `charged`. Cost: 10 credits per write call.',
   '<Card title="Monitor tweets to webhooks" icon="radio">',
   'Call `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then `POST /api/v1/webhooks`.',
+  "save_secret_once: 'Store webhook.secret for X-Xquik-Signature verification; do not print it in logs.'",
+  'run `POST /api/v1/webhooks/{id}/test` before routing production events',
   "source: 'xquik_mcp'",
   "job: 'tweet_search'",
   'The server covers 120 operations across 10 categories:',

@@ -315,7 +315,18 @@ async () => {
     method: 'POST',
     body: { url: 'https://example.com/hook', eventTypes: ['tweet.new', 'tweet.reply'] }
   });
-  return { monitor, webhook };
+  const test = await xquik.request(`/api/v1/webhooks/${webhook.id}/test`, {
+    method: 'POST'
+  });
+  return {
+    monitor_id: monitor.id,
+    event_types: monitor.event_types,
+    next_billing_at: monitor.next_billing_at,
+    webhook_id: webhook.id,
+    webhook_url: webhook.url,
+    save_secret_once: 'Store webhook.secret for X-Xquik-Signature verification; do not print it in logs.',
+    test
+  };
 }
 ```
 
@@ -353,7 +364,7 @@ MCP returns JSON. Use extraction export endpoints when you need Xquik to generat
     Call `POST /api/v1/x/tweets`, then `GET /api/v1/x/write-actions/{id}` when pending. Store `tweet_id`, `reply_to_tweet_id`, `write_action_id`, `status`, and `charged`. Cost: 10 credits per write call.
   </Card>
   <Card title="Monitor tweets to webhooks" icon="radio">
-    Call `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then `POST /api/v1/webhooks`. Store `monitor.id`, `event_types`, `next_billing_at`, `webhook.id`, and the webhook URL. Cost: 21 credits per active monitor-hour; webhook delivery is included.
+    Call `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then `POST /api/v1/webhooks`. Store `monitor.id`, `event_types`, `next_billing_at`, `webhook.id`, webhook URL, and the one-time `webhook.secret`; run `POST /api/v1/webhooks/{id}/test` before routing production events. Cost: 21 credits per active monitor-hour; webhook delivery is included.
   </Card>
 </CardGroup>
 
