@@ -15,6 +15,7 @@ const SKIPPED_PUBLIC_SCAN_DIRS = new Set([
 ] as const);
 
 const CREDITS_QUICK_TOPUP_PAGE = 'api-reference/credits/quick-topup.mdx';
+const API_KEYS_CREATE_PAGE = 'api-reference/api-keys/create.mdx';
 
 const REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS = [
   '/* Keep mobile guide content inside the viewport. */',
@@ -909,6 +910,24 @@ const FORBIDDEN_QUICK_TOPUP_CLIENT_SECRET_LOG_SNIPPETS = [
 const FORBIDDEN_TOPUP_EXAMPLE_SNIPPETS = [
   '"balance": "1450"',
   '"credits": "1000"',
+] as const;
+
+const REQUIRED_API_KEYS_CREATE_PAGE_SNIPPETS = [
+  'Store `fullKey` immediately and log only `id` and `prefix`.',
+  'full_key=$(jq -r \'.fullKey\' <<<"$response")',
+  'const apiKey = key.fullKey;',
+  'api_key = key["fullKey"]',
+  'apiKey := key["fullKey"]',
+  'Store apiKey in your secret manager; do not print it in logs.',
+  'Created API key',
+  'The `fullKey` is returned **only once**.',
+] as const;
+
+const FORBIDDEN_API_KEYS_CREATE_LOG_SNIPPETS = [
+  '| jq',
+  'console.log(key)',
+  'print(key)',
+  'fmt.Println(string(respBody))',
 ] as const;
 
 const REQUIRED_ACCOUNT_API_SNIPPETS = [
@@ -4638,6 +4657,32 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Quick top-up API docs can print a payment client secret with "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps create API key examples from logging the one-time full key', (): void => {
+    expect.assertions(1);
+
+    const createApiKeyPage = readFileSync(API_KEYS_CREATE_PAGE, 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          createApiKeyPage,
+          'Create API key docs',
+          REQUIRED_API_KEYS_CREATE_PAGE_SNIPPETS,
+        ),
+        ...FORBIDDEN_API_KEYS_CREATE_LOG_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            createApiKeyPage.includes(snippet)
+              ? [
+                  {
+                    issue: `Create API key docs can print the one-time fullKey with "${snippet}".`,
                   },
                 ]
               : [],

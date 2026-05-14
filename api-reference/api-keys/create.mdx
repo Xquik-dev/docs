@@ -13,12 +13,19 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **Free** - does not consume credits
 </Callout>
 
+Store `fullKey` immediately and log only `id` and `prefix`.
+
 <CodeGroup>
   ```bash cURL
-  curl -X POST https://xquik.com/api/v1/api-keys \
+  response=$(curl -sS -X POST https://xquik.com/api/v1/api-keys \
     -H "Cookie: session_token=YOUR_SESSION_TOKEN" \
     -H "Content-Type: application/json" \
-    -d '{"name": "Production"}' | jq
+    -d '{"name": "Production"}')
+  full_key=$(jq -r '.fullKey' <<<"$response")
+  key_id=$(jq -r '.id' <<<"$response")
+  key_prefix=$(jq -r '.prefix' <<<"$response")
+  # Store $full_key in your secret manager; do not print it in logs.
+  printf 'Created API key %s (%s)\n' "$key_id" "$key_prefix"
   ```
 
   ```javascript Node.js
@@ -31,7 +38,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     body: JSON.stringify({ name: "Production" }),
   });
   const key = await response.json();
-  console.log(key);
+  const apiKey = key.fullKey;
+  // Store apiKey in your secret manager; do not print it in logs.
+  process.stdout.write(`Created API key ${key.id} (${key.prefix})\n`);
   ```
 
   ```python Python
@@ -43,45 +52,50 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       json={"name": "Production"},
   )
   key = response.json()
-  print(key)
+  api_key = key["fullKey"]
+  # Store api_key in your secret manager; do not print it in logs.
+  print(f"Created API key {key['id']} ({key['prefix']})")
   ```
 
   ```go Go
   package main
 
   import (
-  	"bytes"
-  	"encoding/json"
-  	"fmt"
-  	"io"
-  	"log"
-  	"net/http"
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "log"
+    "net/http"
   )
 
   func main() {
-  	body, err := json.Marshal(map[string]string{"name": "Production"})
-  	if err != nil {
-  		log.Fatal(err)
-  	}
+    body, err := json.Marshal(map[string]string{"name": "Production"})
+    if err != nil {
+      log.Fatal(err)
+    }
 
-  	req, err := http.NewRequest("POST", "https://xquik.com/api/v1/api-keys", bytes.NewReader(body))
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	req.Header.Set("Content-Type", "application/json")
-  	req.AddCookie(&http.Cookie{Name: "session_token", Value: "YOUR_SESSION_TOKEN"})
+    req, err := http.NewRequest("POST", "https://xquik.com/api/v1/api-keys", bytes.NewReader(body))
+    if err != nil {
+      log.Fatal(err)
+    }
+    req.Header.Set("Content-Type", "application/json")
+    req.AddCookie(&http.Cookie{Name: "session_token", Value: "YOUR_SESSION_TOKEN"})
 
-  	resp, err := http.DefaultClient.Do(req)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	defer resp.Body.Close()
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+      log.Fatal(err)
+    }
+    defer resp.Body.Close()
 
-  	respBody, err := io.ReadAll(resp.Body)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	fmt.Println(string(respBody))
+    var key map[string]string
+    if err := json.NewDecoder(resp.Body).Decode(&key); err != nil {
+      log.Fatal(err)
+    }
+
+    apiKey := key["fullKey"]
+    // Store apiKey in your secret manager; do not print it in logs.
+    _ = apiKey
+    fmt.Printf("Created API key %s (%s)\n", key["id"], key["prefix"])
   }
   ```
 </CodeGroup>
