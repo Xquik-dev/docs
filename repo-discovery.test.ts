@@ -2334,6 +2334,31 @@ const REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS = [
   '"message": "Monitor already exists."',
 ] as const;
 
+const REQUIRED_KEYWORD_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
+  '## Inventory handoff',
+  'Use `GET /monitors/keywords` after create, update, pause, or delete operations',
+  'up to 200',
+  'keyword monitors ordered by creation time',
+  '`total` count for the returned',
+  '<Card title="Active Burn" icon="activity">',
+  'Filter monitors where `isActive` is `true`.',
+  'Each active keyword monitor',
+  'bills 21 credits per active monitor-hour',
+  '`nextBillingAt` to schedule',
+  'credit checks or pause stale alerts.',
+  '<Card title="Webhook Alignment" icon="webhook">',
+  "Compare each monitor's `eventTypes` with webhook subscriptions",
+  'relying on signed alerts.',
+  '<Card title="Event Backfill" icon="database">',
+  'Use `id` as `keywordMonitorId` with',
+  '[List Events](/api-reference/events/list)',
+  '<Card title="State Repair" icon="sliders-horizontal">',
+  '[Update Keyword Monitor](/api-reference/monitors/update-keyword)',
+  'replace `eventTypes` or toggle `isActive`.',
+  '[Delete Keyword Monitor](/api-reference/monitors/delete-keyword)',
+  'the query should stop permanently.',
+] as const;
+
 const REQUIRED_KEYWORD_MONITOR_UPDATE_API_HANDOFF_SNIPPETS = [
   '## Update handoff',
   'Use this endpoint when a keyword alert changes scope',
@@ -5043,6 +5068,23 @@ describe('repository discovery', (): void => {
         source,
         'Create keyword monitor API page',
         REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the keyword monitor list API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/monitors/list-keywords.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'List keyword monitor API page',
+        REQUIRED_KEYWORD_MONITOR_LIST_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
