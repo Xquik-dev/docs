@@ -2359,6 +2359,30 @@ const REQUIRED_KEYWORD_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   'the query should stop permanently.',
 ] as const;
 
+const REQUIRED_KEYWORD_MONITOR_GET_API_HANDOFF_SNIPPETS = [
+  '## State handoff',
+  'Use `GET /monitors/keywords/{id}` before changing routing, billing checks, or',
+  'alert state for one keyword monitor.',
+  'current stored',
+  'monitor for your account only',
+  'deleted or cross-account IDs return `404`.',
+  '<Card title="Current Filter" icon="funnel">',
+  'Treat `query` and `eventTypes` as the active matching contract.',
+  'Mirror',
+  '`eventTypes` into webhook subscriptions',
+  '<Card title="Active State" icon="power">',
+  'Use `isActive` to decide whether the monitor should poll and bill.',
+  '[Update Keyword Monitor](/api-reference/monitors/update-keyword)',
+  '<Card title="Billing Check" icon="coins">',
+  'Read `nextBillingAt` before credit alerts, budget checks, or account',
+  'Paused monitors stay visible but do not add hourly monitor burn.',
+  '<Card title="Event Join" icon="link">',
+  'Use `id` as `keywordMonitorId` with',
+  '[List Events](/api-reference/events/list)',
+  'reconcile stored events and',
+  'webhook deliveries for this query.',
+] as const;
+
 const REQUIRED_KEYWORD_MONITOR_UPDATE_API_HANDOFF_SNIPPETS = [
   '## Update handoff',
   'Use this endpoint when a keyword alert changes scope',
@@ -5085,6 +5109,23 @@ describe('repository discovery', (): void => {
         source,
         'List keyword monitor API page',
         REQUIRED_KEYWORD_MONITOR_LIST_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the keyword monitor get API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/monitors/get-keyword.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Get keyword monitor API page',
+        REQUIRED_KEYWORD_MONITOR_GET_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
