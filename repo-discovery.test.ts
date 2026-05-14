@@ -3955,6 +3955,9 @@ const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
 ] as const;
 
 const MAX_LLMS_TXT_CHARS = 48_000;
+// Keep the overview from absorbing another deep tutorial body; link to focused
+// workflow and API pages for expanded examples instead.
+const MAX_WORKFLOWS_OVERVIEW_CHARS = 40_000;
 
 const REQUIRED_AGENT_DOCS_MARKDOWN_FALLBACK_CHECKS = [
   '  - llms-txt-size',
@@ -5613,6 +5616,14 @@ describe('repository discovery', (): void => {
         ),
       ],
     ).toStrictEqual([]);
+  });
+
+  it('keeps the workflows overview within the generated HTML weight budget', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/workflows.mdx', 'utf8');
+
+    expect(source.length).toBeLessThanOrEqual(MAX_WORKFLOWS_OVERVIEW_CHARS);
   });
 
   it('keeps the keyword monitor API handoff concrete', (): void => {
