@@ -1863,6 +1863,24 @@ const REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS = [
   '[Create Webhook](/api-reference/webhooks/create)',
 ] as const;
 
+const REQUIRED_WEBHOOK_DELETE_API_SNIPPETS = [
+  '## Deactivation handoff',
+  'Use this endpoint when a receiver should stop getting future monitor events',
+  'The endpoint sets `isActive` to `false` and returns `{ "success": true }`.',
+  'It does not return the webhook configuration.',
+  'Inactive webhooks do not receive new monitor deliveries or scheduled retries.',
+  'In-flight delivery attempts may still finish.',
+  '[List Webhooks](/api-reference/webhooks/list)',
+  '`webhooks[].isActive: false`',
+  '[List Deliveries](/api-reference/webhooks/deliveries)',
+  'status, attempts, errors, and timestamps.',
+  'Remove queue, CRM, alerting, or warehouse routing',
+  '[Update Webhook](/api-reference/webhooks/update)',
+  '`isActive: true`',
+  '[Test Webhook](/api-reference/webhooks/test)',
+  'Delete returns no `secret`.',
+] as const;
+
 const REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS = [
   '## Operational handoff',
   'It returns the 100 most recent delivery records for one webhook, newest first.',
@@ -4665,6 +4683,10 @@ describe('repository discovery', (): void => {
       'api-reference/webhooks/update.mdx',
       'utf8',
     );
+    const deleteWebhookApi = readFileSync(
+      'api-reference/webhooks/delete.mdx',
+      'utf8',
+    );
     const testWebhookApi = readFileSync(
       'api-reference/webhooks/test.mdx',
       'utf8',
@@ -4690,6 +4712,11 @@ describe('repository discovery', (): void => {
           updateWebhookApi,
           'Update webhook API docs',
           REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          deleteWebhookApi,
+          'Delete webhook API docs',
+          REQUIRED_WEBHOOK_DELETE_API_SNIPPETS,
         ),
         ...collectSnippetFindings(
           testWebhookApi,

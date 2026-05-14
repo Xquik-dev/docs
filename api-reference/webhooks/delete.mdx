@@ -123,6 +123,46 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   </Tab>
 </Tabs>
 
+## Deactivation handoff
+
+Use this endpoint when a receiver should stop getting future monitor events but
+you still need the webhook record and delivery history for audit or rollback.
+
+<CardGroup cols={2}>
+  <Card title="Soft Deactivate" icon="toggle-left">
+    The endpoint sets `isActive` to `false` and returns `{ "success": true }`.
+    It does not return the webhook configuration.
+  </Card>
+
+  <Card title="Future Deliveries" icon="ban">
+    Inactive webhooks do not receive new monitor deliveries or scheduled retries.
+    In-flight delivery attempts may still finish.
+  </Card>
+
+  <Card title="Audit Trail" icon="list-checks">
+    Use [List Webhooks](/api-reference/webhooks/list) to confirm
+    `webhooks[].isActive: false`, then use
+    [List Deliveries](/api-reference/webhooks/deliveries) for prior delivery
+    status, attempts, errors, and timestamps.
+  </Card>
+
+  <Card title="Receiver Cleanup" icon="route-off">
+    Remove queue, CRM, alerting, or warehouse routing only after the endpoint is
+    inactive and no more production events are expected.
+  </Card>
+
+  <Card title="Reactivate" icon="rotate-ccw">
+    To reuse the same webhook, call
+    [Update Webhook](/api-reference/webhooks/update) with `isActive: true`, then
+    run [Test Webhook](/api-reference/webhooks/test).
+  </Card>
+
+  <Card title="Signing Secret" icon="shield-check">
+    Delete returns no `secret`. Keep the original Create Webhook secret for
+    audit records or future reactivation.
+  </Card>
+</CardGroup>
+
 <Note>
   This endpoint supports **dual authentication**: API key (`x-api-key` header) or session cookie from the dashboard.
 
