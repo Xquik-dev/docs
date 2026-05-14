@@ -2347,7 +2347,16 @@ const REQUIRED_DM_HISTORY_API_SNIPPETS = [
   'Requires a connected X account passed via the `account` query parameter.',
   'DM history is participant-scoped',
   'DM history requires a connected participant account.',
+  'DM history responses can contain private message text.',
+  'Do not write full DM bodies to shared logs or public artifacts.',
   'params={"account": "your_handle"}',
+  'const messages = data.messages;',
+  'Store messages in a private system; avoid logging DM text.',
+  'const nextMessages = nextData.messages;',
+  'messages = data["messages"]',
+  'Store nextMessages in the same private system before requesting more pages.',
+  'next_messages = data["messages"]',
+  'Store next_messages in the same private system before requesting more pages.',
   '<ParamField query="account" type="string" required>',
   'Pass the `next_cursor` value from the previous response to fetch older messages.',
   'Legacy pagination cursor. Use `cursor` for new integrations.',
@@ -2374,6 +2383,12 @@ const REQUIRED_DM_HISTORY_API_SNIPPETS = [
   '[Send DM](/api-reference/x-write/send-dm)',
   '[Upload Media](/api-reference/x-write/upload-media)',
   'participant-scoped history sync',
+] as const;
+
+const FORBIDDEN_DM_HISTORY_LOG_SNIPPETS = [
+  'process.stdout.write(`${JSON.stringify(data.messages, null, 2)}\\n`);',
+  'process.stdout.write(`${JSON.stringify(nextData.messages, null, 2)}\\n`);',
+  'print(data["messages"])',
 ] as const;
 
 const REQUIRED_SEND_DM_API_SNIPPETS = [
@@ -5094,11 +5109,23 @@ describe('repository discovery', (): void => {
     const source = readFileSync('api-reference/x/dm-history.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'DM history API docs',
-        REQUIRED_DM_HISTORY_API_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'DM history API docs',
+          REQUIRED_DM_HISTORY_API_SNIPPETS,
+        ),
+        ...FORBIDDEN_DM_HISTORY_LOG_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `DM history API docs log private message bodies with "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
