@@ -3960,6 +3960,7 @@ const REQUIRED_AGENT_DOCS_MARKDOWN_FALLBACK_CHECKS = [
   '  - llms-txt-size',
   '  - llms-txt-links-markdown',
   '  - llms-txt-directive-md',
+  '  - llms-txt-directive-html',
   '  - markdown-url-support',
   '  - content-negotiation',
   '  - page-size-markdown',
@@ -3971,6 +3972,8 @@ const REQUIRED_AGENT_DOCS_PAGE_SIZE_CHECKS = [
   '  - page-size-html',
   '  - page-size-markdown',
   'content-start-position stays disabled until the 50-page afdocs sample starts',
+  'llms-txt-directive-html stays enabled even when it warns on buried positions',
+  'Treat that warning as generated HTML',
 ] as const;
 
 const VAGUE_PUBLIC_POSITIONING = [
