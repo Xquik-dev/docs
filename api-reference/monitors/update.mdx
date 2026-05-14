@@ -119,8 +119,49 @@ At least 1 field is required.
 </ParamField>
 
 <ParamField body="isActive" type="boolean">
-  Set to `false` to pause monitoring, or `true` to resume. Toggling this automatically registers or unregisters the account with the real-time stream.
+  Set to `false` to pause monitoring, or `true` to resume. Paused account
+  monitors do not consume hourly monitor credits.
 </ParamField>
+
+## Update handoff
+
+Use this endpoint when an account alert changes event scope, needs a temporary
+pause, or must resume without creating a new monitor ID.
+
+<CardGroup cols={2}>
+  <Card title="Returned State" icon="clipboard-check">
+    Store returned `id`, `username`, `xUserId`, `eventTypes`, `isActive`,
+    `createdAt`, and `nextBillingAt` as the current account monitor
+    configuration.
+  </Card>
+
+  <Card title="Event Filter" icon="funnel">
+    `eventTypes` replaces the current filter. Keep webhook subscriptions aligned
+    with the monitor event types you expect to deliver.
+  </Card>
+
+  <Card title="Pause Monitoring" icon="pause-circle">
+    `isActive: false` pauses future account checks, stored events, future webhook
+    deliveries, and hourly monitor billing for this monitor.
+  </Card>
+
+  <Card title="Resume Monitoring" icon="play-circle">
+    `isActive: true` resumes checks for matching future account activity. Check
+    `nextBillingAt`, then run [Test Webhook](/api-reference/webhooks/test)
+    before relying on production alerts.
+  </Card>
+
+  <Card title="Account Identity" icon="user-check">
+    PATCH cannot change `username` or `xUserId`. Delete this monitor and create
+    a new account monitor when the tracked account changes.
+  </Card>
+
+  <Card title="Downstream Join" icon="link">
+    Keep using `monitorId` and `username` from
+    [List Events](/api-reference/events/list) to reconcile stored events and
+    signed webhook payloads after the update.
+  </Card>
+</CardGroup>
 
 ## Response
 
@@ -178,7 +219,9 @@ At least 1 field is required.
 </Tabs>
 
 <Info>
-  Toggling `isActive` automatically registers or unregisters the X account with the real-time stream. When paused (`isActive: false`), no events are captured and no webhook deliveries are sent for this monitor.
+  `isActive: false` pauses future checks, stored events, webhook deliveries, and
+  hourly monitor billing for this monitor. `isActive: true` resumes future
+  checks with the returned `eventTypes`.
 </Info>
 
 <Note>

@@ -2511,6 +2511,27 @@ const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   'tracked account should stop permanently.',
 ] as const;
 
+const REQUIRED_ACCOUNT_MONITOR_UPDATE_API_HANDOFF_SNIPPETS = [
+  'monitors do not consume hourly monitor credits.',
+  '## Update handoff',
+  'Use this endpoint when an account alert changes event scope',
+  'Store returned `id`, `username`, `xUserId`, `eventTypes`, `isActive`,',
+  '`createdAt`, and `nextBillingAt` as the current account monitor',
+  'configuration.',
+  '`eventTypes` replaces the current filter.',
+  'Keep webhook subscriptions aligned',
+  '`isActive: false` pauses future account checks',
+  'deliveries, and hourly monitor billing',
+  '`isActive: true` resumes checks for matching future account activity.',
+  '`nextBillingAt`, then run [Test Webhook](/api-reference/webhooks/test)',
+  'PATCH cannot change `username` or `xUserId`.',
+  'Delete this monitor and create',
+  'a new account monitor when the tracked account changes.',
+  '`monitorId` and `username` from',
+  '[List Events](/api-reference/events/list)',
+  'signed webhook payloads after the update.',
+] as const;
+
 const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
   '## Source-backed Zapier scope',
   'API by Zapier',
@@ -5254,6 +5275,22 @@ describe('repository discovery', (): void => {
         REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
+  });
+
+  it('keeps the account monitor update API handoff concrete', (): void => {
+    expect.assertions(2);
+
+    const source = readFileSync('api-reference/monitors/update.mdx', 'utf8');
+    const legacyImplementationWording = ['real-time', 'stream'].join(' ');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Update account monitor API page',
+        REQUIRED_ACCOUNT_MONITOR_UPDATE_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(source).not.toContain(legacyImplementationWording);
   });
 
   it('keeps Zapier comparison workflow details source-backed', (): void => {
