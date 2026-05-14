@@ -2629,7 +2629,7 @@ const REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS = [
   '<Card title="Webhook Delivery Join" icon="webhook">',
   'Use `deliveryId` for receiver idempotency and `streamEventId`',
   'Store `eventType`, `occurredAt`,',
-  '### Signed webhook rollout',
+  '**Signed webhook rollout:**',
   'use the same `eventTypes` when you create the webhook',
   'Store webhook `secret` once',
   'run `POST /webhooks/{id}/test`',
