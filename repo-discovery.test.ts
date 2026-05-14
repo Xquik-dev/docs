@@ -2461,6 +2461,27 @@ const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
   '"message": "Monitor already exists."',
 ] as const;
 
+const REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS = [
+  '## State handoff',
+  'Use `GET /monitors/{id}` before changing routing, billing checks, or alert',
+  'state for one account monitor.',
+  'current stored monitor',
+  'for your account only',
+  'deleted or cross-account IDs return `404`.',
+  '<Card title="Tracked Account" icon="user-check">',
+  'Treat `username` and `xUserId` as the resolved X account identity.',
+  'downstream CRM, warehouse, or queue records.',
+  '<Card title="Current Filter" icon="funnel">',
+  'Treat `eventTypes` as the active matching contract.',
+  'webhook subscriptions before relying on signed alerts.',
+  '<Card title="Active State" icon="power">',
+  'Use `isActive` to decide whether the monitor should poll and bill.',
+  '[Update Monitor](/api-reference/monitors/update)',
+  '<Card title="Event Join" icon="link">',
+  'Use `id` as `monitorId` with [List Events](/api-reference/events/list)',
+  'reconcile stored events and webhook deliveries for this account.',
+] as const;
+
 const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
   '## Source-backed Zapier scope',
   'API by Zapier',
@@ -5174,6 +5195,20 @@ describe('repository discovery', (): void => {
         source,
         'Create account monitor API page',
         REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the account monitor get API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/monitors/get.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Get account monitor API page',
+        REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
