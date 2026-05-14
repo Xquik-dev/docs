@@ -91,6 +91,37 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 </CodeGroup>
 
+## Post with public image URLs
+
+Use `media` when your image is already a public HTTPS URL or when [Upload Media](/api-reference/x-write/upload-media) returned `mediaUrl`. Do not send `media_ids`; that field is for DMs only.
+
+<CodeGroup>
+  ```bash Image tweet
+  curl -X POST https://xquik.com/api/v1/x/tweets \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "account": "brand_account",
+      "text": "Launch notes are live.",
+      "media": ["https://cdn.example.com/product-screenshot.png"]
+    }' | jq
+  ```
+
+  ```bash Image reply
+  curl -X POST https://xquik.com/api/v1/x/tweets \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "account": "brand_account",
+      "text": "Here is the chart.",
+      "reply_to_tweet_id": "1893456789012345678",
+      "media": ["https://cdn.example.com/reply-chart.png"]
+    }' | jq
+  ```
+</CodeGroup>
+
+Store `tweetId` on a `200 Success` response. If the API returns `202 x_write_unconfirmed`, store `writeActionId`, poll [Get Write Action Status](/api-reference/x-write/get-write-action-status), and do not retry-send the same body. Keep `reply_to_tweet_id` and `media` in your downstream record.
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
