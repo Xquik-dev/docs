@@ -295,6 +295,7 @@ const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
 
 const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
   '## Workflow: Search Tweets to CSV, JSON Lines, or XLSX',
+  '## Workflow: Tweet Replies to CSV, JSON, or XLSX',
   '## Workflow: Post Image Tweets and DM Attachments',
   '`client.x.tweets.search`',
   '`GET /x/tweets/search`',
@@ -321,6 +322,14 @@ const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
   '`tweet.to_json`',
   '`tweet.deep_to_h`',
   'XLSX writer',
+  '`client.extractions.estimate_cost`',
+  '`client.extractions.run`',
+  '`client.extractions.retrieve`',
+  '`client.extractions.export_results`',
+  '`reply_extractor` requires `target_tweet_id`.',
+  '`client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`',
+  '`client.extractions.export_results` supports `:csv`, `:json`, and `:xlsx`',
+  'Cost: 1 credit per reply extracted or returned.',
   '`client.x.tweets.create`',
   '`reply_to_tweet_id`',
   '`media` with public image URLs',

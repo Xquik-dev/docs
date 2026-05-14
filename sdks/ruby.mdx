@@ -146,6 +146,65 @@ The generated params map directly to the REST endpoint:
 
 Write `page.tweets` to CSV for analysts. Write JSON Lines for queues and data lakes to `xquik-tweet-search.jsonl` with `tweet.to_json`, or call `tweet.deep_to_h` before loading a warehouse. Load the projected rows into an XLSX writer when account teams need a workbook. Pass `id`, `text`, `author.username`, `created_at`, and engagement counts to a CRM or enrichment job.
 
+## Workflow: Tweet Replies to CSV, JSON, or XLSX
+
+Use this workflow when a Ruby app, Rails job, Sidekiq worker, or agent tool needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV/JSON/XLSX file export. It calls `POST /extractions/estimate` through `client.extractions.estimate_cost`, creates the job with `client.extractions.run`, reads rows with `client.extractions.retrieve`, and downloads files with `client.extractions.export_results`.
+
+```ruby
+require "json"
+require "x_twitter_scraper"
+
+client = XTwitterScraper::Client.new(
+  api_key: ENV["X_TWITTER_SCRAPER_API_KEY"]
+)
+target_tweet_id = "1893704267862470862"
+
+estimate = client.extractions.estimate_cost(
+  tool_type: :reply_extractor,
+  target_tweet_id: target_tweet_id
+)
+
+raise "Insufficient credits for reply extraction." unless estimate.allowed
+
+job = client.extractions.run(
+  tool_type: :reply_extractor,
+  target_tweet_id: target_tweet_id
+)
+
+loop do
+  status_page = client.extractions.retrieve(job.id, limit: 1)
+  status = status_page.job[:status] || status_page.job["status"]
+
+  break if status == "completed"
+
+  raise "Reply extraction failed." if status == "failed"
+
+  sleep 3
+end
+
+after = nil
+
+File.open("xquik-tweet-replies.jsonl", "w") do |jsonl|
+  loop do
+    page = client.extractions.retrieve(job.id, limit: 1000, after: after)
+
+    page.results.each do |row|
+      jsonl.puts(JSON.generate(row))
+    end
+
+    break unless page.has_more && page.next_cursor.to_s != ""
+
+    after = page.next_cursor
+  end
+end
+
+csv_response = client.extractions.export_results(job.id, format_: :csv)
+csv_response.rewind
+File.binwrite("xquik-tweet-replies.csv", csv_response.read)
+```
+
+`reply_extractor` requires `target_tweet_id`. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; store those values when you need resumable JSON pagination. `client.extractions.export_results` supports `:csv`, `:json`, and `:xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
+
 ## Workflow: Post Image Tweets and DM Attachments
 
 Use this workflow when a Ruby app, Rails job, Sidekiq worker, or agent service needs to post an image-backed tweet, reply with an image, or send one uploaded media item in a DM.
