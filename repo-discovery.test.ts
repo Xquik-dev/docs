@@ -2532,6 +2532,33 @@ const REQUIRED_ACCOUNT_MONITOR_UPDATE_API_HANDOFF_SNIPPETS = [
   'signed webhook payloads after the update.',
 ] as const;
 
+const REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
+  '## Deletion handoff',
+  'Use this endpoint when a tracked account should stop permanently.',
+  '[Update Monitor](/api-reference/monitors/update)',
+  '`isActive: false` when',
+  'you only need to pause alerts',
+  '<Card title="Permanent Remove" icon="trash-2">',
+  'Delete removes the account monitor and returns `{ "success": true }`.',
+  'cannot be fetched, updated, resumed, or billed again.',
+  '<Card title="Stored History" icon="database">',
+  'Stored events and webhook delivery records tied to this account monitor',
+  '<Card title="Pause Instead" icon="pause-circle">',
+  'Use `PATCH /monitors/{id}` with `isActive: false`',
+  'while preserving the monitor record.',
+  '<Card title="Verify Removal" icon="list-checks">',
+  '[List Monitors](/api-reference/monitors/list)',
+  '[Get',
+  'Monitor](/api-reference/monitors/get)',
+  'return `404` for the deleted',
+  '<Card title="Track New Account" icon="user-plus">',
+  'Store the new',
+  '`id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`.',
+  '<Card title="Webhook Reuse" icon="webhook">',
+  'Existing webhook endpoints remain configured.',
+  '[Test Webhook](/api-reference/webhooks/test)',
+] as const;
+
 const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
   '## Source-backed Zapier scope',
   'API by Zapier',
@@ -5291,6 +5318,20 @@ describe('repository discovery', (): void => {
       ),
     ).toStrictEqual([]);
     expect(source).not.toContain(legacyImplementationWording);
+  });
+
+  it('keeps the account monitor delete API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/monitors/delete.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Delete account monitor API page',
+        REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps Zapier comparison workflow details source-backed', (): void => {

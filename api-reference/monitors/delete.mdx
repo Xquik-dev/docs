@@ -121,8 +121,49 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   </Tab>
 </Tabs>
 
+## Deletion handoff
+
+Use this endpoint when a tracked account should stop permanently. Use
+[Update Monitor](/api-reference/monitors/update) with `isActive: false` when
+you only need to pause alerts and keep the monitor available.
+
+<CardGroup cols={2}>
+  <Card title="Permanent Remove" icon="trash-2">
+    Delete removes the account monitor and returns `{ "success": true }`. The
+    deleted ID cannot be fetched, updated, resumed, or billed again.
+  </Card>
+
+  <Card title="Stored History" icon="database">
+    Stored events and webhook delivery records tied to this account monitor are
+    removed with it. Export or reconcile records before deletion.
+  </Card>
+
+  <Card title="Pause Instead" icon="pause-circle">
+    Use `PATCH /monitors/{id}` with `isActive: false` to stop future checks,
+    alerts, and hourly billing while preserving the monitor record.
+  </Card>
+
+  <Card title="Verify Removal" icon="list-checks">
+    Call [List Monitors](/api-reference/monitors/list) after deletion. [Get
+    Monitor](/api-reference/monitors/get) should return `404` for the deleted
+    ID.
+  </Card>
+
+  <Card title="Track New Account" icon="user-plus">
+    Create a new account monitor when the tracked account changes. Store the new
+    `id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`.
+  </Card>
+
+  <Card title="Webhook Reuse" icon="webhook">
+    Existing webhook endpoints remain configured. Keep their `eventTypes`
+    aligned, then run [Test Webhook](/api-reference/webhooks/test) before
+    relying on new account monitor alerts.
+  </Card>
+</CardGroup>
+
 <Info>
-  The monitor is deleted and its stored events are removed with it. Pause with `isActive: false` if you want to stop new checks without deleting the monitor.
+  The monitor is deleted and its stored events are removed with it. Pause with
+  `isActive: false` if you want to stop new checks without deleting the monitor.
 </Info>
 
 <Note>
