@@ -2334,6 +2334,24 @@ const REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS = [
   '"message": "Monitor already exists."',
 ] as const;
 
+const REQUIRED_KEYWORD_MONITOR_UPDATE_API_HANDOFF_SNIPPETS = [
+  '## Update handoff',
+  'Use this endpoint when a keyword alert changes scope',
+  'Store returned `id`, `query`, `eventTypes`, `isActive`, `createdAt`, and',
+  '`nextBillingAt` as the current keyword monitor configuration.',
+  '`eventTypes` replaces the current filter.',
+  'Keep webhook subscriptions aligned',
+  '`isActive: false` pauses keyword polling',
+  'deliveries, and hourly monitor billing',
+  '`isActive: true` resumes polling for matching future tweets.',
+  '`nextBillingAt`, then run [Test Webhook](/api-reference/webhooks/test)',
+  'PATCH cannot change `query`.',
+  'Delete this monitor and create a new keyword',
+  'monitor when the X search query changes.',
+  '`keywordMonitorId` and `query` from',
+  '[List Events](/api-reference/events/list)',
+] as const;
+
 const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
   'monitor tweets',
   'signed webhooks',
@@ -5000,6 +5018,23 @@ describe('repository discovery', (): void => {
         source,
         'Create keyword monitor API page',
         REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the keyword monitor update API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/monitors/update-keyword.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Update keyword monitor API page',
+        REQUIRED_KEYWORD_MONITOR_UPDATE_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
