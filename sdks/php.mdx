@@ -1,15 +1,15 @@
 ---
 title: PHP SDK
 sidebarTitle: PHP
-description: Use the Xquik PHP SDK to search tweets, export JSON Lines, CSV, or XLSX, post image tweets, upload media, send DMs, and run PHP X API workers.
-keywords: ["PHP SDK", "Composer Twitter scraper", "X API PHP", "PHP API client", "tweet search PHP", "Twitter API PHP", "JSON export", "CSV export", "XLSX export"]
+description: Use the Xquik PHP SDK to search tweets, export tweet replies to JSON Lines, CSV, or XLSX, post image tweets, upload media, send DMs, and run PHP X API workers.
+keywords: ["PHP SDK", "Composer Twitter scraper", "X API PHP", "PHP API client", "tweet search PHP", "tweet replies PHP", "Twitter API PHP", "JSON export", "CSV export", "XLSX export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the PHP SDK for PHP 8.1+ applications with named parameters, generated models, typed exceptions, retries, and file upload helpers. It is useful when a PHP app or worker needs to search tweets, scrape tweets to JSON Lines, CSV, or XLSX, export followers, monitor tweets, post image tweets, upload media, send direct messages, or hand X API data to a queue, CRM, or reporting pipeline.
+Use the PHP SDK for PHP 8.1+ applications with named parameters, generated models, typed exceptions, retries, and file upload helpers. It is useful when a PHP app or worker needs to search tweets, scrape tweets or replies to JSON Lines, CSV, or XLSX, export followers, monitor tweets, post image tweets, upload media, send direct messages, or hand X API data to a queue, CRM, or reporting pipeline.
 
 ## Install
 
@@ -133,6 +133,94 @@ try {
 Each `SearchTweet` includes typed properties such as `$id`, `$text`, `$author`, `$createdAt`, `$likeCount`, `$replyCount`, `$retweetCount`, `$quoteCount`, and `$viewCount` when available. Write `$page->tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the same projected rows into CSV for analysts, or generate XLSX from those rows when account teams need a workbook.
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, timeouts, 408, 409, 429, and 5xx responses 2 times by default. For long-running workers, pass `requestOptions: ['maxRetries' => 5]` and persist `$page->nextCursor` after each page.
+
+## Workflow: Tweet Replies to CSV, JSON, or XLSX
+
+Use this workflow when a PHP worker needs every reply on a public tweet in a durable file for moderation review, customer support triage, analyst export, or a warehouse loader.
+
+`$client->extractions->estimateCost()` and `$client->extractions->run()` map to the extraction workflow. For tweet replies, use `ToolType::REPLY_EXTRACTOR`; `reply_extractor` requires `targetTweetID`. `$client->extractions->retrieve()` returns `results`, `hasMore`, and `nextCursor` for pagination. `$client->extractions->exportResults()` returns the completed job as a string and supports `CSV`, `JSON`, and `XLSX` export formats.
+
+```php
+<?php
+
+use XTwitterScraper\Client;
+use XTwitterScraper\Extractions\ExtractionEstimateCostParams\ToolType as EstimateToolType;
+use XTwitterScraper\Extractions\ExtractionExportResultsParams\Format as ExportFormat;
+use XTwitterScraper\Extractions\ExtractionRunParams\ToolType as RunToolType;
+
+$client = new Client(
+  apiKey: getenv('X_TWITTER_SCRAPER_API_KEY') ?: ''
+);
+
+$targetTweetID = '1893704267862470862';
+$estimate = $client->extractions->estimateCost(
+  toolType: EstimateToolType::REPLY_EXTRACTOR,
+  targetTweetID: $targetTweetID,
+);
+
+if (!$estimate->allowed) {
+  throw new RuntimeException('Insufficient credits for reply extraction.');
+}
+
+$job = $client->extractions->run(
+  toolType: RunToolType::REPLY_EXTRACTOR,
+  targetTweetID: $targetTweetID,
+);
+
+while (true) {
+  $statusPage = $client->extractions->retrieve($job->id, limit: 1);
+  $status = $statusPage->job['status'] ?? null;
+
+  if ('completed' === $status) {
+    break;
+  }
+
+  if ('failed' === $status) {
+    throw new RuntimeException('Reply extraction failed.');
+  }
+
+  sleep(3);
+}
+
+$after = null;
+$handle = fopen('xquik-tweet-replies.jsonl', 'wb');
+
+if (false === $handle) {
+  throw new RuntimeException('Could not open xquik-tweet-replies.jsonl');
+}
+
+try {
+  do {
+    $page = $client->extractions->retrieve($job->id, after: $after, limit: 1000);
+
+    foreach ($page->results as $reply) {
+      fwrite(
+        $handle,
+        json_encode($reply, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . PHP_EOL
+      );
+    }
+
+    $after = $page->hasMore ? $page->nextCursor : null;
+  } while (null !== $after && '' !== $after);
+} finally {
+  fclose($handle);
+}
+
+file_put_contents(
+  'xquik-tweet-replies.csv',
+  $client->extractions->exportResults($job->id, format: ExportFormat::CSV),
+);
+file_put_contents(
+  'xquik-tweet-replies.json',
+  $client->extractions->exportResults($job->id, format: ExportFormat::JSON),
+);
+file_put_contents(
+  'xquik-tweet-replies.xlsx',
+  $client->extractions->exportResults($job->id, format: ExportFormat::XLSX),
+);
+```
+
+Cost: 1 credit per reply extracted or returned. Store `$job->id` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `$client->extractions->retrieve()`. Keep `$page->nextCursor` as the checkpoint when you stream replies to JSON Lines, and use the export endpoint when a downstream user needs CSV, JSON, or XLSX files.
 
 ## Workflow: Post Image Tweets and DM Attachments
 
