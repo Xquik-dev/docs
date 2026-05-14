@@ -1977,6 +1977,11 @@ const REQUIRED_WEBHOOK_CREATE_API_SNIPPETS = [
   '## Integration handoff',
   'Use this endpoint after creating an account monitor with [`POST /monitors`](/api-reference/monitors/create) or a keyword monitor with [`POST /monitors/keywords`](/api-reference/monitors/create-keyword).',
   'Active monitors produce the events; webhook delivery is included with monitor billing.',
+  'const webhookSecret = webhook.secret;',
+  'Store webhookSecret in your secret manager; do not print it in logs.',
+  'webhook_secret = webhook["secret"]',
+  'Store webhook_secret in your secret manager; do not print it in logs.',
+  'Store secret in your secret manager; do not print it in logs.',
   '<Card title="tweet.new" icon="bell">',
   'new posts that are not replies, quotes, or retweets.',
   '<Card title="tweet.quote" icon="quote">',
@@ -2006,6 +2011,12 @@ const REQUIRED_WEBHOOK_CREATE_API_SNIPPETS = [
   'and `streamEventId` when one monitor event must be processed once across retries',
   'Return a `2xx` response within 10 seconds',
   '[Signature Verification](/webhooks/verification)',
+] as const;
+
+const FORBIDDEN_WEBHOOK_CREATE_SECRET_LOG_SNIPPETS = [
+  'console.log(webhook)',
+  'print(webhook)',
+  'fmt.Println(string(respBody))',
 ] as const;
 
 const REQUIRED_WEBHOOK_LIST_API_SNIPPETS = [
@@ -5227,6 +5238,16 @@ describe('repository discovery', (): void => {
           createWebhookApi,
           'Create webhook API docs',
           REQUIRED_WEBHOOK_CREATE_API_SNIPPETS,
+        ),
+        ...FORBIDDEN_WEBHOOK_CREATE_SECRET_LOG_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            createWebhookApi.includes(snippet)
+              ? [
+                  {
+                    issue: `Create webhook API docs can print the one-time webhook secret with "${snippet}".`,
+                  },
+                ]
+              : [],
         ),
         ...collectSnippetFindings(
           listWebhookApi,

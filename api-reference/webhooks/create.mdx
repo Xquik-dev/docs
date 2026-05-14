@@ -37,7 +37,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     }),
   });
   const webhook = await response.json();
-  console.log(webhook);
+  const webhookSecret = webhook.secret;
+  // Store webhookSecret in your secret manager; do not print it in logs.
   ```
 
   ```python Python
@@ -52,7 +53,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       },
   )
   webhook = response.json()
-  print(webhook)
+  webhook_secret = webhook["secret"]
+  # Store webhook_secret in your secret manager; do not print it in logs.
   ```
 
   ```go Go
@@ -61,8 +63,6 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   import (
   	"bytes"
   	"encoding/json"
-  	"fmt"
-  	"io"
   	"log"
   	"net/http"
   )
@@ -90,11 +90,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   	}
   	defer resp.Body.Close()
 
-  	respBody, err := io.ReadAll(resp.Body)
-  	if err != nil {
+    var webhook map[string]any
+    if err := json.NewDecoder(resp.Body).Decode(&webhook); err != nil {
   		log.Fatal(err)
   	}
-  	fmt.Println(string(respBody))
+    secret, _ := webhook["secret"].(string)
+    // Store secret in your secret manager; do not print it in logs.
+    _ = secret
   }
   ```
 </CodeGroup>
