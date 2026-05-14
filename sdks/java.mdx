@@ -156,6 +156,73 @@ Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `autho
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `.limit()` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For longer workers, set an explicit retry limit and persist `page.nextCursor()` after each page.
 
+## Workflow: Tweet Replies to CSV, JSON, or XLSX
+
+Use this workflow when a Java worker needs every reply to a campaign, support thread, launch post, or incident update as a durable file. `reply_extractor` requires `targetTweetId`; estimate first, run the job, poll `retrieve`, then export the completed job as CSV, JSON, or XLSX.
+
+`client.extractions().estimateCost` maps to `POST /extractions/estimate`, `client.extractions().run` maps to `POST /extractions`, `client.extractions().retrieve` maps to `GET /extractions/{id}`, and `client.extractions().exportResults` maps to `GET /extractions/{id}/export`.
+
+```java
+import com.x_twitter_scraper.api.client.XTwitterScraperClient;
+import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient;
+import com.x_twitter_scraper.api.core.http.HttpResponse;
+import com.x_twitter_scraper.api.models.extractions.ExtractionEstimateCostParams;
+import com.x_twitter_scraper.api.models.extractions.ExtractionEstimateCostResponse;
+import com.x_twitter_scraper.api.models.extractions.ExtractionExportResultsParams;
+import com.x_twitter_scraper.api.models.extractions.ExtractionRetrieveResponse;
+import com.x_twitter_scraper.api.models.extractions.ExtractionRunParams;
+import com.x_twitter_scraper.api.models.extractions.ExtractionRunResponse;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+
+XTwitterScraperClient client = XTwitterScraperOkHttpClient.fromEnv();
+String targetTweetId = "1893704267862470862";
+
+ExtractionEstimateCostResponse estimate = client.extractions().estimateCost(
+    ExtractionEstimateCostParams.builder()
+        .toolType(ExtractionEstimateCostParams.ToolType.REPLY_EXTRACTOR)
+        .targetTweetId(targetTweetId)
+        .build()
+);
+
+if (!estimate.allowed()) {
+    throw new IllegalStateException(
+        "Reply export requires " + estimate.creditsRequired() + " credits."
+    );
+}
+
+ExtractionRunResponse job = client.extractions().run(
+    ExtractionRunParams.builder()
+        .toolType(ExtractionRunParams.ToolType.REPLY_EXTRACTOR)
+        .targetTweetId(targetTweetId)
+        .build()
+);
+
+ExtractionRetrieveResponse results = client.extractions().retrieve(job.id());
+System.out.printf(
+    "job=%s replies=%d hasMore=%s%n",
+    job.id(),
+    results.results().size(),
+    results.hasMore()
+);
+
+try (HttpResponse export = client.extractions().exportResults(
+    ExtractionExportResultsParams.builder()
+        .id(job.id())
+        .format(ExtractionExportResultsParams.Format.CSV)
+        .build()
+)) {
+    Files.copy(
+        export.body(),
+        Paths.get("xquik-replies.csv"),
+        StandardCopyOption.REPLACE_EXISTING
+    );
+}
+```
+
+Use `ExtractionExportResultsParams.Format.JSON` for a JSON file handoff or `ExtractionExportResultsParams.Format.XLSX` for workbook delivery. Persist `job.id()` before polling so a queue retry can resume with `client.extractions().retrieve(job.id())` and repeat `client.extractions().exportResults(...)` after completion.
+
 ## Workflow: Post Image Tweets and DM Attachments
 
 Use this workflow when a JVM service needs to publish an image tweet, reply with an image, or send a direct message with an uploaded local file. `client.x().tweets().create` maps to `POST /x/tweets`; pass public image URLs through `.addMedia()` or `.media()`. For replies, set `.replyToTweetId()` to the parent tweet ID. `client.x().media().upload` maps to `POST /x/media`; use `media.mediaId()` only for the one-item DM `.addMediaId()` handoff.
