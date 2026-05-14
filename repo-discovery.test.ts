@@ -2643,6 +2643,15 @@ const REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS = [
   '"message": "Monitor already exists."',
 ] as const;
 
+const FORBIDDEN_KEYWORD_MONITOR_INLINE_WEBHOOK_SNIPPETS = [
+  'X-Xquik-Signature',
+  'X-Xquik-Timestamp',
+  'X-Xquik-Nonce',
+  'one-time webhook `secret`',
+  'Store the one-time webhook',
+  'raw body',
+] as const;
+
 const REQUIRED_KEYWORD_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   '## Inventory handoff',
   'Use `GET /monitors/keywords` after create, update, pause, or delete operations',
@@ -5682,11 +5691,23 @@ describe('repository discovery', (): void => {
     );
 
     expect(
-      collectSnippetFindings(
-        source,
-        'Create keyword monitor API page',
-        REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'Create keyword monitor API page',
+          REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_KEYWORD_MONITOR_INLINE_WEBHOOK_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Create keyword monitor API page should link to webhook-specific signature docs instead of inlining "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
