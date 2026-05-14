@@ -612,6 +612,9 @@ const FORBIDDEN_SKILL_DECISION_GUIDANCE_SNIPPETS = [
 
 const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   '`xquik.request()` uses the normalized v1 contract automatically.',
+  'Search the API spec. Read-only, no network calls, no credits. Requires MCP authentication to execute.',
+  'Free means no usage credits; the call still requires MCP authentication through an API key or OAuth Bearer token.',
+  'Search the API endpoint catalog. Read-only, no network calls, and no credits required. The call still requires MCP authentication through an API key or OAuth Bearer token.',
   'has_more',
   'next_cursor',
   'Pass `next_cursor` back as the `cursor` query parameter',
@@ -4320,6 +4323,7 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     const source = [
+      readFileSync('mcp/overview.mdx', 'utf8'),
       readFileSync('mcp/tools.mdx', 'utf8'),
       readFileSync('guides/types.mdx', 'utf8'),
     ].join('\n');
