@@ -101,7 +101,6 @@ with csv_output.open("w", newline="", encoding="utf-8") as csv_file, jsonl_outpu
     while True:
         page = client.x.tweets.search(
             q="from:xquikcom webhook OR SDK",
-            limit=100,
             query_type="Latest",
             cursor=cursor,
         )
@@ -133,7 +132,7 @@ The method accepts the same query inputs as the REST endpoint:
     Python argument `q` maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.
   </Card>
   <Card title="limit" icon="list">
-    Python argument `limit` maps to REST `limit`. Use it for the page size from 1 to 200. Remaining credits can lower the returned count.
+    Python argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.
   </Card>
   <Card title="cursor" icon="arrow-right">
     Python argument `cursor` maps to REST `cursor`. Pass the opaque cursor from `page.next_cursor` to request the next page.
@@ -226,7 +225,7 @@ Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, an
 
 ## Cost, Limits & Retries
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. Read calls are rate-limited, and `429` responses include `Retry-After`.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. Read calls are rate-limited, and `429` responses include `Retry-After`.
 
 The client retries connection errors, 408, 409, 429, and 5xx responses by default. Handle `RateLimitError` with backoff, and fix 400, 401, 403, 404, or 422 responses before retrying.
 

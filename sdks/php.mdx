@@ -71,7 +71,6 @@ try {
     /** @var PaginatedTweets $page */
     $page = $client->x->tweets->search(
       q: 'from:xquikcom webhook OR SDK',
-      limit: 100,
       cursor: $cursor,
       queryType: QueryType::LATEST,
     );
@@ -111,7 +110,7 @@ try {
     PHP argument `q` maps to REST `q`. Use it for an X search query such as `from:username`, a keyword, hashtag, or boolean operator query.
   </Card>
   <Card title="limit" icon="list">
-    PHP argument `limit` maps to REST `limit`. Use it for the maximum tweets to return for the page.
+    PHP argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.
   </Card>
   <Card title="cursor" icon="arrow-right">
     PHP argument `cursor` maps to REST `cursor`. Pass the opaque cursor from `$page->nextCursor` to request the next page.
@@ -133,7 +132,7 @@ try {
 
 Each `SearchTweet` includes typed properties such as `$id`, `$text`, `$author`, `$createdAt`, `$likeCount`, `$replyCount`, `$retweetCount`, `$quoteCount`, and `$viewCount` when available. Write `$page->tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the same projected rows into CSV for analysts, or generate XLSX from those rows when account teams need a workbook.
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, timeouts, 408, 409, 429, and 5xx responses 2 times by default. For long-running workers, pass `requestOptions: ['maxRetries' => 5]` and persist `$page->nextCursor` after each page.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, timeouts, 408, 409, 429, and 5xx responses 2 times by default. For long-running workers, pass `requestOptions: ['maxRetries' => 5]` and persist `$page->nextCursor` after each page.
 
 ## Workflow: Post Image Tweets and DM Attachments
 

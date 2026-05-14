@@ -163,6 +163,7 @@ const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
   '`untilTime`',
   '`queryType`',
   'Maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.',
+  'Maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.',
   'Maps to REST `cursor`. Pass the opaque cursor from `page.next_cursor` to request the next page.',
   '`PaginatedTweets`',
   '`page.tweets`',
@@ -201,6 +202,7 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
   '`UntilTime`',
   '`QueryType`',
   'Go field `Q` maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.',
+  'Go field `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.',
   'Go field `Cursor` maps to REST `cursor`. Pass the opaque cursor from `NextCursor` to request the next page.',
   '`PaginatedTweets`',
   '`Tweets`',
@@ -236,6 +238,7 @@ const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
   '`until_time`',
   '`query_type`',
   'Python argument `q` maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.',
+  'Python argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.',
   'Python argument `cursor` maps to REST `cursor`. Pass the opaque cursor from `page.next_cursor` to request the next page.',
   '`PaginatedTweets`',
   '`page.tweets`',
@@ -276,6 +279,7 @@ const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
   '`until_time`',
   '`query_type`',
   'Ruby keyword `q` maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.',
+  'Ruby keyword `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.',
   'Ruby keyword `cursor` maps to REST `cursor`. Pass the opaque cursor from `page.next_cursor` to request the next page.',
   '`XTwitterScraper::PaginatedTweets`',
   '`page.tweets`',
@@ -320,6 +324,7 @@ const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
   '`.has_next_page`',
   '`.next_cursor`',
   'Tweet search costs 1 credit per tweet returned.',
+  'Use `--limit` for a bounded request from 1 to 200. Omit it when passing `--cursor` in page loops.',
   'Write one JSON object per line for downstream jobs',
   '`xquik-tweet-search.jsonl`',
   'projected records to CSV for analysts',
@@ -355,6 +360,7 @@ const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
   '`UntilTime`',
   '`QueryType`',
   'C# property `Q` maps to REST `q`.',
+  'C# property `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.',
   'C# property `Cursor` maps to REST `cursor`.',
   'C# property `QueryType` maps to REST `queryType`.',
   '`PaginatedTweets`',
@@ -399,6 +405,7 @@ const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
   '`queryType`',
   '`QueryType::LATEST`',
   'PHP argument `q` maps to REST `q`.',
+  'PHP argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.',
   'PHP argument `cursor` maps to REST `cursor`.',
   'PHP argument `queryType` maps to REST `queryType`.',
   '`PaginatedTweets`',
@@ -443,6 +450,7 @@ const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
   '`.queryType()`',
   '`QueryType.LATEST`',
   'Java builder method `.q()` maps to REST `q`.',
+  'Java builder method `.limit()` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.',
   'Java builder method `.cursor()` maps to REST `cursor`.',
   'Java builder method `.queryType()` maps to REST `queryType`.',
   '`PaginatedTweets`',
@@ -487,6 +495,7 @@ const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
   '`.queryType()`',
   '`QueryType.LATEST`',
   'Kotlin builder method `.q()` maps to REST `q`.',
+  'Kotlin builder method `.limit()` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.',
   'Kotlin builder method `.cursor()` maps to REST `cursor`.',
   'Kotlin builder method `.queryType()` maps to REST `queryType`.',
   '`PaginatedTweets`',
@@ -516,6 +525,23 @@ const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
   'Throws `BadRequestException`.',
   'Throws `RateLimitException`.',
   'Throws `InternalServerException`.',
+] as const;
+
+const FORBIDDEN_TWEET_SEARCH_CURSOR_LIMIT_SNIPPETS = [
+  'Use it for the page size from 1 to 200',
+  'Use it for the maximum tweets to return for the page',
+  '`q`, `limit`, and optional `cursor`',
+  'with `q`, `limit`, and optional `cursor`',
+  '--cursor "$cursor" \\\n    --limit 100',
+  'limit: 100,\n    queryType: "Latest",\n    cursor,',
+  'limit=100,\n            query_type="Latest",\n            cursor=cursor,',
+  'Limit:     xtwitterscraper.Int(100),\n\t\t\tQueryType:',
+  'limit: 100,\n        query_type: :Latest,\n        cursor: cursor',
+  'Limit = 100,\n            Cursor = cursor,',
+  'limit: 100,\n      cursor: $cursor,',
+  '"limit": "{{parameters.limit || 25}}",\n    "cursor": "{{parameters.cursor}}"',
+  'cursor=str(next_cursor),\n        limit=100,',
+  '.limit(100L)\n            .queryType(QueryType.LATEST)',
 ] as const;
 
 const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
@@ -2250,6 +2276,7 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   '### 1. Scrape tweets to CSV, JSON, or XLSX',
   '`tweet_search_extractor`',
   '`GET /x/tweets/search`',
+  'use `limit` only for bounded pulls',
   '`tweets`, `has_next_page`, and `next_cursor`',
   '`reply_extractor` with `targetTweetId`',
   '1 credit per tweet returned or extracted',
@@ -2600,7 +2627,7 @@ const REQUIRED_ZAPIER_GUIDE_SNIPPETS = [
   'Completed polling, and Webhook Delivery Failure polling.',
   '## Starter Actions',
   '<Card title="Search Tweets" icon="search">',
-  'Call `GET /x/tweets/search` with `q`, `limit`, and optional `cursor`.',
+  'Call `GET /x/tweets/search` with `q`; use `cursor` for page loops or `limit` for bounded pulls.',
   '<Card title="Get Tweet" icon="message-square">',
   'Call `GET /x/tweets/{id}` with a tweet ID.',
   '<Card title="Get User" icon="user">',
@@ -2787,7 +2814,8 @@ const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
   '<Card title="Downstream Rows" icon="table">',
   'Normalize raw dictionaries in a follow-up task before writing to Slack, Sheets, a warehouse, or a dashboard.',
   'search_recent_tweets = search_tweets.with_options(',
-  'Respect `Retry-After` for repeated `429` responses, and keep `limit` at or below `200` for tweet search pages.',
+  'Respect `Retry-After` for repeated `429` responses, and keep `limit` at or below `200` for bounded tweet search pulls.',
+  'Omit `limit` when passing a cursor.',
   '## Failure Routing',
   '`XquikError` exposes `status_code` and `response_text` when an HTTP response is available.',
   '<Card title="Inspect Status" icon="route">',
@@ -2930,7 +2958,7 @@ const REQUIRED_MAKE_GUIDE_SNIPPETS = [
   'Xquik service unavailable. Retry with exponential backoff.',
   '## Starter Modules',
   '<Card title="Search Tweets" icon="search">',
-  'Search module. Call `GET /x/tweets/search` with `q`, `limit`, and optional `cursor`.',
+  'Search module. Call `GET /x/tweets/search` with `q`; use `cursor` for page loops or `limit` for bounded pulls.',
   '<Card title="Get Tweet" icon="message-circle">',
   'Action module. Call `GET /x/tweets/{id}` with a tweet ID.',
   '<Card title="Get User" icon="user-round">',
@@ -2947,6 +2975,7 @@ const REQUIRED_MAKE_GUIDE_SNIPPETS = [
   'Action module. Call `POST /webhooks` with callback URL and event types.',
   '<Card title="Make an API Call" icon="terminal">',
   'Universal module. Accept any `/api/v1` path as an escape hatch for endpoints not yet modeled.',
+  'Add a separate bounded-pull variant that sends `limit` and omits `cursor`.',
   'Map webhook output fields for downstream modules:',
   '<Card title="Event type" icon="bell">',
   'Map `eventType` to route `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.retweet` events.',
@@ -2972,7 +3001,7 @@ const REQUIRED_MAKE_GUIDE_SNIPPETS = [
   '<Card title="Schedule Trigger" icon="calendar-clock">',
   'Run the scenario on a daily schedule for repeatable topic research.',
   '<Card title="Search Tweets" icon="search">',
-  'Call Xquik Search Tweets with `q`, `limit`, and optional `cursor`.',
+  'Call Xquik Search Tweets with `q`; use `cursor` for page loops or `limit` for bounded pulls.',
   '<Card title="Iterator" icon="list">',
   'Iterate over `tweets` and pass one tweet bundle to each downstream module.',
   '<Card title="Sheet Row" icon="table">',
@@ -4225,6 +4254,44 @@ describe('repository discovery', (): void => {
         REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
+  });
+
+  it('keeps tweet search cursor loops separate from bounded limit pulls', (): void => {
+    expect.assertions(1);
+
+    const files = [
+      'sdks/typescript.mdx',
+      'sdks/python.mdx',
+      'sdks/go.mdx',
+      'sdks/ruby.mdx',
+      'sdks/cli.mdx',
+      'sdks/csharp.mdx',
+      'sdks/php.mdx',
+      'sdks/java.mdx',
+      'sdks/kotlin.mdx',
+      'guides/zapier.mdx',
+      'guides/make.mdx',
+      'guides/prefect.mdx',
+      'guides/workflows.mdx',
+    ] as const;
+
+    const findings = files.flatMap((file): readonly DiscoveryFinding[] => {
+      const source = readFileSync(file, 'utf8');
+
+      return FORBIDDEN_TWEET_SEARCH_CURSOR_LIMIT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  label: file,
+                  snippet,
+                },
+              ]
+            : [],
+      );
+    });
+
+    expect(findings).toStrictEqual([]);
   });
 
   it('keeps the Terraform provider page useful for monitor webhook handoffs', (): void => {

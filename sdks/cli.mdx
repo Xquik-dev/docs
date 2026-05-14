@@ -87,12 +87,13 @@ if [ -n "$cursor" ]; then
   x-twitter-scraper x:tweets search \
     --q "from:xquikcom webhook OR SDK" \
     --cursor "$cursor" \
-    --limit 100 \
     --format json > next-page.json
 fi
 ```
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `--limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. Use `--format-error json` so batch jobs can branch on `status` and `code`, and retry `429` or temporary `5xx` responses with backoff.
+Use `--limit` for a bounded request from 1 to 200. Omit it when passing `--cursor` in page loops.
+
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `--limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. Use `--format-error json` so batch jobs can branch on `status` and `code`, and retry `429` or temporary `5xx` responses with backoff.
 
 For CSV or XLSX handoff, keep `xquik-tweet-search.jsonl` as the source of truth and convert it in your pipeline. For example, a Python step can load each JSON Lines row and write projected records to CSV for analysts, or produce XLSX from those rows for account management workflows.
 

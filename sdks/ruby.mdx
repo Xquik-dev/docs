@@ -76,7 +76,6 @@ CSV.open("xquik-tweet-search.csv", "w", write_headers: true, headers: headers) d
     loop do
       page = client.x.tweets.search(
         q: "from:xquikcom webhook OR SDK",
-        limit: 100,
         query_type: :Latest,
         cursor: cursor
       )
@@ -113,7 +112,7 @@ The generated params map directly to the REST endpoint:
     Ruby keyword `q` maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.
   </Card>
   <Card title="limit" icon="list">
-    Ruby keyword `limit` maps to REST `limit`. Use it for the page size from 1 to 200. Remaining credits can lower the returned count.
+    Ruby keyword `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.
   </Card>
   <Card title="cursor" icon="arrow-right">
     Ruby keyword `cursor` maps to REST `cursor`. Pass the opaque cursor from `page.next_cursor` to request the next page.
@@ -202,7 +201,7 @@ Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, an
 
 ## Cost, Limits & Retries
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. Read calls are rate-limited, and `429` responses include `Retry-After`.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. Read calls are rate-limited, and `429` responses include `Retry-After`.
 
 The client retries connection errors, timeouts, 408, 409, 429, and 5xx responses by default. Handle `XTwitterScraper::Errors::RateLimitError` with backoff, and fix 400, 401, 403, 404, or 422 responses before retrying.
 

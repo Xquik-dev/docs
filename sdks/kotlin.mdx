@@ -87,7 +87,6 @@ Files.newBufferedWriter(Paths.get("xquik-tweet-search.jsonl"), StandardCharsets.
     do {
         val builder = TweetSearchParams.builder()
             .q("from:xquikcom webhook OR SDK")
-            .limit(100L)
             .queryType(QueryType.LATEST)
 
         if (!cursor.isNullOrEmpty()) {
@@ -125,7 +124,7 @@ Files.newBufferedWriter(Paths.get("xquik-tweet-search.jsonl"), StandardCharsets.
     Kotlin builder method `.q()` maps to REST `q`. Use it for an X search query such as `from:username`, a keyword, hashtag, or boolean operator query.
   </Card>
   <Card title=".limit()" icon="list">
-    Kotlin builder method `.limit()` maps to REST `limit`. Use it for the maximum tweets to return for the page.
+    Kotlin builder method `.limit()` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.
   </Card>
   <Card title=".cursor()" icon="arrow-right">
     Kotlin builder method `.cursor()` maps to REST `cursor`. Pass the opaque cursor from `page.nextCursor()` to request the next page.
@@ -147,7 +146,7 @@ Files.newBufferedWriter(Paths.get("xquik-tweet-search.jsonl"), StandardCharsets.
 
 Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, `createdAt()`, `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, and `viewCount()` when available. Write `page.tweets()` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets.
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For longer workers, set an explicit retry limit and persist `page.nextCursor()` after each page.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `.limit()` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For longer workers, set an explicit retry limit and persist `page.nextCursor()` after each page.
 
 ## Workflow: Post Image Tweets and DM Attachments
 
