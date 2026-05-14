@@ -1,15 +1,15 @@
 ---
 title: C# SDK
 sidebarTitle: C# / .NET
-description: Use the Xquik C# SDK to search tweets, export JSON Lines, CSV, or XLSX, post image tweets, upload media, send DMs, and run .NET X API workers.
-keywords: ["C# SDK", ".NET Twitter scraper SDK", "NuGet X API", "X API C#", "tweet search C#", "Twitter API C#", "JSON export", "CSV export", "XLSX export"]
+description: Use the Xquik C# SDK to search tweets, export tweet replies to JSON Lines, CSV, or XLSX, post image tweets, upload media, send DMs, and run .NET X API workers.
+keywords: ["C# SDK", ".NET Twitter scraper SDK", "NuGet X API", "X API C#", "tweet search C#", "tweet replies C#", "Twitter API C#", "JSON export", "CSV export", "XLSX export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the C# SDK for typed .NET Standard 2.0+ access to Xquik from services, workers, console tools, and ASP.NET backends. It is useful when a .NET job needs to search tweets, scrape tweets to JSON Lines, CSV, or XLSX, export followers, monitor tweets, post image tweets, upload media, send direct messages, or hand X API data to queues, CRMs, and reporting systems.
+Use the C# SDK for typed .NET Standard 2.0+ access to Xquik from services, workers, console tools, and ASP.NET backends. It is useful when a .NET job needs to search tweets, scrape tweets or replies to JSON Lines, CSV, or XLSX, export followers, monitor tweets, post image tweets, upload media, send direct messages, or hand X API data to queues, CRMs, and reporting systems.
 
 ## Install
 
@@ -123,6 +123,110 @@ do
 Each `SearchTweet` includes typed properties such as `ID`, `Text`, `Author`, `CreatedAt`, `LikeCount`, `ReplyCount`, `RetweetCount`, `QuoteCount`, and `ViewCount` when available. Write `page.Tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the same projected rows into CSV for analysts, or write XLSX from those rows when account managers need a workbook.
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `Limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, 408, 409, 429, and 5xx responses 2 times by default. For longer workers, set `MaxRetries` on the client and persist `NextCursor` after each page.
+
+## Workflow: Tweet Replies to CSV, JSON, or XLSX
+
+Use this workflow when a .NET worker needs every reply on a public tweet in a durable file for moderation review, customer support triage, analyst export, or a warehouse loader.
+
+`client.Extractions.EstimateCost` and `client.Extractions.Run` map to the extraction workflow. For tweet replies, use `ExtractionEstimateCostParamsToolType.ReplyExtractor` and `ExtractionRunParamsToolType.ReplyExtractor`; `reply_extractor` requires `TargetTweetID`. `client.Extractions.Retrieve` returns `Results`, `HasMore`, and `NextCursor` for pagination. `client.Extractions.ExportResults` returns an `HttpResponse`; read CSV and JSON as strings, and copy XLSX from the response stream.
+
+```csharp
+using System;
+using System.IO;
+using System.Text.Json;
+using System.Threading.Tasks;
+using XTwitterScraper;
+using XTwitterScraper.Core;
+using XTwitterScraper.Models.Extractions;
+
+XTwitterScraperClient client = new();
+
+string targetTweetID = "1893704267862470862";
+ExtractionEstimateCostResponse estimate = await client.Extractions.EstimateCost(
+    new ExtractionEstimateCostParams
+    {
+        ToolType = ExtractionEstimateCostParamsToolType.ReplyExtractor,
+        TargetTweetID = targetTweetID,
+    }
+);
+
+if (!estimate.Allowed)
+{
+    throw new InvalidOperationException("Insufficient credits for reply extraction.");
+}
+
+ExtractionRunResponse job = await client.Extractions.Run(
+    new ExtractionRunParams
+    {
+        ToolType = ExtractionRunParamsToolType.ReplyExtractor,
+        TargetTweetID = targetTweetID,
+    }
+);
+
+while (true)
+{
+    ExtractionRetrieveResponse statusPage = await client.Extractions.Retrieve(
+        job.ID,
+        new ExtractionRetrieveParams { Limit = 1 }
+    );
+
+    string? status = statusPage.Job.TryGetValue("status", out JsonElement statusValue)
+        ? statusValue.GetString()
+        : null;
+
+    if (status == "completed")
+    {
+        break;
+    }
+
+    if (status == "failed")
+    {
+        throw new InvalidOperationException("Reply extraction failed.");
+    }
+
+    await Task.Delay(TimeSpan.FromSeconds(3));
+}
+
+string? after = null;
+using StreamWriter writer = File.CreateText("xquik-tweet-replies.jsonl");
+
+do
+{
+    ExtractionRetrieveResponse page = await client.Extractions.Retrieve(
+        job.ID,
+        new ExtractionRetrieveParams { After = after, Limit = 1000 }
+    );
+
+    foreach (var reply in page.Results)
+    {
+        await writer.WriteLineAsync(JsonSerializer.Serialize(reply));
+    }
+
+    after = page.HasMore ? page.NextCursor : null;
+} while (!string.IsNullOrEmpty(after));
+
+using HttpResponse csvResponse = await client.Extractions.ExportResults(
+    job.ID,
+    new ExtractionExportResultsParams { Format = Format.Csv }
+);
+await File.WriteAllTextAsync("xquik-tweet-replies.csv", await csvResponse.ReadAsString());
+
+using HttpResponse jsonResponse = await client.Extractions.ExportResults(
+    job.ID,
+    new ExtractionExportResultsParams { Format = Format.Json }
+);
+await File.WriteAllTextAsync("xquik-tweet-replies.json", await jsonResponse.ReadAsString());
+
+using HttpResponse xlsxResponse = await client.Extractions.ExportResults(
+    job.ID,
+    new ExtractionExportResultsParams { Format = Format.Xlsx }
+);
+using Stream xlsxStream = await xlsxResponse.ReadAsStream();
+using FileStream xlsxFile = File.Create("xquik-tweet-replies.xlsx");
+await xlsxStream.CopyToAsync(xlsxFile);
+```
+
+Cost: 1 credit per reply extracted or returned. Store `job.ID` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `client.Extractions.Retrieve`. Keep `page.NextCursor` as the checkpoint when you stream replies to JSON Lines, and use the export endpoint when a downstream user needs CSV, JSON, or XLSX files.
 
 ## Workflow: Post Image Tweets and DM Attachments
 
