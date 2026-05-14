@@ -2352,6 +2352,31 @@ const REQUIRED_KEYWORD_MONITOR_UPDATE_API_HANDOFF_SNIPPETS = [
   '[List Events](/api-reference/events/list)',
 ] as const;
 
+const REQUIRED_KEYWORD_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
+  '## Deletion handoff',
+  'Use this endpoint when a keyword query should stop permanently.',
+  '[Update Keyword Monitor](/api-reference/monitors/update-keyword)',
+  '`isActive: false` when you only need to pause alerts',
+  '<Card title="Permanent Remove" icon="trash-2">',
+  'Delete removes the keyword monitor and returns `{ "success": true }`.',
+  'cannot be fetched, updated, resumed, or billed again.',
+  '<Card title="Stored History" icon="database">',
+  'Stored events and webhook delivery records tied to this keyword monitor',
+  '<Card title="Pause Instead" icon="pause-circle">',
+  'Use `PATCH /monitors/keywords/{id}` with `isActive: false`',
+  'while preserving the monitor record.',
+  '<Card title="Verify Removal" icon="list-checks">',
+  '[List Keyword Monitors](/api-reference/monitors/list-keywords)',
+  '[Get Keyword Monitor](/api-reference/monitors/get-keyword)',
+  'return `404` for the deleted ID.',
+  '<Card title="Track New Query" icon="search">',
+  'Store the new',
+  '`id`, `query`, `eventTypes`, `isActive`, and `nextBillingAt`.',
+  '<Card title="Webhook Reuse" icon="webhook">',
+  'Existing webhook endpoints remain configured.',
+  '[Test Webhook](/api-reference/webhooks/test)',
+] as const;
+
 const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
   'monitor tweets',
   'signed webhooks',
@@ -5035,6 +5060,23 @@ describe('repository discovery', (): void => {
         source,
         'Update keyword monitor API page',
         REQUIRED_KEYWORD_MONITOR_UPDATE_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the keyword monitor delete API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/monitors/delete-keyword.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Delete keyword monitor API page',
+        REQUIRED_KEYWORD_MONITOR_DELETE_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
