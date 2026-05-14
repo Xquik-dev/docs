@@ -200,6 +200,7 @@ const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
 
 const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
   '## Workflow: Search Tweets to JSON Lines, CSV, or XLSX',
+  '## Workflow: Tweet Replies to CSV, JSON, or XLSX',
   '## Workflow: Post Image Tweets and DM Attachments',
   '`client.X.Tweets.Search`',
   '`GET /x/tweets/search`',
@@ -223,6 +224,14 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
   'Write `Tweets` as JSON Lines to `xquik-tweet-search.jsonl`',
   'projected records into CSV for analysts',
   'produce XLSX from those rows',
+  '`client.Extractions.EstimateCost`',
+  '`client.Extractions.Run`',
+  '`client.Extractions.Get`',
+  '`client.Extractions.ExportResults`',
+  '`reply_extractor` requires `TargetTweetID`.',
+  '`client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`',
+  '`client.Extractions.ExportResults` supports CSV, JSON, and XLSX',
+  'Cost: 1 credit per reply extracted or returned.',
   '`client.X.Tweets.New`',
   '`ReplyToTweetID`',
   '`Media` with public image URLs',
