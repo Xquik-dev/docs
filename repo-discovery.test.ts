@@ -2472,6 +2472,11 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   '`messageId` and `success`',
   '`POST /monitors`, then `GET /events`',
   '`POST /webhooks`, then `POST /webhooks/{id}/test`',
+  'const webhookSecret = webhook.secret;',
+  'Store webhookSecret in your secret manager; do not print it in logs.',
+  'webhook_secret = webhook["secret"]',
+  'Store webhook_secret in your secret manager; do not print it in logs.',
+  'Store secret in your secret manager; do not print it in logs.',
   "`xquik.request('/api/v1/x/tweets/search')`",
   '`POST /extractions/estimate`, then `POST /extractions`',
   '`POST /x/tweets`',
@@ -2501,6 +2506,12 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   'Return `2xx` before slow CRM, warehouse, Slack, or queue work starts.',
   'retries network failures and non-`2xx` responses up to 10 attempts',
   'Return `410 Gone` only when Xquik should stop retrying that delivery immediately.',
+] as const;
+
+const FORBIDDEN_WORKFLOW_SECRET_LOG_SNIPPETS = [
+  'console.log("Webhook secret:", webhook.secret)',
+  'print("Webhook secret:", webhook["secret"])',
+  'fmt.Println("Webhook secret:", secret)',
 ] as const;
 
 const REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS = [
@@ -5466,11 +5477,23 @@ describe('repository discovery', (): void => {
     const source = readFileSync('guides/workflows.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'Workflows overview',
-        REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'Workflows overview',
+          REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS,
+        ),
+        ...FORBIDDEN_WORKFLOW_SECRET_LOG_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Workflows guide logs the one-time webhook secret with "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
