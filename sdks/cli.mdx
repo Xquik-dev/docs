@@ -97,6 +97,80 @@ Tweet search costs 1 credit per tweet returned. If remaining credits cannot cove
 
 For CSV or XLSX handoff, keep `xquik-tweet-search.jsonl` as the source of truth and convert it in your pipeline. For example, a Python step can load each JSON Lines row and write projected records to CSV for analysts, or produce XLSX from those rows for account management workflows.
 
+## Workflow: Tweet Replies to CSV, JSON, or XLSX
+
+Use this workflow when a moderation, support, giveaway, research, or AI review job needs every reply under one tweet as a file handoff. The CLI calls the extraction endpoints: estimate first, run `reply_extractor`, poll the stored job, then export CSV, JSON, or XLSX.
+
+`reply_extractor` requires `targetTweetId`. The CLI flag is `--target-tweet-id`.
+
+```bash
+x-twitter-scraper extractions estimate-cost \
+  --tool-type reply_extractor \
+  --target-tweet-id 1893704267862470862 \
+  --format json > reply-estimate.json
+```
+
+The estimate calls `POST /extractions/estimate` and returns `allowed`, `estimatedResults`, `creditsRequired`, `creditsAvailable`, and `source`. For reply scraping, `source` is usually `replyCount`.
+
+```bash
+jq -e '.allowed == true' reply-estimate.json >/dev/null
+
+job_id="$(x-twitter-scraper extractions run \
+  --tool-type reply_extractor \
+  --target-tweet-id 1893704267862470862 \
+  --transform id \
+  --raw-output)"
+```
+
+The run command calls `POST /extractions`. Persist `job_id` before polling so a shell restart, queue retry, or CI rerun can resume the same extraction.
+
+```bash
+while :; do
+  x-twitter-scraper extractions retrieve \
+    --id "$job_id" \
+    --limit 100 \
+    --format json > replies-page.json
+
+  status="$(jq -r '.job.status' replies-page.json)"
+  [ "$status" = "completed" ] && break
+  [ "$status" = "failed" ] && exit 1
+  sleep 10
+done
+```
+
+The retrieve command calls `GET /extractions/{id}`. The JSON response includes `.job`, `.results`, `.hasMore`, and `.nextCursor`. When `.hasMore` is true, save the cursor and call `extractions retrieve` again:
+
+```bash
+next_cursor="$(jq -r '.nextCursor // empty' replies-page.json)"
+
+x-twitter-scraper extractions retrieve \
+  --id "$job_id" \
+  --after "$next_cursor" \
+  --limit 100 \
+  --format json > replies-next-page.json
+```
+
+Append `.results[]` to your queue, CRM import, or warehouse load.
+
+```bash
+x-twitter-scraper extractions export-results \
+  --id "$job_id" \
+  --format csv \
+  --output xquik-tweet-replies.csv
+
+x-twitter-scraper extractions export-results \
+  --id "$job_id" \
+  --format json \
+  --output xquik-tweet-replies.json
+
+x-twitter-scraper extractions export-results \
+  --id "$job_id" \
+  --format xlsx \
+  --output xquik-tweet-replies.xlsx
+```
+
+The export command calls `GET /extractions/{id}/export` and writes the response bytes to `--output`. Use `--format csv` for analyst spreadsheets, `--format json` for pipelines, and `--format xlsx` for account-management workbooks. Cost: 1 credit per reply extracted or returned. Exports are free after the extraction job exists.
+
 ## Workflow: Post Image Tweets, Replies, and DM Attachments
 
 Use this workflow when an operator, support queue, or agent needs to publish an image-backed tweet, reply with an image, or send one media attachment in a DM from a connected X account.

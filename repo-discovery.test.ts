@@ -346,6 +346,7 @@ const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
 
 const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
   '## Workflow: Search Tweets to JSON Lines, CSV, or XLSX',
+  '## Workflow: Tweet Replies to CSV, JSON, or XLSX',
   '## Workflow: Post Image Tweets, Replies, and DM Attachments',
   '`x-twitter-scraper x:tweets search`',
   '`GET /x/tweets/search`',
@@ -366,6 +367,28 @@ const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
   'projected records to CSV for analysts',
   'produce XLSX from those rows',
   '`--format-error json`',
+  'x-twitter-scraper extractions estimate-cost',
+  '`POST /extractions/estimate`',
+  '`reply_extractor` requires `targetTweetId`.',
+  '`--target-tweet-id`',
+  'x-twitter-scraper extractions run',
+  '`POST /extractions`',
+  '--transform id',
+  '--raw-output',
+  'Persist `job_id` before polling',
+  'x-twitter-scraper extractions retrieve',
+  '`GET /extractions/{id}`',
+  '`.results`',
+  '`.hasMore`',
+  '`.nextCursor`',
+  '--after "$next_cursor"',
+  'x-twitter-scraper extractions export-results',
+  '`GET /extractions/{id}/export`',
+  '`--format csv`',
+  '`--format json`',
+  '`--format xlsx`',
+  '`--output`',
+  'Cost: 1 credit per reply extracted or returned.',
   '`x-twitter-scraper x:tweets create`',
   '`--media`',
   '`--reply-to-tweet-id`',
@@ -4301,7 +4324,7 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
   });
 
-  it('keeps the CLI SDK page useful for tweet search handoffs', (): void => {
+  it('keeps the CLI SDK page useful for tweet search and replies handoffs', (): void => {
     expect.assertions(1);
 
     const source = readFileSync('sdks/cli.mdx', 'utf8');
