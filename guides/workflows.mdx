@@ -158,7 +158,7 @@ Start here when you need to decide which Xquik tools to build around first. Thes
 
 ### 1. Scrape tweets to CSV, JSON, or XLSX
 
-Use this when a user asks to scrape tweets, search tweets, build a tweet scraper, export hashtag results, or hand matching posts to an analyst. Estimate first, create the extraction job, poll it, then export the file format your downstream system expects. For tweet replies, use `reply_extractor` with `targetTweetId` and export the same CSV, JSON, or XLSX formats.
+Use this when a user asks to scrape tweets, search tweets, build a tweet scraper, export hashtag results, or hand matching posts to an analyst. Estimate first, create the extraction job, poll it, then export the file format your downstream system expects. For reply-specific exports, use the next workflow.
 
 ```bash
 curl -X POST https://xquik.com/api/v1/extractions/estimate \
@@ -174,7 +174,24 @@ curl -X POST https://xquik.com/api/v1/extractions/estimate \
 
 The extraction returns a job ID. `GET /extractions/{id}` returns `job`, `results`, `hasMore`, and `nextCursor`; `GET /extractions/{id}/export?format=csv` downloads the rows. For live pagination without a stored job, call `GET /x/tweets/search` with `q` and optional `cursor`; use `limit` only for bounded pulls. It returns `tweets`, `has_next_page`, and `next_cursor`.
 
-### 2. Export followers to CRM or warehouse
+### 2. Scrape tweet replies to CSV, JSON, or XLSX
+
+Use this when a moderation, support, giveaway, research, or AI review system needs every reply under a specific post as rows. Estimate first with `reply_extractor` and `targetTweetId`, create the extraction job with the same fields, poll it, then export `format=csv`, `format=json`, or `format=xlsx`.
+
+```bash
+curl -X POST https://xquik.com/api/v1/extractions/estimate \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolType": "reply_extractor",
+    "targetTweetId": "1893704267862470862",
+    "resultsLimit": 500
+  }' | jq
+```
+
+`GET /extractions/{id}` returns reply rows, `hasMore`, and `nextCursor`; pass `nextCursor` as `after` for more stored results. For live pagination without a stored job, call `GET /x/tweets/{id}/replies`, pass `next_cursor` back as `cursor`, and store `tweets`, `has_next_page`, and `next_cursor`.
+
+### 3. Export followers to CRM or warehouse
 
 Use this when the real job is follower export, audience ownership, CRM import, or warehouse sync. Keep `resultsLimit` on both estimate and create calls so the first run has a predictable credit cap.
 
@@ -191,7 +208,7 @@ curl -X POST https://xquik.com/api/v1/extractions \
 
 After `status` becomes `completed`, export `format=csv` for CRM import, `format=xlsx` for analyst review, or `format=json` for a pipeline. Map stable `User ID` values to a CRM field such as `x_user_id`; do not key imports by display name.
 
-### 3. Monitor tweets to signed webhooks
+### 4. Monitor tweets to signed webhooks
 
 Use this when a workflow needs tweet alerts, support routing, warehouse ingest, or queue fanout within seconds. Create the monitor, register the webhook URL, test delivery, then process signed events asynchronously.
 
@@ -207,7 +224,7 @@ curl -X POST https://xquik.com/api/v1/monitors \
 
 Webhook payloads include durable IDs for downstream systems: persist `deliveryId` for delivery-level idempotency and `streamEventId` when the same monitor event must be processed once across retries or endpoints. Return `2xx` before slow CRM, Slack, warehouse, or queue work starts.
 
-### 4. Post image tweets or replies
+### 5. Post image tweets or replies
 
 Use this when an agent or app has public image URLs and needs to post a tweet or reply. Pass those URLs directly in the `media` array on `POST /x/tweets`. Do not call `POST /x/media` first for tweet posts; `POST /x/tweets` rejects `media_ids` with `400 unsupported_field`.
 
@@ -225,7 +242,7 @@ curl -X POST https://xquik.com/api/v1/x/tweets \
 
 The response returns `tweetId` and `success`, or `202 x_write_unconfirmed` with `writeActionId` if final confirmation is still pending. Store the original media URLs next to `tweetId`, `reply_to_tweet_id`, or `writeActionId`. Use `POST /x/media` only when you need a one-item `media_ids` array for [`POST /x/dm/{userId}`](/api-reference/x-write/send-dm).
 
-### 5. Send direct messages with returned IDs
+### 6. Send direct messages with returned IDs
 
 Use this when a support, sales, or agent workflow needs direct messages with audit trails. Look up the recipient user ID, pass the same connected sender as `account` for history reads and DM writes, then store returned message IDs.
 
