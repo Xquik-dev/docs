@@ -2485,6 +2485,7 @@ const FORBIDDEN_DM_HISTORY_SDK_EXAMPLE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
+  'Choose the handoff here, then open the focused workflow or API page for copy-ready examples.',
   '## Integration Handoff Matrix',
   '## High-Value Workflows First',
   'rows for analysts, IDs for systems of record, events for queues, and published action IDs for audit trails',
@@ -2529,12 +2530,6 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   '`messageId` and `success`',
   '`POST /monitors`, then `GET /events`',
   '`POST /webhooks`, then `POST /webhooks/{id}/test`',
-  'const webhookSecret = webhook.secret;',
-  'Store webhookSecret in your secret manager; do not print it in logs.',
-  'webhook_secret = webhook["secret"]',
-  'Store webhook_secret in your secret manager; do not print it in logs.',
-  'Store secret in your secret manager; do not print it in logs.',
-  "`xquik.request('/api/v1/x/tweets/search')`",
   '`POST /extractions/estimate`, then `POST /extractions`',
   '`POST /x/tweets`',
   'Post tweets or replies',
@@ -2542,33 +2537,38 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   '`reply_to_tweet_id`',
   '`tweetId` and `success`',
   '10 credits per write',
-  '"nextBillingAt": "2026-02-24T10:30:00.000Z"',
   '`POST /compose` with `step`',
   'CSV, JSON, XLSX, or paginated JSON',
   '21 credits per hour',
   'Compose, refine, and score are free',
-  '### Step 4: Queue the handoff',
-  'persist `deliveryId` as the idempotency key',
-  '`streamEventId`, `eventType`, `occurredAt`, `schemaVersion`',
-  '`username` for account monitor events',
-  '`query` for keyword monitor events',
-  '`xquik-monitor-events.jsonl`',
-  '"handoff_format": "jsonl"',
-  '"delivery_id": "502"',
-  '"stream_event_id": "9001"',
-  '"source_username": "xquikcom"',
-  '"source_query": null',
-  '"idempotency_key": "delivery:502"',
-  '"event_dedupe_key": "stream_event:9001"',
-  'Return `2xx` before slow CRM, warehouse, Slack, or queue work starts.',
-  'retries network failures and non-`2xx` responses up to 10 attempts',
-  'Return `410 Gone` only when Xquik should stop retrying that delivery immediately.',
+  '## Focused Workflow Pages',
+  'Use the overview to choose the path, then move to the focused page for copy-ready examples, SDK handoff, and endpoint-specific error recovery.',
+  '<Card title="Tweet search exports" icon="search" href="/guides/tweet-search-export">',
+  'Build CSV, JSON, or XLSX exports from `tweet_search_extractor`, or use direct `GET /x/tweets/search` pagination.',
+  '<Card title="Tweet replies exports" icon="messages-square" href="/guides/tweet-replies-export">',
+  '<Card title="Follower CRM export" icon="users" href="/guides/follower-export-crm">',
+  '<Card title="Monitor webhooks" icon="webhook" href="/guides/webhook-testing">',
+  'Test signed deliveries, verify `X-Xquik-Signature`, store `deliveryId`, and return `2xx` before slow work.',
+  '<Card title="Media tweets and DMs" icon="image" href="/guides/media-upload-workflow">',
+  '<Card title="Direct messages" icon="send" href="/guides/direct-message-workflow">',
+  '<Card title="MCP agents" icon="bot" href="/mcp/overview">',
+  '`xquik.request(...)`',
+  '<Card title="Tweet composition" icon="pen-line" href="/api-reference/compose/create">',
 ] as const;
 
 const FORBIDDEN_WORKFLOW_SECRET_LOG_SNIPPETS = [
   'console.log("Webhook secret:", webhook.secret)',
   'print("Webhook secret:", webhook["secret"])',
   'fmt.Println("Webhook secret:", secret)',
+] as const;
+
+const FORBIDDEN_WORKFLOW_OVERVIEW_BLOAT_SNIPPETS = [
+  '<Tabs>',
+  '<Tab title="Monitor & Poll">',
+  '<Tab title="Real-Time Webhooks">',
+  '<Tab title="AI Agent (MCP)">',
+  '<Tab title="Tweet Composition">',
+  '## Publish Tweets & Replies',
 ] as const;
 
 const REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS = [
@@ -3957,7 +3957,7 @@ const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
 const MAX_LLMS_TXT_CHARS = 48_000;
 // Keep the overview from absorbing another deep tutorial body; link to focused
 // workflow and API pages for expanded examples instead.
-const MAX_WORKFLOWS_OVERVIEW_CHARS = 40_000;
+const MAX_WORKFLOWS_OVERVIEW_CHARS = 20_000;
 
 const REQUIRED_AGENT_DOCS_MARKDOWN_FALLBACK_CHECKS = [
   '  - llms-txt-size',
@@ -5610,6 +5610,16 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Workflows guide logs the one-time webhook secret with "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+        ...FORBIDDEN_WORKFLOW_OVERVIEW_BLOAT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Workflows guide reintroduced duplicate deep tutorial content with "${snippet}".`,
                   },
                 ]
               : [],
