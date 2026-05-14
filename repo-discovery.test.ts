@@ -2482,6 +2482,35 @@ const REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS = [
   'reconcile stored events and webhook deliveries for this account.',
 ] as const;
 
+const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
+  '## Inventory handoff',
+  'Use `GET /monitors` after create, update, pause, or delete operations',
+  'your account monitor inventory.',
+  'up to 200 monitors ordered',
+  '`total` count for the returned set.',
+  '<Card title="Tracked Accounts" icon="users">',
+  "Store each monitor's `id`, `username`, and `xUserId`",
+  'warehouse, or queue records.',
+  '<Card title="Active Billing" icon="activity">',
+  'Filter monitors where `isActive` is `true`.',
+  'Each active account monitor',
+  'bills 21 credits per active monitor-hour',
+  '`nextBillingAt` to schedule',
+  'credit checks or pause stale alerts.',
+  '<Card title="Webhook Alignment" icon="webhook">',
+  "Compare each monitor's `eventTypes` with webhook subscriptions",
+  'relying on signed alerts.',
+  '<Card title="Event Backfill" icon="database">',
+  'Use `id` as `monitorId` with [List Events](/api-reference/events/list)',
+  'audit stored account monitor events.',
+  '<Card title="State Repair" icon="sliders-horizontal">',
+  '[Update Monitor](/api-reference/monitors/update)',
+  'replace `eventTypes`',
+  'toggle `isActive`.',
+  '[Delete Monitor](/api-reference/monitors/delete)',
+  'tracked account should stop permanently.',
+] as const;
+
 const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
   '## Source-backed Zapier scope',
   'API by Zapier',
@@ -5209,6 +5238,20 @@ describe('repository discovery', (): void => {
         source,
         'Get account monitor API page',
         REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the account monitor list API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/monitors/list.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'List account monitor API page',
+        REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
