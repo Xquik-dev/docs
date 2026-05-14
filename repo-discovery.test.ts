@@ -1393,9 +1393,13 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   '`job`, `results`, `hasMore`, and `nextCursor`',
   '`tweets[].id`, `tweets[].text`, `tweets[].createdAt`, `tweets[].author.id`, `tweets[].author.username`, `has_next_page`, and `next_cursor`',
   '`xquik-tweet-search.jsonl`',
+  'Omit `limit` for',
+  'cursor-driven page loops.',
+  'Pass `limit` only when you want Xquik to collect up to',
+  'that count in one bounded request with no cursor handoff.',
   '`next_cursor`',
   '`resultsLimit`',
-  '1 credit per tweet returned',
+  'Cost is 1 credit per tweet returned.',
 ] as const;
 
 const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
@@ -1408,6 +1412,8 @@ const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   '`tweets[].author.id` and `tweets[].author.username`',
   '`has_next_page` and `next_cursor`',
   '`limit` is an upper bound from 1 to 200',
+  'Do not combine `limit` with `cursor` for page-by-page loops.',
+  'Omit it for cursor-based pagination.',
   '[Tweet Search Export Workflow](/guides/tweet-search-export)',
   'saved CSV, JSON, or XLSX files',
   '1 credit per tweet returned',
