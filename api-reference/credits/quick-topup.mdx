@@ -15,10 +15,20 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <CodeGroup>
   ```bash cURL
-  curl -X POST https://xquik.com/api/v1/credits/quick-topup \
+  response=$(curl -sS -X POST https://xquik.com/api/v1/credits/quick-topup \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
     -H "Content-Type: application/json" \
-    -d '{"dollars": 25}' | jq
+    -d '{"dollars": 25}')
+  outcome=$(jq -r '.outcome' <<<"$response")
+
+  if [ "$outcome" = "requires_action" ]; then
+    client_secret=$(jq -r '.clientSecret' <<<"$response")
+    # Pass $client_secret to the billing confirmation flow; do not print it.
+  elif [ "$outcome" = "charged" ]; then
+    jq '{outcome, credits, balance}' <<<"$response"
+  else
+    jq '{outcome}' <<<"$response"
+  fi
   ```
 
   ```javascript Node.js
@@ -30,8 +40,16 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     },
     body: JSON.stringify({ dollars: 25 }),
   });
-  const data = await response.json();
-  process.stdout.write(`${JSON.stringify(data, null, 2)}\n`);
+  const result = await response.json();
+
+  if (result.outcome === "requires_action") {
+    const paymentClientSecret = result.clientSecret;
+    // Pass paymentClientSecret to the billing confirmation flow; do not print it.
+  } else if (result.outcome === "charged") {
+    process.stdout.write(`Added ${result.credits} credits. Balance: ${result.balance}\n`);
+  } else {
+    process.stdout.write("Add a payment method before quick top-up.\n");
+  }
   ```
 
   ```python Python
@@ -43,7 +61,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       json={"dollars": 25},
   )
   data = response.json()
-  print(data)
+  if data["outcome"] == "requires_action":
+      payment_client_secret = data["clientSecret"]
+      # Pass payment_client_secret to the billing confirmation flow; do not print it.
+  elif data["outcome"] == "charged":
+      print(f"Added {data['credits']} credits. Balance: {data['balance']}")
+  else:
+      print("Add a payment method before quick top-up.")
   ```
 
   ```go Go
@@ -78,7 +102,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      outcome, _ := data["outcome"].(string)
+      if outcome == "requires_action" {
+          clientSecret, _ := data["clientSecret"].(string)
+          // Pass clientSecret to the billing confirmation flow; do not print it.
+          _ = clientSecret
+      } else if outcome == "charged" {
+          credits, _ := data["credits"].(string)
+          balance, _ := data["balance"].(string)
+          fmt.Printf("Added %s credits. Balance: %s\n", credits, balance)
+      } else {
+          fmt.Println("Add a payment method before quick top-up.")
+      }
   }
   ```
 </CodeGroup>
@@ -101,7 +136,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 At USD 0.00015 per credit, a USD 25 quick top-up adds 166,666 credits, rounded down to whole credits.
 
-Only the `charged` outcome grants credits and updates `balance`. If the endpoint returns `requires_action`, complete payment authentication with `clientSecret` before retrying the metered API call. If it returns `no_payment_method`, create a checkout top-up instead.
+Only the `charged` outcome grants credits and updates `balance`. If the endpoint returns `requires_action`, complete payment authentication with `clientSecret` before retrying the metered API call. Pass `clientSecret` to the billing confirmation flow only; do not print it in logs. If it returns `no_payment_method`, create a checkout top-up instead.
 
 ## Response
 

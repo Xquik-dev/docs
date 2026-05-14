@@ -889,9 +889,21 @@ const REQUIRED_QUICK_TOPUP_PAGE_SNIPPETS = [
   'At USD 0.00015 per credit, a USD 25 quick top-up adds 166,666 credits',
   'Only the `charged` outcome grants credits and updates `balance`.',
   'If the endpoint returns `requires_action`, complete payment authentication with `clientSecret` before retrying the metered API call.',
+  'Pass `clientSecret` to the billing confirmation flow only; do not print it in logs.',
+  'client_secret=$(jq -r \'.clientSecret\' <<<"$response")',
+  'const paymentClientSecret = result.clientSecret;',
+  'payment_client_secret = data["clientSecret"]',
+  'clientSecret, _ := data["clientSecret"].(string)',
   'If it returns `no_payment_method`, create a checkout top-up instead.',
   '"balance": "466666"',
   '"credits": "166666"',
+] as const;
+
+const FORBIDDEN_QUICK_TOPUP_CLIENT_SECRET_LOG_SNIPPETS = [
+  '| jq',
+  'process.stdout.write(`${JSON.stringify(data, null, 2)}\\n`);',
+  'print(data)',
+  'fmt.Println(data)',
 ] as const;
 
 const FORBIDDEN_TOPUP_EXAMPLE_SNIPPETS = [
@@ -4616,6 +4628,16 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Credit top-up docs contain stale example value ${snippet}.`,
+                  },
+                ]
+              : [],
+        ),
+        ...FORBIDDEN_QUICK_TOPUP_CLIENT_SECRET_LOG_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            quickTopupPage.includes(snippet)
+              ? [
+                  {
+                    issue: `Quick top-up API docs can print a payment client secret with "${snippet}".`,
                   },
                 ]
               : [],
