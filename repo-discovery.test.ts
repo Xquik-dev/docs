@@ -1853,6 +1853,14 @@ const REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS = [
   '<Card title="tweet.retweet" icon="repeat-2">',
   'repost activity should keep triggering deliveries.',
   '`webhook.test` is generated only by the [Test Webhook](/api-reference/webhooks/test) endpoint.',
+  '## Reconfiguration handoff',
+  'Store returned `id`, `url`, `eventTypes`, `isActive`, and `createdAt`',
+  'After changing `url`, run [Test Webhook](/api-reference/webhooks/test)',
+  '`eventTypes` replaces the previous list.',
+  '`isActive: false` stops future deliveries.',
+  '`isActive: true` resumes delivery for matching future monitor events.',
+  'This endpoint does not rotate or return `secret`.',
+  '[Create Webhook](/api-reference/webhooks/create)',
 ] as const;
 
 const REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS = [
