@@ -86,14 +86,16 @@ Use `POST /monitors/keywords` when a queue, CRM, warehouse, Slack alert, or agen
     signed webhook back to `GET /events/{id}`. Store `eventType`, `occurredAt`,
     and `data` with the downstream job.
   </Card>
+  <Card title="Signed Webhook Rollout" icon="shield-check">
+    Create the webhook with matching `eventTypes` unless the receiver wants a
+    subset. Store the one-time `secret`, then run `POST /webhooks/{id}/test`.
+  </Card>
+  <Card title="Delivery Verification" icon="key-round">
+    Verify `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` on the
+    raw body. Deduplicate with `deliveryId`; join with `streamEventId` and
+    `keywordMonitorId`.
+  </Card>
 </CardGroup>
-
-**Signed webhook rollout:** After creating a keyword monitor, use the same `eventTypes` when you create the webhook unless the receiver intentionally wants a subset. Store webhook `secret` once, run `POST /webhooks/{id}/test`, then reject unsigned or replayed deliveries before processing monitor events.
-
-1. Store monitor `id`, normalized `query`, and `eventTypes`.
-2. Create the webhook with matching `eventTypes` and store `id`, `url`, `secret`, and `createdAt`.
-3. Verify `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` on the raw body.
-4. Deduplicate with `deliveryId`; join production deliveries to stored events with `streamEventId` and `keywordMonitorId`.
 
 Active keyword monitors check every 1 second and cost 21 credits per active monitor-hour. Creation or reactivation requires 22 available credits. Pause with `PATCH /monitors/keywords/{id}` and `{ "isActive": false }` when the alert should stop.
 
