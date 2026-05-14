@@ -3682,6 +3682,23 @@ const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
 
 const MAX_LLMS_TXT_CHARS = 48_000;
 
+const REQUIRED_AGENT_DOCS_MARKDOWN_FALLBACK_CHECKS = [
+  '  - llms-txt-size',
+  '  - llms-txt-links-markdown',
+  '  - llms-txt-directive-md',
+  '  - markdown-url-support',
+  '  - content-negotiation',
+  '  - page-size-markdown',
+  '  - markdown-content-parity',
+] as const;
+
+const REQUIRED_AGENT_DOCS_PAGE_SIZE_CHECKS = [
+  '  - rendering-strategy',
+  '  - page-size-html',
+  '  - page-size-markdown',
+  'content-start-position stays disabled until the 50-page afdocs sample starts',
+] as const;
+
 const VAGUE_PUBLIC_POSITIONING = [
   ['X-specific', 'workflows'].join(' '),
   ['workflow', 'surface'].join(' '),
@@ -3962,6 +3979,27 @@ describe('repository discovery', (): void => {
       ),
       ...collectSnippetFindings(llms, 'llms.txt', REQUIRED_LLMS_SNIPPETS),
     ]).toStrictEqual([]);
+  });
+
+  it('keeps agent-docs checks covering generated HTML size and markdown fallbacks', (): void => {
+    expect.assertions(2);
+
+    const config = readFileSync('agent-docs.config.yml', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        config,
+        'Agent docs markdown fallback checks',
+        REQUIRED_AGENT_DOCS_MARKDOWN_FALLBACK_CHECKS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      collectSnippetFindings(
+        config,
+        'Agent docs page-size checks',
+        REQUIRED_AGENT_DOCS_PAGE_SIZE_CHECKS,
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps the public skill rate limits scan-friendly and source-backed', (): void => {
