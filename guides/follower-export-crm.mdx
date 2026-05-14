@@ -49,6 +49,34 @@ Use this workflow when a sales, support, research, or marketing system needs an 
 
 Use extraction jobs for repeatable exports, cost preview, audit trails, and file downloads. Use the direct followers API for low-latency pages and small app handoffs.
 
+### Live follower page handoff
+
+Use `GET /x/users/{id}/followers` when a CRM enrichment job, queue worker, audience sync, or agent needs the newest follower page without creating a saved extraction.
+
+```bash cURL
+curl "https://xquik.com/api/v1/x/users/44196397/followers?pageSize=200&cursor=DAACCgACGRElMJcAAA" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+The response returns `users`, `has_next_page`, and `next_cursor`. Treat `next_cursor` as opaque, store it with the import checkpoint, and pass it back as `cursor` only when `has_next_page` is true.
+
+Map direct API fields before import:
+
+<CardGroup cols={2}>
+  <Card title="Identity" icon="fingerprint">
+    Map `users[].id` to `x_user_id`, `users[].username` to `x_username`, and `users[].name` to `display_name`.
+  </Card>
+  <Card title="Audience fields" icon="chart-no-axes-column">
+    Map optional `followers`, `following`, `statusesCount`, `verified`, and `verifiedType` for scoring or segments.
+  </Card>
+  <Card title="Profile context" icon="file-text">
+    Map optional `description`, `location`, `url`, `profilePicture`, and `coverPicture` for enrichment and review queues.
+  </Card>
+  <Card title="Credit-aware pages" icon="coins">
+    `pageSize` accepts `20` to `200`, but paid calls can return fewer users when remaining credits are lower than the requested page.
+  </Card>
+</CardGroup>
+
 ## Step 1: Estimate cost
 
 Estimate first so the workflow can stop before spending credits.
