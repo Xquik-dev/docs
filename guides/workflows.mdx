@@ -150,9 +150,9 @@ Start here when you need to decide which Xquik tools to build around first. Thes
   </Card>
   <Card title="6. Send direct messages with returned IDs" icon="send">
     Lets support, sales, and agent systems read a conversation and store the outbound message ID.
-    First endpoint: `GET /x/dm/{userId}/history`, then `POST /x/dm/{userId}`.
-    Handoff: `messages`, `has_next_page`, `next_cursor`, `messageId`, and `success`.
-    Cost model: 1 credit per message returned; 10 credits per DM send.
+    First endpoint: `GET /x/users/{id}` if needed; use `GET /x/dm/{userId}/history?account=...`, then `POST /x/dm/{userId}`.
+    Handoff: `account`, `messages`, `has_next_page`, `next_cursor`, `messageId`, and `success`.
+    Cost model: 1 credit per user lookup or history message; 10 credits per DM send.
   </Card>
 </CardGroup>
 
@@ -227,7 +227,15 @@ The response returns `tweetId` and `success`, or `202 x_write_unconfirmed` with 
 
 ### 5. Send direct messages with returned IDs
 
-Use this when a support, sales, or agent workflow needs direct messages with audit trails. Look up the recipient user ID, read history when needed, then send the DM from a connected account.
+Use this when a support, sales, or agent workflow needs direct messages with audit trails. Look up the recipient user ID, pass the same connected sender as `account` for history reads and DM writes, then store returned message IDs.
+
+```bash
+curl -G https://xquik.com/api/v1/x/dm/987654321/history \
+  --data-urlencode "account=brand_account" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+History reads require `account`, and that connected account must participate in the conversation. Missing `account` returns `400 account_required`; a non-participant account returns `403 dm_not_permitted`.
 
 ```bash
 curl -X POST https://xquik.com/api/v1/x/dm/987654321 \
