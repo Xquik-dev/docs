@@ -120,6 +120,73 @@ The generated params map directly to the REST endpoint:
 
 Write `page.tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets. Pass `id`, `text`, `author.username`, `createdAt`, and engagement counts into your CRM or enrichment pipeline.
 
+## Workflow: Tweet Replies to CSV, JSON, or XLSX
+
+Use this workflow when a TypeScript worker needs every reply under one tweet as a saved extraction, paginated JSON handoff, or file export for moderation, support, research, CRM, or agent review. It calls `POST /extractions/estimate` through `client.extractions.estimateCost`, creates the job with `client.extractions.run`, reads rows with `client.extractions.retrieve`, and downloads files with `client.extractions.exportResults`.
+
+```ts
+import { writeFile } from "node:fs/promises";
+import XTwitterScraper from "x-twitter-scraper";
+
+const client = new XTwitterScraper();
+const targetTweetId = "1893704267862470862";
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+const estimate = await client.extractions.estimateCost({
+  toolType: "reply_extractor",
+  targetTweetId,
+});
+
+if (!estimate.allowed) {
+  throw new Error("Insufficient credits for reply extraction.");
+}
+
+const job = await client.extractions.run({
+  toolType: "reply_extractor",
+  targetTweetId,
+});
+
+while (true) {
+  const statusPage = await client.extractions.retrieve(job.id, { limit: 1 });
+  const status = statusPage.job["status"];
+
+  if (status === "completed") {
+    break;
+  }
+
+  if (status === "failed") {
+    throw new Error("Reply extraction failed.");
+  }
+
+  await sleep(3000);
+}
+
+let after: string | undefined;
+
+while (true) {
+  const page = await client.extractions.retrieve(job.id, {
+    limit: 1000,
+    after,
+  });
+
+  for (const row of page.results) {
+    process.stdout.write(`${JSON.stringify(row)}\n`);
+  }
+
+  if (!page.hasMore || !page.nextCursor) {
+    break;
+  }
+
+  after = page.nextCursor;
+}
+
+const csv = await client.extractions.exportResults(job.id, { format: "csv" });
+await writeFile("xquik-tweet-replies.csv", Buffer.from(await csv.arrayBuffer()));
+```
+
+`reply_extractor` requires `targetTweetId`. `client.extractions.retrieve` returns `results`, `hasMore`, and `nextCursor`; store those values when you need resumable JSON pagination. `client.extractions.exportResults` supports `csv`, `json`, and `xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
+
 ## Workflow: Post Image Tweets and DM Attachments
 
 Use this workflow when a TypeScript worker, support queue, or agent service needs to post an image-backed tweet, reply with an image, or send one uploaded media item in a DM.
@@ -175,6 +242,9 @@ Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, an
 Useful endpoints:
 
 - [Search Tweets](/api-reference/x/search-tweets)
+- [Create Extraction](/api-reference/extractions/create)
+- [Get Extraction](/api-reference/extractions/get)
+- [Export Extraction](/api-reference/extractions/export)
 - [Get User](/api-reference/x/get-user)
 - [Create Tweet](/api-reference/x-write/create-tweet)
 - [Upload Media](/api-reference/x-write/upload-media)
