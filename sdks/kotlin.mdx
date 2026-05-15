@@ -1,7 +1,7 @@
 ---
 title: Kotlin SDK
 sidebarTitle: Kotlin
-description: Use the Xquik Kotlin SDK to search tweets, export JSON Lines, CSV, or XLSX, post image tweets, upload media, send DMs, and build JVM X API workers.
+description: Use the Xquik Kotlin SDK to search tweets, export JSON Lines, CSV, or XLSX, post media tweets, upload media, send DMs, and build JVM X API workers.
 keywords: ["Kotlin SDK", "X API Kotlin", "JVM client", "tweet search Kotlin", "Twitter API Kotlin", "JSON export", "CSV export", "XLSX export", "source build"]
 ---
 
@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the Kotlin SDK for generated JVM models, Kotlin nullable values, builders, sync calls, async calls, typed exceptions, retries, and file upload helpers. It is useful when a JVM service, Ktor worker, Spring job, queue consumer, or cron task needs to search tweets, scrape tweets to JSON Lines, CSV, or XLSX, export followers, monitor tweets, post image tweets, upload media, send direct messages, or hand X API data to analytics and CRM systems.
+Use the Kotlin SDK for generated JVM models, Kotlin nullable values, builders, sync calls, async calls, typed exceptions, retries, and file upload helpers. It is useful when a JVM service, Ktor worker, Spring job, queue consumer, or cron task needs to search tweets, scrape tweets to JSON Lines, CSV, or XLSX, export followers, monitor tweets, post media tweets, upload media, send direct messages, or hand X API data to analytics and CRM systems.
 
 ## Install
 
@@ -223,9 +223,9 @@ client.extractions().exportResults(
 
 Use `ExtractionExportResultsParams.Format.JSON` for a JSON file handoff or `ExtractionExportResultsParams.Format.XLSX` for workbook delivery. Persist `job.id()` before polling so a queue retry can resume with `client.extractions().retrieve(job.id())` and repeat `client.extractions().exportResults(...)` after completion.
 
-## Workflow: Post Image Tweets and DM Attachments
+## Workflow: Post Media Tweets and DM Attachments
 
-Use this workflow when a Kotlin service needs to publish an image tweet, reply with an image, or send a direct message with an uploaded local file. `client.x().tweets().create` maps to `POST /x/tweets`; pass public image URLs through `.addMedia()` or `.media()`. For replies, set `.replyToTweetId()` to the parent tweet ID. `client.x().media().upload` maps to `POST /x/media`; use `media.mediaId()` only for the one-item DM `.addMediaId()` handoff.
+Use this workflow when a Kotlin service needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `client.x().tweets().create` maps to `POST /x/tweets`; pass public media URLs through `.addMedia()` or `.media()`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB, and do not mix video with other media. For replies, set `.replyToTweetId()` to the parent tweet ID. `client.x().media().upload` maps to `POST /x/media`; use `media.mediaId()` only for the one-item DM `.addMediaId()` handoff.
 
 ```kotlin
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -244,8 +244,8 @@ val client: XTwitterScraperClient = XTwitterScraperOkHttpClient.fromEnv()
 val tweet: TweetCreateResponse = client.x().tweets().create(
     TweetCreateParams.builder()
         .account("@xquikcom")
-        .text("Shipping the weekly X API export.")
-        .addMedia("https://static.example.com/reports/x-api-export.png")
+        .text("Shipping the weekly X API video.")
+        .addMedia("https://static.example.com/reports/x-api-export.mp4")
         .build()
 )
 
@@ -283,7 +283,7 @@ val handoff = linkedMapOf<String, Any?>(
 println(ObjectMapper().writeValueAsString(handoff))
 ```
 
-Store `tweet.tweetId()` and `reply.tweetId()` on the CMS, queue job, or agent state before scheduling follow-up work. Store `dm.messageId()` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.mediaId()` values to `client.x().tweets().create`; that method uses public image URLs through `media`.
+Store `tweet.tweetId()` and `reply.tweetId()` on the CMS, queue job, or agent state before scheduling follow-up work. Store `dm.messageId()` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.mediaId()` values to `client.x().tweets().create`; that method uses public media URLs through `media`.
 
 ## Error Handling
 

@@ -1,7 +1,7 @@
 ---
 title: C# SDK
 sidebarTitle: C# / .NET
-description: Use the Xquik C# SDK to search tweets, export tweet replies to JSON Lines, CSV, or XLSX, post image tweets, upload media, send DMs, and run .NET X API workers.
+description: Use the Xquik C# SDK to search tweets, export tweet replies to JSON Lines, CSV, or XLSX, post media tweets, upload media, send DMs, and run .NET X API workers.
 keywords: ["C# SDK", ".NET Twitter scraper SDK", "NuGet X API", "X API C#", "tweet search C#", "tweet replies C#", "Twitter API C#", "JSON export", "CSV export", "XLSX export"]
 ---
 
@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the C# SDK for typed .NET Standard 2.0+ access to Xquik from services, workers, console tools, and ASP.NET backends. It is useful when a .NET job needs to search tweets, scrape tweets or replies to JSON Lines, CSV, or XLSX, export followers, monitor tweets, post image tweets, upload media, send direct messages, or hand X API data to queues, CRMs, and reporting systems.
+Use the C# SDK for typed .NET Standard 2.0+ access to Xquik from services, workers, console tools, and ASP.NET backends. It is useful when a .NET job needs to search tweets, scrape tweets or replies to JSON Lines, CSV, or XLSX, export followers, monitor tweets, post media tweets, upload media, send direct messages, or hand X API data to queues, CRMs, and reporting systems.
 
 ## Install
 
@@ -245,9 +245,9 @@ await xlsxStream.CopyToAsync(xlsxFile);
 
 Cost: 1 credit per reply extracted or returned. Store `job.ID` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `client.Extractions.Retrieve`. Keep `page.NextCursor` as the checkpoint when you stream replies to JSON Lines, and use the export endpoint when a downstream user needs CSV, JSON, or XLSX files.
 
-## Workflow: Post Image Tweets and DM Attachments
+## Workflow: Post Media Tweets and DM Attachments
 
-Use this workflow when a .NET worker needs to publish an image tweet, reply with an image, or send a direct message with an uploaded local file. `client.X.Tweets.Create` maps to `POST /x/tweets`; pass public image URLs through `Media`. For replies, set `ReplyToTweetID` to the parent tweet ID. `client.X.Media.Upload` maps to `POST /x/media`; use `media.MediaID` only for the one-item `MediaIds` handoff on `client.X.Dm.Send`.
+Use this workflow when a .NET worker needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `client.X.Tweets.Create` maps to `POST /x/tweets`; pass public media URLs through `Media`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB, and do not mix video with other media. For replies, set `ReplyToTweetID` to the parent tweet ID. `client.X.Media.Upload` maps to `POST /x/media`; use `media.MediaID` only for the one-item `MediaIds` handoff on `client.X.Dm.Send`.
 
 ```csharp
 using System.IO;
@@ -263,8 +263,8 @@ TweetCreateResponse tweet = await client.X.Tweets.Create(
     new TweetCreateParams
     {
         Account = "@xquikcom",
-        Text = "Shipping the weekly X API export.",
-        Media = new[] { "https://static.example.com/reports/x-api-export.png" },
+        Text = "Shipping the weekly X API video.",
+        Media = new[] { "https://static.example.com/reports/x-api-export.mp4" },
     }
 );
 
@@ -307,7 +307,7 @@ var handoff = new
 await Console.Out.WriteLineAsync(JsonSerializer.Serialize(handoff));
 ```
 
-Store `tweet.TweetID` and `reply.TweetID` on the CMS, queue job, or agent state before scheduling follow-up work. Store `dm.MessageID` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.MediaID` values to `client.X.Tweets.Create`; that method uses `Media` with public image URLs.
+Store `tweet.TweetID` and `reply.TweetID` on the CMS, queue job, or agent state before scheduling follow-up work. Store `dm.MessageID` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.MediaID` values to `client.X.Tweets.Create`; that method uses `Media` with public media URLs.
 
 ## Error Handling
 

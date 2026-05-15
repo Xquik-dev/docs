@@ -221,17 +221,17 @@ File.binwrite("xquik-tweet-replies.csv", csv_response.read)
 
 `reply_extractor` requires `target_tweet_id`. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; store those values when you need resumable JSON pagination. `client.extractions.export_results` supports `:csv`, `:json`, and `:xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
 
-## Workflow: Post Image Tweets and DM Attachments
+## Workflow: Post Media Tweets and DM Attachments
 
-Use this workflow when a Ruby app, Rails job, Sidekiq worker, or agent service needs to post an image-backed tweet, reply with an image, or send one uploaded media item in a DM.
+Use this workflow when a Ruby app, Rails job, Sidekiq worker, or agent service needs to post a media-backed tweet, reply with media, or send one uploaded media item in a DM.
 
-Tweet and reply image posts use public image URLs directly on `client.x.tweets.create`. Do not upload first when the image URL is already public.
+Tweet and reply media posts use public media URLs directly on `client.x.tweets.create`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. Do not upload first when the media URL is already public.
 
 ```ruby
 tweet = client.x.tweets.create(
   account: "@xquikcom",
-  text: "New export workflow is live.",
-  media: ["https://example.com/export-preview.png"]
+  text: "New demo video is live.",
+  media: ["https://example.com/product-demo.mp4"]
 )
 
 puts(tweet.tweet_id)
@@ -272,7 +272,7 @@ end
 
 `client.x.tweets.create` returns `tweet.tweet_id` for confirmed posts. `client.x.media.upload` returns `media.media_id` for DM attachments, and `client.x.dm.send_` returns `dm.message_id` for support tickets, CRM records, queue jobs, or agent memory.
 
-Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.media_id` values to `client.x.tweets.create`; that method uses `media` with public image URLs.
+Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.media_id` values to `client.x.tweets.create`; that method uses `media` with public media URLs.
 
 ## Cost, Limits & Retries
 

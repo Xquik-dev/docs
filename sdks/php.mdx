@@ -1,7 +1,7 @@
 ---
 title: PHP SDK
 sidebarTitle: PHP
-description: Use the Xquik PHP SDK to search tweets, export tweet replies to JSON Lines, CSV, or XLSX, post image tweets, upload media, send DMs, and run PHP X API workers.
+description: Use the Xquik PHP SDK to search tweets, export tweet replies to JSON Lines, CSV, or XLSX, post media tweets, upload media, send DMs, and run PHP X API workers.
 keywords: ["PHP SDK", "Composer Twitter scraper", "X API PHP", "PHP API client", "tweet search PHP", "tweet replies PHP", "Twitter API PHP", "JSON export", "CSV export", "XLSX export"]
 ---
 
@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the PHP SDK for PHP 8.1+ applications with named parameters, generated models, typed exceptions, retries, and file upload helpers. It is useful when a PHP app or worker needs to search tweets, scrape tweets or replies to JSON Lines, CSV, or XLSX, export followers, monitor tweets, post image tweets, upload media, send direct messages, or hand X API data to a queue, CRM, or reporting pipeline.
+Use the PHP SDK for PHP 8.1+ applications with named parameters, generated models, typed exceptions, retries, and file upload helpers. It is useful when a PHP app or worker needs to search tweets, scrape tweets or replies to JSON Lines, CSV, or XLSX, export followers, monitor tweets, post media tweets, upload media, send direct messages, or hand X API data to a queue, CRM, or reporting pipeline.
 
 ## Install
 
@@ -236,9 +236,9 @@ file_put_contents(
 
 Cost: 1 credit per reply extracted or returned. Store `$job->id` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `$client->extractions->retrieve()`. Keep `$page->nextCursor` as the checkpoint when you stream replies to JSON Lines, and use the export endpoint when a downstream user needs CSV, JSON, or XLSX files.
 
-## Workflow: Post Image Tweets and DM Attachments
+## Workflow: Post Media Tweets and DM Attachments
 
-Use this workflow when a PHP app needs to publish an image tweet, reply with an image, or send a direct message with an uploaded local file. `$client->x->tweets->create()` maps to `POST /x/tweets`; pass public image URLs through `media`. For replies, set `replyToTweetID` to the parent tweet ID. `$client->x->media->upload()` maps to `POST /x/media`; use its `$media->mediaID` only for the one-item `mediaIDs` array on `$client->x->dm->send()`.
+Use this workflow when a PHP app needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `$client->x->tweets->create()` maps to `POST /x/tweets`; pass public media URLs through `media`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB, and do not mix video with other media. For replies, set `replyToTweetID` to the parent tweet ID. `$client->x->media->upload()` maps to `POST /x/media`; use its `$media->mediaID` only for the one-item `mediaIDs` array on `$client->x->dm->send()`.
 
 ```php
 <?php
@@ -252,8 +252,8 @@ $client = new Client(
 
 $tweet = $client->x->tweets->create(
   account: '@xquikcom',
-  text: 'Shipping the weekly X API export.',
-  media: ['https://static.example.com/reports/x-api-export.png'],
+  text: 'Shipping the weekly X API video.',
+  media: ['https://static.example.com/reports/x-api-export.mp4'],
 );
 
 $reply = $client->x->tweets->create(
@@ -298,7 +298,7 @@ fwrite(
 );
 ```
 
-Store `$tweet->tweetID` and `$reply->tweetID` on the CMS, queue job, or agent state before scheduling follow-up work. Store `$dm->messageID` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `$media->mediaID` values to `$client->x->tweets->create()`; that method uses `media` with public image URLs.
+Store `$tweet->tweetID` and `$reply->tweetID` on the CMS, queue job, or agent state before scheduling follow-up work. Store `$dm->messageID` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `$media->mediaID` values to `$client->x->tweets->create()`; that method uses `media` with public media URLs.
 
 ## Error Handling
 
