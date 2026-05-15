@@ -1,4 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -16,6 +17,9 @@ const SKIPPED_PUBLIC_SCAN_DIRS = new Set([
 
 const CREDITS_QUICK_TOPUP_PAGE = 'api-reference/credits/quick-topup.mdx';
 const API_KEYS_CREATE_PAGE = 'api-reference/api-keys/create.mdx';
+const PRODUCT_APP_ICON_FILE = '/Users/burak/Developer/xquik/app/icon.svg';
+const DOCS_X_ONLY_ICON_SHA256 =
+  '7002c1dd82b5b903d69777fa212f39b0e0410cb156e7bcb1b4426fcec3a7cdc5';
 
 const REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS = [
   '/* Keep mobile guide content inside the viewport. */',
@@ -4360,6 +4364,10 @@ function collectForbiddenPublicCardIconFindings(): readonly DiscoveryFinding[] {
   return findings;
 }
 
+function sha256File(file: string): string {
+  return createHash('sha256').update(readFileSync(file)).digest('hex');
+}
+
 function collectPublicConfidentialityWordingFindings(): readonly DiscoveryFinding[] {
   const findings: DiscoveryFinding[] = [];
 
@@ -6876,6 +6884,20 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     expect(collectForbiddenPublicCardIconFindings()).toStrictEqual([]);
+  });
+
+  it('keeps Xquik docs icon sources aligned with product icon policy', (): void => {
+    expect.assertions(3);
+
+    expect(sha256File('logo/x-only.svg')).toBe(DOCS_X_ONLY_ICON_SHA256);
+    expect(sha256File('favicon.svg')).toBe(
+      existsSync(PRODUCT_APP_ICON_FILE)
+        ? sha256File(PRODUCT_APP_ICON_FILE)
+        : '7b22cb7c5f5f9f154e1327210b7878e03e1028ef33857282701feb5fd5e96960',
+    );
+    expect(readFileSync('docs.json', 'utf8')).toContain(
+      '"favicon": "/favicon.svg"',
+    );
   });
 
   it('keeps comparison guides direct and value focused', (): void => {
