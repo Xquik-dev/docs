@@ -4235,7 +4235,9 @@ const REQUIRED_AGENT_DOCS_PAGE_SIZE_CHECKS = [
   '  - rendering-strategy',
   '  - page-size-html',
   '  - page-size-markdown',
-  'content-start-position stays disabled until the 50-page afdocs sample starts',
+  'content-start-position stays disabled until the bounded afdocs sample starts',
+  'Keep the live CI crawl deterministic and bounded',
+  '  maxLinksToTest: 30',
   'llms-txt-directive-html stays enabled even when it warns on buried positions',
   'Treat that warning as generated HTML',
 ] as const;
