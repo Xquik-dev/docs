@@ -5726,6 +5726,16 @@ describe('repository discovery', (): void => {
                 ]
               : [],
         ),
+        ...['xquik OR \\"x api\\"', 'xquik OR "x api"'].flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Create keyword monitor API page should use a plain query example instead of nested quoted query "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
       ],
     ).toStrictEqual([]);
   });
