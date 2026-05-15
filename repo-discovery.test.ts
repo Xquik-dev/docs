@@ -2859,6 +2859,11 @@ const REQUIRED_ACCOUNT_MONITOR_UPDATE_API_HANDOFF_SNIPPETS = [
   'signed webhook payloads after the update.',
 ] as const;
 
+const FORBIDDEN_ACCOUNT_MONITOR_UPDATE_FULL_EVENT_TYPE_EXAMPLES = [
+  '["tweet.new", "tweet.quote", "tweet.reply", "tweet.retweet"]',
+  '[]string{"tweet.new", "tweet.quote", "tweet.reply", "tweet.retweet"}',
+] as const;
+
 const REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
   '## Deletion handoff',
   'Use this endpoint when a tracked account should stop permanently.',
@@ -5868,19 +5873,38 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the account monitor update API handoff concrete', (): void => {
-    expect.assertions(2);
+    expect.assertions(1);
 
     const source = readFileSync('api-reference/monitors/update.mdx', 'utf8');
     const legacyImplementationWording = ['real-time', 'stream'].join(' ');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'Update account monitor API page',
-        REQUIRED_ACCOUNT_MONITOR_UPDATE_API_HANDOFF_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'Update account monitor API page',
+          REQUIRED_ACCOUNT_MONITOR_UPDATE_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_ACCOUNT_MONITOR_UPDATE_FULL_EVENT_TYPE_EXAMPLES.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Update account monitor API page should keep examples short instead of repeating the full event type list "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+        ...(source.includes(legacyImplementationWording)
+          ? [
+              {
+                issue:
+                  'Update account monitor API page should avoid legacy implementation wording.',
+              },
+            ]
+          : []),
+      ],
     ).toStrictEqual([]);
-    expect(source).not.toContain(legacyImplementationWording);
   });
 
   it('keeps the account monitor delete API handoff concrete', (): void => {
