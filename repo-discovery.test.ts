@@ -850,7 +850,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   "media: ['https://example.com/product-demo.mp4']",
   "> Upload media for a DM (subscription required)",
   'media_ids: [media.media_id]',
-  '<Card title="Post image tweets or replies" icon="image">',
+  '<Card title="Post media tweets or replies" icon="image">',
   'Call `POST /api/v1/x/tweets` with `media: ["https://..."]`. Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `account`, and the original `media` URLs. Cost: 10 credits per write call.',
   '<Card title="Send DMs with media" icon="send">',
   'Call `POST /api/v1/x/media`, then `POST /api/v1/x/dm/{userId}` with one `media_ids` value. Store `media_id`, `media_url`, `message_id`, `user_id`, `account`, and source URL or filename. Cost: 10 credits per media upload plus 10 credits per DM send.',
