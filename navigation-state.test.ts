@@ -13,7 +13,21 @@ interface NavigationNode {
 
 type NavigationItem = string | NavigationNode;
 
+interface ApiMdxConfig {
+  readonly auth?: {
+    readonly method?: string;
+    readonly name?: string;
+  };
+  readonly server?: string;
+}
+
 interface DocsConfig {
+  readonly api: {
+    readonly examples?: {
+      readonly languages?: readonly string[];
+    };
+    readonly mdx?: ApiMdxConfig;
+  };
   readonly navigation: NavigationNode;
 }
 
@@ -76,5 +90,21 @@ describe('navigation default state', (): void => {
       ...X_API_GROUPS,
     ]);
     expect(collapsedGroups).toStrictEqual([]);
+  });
+
+  it('keeps MDX API snippets pointed at the public API origin', (): void => {
+    expect.assertions(4);
+
+    const config = docsConfig();
+
+    expect(config.api.mdx?.server).toBe('https://xquik.com/api/v1');
+    expect(config.api.mdx?.auth?.method).toBe('key');
+    expect(config.api.mdx?.auth?.name).toBe('x-api-key');
+    expect(config.api.examples?.languages).toStrictEqual([
+      'curl',
+      'python',
+      'javascript',
+      'go',
+    ]);
   });
 });
