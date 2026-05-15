@@ -891,6 +891,20 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'Active instant monitors cost 21 credits per active monitor-hour. Creating monitors requires a subscription and available credits.',
 ] as const;
 
+const REQUIRED_MCP_EXAMPLE_PROMPT_SNIPPETS = [
+  'Search recent X posts about TypeScript.',
+  'Pull all replies to this tweet: https://x.com/elonmusk/status/1893456789012345678',
+  'Set up a webhook at https://my-server.com/events for new tweets.',
+  'Post a tweet saying: Just shipped v2.0!',
+] as const;
+
+const FORBIDDEN_MCP_EXAMPLE_PROMPT_SNIPPETS = [
+  '- "Can you',
+  '- "What',
+  'What\'s',
+  'don\'t',
+] as const;
+
 const FORBIDDEN_MCP_CONTRACT_SNIPPETS = [
   'returns the same response shapes documented here. No field name mapping is needed.',
   'The sandbox automatically calls `POST /api/v1/subscribe` and includes a checkout URL in the error message.',
@@ -4991,6 +5005,32 @@ describe('repository discovery', (): void => {
       if (source.includes(snippet)) {
         findings.push({
           issue: `MCP contract docs contain stale wording "${snippet}".`,
+        });
+      }
+    }
+
+    expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps MCP example prompts scan-friendly and stable for hydration', (): void => {
+    expect.assertions(1);
+
+    const overview = readFileSync('mcp/overview.mdx', 'utf8');
+    const examplePromptsStart = overview.indexOf('## Example prompts');
+    const frameworkGuidesStart = overview.indexOf('## Framework guides');
+    const source = overview.slice(examplePromptsStart, frameworkGuidesStart);
+    const findings: DiscoveryFinding[] = [
+      ...collectSnippetFindings(
+        source,
+        'MCP example prompts',
+        REQUIRED_MCP_EXAMPLE_PROMPT_SNIPPETS,
+      ),
+    ];
+
+    for (const snippet of FORBIDDEN_MCP_EXAMPLE_PROMPT_SNIPPETS) {
+      if (source.includes(snippet)) {
+        findings.push({
+          issue: `MCP example prompts contain hydration-risk wording "${snippet}".`,
         });
       }
     }
