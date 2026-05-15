@@ -91,9 +91,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 </CodeGroup>
 
-## Post with public image URLs
+## Post with public media URLs
 
-Use `media` when your image is already a public HTTPS URL or when [Upload Media](/api-reference/x-write/upload-media) returned `mediaUrl`. Do not send `media_ids`; that field is for DMs only.
+Use `media` when your image or MP4 video is already a public HTTPS URL or when [Upload Media](/api-reference/x-write/upload-media) returned `mediaUrl`. Send up to 4 image URLs or exactly 1 MP4 video URL. Do not send `media_ids`; that field is for DMs only.
 
 <CodeGroup>
   ```bash Image tweet
@@ -116,6 +116,17 @@ Use `media` when your image is already a public HTTPS URL or when [Upload Media]
       "text": "Here is the chart.",
       "reply_to_tweet_id": "1893456789012345678",
       "media": ["https://cdn.example.com/reply-chart.png"]
+    }' | jq
+  ```
+
+  ```bash MP4 video tweet
+  curl -X POST https://xquik.com/api/v1/x/tweets \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "account": "brand_account",
+      "text": "Launch walkthrough is live.",
+      "media": ["https://cdn.example.com/product-demo.mp4"]
     }' | jq
   ```
 </CodeGroup>
@@ -159,7 +170,7 @@ Store `tweetId` on a `200 Success` response. If the API returns `202 x_write_unc
 </ParamField>
 
 <ParamField body="media" type="string[]">
-  Array of 1-4 public image URLs to attach directly. Supports JPEG, PNG, GIF, WebP & AVIF. Use [Upload Media](/api-reference/x-write/upload-media) first if you need Xquik to host a local file, then pass the returned `mediaUrl` in `media`. Do not pass uploaded `mediaId` values or `media_ids`.
+  Array of public media URLs to attach directly. Send up to 4 JPEG, PNG, GIF, WebP, or AVIF image URLs, or exactly 1 MP4 video URL. Do not mix video with other media. Use [Upload Media](/api-reference/x-write/upload-media) first if you need Xquik to host a local file, then pass the returned `mediaUrl` in `media`. Do not pass uploaded `mediaId` values or `media_ids`.
 </ParamField>
 
 ## Response
@@ -199,11 +210,11 @@ Store `tweetId` on a `200 Success` response. If the API returns `202 x_write_unc
     ```json
     {
       "error": "unsupported_field",
-      "message": "media_ids is not supported on POST /x/tweets. Pass media as an array of public image URLs.",
+      "message": "media_ids is not supported on POST /x/tweets. Pass media as an array of public image or MP4 video URLs.",
       "retryable": false,
       "details": {
         "action": "create_tweet",
-        "suggestion": "Use the media field with public image URLs instead of media_ids."
+        "suggestion": "Use the media field with public URLs instead of media_ids. Send up to 4 images or exactly 1 MP4 video."
       }
     }
     ```
