@@ -827,6 +827,13 @@ const FORBIDDEN_SKILL_DECISION_GUIDANCE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_MCP_CONTRACT_SNIPPETS = [
+  'MCP server discovery metadata is available at:',
+  'https://xquik.com/.well-known/mcp.json',
+  '`GET` and `POST` requests to `/.well-known/mcp.json` return the MCP registry',
+  'server card JSON directly.',
+  '`GET /.well-known/mcp/server-card.json` returns the',
+  'same card for clients that read the nested server-card path.',
+  'can also read `GET /.well-known/oauth-protected-resource/.well-known/mcp.json`',
   '`xquik.request()` uses the normalized v1 contract automatically.',
   'Search the API spec. Read-only, no network calls, no credits. Requires MCP authentication to execute.',
   'Free means no usage credits; the call still requires MCP authentication through an API key or OAuth Bearer token.',
