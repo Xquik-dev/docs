@@ -33,29 +33,46 @@ client := xtwitterscraper.NewClient(
 
 ## Basic Example
 
+Search tweets and write durable JSON Lines handoff rows:
+
 ```go
 package main
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
+	"os"
 
 	"github.com/Xquik-dev/x-twitter-scraper-go"
 	"github.com/Xquik-dev/x-twitter-scraper-go/option"
 )
 
 func main() {
-	client := xtwitterscraper.NewClient(option.WithAPIKey("xq_YOUR_KEY_HERE"))
+	client := xtwitterscraper.NewClient(
+		option.WithAPIKey(os.Getenv("X_TWITTER_SCRAPER_API_KEY")),
+	)
 
-	tweets, err := client.X.Tweets.Search(context.TODO(), xtwitterscraper.XTweetSearchParams{
-		Q:     "from:elonmusk",
+	page, err := client.X.Tweets.Search(context.Background(), xtwitterscraper.XTweetSearchParams{
+		Q:     "from:xquikcom webhook OR SDK",
 		Limit: xtwitterscraper.Int(10),
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("%+v\n", tweets.HasNextPage)
+	encoder := json.NewEncoder(os.Stdout)
+	for _, tweet := range page.Tweets {
+		row := map[string]string{
+			"tweet_id":        tweet.ID,
+			"text":            tweet.Text,
+			"author_username": tweet.Author.Username,
+			"created_at":      tweet.CreatedAt,
+		}
+
+		if err := encoder.Encode(row); err != nil {
+			panic(err)
+		}
+	}
 }
 ```
 

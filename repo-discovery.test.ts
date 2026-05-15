@@ -211,6 +211,13 @@ const FORBIDDEN_TYPESCRIPT_SDK_RAW_SEARCH_SNIPPETS = [
 ] as const;
 
 const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
+  'Search tweets and write durable JSON Lines handoff rows:',
+  'page, err := client.X.Tweets.Search(context.Background(), xtwitterscraper.XTweetSearchParams{',
+  'for _, tweet := range page.Tweets {',
+  '"tweet_id":        tweet.ID',
+  '"author_username": tweet.Author.Username',
+  '"created_at":      tweet.CreatedAt',
+  'if err := encoder.Encode(row); err != nil {',
   '## Workflow: Search Tweets to JSON Lines, CSV, or XLSX',
   '## Workflow: Tweet Replies to CSV, JSON, or XLSX',
   '## Workflow: Post Image Tweets and DM Attachments',
@@ -253,6 +260,10 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
   '`MediaIDs`',
   '`dm.MessageID`',
   'Do not pass uploaded `MediaID` values to `client.X.Tweets.New`',
+] as const;
+
+const FORBIDDEN_GO_SDK_WEAK_SEARCH_SNIPPETS = [
+  'fmt.Printf("%+v\\n", tweets.HasNextPage)',
 ] as const;
 
 const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
@@ -4580,11 +4591,23 @@ describe('repository discovery', (): void => {
     const source = readFileSync('sdks/go.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'Go SDK workflow docs',
-        REQUIRED_GO_SDK_WORKFLOW_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'Go SDK workflow docs',
+          REQUIRED_GO_SDK_WORKFLOW_SNIPPETS,
+        ),
+        ...FORBIDDEN_GO_SDK_WEAK_SEARCH_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Go SDK workflow docs contain weak search output "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
