@@ -1175,7 +1175,7 @@ const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CREATE_TWEET_API_SNIPPETS = [
-  'Post tweets and replies from a connected X account with media URLs, write-status polling, and audit handoff',
+  'Post tweets and replies from a connected X account with public image URLs or 1 MP4 video URL, write-status polling, and audit handoff',
   '"post tweet replies"',
   '`reply_to_tweet_id`',
   '`media`',
