@@ -3982,6 +3982,21 @@ const FORBIDDEN_PUBLIC_CARD_ICON_SNIPPETS = [
     replacement: 'icon="circle-alert"',
     snippet: 'icon="circle-exclamation"',
   },
+  {
+    reason: 'microsoft.svg returns 403 from the Mintlify Lucide asset CDN',
+    replacement: 'icon="workflow"',
+    snippet: 'icon="microsoft"',
+  },
+  {
+    reason: 'pause-circle.svg returns 403 from the Mintlify Lucide asset CDN',
+    replacement: 'icon="circle-pause"',
+    snippet: 'icon="pause-circle"',
+  },
+  {
+    reason: 'play-circle.svg returns 403 from the Mintlify Lucide asset CDN',
+    replacement: 'icon="circle-play"',
+    snippet: 'icon="play-circle"',
+  },
 ] as const;
 
 const EXPECTED_OPENAPI_OPERATION_COUNT = 120;
