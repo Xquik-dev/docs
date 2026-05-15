@@ -905,6 +905,18 @@ const FORBIDDEN_MCP_EXAMPLE_PROMPT_SNIPPETS = [
   'don\'t',
 ] as const;
 
+const REQUIRED_MCP_SETUP_CALLOUT_SNIPPETS = [
+  '<Tip>',
+  'Start with [Claude.ai](https://claude.ai) for OAuth login or [Claude Code](#setup) for terminal setup.',
+  '</Tip>',
+] as const;
+
+const FORBIDDEN_MCP_SETUP_CALLOUT_SNIPPETS = [
+  '<Tip>**',
+  '(zero config, OAuth login)',
+  '(terminal, most flexible)',
+] as const;
+
 const FORBIDDEN_MCP_CONTRACT_SNIPPETS = [
   'returns the same response shapes documented here. No field name mapping is needed.',
   'The sandbox automatically calls `POST /api/v1/subscribe` and includes a checkout URL in the error message.',
@@ -5031,6 +5043,32 @@ describe('repository discovery', (): void => {
       if (source.includes(snippet)) {
         findings.push({
           issue: `MCP example prompts contain hydration-risk wording "${snippet}".`,
+        });
+      }
+    }
+
+    expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps the MCP setup callout simple for stable hydration', (): void => {
+    expect.assertions(1);
+
+    const overview = readFileSync('mcp/overview.mdx', 'utf8');
+    const mcpVsRestStart = overview.indexOf('## MCP vs REST API');
+    const setupStart = overview.indexOf('## Setup');
+    const source = overview.slice(mcpVsRestStart, setupStart);
+    const findings: DiscoveryFinding[] = [
+      ...collectSnippetFindings(
+        source,
+        'MCP setup callout',
+        REQUIRED_MCP_SETUP_CALLOUT_SNIPPETS,
+      ),
+    ];
+
+    for (const snippet of FORBIDDEN_MCP_SETUP_CALLOUT_SNIPPETS) {
+      if (source.includes(snippet)) {
+        findings.push({
+          issue: `MCP setup callout contains hydration-risk wording "${snippet}".`,
         });
       }
     }
