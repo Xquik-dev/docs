@@ -2652,6 +2652,11 @@ const FORBIDDEN_KEYWORD_MONITOR_INLINE_WEBHOOK_SNIPPETS = [
   'raw body',
 ] as const;
 
+const FORBIDDEN_NESTED_QUOTED_KEYWORD_QUERY_SNIPPETS = [
+  'xquik OR \\"x api\\"',
+  'xquik OR "x api"',
+] as const;
+
 const REQUIRED_KEYWORD_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   '## Inventory handoff',
   'Use `GET /monitors/keywords` after create, update, pause, or delete operations',
@@ -5726,7 +5731,7 @@ describe('repository discovery', (): void => {
                 ]
               : [],
         ),
-        ...['xquik OR \\"x api\\"', 'xquik OR "x api"'].flatMap(
+        ...FORBIDDEN_NESTED_QUOTED_KEYWORD_QUERY_SNIPPETS.flatMap(
           (snippet): readonly DiscoveryFinding[] =>
             source.includes(snippet)
               ? [
@@ -5783,11 +5788,23 @@ describe('repository discovery', (): void => {
     );
 
     expect(
-      collectSnippetFindings(
-        source,
-        'Update keyword monitor API page',
-        REQUIRED_KEYWORD_MONITOR_UPDATE_API_HANDOFF_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'Update keyword monitor API page',
+          REQUIRED_KEYWORD_MONITOR_UPDATE_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_NESTED_QUOTED_KEYWORD_QUERY_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Update keyword monitor API page should use a plain query example instead of nested quoted query "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
