@@ -765,6 +765,10 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'run `POST /api/v1/webhooks/{id}/test` before routing production events',
   "source: 'xquik_mcp'",
   "job: 'tweet_search'",
+  '**402 / `no_subscription` / `subscription_inactive`**',
+  'The sandbox attempts `POST /api/v1/subscribe`; when it returns a URL, the error includes it.',
+  '**402 / `no_credits` / `insufficient_credits`**',
+  'Call `POST /api/v1/credits/topup` or `POST /api/v1/credits/quick-topup`, then retry the failed metered call.',
   'The server covers 120 operations across 10 categories:',
   '<Card title="X data reads" icon="search">',
   '38 operations in `twitter`: tweet search, tweet and article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, followers, replies, communities, and lists.',
@@ -776,6 +780,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
 
 const FORBIDDEN_MCP_CONTRACT_SNIPPETS = [
   'returns the same response shapes documented here. No field name mapping is needed.',
+  'The sandbox automatically calls `POST /api/v1/subscribe` and includes a checkout URL in the error message.',
 ] as const;
 
 const REQUIRED_BILLING_RECOVERY_SNIPPETS = [
