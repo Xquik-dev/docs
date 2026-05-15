@@ -36,29 +36,52 @@ client = XTwitterScraper(
 
 ## Basic Example
 
+Search tweets and write durable JSON Lines handoff rows:
+
 ```python
+import json
+import sys
+
 from x_twitter_scraper import XTwitterScraper
 
 client = XTwitterScraper()
 
-tweets = client.x.tweets.search(
-    q="from:elonmusk",
+page = client.x.tweets.search(
+    q="from:xquikcom webhook OR SDK",
     limit=10,
 )
-print(tweets.to_json())
+
+for tweet in page.tweets:
+    row = {
+        "tweet_id": tweet.id,
+        "text": tweet.text,
+        "author_username": tweet.author.username if tweet.author else None,
+        "created_at": tweet.created_at,
+    }
+    sys.stdout.write(json.dumps(row, ensure_ascii=False) + "\n")
 ```
 
 Async clients use the same generated method names:
 
 ```python
 import asyncio
+import json
+import sys
+
 from x_twitter_scraper import AsyncXTwitterScraper
 
 client = AsyncXTwitterScraper()
 
 async def main() -> None:
-    tweets = await client.x.tweets.search(q="xquik", limit=10)
-    print(tweets.to_json())
+    page = await client.x.tweets.search(q="xquik", limit=10)
+    for tweet in page.tweets:
+        row = {
+            "tweet_id": tweet.id,
+            "text": tweet.text,
+            "author_username": tweet.author.username if tweet.author else None,
+            "created_at": tweet.created_at,
+        }
+        sys.stdout.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 asyncio.run(main())
 ```
