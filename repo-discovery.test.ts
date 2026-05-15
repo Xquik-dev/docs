@@ -2067,7 +2067,7 @@ const FORBIDDEN_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
-  'Upload media API',
+  'title: "Upload media"',
   'post tweet with media',
   'post tweet replies with media',
   'send DM with media',
@@ -2657,7 +2657,7 @@ const FORBIDDEN_DM_HISTORY_LOG_SNIPPETS = [
 ] as const;
 
 const REQUIRED_SEND_DM_API_SNIPPETS = [
-  'Send DM API',
+  'title: "Send DM"',
   'Twitter DM API',
   'X direct message API',
   'send DM with media',
@@ -4508,6 +4508,29 @@ function collectAlternativesOverviewCardParagraphFindings(): readonly DiscoveryF
   return findings;
 }
 
+function collectRedundantApiTitleSuffixFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const file of listPublicMarkdownFiles('api-reference')) {
+    const source = readFileSync(file, 'utf8');
+
+    if (!source.includes('\napi:')) {
+      continue;
+    }
+
+    const title = source.match(/^title:\s*"?(.*?)"?\s*$/mu)?.[1];
+
+    if (title?.endsWith(' API') === true) {
+      findings.push({
+        file,
+        issue: `Endpoint title "${title}" adds redundant API text that appears in the sidebar.`,
+      });
+    }
+  }
+
+  return findings;
+}
+
 describe('repository discovery', (): void => {
   it('keeps the public README concrete and easy to find from GitHub search', (): void => {
     expect.assertions(1);
@@ -4520,6 +4543,12 @@ describe('repository discovery', (): void => {
 
     expect(getOpenApiOperationCount()).toBe(EXPECTED_OPENAPI_OPERATION_COUNT);
     expect(collectStaleOperationCountFindings()).toStrictEqual([]);
+  });
+
+  it('keeps endpoint titles free of redundant API suffixes', (): void => {
+    expect.assertions(1);
+
+    expect(collectRedundantApiTitleSuffixFindings()).toStrictEqual([]);
   });
 
   it('keeps public confidentiality wording generic and product-approved', (): void => {
