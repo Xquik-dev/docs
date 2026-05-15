@@ -659,6 +659,13 @@ const FORBIDDEN_JAVA_SDK_WEAK_SEARCH_SNIPPETS = [
 ] as const;
 
 const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
+  'Search tweets and write durable JSON Lines handoff rows:',
+  'val page: PaginatedTweets = client.x().tweets().search(params)',
+  'for (tweet: SearchTweet in page.tweets()) {',
+  '"tweet_id" to tweet.id(),',
+  '"author_username" to tweet.author()?.username(),',
+  '"created_at" to tweet.createdAt(),',
+  'println(objectMapper.writeValueAsString(row))',
   '## Workflow: Search Tweets to JSON Lines, CSV, or XLSX',
   '`client.x().tweets().search`',
   '`GET /x/tweets/search`',
@@ -718,6 +725,10 @@ const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
   'Throws `BadRequestException`.',
   'Throws `RateLimitException`.',
   'Throws `InternalServerException`.',
+] as const;
+
+const FORBIDDEN_KOTLIN_SDK_WEAK_SEARCH_SNIPPETS = [
+  'val tweets: PaginatedTweets = client.x().tweets().search(params)',
 ] as const;
 
 const FORBIDDEN_TWEET_SEARCH_CURSOR_LIMIT_SNIPPETS = [
@@ -4781,11 +4792,20 @@ describe('repository discovery', (): void => {
     const source = readFileSync('sdks/kotlin.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'Kotlin SDK workflow docs',
-        REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'Kotlin SDK workflow docs',
+          REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS,
+        ),
+        ...FORBIDDEN_KOTLIN_SDK_WEAK_SEARCH_SNIPPETS.flatMap((snippet) =>
+          source.includes(snippet)
+            ? [
+                `Kotlin SDK workflow docs still contains weak snippet: ${snippet}`,
+              ]
+            : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 

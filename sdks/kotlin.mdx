@@ -45,20 +45,36 @@ export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 
 ## Basic Example
 
+Search tweets and write durable JSON Lines handoff rows:
+
 ```kotlin
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.x_twitter_scraper.api.client.XTwitterScraperClient
 import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient
 import com.x_twitter_scraper.api.models.PaginatedTweets
+import com.x_twitter_scraper.api.models.SearchTweet
 import com.x_twitter_scraper.api.models.x.tweets.TweetSearchParams
 
 val client: XTwitterScraperClient = XTwitterScraperOkHttpClient.fromEnv()
+val objectMapper = ObjectMapper()
 
 val params: TweetSearchParams = TweetSearchParams.builder()
-    .q("from:elonmusk")
+    .q("from:xquikcom webhook OR SDK")
     .limit(10L)
     .build()
 
-val tweets: PaginatedTweets = client.x().tweets().search(params)
+val page: PaginatedTweets = client.x().tweets().search(params)
+
+for (tweet: SearchTweet in page.tweets()) {
+    val row = linkedMapOf<String, Any?>(
+        "tweet_id" to tweet.id(),
+        "text" to tweet.text(),
+        "author_username" to tweet.author()?.username(),
+        "created_at" to tweet.createdAt(),
+    )
+
+    println(objectMapper.writeValueAsString(row))
+}
 ```
 
 ## Workflow: Search Tweets to JSON Lines, CSV, or XLSX
