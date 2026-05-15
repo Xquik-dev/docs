@@ -5280,7 +5280,7 @@ describe('repository discovery', (): void => {
     expect(
       collectSnippetFindings(
         source,
-        'Tweet replies API page',
+        'Tweet replies endpoint page',
         REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
@@ -5375,7 +5375,7 @@ describe('repository discovery', (): void => {
       [
         ...collectSnippetFindings(
           source,
-          'Search tweets API page',
+          'Search tweets endpoint page',
           REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS,
         ),
         ...FORBIDDEN_SEARCH_TWEETS_DIRECT_FILE_EXPORT_SNIPPETS.flatMap(
@@ -5383,7 +5383,7 @@ describe('repository discovery', (): void => {
             source.includes(snippet)
               ? [
                   {
-                    issue: `Search tweets API page should distinguish direct JSON pages from saved file exports: "${snippet}".`,
+                    issue: `Search tweets endpoint page should distinguish direct JSON pages from saved file exports: "${snippet}".`,
                   },
                 ]
               : [],
@@ -5592,7 +5592,7 @@ describe('repository discovery', (): void => {
     expect(
       collectSnippetFindings(
         source,
-        'Upload media API page',
+        'Upload media endpoint page',
         REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
@@ -5985,7 +5985,7 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
   });
 
-  it('keeps the Send DM API page clear about media attachments', (): void => {
+  it('keeps the Send DM endpoint page clear about media attachments', (): void => {
     expect.assertions(1);
 
     const source = readFileSync('api-reference/x-write/send-dm.mdx', 'utf8');
@@ -5993,7 +5993,7 @@ describe('repository discovery', (): void => {
     expect(
       collectSnippetFindings(
         source,
-        'Send DM API docs',
+        'Send DM endpoint docs',
         REQUIRED_SEND_DM_API_SNIPPETS,
       ),
     ).toStrictEqual([]);
@@ -6103,7 +6103,7 @@ describe('repository discovery', (): void => {
       [
         ...collectSnippetFindings(
           source,
-          'Create keyword monitor API page',
+          'Create keyword monitor endpoint page',
           REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS,
         ),
         ...FORBIDDEN_KEYWORD_MONITOR_INLINE_WEBHOOK_SNIPPETS.flatMap(
@@ -6111,7 +6111,7 @@ describe('repository discovery', (): void => {
             source.includes(snippet)
               ? [
                   {
-                    issue: `Create keyword monitor API page should link to webhook-specific signature docs instead of inlining "${snippet}".`,
+                    issue: `Create keyword monitor endpoint page should link to webhook-specific signature docs instead of inlining "${snippet}".`,
                   },
                 ]
               : [],
@@ -6121,7 +6121,7 @@ describe('repository discovery', (): void => {
             source.includes(snippet)
               ? [
                   {
-                    issue: `Create keyword monitor API page should use a plain query example instead of nested quoted query "${snippet}".`,
+                    issue: `Create keyword monitor endpoint page should use a plain query example instead of nested quoted query "${snippet}".`,
                   },
                 ]
               : [],
@@ -6230,7 +6230,7 @@ describe('repository discovery', (): void => {
     expect(
       collectSnippetFindings(
         source,
-        'Create account monitor API page',
+        'Create account monitor endpoint page',
         REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
