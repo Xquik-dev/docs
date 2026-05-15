@@ -2127,9 +2127,20 @@ const REQUIRED_WEBHOOK_TEST_API_SNIPPETS = [
   'Treat `success: false` with a non-`2xx` `statusCode` as a receiver error.',
   'Treat `statusCode: 0` as a network or reachability failure.',
   'Store `error` with your deployment logs',
+  'const testOutcome = {',
+  'accepted: result.success === true',
+  '"accepted": result["success"] is True',
+  'type TestOutcome struct',
+  'Store `accepted`,',
   '`webhook_inactive` means no test was sent.',
   '[Update Webhook](/api-reference/webhooks/update)',
   'Validate `X-Xquik-Signature` on the raw request body',
+] as const;
+
+const FORBIDDEN_WEBHOOK_TEST_RAW_OUTPUT_SNIPPETS = [
+  'console.log(result);',
+  'print(result)',
+  'fmt.Println(string(body))',
 ] as const;
 
 const REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS = [
@@ -5475,6 +5486,16 @@ describe('repository discovery', (): void => {
           testWebhookApi,
           'Test webhook API docs',
           REQUIRED_WEBHOOK_TEST_API_SNIPPETS,
+        ),
+        ...FORBIDDEN_WEBHOOK_TEST_RAW_OUTPUT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            testWebhookApi.includes(snippet)
+              ? [
+                  {
+                    issue: `Test webhook API docs print raw test responses with "${snippet}".`,
+                  },
+                ]
+              : [],
         ),
         ...collectSnippetFindings(
           deliveriesApi,
