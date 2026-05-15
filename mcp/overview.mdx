@@ -37,12 +37,21 @@ same card for clients that read the nested server-card path. OAuth-aware clients
 can also read `GET /.well-known/oauth-protected-resource/.well-known/mcp.json`
 for protected-resource metadata for `https://xquik.com/mcp`.
 
-Unauthenticated requests to `https://xquik.com/mcp` return `401` with
-`WWW-Authenticate: Bearer` and
-`resource_metadata="https://xquik.com/.well-known/oauth-protected-resource/mcp"`.
-The JSON body is `{ "error": "Authentication required" }`. OAuth-capable
-clients use that challenge to discover the authorization metadata; API-key
-clients should send `x-api-key` on the first request.
+Unauthenticated requests to `https://xquik.com/mcp` return this challenge:
+
+```http
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer realm="OAuth", resource_metadata="https://xquik.com/.well-known/oauth-protected-resource/mcp", error="invalid_token", error_description="Missing or invalid access token", scope="mcp:tools"
+```
+
+The JSON body is:
+
+```json
+{ "error": "Authentication required" }
+```
+
+OAuth-capable clients use that challenge to discover the authorization metadata.
+API-key clients should send `x-api-key` on the first request.
 
 ## Authentication
 
