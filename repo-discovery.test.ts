@@ -2732,8 +2732,10 @@ const REQUIRED_KEYWORD_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
   '[Update Keyword Monitor](/api-reference/monitors/update-keyword)',
   '`isActive: false` when you only need to pause alerts',
   '<Card title="Permanent Remove" icon="trash-2">',
-  'Delete removes the keyword monitor and returns `{ "success": true }`.',
-  'cannot be fetched, updated, resumed, or billed again.',
+  'Delete removes the keyword monitor. Store returned `success` before treating',
+  'the deleted ID as permanently removed.',
+  'The deleted ID cannot be fetched,',
+  'updated, resumed, or billed again.',
   '<Card title="Stored History" icon="database">',
   'Stored events and webhook delivery records tied to this keyword monitor',
   '<Card title="Pause Instead" icon="circle-pause">',
@@ -2864,6 +2866,11 @@ const FORBIDDEN_ACCOUNT_MONITOR_UPDATE_FULL_EVENT_TYPE_EXAMPLES = [
   '[]string{"tweet.new", "tweet.quote", "tweet.reply", "tweet.retweet"}',
 ] as const;
 
+const FORBIDDEN_MONITOR_DELETE_INLINE_SUCCESS_JSON_SNIPPETS = [
+  'Delete removes the account monitor and returns `{ "success": true }`.',
+  'Delete removes the keyword monitor and returns `{ "success": true }`.',
+] as const;
+
 const REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
   '## Deletion handoff',
   'Use this endpoint when a tracked account should stop permanently.',
@@ -2871,8 +2878,10 @@ const REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
   '`isActive: false` when',
   'you only need to pause alerts',
   '<Card title="Permanent Remove" icon="trash-2">',
-  'Delete removes the account monitor and returns `{ "success": true }`.',
-  'cannot be fetched, updated, resumed, or billed again.',
+  'Delete removes the account monitor. Store returned `success` before treating',
+  'the deleted ID as permanently removed.',
+  'The deleted ID cannot be fetched,',
+  'updated, resumed, or billed again.',
   '<Card title="Stored History" icon="database">',
   'Stored events and webhook delivery records tied to this account monitor',
   '<Card title="Pause Instead" icon="circle-pause">',
@@ -5822,11 +5831,23 @@ describe('repository discovery', (): void => {
     );
 
     expect(
-      collectSnippetFindings(
-        source,
-        'Delete keyword monitor API page',
-        REQUIRED_KEYWORD_MONITOR_DELETE_API_HANDOFF_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'Delete keyword monitor API page',
+          REQUIRED_KEYWORD_MONITOR_DELETE_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_MONITOR_DELETE_INLINE_SUCCESS_JSON_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Delete keyword monitor API page should keep inline card prose out of JSON shape "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
@@ -5913,11 +5934,23 @@ describe('repository discovery', (): void => {
     const source = readFileSync('api-reference/monitors/delete.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'Delete account monitor API page',
-        REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'Delete account monitor API page',
+          REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_MONITOR_DELETE_INLINE_SUCCESS_JSON_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Delete account monitor API page should keep inline card prose out of JSON shape "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
