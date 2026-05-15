@@ -25,7 +25,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const importRows = data.users.map((user) => ({
+    x_user_id: user.id,
+    x_username: user.username,
+    display_name: user.name,
+  }));
+  const nextCursor = data.has_next_page ? data.next_cursor : null;
   ```
 
   ```python Python
@@ -36,9 +41,21 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  import_rows = [
+      {
+          "x_user_id": user["id"],
+          "x_username": user["username"],
+          "display_name": user["name"],
+      }
+      for user in data["users"]
+  ]
+  next_cursor = data["next_cursor"] if data["has_next_page"] else None
   ```
 </CodeGroup>
+
+The Node.js and Python snippets shape CRM-safe import rows instead of printing
+full follower profiles. Persist the mapped rows and `nextCursor` in your sync
+job.
 
 ## Direct follower handoff
 

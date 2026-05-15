@@ -1508,10 +1508,20 @@ const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '`x_user_id`',
   '`users[].username` and `users[].name`',
   '`has_next_page` and `next_cursor`',
+  'const importRows = data.users.map',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  'import_rows = [',
+  'next_cursor = data["next_cursor"] if data["has_next_page"] else None',
+  'shape CRM-safe import rows instead of printing',
   '`pageSize` from 20 to 200',
   '1 credit per result returned',
   '`402 insufficient_credits`',
   'USD 0.00015 per user returned',
+] as const;
+
+const FORBIDDEN_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
 ] as const;
 
 const REQUIRED_FOLLOWING_API_HANDOFF_SNIPPETS = [
@@ -4994,6 +5004,16 @@ describe('repository discovery', (): void => {
         source,
         'Followers API page',
         REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Followers API page prints raw follower data with "${snippet}".`,
+                },
+              ]
+            : [],
       ),
     ).toStrictEqual([]);
   });
