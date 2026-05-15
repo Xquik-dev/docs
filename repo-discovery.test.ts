@@ -1625,14 +1625,21 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
+  'return paginated JSON tweet data for CRM, agents, or export handoff',
   '## Direct API handoff',
   '`GET /x/tweets/search`',
-  'app, queue worker, CRM enrichment job, or agent',
+  'app, queue worker, CRM enrichment job, or',
+  'agent needs the latest matching tweets',
+  'It returns paginated JSON for live search pages and app ingestion.',
+  'For CSV or',
+  'XLSX output, project the returned `tweets[]` rows locally',
   '`tweet_search_extractor`',
   '`tweets[]`',
   '`tweets[].id`',
   '`tweets[].author.id` and `tweets[].author.username`',
   '`has_next_page` and `next_cursor`',
+  '<Card title="File exports" icon="file-spreadsheet">',
+  'Use `tweet_search_extractor` when the output must be saved CSV, JSON, or XLSX.',
   '`limit` is an upper bound from 1 to 200',
   'Do not combine `limit` with `cursor` for page-by-page loops.',
   'Omit it for cursor-based pagination.',
@@ -1641,6 +1648,11 @@ const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   '1 credit per tweet returned',
   '`402 insufficient_credits`',
   '`Retry-After`',
+] as const;
+
+const FORBIDDEN_SEARCH_TWEETS_DIRECT_FILE_EXPORT_SNIPPETS = [
+  'return paginated tweet data for CSV, JSON, XLSX, CRM, or agent handoff',
+  'It is the fastest path for live search pages, JSON ingestion, and small CSV or XLSX projections.',
 ] as const;
 
 const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
@@ -5042,11 +5054,23 @@ describe('repository discovery', (): void => {
     const source = readFileSync('api-reference/x/search-tweets.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'Search tweets API page',
-        REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'Search tweets API page',
+          REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_SEARCH_TWEETS_DIRECT_FILE_EXPORT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Search tweets API page should distinguish direct JSON pages from saved file exports: "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
