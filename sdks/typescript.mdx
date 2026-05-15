@@ -35,19 +35,28 @@ const client = new XTwitterScraper({
 
 ## Basic Example
 
-Search tweets and write the first page as JSON:
+Search tweets and write durable JSON Lines handoff rows:
 
 ```ts
 import XTwitterScraper from "x-twitter-scraper";
 
 const client = new XTwitterScraper();
 
-const tweets = await client.x.tweets.search({
-  q: "from:elonmusk",
+const page = await client.x.tweets.search({
+  q: "from:xquikcom webhook OR SDK",
   limit: 10,
 });
 
-process.stdout.write(JSON.stringify(tweets, null, 2));
+const tweetRows = page.tweets.map((tweet) => ({
+  tweet_id: tweet.id,
+  text: tweet.text,
+  author_username: tweet.author?.username,
+  created_at: tweet.createdAt,
+}));
+
+for (const row of tweetRows) {
+  process.stdout.write(`${JSON.stringify(row)}\n`);
+}
 ```
 
 ## Workflow: Search Tweets to JSON Lines, CSV, or XLSX

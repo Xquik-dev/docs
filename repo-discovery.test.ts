@@ -152,6 +152,13 @@ const FORBIDDEN_SDK_OVERVIEW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
+  'Search tweets and write durable JSON Lines handoff rows:',
+  'const page = await client.x.tweets.search({',
+  'const tweetRows = page.tweets.map((tweet) => ({',
+  'tweet_id: tweet.id',
+  'author_username: tweet.author?.username',
+  'created_at: tweet.createdAt',
+  'process.stdout.write(`${JSON.stringify(row)}\\n`);',
   '## Workflow: Search Tweets to JSON Lines, CSV, or XLSX',
   '## Workflow: Tweet Replies to CSV, JSON, or XLSX',
   '## Workflow: Post Image Tweets and DM Attachments',
@@ -197,6 +204,10 @@ const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
   'Throws `BadRequestError`.',
   'Throws `RateLimitError`.',
   'Throws `InternalServerError`.',
+] as const;
+
+const FORBIDDEN_TYPESCRIPT_SDK_RAW_SEARCH_SNIPPETS = [
+  'process.stdout.write(JSON.stringify(tweets, null, 2));',
 ] as const;
 
 const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
@@ -4509,11 +4520,24 @@ describe('repository discovery', (): void => {
     const source = readFileSync('sdks/typescript.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'TypeScript SDK workflow docs',
-        REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'TypeScript SDK workflow docs',
+          REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS,
+        ),
+        ...FORBIDDEN_TYPESCRIPT_SDK_RAW_SEARCH_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    label: 'TypeScript SDK workflow docs',
+                    snippet,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
