@@ -834,12 +834,16 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   '`GET /.well-known/mcp/server-card.json` returns the',
   'same card for clients that read the nested server-card path.',
   'can also read `GET /.well-known/oauth-protected-resource/.well-known/mcp.json`',
-  'Unauthenticated requests to `https://xquik.com/mcp` return this challenge:',
-  'WWW-Authenticate: Bearer',
+  'Unauthenticated requests to `https://xquik.com/mcp` return `401` with a',
+  '`WWW-Authenticate: Bearer` challenge.',
   'resource_metadata="https://xquik.com/.well-known/oauth-protected-resource/mcp"',
-  'The JSON body is:',
-  '{ "error": "Authentication required" }',
-  'send `x-api-key` on the first request.',
+  '`scope="mcp:tools"`',
+  '`error="invalid_token"`',
+  '`error_description="Missing or invalid access token"`',
+  'The JSON body is',
+  '`{ "error": "Authentication required" }`',
+  'API-key clients should send',
+  '`x-api-key` on the first request.',
   '`xquik.request()` uses the normalized v1 contract automatically.',
   'Search the API spec. Read-only, no network calls, no credits. Requires MCP authentication to execute.',
   'Free means no usage credits; the call still requires MCP authentication through an API key or OAuth Bearer token.',
@@ -920,6 +924,9 @@ const FORBIDDEN_MCP_SETUP_CALLOUT_SNIPPETS = [
 const FORBIDDEN_MCP_CONTRACT_SNIPPETS = [
   'returns the same response shapes documented here. No field name mapping is needed.',
   'The sandbox automatically calls `POST /api/v1/subscribe` and includes a checkout URL in the error message.',
+  '```http',
+  'HTTP/1.1 401 Unauthorized',
+  'The JSON body is:',
 ] as const;
 
 const REQUIRED_BILLING_RECOVERY_SNIPPETS = [
