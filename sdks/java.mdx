@@ -45,20 +45,37 @@ export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 
 ## Basic Example
 
+Search tweets and write durable JSON Lines handoff rows:
+
 ```java
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.x_twitter_scraper.api.client.XTwitterScraperClient;
 import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient;
 import com.x_twitter_scraper.api.models.PaginatedTweets;
+import com.x_twitter_scraper.api.models.SearchTweet;
 import com.x_twitter_scraper.api.models.x.tweets.TweetSearchParams;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 XTwitterScraperClient client = XTwitterScraperOkHttpClient.fromEnv();
+ObjectMapper objectMapper = new ObjectMapper();
 
 TweetSearchParams params = TweetSearchParams.builder()
-    .q("from:elonmusk")
+    .q("from:xquikcom webhook OR SDK")
     .limit(10L)
     .build();
 
-PaginatedTweets tweets = client.x().tweets().search(params);
+PaginatedTweets page = client.x().tweets().search(params);
+
+for (SearchTweet tweet : page.tweets()) {
+    Map<String, Object> row = new LinkedHashMap<>();
+    row.put("tweet_id", tweet.id());
+    row.put("text", tweet.text());
+    row.put("author_username", tweet.author().map(SearchTweet.Author::username).orElse(null));
+    row.put("created_at", tweet.createdAt().orElse(null));
+
+    System.out.println(objectMapper.writeValueAsString(row));
+}
 ```
 
 ## Workflow: Search Tweets to JSON Lines, CSV, or XLSX
