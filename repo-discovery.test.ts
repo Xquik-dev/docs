@@ -2016,9 +2016,13 @@ const REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
   '`mediaUrl`',
   '`mediaId`',
   'POST /x/tweets',
+  'one media attachment in DMs',
   'If you already have public image URLs or a public MP4 video URL for a tweet or reply, skip `POST /x/media` and pass those URLs directly in the `media` array on `POST /x/tweets`.',
   'Send up to 4 images or exactly 1 MP4 video up to 100 MB.',
   'Use `POST /x/media` when you need Xquik to host a local file, validate a generated media URL, or produce a `mediaId` for a DM attachment.',
+  '**Need to post an MP4 tweet?**',
+  '`media: ["https://example.com/video.mp4"]`',
+  'Use `POST /x/media` first only when Xquik must host a local file or validate a generated URL',
   'Post tweets with public media URLs',
   'Post tweets with media uploaded through Xquik',
   'Post tweet replies with uploaded media',
@@ -2049,6 +2053,10 @@ const REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
   '"handoff_format":"jsonl"',
   'Use `media_url` for tweet and reply `media` arrays. Use `media_id` for the single DM `media_ids` item.',
   'Store upload, tweet/reply, or DM handoff rows in `xquik-media-handoff.jsonl` with `media_id` and `media_url`.',
+] as const;
+
+const FORBIDDEN_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
+  'one-image direct messages',
 ] as const;
 
 const REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
@@ -5521,7 +5529,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the media upload handoff clear for tweets and DMs', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('guides/media-upload-workflow.mdx', 'utf8');
 
@@ -5530,6 +5538,11 @@ describe('repository discovery', (): void => {
         source,
         'Media upload workflow guide',
         REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_MEDIA_UPLOAD_WORKFLOW_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
       ),
     ).toStrictEqual([]);
   });
