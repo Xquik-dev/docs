@@ -453,6 +453,13 @@ const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
+  'Search tweets and write durable JSON Lines handoff rows:',
+  'PaginatedTweets page = await client.X.Tweets.Search(parameters);',
+  'foreach (SearchTweet tweet in page.Tweets)',
+  'tweet_id = tweet.ID',
+  'author_username = tweet.Author?.Username',
+  'created_at = tweet.CreatedAt',
+  'await Console.Out.WriteLineAsync(JsonSerializer.Serialize(row));',
   '## Workflow: Search Tweets to JSON Lines, CSV, or XLSX',
   '`client.X.Tweets.Search`',
   '`GET /x/tweets/search`',
@@ -505,6 +512,10 @@ const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
   'Throws `XTwitterScraperBadRequestException`.',
   'Throws `XTwitterScraperRateLimitException`.',
   'Throws `XTwitterScraper5xxException`.',
+] as const;
+
+const FORBIDDEN_CSHARP_SDK_WEAK_SEARCH_SNIPPETS = [
+  'var tweets = await client.X.Tweets.Search(parameters);',
 ] as const;
 
 const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
@@ -4685,11 +4696,23 @@ describe('repository discovery', (): void => {
     const source = readFileSync('sdks/csharp.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'C# SDK workflow docs',
-        REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'C# SDK workflow docs',
+          REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS,
+        ),
+        ...FORBIDDEN_CSHARP_SDK_WEAK_SEARCH_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `C# SDK workflow docs contain weak search output "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 

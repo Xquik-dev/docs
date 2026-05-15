@@ -27,19 +27,36 @@ export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 
 ## Basic Example
 
+Search tweets and write durable JSON Lines handoff rows:
+
 ```csharp
+using System.Text.Json;
 using XTwitterScraper;
+using XTwitterScraper.Models;
 using XTwitterScraper.Models.X.Tweets;
 
 XTwitterScraperClient client = new();
 
 TweetSearchParams parameters = new()
 {
-    Q = "from:elonmusk",
+    Q = "from:xquikcom webhook OR SDK",
     Limit = 10,
 };
 
-var tweets = await client.X.Tweets.Search(parameters);
+PaginatedTweets page = await client.X.Tweets.Search(parameters);
+
+foreach (SearchTweet tweet in page.Tweets)
+{
+    var row = new
+    {
+        tweet_id = tweet.ID,
+        text = tweet.Text,
+        author_username = tweet.Author?.Username,
+        created_at = tweet.CreatedAt,
+    };
+
+    await Console.Out.WriteLineAsync(JsonSerializer.Serialize(row));
+}
 ```
 
 ## Workflow: Search Tweets to JSON Lines, CSV, or XLSX
