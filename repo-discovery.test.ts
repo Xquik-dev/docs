@@ -497,6 +497,13 @@ const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
+  'Search tweets and write durable JSON Lines handoff rows:',
+  '$page = $client->x->tweets->search(',
+  'foreach ($page->tweets as $tweet) {',
+  '$tweet->id',
+  '$tweet->author?->username',
+  '$tweet->createdAt',
+  'echo json_encode($row, JSON_THROW_ON_ERROR) . PHP_EOL;',
   '## Workflow: Search Tweets to JSON Lines, CSV, or XLSX',
   '`$client->x->tweets->search()`',
   '`GET /x/tweets/search`',
@@ -549,6 +556,10 @@ const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
   'Throws `BadRequestException`.',
   'Throws `RateLimitException`.',
   'Throws `InternalServerException`.',
+] as const;
+
+const FORBIDDEN_PHP_SDK_WEAK_SEARCH_SNIPPETS = [
+  'var_export($tweets->hasNextPage)',
 ] as const;
 
 const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
@@ -4665,11 +4676,24 @@ describe('repository discovery', (): void => {
     const source = readFileSync('sdks/php.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'PHP SDK workflow docs',
-        REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'PHP SDK workflow docs',
+          REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS,
+        ),
+        ...FORBIDDEN_PHP_SDK_WEAK_SEARCH_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    label: 'PHP SDK workflow docs',
+                    snippet,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 

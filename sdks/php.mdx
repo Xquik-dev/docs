@@ -27,6 +27,8 @@ export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 
 ## Basic Example
 
+Search tweets and write durable JSON Lines handoff rows:
+
 ```php
 <?php
 
@@ -36,9 +38,21 @@ $client = new Client(
   apiKey: getenv('X_TWITTER_SCRAPER_API_KEY') ?: 'xq_YOUR_KEY_HERE'
 );
 
-$tweets = $client->x->tweets->search(q: 'from:elonmusk', limit: 10);
+$page = $client->x->tweets->search(
+  q: 'from:xquikcom webhook OR SDK',
+  limit: 10,
+);
 
-var_export($tweets->hasNextPage);
+foreach ($page->tweets as $tweet) {
+  $row = [
+    'tweet_id' => $tweet->id,
+    'text' => $tweet->text,
+    'author_username' => $tweet->author?->username,
+    'created_at' => $tweet->createdAt,
+  ];
+
+  echo json_encode($row, JSON_THROW_ON_ERROR) . PHP_EOL;
+}
 ```
 
 ## Workflow: Search Tweets to JSON Lines, CSV, or XLSX
