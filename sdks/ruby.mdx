@@ -33,15 +33,31 @@ export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 
 ## Basic Example
 
+Search tweets and write durable JSON Lines handoff rows:
+
 ```ruby
+require "json"
 require "x_twitter_scraper"
 
 client = XTwitterScraper::Client.new(
   api_key: ENV["X_TWITTER_SCRAPER_API_KEY"]
 )
 
-tweets = client.x.tweets.search(q: "from:elonmusk", limit: 10)
-puts(tweets.has_next_page)
+page = client.x.tweets.search(
+  q: "from:xquikcom webhook OR SDK",
+  limit: 10
+)
+
+page.tweets.each do |tweet|
+  row = {
+    tweet_id: tweet.id,
+    text: tweet.text,
+    author_username: tweet.author&.username,
+    created_at: tweet.created_at
+  }
+
+  puts(JSON.generate(row))
+end
 ```
 
 ## Workflow: Search Tweets to CSV, JSON Lines, or XLSX

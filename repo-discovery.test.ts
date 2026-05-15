@@ -317,6 +317,13 @@ const FORBIDDEN_PYTHON_SDK_RAW_SEARCH_SNIPPETS = [
 ] as const;
 
 const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
+  'Search tweets and write durable JSON Lines handoff rows:',
+  'page = client.x.tweets.search(',
+  'page.tweets.each do |tweet|',
+  'tweet_id: tweet.id',
+  'author_username: tweet.author&.username',
+  'created_at: tweet.created_at',
+  'puts(JSON.generate(row))',
   '## Workflow: Search Tweets to CSV, JSON Lines, or XLSX',
   '## Workflow: Tweet Replies to CSV, JSON, or XLSX',
   '## Workflow: Post Image Tweets and DM Attachments',
@@ -365,6 +372,10 @@ const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
   'Throws `BadRequestError`.',
   'Throws `RateLimitError`.',
   'Throws `InternalServerError`.',
+] as const;
+
+const FORBIDDEN_RUBY_SDK_WEAK_SEARCH_SNIPPETS = [
+  'puts(tweets.has_next_page)',
 ] as const;
 
 const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
@@ -4599,11 +4610,24 @@ describe('repository discovery', (): void => {
     const source = readFileSync('sdks/ruby.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'Ruby SDK workflow docs',
-        REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'Ruby SDK workflow docs',
+          REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS,
+        ),
+        ...FORBIDDEN_RUBY_SDK_WEAK_SEARCH_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    label: 'Ruby SDK workflow docs',
+                    snippet,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
