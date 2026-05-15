@@ -6,6 +6,8 @@ keywords: ["search tweets", "tweet scraper", "scrape tweets", "Twitter API searc
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
+import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
+import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-params.mdx";
 
 <LlmsDirective />
 
@@ -20,19 +22,28 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <CodeGroup>
   ```bash cURL
   curl -G https://xquik.com/api/v1/x/tweets/search \
-    --data-urlencode "q=from:xquikcom giveaway" \
+    --data-urlencode "q=giveaway" \
+    --data-urlencode "fromUser=xquikcom" \
+    --data-urlencode "mediaType=media" \
+    --data-urlencode "verifiedOnly=true" \
     --data-urlencode "queryType=Latest" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 
   # Page 2 - pass next_cursor from the previous response
   curl -G https://xquik.com/api/v1/x/tweets/search \
-    --data-urlencode "q=from:xquikcom giveaway" \
+    --data-urlencode "q=giveaway" \
+    --data-urlencode "fromUser=xquikcom" \
+    --data-urlencode "mediaType=media" \
     --data-urlencode "cursor=abc123" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
   ```javascript Node.js
-  const params = new URLSearchParams({ q: "from:xquikcom giveaway" });
+  const params = new URLSearchParams({
+    q: "giveaway",
+    fromUser: "xquikcom",
+    mediaType: "media",
+  });
   const response = await fetch(`https://xquik.com/api/v1/x/tweets/search?${params}`, {
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
@@ -43,7 +54,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   let cursor = data.next_cursor;
   while (data.has_next_page) {
     const next = await fetch(
-      `https://xquik.com/api/v1/x/tweets/search?${new URLSearchParams({ q: "from:xquikcom giveaway", cursor })}`,
+      `https://xquik.com/api/v1/x/tweets/search?${new URLSearchParams({ q: "giveaway", fromUser: "xquikcom", mediaType: "media", cursor })}`,
       { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
     );
     const page = await next.json();
@@ -58,7 +69,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
   response = requests.get(
       "https://xquik.com/api/v1/x/tweets/search",
-      params={"q": "from:xquikcom giveaway"},
+      params={"q": "giveaway", "fromUser": "xquikcom", "mediaType": "media"},
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
@@ -68,7 +79,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   while data["has_next_page"]:
       data = requests.get(
           "https://xquik.com/api/v1/x/tweets/search",
-          params={"q": "from:xquikcom giveaway", "cursor": data["next_cursor"]},
+          params={
+              "q": "giveaway",
+              "fromUser": "xquikcom",
+              "mediaType": "media",
+              "cursor": data["next_cursor"],
+          },
           headers={"x-api-key": "xq_YOUR_KEY_HERE"},
       ).json()
       print(data["tweets"])
@@ -88,7 +104,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   func main() {
   	baseURL := "https://xquik.com/api/v1/x/tweets/search"
   	params := url.Values{}
-  	params.Set("q", "from:xquikcom giveaway")
+    params.Set("q", "giveaway")
+    params.Set("fromUser", "xquikcom")
+    params.Set("mediaType", "media")
 
   	req, err := http.NewRequest("GET", baseURL+"?"+params.Encode(), nil)
   	if err != nil {
@@ -176,6 +194,23 @@ Tweet search costs 1 credit per tweet returned. Low credit balances can return f
 <ParamField query="limit" type="integer">
   Maximum number of tweets to collect in one bounded request (1-200). Omit it for cursor-based pagination.
 </ParamField>
+
+### Structured filters
+
+Structured filters are part of the public Search Tweets API. Xquik converts
+them into X search operators before fetching results, then filters returned rows
+again when the response fields are available. Keep the same filters on every
+cursor request.
+
+<TweetResultFilterParams />
+
+### Search-only operators
+
+These query parameters apply only to `GET /x/tweets/search` because they map to
+search operators before the request runs. Use `advancedQuery` only when you
+already have trusted raw X search operator syntax to append.
+
+<TweetSearchOnlyFilterParams />
 
 ## Headers
 

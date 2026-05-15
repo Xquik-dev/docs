@@ -779,6 +779,13 @@ const REQUIRED_LLMS_SNIPPETS = [
   '"writeActionId": "42"',
   '`GET /x/write-actions/{id}`',
   'opt in to the normalized v1 response contract',
+  '**Tweet Search Filters** (`tweet_search_extractor` and `GET /x/tweets/search`)',
+  '`minQuotes`',
+  '`anyWords`',
+  '`quotesOfTweetId`',
+  '**Tweet result filters**',
+  '`GET /x/users/{id}/tweets`',
+  '`GET /x/tweets/{id}/quotes`',
 ] as const;
 
 const REQUIRED_SKILL_RATE_LIMIT_SNIPPETS = [
@@ -1746,6 +1753,17 @@ const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   '`limit` is an upper bound from 1 to 200',
   'Do not combine `limit` with `cursor` for page-by-page loops.',
   'Omit it for cursor-based pagination.',
+  '### Structured filters',
+  'Structured filters are part of the public Search Tweets API.',
+  'Keep the same filters on every',
+  'cursor request.',
+  '<TweetResultFilterParams />',
+  '### Search-only operators',
+  '<TweetSearchOnlyFilterParams />',
+  'fromUser',
+  'mediaType',
+  'verifiedOnly',
+  'advancedQuery',
   '[Tweet Search Export Workflow](/guides/tweet-search-export)',
   'saved CSV, JSON, or XLSX files',
   '1 credit per tweet returned',
@@ -1756,6 +1774,23 @@ const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
 const FORBIDDEN_SEARCH_TWEETS_DIRECT_FILE_EXPORT_SNIPPETS = [
   'return paginated tweet data for CSV, JSON, XLSX, CRM, or agent handoff',
   'It is the fastest path for live search pages, JSON ingestion, and small CSV or XLSX projections.',
+] as const;
+
+const TWEET_LIST_FILTER_API_PAGES = [
+  'api-reference/x/user-tweets.mdx',
+  'api-reference/x/user-likes.mdx',
+  'api-reference/x/user-media.mdx',
+  'api-reference/x/user-mentions.mdx',
+  'api-reference/x/tweet-replies.mdx',
+  'api-reference/x/tweet-quotes.mdx',
+] as const;
+
+const REQUIRED_TWEET_LIST_FILTER_SNIPPETS = [
+  'import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";',
+  '### Tweet result filters',
+  'These optional filters apply to `tweets[]` returned by this route.',
+  'filter rows after each page is fetched',
+  '<TweetResultFilterParams />',
 ] as const;
 
 const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
@@ -5294,6 +5329,20 @@ describe('repository discovery', (): void => {
         ),
       ],
     ).toStrictEqual([]);
+  });
+
+  it('keeps tweet-list API result filters visible', (): void => {
+    expect.assertions(1);
+
+    const findings = TWEET_LIST_FILTER_API_PAGES.flatMap((file) =>
+      collectSnippetFindings(
+        readFileSync(file, 'utf8'),
+        file,
+        REQUIRED_TWEET_LIST_FILTER_SNIPPETS,
+      ),
+    );
+
+    expect(findings).toStrictEqual([]);
   });
 
   it('keeps the extraction workflow concrete for credits, JSON, and file handoffs', (): void => {
