@@ -238,7 +238,9 @@ Cost: 1 credit per reply extracted or returned. Store `$job->id` on the queue jo
 
 ## Workflow: Post Media Tweets and DM Attachments
 
-Use this workflow when a PHP app needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `$client->x->tweets->create()` maps to `POST /x/tweets`; pass public media URLs through `media`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB, and do not mix video with other media. For replies, set `replyToTweetID` to the parent tweet ID. `$client->x->media->upload()` maps to `POST /x/media`; use its `$media->mediaID` only for the one-item `mediaIDs` array on `$client->x->dm->send()`.
+Use this workflow when a PHP app needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `POST /x/tweets` accepts public media URLs through `media`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB, and do not mix video with other media. For replies, set `replyToTweetID` to the parent tweet ID. `$client->x->media->upload()` maps to `POST /x/media`; use its `$media->mediaID` only for the one-item `mediaIDs` array on `$client->x->dm->send()`.
+
+Use `$client->x->tweets->raw->create()` when a worker must branch on the REST `202 x_write_unconfirmed` response. The generated `$client->x->tweets->create()` helper is still useful when your flow only continues after a confirmed `$tweet->tweetID`.
 
 ```php
 <?php
@@ -246,22 +248,54 @@ Use this workflow when a PHP app needs to publish a media tweet, reply with medi
 use XTwitterScraper\Client;
 use XTwitterScraper\Core\FileParam;
 
+/**
+ * @param array<string,mixed> $payload
+ *
+ * @return array<string,mixed>
+ */
+function createTweetHandoff(Client $client, array $payload): array
+{
+  $response = $client->x->tweets->raw->create(params: $payload);
+
+  if (202 === $response->getStatusCode()) {
+    $body = json_decode((string) $response->getBody(), true, flags: JSON_THROW_ON_ERROR);
+
+    if ('x_write_unconfirmed' === ($body['error'] ?? null)) {
+      return [
+        'status' => $body['status'],
+        'write_action_id' => $body['writeActionId'],
+        'charged' => $body['charged'],
+        'retryable' => $body['retryable'],
+        'poll' => 'GET /x/write-actions/{id}',
+      ];
+    }
+  }
+
+  $tweet = $response->parse();
+
+  return [
+    'status' => 'success',
+    'tweet_id' => $tweet->tweetID,
+    'charged' => true,
+  ];
+}
+
 $client = new Client(
   apiKey: getenv('X_TWITTER_SCRAPER_API_KEY') ?: ''
 );
 
-$tweet = $client->x->tweets->create(
-  account: '@xquikcom',
-  text: 'Shipping the weekly X API video.',
-  media: ['https://static.example.com/reports/x-api-export.mp4'],
-);
+$tweetHandoff = createTweetHandoff($client, [
+  'account' => '@xquikcom',
+  'text' => 'Shipping the weekly X API video.',
+  'media' => ['https://static.example.com/reports/x-api-export.mp4'],
+]);
 
-$reply = $client->x->tweets->create(
-  account: '@xquikcom',
-  text: 'Here is the chart behind the update.',
-  media: ['https://static.example.com/reports/reply-chart.png'],
-  replyToTweetID: $tweet->tweetID,
-);
+$replyHandoff = createTweetHandoff($client, [
+  'account' => '@xquikcom',
+  'text' => 'Here is the chart behind the update.',
+  'media' => ['https://static.example.com/reports/reply-chart.png'],
+  'replyToTweetID' => $tweetHandoff['tweet_id'] ?? '1893704267862470862',
+]);
 
 $localFile = fopen('handoff.png', 'rb');
 
@@ -285,20 +319,25 @@ $dm = $client->x->dm->send(
   mediaIDs: [$media->mediaID],
 );
 
+$dmHandoff = [
+  'message_id' => $dm->messageID,
+  'media_id' => $media->mediaID,
+];
+
 fwrite(
   STDOUT,
   json_encode(
     [
-      'tweet_id' => $tweet->tweetID,
-      'reply_tweet_id' => $reply->tweetID,
-      'dm_message_id' => $dm->messageID,
+      'tweet_handoff' => $tweetHandoff,
+      'reply_handoff' => $replyHandoff,
+      'dm_handoff' => $dmHandoff,
     ],
     JSON_THROW_ON_ERROR
   ) . PHP_EOL
 );
 ```
 
-Store `$tweet->tweetID` and `$reply->tweetID` on the CMS, queue job, or agent state before scheduling follow-up work. Store `$dm->messageID` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `$media->mediaID` values to `$client->x->tweets->create()`; that method uses `media` with public media URLs.
+Store `write_action_id` and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before retrying a pending tweet or reply. Store `tweet_id` on the CMS, queue job, or agent state after confirmed writes. Store `$dm->messageID` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `$media->mediaID` values to `$client->x->tweets->create()`; that method uses `media` with public media URLs.
 
 ## Error Handling
 
