@@ -256,7 +256,9 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 
 ## Idempotency
 
-Webhook deliveries can be retried on failure, so your endpoint may receive the same event multiple times. Use `deliveryId` as the webhook delivery idempotency key. Use `streamEventId` when your system should process one monitor event only once across webhook retries or endpoint changes. Do not hash the raw request body when `deliveryId` is available.
+Webhook deliveries can be retried on failure, so your endpoint may receive the same event multiple times. Production monitor deliveries include `deliveryId` and `streamEventId`. Use `deliveryId` as the webhook delivery idempotency key. Use `streamEventId` when your system should process one monitor event only once across webhook retries or endpoint changes. Do not hash the raw request body when `deliveryId` is available.
+
+`webhook.test` deliveries include `eventType`, `data`, and `timestamp`; they omit monitor idempotency fields. Use them to verify signatures and receiver reachability, then skip production event de-dupe for the test request.
 
 <CodeGroup>
 
@@ -272,6 +274,17 @@ app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
   }
 
   const event = JSON.parse(payload);
+
+  if (event.eventType === "webhook.test") {
+    return res.status(200).send("Test accepted");
+  }
+
+  if (
+    typeof event.deliveryId !== "string" ||
+    typeof event.streamEventId !== "string"
+  ) {
+    return res.status(400).send("Missing idempotency fields");
+  }
 
   if (processedDeliveries.has(event.deliveryId)) {
     return res.status(200).send("Delivery already processed");
@@ -303,15 +316,23 @@ def webhook():
 
     event = request.get_json()
 
-    if event["deliveryId"] in processed_deliveries:
+    if event.get("eventType") == "webhook.test":
+        return "Test accepted", 200
+
+    delivery_id = event.get("deliveryId")
+    stream_event_id = event.get("streamEventId")
+    if not isinstance(delivery_id, str) or not isinstance(stream_event_id, str):
+        return "Missing idempotency fields", 400
+
+    if delivery_id in processed_deliveries:
         return "Delivery already processed", 200
 
-    processed_deliveries.add(event["deliveryId"])
+    processed_deliveries.add(delivery_id)
 
-    if event["streamEventId"] in processed_events:
+    if stream_event_id in processed_events:
         return "Event already processed", 200
 
-    processed_events.add(event["streamEventId"])
+    processed_events.add(stream_event_id)
 
     handle_event(event)
 

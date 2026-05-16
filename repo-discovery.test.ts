@@ -2631,11 +2631,15 @@ const REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS = [
 const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
   'if (!verifyWebhook(req, WEBHOOK_SECRET))',
   'if not verify_webhook(request, WEBHOOK_SECRET):',
+  'Production monitor deliveries include `deliveryId` and `streamEventId`.',
+  '`webhook.test` deliveries include `eventType`, `data`, and `timestamp`; they omit monitor idempotency fields.',
   'Use `deliveryId` as the webhook delivery idempotency key.',
   'Use `streamEventId` when your system should process one monitor event only once across webhook retries or endpoint changes.',
   'Do not hash the raw request body when `deliveryId` is available.',
+  'if (event.eventType === "webhook.test")',
+  'if event.get("eventType") == "webhook.test":',
   'processedDeliveries.add(event.deliveryId)',
-  'processed_events.add(event["streamEventId"])',
+  'processed_events.add(stream_event_id)',
 ] as const;
 
 const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
