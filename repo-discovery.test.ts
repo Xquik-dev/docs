@@ -998,6 +998,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   '`{ "error": "Authentication required" }`',
   'API-key clients should send',
   '`x-api-key` on the first request.',
+  'Connect to `https://xquik.com/mcp` with `x-api-key` or OAuth 2.1 Bearer auth.',
   '`xquik.request()` uses the normalized v1 contract automatically.',
   'Write and media responses also use the MCP-normalized snake_case contract.',
   'Read `tweet_id`, `write_action_id`, `media_id`, `media_url`, and `message_id` from `xquik.request()` results.',
