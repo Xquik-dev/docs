@@ -301,32 +301,85 @@ Use this workflow when a Go worker, queue consumer, or agent service needs to po
 Tweet and reply media posts use public media URLs directly on `client.X.Tweets.New`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. Do not upload first when the media URL is already public.
 
 ```go
-tweet, err := client.X.Tweets.New(context.Background(), xtwitterscraper.XTweetNewParams{
+type tweetCreatePayload struct {
+	Success       bool   `json:"success"`
+	TweetID       string `json:"tweetId"`
+	Error         string `json:"error"`
+	Status        string `json:"status"`
+	WriteActionID string `json:"writeActionId"`
+	Charged       bool   `json:"charged"`
+	Retryable     bool   `json:"retryable"`
+}
+
+func createTweetHandoff(payload tweetCreatePayload, base map[string]any) map[string]any {
+	handoff := map[string]any{
+		"status":   "posted",
+		"tweet_id": payload.TweetID,
+	}
+
+	if payload.Error == "x_write_unconfirmed" && payload.Status == "pending_confirmation" {
+		handoff = map[string]any{
+			"status":          "pending_confirmation",
+			"write_action_id": payload.WriteActionID,
+			"charged":         payload.Charged,
+			"retryable":       payload.Retryable,
+			"poll":            "GET /x/write-actions/{id}",
+		}
+	}
+
+	for key, value := range base {
+		handoff[key] = value
+	}
+
+	return handoff
+}
+```
+
+The generated Go response model covers confirmed `TweetID` responses. Use `option.WithResponseBodyInto` when a write worker must branch on the REST `202 x_write_unconfirmed` response, store `writeActionId`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write.
+
+```go
+ctx := context.Background()
+var tweetPayload tweetCreatePayload
+_, err := client.X.Tweets.New(ctx, xtwitterscraper.XTweetNewParams{
 	Account: "@xquikcom",
 	Text:    xtwitterscraper.String("New demo video is live."),
 	Media:   []string{"https://example.com/product-demo.mp4"},
-})
+}, option.WithResponseBodyInto(&tweetPayload))
 if err != nil {
 	panic(err)
 }
 
-fmt.Println(tweet.TweetID)
+tweetHandoff := createTweetHandoff(tweetPayload, map[string]any{
+	"account": "@xquikcom",
+	"media":   []string{"https://example.com/product-demo.mp4"},
+})
+if err := json.NewEncoder(os.Stdout).Encode(tweetHandoff); err != nil {
+	panic(err)
+}
 ```
 
 To post an image reply, add `ReplyToTweetID`:
 
 ```go
-reply, err := client.X.Tweets.New(context.Background(), xtwitterscraper.XTweetNewParams{
+var replyPayload tweetCreatePayload
+_, err := client.X.Tweets.New(ctx, xtwitterscraper.XTweetNewParams{
 	Account:        "@xquikcom",
 	Text:           xtwitterscraper.String("Here is the requested screenshot."),
 	ReplyToTweetID: xtwitterscraper.String("1893704267862470862"),
 	Media:          []string{"https://example.com/export-preview.png"},
-})
+}, option.WithResponseBodyInto(&replyPayload))
 if err != nil {
 	panic(err)
 }
 
-fmt.Println(reply.TweetID)
+replyHandoff := createTweetHandoff(replyPayload, map[string]any{
+	"account":           "@xquikcom",
+	"reply_to_tweet_id": "1893704267862470862",
+	"media":             []string{"https://example.com/export-preview.png"},
+})
+if err := json.NewEncoder(os.Stdout).Encode(replyHandoff); err != nil {
+	panic(err)
+}
 ```
 
 For DM attachments, upload the local file first and pass the returned `media.MediaID` as the only `MediaIDs` item:
@@ -355,10 +408,19 @@ if err != nil {
 	panic(err)
 }
 
-fmt.Println(dm.MessageID)
+dmHandoff := map[string]any{
+	"status":     "sent",
+	"message_id": dm.MessageID,
+	"media_id":   media.MediaID,
+	"account":    "@xquikcom",
+	"user_id":    "44196397",
+}
+if err := json.NewEncoder(os.Stdout).Encode(dmHandoff); err != nil {
+	panic(err)
+}
 ```
 
-`client.X.Tweets.New` returns `TweetID` for confirmed posts. `client.X.Media.Upload` returns `media.MediaID` for DM attachments, and `client.X.Dm.Send` returns `dm.MessageID` for support tickets, CRM records, queue jobs, or agent memory.
+`client.X.Tweets.New` returns `TweetID` for confirmed posts. Raw create responses can also include the pending write fields above when confirmation is still running. `client.X.Media.Upload` returns `media.MediaID` for DM attachments, and `client.X.Dm.Send` returns `dm.MessageID` for support tickets, CRM records, queue jobs, or agent memory.
 
 Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `MediaID` values to `client.X.Tweets.New`; that method uses `Media` with public media URLs.
 
@@ -388,6 +450,7 @@ if tweets.HasNextPage {
 
 - [Search Tweets](/api-reference/x/search-tweets)
 - [Create Tweet](/api-reference/x-write/create-tweet)
+- [Get Write Action Status](/api-reference/x-write/get-write-action-status)
 - [Upload Media](/api-reference/x-write/upload-media)
 - [Send Direct Message](/api-reference/x-write/send-dm)
 - [Webhook Overview](/webhooks/overview)
