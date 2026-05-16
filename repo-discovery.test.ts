@@ -2501,7 +2501,6 @@ const REQUIRED_WEBHOOK_TESTING_SNIPPETS = [
   '`X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce`',
   '"success": true',
   '"statusCode": 200',
-  'verify the HMAC against the raw request body before processing it',
   'For end-to-end verification of the configured webhook URL, prefer `POST /webhooks/{id}/test`.',
   '"schemaVersion":1',
   '"deliveryId":"502"',
@@ -2679,6 +2678,9 @@ const FORBIDDEN_WEBHOOK_DELIVERIES_RAW_OUTPUT_SNIPPETS = [
 const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
   'if (!verifyWebhook(req, WEBHOOK_SECRET))',
   'if not verify_webhook(request, WEBHOOK_SECRET):',
+  '<timestamp>.<nonce>.<rawBody>',
+  'Verify the raw body bytes',
+  'Compute the HMAC over the raw request body bytes',
   'Production monitor deliveries include `deliveryId` and `streamEventId`.',
   '`webhook.test` deliveries include `eventType`, `data`, and `timestamp`; they omit monitor idempotency fields.',
   'Use `deliveryId` as the webhook delivery idempotency key.',
