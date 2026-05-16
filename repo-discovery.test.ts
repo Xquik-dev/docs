@@ -1595,6 +1595,8 @@ const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   '`statusesCount`',
   '`pageSize` accepts `20` to `200`',
   'paid calls can return fewer users',
+  '`402 insufficient_credits`',
+  'lower `pageSize` or add credits',
   'x_user_id',
   'HubSpot',
   'Salesforce Bulk API 2.0',
