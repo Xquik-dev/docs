@@ -2004,6 +2004,15 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   '`next_cursor`',
   '`resultsLimit`',
   'Cost is 1 credit per tweet returned.',
+  '## Failure handling',
+  '400 missing query',
+  'Send a non-empty `q` value for direct search, or `searchQuery` for `tweet_search_extractor`.',
+  '402 credits',
+  'Subscribe, add credits, lower direct `limit`, or lower extraction `resultsLimit`.',
+  '429 rate limit',
+  'Wait for `retryAfter` or the `Retry-After` header before retrying.',
+  '424 or 502 unavailable',
+  'Retry with exponential backoff and keep the same query, filters, cursor, or job ID.',
 ] as const;
 
 const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
