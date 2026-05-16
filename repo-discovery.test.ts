@@ -2501,6 +2501,7 @@ const REQUIRED_WEBHOOK_TESTING_SNIPPETS = [
   '`X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce`',
   '"success": true',
   '"statusCode": 200',
+  'verify the HMAC against the raw request body before processing it',
   'For end-to-end verification of the configured webhook URL, prefer `POST /webhooks/{id}/test`.',
   '"schemaVersion":1',
   '"deliveryId":"502"',
