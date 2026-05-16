@@ -1454,6 +1454,11 @@ const REQUIRED_CREATE_TWEET_API_SNIPPETS = [
   'If polling later returns `status: "success"` with `tweetId`, update the same record to `posted`.',
 ] as const;
 
+const FORBIDDEN_CREATE_TWEET_API_SNIPPETS = [
+  '"media_ids": [',
+  '"mediaIds": [',
+] as const;
+
 const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
   'Poll post tweet, tweet reply, and DM write actions after pending confirmation responses',
   '"tweet reply status"',
@@ -6407,7 +6412,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the create tweet API page useful for post and reply handoffs', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync(
       'api-reference/x-write/create-tweet.mdx',
@@ -6419,6 +6424,11 @@ describe('repository discovery', (): void => {
         source,
         'Create tweet API docs',
         REQUIRED_CREATE_TWEET_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_CREATE_TWEET_API_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
       ),
     ).toStrictEqual([]);
   });
