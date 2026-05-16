@@ -1754,6 +1754,7 @@ const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   'Call `GET /extractions/{id}/export?format=csv`, `format=json`, or `format=xlsx`',
   '`md`, `md-document`, `pdf`, and `txt` are also supported',
   '### Paginated JSON handoff',
+  '### JSON Lines handoff',
   'Only `id` and `xUserId` are guaranteed on every result',
   '"toolType": "follower_explorer"',
   '"hasMore": true',
@@ -1778,6 +1779,12 @@ const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   '`Cover Picture` to a banner URL field',
   '"job": "follower_export"',
   '"source_username": "elonmusk"',
+  'extraction_id: extractionId',
+  'x_user_id: follower.xUserId',
+  'x_username: follower.xUsername',
+  'display_name: follower.xDisplayName',
+  'followers_count: follower.xFollowersCount',
+  'process.stdout.write(JSON.stringify(row) + "\\n");',
   '`xquik-follower-export.jsonl`',
   'title="Followers API"',
   'href="/api-reference/x/followers"',
@@ -5639,7 +5646,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps follower export CRM handoff steps concrete', (): void => {
-    expect.assertions(2);
+    expect.assertions(3);
 
     const source = readFileSync('guides/follower-export-crm.mdx', 'utf8');
 
@@ -5651,6 +5658,7 @@ describe('repository discovery', (): void => {
       ),
     ).toStrictEqual([]);
     expect(source).not.toContain('console.log(job.id, job.status);');
+    expect(source).not.toContain('console.log(JSON.stringify(row));');
   });
 
   it('keeps tweet replies export workflow steps concrete', (): void => {
