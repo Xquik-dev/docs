@@ -250,31 +250,58 @@ Cost: 1 credit per reply extracted or returned. Store `job.ID` on the queue job,
 Use this workflow when a .NET worker needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `client.X.Tweets.Create` maps to `POST /x/tweets`; pass public media URLs through `Media`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB, and do not mix video with other media. For replies, set `ReplyToTweetID` to the parent tweet ID. `client.X.Media.Upload` maps to `POST /x/media`; use `media.MediaID` only for the one-item `MediaIds` handoff on `client.X.Dm.Send`.
 
 ```csharp
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Text.Json;
+using System.Threading.Tasks;
 using XTwitterScraper;
+using XTwitterScraper.Core;
 using XTwitterScraper.Models.X.Dm;
 using XTwitterScraper.Models.X.Media;
 using XTwitterScraper.Models.X.Tweets;
 
 XTwitterScraperClient client = new();
+string parentTweetID = "1893704267862470862";
 
-TweetCreateResponse tweet = await client.X.Tweets.Create(
-    new TweetCreateParams
+using HttpResponse<TweetCreateResponse> tweetResponse =
+    await client.X.Tweets.WithRawResponse.Create(
+        new TweetCreateParams
+        {
+            Account = "@xquikcom",
+            Text = "Shipping the weekly X API video.",
+            Media = new[] { "https://static.example.com/reports/x-api-export.mp4" },
+        }
+    );
+
+Dictionary<string, object?> tweetHandoff = await CreateTweetHandoff(
+    tweetResponse,
+    new Dictionary<string, object?>
     {
-        Account = "@xquikcom",
-        Text = "Shipping the weekly X API video.",
-        Media = new[] { "https://static.example.com/reports/x-api-export.mp4" },
+        ["account"] = "@xquikcom",
+        ["media_url"] = "https://static.example.com/reports/x-api-export.mp4",
     }
 );
 
-TweetCreateResponse reply = await client.X.Tweets.Create(
-    new TweetCreateParams
+using HttpResponse<TweetCreateResponse> replyResponse =
+    await client.X.Tweets.WithRawResponse.Create(
+        new TweetCreateParams
+        {
+            Account = "@xquikcom",
+            Text = "Here is the chart behind the update.",
+            Media = new[] { "https://static.example.com/reports/reply-chart.png" },
+            ReplyToTweetID = parentTweetID,
+        }
+    );
+
+Dictionary<string, object?> replyHandoff = await CreateTweetHandoff(
+    replyResponse,
+    new Dictionary<string, object?>
     {
-        Account = "@xquikcom",
-        Text = "Here is the chart behind the update.",
-        Media = new[] { "https://static.example.com/reports/reply-chart.png" },
-        ReplyToTweetID = tweet.TweetID,
+        ["account"] = "@xquikcom",
+        ["reply_to_tweet_id"] = parentTweetID,
+        ["media_url"] = "https://static.example.com/reports/reply-chart.png",
     }
 );
 
@@ -297,17 +324,54 @@ DmSendResponse dm = await client.X.Dm.Send(
     }
 );
 
-var handoff = new
+Dictionary<string, object?> dmHandoff = new()
 {
-    tweet_id = tweet.TweetID,
-    reply_tweet_id = reply.TweetID,
-    dm_message_id = dm.MessageID,
+    ["message_id"] = dm.MessageID,
+    ["media_id"] = media.MediaID,
+    ["user_id"] = "44196397",
+    ["account"] = "@xquikcom",
 };
 
-await Console.Out.WriteLineAsync(JsonSerializer.Serialize(handoff));
+await Console.Out.WriteLineAsync(JsonSerializer.Serialize(tweetHandoff));
+await Console.Out.WriteLineAsync(JsonSerializer.Serialize(replyHandoff));
+await Console.Out.WriteLineAsync(JsonSerializer.Serialize(dmHandoff));
+
+static async Task<Dictionary<string, object?>> CreateTweetHandoff(
+    HttpResponse<TweetCreateResponse> response,
+    Dictionary<string, object?> row
+)
+{
+    string body = await response.ReadAsString();
+    using JsonDocument document = JsonDocument.Parse(body);
+    JsonElement payload = document.RootElement;
+
+    if (
+        response.StatusCode == HttpStatusCode.Accepted &&
+        payload.TryGetProperty("error", out JsonElement error) &&
+        error.GetString() == "x_write_unconfirmed" &&
+        payload.TryGetProperty("status", out JsonElement status) &&
+        status.GetString() == "pending_confirmation"
+    )
+    {
+        row["status"] = "pending_confirmation";
+        row["write_action_id"] = payload.GetProperty("writeActionId").GetString();
+        row["charged"] = payload.GetProperty("charged").GetBoolean();
+        row["retryable"] = payload.GetProperty("retryable").GetBoolean();
+        row["poll"] = "GET /x/write-actions/{id}";
+        return row;
+    }
+
+    TweetCreateResponse tweet =
+        JsonSerializer.Deserialize<TweetCreateResponse>(body)
+        ?? throw new InvalidOperationException("Tweet response body was empty.");
+
+    row["status"] = "sent";
+    row["tweet_id"] = tweet.TweetID;
+    return row;
+}
 ```
 
-Store `tweet.TweetID` and `reply.TweetID` on the CMS, queue job, or agent state before scheduling follow-up work. Store `dm.MessageID` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.MediaID` values to `client.X.Tweets.Create`; that method uses `Media` with public media URLs.
+Use `client.X.Tweets.WithRawResponse.Create` when a write worker must branch on the REST `202 x_write_unconfirmed` response. If the API returns pending confirmation, store `writeActionId` as `write_action_id` and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before scheduling follow-up work. Do not retry-send the same write while status is pending. Store confirmed `tweet_id` values on the CMS, queue job, or agent state, and store `dm.MessageID` plus `media.MediaID` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.MediaID` values to `client.X.Tweets.Create`; that method uses `Media` with public media URLs.
 
 ## Error Handling
 
