@@ -182,7 +182,8 @@ x-twitter-scraper x:tweets create \
   --account @xquikcom \
   --text "New demo video is live." \
   --media https://example.com/product-demo.mp4 \
-  --format json > posted-tweet.json
+  --format json \
+  --format-error json > posted-tweet.json
 ```
 
 To reply with media, add the parent tweet ID. The `--reply-to-tweet-id` flag maps to `reply_to_tweet_id`, and `--media` maps to the public URL array on `POST /x/tweets`.
@@ -193,10 +194,40 @@ x-twitter-scraper x:tweets create \
   --text "Here is the requested screenshot." \
   --reply-to-tweet-id 1893704267862470862 \
   --media https://example.com/export-preview.png \
-  --format json > posted-reply.json
+  --format json \
+  --format-error json > posted-reply.json
 ```
 
-The response returns `tweetId` and `success`. If the API returns `202 x_write_unconfirmed`, store `writeActionId` and poll `GET /x/write-actions/{id}` before sending another write. Each create-tweet call costs 10 credits.
+The response returns `tweetId` and `success`. If the API returns `202 x_write_unconfirmed`, store `writeActionId` and poll `GET /x/write-actions/{id}` before sending another write. Keep one JSON Lines handoff shape for both outcomes:
+
+```bash
+write_handoff() {
+  input_file="$1"
+
+  jq -c '
+    if .error == "x_write_unconfirmed" then
+      {
+        status,
+        write_action_id: .writeActionId,
+        charged,
+        retryable,
+        poll: "GET /x/write-actions/{id}"
+      }
+    else
+      {
+        status: "posted",
+        tweet_id: .tweetId,
+        charged: true
+      }
+    end
+  ' "$input_file"
+}
+
+write_handoff posted-tweet.json > tweet-handoff.jsonl
+write_handoff posted-reply.json > reply-handoff.jsonl
+```
+
+Each create-tweet call costs 10 credits.
 
 Use `x:media upload` when you need an uploaded media ID for a DM attachment. The CLI upload command accepts a local file through `--file`; `--transform mediaId` extracts the upload response ID for scripts.
 
@@ -213,6 +244,12 @@ x-twitter-scraper x:dm send \
   --text "Here is the asset." \
   --media-id "$media_id" \
   --format json > sent-dm.json
+
+jq -c --arg media_id "$media_id" '{
+  status: "sent",
+  message_id: .messageId,
+  media_id: $media_id
+}' sent-dm.json > dm-handoff.jsonl
 ```
 
 The `--media-id` flag maps to the REST `media_ids` body field. DMs accept exactly 1 uploaded media ID. Store `messageId` from the DM response on the support ticket, CRM record, queue job, or agent memory. Uploading media costs 10 credits, and sending the DM costs 10 credits.
