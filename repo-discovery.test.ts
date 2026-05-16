@@ -921,6 +921,15 @@ const FORBIDDEN_MCP_SETUP_CALLOUT_SNIPPETS = [
   '(terminal, most flexible)',
 ] as const;
 
+const REQUIRED_MCP_SETUP_TAB_SNIPPETS = [
+  '### Web and terminal clients',
+  '### Editor clients',
+  '<Tab title="Claude.ai (Web)">',
+  '<Tab title="Codex CLI">',
+  '<Tab title="Cursor">',
+  '<Tab title="OpenCode">',
+] as const;
+
 const FORBIDDEN_MCP_CONTRACT_SNIPPETS = [
   'returns the same response shapes documented here. No field name mapping is needed.',
   'The sandbox automatically calls `POST /api/v1/subscribe` and includes a checkout URL in the error message.',
@@ -5076,6 +5085,36 @@ describe('repository discovery', (): void => {
       if (source.includes(snippet)) {
         findings.push({
           issue: `MCP setup callout contains hydration-risk wording "${snippet}".`,
+        });
+      }
+    }
+
+    expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps MCP setup tab groups small for stable hydration', (): void => {
+    expect.assertions(1);
+
+    const overview = readFileSync('mcp/overview.mdx', 'utf8');
+    const setupStart = overview.indexOf('## Setup');
+    const chatGptStart = overview.indexOf('### ChatGPT');
+    const source = overview.slice(setupStart, chatGptStart);
+    const findings: DiscoveryFinding[] = [
+      ...collectSnippetFindings(
+        source,
+        'MCP setup tabs',
+        REQUIRED_MCP_SETUP_TAB_SNIPPETS,
+      ),
+    ];
+    const tabGroups = source.split('<Tabs>').slice(1);
+
+    for (const group of tabGroups) {
+      const beforeEnd = group.slice(0, group.indexOf('</Tabs>'));
+      const tabCount = beforeEnd.match(/<Tab title=/g)?.length ?? 0;
+
+      if (tabCount > 4) {
+        findings.push({
+          issue: `MCP setup tab group has ${tabCount} tabs; split it into smaller groups.`,
         });
       }
     }
