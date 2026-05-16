@@ -256,35 +256,87 @@ Use this workflow when a Python worker, notebook, support queue, or agent needs 
 Tweet and reply media posts use public media URLs directly on `client.x.tweets.create`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. Do not upload first when the media URL is already public.
 
 ```python
+import json
+import sys
+from typing import Any
+
 from x_twitter_scraper import XTwitterScraper
 
 client = XTwitterScraper()
 
-tweet = client.x.tweets.create(
+def create_tweet_handoff(
+    payload: dict[str, Any],
+    base: dict[str, Any],
+) -> dict[str, Any]:
+    if (
+        payload.get("error") == "x_write_unconfirmed"
+        and payload.get("status") == "pending_confirmation"
+    ):
+        return {
+            "status": "pending_confirmation",
+            "write_action_id": payload["writeActionId"],
+            "charged": payload["charged"],
+            "retryable": payload["retryable"],
+            "poll": "GET /x/write-actions/{id}",
+            **base,
+        }
+
+    return {
+        "status": "posted",
+        "tweet_id": payload["tweetId"],
+        **base,
+    }
+```
+
+The generated Python model covers confirmed `tweet_id` responses. Use `with_raw_response.create` when a write worker must branch on the REST `202 x_write_unconfirmed` response, store `writeActionId`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write.
+
+```python
+response = client.x.tweets.with_raw_response.create(
     account="@xquikcom",
     text="New demo video is live.",
     media=["https://example.com/product-demo.mp4"],
 )
+payload = response.json()
 
-print(tweet.tweet_id)
+tweet_handoff = create_tweet_handoff(
+    payload,
+    {
+        "account": "@xquikcom",
+        "media": ["https://example.com/product-demo.mp4"],
+    },
+)
+
+sys.stdout.write(json.dumps(tweet_handoff, ensure_ascii=False) + "\n")
 ```
 
 To post an image reply, add `reply_to_tweet_id`:
 
 ```python
-reply = client.x.tweets.create(
+response = client.x.tweets.with_raw_response.create(
     account="@xquikcom",
     text="Here is the requested screenshot.",
     reply_to_tweet_id="1893704267862470862",
     media=["https://example.com/export-preview.png"],
 )
+payload = response.json()
 
-print(reply.tweet_id)
+reply_handoff = create_tweet_handoff(
+    payload,
+    {
+        "account": "@xquikcom",
+        "reply_to_tweet_id": "1893704267862470862",
+        "media": ["https://example.com/export-preview.png"],
+    },
+)
+
+sys.stdout.write(json.dumps(reply_handoff, ensure_ascii=False) + "\n")
 ```
 
 For DM attachments, upload the local file first and pass the returned `media.media_id` as the only `media_ids` item:
 
 ```python
+import json
+import sys
 from pathlib import Path
 
 media = client.x.media.upload(
@@ -299,10 +351,18 @@ dm = client.x.dm.send(
     media_ids=[media.media_id],
 )
 
-print(dm.message_id)
+dm_handoff = {
+    "status": "sent",
+    "message_id": dm.message_id,
+    "media_id": media.media_id,
+    "account": "@xquikcom",
+    "user_id": "44196397",
+}
+
+sys.stdout.write(json.dumps(dm_handoff, ensure_ascii=False) + "\n")
 ```
 
-`client.x.tweets.create` returns `tweet.tweet_id` for confirmed posts. `client.x.media.upload` returns `media.media_id` for DM attachments, and `client.x.dm.send` returns `dm.message_id` for support tickets, CRM records, queue jobs, or agent memory.
+`client.x.tweets.create` returns `tweet.tweet_id` for confirmed posts. Raw create responses can also include the pending write fields above when confirmation is still running. `client.x.media.upload` returns `media.media_id` for DM attachments, and `client.x.dm.send` returns `dm.message_id` for support tickets, CRM records, queue jobs, or agent memory.
 
 Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.media_id` values to `client.x.tweets.create`; that method uses `media` with public media URLs.
 
@@ -371,6 +431,7 @@ if page.has_next_page:
 - [Get Extraction](/api-reference/extractions/get)
 - [Export Extraction](/api-reference/extractions/export)
 - [Create Tweet](/api-reference/x-write/create-tweet)
+- [Get Write Action Status](/api-reference/x-write/get-write-action-status)
 - [Upload Media](/api-reference/x-write/upload-media)
 - [Send Direct Message](/api-reference/x-write/send-dm)
 - [Webhook Overview](/webhooks/overview)
