@@ -1837,7 +1837,7 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
   'Use `sinceTime` and `untilTime` as Unix timestamps in seconds',
   '--data-urlencode "sinceTime=1777392000"',
   '--data-urlencode "untilTime=1777478400"',
-  'process.stdout.write(`${JSON.stringify(row)}\\n`);',
+  'process.stdout.write(JSON.stringify(row) + "\\n");',
   '`resultsLimit`',
   'Estimate is free.',
   'Exports are free after the extraction job exists.',
