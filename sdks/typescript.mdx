@@ -203,26 +203,86 @@ Use this workflow when a TypeScript worker, support queue, or agent service need
 Tweet and reply media posts use public media URLs directly on `client.x.tweets.create`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. Do not upload first when the media URL is already public.
 
 ```ts
-const tweet = await client.x.tweets.create({
+type TweetCreateResult =
+  | {
+      success: true;
+      tweetId: string;
+    }
+  | {
+      error: "x_write_unconfirmed";
+      status: "pending_confirmation";
+      writeActionId: string;
+      charged: false;
+      retryable: false;
+    };
+
+function createTweetHandoff(
+  result: TweetCreateResult,
+  base: {
+    account: string;
+    media: string[];
+    reply_to_tweet_id?: string;
+  },
+) {
+  const thread = base.reply_to_tweet_id
+    ? { reply_to_tweet_id: base.reply_to_tweet_id }
+    : {};
+
+  if ("writeActionId" in result) {
+    return {
+      status: "pending_confirmation",
+      write_action_id: result.writeActionId,
+      charged: result.charged,
+      retryable: result.retryable,
+      poll: "GET /x/write-actions/{id}",
+      ...base,
+      ...thread,
+    };
+  }
+
+  return {
+    status: "posted",
+    tweet_id: result.tweetId,
+    ...base,
+    ...thread,
+  };
+}
+```
+
+The generated TypeScript SDK models confirmed `tweetId` responses. The REST API can also return `202 x_write_unconfirmed`; treat that runtime value as pending, store `writeActionId`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write.
+
+```ts
+const tweet = (await client.x.tweets.create({
   account: "@xquikcom",
   text: "New demo video is live.",
   media: ["https://example.com/product-demo.mp4"],
+})) as TweetCreateResult;
+
+const tweetHandoff = createTweetHandoff(tweet, {
+  account: "@xquikcom",
+  media: ["https://example.com/product-demo.mp4"],
 });
 
-process.stdout.write(`${tweet.tweetId}\n`);
+process.stdout.write(`${JSON.stringify(tweetHandoff)}\n`);
 ```
 
 To post an image reply, add `reply_to_tweet_id`:
 
 ```ts
-const reply = await client.x.tweets.create({
+const reply = (await client.x.tweets.create({
   account: "@xquikcom",
   text: "Here is the requested screenshot.",
   reply_to_tweet_id: "1893704267862470862",
   media: ["https://example.com/export-preview.png"],
+})) as TweetCreateResult;
+
+const replyHandoff = createTweetHandoff(reply, {
+  account: "@xquikcom",
+  reply_to_tweet_id: "1893704267862470862",
+  media: ["https://example.com/export-preview.png"],
 });
 
-process.stdout.write(`${reply.tweetId}\n`);
+process.stdout.write(`${JSON.stringify(replyHandoff)}\n`);
 ```
 
 For DM attachments, upload the local file first and pass the returned `media.mediaId` as the only `media_ids` item:
@@ -241,10 +301,18 @@ const dm = await client.x.dm.send("44196397", {
   media_ids: [media.mediaId],
 });
 
-process.stdout.write(`${dm.messageId}\n`);
+const dmHandoff = {
+  status: "sent",
+  message_id: dm.messageId,
+  media_id: media.mediaId,
+  account: "@xquikcom",
+  user_id: "44196397",
+};
+
+process.stdout.write(`${JSON.stringify(dmHandoff)}\n`);
 ```
 
-`client.x.tweets.create` returns `tweet.tweetId` for confirmed posts. `client.x.media.upload` returns `media.mediaId` for DM attachments, and `client.x.dm.send` returns `dm.messageId` for support tickets, CRM records, queue jobs, or agent memory.
+`client.x.tweets.create` returns `tweet.tweetId` for confirmed posts or the pending write fields above when confirmation is still running. `client.x.media.upload` returns `media.mediaId` for DM attachments, and `client.x.dm.send` returns `dm.messageId` for support tickets, CRM records, queue jobs, or agent memory.
 
 Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.mediaId` values to `client.x.tweets.create`; that method uses `media` with public media URLs.
 
