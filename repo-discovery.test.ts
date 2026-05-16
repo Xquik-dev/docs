@@ -142,6 +142,8 @@ const REQUIRED_SDK_OVERVIEW_SNIPPETS = [
   'Cost: 10 credits per media upload plus 10 credits per',
   'instant monitors cost 21 credits per active monitor-hour.',
   '[MCP Server](/mcp/overview)',
+  'export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"',
+  'OAuth 2.1 bearer tokens are supported where the generated SDK exposes `X_TWITTER_SCRAPER_BEARER_TOKEN`.',
 ] as const;
 
 const FORBIDDEN_SDK_OVERVIEW_SNIPPETS = [
