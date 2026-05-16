@@ -240,16 +240,43 @@ async () => {
 
 ```javascript
 async () => {
-  return xquik.request('/api/v1/x/tweets', {
+  const body = {
+    account: 'myxhandle',
+    text: 'Launch media is ready',
+    reply_to_tweet_id: '1893456789012345678',
+    media: ['https://example.com/product-demo.mp4']
+  };
+
+  const result = await xquik.request('/api/v1/x/tweets', {
     method: 'POST',
-    body: {
-      account: 'myxhandle',
-      text: 'Launch media is ready',
-      reply_to_tweet_id: '1893456789012345678',
-      media: ['https://example.com/product-demo.mp4']
-    }
+    body
   });
-  // Returns { success: true, tweet_id: '...' } or a pending write_action_id
+
+  if (result.error === 'x_write_unconfirmed') {
+    return {
+      source: 'xquik_mcp',
+      job: 'tweet_write',
+      status: result.status,
+      write_action_id: result.write_action_id,
+      charged: result.charged,
+      retryable: result.retryable,
+      poll: `/api/v1/x/write-actions/${result.write_action_id}`,
+      account: body.account,
+      reply_to_tweet_id: body.reply_to_tweet_id,
+      media: body.media
+    };
+  }
+
+  return {
+    source: 'xquik_mcp',
+    job: 'tweet_write',
+    status: 'posted',
+    tweet_id: result.tweet_id,
+    account: body.account,
+    reply_to_tweet_id: body.reply_to_tweet_id,
+    media: body.media,
+    charged: true
+  };
 }
 ```
 
@@ -257,22 +284,38 @@ async () => {
 
 ```javascript
 async () => {
+  const account = 'myxhandle';
+  const user_id = '44196397';
+  const source_url = 'https://example.com/image.png';
+
   const media = await xquik.request('/api/v1/x/media', {
     method: 'POST',
     body: {
-      account: 'myxhandle',
-      url: 'https://example.com/image.png'
+      account,
+      url: source_url
     }
   });
-  // Returns { success: true, media_id: '...', media_url: '...' }
-  return xquik.request('/api/v1/x/dm/44196397', {
+
+  const dm = await xquik.request(`/api/v1/x/dm/${user_id}`, {
     method: 'POST',
     body: {
-      account: 'myxhandle',
+      account,
       text: 'Here is the asset',
       media_ids: [media.media_id]
     }
   });
+
+  return {
+    source: 'xquik_mcp',
+    job: 'dm_media',
+    status: 'sent',
+    user_id,
+    account,
+    source_url,
+    media_id: media.media_id,
+    media_url: media.media_url,
+    message_id: dm.message_id
+  };
 }
 ```
 
