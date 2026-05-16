@@ -228,9 +228,11 @@ Use `ExtractionExportResultsParams.Format.JSON` for a JSON file handoff or `Extr
 Use this workflow when a Kotlin service needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `client.x().tweets().create` maps to `POST /x/tweets`; pass public media URLs through `.addMedia()` or `.media()`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB, and do not mix video with other media. For replies, set `.replyToTweetId()` to the parent tweet ID. `client.x().media().upload` maps to `POST /x/media`; use `media.mediaId()` only for the one-item DM `.addMediaId()` handoff.
 
 ```kotlin
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.x_twitter_scraper.api.client.XTwitterScraperClient
 import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient
+import com.x_twitter_scraper.api.core.http.HttpResponseFor
 import com.x_twitter_scraper.api.models.x.dm.DmSendParams
 import com.x_twitter_scraper.api.models.x.dm.DmSendResponse
 import com.x_twitter_scraper.api.models.x.media.MediaUploadParams
@@ -240,22 +242,74 @@ import com.x_twitter_scraper.api.models.x.tweets.TweetCreateResponse
 import java.nio.file.Paths
 
 val client: XTwitterScraperClient = XTwitterScraperOkHttpClient.fromEnv()
+val objectMapper = ObjectMapper()
 
-val tweet: TweetCreateResponse = client.x().tweets().create(
+fun createTweetHandoff(
+    payload: Map<String, Any?>,
+    base: Map<String, Any?>,
+): Map<String, Any?> {
+    val handoff = linkedMapOf<String, Any?>()
+
+    if (
+        payload["error"] == "x_write_unconfirmed" &&
+        payload["status"] == "pending_confirmation"
+    ) {
+        handoff["status"] = "pending_confirmation"
+        handoff["write_action_id"] = payload["writeActionId"]
+        handoff["charged"] = payload["charged"]
+        handoff["retryable"] = payload["retryable"]
+        handoff["poll"] = "GET /x/write-actions/{id}"
+    } else {
+        handoff["status"] = "posted"
+        handoff["tweet_id"] = payload["tweetId"]
+    }
+
+    handoff.putAll(base)
+    return handoff
+}
+
+val tweetPayload: Map<String, Any?> = client.x().tweets().withRawResponse().create(
     TweetCreateParams.builder()
         .account("@xquikcom")
         .text("Shipping the weekly X API video.")
         .addMedia("https://static.example.com/reports/x-api-export.mp4")
         .build()
+).use { response: HttpResponseFor<TweetCreateResponse> ->
+    objectMapper.readValue(
+        response.body(),
+        object : TypeReference<Map<String, Any?>>() {},
+    )
+}
+
+val tweetHandoff = createTweetHandoff(
+    tweetPayload,
+    linkedMapOf(
+        "account" to "@xquikcom",
+        "media" to listOf("https://static.example.com/reports/x-api-export.mp4"),
+    ),
 )
 
-val reply: TweetCreateResponse = client.x().tweets().create(
+val replyPayload: Map<String, Any?> = client.x().tweets().withRawResponse().create(
     TweetCreateParams.builder()
         .account("@xquikcom")
         .text("Here is the chart behind the update.")
         .addMedia("https://static.example.com/reports/reply-chart.png")
-        .replyToTweetId(tweet.tweetId())
+        .replyToTweetId("1893704267862470862")
         .build()
+).use { response: HttpResponseFor<TweetCreateResponse> ->
+    objectMapper.readValue(
+        response.body(),
+        object : TypeReference<Map<String, Any?>>() {},
+    )
+}
+
+val replyHandoff = createTweetHandoff(
+    replyPayload,
+    linkedMapOf(
+        "account" to "@xquikcom",
+        "reply_to_tweet_id" to "1893704267862470862",
+        "media" to listOf("https://static.example.com/reports/reply-chart.png"),
+    ),
 )
 
 val media: MediaUploadResponse = client.x().media().upload(
@@ -274,16 +328,20 @@ val dm: DmSendResponse = client.x().dm().send(
         .build()
 )
 
-val handoff = linkedMapOf<String, Any?>(
-    "tweet_id" to tweet.tweetId(),
-    "reply_tweet_id" to reply.tweetId(),
-    "dm_message_id" to dm.messageId(),
+val dmHandoff = linkedMapOf(
+    "status" to "sent",
+    "message_id" to dm.messageId(),
+    "media_id" to media.mediaId(),
+    "account" to "@xquikcom",
+    "user_id" to "44196397",
 )
 
-println(ObjectMapper().writeValueAsString(handoff))
+println(objectMapper.writeValueAsString(tweetHandoff))
+println(objectMapper.writeValueAsString(replyHandoff))
+println(objectMapper.writeValueAsString(dmHandoff))
 ```
 
-Store `tweet.tweetId()` and `reply.tweetId()` on the CMS, queue job, or agent state before scheduling follow-up work. Store `dm.messageId()` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.mediaId()` values to `client.x().tweets().create`; that method uses public media URLs through `media`.
+The generated Kotlin response model covers confirmed `tweetId` responses. Use `client.x().tweets().withRawResponse().create(...)` when a write worker must branch on the REST `202 x_write_unconfirmed` response, store `writeActionId`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write. Store `tweetHandoff`, `replyHandoff`, and `dmHandoff` on the CMS, support ticket, queue job, CRM note, or agent state before scheduling follow-up work. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.mediaId()` values to `client.x().tweets().create`; that method uses public media URLs through `media`.
 
 ## Error Handling
 
@@ -329,6 +387,7 @@ if (tweets.hasNextPage()) {
 
 - [Search Tweets](/api-reference/x/search-tweets)
 - [Create Tweet](/api-reference/x-write/create-tweet)
+- [Get Write Action Status](/api-reference/x-write/get-write-action-status)
 - [Upload Media](/api-reference/x-write/upload-media)
 - [Send Direct Message](/api-reference/x-write/send-dm)
 - [Create Monitor](/api-reference/monitors/create)
