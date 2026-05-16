@@ -8,13 +8,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Webhooks deliver events from monitored X accounts to your server in real time. Every delivery is signed with HMAC-SHA256 so you can verify authenticity.
+Webhooks deliver events from account or keyword monitors to your server in real time. Every delivery is signed with HMAC-SHA256 so you can verify authenticity.
 
-Use webhooks when `tweet.new`, `tweet.reply`, `tweet.quote`, or `tweet.retweet` events must reach your app without polling. The setup returns a monitor ID, webhook ID, one-time signing secret, and signed JSON deliveries. Webhook operations are free. Active monitors cost 21 credits/hour and include stored events plus webhook delivery.
+Use webhooks when `tweet.new`, `tweet.reply`, `tweet.quote`, or `tweet.retweet` events from tracked accounts or matching keyword queries must reach your app without polling. The setup returns a monitor ID, webhook ID, one-time signing secret, and signed JSON deliveries. Webhook operations are free. Active monitors cost 21 credits/hour and include stored events plus webhook delivery.
 
 <CardGroup cols={3}>
   <Card title="Account or keyword monitor" icon="radio">
-    Output: monitor ID, username or keyword, and selected event types.
+    Output: monitor ID, username or query, and selected event types.
     Cost: 21 credits/hour while active.
   </Card>
 
@@ -35,9 +35,11 @@ Get webhooks working in 3 steps:
 
 <Steps>
   <Step title="Create a monitor">
-    Start monitoring an X account for specific event types.
+    Choose an account monitor for one X account, or a keyword monitor for matching query results.
 
-    ```bash
+    <CodeGroup>
+
+    ```bash Account monitor
     curl -X POST https://xquik.com/api/v1/monitors \
       -H "x-api-key: xq_YOUR_KEY_HERE" \
       -H "Content-Type: application/json" \
@@ -46,6 +48,20 @@ Get webhooks working in 3 steps:
         "eventTypes": ["tweet.new", "tweet.reply"]
       }' | jq
     ```
+
+    ```bash Keyword monitor
+    curl -X POST https://xquik.com/api/v1/monitors/keywords \
+      -H "x-api-key: xq_YOUR_KEY_HERE" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "query": "xquik launch",
+        "eventTypes": ["tweet.new", "tweet.reply"]
+      }' | jq
+    ```
+
+    </CodeGroup>
+
+    Store the returned monitor `id`; account events include `username`, keyword events include `query`.
   </Step>
   <Step title="Register a webhook">
     Provide an HTTPS URL and select which event types to receive. Xquik generates a signing secret. Store it securely, it is only returned once.
@@ -87,7 +103,7 @@ Get webhooks working in 3 steps:
 ## How it works
 
 ```text
-Monitor event -> Xquik -> Your Webhook Endpoint
+Account or keyword monitor event -> Xquik -> Your Webhook Endpoint
 ```
 
 ## Delivery format
@@ -363,5 +379,9 @@ After the 10th failed attempt, the delivery is marked as `exhausted`. A `410 Gon
 
   <Card title="Monitor setup" icon="radio" href="/api-reference/monitors/create">
     Create account monitors that emit events for webhook delivery.
+  </Card>
+
+  <Card title="Keyword monitor setup" icon="search" href="/api-reference/monitors/create-keyword">
+    Create keyword monitors that emit matching tweet events for webhook delivery.
   </Card>
 </CardGroup>

@@ -2667,6 +2667,14 @@ const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
 ] as const;
 
 const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
+  'Webhooks deliver events from account or keyword monitors to your server in real time.',
+  'matching keyword queries must reach your app without polling.',
+  'Output: monitor ID, username or query, and selected event types.',
+  'POST https://xquik.com/api/v1/monitors/keywords',
+  '"query": "xquik launch"',
+  'Store the returned monitor `id`; account events include `username`, keyword events include `query`.',
+  'Account or keyword monitor event -> Xquik -> Your Webhook Endpoint',
+  '<Card title="Keyword monitor setup" icon="search" href="/api-reference/monitors/create-keyword">',
   'base 1 second, multiplier 2x, max 60 seconds',
   'Final attempt. If it fails, the delivery is marked as `exhausted`.',
   'After the 10th failed attempt, the delivery is marked as `exhausted`.',
