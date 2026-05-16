@@ -1090,6 +1090,7 @@ const REQUIRED_MCP_EXAMPLE_PROMPT_SNIPPETS = [
   'Pull all replies to this tweet: https://x.com/elonmusk/status/1893456789012345678',
   'Set up a webhook at https://my-server.com/events for new tweets.',
   'Post a tweet saying: Just shipped v2.0!',
+  'Post a tweet saying: New feature! Use public image URL https://example.com/launch.png.',
 ] as const;
 
 const FORBIDDEN_MCP_EXAMPLE_PROMPT_SNIPPETS = [
@@ -1097,6 +1098,7 @@ const FORBIDDEN_MCP_EXAMPLE_PROMPT_SNIPPETS = [
   '- "What',
   'What\'s',
   'don\'t',
+  'Upload this image and tweet it',
 ] as const;
 
 const REQUIRED_MCP_SETUP_CALLOUT_SNIPPETS = [
