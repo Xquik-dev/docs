@@ -236,6 +236,54 @@ async () => {
 }
 ```
 
+> Scrape tweet replies to CSV, JSON, or XLSX (subscription required)
+
+```javascript
+async () => {
+  const body = {
+    toolType: 'reply_extractor',
+    targetTweetId: '1893704267862470862',
+    resultsLimit: 500
+  };
+
+  const estimate = await xquik.request('/api/v1/extractions/estimate', {
+    method: 'POST',
+    body
+  });
+
+  if (estimate.allowed === false) {
+    return {
+      source: 'xquik_mcp',
+      job: 'reply_extraction',
+      status: 'blocked',
+      error: estimate.error,
+      credits_required: estimate.credits_required,
+      credits_available: estimate.credits_available
+    };
+  }
+
+  const extraction = await xquik.request('/api/v1/extractions', {
+    method: 'POST',
+    body
+  });
+
+  return {
+    source: 'xquik_mcp',
+    job: 'reply_extraction',
+    extraction_id: extraction.id,
+    status: extraction.status,
+    target_tweet_id: body.targetTweetId,
+    results_limit: body.resultsLimit,
+    estimated_results: estimate.estimated_results,
+    credits_required: estimate.credits_required,
+    poll: `/api/v1/extractions/${extraction.id}`,
+    export_csv: `/api/v1/extractions/${extraction.id}/export?format=csv`,
+    export_json: `/api/v1/extractions/${extraction.id}/export?format=json`,
+    export_xlsx: `/api/v1/extractions/${extraction.id}/export?format=xlsx`
+  };
+}
+```
+
 > Post a tweet or reply with public media URLs (subscription required)
 
 ```javascript
