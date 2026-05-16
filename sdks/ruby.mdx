@@ -225,29 +225,61 @@ File.binwrite("xquik-tweet-replies.csv", csv_response.read)
 
 Use this workflow when a Ruby app, Rails job, Sidekiq worker, or agent service needs to post a media-backed tweet, reply with media, or send one uploaded media item in a DM.
 
-Tweet and reply media posts use public media URLs directly on `client.x.tweets.create`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. Do not upload first when the media URL is already public.
+Tweet and reply media posts use public media URLs directly on `POST /x/tweets`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. Do not upload first when the media URL is already public.
+
+Use `client.request` when a write worker must branch on the REST `202 x_write_unconfirmed` response. The generated `client.x.tweets.create` helper is still useful when your flow only continues after a confirmed `tweet.tweet_id`.
 
 ```ruby
-tweet = client.x.tweets.create(
-  account: "@xquikcom",
-  text: "New demo video is live.",
-  media: ["https://example.com/product-demo.mp4"]
+def create_tweet_handoff(client, payload)
+  response = client.request(
+    method: :post,
+    path: "x/tweets",
+    body: payload
+  )
+
+  if response.fetch(:error, nil) == "x_write_unconfirmed"
+    return {
+      "status" => response.fetch(:status),
+      "write_action_id" => response.fetch(:writeActionId),
+      "charged" => response.fetch(:charged),
+      "retryable" => response.fetch(:retryable),
+      "poll" => "GET /x/write-actions/{id}"
+    }
+  end
+
+  {
+    "status" => "success",
+    "tweet_id" => response.fetch(:tweetId),
+    "charged" => true
+  }
+end
+
+tweet_handoff = create_tweet_handoff(
+  client,
+  {
+    account: "@xquikcom",
+    text: "New demo video is live.",
+    media: ["https://example.com/product-demo.mp4"]
+  }
 )
 
-puts(tweet.tweet_id)
+puts(JSON.generate(tweet_handoff))
 ```
 
 To post an image reply, add `reply_to_tweet_id`:
 
 ```ruby
-reply = client.x.tweets.create(
-  account: "@xquikcom",
-  text: "Here is the requested screenshot.",
-  reply_to_tweet_id: "1893704267862470862",
-  media: ["https://example.com/export-preview.png"]
+reply_handoff = create_tweet_handoff(
+  client,
+  {
+    account: "@xquikcom",
+    text: "Here is the requested screenshot.",
+    reply_to_tweet_id: "1893704267862470862",
+    media: ["https://example.com/export-preview.png"]
+  }
 )
 
-puts(reply.tweet_id)
+puts(JSON.generate(reply_handoff))
 ```
 
 For DM attachments, upload the local file first and pass the returned `media.media_id` as the only `media_ids` item:
@@ -270,7 +302,7 @@ File.open("./handoff.png", "rb") do |file|
 end
 ```
 
-`client.x.tweets.create` returns `tweet.tweet_id` for confirmed posts. `client.x.media.upload` returns `media.media_id` for DM attachments, and `client.x.dm.send_` returns `dm.message_id` for support tickets, CRM records, queue jobs, or agent memory.
+Store `write_action_id` and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before retrying a pending tweet or reply. `client.x.tweets.create` returns `tweet.tweet_id` for confirmed-only flows. `client.x.media.upload` returns `media.media_id` for DM attachments, and `client.x.dm.send_` returns `dm.message_id` for support tickets, CRM records, queue jobs, or agent memory.
 
 Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.media_id` values to `client.x.tweets.create`; that method uses `media` with public media URLs.
 
