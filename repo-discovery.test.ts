@@ -2418,6 +2418,9 @@ const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   '<Card title="Modern pagination" icon="history">',
   'Use `cursor`; keep `maxId` only for older integrations that already depend on it.',
   '<Card title="Transient retries only" icon="refresh-cw">',
+  'DM history and outbound `message_text` values can contain private customer or community conversations.',
+  'Store them only in private support, CRM, warehouse, or agent memory systems.',
+  'Shared logs, public artifacts, and status dashboards should keep `message_id`, `sender_id`, `receiver_id`, `created_at`, `media_url`, and job status instead of full DM bodies.',
   '1 credit per message returned',
   '`400 account_required`',
   '`403 dm_not_permitted`',
@@ -2480,6 +2483,7 @@ const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   'Store the optional one-item `media_ids` array containing a `mediaId` from',
   '<Card title="Response" icon="circle-check">',
   'Store `messageId`, `recipient_user_id`, `sender_account`, `message_text`,',
+  'and optional `media_id` in private audit records or support systems.',
   '<Card title="JSON Lines" icon="file-json">',
   'Store history and send records in `xquik-dm-handoff.jsonl`',
 ] as const;
