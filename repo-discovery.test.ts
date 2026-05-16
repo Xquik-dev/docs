@@ -2600,6 +2600,12 @@ const REQUIRED_WEBHOOK_DELETE_API_SNIPPETS = [
 const REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS = [
   '## Operational handoff',
   'It returns the 100 most recent delivery records for one webhook, newest first.',
+  'const deliveryTriage = data.deliveries.map',
+  'const retryCandidates = deliveryTriage.filter',
+  'delivery_triage = [',
+  'retry_candidates = [',
+  'Map each delivery into a small incident row',
+  'avoid dumping the full response into logs',
   '<Card title="Delivery ID" icon="fingerprint">',
   'Store `id` for delivery-level idempotency and support lookup.',
   '<Card title="Event Join" icon="link">',
@@ -2630,6 +2636,11 @@ const REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS = [
   '<Card title="exhausted" icon="circle-x">',
   'All retry attempts have been used.',
   'Xquik will not retry this delivery.',
+] as const;
+
+const FORBIDDEN_WEBHOOK_DELIVERIES_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
 ] as const;
 
 const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
@@ -6150,6 +6161,16 @@ describe('repository discovery', (): void => {
           deliveriesApi,
           'Webhook deliveries API docs',
           REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS,
+        ),
+        ...FORBIDDEN_WEBHOOK_DELIVERIES_RAW_OUTPUT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            deliveriesApi.includes(snippet)
+              ? [
+                  {
+                    issue: `Webhook deliveries API docs print raw delivery responses with "${snippet}".`,
+                  },
+                ]
+              : [],
         ),
         ...collectSnippetFindings(
           overview,

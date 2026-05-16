@@ -27,7 +27,23 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     }
   );
   const data = await response.json();
-  console.log(data);
+  const deliveryTriage = data.deliveries.map((delivery) => ({
+    delivery_id: delivery.id,
+    stream_event_id: delivery.streamEventId,
+    status: delivery.status,
+    attempts: delivery.attempts,
+    receiver_status: delivery.lastStatusCode ?? null,
+    last_error: delivery.lastError ?? null,
+    queued_at: delivery.createdAt,
+    delivered_at: delivery.deliveredAt ?? null,
+    action:
+      delivery.status === "exhausted"
+        ? "page"
+        : delivery.status === "failed" && delivery.attempts >= 3
+          ? "warn"
+          : "track",
+  }));
+  const retryCandidates = deliveryTriage.filter((row) => row.action !== "track");
   ```
 
   ```python Python
@@ -38,7 +54,27 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  delivery_triage = [
+      {
+          "delivery_id": delivery["id"],
+          "stream_event_id": delivery["streamEventId"],
+          "status": delivery["status"],
+          "attempts": delivery["attempts"],
+          "receiver_status": delivery.get("lastStatusCode"),
+          "last_error": delivery.get("lastError"),
+          "queued_at": delivery["createdAt"],
+          "delivered_at": delivery.get("deliveredAt"),
+          "action": "page"
+          if delivery["status"] == "exhausted"
+          else "warn"
+          if delivery["status"] == "failed" and delivery["attempts"] >= 3
+          else "track",
+      }
+      for delivery in data["deliveries"]
+  ]
+  retry_candidates = [
+      row for row in delivery_triage if row["action"] != "track"
+  ]
   ```
 
   ```go Go
@@ -88,6 +124,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 ## Operational handoff
 
 Use this endpoint when your queue, CRM, warehouse, or alerting system needs to reconcile webhook delivery health. It returns the 100 most recent delivery records for one webhook, newest first.
+
+Map each delivery into a small incident row before sending it downstream. Keep `id`, `streamEventId`, `status`, `attempts`, receiver status, timestamps, and the chosen action; avoid dumping the full response into logs.
 
 Store these fields for support and retry triage:
 
