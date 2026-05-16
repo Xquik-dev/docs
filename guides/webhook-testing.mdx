@@ -151,7 +151,10 @@ Simulate a webhook delivery to your local handler without calling Xquik. This is
 ```bash
 # Generate a test signature
 SECRET="your_webhook_secret_here"
-PAYLOAD='{"eventType":"tweet.new","username":"elonmusk","data":{"id":"1893456789012345678","text":"The future is now.","author":{"id":"44196397","userName":"elonmusk","name":"Elon Musk"},"isRetweet":false,"isReply":false,"isQuote":false,"createdAt":"2026-02-24T14:22:00.000Z"}}'
+PAYLOAD=$(cat <<'JSON'
+{"eventType":"tweet.new","schemaVersion":1,"deliveryId":"502","streamEventId":"9002","occurredAt":"2026-02-24T14:22:00.000Z","username":"elonmusk","data":{"id":"1893456789012345678","text":"The future is now.","author":{"id":"44196397","userName":"elonmusk","name":"Elon Musk"},"isRetweet":false,"isReply":false,"isQuote":false,"createdAt":"2026-02-24T14:22:00.000Z"}}
+JSON
+)
 TIMESTAMP=$(date +%s)000
 NONCE=$(openssl rand -hex 16)
 
@@ -171,6 +174,10 @@ curl -X POST http://localhost:3000/webhook \
 ```json
 {
   "eventType": "tweet.new",
+  "schemaVersion": 1,
+  "deliveryId": "502",
+  "streamEventId": "9002",
+  "occurredAt": "2026-02-24T14:22:00.000Z",
   "username": "elonmusk",
   "data": {
     "id": "1893456789012345678",
@@ -188,7 +195,7 @@ curl -X POST http://localhost:3000/webhook \
 }
 ```
 
-Test all event types by changing the `eventType` field: `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet`.
+Include `deliveryId` and `streamEventId` in offline fixtures so receiver idempotency tests match production deliveries. Test all event types by changing the `eventType` field: `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet`.
 
 ## Debugging delivery failures
 

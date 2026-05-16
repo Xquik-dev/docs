@@ -2262,6 +2262,11 @@ const REQUIRED_WEBHOOK_TESTING_SNIPPETS = [
   '"success": true',
   '"statusCode": 200',
   'For end-to-end verification of the configured webhook URL, prefer `POST /webhooks/{id}/test`.',
+  '"schemaVersion":1',
+  '"deliveryId":"502"',
+  '"streamEventId":"9002"',
+  '"occurredAt":"2026-02-24T14:22:00.000Z"',
+  'Include `deliveryId` and `streamEventId` in offline fixtures so receiver idempotency tests match production deliveries.',
 ] as const;
 
 const REQUIRED_WEBHOOK_CREATE_API_SNIPPETS = [
