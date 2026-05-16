@@ -1571,6 +1571,15 @@ const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   '"hasMore": true',
   '"nextCursor": "1001"',
   'Use `limit` up to `1000` and pass `nextCursor` as `after`',
+  'const extractionHandoff = {',
+  'extraction_id: job.id',
+  'status: job.status',
+  'source_username: "elonmusk"',
+  'results_limit: 10000',
+  'handoff_created_at: new Date().toISOString()',
+  'Store `extractionHandoff` in your job table',
+  'Poll by `extraction_id`',
+  '"status": "running"',
   '<Card title="Stable account key" icon="fingerprint">',
   '`xUserId` to `x_user_id`',
   '`User ID` to `x_user_id`',
@@ -5383,7 +5392,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps follower export CRM handoff steps concrete', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('guides/follower-export-crm.mdx', 'utf8');
 
@@ -5394,6 +5403,7 @@ describe('repository discovery', (): void => {
         REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
+    expect(source).not.toContain('console.log(job.id, job.status);');
   });
 
   it('keeps tweet replies export workflow steps concrete', (): void => {
