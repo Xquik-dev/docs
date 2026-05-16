@@ -2789,6 +2789,7 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   '1 credit per follower returned',
   '### 4. Monitor tweets to signed webhooks',
   '`deliveryId`, `streamEventId`, `eventType`, and tweet data',
+  'Store the one-time `secret` returned by `POST /webhooks` and verify `X-Xquik-Signature` against the raw body before accepting the event.',
   '21 credits per active monitor-hour; webhook delivery is included',
   '### 5. Post media tweets or replies',
   '`POST /x/tweets` with `media`',
