@@ -916,6 +916,14 @@ const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
   'Active instant monitors check every 1 second and cost 21 credits per active monitor-hour.',
   'Terraform state can contain the webhook `secret` returned at creation time.',
   '`sensitive = true`',
+  '## Workflow: Declare Media Tweets and Replies',
+  '`x-twitter-scraper_x_tweet`',
+  '`POST /x/tweets`',
+  'media             = ["https://example.com/product-demo.mp4"]',
+  'launch_reply_tweet_id',
+  'Do not pass uploaded media IDs to this resource',
+  'Terraform state for `x-twitter-scraper_x_tweet` does not expose `write_action_id`, media upload resources, or direct-message send resources.',
+  'store returned DM `message_id`, use the REST API, MCP tools, or a generated SDK instead of Terraform.',
 ] as const;
 
 const REQUIRED_LLMS_SNIPPETS = [

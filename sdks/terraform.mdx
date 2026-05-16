@@ -149,6 +149,41 @@ Webhook operations are free. Active instant monitors check every 1 second and co
 
 Terraform state can contain the webhook `secret` returned at creation time. Use an encrypted backend, restrict state access, and mark every output that references the secret as `sensitive = true`. If the secret is lost or exposed, delete and recreate the webhook so Terraform receives a new signing secret.
 
+## Workflow: Declare Media Tweets and Replies
+
+Use `x-twitter-scraper_x_tweet` when an infrastructure change must create one durable tweet or reply as part of a reviewed apply. The resource maps to `POST /x/tweets`, accepts public media URLs in `media`, and stores the confirmed `tweet_id` in Terraform state.
+
+```hcl
+resource "x-twitter-scraper_x_tweet" "launch_reply" {
+  account           = "myxhandle"
+  text              = "Launch assets are ready"
+  reply_to_tweet_id = "1893456789012345678"
+  media             = ["https://example.com/product-demo.mp4"]
+}
+
+output "launch_reply_tweet_id" {
+  value = x-twitter-scraper_x_tweet.launch_reply.tweet_id
+}
+```
+
+### Tweet Resource Mapping
+
+<CardGroup cols={2}>
+  <Card title="Tweet resource" icon="send">
+    Terraform resource `x-twitter-scraper_x_tweet` maps to `POST /x/tweets`. It requires `account`, accepts optional `text`, `reply_to_tweet_id`, `is_note_tweet`, `attachment_url`, `community_id`, and `media`, and returns `tweet_id` plus read-only tweet details in state.
+  </Card>
+
+  <Card title="Media boundary" icon="image">
+    The `media` argument is for public image URLs or exactly one public MP4 URL. Do not pass uploaded media IDs to this resource; uploaded media IDs are for direct messages through `POST /x/dm/{userId}`.
+  </Card>
+</CardGroup>
+
+### Tweet Handoff
+
+After `terraform apply`, hand `tweet_id`, `reply_to_tweet_id`, `account`, and the original `media` URLs to the queue, release record, CRM note, or incident timeline that needs to reconcile the post. Keep the media URLs in your own system so a later state refresh does not become the only audit trail.
+
+Terraform state for `x-twitter-scraper_x_tweet` does not expose `write_action_id`, media upload resources, or direct-message send resources. If a worker must store `202 x_write_unconfirmed` handoffs, upload local media for one-item DM `media_ids`, or store returned DM `message_id`, use the REST API, MCP tools, or a generated SDK instead of Terraform.
+
 ## Error Handling
 
 Provider errors surface through Terraform plan and apply output. REST API response semantics match the [error handling guide](/guides/error-handling).
