@@ -29,20 +29,63 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const nextCursor = data.has_next_page ? data.next_cursor : null;
+  const tweetRows = data.tweets.map((tweet) => ({
+    community_id: communityId,
+    tweet_id: tweet.id,
+    text: tweet.text,
+    author_id: tweet.author?.id ?? null,
+    author_username: tweet.author?.username ?? null,
+    created_at: tweet.createdAt ?? null,
+    like_count: tweet.likeCount ?? null,
+    reply_count: tweet.replyCount ?? null,
+    retweet_count: tweet.retweetCount ?? null,
+    media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
+    next_cursor: nextCursor,
+  }));
+
+  process.stdout.write(JSON.stringify(tweetRows, null, 2));
   ```
 
   ```python Python
+  import json
   import requests
 
+  community_id = "1234567890"
   response = requests.get(
-      "https://xquik.com/api/v1/x/communities/1234567890/tweets",
+      f"https://xquik.com/api/v1/x/communities/{community_id}/tweets",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  next_cursor = data["next_cursor"] if data["has_next_page"] else None
+  tweet_rows = [
+      {
+          "community_id": community_id,
+          "tweet_id": tweet["id"],
+          "text": tweet["text"],
+          "author_id": tweet.get("author", {}).get("id"),
+          "author_username": tweet.get("author", {}).get("username"),
+          "created_at": tweet.get("createdAt"),
+          "like_count": tweet.get("likeCount"),
+          "reply_count": tweet.get("replyCount"),
+          "retweet_count": tweet.get("retweetCount"),
+          "media_urls": [
+              item["mediaUrl"] for item in tweet.get("media", []) if item.get("mediaUrl")
+          ],
+          "next_cursor": next_cursor,
+      }
+      for tweet in data["tweets"]
+  ]
+
+  print(json.dumps(tweet_rows, indent=2))
   ```
 </CodeGroup>
+
+Use `GET /x/communities/{id}/tweets` for community monitoring, content review,
+post exports, or moderation queues. It creates one row per community tweet.
+Store `community_id`, `tweet_id`, `text`, `author_id`, `author_username`,
+`created_at`, `like_count`, `reply_count`, `retweet_count`, `media_urls`, and
+`next_cursor`.
 
 ## Path parameters
 

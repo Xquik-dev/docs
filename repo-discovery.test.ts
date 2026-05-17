@@ -2341,6 +2341,31 @@ const FORBIDDEN_COMMUNITY_MEMBERS_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_COMMUNITY_TWEETS_API_HANDOFF_SNIPPETS = [
+  '`GET /x/communities/{id}/tweets`',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  'const tweetRows = data.tweets.map((tweet) => ({',
+  'community_id: communityId',
+  'tweet_id: tweet.id',
+  'author_id: tweet.author?.id ?? null',
+  'author_username: tweet.author?.username ?? null',
+  'created_at: tweet.createdAt ?? null',
+  'like_count: tweet.likeCount ?? null',
+  'media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? []',
+  '"community_id": community_id',
+  '"tweet_id": tweet["id"]',
+  '"author_username": tweet.get("author", {}).get("username")',
+  '"created_at": tweet.get("createdAt")',
+  '"media_urls": [',
+  'one row per community tweet',
+  '`community_id`, `tweet_id`, `text`,',
+] as const;
+
+const FORBIDDEN_COMMUNITY_TWEETS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct follower handoff',
   '<CardGroup cols={2}>',
@@ -6798,6 +6823,33 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Community members API page prints raw member data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the community tweets API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x/community-tweets.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Community tweets endpoint page',
+        REQUIRED_COMMUNITY_TWEETS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_COMMUNITY_TWEETS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Community tweets API page prints raw tweet data with "${snippet}".`,
                 },
               ]
             : [],
