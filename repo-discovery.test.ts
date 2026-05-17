@@ -2141,13 +2141,31 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
 const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   '## Direct replies handoff',
   '`GET /x/tweets/{id}/replies`',
-  'support, community, moderation, giveaway, or agent workflow',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  'const replyRows = data.tweets.map((reply) => ({',
+  'parent_tweet_id: tweetId',
+  'reply_id: reply.id',
+  'author_id: reply.author?.id ?? null',
+  'author_username: reply.author?.username ?? null',
+  'in_reply_to_id: reply.inReplyToId ?? null',
+  'conversation_id: reply.conversationId ?? null',
+  'media_urls: reply.media?.map((item) => item.mediaUrl).filter(Boolean) ?? []',
+  '"parent_tweet_id": tweet_id',
+  '"reply_id": reply["id"]',
+  '"author_id": (reply.get("author") or {}).get("id")',
+  '"author_username": (reply.get("author") or {}).get("username")',
+  '"in_reply_to_id": reply.get("inReplyToId")',
+  '"conversation_id": reply.get("conversationId")',
+  '"media_urls": [',
+  'support, community, moderation,',
   '`reply_extractor`',
   '`tweets[]`',
   '`tweets[].id`',
   '`tweets[].author.id` and `tweets[].author.username`',
   '`tweets[].inReplyToId` and `conversationId`',
   '`has_next_page` and `next_cursor`',
+  'row per reply for a single tweet',
+  '`parent_tweet_id`, `reply_id`, `text`,',
   '`sinceTime` and `untilTime` are Unix timestamps in seconds',
   'Direct replies calls use the default paid page size',
   '`resultsLimit`',
@@ -2156,6 +2174,11 @@ const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   '1 credit per tweet returned',
   '`402 insufficient_credits`',
   '`Retry-After`',
+] as const;
+
+const FORBIDDEN_TWEET_REPLIES_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
 ] as const;
 
 const REQUIRED_GET_TWEET_API_HANDOFF_SNIPPETS = [
@@ -6656,6 +6679,16 @@ describe('repository discovery', (): void => {
         source,
         'Tweet replies endpoint page',
         REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_TWEET_REPLIES_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Tweet replies API page prints raw reply data with "${snippet}".`,
+                },
+              ]
+            : [],
       ),
     ).toStrictEqual([]);
   });

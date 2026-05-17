@@ -30,24 +30,71 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const nextCursor = data.has_next_page ? data.next_cursor : null;
+  const replyRows = data.tweets.map((reply) => ({
+    parent_tweet_id: tweetId,
+    reply_id: reply.id,
+    text: reply.text,
+    author_id: reply.author?.id ?? null,
+    author_username: reply.author?.username ?? null,
+    created_at: reply.createdAt ?? null,
+    in_reply_to_id: reply.inReplyToId ?? null,
+    conversation_id: reply.conversationId ?? null,
+    like_count: reply.likeCount ?? null,
+    reply_count: reply.replyCount ?? null,
+    retweet_count: reply.retweetCount ?? null,
+    media_urls: reply.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
+    next_cursor: nextCursor,
+  }));
+
+  process.stdout.write(JSON.stringify(replyRows, null, 2));
   ```
 
   ```python Python
+  import json
   import requests
 
+  tweet_id = "1893456789012345678"
   response = requests.get(
-      "https://xquik.com/api/v1/x/tweets/1893456789012345678/replies",
+      f"https://xquik.com/api/v1/x/tweets/{tweet_id}/replies",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  next_cursor = data["next_cursor"] if data["has_next_page"] else None
+  reply_rows = [
+      {
+          "parent_tweet_id": tweet_id,
+          "reply_id": reply["id"],
+          "text": reply["text"],
+          "author_id": (reply.get("author") or {}).get("id"),
+          "author_username": (reply.get("author") or {}).get("username"),
+          "created_at": reply.get("createdAt"),
+          "in_reply_to_id": reply.get("inReplyToId"),
+          "conversation_id": reply.get("conversationId"),
+          "like_count": reply.get("likeCount"),
+          "reply_count": reply.get("replyCount"),
+          "retweet_count": reply.get("retweetCount"),
+          "media_urls": [
+              item["mediaUrl"] for item in reply.get("media", []) if item.get("mediaUrl")
+          ],
+          "next_cursor": next_cursor,
+      }
+      for reply in data["tweets"]
+  ]
+
+  print(json.dumps(reply_rows, indent=2))
   ```
 </CodeGroup>
 
 ## Direct replies handoff
 
-Use `GET /x/tweets/{id}/replies` when a support, community, moderation, giveaway, or agent workflow needs the newest reply page as JSON. It returns one page of replies for a single tweet. For larger CSV, JSON, or XLSX exports with an estimate and saved job, use [`reply_extractor`](/guides/tweet-replies-export).
+Use `GET /x/tweets/{id}/replies` when a support, community, moderation,
+giveaway, or agent workflow needs the newest reply page as JSON. It returns one
+row per reply for a single tweet. Store `parent_tweet_id`, `reply_id`, `text`,
+`author_id`, `author_username`, `created_at`, `in_reply_to_id`,
+`conversation_id`, engagement counts, media URLs, and `next_cursor`. For larger
+CSV, JSON, or XLSX exports with an estimate and saved job, use
+[`reply_extractor`](/guides/tweet-replies-export).
 
 <CardGroup cols={2}>
   <Card title="Reply rows" icon="rows-3">
