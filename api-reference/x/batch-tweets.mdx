@@ -24,26 +24,90 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 
   ```javascript Node.js
-  const ids = "1893456789012345678,1893456789012345679";
-  const response = await fetch(`https://xquik.com/api/v1/x/tweets?ids=${ids}`, {
-    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
-  });
+  const ids = ["1893456789012345678", "1893456789012345679"];
+  const response = await fetch(
+    `https://xquik.com/api/v1/x/tweets?ids=${ids.join(",")}`,
+    {
+      headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+    }
+  );
   const data = await response.json();
-  console.log(data);
+  const tweetsById = new Map(data.tweets.map((tweet) => [tweet.id, tweet]));
+  const tweetRows = data.tweets.map((tweet) => ({
+    requested_ids: ids,
+    tweet_id: tweet.id,
+    text: tweet.text,
+    author_id: tweet.author?.id ?? null,
+    author_username: tweet.author?.username ?? null,
+    created_at: tweet.createdAt ?? null,
+    conversation_id: tweet.conversationId ?? null,
+    like_count: tweet.likeCount ?? null,
+    reply_count: tweet.replyCount ?? null,
+    retweet_count: tweet.retweetCount ?? null,
+    quote_count: tweet.quoteCount ?? null,
+    media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
+    has_next_page: data.has_next_page,
+    next_cursor: data.next_cursor || null,
+  }));
+  const missingIds = ids.filter((id) => !tweetsById.has(id));
   ```
 
   ```python Python
   import requests
 
+  ids = ["1893456789012345678", "1893456789012345679"]
   response = requests.get(
       "https://xquik.com/api/v1/x/tweets",
-      params={"ids": "1893456789012345678,1893456789012345679"},
+      params={"ids": ",".join(ids)},
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  tweets_by_id = {tweet["id"]: tweet for tweet in data["tweets"]}
+  tweet_rows = [
+      {
+          "requested_ids": ids,
+          "tweet_id": tweet["id"],
+          "text": tweet["text"],
+          "author_id": (tweet.get("author") or {}).get("id"),
+          "author_username": (tweet.get("author") or {}).get("username"),
+          "created_at": tweet.get("createdAt"),
+          "conversation_id": tweet.get("conversationId"),
+          "like_count": tweet.get("likeCount"),
+          "reply_count": tweet.get("replyCount"),
+          "retweet_count": tweet.get("retweetCount"),
+          "quote_count": tweet.get("quoteCount"),
+          "media_urls": [
+              item["mediaUrl"]
+              for item in tweet.get("media", [])
+              if item.get("mediaUrl")
+          ],
+          "has_next_page": data["has_next_page"],
+          "next_cursor": data["next_cursor"] or None,
+      }
+      for tweet in data["tweets"]
+  ]
+  missing_ids = [tweet_id for tweet_id in ids if tweet_id not in tweets_by_id]
   ```
 </CodeGroup>
+
+The Node.js and Python snippets shape durable tweet rows instead of printing
+full response pages. Persist `tweetRows` or `tweet_rows` and `missingIds` or
+`missing_ids` with the original ID list so retries only request missing tweets.
+
+## Direct batch tweet handoff
+
+Use `GET /x/tweets` when a CRM, warehouse, newsroom, moderation queue, or agent
+workflow already has tweet IDs and needs tweet text, authors, metrics, media
+URLs, and missing-ID handling in one response. Use [Get Tweet](/api-reference/x/get-tweet)
+when you need one tweet by ID, or [Search Tweets](/api-reference/x/search-tweets)
+when you need to find tweets by query.
+
+Store `requested_ids`, `tweet_id`, `text`, `author_id`, `author_username`,
+`created_at`, `conversation_id`, engagement counts, media URLs,
+`has_next_page`, and `next_cursor`. Join returned tweets by `tweet_id` instead
+of relying on response order. Send at most 100 IDs per request. Batch requests
+always return `has_next_page: false` and `next_cursor: ""`; zero affordable
+results return `402 insufficient_credits`.
 
 ## Query parameters
 

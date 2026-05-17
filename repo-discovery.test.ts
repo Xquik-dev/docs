@@ -2650,6 +2650,33 @@ const FORBIDDEN_LIST_MEMBERS_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_BATCH_TWEETS_API_HANDOFF_SNIPPETS = [
+  '## Direct batch tweet handoff',
+  '`GET /x/tweets`',
+  'CRM, warehouse, newsroom, moderation queue,',
+  '[Get Tweet](/api-reference/x/get-tweet)',
+  '[Search Tweets](/api-reference/x/search-tweets)',
+  'const tweetsById = new Map(data.tweets.map',
+  'const tweetRows = data.tweets.map',
+  'const missingIds = ids.filter',
+  'tweets_by_id = {tweet["id"]: tweet for tweet in data["tweets"]}',
+  'tweet_rows = [',
+  'missing_ids = [tweet_id for tweet_id in ids if tweet_id not in tweets_by_id]',
+  'shape durable tweet rows instead of printing',
+  '`requested_ids`, `tweet_id`, `text`,',
+  '`has_next_page`, and `next_cursor`',
+  'Join returned tweets by `tweet_id` instead',
+  '100 IDs per request',
+  '`has_next_page: false`',
+  '`next_cursor: ""`',
+  '`402 insufficient_credits`',
+] as const;
+
+const FORBIDDEN_BATCH_TWEETS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_BATCH_USERS_API_HANDOFF_SNIPPETS = [
   '## Direct batch user handoff',
   '`GET /x/users/batch`',
@@ -7386,6 +7413,30 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Batch users API page prints raw profile data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
+  });
+
+  it('keeps the batch tweets API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/batch-tweets.mdx', 'utf8');
+
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Batch tweets API page',
+        REQUIRED_BATCH_TWEETS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_BATCH_TWEETS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Batch tweets API page prints raw tweet data with "${snippet}".`,
                 },
               ]
             : [],
