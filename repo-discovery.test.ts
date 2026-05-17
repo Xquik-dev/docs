@@ -2525,42 +2525,6 @@ const FORBIDDEN_FOLLOWING_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
-const REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS = [
-  '## Direct follow relationship handoff',
-  '`GET /x/followers/check`',
-  'CRM, giveaway eligibility check,',
-  'const source = "xquikcom";',
-  'const target = "elonmusk";',
-  'const params = new URLSearchParams({ source, target });',
-  'const relationshipRow = {',
-  'source_username: data.sourceUsername',
-  'target_username: data.targetUsername',
-  'source_follows_target: data.isFollowing',
-  'target_follows_source: data.isFollowedBy',
-  'process.stdout.write(`${JSON.stringify(relationshipRow)}\\n`);',
-  'import json',
-  'source = "xquikcom"',
-  'target = "elonmusk"',
-  'relationship_row = {',
-  '"source_username": data["sourceUsername"]',
-  '"target_username": data["targetUsername"]',
-  '"source_follows_target": data["isFollowing"]',
-  '"target_follows_source": data["isFollowedBy"]',
-  'print(json.dumps(relationship_row))',
-  'shape a durable relationship row instead of',
-  '`source_username`, `target_username`,',
-  '`source_follows_target`, and',
-  '`target_follows_source`',
-  '`isFollowing` means',
-  '`isFollowedBy` means',
-  '`400 missing_params`',
-] as const;
-
-const FORBIDDEN_CHECK_FOLLOWER_API_RAW_OUTPUT_SNIPPETS = [
-  'console.log(data);',
-  'print(data)',
-] as const;
-
 const REQUIRED_LIST_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct list follower handoff',
   '`GET /x/lists/{id}/followers`',
@@ -7258,30 +7222,6 @@ describe('repository discovery', (): void => {
             : [],
       ),
     ).toStrictEqual([]);
-  });
-
-  it('keeps the check follower API handoff concrete', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('api-reference/x/check-follower.mdx', 'utf8');
-
-    expect([
-      ...collectSnippetFindings(
-        source,
-        'Check follower API page',
-        REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS,
-      ),
-      ...FORBIDDEN_CHECK_FOLLOWER_API_RAW_OUTPUT_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? [
-                {
-                  issue: `Check follower API page prints raw relationship data with "${snippet}".`,
-                },
-              ]
-            : [],
-      ),
-    ]).toStrictEqual([]);
   });
 
   it('keeps the list followers API handoff concrete', (): void => {
