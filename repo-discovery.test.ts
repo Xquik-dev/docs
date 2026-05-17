@@ -3904,6 +3904,49 @@ const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
   'Hermes Tweet includes 101 agent-callable Xquik endpoints generated from the OpenAPI contract, plus 31 MPP-tagged read endpoints in the bundled catalog.',
 ] as const;
 
+const REQUIRED_TWEETCLAW_GUIDE_SNIPPETS = [
+  'TweetClaw is the official OpenClaw plugin for using Xquik from an OpenClaw agent.',
+  'openclaw plugins install @xquik/tweetclaw',
+  'openclaw plugins install @xquik/tweetclaw@1.6.31 --pin',
+  '`@xquik/tweetclaw` is the official package. The plugin id is `tweetclaw`.',
+  'The current source-truth version is `1.6.31`.',
+  'MPP lets TweetClaw call 31 read-only X API endpoints without an Xquik account or API key.',
+  '<Card title="explore" icon="search">',
+  'Search the bundled Xquik endpoint catalog and inspect parameters.',
+  '<Card title="tweetclaw" icon="terminal">',
+  'Call catalog-listed Xquik endpoints with structured method, path, query, and',
+  'The `explore` tool is the safe first step.',
+  'openclaw config set tools.alsoAllow \'["explore", "tweetclaw"]\'',
+  '## Workflow Handoffs',
+  '<Card title="Tweet Replies Export" icon="message-circle">',
+  'Estimate `reply_extractor` with `targetTweetId`, create the extraction, poll',
+  '<Card title="Follower Export" icon="users">',
+  'Estimate `follower_explorer` with `targetUsername`, create the extraction,',
+  '<Card title="Media Tweets and DM Attachments" icon="image">',
+  'For tweets or replies, call `POST /api/v1/x/tweets` with public media URLs',
+  '`mediaId` as the one-item `media_ids` value, then store `messageId`.',
+  'For a tweet or reply, call POST /api/v1/x/tweets with media set to public HTTPS image or MP4 URLs. Do not send media_ids.',
+  'For a DM attachment, call POST /api/v1/x/media first, then POST /api/v1/x/dm/{userId} with one media_ids value.',
+  'Return tweetId for posts, and return mediaId plus messageId for DMs.',
+  'Only change `baseUrl` for a self-hosted Xquik-compatible API.',
+  'TweetClaw exposes 99 agent-callable endpoints across 9 categories.',
+  '<Card title="account" icon="user">',
+  '1 endpoint for account status and usage.',
+  '<Card title="composition" icon="pen-line">',
+  '13 endpoints for compose, drafts, writing styles, and radar.',
+  '<Card title="extraction" icon="file-spreadsheet">',
+  '9 endpoints for extraction jobs, giveaway draws, and exports.',
+  '<Card title="monitoring" icon="radio">',
+  '18 endpoints for account monitors, keyword monitors, events, and webhooks.',
+  '<Card title="twitter" icon="search">',
+  '37 endpoints for search, lookups, timelines, articles, trends, bookmarks,',
+  '<Card title="x-write" icon="send">',
+  '18 endpoints for post, reply, like, retweet, follow, remove follower, DM,',
+  'TweetClaw keeps credentials in plugin config and injects auth at request time.',
+  'OpenClaw approval prompts apply before write-like `tweetclaw` calls.',
+  'Dashboard-only account-admin, billing, support-ticket, and raw credential flows are excluded',
+] as const;
+
 const REQUIRED_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS = [
   'Build a Microsoft Agent Framework agent that can search tweets, hand off IDs and cursors, post tweets, and run extraction jobs',
   'from pathlib import Path',
@@ -7281,6 +7324,25 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('The current package version is `0.1.5`');
     expect(source).not.toContain('Hermes Tweet includes 99');
     expect(source).not.toContain('tweet_action` stays enabled');
+  });
+
+  it('keeps the TweetClaw guide aligned with the current plugin scope', (): void => {
+    expect.assertions(4);
+
+    const source = readFileSync('guides/tweetclaw.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'TweetClaw guide',
+        REQUIRED_TWEETCLAW_GUIDE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(source).not.toContain('@xquik/tweetclaw@1.6.30');
+    expect(source).not.toContain('TweetClaw exposes 101 agent-callable');
+    expect(source).not.toContain(
+      'For tweets or replies, call `POST /api/v1/x/tweets` with uploaded media IDs',
+    );
   });
 
   it('keeps the Microsoft Agent Framework guide handoff concrete', (): void => {
