@@ -8,7 +8,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Build a CrewAI crew that can search tweets, analyze users, and monitor accounts - all powered by Xquik's MCP server.
+Build a CrewAI crew that can search tweets, hand off IDs and cursors, monitor accounts, and run extraction jobs - all powered by Xquik's MCP server.
 
 ## Prerequisites
 
@@ -27,6 +27,7 @@ MCP support is built into CrewAI core - no extra packages needed.
 ## Full Example
 
 ```python
+from pathlib import Path
 from crewai import Agent, Task, Crew, Process
 from crewai.mcp import MCPServerHTTP
 
@@ -43,8 +44,8 @@ researcher = Agent(
 )
 
 task = Task(
-    description="Search for the latest tweets about AI agents, summarize the top 5 most engaged tweets, and identify key influencers in the conversation.",
-    expected_output="A structured report with top tweets, engagement metrics, and influencer list",
+    description="Search for the latest tweets about AI agents. Return compact JSON with query, route_used, tweets[{tweet_id,text,author_username,created_at}], has_more, next_cursor, and key influencers.",
+    expected_output="Compact JSON with tweet rows, pagination state, and influencer notes",
     agent=researcher,
 )
 
@@ -56,16 +57,36 @@ crew = Crew(
 )
 
 result = crew.kickoff()
-print(result)
+Path("xquik-crewai-handoff.json").write_text(str(result), encoding="utf-8")
 ```
 
 The `mcps` field on `Agent` auto-discovers all Xquik tools and makes them available to the agent. No manual tool wiring needed.
+
+The MCP runtime returns normalized snake_case fields through `xquik.request()`, so keep CrewAI tasks aligned with `tweet_id`, `has_more`, `next_cursor`, and returned job IDs.
+
+## Handoff Checklist
+
+<CardGroup cols={2}>
+  <Card title="Tweet search rows" icon="search">
+    Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.
+  </Card>
+  <Card title="Monitor and webhook setup" icon="radio">
+    Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager.
+  </Card>
+  <Card title="Extraction jobs" icon="database">
+    Store `extraction_id`, `status`, `poll`, and `export_after_complete`; poll before loading CSV, JSON, or XLSX rows.
+  </Card>
+  <Card title="Writes" icon="send">
+    Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, and `poll`; do not resend pending writes.
+  </Card>
+</CardGroup>
 
 ## Multi-Agent Crew
 
 Use multiple agents with different roles sharing the same MCP server:
 
 ```python
+from pathlib import Path
 from crewai import Agent, Task, Crew, Process
 from crewai.mcp import MCPServerHTTP
 
@@ -76,7 +97,7 @@ xquik_mcp = MCPServerHTTP(
 
 researcher = Agent(
     role="X Researcher",
-    goal="Gather raw data from X about a given topic",
+    goal="Gather compact JSON handoff rows from X about a given topic",
     backstory="Data collection specialist who finds relevant tweets and profiles",
     mcps=[xquik_mcp],
 )
@@ -84,7 +105,7 @@ researcher = Agent(
 analyst = Agent(
     role="Engagement Analyst",
     goal="Analyze engagement patterns and identify trends",
-    backstory="Data analyst who turns raw social data into actionable insights",
+    backstory="Data analyst who turns structured social data into actionable insights",
     mcps=[xquik_mcp],
 )
 
@@ -96,7 +117,7 @@ writer = Agent(
 
 research_task = Task(
     description="Search X for tweets about '{topic}' from the last 24 hours. Collect the top 20 by engagement.",
-    expected_output="Raw tweet data with engagement metrics",
+    expected_output="Compact JSON with tweet_id, author_username, text, created_at, has_more, next_cursor, and route_used",
     agent=researcher,
 )
 
@@ -120,7 +141,10 @@ crew = Crew(
 )
 
 result = crew.kickoff(inputs={"topic": "AI agents"})
-print(result)
+Path("xquik-crewai-workflow-handoff.json").write_text(
+    str(result),
+    encoding="utf-8",
+)
 ```
 
 ## Tool Filtering
