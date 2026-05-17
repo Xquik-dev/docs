@@ -810,7 +810,9 @@ const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
   'Write `page.tweets()` as JSON Lines to `xquik-tweet-search.jsonl`',
   'projected records into CSV for analysts',
   'produce XLSX from those rows',
+  '## Workflow: Follower Export to CSV, JSON, or XLSX',
   '## Workflow: Tweet Replies to CSV, JSON, or XLSX',
+  '`follower_explorer` requires `targetUsername`.',
   '`reply_extractor` requires `targetTweetId`',
   '`client.extractions().estimateCost`',
   '`POST /extractions/estimate`',
@@ -820,6 +822,18 @@ const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
   '`GET /extractions/{id}`',
   '`client.extractions().exportResults`',
   '`GET /extractions/{id}/export`',
+  'ExtractionEstimateCostParams.ToolType.FOLLOWER_EXPLORER',
+  'ExtractionRunParams.ToolType.FOLLOWER_EXPLORER',
+  'ExtractionRetrieveParams.Builder pageParams',
+  'Paths.get("xquik-followers.jsonl")',
+  'Paths.get("xquik-followers.csv")',
+  'Paths.get("xquik-followers.json")',
+  'Paths.get("xquik-followers.xlsx")',
+  'Persist `job.id()`, `targetUsername`, `estimate.estimatedResults()`, and `estimate.source()` before polling',
+  'pass `nextCursor()` back as `after`',
+  'Map exported `User ID` or row `xUserId` as the CRM unique key.',
+  'Cost: 1 credit per follower extracted or returned.',
+  'Exports are free after the extraction job exists.',
   'ExtractionEstimateCostParams.ToolType.REPLY_EXTRACTOR',
   'ExtractionRunParams.ToolType.REPLY_EXTRACTOR',
   'ExtractionExportResultsParams.Format.CSV',
@@ -867,6 +881,7 @@ const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
 
 const FORBIDDEN_JAVA_SDK_WEAK_SEARCH_SNIPPETS = [
   'PaginatedTweets tweets = client.x().tweets().search(params);',
+  'results_limit',
 ] as const;
 
 const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
