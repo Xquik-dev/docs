@@ -162,6 +162,73 @@ The generated params map directly to the REST endpoint:
 
 Write `page.tweets` to CSV for analysts. Write JSON Lines for queues and data lakes to `xquik-tweet-search.jsonl` with `tweet.to_json`, or call `tweet.deep_to_h` before loading a warehouse. Load the projected rows into an XLSX writer when account teams need a workbook. Pass `id`, `text`, `author.username`, `created_at`, and engagement counts to a CRM or enrichment job.
 
+## Workflow: Follower Export to CSV, JSON, or XLSX
+
+Use this workflow when a Ruby app, Rails job, Sidekiq worker, or agent tool needs an owned follower list for a CRM import, warehouse load, analyst CSV file, XLSX workbook, or resumable JSON handoff. It calls `POST /extractions/estimate` through `client.extractions.estimate_cost`, creates the job with `client.extractions.run`, reads saved rows with `client.extractions.retrieve`, and downloads files with `client.extractions.export_results`.
+
+```ruby
+require "json"
+require "x_twitter_scraper"
+
+client = XTwitterScraper::Client.new(
+  api_key: ENV["X_TWITTER_SCRAPER_API_KEY"]
+)
+target_username = "xquikcom"
+
+estimate = client.extractions.estimate_cost(
+  tool_type: :follower_explorer,
+  target_username: target_username
+)
+
+raise "Insufficient credits for follower export." unless estimate.allowed
+
+job = client.extractions.run(
+  tool_type: :follower_explorer,
+  target_username: target_username
+)
+
+loop do
+  status_page = client.extractions.retrieve(job.id, limit: 1)
+  status = status_page.job[:status] || status_page.job["status"]
+
+  break if status == "completed"
+
+  raise "Follower export failed." if status == "failed"
+
+  sleep 10
+end
+
+after = nil
+
+File.open("xquik-followers.jsonl", "w") do |jsonl|
+  loop do
+    page = client.extractions.retrieve(job.id, limit: 1000, after: after)
+
+    page.results.each do |row|
+      jsonl.puts(JSON.generate(row))
+    end
+
+    break unless page.has_more && page.next_cursor.to_s != ""
+
+    after = page.next_cursor
+  end
+end
+
+csv_response = client.extractions.export_results(job.id, format_: :csv)
+csv_response.rewind
+File.binwrite("xquik-followers.csv", csv_response.read)
+
+json_response = client.extractions.export_results(job.id, format_: :json)
+json_response.rewind
+File.binwrite("xquik-followers.json", json_response.read)
+
+xlsx_response = client.extractions.export_results(job.id, format_: :xlsx)
+xlsx_response.rewind
+File.binwrite("xquik-followers.xlsx", xlsx_response.read)
+```
+
+`follower_explorer` requires `target_username`. Persist `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling so a Sidekiq retry, Rails job retry, or worker restart can resume the same follower export. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; pass `next_cursor` back as `after` when you need stored JSON pages before exporting files. Map exported `User ID` or row `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
 Use this workflow when a Ruby app, Rails job, Sidekiq worker, or agent tool needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV/JSON/XLSX file export. It calls `POST /extractions/estimate` through `client.extractions.estimate_cost`, creates the job with `client.extractions.run`, reads rows with `client.extractions.retrieve`, and downloads files with `client.extractions.export_results`.

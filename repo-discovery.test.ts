@@ -461,10 +461,23 @@ const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
   '`tweet.to_json`',
   '`tweet.deep_to_h`',
   'XLSX writer',
+  '## Workflow: Follower Export to CSV, JSON, or XLSX',
   '`client.extractions.estimate_cost`',
   '`client.extractions.run`',
   '`client.extractions.retrieve`',
   '`client.extractions.export_results`',
+  '`follower_explorer` requires `target_username`.',
+  'target_username = "xquikcom"',
+  'target_username: target_username',
+  'File.open("xquik-followers.jsonl", "w")',
+  'File.binwrite("xquik-followers.csv", csv_response.read)',
+  'File.binwrite("xquik-followers.json", json_response.read)',
+  'File.binwrite("xquik-followers.xlsx", xlsx_response.read)',
+  'Persist `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling',
+  'pass `next_cursor` back as `after`',
+  'Map exported `User ID` or row `xUserId` as the CRM unique key.',
+  'Cost: 1 credit per follower extracted or returned.',
+  'Exports are free after the extraction job exists.',
   '`reply_extractor` requires `target_tweet_id`.',
   '`client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`',
   '`client.extractions.export_results` supports `:csv`, `:json`, and `:xlsx`',
@@ -497,6 +510,7 @@ const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
 
 const FORBIDDEN_RUBY_SDK_WEAK_SEARCH_SNIPPETS = [
   'puts(tweets.has_next_page)',
+  'results_limit',
 ] as const;
 
 const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
