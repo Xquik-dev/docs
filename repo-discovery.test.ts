@@ -2608,6 +2608,40 @@ const FORBIDDEN_BATCH_USERS_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS = [
+  '## Direct mention handoff',
+  '`GET /x/users/{id}/mentions`',
+  'support, community, brand monitoring,',
+  '[`mentions`](/api-reference/extractions/create)',
+  'CSV/JSON/XLSX file export',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  'const mentionRows = data.tweets.map',
+  'mentioned_user: userId',
+  'tweet_id: tweet.id',
+  'author_id: tweet.author?.id ?? null',
+  'author_username: tweet.author?.username ?? null',
+  'created_at: tweet.createdAt ?? null',
+  'conversation_id: tweet.conversationId ?? null',
+  'media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? []',
+  'next_cursor = data["next_cursor"] if data["has_next_page"] else None',
+  'mention_rows = [',
+  '"mentioned_user": user_id',
+  '"tweet_id": tweet["id"]',
+  '"author_username": (tweet.get("author") or {}).get("username")',
+  '"media_urls": [',
+  'shape durable mention rows instead of printing',
+  '`mentioned_user`, `tweet_id`, `text`,',
+  '`has_next_page`, and `next_cursor`',
+  'Use `sinceTime`',
+  '`untilTime` to bound a poller window',
+  '`402 insufficient_credits`',
+] as const;
+
+const FORBIDDEN_USER_MENTIONS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_VERIFIED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct verified followers handoff',
   '`GET /x/users/{id}/verified-followers`',
@@ -7223,6 +7257,30 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Batch users API page prints raw profile data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
+  });
+
+  it('keeps the user mentions API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/user-mentions.mdx', 'utf8');
+
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'User mentions API page',
+        REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_USER_MENTIONS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `User mentions API page prints raw mention data with "${snippet}".`,
                 },
               ]
             : [],
