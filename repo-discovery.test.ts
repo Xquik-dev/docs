@@ -2450,6 +2450,7 @@ const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   '<Card title="422 x_rejected" icon="circle-alert">',
   '<Card title="429 or 503" icon="refresh-cw">',
   'Retry with exponential backoff and respect `Retry-After` when present.',
+  'Store the required non-empty `text` value.',
   '`messageId`',
   '`success`',
   '### Store the outbound handoff',
@@ -2485,11 +2486,11 @@ const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   '<Card title="Sender" icon="user-check">',
   'Store the connected X account username or ID sent in `account`.',
   '<Card title="Recipient" icon="user">',
-  'Store the numeric user ID from `POST /x/dm/{userId}`.',
+  'Store the numeric recipient ID used in the `POST /x/dm/{userId}` path.',
   '<Card title="History" icon="history">',
   'For DM history exports, store `messages`, `has_next_page`, and',
   '<Card title="Text" icon="message-square">',
-  'It can contain up to 10,000 characters.',
+  'Store the required non-empty `text` value.',
   '<Card title="Media" icon="image">',
   'Store the optional one-item `media_ids` array containing a `mediaId` from',
   '<Card title="Response" icon="circle-check">',
@@ -2928,6 +2929,10 @@ const FORBIDDEN_WEBHOOK_VERIFICATION_SNIPPETS = [
   'Deduplicate by hashing the raw payload',
   'processedPayloads',
   'processed_payloads',
+] as const;
+
+const FORBIDDEN_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
+  'It can contain up to 10,000 characters.',
 ] as const;
 
 const REQUIRED_DM_HISTORY_API_SNIPPETS = [
@@ -6032,11 +6037,23 @@ describe('repository discovery', (): void => {
     const source = readFileSync('guides/direct-message-workflow.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'Direct message workflow guide',
-        REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'Direct message workflow guide',
+          REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS,
+        ),
+        ...FORBIDDEN_DIRECT_MESSAGE_WORKFLOW_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Direct message workflow guide contains unsupported text limit "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
