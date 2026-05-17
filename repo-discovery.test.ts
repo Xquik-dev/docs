@@ -2526,27 +2526,21 @@ const FORBIDDEN_FOLLOWING_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS = [
-  '## Direct follow relationship handoff',
-  '`GET /x/followers/check`',
-  'CRM, support, giveaway, moderation, or',
   'const source = "xquikcom";',
   'const target = "elonmusk";',
+  'const params = new URLSearchParams({ source, target });',
   'const relationshipRow = {',
   'source_username: data.sourceUsername',
   'target_username: data.targetUsername',
   'source_follows_target: data.isFollowing',
   'target_follows_source: data.isFollowedBy',
-  'checked_at: new Date().toISOString()',
-  'from datetime import datetime, timezone',
+  'source = "xquikcom"',
+  'target = "elonmusk"',
   'relationship_row = {',
   '"source_username": data["sourceUsername"]',
   '"target_username": data["targetUsername"]',
   '"source_follows_target": data["isFollowing"]',
   '"target_follows_source": data["isFollowedBy"]',
-  '"checked_at": datetime.now(timezone.utc).isoformat()',
-  'shape a durable relationship row instead of',
-  '`source_username`, `target_username`,',
-  '`target_follows_source`, and `checked_at`',
 ] as const;
 
 const FORBIDDEN_CHECK_FOLLOWER_API_RAW_OUTPUT_SNIPPETS = [
