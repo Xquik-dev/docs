@@ -2614,6 +2614,8 @@ const REQUIRED_SEARCH_USERS_API_HANDOFF_SNIPPETS = [
   'CRM, enrichment, creator discovery, support,',
   '[Get User](/api-reference/x/get-user)',
   '[Get Users (Batch)](/api-reference/x/batch-users)',
+  'const params = new URLSearchParams({ q: query });',
+  'const response = await fetch(`https://xquik.com/api/v1/x/users/search?${params}`',
   'const nextCursor = data.has_next_page ? data.next_cursor : null;',
   'const searchRows = data.users.map',
   'search_query: query',
