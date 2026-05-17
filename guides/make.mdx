@@ -148,7 +148,7 @@ Handle status codes consistently:
   </Card>
 
   <Card title="Create Tweet" icon="send">
-    Action module. Call `POST /x/tweets` with account, text, and optional media URLs.
+    Action module. Call `POST /x/tweets` with account, text, and optional public media URLs.
   </Card>
 
   <Card title="Create Extraction" icon="boxes">
@@ -192,6 +192,36 @@ Example Search Tweets module communication:
 
 Add a separate bounded-pull variant that sends `limit` and omits `cursor`.
 
+## Output Handoff
+
+Make response handling lets search modules `iterate` over `body.tweets` while `body` stays available for output, wrapper, and pagination fields. Emit tweet bundles from `item`, then carry setup IDs, write status, and page cursors in scenario state when downstream modules need another request.
+
+<CardGroup cols={2}>
+  <Card title="Tweet search page" icon="search">
+    Store `q`, each tweet `id`, `text`, `author.username`, `createdAt`, `body.has_next_page`, and `body.next_cursor`.
+  </Card>
+
+  <Card title="Tweet or reply write" icon="send">
+    Store `tweetId` on a `200` response. For `202 x_write_unconfirmed`, store `writeActionId`, `status`, `charged`, and poll `GET /x/write-actions/{id}` before retrying.
+  </Card>
+
+  <Card title="Public media upload" icon="image">
+    Store `mediaId`, `mediaUrl`, and `success`. Use `mediaUrl` in tweet `media` arrays; reserve uploaded media IDs for one-item DMs.
+  </Card>
+
+  <Card title="Monitor and webhook setup" icon="radio">
+    Store monitor `id`, `username`, `xUserId`, `eventTypes`, `isActive`, `nextBillingAt`, webhook `id`, `url`, `eventTypes`, and the one-time `secret`.
+  </Card>
+
+  <Card title="Extraction jobs" icon="database">
+    Store `id`, `toolType`, and `status` from `POST /extractions`; poll `GET /extractions/{id}`, then carry `hasMore` and `nextCursor`.
+  </Card>
+
+  <Card title="Webhook event dedupe" icon="fingerprint">
+    Store `deliveryId` for endpoint-level retry dedupe and `streamEventId` when one monitor event must process once across receiver changes.
+  </Card>
+</CardGroup>
+
 ## Instant Trigger: Monitor Events
 
 Use a dedicated Make webhook for monitor events. Register that webhook URL in Xquik:
@@ -225,6 +255,14 @@ Map webhook output fields for downstream modules:
 <CardGroup cols={3}>
   <Card title="Event type" icon="bell">
     Map `eventType` to route `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.retweet` events.
+  </Card>
+
+  <Card title="Delivery ID" icon="fingerprint">
+    Map `deliveryId` as the per-endpoint idempotency key for retries.
+  </Card>
+
+  <Card title="Stream event ID" icon="link">
+    Map `streamEventId` when one monitor event should process once across endpoint changes.
   </Card>
 
   <Card title="Occurred at" icon="calendar-clock">
@@ -296,7 +334,7 @@ Fetch the job detail with `GET /extractions/{id}` and loop through `nextCursor` 
   </Card>
 
   <Card title="Dedupe Store" icon="database">
-    Upsert by `data.id` or `deliveryId` to avoid duplicate alerts.
+    Upsert by `deliveryId` per endpoint. Use `streamEventId` when one monitor event should fan out once across endpoint changes.
   </Card>
 </CardGroup>
 
