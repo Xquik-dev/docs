@@ -373,10 +373,22 @@ async () => {
 
 ```javascript
 async () => {
-  return xquik.request('/api/v1/x/media/download', {
+  const tweet_input = '1234567890';
+  const download = await xquik.request('/api/v1/x/media/download', {
     method: 'POST',
-    body: { tweetInput: '1234567890' }
+    body: { tweetInput: tweet_input }
   });
+
+  return {
+    source: 'xquik_mcp',
+    job: 'media_download',
+    mode: 'single',
+    tweet_input,
+    tweet_id: download.tweet_id,
+    gallery_url: download.gallery_url,
+    cache_hit: download.cache_hit,
+    note: 'Store gallery_url as the saved media gallery. It is not an uploaded media_id for DMs.'
+  };
 }
 ```
 
@@ -384,15 +396,35 @@ async () => {
 
 ```javascript
 async () => {
+  const query = 'from:berktavsan has:videos';
   const search = await xquik.request('/api/v1/x/tweets/search', {
-    query: { q: 'from:berktavsan has:videos' }
+    query: { q: query }
   });
-  if (!search.tweets?.length) return { error: 'No video tweets found' };
-  const tweetIds = search.tweets.map(t => t.id);
-  return xquik.request('/api/v1/x/media/download', {
+  if (!search.tweets?.length) {
+    return {
+      source: 'xquik_mcp',
+      job: 'bulk_media_download',
+      status: 'empty',
+      query
+    };
+  }
+
+  const tweetIds = search.tweets.map(t => t.id).slice(0, 50);
+  const download = await xquik.request('/api/v1/x/media/download', {
     method: 'POST',
     body: { tweetIds }
   });
+
+  return {
+    source: 'xquik_mcp',
+    job: 'bulk_media_download',
+    status: 'ready',
+    query,
+    tweet_ids: tweetIds,
+    gallery_url: download.gallery_url,
+    total_tweets: download.total_tweets,
+    total_media: download.total_media
+  };
 }
 ```
 
