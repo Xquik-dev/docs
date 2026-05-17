@@ -25,10 +25,24 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const contentBlocks = data.article.contents ?? [];
+  const handoff = {
+    tweet_id: tweetId,
+    article_title: data.article.title ?? null,
+    preview_text: data.article.previewText ?? null,
+    author_username: data.author?.username ?? null,
+    created_at: data.article.createdAt ?? null,
+    cover_image_url: data.article.coverImageUrl ?? null,
+    body_text: contentBlocks
+      .map((block) => block.text)
+      .filter(Boolean)
+      .join("\n\n"),
+  };
+  process.stdout.write(`${JSON.stringify(handoff)}\n`);
   ```
 
   ```python Python
+  import json
   import requests
 
   tweet_id = "2033891852621840387"
@@ -37,7 +51,19 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  content_blocks = data["article"].get("contents", [])
+  handoff = {
+      "tweet_id": tweet_id,
+      "article_title": data["article"].get("title"),
+      "preview_text": data["article"].get("previewText"),
+      "author_username": data.get("author", {}).get("username"),
+      "created_at": data["article"].get("createdAt"),
+      "cover_image_url": data["article"].get("coverImageUrl"),
+      "body_text": "\n\n".join(
+          block["text"] for block in content_blocks if block.get("text")
+      ),
+  }
+  print(json.dumps(handoff))
   ```
 
   ```go Go
@@ -72,6 +98,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   }
   ```
 </CodeGroup>
+
+Use `GET /x/articles/{tweetId}` when a workflow needs one long-form post body
+plus article metadata. The Node.js and Python snippets shape a durable handoff
+row instead of printing the full lookup response. Store `tweet_id`,
+`article_title`, `preview_text`, `author_username`, `created_at`,
+`cover_image_url`, and `body_text` with the downstream record.
 
 ## Path parameters
 

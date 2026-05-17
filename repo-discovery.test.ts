@@ -2177,6 +2177,29 @@ const FORBIDDEN_GET_TWEET_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
+  '`GET /x/articles/{tweetId}`',
+  'tweet_id: tweetId',
+  'article_title: data.article.title ?? null',
+  'preview_text: data.article.previewText ?? null',
+  'author_username: data.author?.username ?? null',
+  'cover_image_url: data.article.coverImageUrl ?? null',
+  'body_text: contentBlocks',
+  '"tweet_id": tweet_id',
+  '"article_title": data["article"].get("title")',
+  '"preview_text": data["article"].get("previewText")',
+  '"author_username": data.get("author", {}).get("username")',
+  '"cover_image_url": data["article"].get("coverImageUrl")',
+  '"body_text": "\\n\\n".join(',
+  'shape a durable handoff',
+  '`article_title`, `preview_text`, `author_username`,',
+] as const;
+
+const FORBIDDEN_GET_ARTICLE_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct follower handoff',
   '<CardGroup cols={2}>',
@@ -6463,6 +6486,30 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Get tweet API page prints raw tweet data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the get article API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/get-article.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Get article endpoint page',
+        REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_GET_ARTICLE_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Get article API page prints raw article data with "${snippet}".`,
                 },
               ]
             : [],
