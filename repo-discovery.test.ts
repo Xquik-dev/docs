@@ -2608,6 +2608,38 @@ const FORBIDDEN_BATCH_USERS_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_SEARCH_USERS_API_HANDOFF_SNIPPETS = [
+  '## Direct user search handoff',
+  '`GET /x/users/search`',
+  'CRM, enrichment, creator discovery, support,',
+  '[Get User](/api-reference/x/get-user)',
+  '[Get Users (Batch)](/api-reference/x/batch-users)',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  'const searchRows = data.users.map',
+  'search_query: query',
+  'result_rank: index + 1',
+  'user_id: user.id',
+  'follower_count: user.followers ?? null',
+  'profile_image_url: user.profilePicture ?? null',
+  'next_cursor = data["next_cursor"] if data["has_next_page"] else None',
+  'search_rows = [',
+  '"search_query": query',
+  '"result_rank": index + 1',
+  '"user_id": user["id"]',
+  '"profile_image_url": user.get("profilePicture")',
+  'shape durable search-result rows instead of',
+  '`search_query`, `result_rank`, `user_id`,',
+  '`has_next_page`,',
+  '`next_cursor`',
+  'pass it back as `cursor`',
+  '`402 insufficient_credits`',
+] as const;
+
+const FORBIDDEN_SEARCH_USERS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS = [
   '## Direct mention handoff',
   '`GET /x/users/{id}/mentions`',
@@ -7257,6 +7289,30 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Batch users API page prints raw profile data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
+  });
+
+  it('keeps the search users API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/search-users.mdx', 'utf8');
+
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Search users API page',
+        REQUIRED_SEARCH_USERS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_SEARCH_USERS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Search users API page prints raw profile data with "${snippet}".`,
                 },
               ]
             : [],
