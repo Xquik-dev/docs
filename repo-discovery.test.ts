@@ -2181,6 +2181,34 @@ const FORBIDDEN_TWEET_REPLIES_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_TWEET_QUOTES_API_HANDOFF_SNIPPETS = [
+  '## Direct quote tweet handoff',
+  '`GET /x/tweets/{id}/quotes`',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  'const quoteRows = data.tweets.map((tweet) => ({',
+  'quoted_tweet_id: tweetId',
+  'quote_id: tweet.id',
+  'author_id: tweet.author?.id ?? null',
+  'author_username: tweet.author?.username ?? null',
+  'quote_count: tweet.quoteCount ?? null',
+  'media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? []',
+  '"quoted_tweet_id": tweet_id',
+  '"quote_id": tweet["id"]',
+  '"author_id": (tweet.get("author") or {}).get("id")',
+  '"author_username": (tweet.get("author") or {}).get("username")',
+  '"quote_count": tweet.get("quoteCount")',
+  '"media_urls": [',
+  'support, campaign, moderation, research,',
+  'for a single parent tweet',
+  '`quoted_tweet_id`, `quote_id`, `text`,',
+  '`sinceTime`, `untilTime`, and tweet result filters',
+] as const;
+
+const FORBIDDEN_TWEET_QUOTES_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_GET_TWEET_API_HANDOFF_SNIPPETS = [
   '`GET /x/tweets/{id}`',
   'tweet_id: data.tweet.id',
@@ -6686,6 +6714,30 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Tweet replies API page prints raw reply data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the tweet quotes API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/tweet-quotes.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Tweet quotes endpoint page',
+        REQUIRED_TWEET_QUOTES_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_TWEET_QUOTES_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Tweet quotes API page prints raw quote data with "${snippet}".`,
                 },
               ]
             : [],

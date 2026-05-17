@@ -30,20 +30,68 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const nextCursor = data.has_next_page ? data.next_cursor : null;
+  const quoteRows = data.tweets.map((tweet) => ({
+    quoted_tweet_id: tweetId,
+    quote_id: tweet.id,
+    text: tweet.text,
+    author_id: tweet.author?.id ?? null,
+    author_username: tweet.author?.username ?? null,
+    created_at: tweet.createdAt ?? null,
+    like_count: tweet.likeCount ?? null,
+    reply_count: tweet.replyCount ?? null,
+    retweet_count: tweet.retweetCount ?? null,
+    quote_count: tweet.quoteCount ?? null,
+    media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
+    next_cursor: nextCursor,
+  }));
+
+  process.stdout.write(JSON.stringify(quoteRows, null, 2));
   ```
 
   ```python Python
+  import json
   import requests
 
+  tweet_id = "1893456789012345678"
   response = requests.get(
-      "https://xquik.com/api/v1/x/tweets/1893456789012345678/quotes",
+      f"https://xquik.com/api/v1/x/tweets/{tweet_id}/quotes",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  next_cursor = data["next_cursor"] if data["has_next_page"] else None
+  quote_rows = [
+      {
+          "quoted_tweet_id": tweet_id,
+          "quote_id": tweet["id"],
+          "text": tweet["text"],
+          "author_id": (tweet.get("author") or {}).get("id"),
+          "author_username": (tweet.get("author") or {}).get("username"),
+          "created_at": tweet.get("createdAt"),
+          "like_count": tweet.get("likeCount"),
+          "reply_count": tweet.get("replyCount"),
+          "retweet_count": tweet.get("retweetCount"),
+          "quote_count": tweet.get("quoteCount"),
+          "media_urls": [
+              item["mediaUrl"] for item in tweet.get("media", []) if item.get("mediaUrl")
+          ],
+          "next_cursor": next_cursor,
+      }
+      for tweet in data["tweets"]
+  ]
+
+  print(json.dumps(quote_rows, indent=2))
   ```
 </CodeGroup>
+
+## Direct quote tweet handoff
+
+Use `GET /x/tweets/{id}/quotes` when a support, campaign, moderation, research,
+or agent workflow needs quote tweets as JSON rows. It returns one row per quote
+tweet for a single parent tweet. Store `quoted_tweet_id`, `quote_id`, `text`,
+`author_id`, `author_username`, `created_at`, engagement counts, media URLs,
+and `next_cursor`. Use `sinceTime`, `untilTime`, and tweet result filters to
+bound the quote set before exporting rows downstream.
 
 ## Path parameters
 
