@@ -148,6 +148,101 @@ Each `SearchTweet` includes typed properties such as `$id`, `$text`, `$author`, 
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, timeouts, 408, 409, 429, and 5xx responses 2 times by default. For long-running workers, pass `requestOptions: ['maxRetries' => 5]` and persist `$page->nextCursor` after each page.
 
+## Workflow: Follower Export to CSV, JSON, or XLSX
+
+Use this workflow when a PHP worker, Laravel command, Symfony console command, or cron job needs an owned follower list for CRM import, warehouse loading, account scoring, analyst CSV, XLSX delivery, or a resumable JSON handoff.
+
+`$client->extractions->estimateCost()` maps to `POST /extractions/estimate`, `$client->extractions->run()` maps to `POST /extractions`, `$client->extractions->retrieve()` maps to `GET /extractions/{id}`, and `$client->extractions->exportResults()` maps to `GET /extractions/{id}/export`. For follower exports, `follower_explorer` requires `targetUsername`.
+
+```php
+<?php
+
+use XTwitterScraper\Client;
+use XTwitterScraper\Extractions\ExtractionEstimateCostParams\ToolType as EstimateToolType;
+use XTwitterScraper\Extractions\ExtractionExportResultsParams\Format as ExportFormat;
+use XTwitterScraper\Extractions\ExtractionRunParams\ToolType as RunToolType;
+
+$client = new Client(
+  apiKey: getenv('X_TWITTER_SCRAPER_API_KEY') ?: ''
+);
+
+$targetUsername = 'xquikcom';
+$estimate = $client->extractions->estimateCost(
+  toolType: EstimateToolType::FOLLOWER_EXPLORER,
+  targetUsername: $targetUsername,
+);
+
+if (!$estimate->allowed) {
+  throw new RuntimeException("Follower export requires {$estimate->creditsRequired} credits.");
+}
+
+$job = $client->extractions->run(
+  toolType: RunToolType::FOLLOWER_EXPLORER,
+  targetUsername: $targetUsername,
+);
+
+$completed = false;
+
+for ($attempt = 0; $attempt < 120; $attempt++) {
+  $statusPage = $client->extractions->retrieve($job->id, limit: 1);
+  $status = $statusPage->job['status'] ?? null;
+
+  if ('completed' === $status) {
+    $completed = true;
+    break;
+  }
+
+  if ('failed' === $status) {
+    throw new RuntimeException('Follower export failed.');
+  }
+
+  sleep(10);
+}
+
+if (!$completed) {
+  throw new RuntimeException('Follower export did not complete before timeout.');
+}
+
+$after = null;
+$handle = fopen('xquik-followers.jsonl', 'wb');
+
+if (false === $handle) {
+  throw new RuntimeException('Could not open xquik-followers.jsonl');
+}
+
+try {
+  do {
+    $page = $client->extractions->retrieve($job->id, after: $after, limit: 1000);
+
+    foreach ($page->results as $user) {
+      fwrite(
+        $handle,
+        json_encode($user, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . PHP_EOL
+      );
+    }
+
+    $after = $page->hasMore ? $page->nextCursor : null;
+  } while (null !== $after && '' !== $after);
+} finally {
+  fclose($handle);
+}
+
+file_put_contents(
+  'xquik-followers.csv',
+  $client->extractions->exportResults($job->id, format: ExportFormat::CSV),
+);
+file_put_contents(
+  'xquik-followers.json',
+  $client->extractions->exportResults($job->id, format: ExportFormat::JSON),
+);
+file_put_contents(
+  'xquik-followers.xlsx',
+  $client->extractions->exportResults($job->id, format: ExportFormat::XLSX),
+);
+```
+
+Persist `$job->id`, `$targetUsername`, `$estimate->estimatedResults`, and `$estimate->source` before polling so another queue worker can resume without rerunning the extraction. `$client->extractions->retrieve()` returns `$page->results`, `$page->hasMore`, and `$page->nextCursor`; pass `$page->nextCursor` back as `after` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
 Use this workflow when a PHP worker needs every reply on a public tweet in a durable file for moderation review, customer support triage, analyst export, or a warehouse loader.

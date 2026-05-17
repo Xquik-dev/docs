@@ -743,6 +743,19 @@ const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
   'Write `$page->tweets` as JSON Lines to `xquik-tweet-search.jsonl`',
   'projected rows into CSV for analysts',
   'generate XLSX from those rows',
+  '## Workflow: Follower Export to CSV, JSON, or XLSX',
+  '`follower_explorer` requires `targetUsername`.',
+  'EstimateToolType::FOLLOWER_EXPLORER',
+  'RunToolType::FOLLOWER_EXPLORER',
+  "'xquik-followers.jsonl'",
+  "'xquik-followers.csv'",
+  "'xquik-followers.json'",
+  "'xquik-followers.xlsx'",
+  'Persist `$job->id`, `$targetUsername`, `$estimate->estimatedResults`, and `$estimate->source` before polling',
+  'pass `$page->nextCursor` back as `after`',
+  'Map exported `User ID` or row `xUserId` as the CRM unique key.',
+  'Cost: 1 credit per follower extracted or returned.',
+  'Exports are free after the extraction job exists.',
   '## Workflow: Tweet Replies to CSV, JSON, or XLSX',
   '`$client->extractions->estimateCost()`',
   '`$client->extractions->run()`',
@@ -789,6 +802,7 @@ const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
 
 const FORBIDDEN_PHP_SDK_WEAK_SEARCH_SNIPPETS = [
   'var_export($tweets->hasNextPage)',
+  'results_limit',
 ] as const;
 
 const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
