@@ -2177,6 +2177,30 @@ const FORBIDDEN_GET_TWEET_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_GET_USER_API_HANDOFF_SNIPPETS = [
+  '`GET /x/users/{id}`',
+  'user_id: data.id',
+  'display_name: data.name',
+  'bio: data.description ?? null',
+  'follower_count: data.followers ?? null',
+  'following_count: data.following ?? null',
+  'verified_type: data.verifiedType ?? null',
+  'profile_image_url: data.profilePicture ?? null',
+  '"user_id": data["id"]',
+  '"display_name": data["name"]',
+  '"follower_count": data.get("followers")',
+  '"verified_type": data.get("verifiedType")',
+  '"profile_image_url": data.get("profilePicture")',
+  'one durable profile row',
+  '`user_id`, `username`, `display_name`,',
+] as const;
+
+const FORBIDDEN_GET_USER_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+  'fmt.Println(string(body))',
+] as const;
+
 const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
   '`GET /x/articles/{tweetId}`',
   'tweet_id: tweetId',
@@ -6511,6 +6535,30 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Get tweet API page prints raw tweet data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the get user API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/get-user.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Get user endpoint page',
+        REQUIRED_GET_USER_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_GET_USER_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Get user API page prints raw profile data with "${snippet}".`,
                 },
               ]
             : [],

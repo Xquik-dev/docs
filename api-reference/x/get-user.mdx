@@ -25,10 +25,26 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const profileRow = {
+    user_id: data.id,
+    username: data.username,
+    display_name: data.name,
+    bio: data.description ?? null,
+    follower_count: data.followers ?? null,
+    following_count: data.following ?? null,
+    verified: data.verified ?? false,
+    verified_type: data.verifiedType ?? null,
+    profile_url: data.url ?? null,
+    profile_image_url: data.profilePicture ?? null,
+    created_at: data.createdAt ?? null,
+    unavailable_reason: data.unavailableReason ?? null,
+  };
+
+  process.stdout.write(`${JSON.stringify(profileRow)}\n`);
   ```
 
   ```python Python
+  import json
   import requests
 
   response = requests.get(
@@ -36,41 +52,85 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  profile_row = {
+      "user_id": data["id"],
+      "username": data["username"],
+      "display_name": data["name"],
+      "bio": data.get("description"),
+      "follower_count": data.get("followers"),
+      "following_count": data.get("following"),
+      "verified": data.get("verified", False),
+      "verified_type": data.get("verifiedType"),
+      "profile_url": data.get("url"),
+      "profile_image_url": data.get("profilePicture"),
+      "created_at": data.get("createdAt"),
+      "unavailable_reason": data.get("unavailableReason"),
+  }
+  print(json.dumps(profile_row))
   ```
 
   ```go Go
   package main
 
   import (
-  	"fmt"
-  	"io"
-  	"log"
-  	"net/http"
+    "encoding/json"
+    "io"
+    "log"
+    "net/http"
+    "os"
   )
 
   func main() {
-  	username := "xquikcom"
-  	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/x/users/"+username, nil)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+    username := "xquikcom"
+    req, err := http.NewRequest("GET", "https://xquik.com/api/v1/x/users/"+username, nil)
+    if err != nil {
+      log.Fatal(err)
+    }
+    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 
-  	resp, err := http.DefaultClient.Do(req)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	defer resp.Body.Close()
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+      log.Fatal(err)
+    }
+    defer resp.Body.Close()
 
-  	body, err := io.ReadAll(resp.Body)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	fmt.Println(string(body))
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+      log.Fatal(err)
+    }
+
+    var user map[string]any
+    if err := json.Unmarshal(body, &user); err != nil {
+      log.Fatal(err)
+    }
+
+    row := map[string]any{
+      "user_id":            user["id"],
+      "username":           user["username"],
+      "display_name":       user["name"],
+      "bio":                user["description"],
+      "follower_count":     user["followers"],
+      "following_count":    user["following"],
+      "verified":           user["verified"],
+      "verified_type":      user["verifiedType"],
+      "profile_url":        user["url"],
+      "profile_image_url":  user["profilePicture"],
+      "created_at":         user["createdAt"],
+      "unavailable_reason": user["unavailableReason"],
+    }
+    if err := json.NewEncoder(os.Stdout).Encode(row); err != nil {
+      log.Fatal(err)
+    }
   }
   ```
 </CodeGroup>
+
+Use `GET /x/users/{id}` when a workflow needs one durable profile row for CRM
+enrichment, lead scoring, account monitoring, or support triage. Store
+`user_id`, `username`, `display_name`, `bio`, `follower_count`,
+`following_count`, `verified`, `verified_type`, `profile_url`,
+`profile_image_url`, `created_at`, and `unavailable_reason` instead of logging
+the full lookup response.
 
 ## Path parameters
 
