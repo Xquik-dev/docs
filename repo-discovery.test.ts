@@ -474,6 +474,7 @@ const FORBIDDEN_RUBY_SDK_WEAK_SEARCH_SNIPPETS = [
 
 const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
   '## Workflow: Search Tweets to JSON Lines, CSV, or XLSX',
+  '## Workflow: Follower Export to CSV, JSON, or XLSX',
   '## Workflow: Tweet Replies to CSV, JSON, or XLSX',
   '## Workflow: Post Media Tweets, Replies, and DM Attachments',
   '`x-twitter-scraper x:tweets search`',
@@ -497,6 +498,18 @@ const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
   '`--format-error json`',
   'x-twitter-scraper extractions estimate-cost',
   '`POST /extractions/estimate`',
+  '`follower_explorer` requires `targetUsername`.',
+  '`--target-username`',
+  'follower-estimate.json',
+  'For follower exports, `source` is usually `followers`.',
+  'Persist `job_id`, the source username, and the estimate before polling',
+  'followers-page.json',
+  'When `.hasMore` is true, pass `.nextCursor` back as `--after`',
+  '--output xquik-followers.csv',
+  '--output xquik-followers.xlsx',
+  'Map `User ID` or result `xUserId` as the CRM unique key.',
+  'Cost: 1 credit per follower extracted or returned.',
+  'Exports are free after the extraction job exists.',
   '`reply_extractor` requires `targetTweetId`.',
   '`--target-tweet-id`',
   'x-twitter-scraper extractions run',
@@ -544,6 +557,8 @@ const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
   'DMs accept exactly 1 uploaded media ID.',
   'Do not pass uploaded `mediaId` values to `x:tweets create`',
 ] as const;
+
+const FORBIDDEN_CLI_SDK_WORKFLOW_SNIPPETS = ['--results-limit'] as const;
 
 const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
   'Search tweets and write durable JSON Lines handoff rows:',
@@ -5134,17 +5149,29 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
   });
 
-  it('keeps the CLI SDK page useful for tweet search and replies handoffs', (): void => {
+  it('keeps the CLI SDK page useful for tweet search, follower export, and replies handoffs', (): void => {
     expect.assertions(1);
 
     const source = readFileSync('sdks/cli.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'CLI SDK workflow docs',
-        REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'CLI SDK workflow docs',
+          REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS,
+        ),
+        ...FORBIDDEN_CLI_SDK_WORKFLOW_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `CLI SDK workflow docs contain unsupported generated CLI flag "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 

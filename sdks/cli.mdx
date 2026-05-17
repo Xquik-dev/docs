@@ -97,6 +97,63 @@ Tweet search costs 1 credit per tweet returned. If remaining credits cannot cove
 
 For CSV or XLSX handoff, keep `xquik-tweet-search.jsonl` as the source of truth and convert it in your pipeline. For example, a Python step can load each JSON Lines row and write projected records to CSV for analysts, or produce XLSX from those rows for account management workflows.
 
+## Workflow: Follower Export to CSV, JSON, or XLSX
+
+Use this workflow when sales, support, research, or marketing teams need an owned follower list in a CRM import, warehouse load, analyst CSV file, XLSX workbook, or resumable JSON handoff.
+
+`follower_explorer` requires `targetUsername`. The CLI flag is `--target-username`.
+
+```bash
+x-twitter-scraper extractions estimate-cost \
+  --tool-type follower_explorer \
+  --target-username xquikcom \
+  --format json > follower-estimate.json
+```
+
+The estimate calls `POST /extractions/estimate` and returns `allowed`, `estimatedResults`, `creditsRequired`, `creditsAvailable`, and `source`. For follower exports, `source` is usually `followers`.
+
+```bash
+jq -e '.allowed == true' follower-estimate.json >/dev/null
+
+job_id="$(x-twitter-scraper extractions run \
+  --tool-type follower_explorer \
+  --target-username xquikcom \
+  --transform id \
+  --raw-output)"
+```
+
+Persist `job_id`, the source username, and the estimate before polling so a shell restart, queue retry, or CI rerun can resume the same follower export.
+
+```bash
+while :; do
+  x-twitter-scraper extractions retrieve \
+    --id "$job_id" \
+    --limit 1000 \
+    --format json > followers-page.json
+
+  status="$(jq -r '.job.status' followers-page.json)"
+  [ "$status" = "completed" ] && break
+  [ "$status" = "failed" ] && exit 1
+  sleep 10
+done
+```
+
+The retrieve command returns `.job`, `.results`, `.hasMore`, and `.nextCursor`. When `.hasMore` is true, pass `.nextCursor` back as `--after` to fetch the next saved page.
+
+```bash
+x-twitter-scraper extractions export-results \
+  --id "$job_id" \
+  --format csv \
+  --output xquik-followers.csv
+
+x-twitter-scraper extractions export-results \
+  --id "$job_id" \
+  --format xlsx \
+  --output xquik-followers.xlsx
+```
+
+Map `User ID` or result `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
 Use this workflow when a moderation, support, giveaway, research, or AI review job needs every reply under one tweet as a file handoff. The CLI calls the extraction endpoints: estimate first, run `reply_extractor`, poll the stored job, then export CSV, JSON, or XLSX.
