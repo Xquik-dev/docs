@@ -1131,6 +1131,74 @@ const FORBIDDEN_SKILL_RATE_LIMIT_SNIPPETS = [
   '| Delete | DELETE | 15 per 60s |',
 ] as const;
 
+const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
+  {
+    file: 'guides/rate-limits.mdx',
+    required: [
+      '**Quick answer:** 60 GET/1s, 30 POST/60s, 15 DELETE/60s per account.',
+      '`GET`, `HEAD`, and `OPTIONS` share a limit of 60 requests per 1 second.',
+      'Read tier (60 per 1s):',
+      'const readLimiter = new WindowRateLimiter(60, 1_000);',
+      'read_limiter = WindowRateLimiter(60, 1)',
+      'var readLimiter = NewWindowRateLimiter(60, time.Second)',
+      'reservoir: 60,            // 60 requests per read window',
+    ],
+    forbidden: [
+      '10 GET/1s',
+      'limit of 10 requests per 1 second',
+      'Read tier (10 per 1s)',
+      'WindowRateLimiter(10',
+      'NewWindowRateLimiter(10',
+      'reservoir: 10',
+      '10 requests per read window',
+      '10 requests per 1s',
+      '100ms',
+      '120ms stays under 10',
+    ],
+  },
+  {
+    file: 'api-reference/overview.mdx',
+    required: [
+      'Read calls are 60 per 1s, write calls are 30 per 60s, and delete calls are 15 per 60s.',
+      '`GET`, `HEAD`, and `OPTIONS` requests share a 60 per 1s user bucket.',
+    ],
+    forbidden: ['Read calls are 10 per 1s', 'share a 10 per 1s user bucket'],
+  },
+  {
+    file: 'quickstart.mdx',
+    required: ['60 reads/1s, 30 writes/60s, 15 deletes/60s'],
+    forbidden: ['10 reads/1s, 30 writes/60s, 15 deletes/60s'],
+  },
+  {
+    file: 'guides/prefect.mdx',
+    required: ['Read endpoints share a 60 per 1s user bucket.'],
+    forbidden: ['Read endpoints share a 10 per 1s user bucket.'],
+  },
+  {
+    file: 'guides/troubleshooting.mdx',
+    required: [
+      '`GET`, `HEAD`, and `OPTIONS` share a limit of 60 requests per 1 second.',
+    ],
+    forbidden: [
+      '`GET`, `HEAD`, and `OPTIONS` share a limit of 10 requests per 1 second.',
+    ],
+  },
+  {
+    file: 'skill.md',
+    required: [
+      '- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 60 per 1s user bucket.',
+    ],
+    forbidden: [
+      '- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 10 per 1s user bucket.',
+    ],
+  },
+  {
+    file: 'llms.txt',
+    required: ['- Read endpoints: 60 requests per 1s (fixed window)'],
+    forbidden: ['- Read endpoints: 10 requests per 1s (fixed window)'],
+  },
+] as const;
+
 const REQUIRED_SKILL_DECISION_GUIDANCE_SNIPPETS = [
   '## Decision guidance',
   '- **Use the REST API** for backend services, automation scripts, interval polling, file exports, and fine-grained pagination or request control.',
@@ -5993,6 +6061,33 @@ describe('repository discovery', (): void => {
         ),
       ],
     ).toStrictEqual([]);
+  });
+
+  it('keeps public read rate limits aligned with product source truth', (): void => {
+    expect.assertions(1);
+
+    const findings = PUBLIC_READ_RATE_LIMIT_EXPECTATIONS.flatMap(
+      ({ file, forbidden, required }): readonly DiscoveryFinding[] => {
+        const source = readFileSync(file, 'utf8');
+
+        return [
+          ...collectSnippetFindings(source, file, required),
+          ...forbidden.flatMap(
+            (snippet): readonly DiscoveryFinding[] =>
+              source.includes(snippet)
+                ? [
+                    {
+                      file,
+                      issue: `Public read rate limits contain stale snippet "${snippet}".`,
+                    },
+                  ]
+                : [],
+          ),
+        ];
+      },
+    );
+
+    expect(findings).toStrictEqual([]);
   });
 
   it('keeps the public skill decision guidance scan-friendly', (): void => {
