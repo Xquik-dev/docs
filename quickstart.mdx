@@ -240,8 +240,10 @@ Use this X API quickstart to create an API key, call `GET /account`, monitor twe
       }),
     });
     const webhook = await response.json();
-    process.stdout.write(`${JSON.stringify(webhook, null, 2)}\n`);
-    // Save webhook.secret for signature verification
+    const webhookSecret = webhook.secret;
+    if (!webhookSecret) throw new Error("missing webhook secret");
+    process.stdout.write(`Webhook ${webhook.id} ready\n`);
+    // Store webhookSecret in your secret manager; do not print it.
     ```
 
     ```python Python
@@ -256,8 +258,11 @@ Use this X API quickstart to create an API key, call `GET /account`, monitor twe
         },
     )
     webhook = response.json()
-    print(webhook)
-    # Save webhook["secret"] for signature verification
+    webhook_secret = webhook["secret"]
+    if not webhook_secret:
+        raise RuntimeError("missing webhook secret")
+    print(f"Webhook {webhook['id']} ready")
+    # Store webhook_secret in your secret manager; do not print it.
     ```
 
     ```go Go
@@ -267,7 +272,6 @@ Use this X API quickstart to create an API key, call `GET /account`, monitor twe
         "bytes"
         "encoding/json"
         "fmt"
-        "io"
         "net/http"
     )
 
@@ -287,9 +291,20 @@ Use this X API quickstart to create an API key, call `GET /account`, monitor twe
         }
         defer resp.Body.Close()
 
-        respBody, _ := io.ReadAll(resp.Body)
-        fmt.Println(string(respBody))
-        // Save the "secret" field for signature verification
+        var webhook struct {
+            ID     string `json:"id"`
+            Secret string `json:"secret"`
+        }
+        if err := json.NewDecoder(resp.Body).Decode(&webhook); err != nil {
+            panic(err)
+        }
+
+        webhookSecret := webhook.Secret
+        if webhookSecret == "" {
+            panic("missing webhook secret")
+        }
+        fmt.Printf("Webhook %s ready\n", webhook.ID)
+        // Store webhookSecret in your secret manager; do not print it.
     }
     ```
 
@@ -307,7 +322,7 @@ Use this X API quickstart to create an API key, call `GET /account`, monitor twe
     }
     ```
 
-    Save the `secret` from the response. It is only returned once. You'll need it to [verify webhook signatures](/webhooks/verification).
+    Save the `secret` from the response in a secret manager. It is only returned once, and you need it to [verify webhook signatures](/webhooks/verification). Do not print it in shared logs.
   </Step>
 </Steps>
 

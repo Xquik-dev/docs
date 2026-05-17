@@ -93,6 +93,18 @@ const REQUIRED_QUICKSTART_SNIPPETS = [
   '`POST /webhooks`',
   '"isActive": true',
   '"nextBillingAt": "2026-02-24T10:30:00.000Z"',
+  'const webhookSecret = webhook.secret;',
+  'Store webhookSecret in your secret manager; do not print it.',
+  'webhook_secret = webhook["secret"]',
+  'Store webhook_secret in your secret manager; do not print it.',
+  'Save the `secret` from the response in a secret manager.',
+  'Do not print it in shared logs.',
+] as const;
+
+const FORBIDDEN_QUICKSTART_SECRET_LOG_SNIPPETS = [
+  'process.stdout.write(`${JSON.stringify(webhook, null, 2)}\\n`);',
+  'print(webhook)',
+  'fmt.Println(string(respBody))\n        // Save the "secret" field for signature verification',
 ] as const;
 
 const REQUIRED_SDK_OVERVIEW_SNIPPETS = [
@@ -5136,7 +5148,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the quickstart concrete and aligned with monitor response fields', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const quickstart = readFileSync('quickstart.mdx', 'utf8');
 
@@ -5145,6 +5157,11 @@ describe('repository discovery', (): void => {
         quickstart,
         'Quickstart',
         REQUIRED_QUICKSTART_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_QUICKSTART_SECRET_LOG_SNIPPETS.filter((snippet) =>
+        quickstart.includes(snippet),
       ),
     ).toStrictEqual([]);
   });
