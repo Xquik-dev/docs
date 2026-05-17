@@ -197,6 +197,18 @@ const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
   'Write `page.tweets` as JSON Lines to `xquik-tweet-search.jsonl`',
   'projected records into CSV for analysts',
   'produce XLSX from those rows',
+  '## Workflow: Follower Export to CSV, JSON, or XLSX',
+  '`follower_explorer` requires `targetUsername`.',
+  'targetUsername,',
+  'await open("xquik-followers.jsonl", "w")',
+  'await writeFile("xquik-followers.csv", Buffer.from(await csv.arrayBuffer()))',
+  'await writeFile("xquik-followers.json", Buffer.from(await json.arrayBuffer()))',
+  'await writeFile("xquik-followers.xlsx", Buffer.from(await xlsx.arrayBuffer()))',
+  'Persist `job.id`, `targetUsername`, `estimate.estimatedResults`, and `estimate.source` before polling',
+  'pass `nextCursor` back as `after`',
+  'Map exported `User ID` or row `xUserId` as the CRM unique key.',
+  'Cost: 1 credit per follower extracted or returned.',
+  'Exports are free after the extraction job exists.',
   '`client.extractions.estimateCost`',
   '`client.extractions.run`',
   '`client.extractions.retrieve`',
@@ -238,6 +250,7 @@ const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
 
 const FORBIDDEN_TYPESCRIPT_SDK_RAW_SEARCH_SNIPPETS = [
   'process.stdout.write(JSON.stringify(tweets, null, 2));',
+  'results_limit',
 ] as const;
 
 const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [

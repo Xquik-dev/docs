@@ -129,6 +129,84 @@ The generated params map directly to the REST endpoint:
 
 Write `page.tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets. Pass `id`, `text`, `author.username`, `createdAt`, and engagement counts into your CRM or enrichment pipeline.
 
+## Workflow: Follower Export to CSV, JSON, or XLSX
+
+Use this workflow when a Node.js, Bun, or queue worker needs an owned follower list for CRM import, warehouse loading, account scoring, analyst CSV, XLSX workbook delivery, or a resumable JSON handoff. It calls `POST /extractions/estimate` through `client.extractions.estimateCost`, creates the job with `client.extractions.run`, reads saved rows with `client.extractions.retrieve`, and downloads files with `client.extractions.exportResults`.
+
+```ts
+import { open, writeFile } from "node:fs/promises";
+import XTwitterScraper from "x-twitter-scraper";
+
+const client = new XTwitterScraper();
+const targetUsername = "xquikcom";
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+const estimate = await client.extractions.estimateCost({
+  toolType: "follower_explorer",
+  targetUsername,
+});
+
+if (!estimate.allowed) {
+  throw new Error("Insufficient credits for follower export.");
+}
+
+const job = await client.extractions.run({
+  toolType: "follower_explorer",
+  targetUsername,
+});
+
+while (true) {
+  const statusPage = await client.extractions.retrieve(job.id, { limit: 1 });
+  const status = statusPage.job["status"];
+
+  if (status === "completed") {
+    break;
+  }
+
+  if (status === "failed") {
+    throw new Error("Follower export failed.");
+  }
+
+  await sleep(10000);
+}
+
+let after: string | undefined;
+const jsonl = await open("xquik-followers.jsonl", "w");
+
+try {
+  while (true) {
+    const page = await client.extractions.retrieve(job.id, {
+      limit: 1000,
+      after,
+    });
+
+    for (const row of page.results) {
+      await jsonl.write(`${JSON.stringify(row)}\n`);
+    }
+
+    if (!page.hasMore || !page.nextCursor) {
+      break;
+    }
+
+    after = page.nextCursor;
+  }
+} finally {
+  await jsonl.close();
+}
+
+const csv = await client.extractions.exportResults(job.id, { format: "csv" });
+await writeFile("xquik-followers.csv", Buffer.from(await csv.arrayBuffer()));
+
+const json = await client.extractions.exportResults(job.id, { format: "json" });
+await writeFile("xquik-followers.json", Buffer.from(await json.arrayBuffer()));
+
+const xlsx = await client.extractions.exportResults(job.id, { format: "xlsx" });
+await writeFile("xquik-followers.xlsx", Buffer.from(await xlsx.arrayBuffer()));
+```
+
+`follower_explorer` requires `targetUsername`. Persist `job.id`, `targetUsername`, `estimate.estimatedResults`, and `estimate.source` before polling so a queue retry, worker restart, or agent handoff can resume the same export. `client.extractions.retrieve` returns `results`, `hasMore`, and `nextCursor`; pass `nextCursor` back as `after` when you need stored JSON pages before exporting files. Map exported `User ID` or row `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
 Use this workflow when a TypeScript worker needs every reply under one tweet as a saved extraction, paginated JSON handoff, or file export for moderation, support, research, CRM, or agent review. It calls `POST /extractions/estimate` through `client.extractions.estimateCost`, creates the job with `client.extractions.run`, reads rows with `client.extractions.retrieve`, and downloads files with `client.extractions.exportResults`.
