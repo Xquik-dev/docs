@@ -632,9 +632,23 @@ const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
   'Write `page.Tweets` as JSON Lines to `xquik-tweet-search.jsonl`',
   'projected rows into CSV for analysts',
   'write XLSX from those rows',
+  '## Workflow: Follower Export to CSV, JSON, or XLSX',
   '## Workflow: Tweet Replies to CSV, JSON, or XLSX',
   '`client.Extractions.EstimateCost`',
   '`client.Extractions.Run`',
+  '`ExtractionEstimateCostParamsToolType.FollowerExplorer`',
+  '`ExtractionRunParamsToolType.FollowerExplorer`',
+  '`follower_explorer` requires `TargetUsername`.',
+  'string targetUsername = "xquikcom";',
+  'TargetUsername = targetUsername',
+  'File.CreateText("xquik-followers.jsonl")',
+  'File.WriteAllTextAsync("xquik-followers.csv", await csvResponse.ReadAsString())',
+  'File.WriteAllTextAsync("xquik-followers.json", await jsonResponse.ReadAsString())',
+  'File.Create("xquik-followers.xlsx")',
+  'Persist `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling',
+  'map exported `User ID` or row `xUserId` as the CRM unique key.',
+  'Cost: 1 credit per follower extracted or returned.',
+  'Exports are free after the extraction job exists.',
   '`ExtractionEstimateCostParamsToolType.ReplyExtractor`',
   '`ExtractionRunParamsToolType.ReplyExtractor`',
   '`reply_extractor` requires `TargetTweetID`.',
@@ -681,6 +695,7 @@ const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
 
 const FORBIDDEN_CSHARP_SDK_WEAK_SEARCH_SNIPPETS = [
   'var tweets = await client.X.Tweets.Search(parameters);',
+  'results_limit',
 ] as const;
 
 const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [

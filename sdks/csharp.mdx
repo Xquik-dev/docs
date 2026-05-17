@@ -141,6 +141,110 @@ Each `SearchTweet` includes typed properties such as `ID`, `Text`, `Author`, `Cr
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `Limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, 408, 409, 429, and 5xx responses 2 times by default. For longer workers, set `MaxRetries` on the client and persist `NextCursor` after each page.
 
+## Workflow: Follower Export to CSV, JSON, or XLSX
+
+Use this workflow when a .NET worker, console job, or ASP.NET background service needs an owned follower list for a CRM import, warehouse load, analyst CSV file, XLSX workbook, or resumable JSON handoff.
+
+`client.Extractions.EstimateCost` and `client.Extractions.Run` map to the extraction workflow. For follower exports, use `ExtractionEstimateCostParamsToolType.FollowerExplorer` and `ExtractionRunParamsToolType.FollowerExplorer`; `follower_explorer` requires `TargetUsername`. `client.Extractions.Retrieve` returns `Results`, `HasMore`, and `NextCursor` for pagination. `client.Extractions.ExportResults` returns an `HttpResponse`; read CSV and JSON as strings, and copy XLSX from the response stream.
+
+```csharp
+using System;
+using System.IO;
+using System.Text.Json;
+using System.Threading.Tasks;
+using XTwitterScraper;
+using XTwitterScraper.Core;
+using XTwitterScraper.Models.Extractions;
+
+XTwitterScraperClient client = new();
+
+string targetUsername = "xquikcom";
+ExtractionEstimateCostResponse estimate = await client.Extractions.EstimateCost(
+    new ExtractionEstimateCostParams
+    {
+        ToolType = ExtractionEstimateCostParamsToolType.FollowerExplorer,
+        TargetUsername = targetUsername,
+    }
+);
+
+if (!estimate.Allowed)
+{
+    throw new InvalidOperationException("Insufficient credits for follower export.");
+}
+
+ExtractionRunResponse job = await client.Extractions.Run(
+    new ExtractionRunParams
+    {
+        ToolType = ExtractionRunParamsToolType.FollowerExplorer,
+        TargetUsername = targetUsername,
+    }
+);
+
+while (true)
+{
+    ExtractionRetrieveResponse statusPage = await client.Extractions.Retrieve(
+        job.ID,
+        new ExtractionRetrieveParams { Limit = 1 }
+    );
+
+    string? status = statusPage.Job.TryGetValue("status", out JsonElement statusValue)
+        ? statusValue.GetString()
+        : null;
+
+    if (status == "completed")
+    {
+        break;
+    }
+
+    if (status == "failed")
+    {
+        throw new InvalidOperationException("Follower export failed.");
+    }
+
+    await Task.Delay(TimeSpan.FromSeconds(10));
+}
+
+string? after = null;
+using StreamWriter writer = File.CreateText("xquik-followers.jsonl");
+
+do
+{
+    ExtractionRetrieveResponse page = await client.Extractions.Retrieve(
+        job.ID,
+        new ExtractionRetrieveParams { After = after, Limit = 1000 }
+    );
+
+    foreach (var follower in page.Results)
+    {
+        await writer.WriteLineAsync(JsonSerializer.Serialize(follower));
+    }
+
+    after = page.HasMore ? page.NextCursor : null;
+} while (!string.IsNullOrEmpty(after));
+
+using HttpResponse csvResponse = await client.Extractions.ExportResults(
+    job.ID,
+    new ExtractionExportResultsParams { Format = Format.Csv }
+);
+await File.WriteAllTextAsync("xquik-followers.csv", await csvResponse.ReadAsString());
+
+using HttpResponse jsonResponse = await client.Extractions.ExportResults(
+    job.ID,
+    new ExtractionExportResultsParams { Format = Format.Json }
+);
+await File.WriteAllTextAsync("xquik-followers.json", await jsonResponse.ReadAsString());
+
+using HttpResponse xlsxResponse = await client.Extractions.ExportResults(
+    job.ID,
+    new ExtractionExportResultsParams { Format = Format.Xlsx }
+);
+using Stream xlsxStream = await xlsxResponse.ReadAsStream();
+using FileStream xlsxFile = File.Create("xquik-followers.xlsx");
+await xlsxStream.CopyToAsync(xlsxFile);
+```
+
+Cost: 1 credit per follower extracted or returned. Persist `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling so a queue retry, Windows service restart, or worker restart can resume the same follower export. Keep `page.NextCursor` as the checkpoint when you stream followers to JSON Lines, and map exported `User ID` or row `xUserId` as the CRM unique key. Exports are free after the extraction job exists.
+
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
 Use this workflow when a .NET worker needs every reply on a public tweet in a durable file for moderation review, customer support triage, analyst export, or a warehouse loader.
