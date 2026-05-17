@@ -93,6 +93,38 @@ Handle these response classes explicitly:
   </Card>
 </CardGroup>
 
+## Result Handoff
+
+Use an Edit Fields node after each HTTP Request node when the next node only
+needs stable handoff fields. Keep raw responses out of Slack messages, Sheets
+rows, and retry queues.
+
+<CardGroup cols={2}>
+  <Card title="Tweet search page" icon="search">
+    Store request `q`, each tweet `id`, `text`, `author.username`, `createdAt`, plus `has_next_page` and `next_cursor` for page loops.
+  </Card>
+
+  <Card title="Tweet or reply write" icon="send">
+    Store `tweetId` on `200 Success`. For `202 x_write_unconfirmed`, store `writeActionId`, `status`, and `charged`, then poll `GET /x/write-actions/{id}` before retrying.
+  </Card>
+
+  <Card title="Public media upload" icon="image">
+    Store `mediaId`, `mediaUrl`, and `success`. Pass `mediaUrl` to `POST /x/tweets` in `media`; reserve uploaded media IDs for one-item DMs.
+  </Card>
+
+  <Card title="Monitor and webhook setup" icon="radio">
+    Store monitor `id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`; store webhook `id`, `url`, `eventTypes`, and one-time `secret`.
+  </Card>
+
+  <Card title="Webhook event de-dupe" icon="fingerprint">
+    Store `deliveryId` for receiver retry de-dupe and `streamEventId` when one monitor event should process once across endpoint changes.
+  </Card>
+
+  <Card title="Extraction job" icon="database">
+    Store `id`, `toolType`, and `status`; poll `GET /extractions/{id}` and carry `hasMore` plus `nextCursor` into batch loops.
+  </Card>
+</CardGroup>
+
 ## Recipe 1: AI Agent X Research With MCP
 
 Use this when an n8n AI Agent needs to research live X data, summarize trends, or compare account activity.
