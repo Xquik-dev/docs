@@ -1975,6 +1975,8 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
   'Poll by `reply_extraction_id`',
   'Do not wait for `totalResults` or `createdAt` in the create response',
   'those fields arrive from `GET /extractions/{id}`',
+  'Poll `GET /extractions/{id}` until the job is `completed` or `failed`.',
+  'Use CSV for spreadsheets, JSON for app ingestion, and XLSX for analyst handoff.',
   '### Saved export JSON Lines handoff',
   '`tweet-replies.jsonl`',
   'job: "reply_export"',
@@ -1990,6 +1992,7 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
   '--data-urlencode "sinceTime=1777392000"',
   '--data-urlencode "untilTime=1777478400"',
   'process.stdout.write(JSON.stringify(row) + "\\n");',
+  'Use the extraction workflow instead when the job needs a durable export file, a cost estimate before scraping, or a hard `resultsLimit`.',
   '`resultsLimit`',
   'Estimate is free.',
   'Exports are free after the extraction job exists.',
@@ -5841,7 +5844,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps tweet replies export workflow steps concrete', (): void => {
-    expect.assertions(2);
+    expect.assertions(4);
 
     const source = readFileSync('guides/tweet-replies-export.mdx', 'utf8');
 
@@ -5852,6 +5855,8 @@ describe('repository discovery', (): void => {
         REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS,
       ),
     ).toStrictEqual([]);
+    expect(source).not.toContain('console.log(data);');
+    expect(source).not.toContain('print(data)');
     expect(source).not.toContain('console.log(JSON.stringify(row));');
   });
 
