@@ -29,10 +29,26 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const threadRows = data.tweets.map((tweet) => ({
+    source_tweet_id: tweetId,
+    thread_tweet_id: tweet.id,
+    text: tweet.text,
+    author_username: tweet.author?.username ?? null,
+    created_at: tweet.createdAt ?? null,
+    conversation_id: tweet.conversationId ?? null,
+    in_reply_to_id: tweet.inReplyToId ?? null,
+    media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
+  }));
+  const nextCursor = data.has_next_page ? data.next_cursor : null;
+
+  for (const row of threadRows) {
+    const output = { ...row, next_cursor: nextCursor };
+    process.stdout.write(`${JSON.stringify(output)}\n`);
+  }
   ```
 
   ```python Python
+  import json
   import requests
 
   response = requests.get(
@@ -40,9 +56,35 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  next_cursor = data["next_cursor"] if data["has_next_page"] else None
+  thread_rows = [
+      {
+          "source_tweet_id": "1893456789012345678",
+          "thread_tweet_id": tweet["id"],
+          "text": tweet["text"],
+          "author_username": tweet.get("author", {}).get("username"),
+          "created_at": tweet.get("createdAt"),
+          "conversation_id": tweet.get("conversationId"),
+          "in_reply_to_id": tweet.get("inReplyToId"),
+          "media_urls": [
+              item["mediaUrl"]
+              for item in tweet.get("media", [])
+              if item.get("mediaUrl")
+          ],
+          "next_cursor": next_cursor,
+      }
+      for tweet in data["tweets"]
+  ]
+  for row in thread_rows:
+      print(json.dumps(row))
   ```
 </CodeGroup>
+
+Use `GET /x/tweets/{id}/thread` when a workflow needs ordered thread context
+as durable rows. The Node.js and Python snippets write one JSON line per tweet
+instead of printing the full page response. Store `source_tweet_id`,
+`thread_tweet_id`, `text`, `author_username`, `created_at`, `conversation_id`,
+`in_reply_to_id`, `media_urls`, and `next_cursor` for downstream jobs.
 
 ## Path parameters
 

@@ -2200,6 +2200,31 @@ const FORBIDDEN_GET_ARTICLE_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_TWEET_THREAD_API_HANDOFF_SNIPPETS = [
+  '`GET /x/tweets/{id}/thread`',
+  'source_tweet_id: tweetId',
+  'thread_tweet_id: tweet.id',
+  'author_username: tweet.author?.username ?? null',
+  'conversation_id: tweet.conversationId ?? null',
+  'in_reply_to_id: tweet.inReplyToId ?? null',
+  'media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? []',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  '"source_tweet_id": "1893456789012345678"',
+  '"thread_tweet_id": tweet["id"]',
+  '"author_username": tweet.get("author", {}).get("username")',
+  '"conversation_id": tweet.get("conversationId")',
+  '"in_reply_to_id": tweet.get("inReplyToId")',
+  'next_cursor = data["next_cursor"] if data["has_next_page"] else None',
+  'one JSON line per tweet',
+  '`source_tweet_id`,',
+  '`thread_tweet_id`, `text`, `author_username`,',
+] as const;
+
+const FORBIDDEN_TWEET_THREAD_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct follower handoff',
   '<CardGroup cols={2}>',
@@ -6510,6 +6535,30 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Get article API page prints raw article data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the tweet thread API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/tweet-thread.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Tweet thread endpoint page',
+        REQUIRED_TWEET_THREAD_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_TWEET_THREAD_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Tweet thread API page prints raw thread data with "${snippet}".`,
                 },
               ]
             : [],
