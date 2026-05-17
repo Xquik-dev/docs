@@ -1327,6 +1327,24 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   '"mcp/docs-mcp"',
 ] as const;
 
+const REQUIRED_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS = [
+  'Xquik has 2 MCP servers. Choose based on what the agent needs to do.',
+  '<Card title="Search docs" icon="book-open">',
+  'Connect `https://docs.xquik.com/mcp`. It is read-only and requires no auth.',
+  '<Card title="Run API actions" icon="terminal">',
+  'Connect `https://xquik.com/mcp`. It requires `x-api-key` or OAuth 2.1 and exposes `explore` plus `xquik`.',
+  'For docs search, add `https://docs.xquik.com/mcp`.',
+  'For account actions, get your API key from the dashboard.',
+  'Configure `https://xquik.com/mcp` with an `x-api-key` header or OAuth login.',
+  '[Docs MCP server](/mcp/docs-mcp)',
+  '[MCP Server overview](/mcp/overview)',
+] as const;
+
+const FORBIDDEN_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS = [
+  'Xquik provides an MCP (Model Context Protocol) server for AI agent integration. 2 tools',
+  'The agent authenticates via the `x-api-key` header, same as the REST API',
+] as const;
+
 const FORBIDDEN_DOCS_MCP_SERVER_SNIPPETS = [
   'Docs MCP server is authenticated',
   'Docs MCP server executes actions',
@@ -5932,6 +5950,32 @@ describe('repository discovery', (): void => {
     }
 
     expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps troubleshooting clear about Docs MCP vs API MCP', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/troubleshooting.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'Troubleshooting MCP handoff',
+          REQUIRED_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Troubleshooting MCP handoff contains stale single-server wording "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
   });
 
   it('keeps billing recovery steps concrete for 402 failures', (): void => {
