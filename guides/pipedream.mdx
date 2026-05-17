@@ -171,6 +171,31 @@ export default {
 };
 ```
 
+## Result Handoff
+
+Use Pipedream exports and source event metadata to pass stable fields between workflow steps. Keep raw API pages out of Slack messages, CRM rows, warehouse loads, and retry queues.
+
+<CardGroup cols={2}>
+  <Card title="Search Tweets action" icon="search">
+    Export `tweet_count`, `has_next_page`, and `next_cursor`; return tweet rows with `id`, `text`, `author.username`, `createdAt`, and optional `url`.
+  </Card>
+  <Card title="Tweet or reply write" icon="send">
+    Export `tweetId` on `200 Success`. For `202 x_write_unconfirmed`, export `writeActionId`, `status`, and `charged`, then poll `GET /x/write-actions/{id}` before retrying.
+  </Card>
+  <Card title="Public media upload" icon="image">
+    Export `mediaId`, `mediaUrl`, and `success`. Pass `mediaUrl` to `POST /x/tweets` in `media`; reserve uploaded media IDs for one-item DMs.
+  </Card>
+  <Card title="Monitor and webhook setup" icon="radio">
+    Export monitor `id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`; export webhook `id`, `url`, `eventTypes`, and one-time `secret`.
+  </Card>
+  <Card title="Monitor event source" icon="fingerprint">
+    Emit `deliveryId` for endpoint-level retry de-dupe, `streamEventId` for event-level de-dupe across endpoint changes, and `occurredAt` as `ts`.
+  </Card>
+  <Card title="Extraction polling source" icon="database">
+    Emit completed job `id`, `toolType`, and `status`; fetch detail rows and carry `hasMore` plus `nextCursor` into warehouse batches.
+  </Card>
+</CardGroup>
+
 ## Source 1: Monitor Event Webhook
 
 Use this for immediate tweet, reply, quote, and retweet alerts.
