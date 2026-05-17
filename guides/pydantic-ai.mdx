@@ -8,7 +8,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Build a Pydantic AI agent that can search tweets, look up users, post tweets, and run extractions - connected to Xquik's MCP server with 3 lines of config.
+Build a Pydantic AI agent that can search tweets, hand off IDs and cursors, post tweets, and run extraction jobs - connected to Xquik's MCP server with 3 lines of config.
 
 ## Prerequisites
 
@@ -26,6 +26,7 @@ pip install "pydantic-ai[mcp]"
 
 ```python
 import asyncio
+from pathlib import Path
 from pydantic_ai import Agent
 from pydantic_ai.mcp import MCPServerStreamableHTTP
 
@@ -42,8 +43,16 @@ agent = Agent(
 
 
 async def main():
-    result = await agent.run("Search for tweets about AI agents")
-    print(result.output)
+    prompt = (
+        "Search for the latest tweets about AI agents. Return compact JSON "
+        "with query, route_used, tweets[{tweet_id,text,author_username,created_at}], "
+        "has_more, next_cursor, and key influencers."
+    )
+    result = await agent.run(prompt)
+    Path("xquik-pydantic-ai-handoff.json").write_text(
+        result.output,
+        encoding="utf-8",
+    )
 
 
 asyncio.run(main())
@@ -51,17 +60,49 @@ asyncio.run(main())
 
 The agent auto-discovers all Xquik tools and can call any of the 120 API endpoints.
 
+Pydantic AI registers `MCPServerStreamableHTTP` as an agent `toolsets` entry. The MCP runtime returns normalized snake_case fields through `xquik.request()`, so keep prompts aligned with `tweet_id`, `has_more`, `next_cursor`, and returned job IDs.
+
+## Handoff Checklist
+
+<CardGroup cols={2}>
+  <Card title="Tweet search rows" icon="search">
+    Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.
+  </Card>
+  <Card title="Monitor and webhook setup" icon="radio">
+    Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager.
+  </Card>
+  <Card title="Extraction jobs" icon="database">
+    Store `extraction_id`, `status`, `poll`, and `export_after_complete`; poll before loading CSV, JSON, or XLSX rows.
+  </Card>
+  <Card title="Writes" icon="send">
+    Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, and `poll`; do not resend pending writes.
+  </Card>
+</CardGroup>
+
 ## Reusing Connections
 
 Wrap multiple calls in `async with agent` to keep the MCP connection open across requests:
 
 ```python
+from pathlib import Path
+
 async def main():
     async with agent:
-        result1 = await agent.run("Look up @elonmusk's profile")
-        result2 = await agent.run("Get their latest 5 tweets")
-    print(result1.output)
-    print(result2.output)
+        profile = await agent.run("Look up @xquikcom's public profile")
+        tweets = await agent.run(
+            "Get @xquikcom's latest 5 tweets. Return compact JSON with "
+            "tweet_id, author_username, text, created_at, has_more, next_cursor, "
+            "and route_used."
+        )
+
+    Path("xquik-pydantic-ai-profile.json").write_text(
+        profile.output,
+        encoding="utf-8",
+    )
+    Path("xquik-pydantic-ai-tweets.json").write_text(
+        tweets.output,
+        encoding="utf-8",
+    )
 ```
 
 ## Deferred Tool Loading
@@ -89,11 +130,13 @@ If you manage MCP servers via a config file:
 
 ```json mcp_config.json
 {
-  "xquik": {
-    "transport": "streamable-http",
-    "url": "https://xquik.com/mcp",
-    "headers": {
-      "x-api-key": "xq_YOUR_KEY_HERE"
+  "mcpServers": {
+    "xquik": {
+      "transport": "streamable-http",
+      "url": "https://xquik.com/mcp",
+      "headers": {
+        "x-api-key": "xq_YOUR_KEY_HERE"
+      }
     }
   }
 }
