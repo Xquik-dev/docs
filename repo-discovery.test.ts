@@ -2292,6 +2292,30 @@ const FORBIDDEN_RETWEETERS_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_COMMUNITY_INFO_API_HANDOFF_SNIPPETS = [
+  '`GET /x/communities/{id}/info`',
+  'const communityRecord = {',
+  'community_id: community.id',
+  'community_name: community.name ?? null',
+  'member_count: community.member_count ?? null',
+  'moderator_count: community.moderator_count ?? null',
+  'primary_topic_name: community.primary_topic?.name ?? null',
+  'rule_count: community.rules?.length ?? 0',
+  '"community_id": community["id"]',
+  '"community_name": community.get("name")',
+  '"member_count": community.get("member_count")',
+  '"moderator_count": community.get("moderator_count")',
+  '"primary_topic_name": (community.get("primary_topic") or {}).get("name")',
+  '"rule_count": len(community.get("rules") or [])',
+  'one durable community',
+  '`community_id`, `community_name`, `description`,',
+] as const;
+
+const FORBIDDEN_COMMUNITY_INFO_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct follower handoff',
   '<CardGroup cols={2}>',
@@ -6698,6 +6722,30 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Retweeters API page prints raw retweeter data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the community info API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/community-info.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Community info endpoint page',
+        REQUIRED_COMMUNITY_INFO_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_COMMUNITY_INFO_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Community info API page prints raw community data with "${snippet}".`,
                 },
               ]
             : [],

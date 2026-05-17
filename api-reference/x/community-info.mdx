@@ -25,10 +25,25 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const community = data.community;
+  const communityRecord = {
+    community_id: community.id,
+    community_name: community.name ?? null,
+    description: community.description ?? null,
+    member_count: community.member_count ?? null,
+    moderator_count: community.moderator_count ?? null,
+    join_policy: community.join_policy ?? null,
+    banner_url: community.banner_url ?? null,
+    created_at: community.created_at ?? null,
+    primary_topic_name: community.primary_topic?.name ?? null,
+    rule_count: community.rules?.length ?? 0,
+  };
+
+  process.stdout.write(JSON.stringify(communityRecord, null, 2));
   ```
 
   ```python Python
+  import json
   import requests
 
   response = requests.get(
@@ -36,9 +51,29 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  community = data["community"]
+  community_record = {
+      "community_id": community["id"],
+      "community_name": community.get("name"),
+      "description": community.get("description"),
+      "member_count": community.get("member_count"),
+      "moderator_count": community.get("moderator_count"),
+      "join_policy": community.get("join_policy"),
+      "banner_url": community.get("banner_url"),
+      "created_at": community.get("created_at"),
+      "primary_topic_name": (community.get("primary_topic") or {}).get("name"),
+      "rule_count": len(community.get("rules") or []),
+  }
+
+  print(json.dumps(community_record, indent=2))
   ```
 </CodeGroup>
+
+Use `GET /x/communities/{id}/info` when a workflow needs one durable community
+profile row before member exports, moderator review, content routing, or CRM
+enrichment. Store `community_id`, `community_name`, `description`,
+`member_count`, `moderator_count`, `join_policy`, `banner_url`, `created_at`,
+`primary_topic_name`, and `rule_count`.
 
 ## Path parameters
 
