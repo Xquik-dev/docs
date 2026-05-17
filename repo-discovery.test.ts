@@ -2316,6 +2316,31 @@ const FORBIDDEN_COMMUNITY_INFO_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_COMMUNITY_MEMBERS_API_HANDOFF_SNIPPETS = [
+  '`GET /x/communities/{id}/members`',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  'const memberRows = data.users.map((user) => ({',
+  'community_id: communityId',
+  'member_id: user.id',
+  'display_name: user.name',
+  'bio: user.description ?? null',
+  'follower_count: user.followers ?? null',
+  'profile_image_url: user.profilePicture ?? null',
+  '"community_id": community_id',
+  '"member_id": user["id"]',
+  '"display_name": user["name"]',
+  '"bio": user.get("description")',
+  '"follower_count": user.get("followers")',
+  '"profile_image_url": user.get("profilePicture")',
+  'one row per community member',
+  '`community_id`, `member_id`, `username`,',
+] as const;
+
+const FORBIDDEN_COMMUNITY_MEMBERS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct follower handoff',
   '<CardGroup cols={2}>',
@@ -6746,6 +6771,33 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Community info API page prints raw community data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the community members API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x/community-members.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Community members endpoint page',
+        REQUIRED_COMMUNITY_MEMBERS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_COMMUNITY_MEMBERS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Community members API page prints raw member data with "${snippet}".`,
                 },
               ]
             : [],

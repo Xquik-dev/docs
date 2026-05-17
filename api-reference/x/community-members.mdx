@@ -29,20 +29,56 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const nextCursor = data.has_next_page ? data.next_cursor : null;
+  const memberRows = data.users.map((user) => ({
+    community_id: communityId,
+    member_id: user.id,
+    username: user.username,
+    display_name: user.name,
+    bio: user.description ?? null,
+    follower_count: user.followers ?? null,
+    verified: user.verified ?? false,
+    profile_image_url: user.profilePicture ?? null,
+    next_cursor: nextCursor,
+  }));
+
+  process.stdout.write(JSON.stringify(memberRows, null, 2));
   ```
 
   ```python Python
+  import json
   import requests
 
+  community_id = "1234567890"
   response = requests.get(
-      "https://xquik.com/api/v1/x/communities/1234567890/members",
+      f"https://xquik.com/api/v1/x/communities/{community_id}/members",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  next_cursor = data["next_cursor"] if data["has_next_page"] else None
+  member_rows = [
+      {
+          "community_id": community_id,
+          "member_id": user["id"],
+          "username": user["username"],
+          "display_name": user["name"],
+          "bio": user.get("description"),
+          "follower_count": user.get("followers"),
+          "verified": user.get("verified", False),
+          "profile_image_url": user.get("profilePicture"),
+          "next_cursor": next_cursor,
+      }
+      for user in data["users"]
+  ]
+
+  print(json.dumps(member_rows, indent=2))
   ```
 </CodeGroup>
+
+Use `GET /x/communities/{id}/members` for member exports, CRM enrichment,
+audience review, or moderator handoff. It creates one row per community member.
+Store `community_id`, `member_id`, `username`, `display_name`, `bio`,
+`follower_count`, `verified`, `profile_image_url`, and `next_cursor`.
 
 ## Path parameters
 
