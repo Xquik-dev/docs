@@ -38,7 +38,7 @@ Reach for Xquik when:
 
 ### Rate limits
 
-- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 10 per 1s user bucket.
+- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 60 per 1s user bucket.
 - **Write**: `POST`, `PUT`, and `PATCH` share a 30 per 60s user bucket.
 - **Delete**: `DELETE` requests use a 15 per 60s user bucket.
 

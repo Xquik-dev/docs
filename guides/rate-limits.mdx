@@ -11,7 +11,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 Xquik enforces rate limits to ensure fair usage and platform stability. Limits are applied per user account using a fixed window counter.
 
 <Note>
-**Quick answer:** 10 GET/1s, 30 POST/60s, 15 DELETE/60s per account.
+**Quick answer:** 60 GET/1s, 30 POST/60s, 15 DELETE/60s per account.
 Hit the limit? Respect the `Retry-After` header. Avoid 429s? Use the client-side rate limiter below.
 </Note>
 
@@ -19,7 +19,7 @@ Hit the limit? Respect the `Retry-After` header. Avoid 429s? Use the client-side
 
 <CardGroup cols={3}>
   <Card title="Read" icon="database">
-    `GET`, `HEAD`, and `OPTIONS` share a limit of 10 requests per 1 second.
+    `GET`, `HEAD`, and `OPTIONS` share a limit of 60 requests per 1 second.
   </Card>
   <Card title="Write" icon="pen-line">
     `POST`, `PUT`, and `PATCH` share a limit of 30 requests per 60 seconds.
@@ -62,12 +62,12 @@ Xquik uses a **fixed window counter**:
 </Steps>
 
 ```text
-Read tier (10 per 1s):
+Read tier (60 per 1s):
 
-Time 0.0s: [0/10]  -> Send 6 GET requests  -> [6/10]
-Time 0.5s: [6/10]  -> Send 4 GET requests  -> [10/10] (limit reached)
-Time 0.8s: [10/10] -> GET request -> 429 (rejected, window active)
-Time 1.0s: [0/10]  -> Window resets -> requests allowed again
+Time 0.0s: [0/60]   -> Send 40 GET requests -> [40/60]
+Time 0.5s: [40/60]  -> Send 20 GET requests -> [60/60] (limit reached)
+Time 0.8s: [60/60]  -> GET request -> 429 (rejected, window active)
+Time 1.0s: [0/60]   -> Window resets -> requests allowed again
 ```
 
 ## Response headers
@@ -129,8 +129,8 @@ class WindowRateLimiter {
   }
 }
 
-// Read tier: 10 requests per 1s
-const readLimiter = new WindowRateLimiter(10, 1_000);
+// Read tier: 60 requests per 1s
+const readLimiter = new WindowRateLimiter(60, 1_000);
 
 async function apiRequest(url) {
   await readLimiter.acquire();
@@ -168,8 +168,8 @@ class WindowRateLimiter:
 
             self.count += 1
 
-# Read tier: 10 requests per 1s
-read_limiter = WindowRateLimiter(10, 1)
+# Read tier: 60 requests per 1s
+read_limiter = WindowRateLimiter(60, 1)
 
 def api_request(url: str) -> requests.Response:
     read_limiter.acquire()
@@ -225,8 +225,8 @@ func (r *WindowRateLimiter) Acquire() {
 	r.count++
 }
 
-// Read tier: 10 requests per 1s
-var readLimiter = NewWindowRateLimiter(10, time.Second)
+// Read tier: 60 requests per 1s
+var readLimiter = NewWindowRateLimiter(60, time.Second)
 
 func apiRequest(url string) (*http.Response, error) {
 	readLimiter.Acquire()
@@ -242,7 +242,7 @@ func apiRequest(url string) (*http.Response, error) {
 ```bash cURL
 #!/bin/bash
 # Simple rate limiter using sleep between requests
-# Read tier: 10 per 1s = ~100ms between requests
+# Read tier: 60 per 1s = ~17ms between requests
 
 URLS=(
   "https://xquik.com/api/v1/events?monitorId=7"
@@ -252,7 +252,7 @@ URLS=(
 
 for url in "${URLS[@]}"; do
   curl -s "$url" -H "x-api-key: xq_YOUR_KEY_HERE" | jq
-  sleep 0.12  # 120ms stays under 10 requests per second
+  sleep 0.02  # 20ms stays under 60 requests per second
 done
 ```
 
@@ -278,8 +278,8 @@ Instead of building your own rate limiter, consider these battle-tested librarie
 import Bottleneck from "bottleneck";
 
 const limiter = new Bottleneck({
-  reservoir: 10,            // 10 requests per read window
-  reservoirRefreshAmount: 10,
+  reservoir: 60,            // 60 requests per read window
+  reservoirRefreshAmount: 60,
   reservoirRefreshInterval: 1_000, // 1 second
   maxConcurrent: 5,
 });

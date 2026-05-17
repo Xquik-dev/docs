@@ -1118,7 +1118,7 @@ const REQUIRED_LLMS_SNIPPETS = [
 
 const REQUIRED_SKILL_RATE_LIMIT_SNIPPETS = [
   '### Rate limits',
-  '- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 10 per 1s user bucket.',
+  '- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 60 per 1s user bucket.',
   '- **Write**: `POST`, `PUT`, and `PATCH` share a 30 per 60s user bucket.',
   '- **Delete**: `DELETE` requests use a 15 per 60s user bucket.',
   'Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header.',
@@ -1126,7 +1126,7 @@ const REQUIRED_SKILL_RATE_LIMIT_SNIPPETS = [
 
 const FORBIDDEN_SKILL_RATE_LIMIT_SNIPPETS = [
   '| Tier | Methods | Limit |',
-  '| Read | GET, HEAD, OPTIONS | 10 per 1s |',
+  '| Read | GET, HEAD, OPTIONS | 60 per 1s |',
   '| Write | POST, PUT, PATCH | 30 per 60s |',
   '| Delete | DELETE | 15 per 60s |',
 ] as const;
@@ -3629,7 +3629,7 @@ const FORBIDDEN_ARCHITECTURE_DATA_ISOLATION_SNIPPETS = [
 const FORBIDDEN_ARCHITECTURE_RATE_LIMIT_SNIPPETS = [
   '| Tier | Methods | Limit |',
   '|------|---------|-------|',
-  '| **Read** | `GET`, `HEAD`, `OPTIONS` | 10 per 1s |',
+  '| **Read** | `GET`, `HEAD`, `OPTIONS` | 60 per 1s |',
   '| **Write** | `POST`, `PUT`, `PATCH` | 30 per 60s |',
   '| **Delete** | `DELETE` | 15 per 60s |',
 ] as const;
