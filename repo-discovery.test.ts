@@ -2341,6 +2341,31 @@ const FORBIDDEN_COMMUNITY_MEMBERS_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_COMMUNITY_MODERATORS_API_HANDOFF_SNIPPETS = [
+  '`GET /x/communities/{id}/moderators`',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  'const moderatorRows = data.users.map((user) => ({',
+  'community_id: communityId',
+  'moderator_id: user.id',
+  'display_name: user.name',
+  'bio: user.description ?? null',
+  'follower_count: user.followers ?? null',
+  'profile_image_url: user.profilePicture ?? null',
+  '"community_id": community_id',
+  '"moderator_id": user["id"]',
+  '"display_name": user["name"]',
+  '"bio": user.get("description")',
+  '"follower_count": user.get("followers")',
+  '"profile_image_url": user.get("profilePicture")',
+  'community moderator. Store',
+  '`community_id`, `moderator_id`, `username`,',
+] as const;
+
+const FORBIDDEN_COMMUNITY_MODERATORS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_COMMUNITY_TWEETS_API_HANDOFF_SNIPPETS = [
   '`GET /x/communities/{id}/tweets`',
   'const nextCursor = data.has_next_page ? data.next_cursor : null;',
@@ -6823,6 +6848,33 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Community members API page prints raw member data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the community moderators API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x/community-moderators.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Community moderators endpoint page',
+        REQUIRED_COMMUNITY_MODERATORS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_COMMUNITY_MODERATORS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Community moderators API page prints raw moderator data with "${snippet}".`,
                 },
               ]
             : [],
