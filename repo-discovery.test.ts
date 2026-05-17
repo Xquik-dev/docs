@@ -2526,6 +2526,9 @@ const FORBIDDEN_FOLLOWING_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS = [
+  '## Direct follow relationship handoff',
+  '`GET /x/followers/check`',
+  'CRM, giveaway eligibility check,',
   'const source = "xquikcom";',
   'const target = "elonmusk";',
   'const params = new URLSearchParams({ source, target });',
@@ -2534,6 +2537,8 @@ const REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS = [
   'target_username: data.targetUsername',
   'source_follows_target: data.isFollowing',
   'target_follows_source: data.isFollowedBy',
+  'process.stdout.write(`${JSON.stringify(relationshipRow)}\\n`);',
+  'import json',
   'source = "xquikcom"',
   'target = "elonmusk"',
   'relationship_row = {',
@@ -2541,6 +2546,14 @@ const REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS = [
   '"target_username": data["targetUsername"]',
   '"source_follows_target": data["isFollowing"]',
   '"target_follows_source": data["isFollowedBy"]',
+  'print(json.dumps(relationship_row))',
+  'shape a durable relationship row instead of',
+  '`source_username`, `target_username`,',
+  '`source_follows_target`, and',
+  '`target_follows_source`',
+  '`isFollowing` means',
+  '`isFollowedBy` means',
+  '`400 missing_params`',
 ] as const;
 
 const FORBIDDEN_CHECK_FOLLOWER_API_RAW_OUTPUT_SNIPPETS = [
