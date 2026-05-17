@@ -77,12 +77,17 @@ const REQUIRED_INTRODUCTION_SNIPPETS = [
   'upload media',
   'monitor tweets every 1 second',
   'send signed webhooks',
+  "Free trending topics and news from Xquik's own infrastructure.",
   '## Use Xquik with AI agents',
   '[llms.txt](/llms.txt)',
   '[Context7 library](https://context7.com/xquik-dev/xquik-docs)',
   '[Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper)',
   'https://xquik.com/mcp',
   'npx skills add Xquik-dev/x-twitter-scraper',
+] as const;
+
+const FORBIDDEN_INTRODUCTION_CONFIDENTIALITY_SNIPPETS = [
+  'Free trending topics and news from 7 sources:',
 ] as const;
 
 const REQUIRED_QUICKSTART_SNIPPETS = [
@@ -5449,6 +5454,32 @@ describe('repository discovery', (): void => {
       ),
       ...collectSnippetFindings(llms, 'llms.txt', REQUIRED_LLMS_SNIPPETS),
     ]).toStrictEqual([]);
+  });
+
+  it('keeps introduction radar copy public-safe', (): void => {
+    expect.assertions(1);
+
+    const introduction = readFileSync('introduction.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          introduction,
+          'Introduction public radar copy',
+          ["Free trending topics and news from Xquik's own infrastructure."],
+        ),
+        ...FORBIDDEN_INTRODUCTION_CONFIDENTIALITY_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            introduction.includes(snippet)
+              ? [
+                  {
+                    issue: `Introduction contains private radar source wording "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
   });
 
   it('keeps agent-docs checks covering generated HTML size and markdown fallbacks', (): void => {
