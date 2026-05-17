@@ -2201,6 +2201,26 @@ const FORBIDDEN_GET_USER_API_RAW_OUTPUT_SNIPPETS = [
   'fmt.Println(string(body))',
 ] as const;
 
+const REQUIRED_X_TRENDS_API_HANDOFF_SNIPPETS = [
+  '`GET /x/trends`',
+  'const trendRows = data.trends.map((trend) => ({',
+  'trend_name: trend.name',
+  'search_query: trend.query ?? trend.name',
+  'region_woeid: data.woeid',
+  'returned_count: data.count',
+  '"trend_name": trend["name"]',
+  '"search_query": trend.get("query", trend["name"])',
+  '"region_woeid": data["woeid"]',
+  '"returned_count": data["count"]',
+  'one JSON line per trend',
+  '`trend_name`, `rank`, `description`,',
+] as const;
+
+const FORBIDDEN_X_TRENDS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
   '`GET /x/articles/{tweetId}`',
   'tweet_id: tweetId',
@@ -6559,6 +6579,30 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Get user API page prints raw profile data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the X trends API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/trends.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'X trends endpoint page',
+        REQUIRED_X_TRENDS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_X_TRENDS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `X trends API page prints raw trend data with "${snippet}".`,
                 },
               ]
             : [],
