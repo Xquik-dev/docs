@@ -2532,6 +2532,35 @@ const FORBIDDEN_LIST_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_LIST_MEMBERS_API_HANDOFF_SNIPPETS = [
+  '## Direct list member handoff',
+  '`GET /x/lists/{id}/members`',
+  'CRM, warehouse, audience, enrichment,',
+  '`list_member_extractor`',
+  'CSV/JSON/XLSX file export',
+  'const memberRows = data.users.map',
+  'list_id: listId',
+  'member_id: user.id',
+  'follower_count: user.followers ?? null',
+  'profile_image_url: user.profilePicture ?? null',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  'member_rows = [',
+  '"list_id": list_id',
+  '"member_id": user["id"]',
+  '"follower_count": user.get("followers")',
+  '"profile_image_url": user.get("profilePicture")',
+  'next_cursor = data["next_cursor"] if data["has_next_page"] else None',
+  'shape durable list-member rows instead of',
+  '`list_id`, `member_id`, `username`,',
+  '`has_next_page`, and `next_cursor`',
+  '`pageSize` from 20 to 200',
+] as const;
+
+const FORBIDDEN_LIST_MEMBERS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_VERIFIED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct verified followers handoff',
   '`GET /x/users/{id}/verified-followers`',
@@ -7102,6 +7131,32 @@ describe('repository discovery', (): void => {
             : [],
       ),
     ).toStrictEqual([]);
+  });
+
+  it('keeps the list members API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/list-members.mdx', 'utf8');
+    const forbiddenRawOutputFindings =
+      FORBIDDEN_LIST_MEMBERS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `List members API page prints raw member data with "${snippet}".`,
+                },
+              ]
+            : [],
+      );
+
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'List members API page',
+        REQUIRED_LIST_MEMBERS_API_HANDOFF_SNIPPETS,
+      ),
+      ...forbiddenRawOutputFindings,
+    ]).toStrictEqual([]);
   });
 
   it('keeps the verified followers API handoff concrete', (): void => {
