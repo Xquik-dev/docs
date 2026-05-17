@@ -25,7 +25,17 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const audienceRows = data.users.map((user) => ({
+    x_user_id: user.id,
+    x_username: user.username,
+    display_name: user.name,
+    bio: user.description ?? null,
+    follower_count: user.followers ?? null,
+    following_count: user.following ?? null,
+    verified: user.verified ?? false,
+    profile_image_url: user.profilePicture ?? null,
+  }));
+  const nextCursor = data.has_next_page ? data.next_cursor : null;
   ```
 
   ```python Python
@@ -36,9 +46,26 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  audience_rows = [
+      {
+          "x_user_id": user["id"],
+          "x_username": user["username"],
+          "display_name": user["name"],
+          "bio": user.get("description"),
+          "follower_count": user.get("followers"),
+          "following_count": user.get("following"),
+          "verified": user.get("verified", False),
+          "profile_image_url": user.get("profilePicture"),
+      }
+      for user in data["users"]
+  ]
+  next_cursor = data["next_cursor"] if data["has_next_page"] else None
   ```
 </CodeGroup>
+
+The Node.js and Python snippets shape durable audience rows instead of printing
+full following profiles. Persist the mapped rows and `nextCursor` in your sync
+job.
 
 ## Direct following handoff
 

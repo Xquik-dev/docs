@@ -2488,10 +2488,20 @@ const REQUIRED_FOLLOWING_API_HANDOFF_SNIPPETS = [
   '`x_user_id`',
   '`users[].username` and `users[].name`',
   '`has_next_page` and `next_cursor`',
+  'const audienceRows = data.users.map',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  'audience_rows = [',
+  'next_cursor = data["next_cursor"] if data["has_next_page"] else None',
+  'shape durable audience rows instead of printing',
   '`pageSize` from 20 to 200',
   '1 credit per user returned',
   '`402 insufficient_credits`',
   'USD 0.00015 per user returned',
+] as const;
+
+const FORBIDDEN_FOLLOWING_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
 ] as const;
 
 const REQUIRED_VERIFIED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
@@ -7028,6 +7038,16 @@ describe('repository discovery', (): void => {
         source,
         'Following API page',
         REQUIRED_FOLLOWING_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_FOLLOWING_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Following API page prints raw following data with "${snippet}".`,
+                },
+              ]
+            : [],
       ),
     ).toStrictEqual([]);
   });
