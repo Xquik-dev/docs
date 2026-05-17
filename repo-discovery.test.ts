@@ -2269,6 +2269,29 @@ const FORBIDDEN_TWEET_THREAD_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_RETWEETERS_API_HANDOFF_SNIPPETS = [
+  '`GET /x/tweets/{id}/retweeters`',
+  'source_tweet_id: tweetId',
+  'retweeter_id: user.id',
+  'username: user.username',
+  'display_name: user.name',
+  'follower_count: user.followers ?? null',
+  'profile_image_url: user.profilePicture ?? null',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  '"source_tweet_id": "1893456789012345678"',
+  '"retweeter_id": user["id"]',
+  '"display_name": user["name"]',
+  '"follower_count": user.get("followers")',
+  '"profile_image_url": user.get("profilePicture")',
+  'one row per account',
+  '`source_tweet_id`, `retweeter_id`, `username`,',
+] as const;
+
+const FORBIDDEN_RETWEETERS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct follower handoff',
   '<CardGroup cols={2}>',
@@ -6651,6 +6674,30 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Tweet thread API page prints raw thread data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the retweeters API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/retweeters.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Retweeters endpoint page',
+        REQUIRED_RETWEETERS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_RETWEETERS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Retweeters API page prints raw retweeter data with "${snippet}".`,
                 },
               ]
             : [],

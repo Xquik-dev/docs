@@ -29,10 +29,25 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const retweeterRows = data.users.map((user) => ({
+    source_tweet_id: tweetId,
+    retweeter_id: user.id,
+    username: user.username,
+    display_name: user.name,
+    follower_count: user.followers ?? null,
+    verified: user.verified ?? false,
+    profile_image_url: user.profilePicture ?? null,
+  }));
+  const nextCursor = data.has_next_page ? data.next_cursor : null;
+
+  for (const row of retweeterRows) {
+    const output = { ...row, next_cursor: nextCursor };
+    process.stdout.write(`${JSON.stringify(output)}\n`);
+  }
   ```
 
   ```python Python
+  import json
   import requests
 
   response = requests.get(
@@ -40,9 +55,30 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  next_cursor = data["next_cursor"] if data["has_next_page"] else None
+  retweeter_rows = [
+      {
+          "source_tweet_id": "1893456789012345678",
+          "retweeter_id": user["id"],
+          "username": user["username"],
+          "display_name": user["name"],
+          "follower_count": user.get("followers"),
+          "verified": user.get("verified", False),
+          "profile_image_url": user.get("profilePicture"),
+          "next_cursor": next_cursor,
+      }
+      for user in data["users"]
+  ]
+  for row in retweeter_rows:
+      print(json.dumps(row))
   ```
 </CodeGroup>
+
+Use `GET /x/tweets/{id}/retweeters` when a workflow needs one row per account
+that reposted a tweet for giveaway checks, CRM enrichment, audience analysis,
+or follow-up jobs. Store `source_tweet_id`, `retweeter_id`, `username`,
+`display_name`, `follower_count`, `verified`, `profile_image_url`, and
+`next_cursor` instead of logging the full page response.
 
 ## Path parameters
 
