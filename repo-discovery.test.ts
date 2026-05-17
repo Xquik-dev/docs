@@ -1468,6 +1468,20 @@ const FORBIDDEN_BILLING_CARRYOVER_SNIPPETS = [
   '| 1 per result | Tweets, replies, quotes, mentions, posts, likes, media, search |',
 ] as const;
 
+const REQUIRED_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS = [
+  '<Accordion title="Credits">',
+  'Subscription grants, top-ups, and automatic top-ups add credits to one shared balance.',
+  'Unused credits carry over until you spend them.',
+  '<Accordion title="PAYG">',
+  'Top-up credits are added to your balance immediately and do not expire.',
+] as const;
+
+const FORBIDDEN_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS = [
+  'Credits are included in your subscription and reset each billing period.',
+  'reset each billing period',
+  'Credits reset',
+] as const;
+
 const REQUIRED_QUICK_TOPUP_PAGE_SNIPPETS = [
   'At USD 0.00015 per credit, a USD 25 quick top-up adds 166,666 credits',
   'Only the `charged` outcome grants credits and updates `balance`.',
@@ -6006,6 +6020,32 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Billing guide contains stale carry-over wording "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps glossary credit carry-over aligned with billing behavior', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/glossary.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'Glossary credit carry-over',
+          REQUIRED_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS,
+        ),
+        ...FORBIDDEN_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Glossary credit carry-over contains stale wording "${snippet}".`,
                   },
                 ]
               : [],
