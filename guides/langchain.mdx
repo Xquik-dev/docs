@@ -8,7 +8,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Build a LangChain agent that can search tweets, look up users, post tweets, and run extractions - all through Xquik's MCP server.
+Build a LangChain agent that can search tweets, hand off IDs and cursors, post tweets, and run extraction jobs - all through Xquik's MCP server.
 
 ## Prerequisites
 
@@ -26,6 +26,7 @@ pip install langchain-mcp-adapters langchain langchain-anthropic
 
 ```python
 import asyncio
+from pathlib import Path
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain.agents import create_agent
 
@@ -49,11 +50,17 @@ async def main():
         system_prompt="You help users interact with X (Twitter) via the Xquik API.",
     )
 
-    response = await agent.ainvoke(
-        {"messages": [{"role": "user", "content": "Search for tweets about AI agents"}]}
+    prompt = (
+        "Search for the latest tweets about AI agents. Return compact JSON "
+        "with query, route_used, tweets[{tweet_id,text,author_username,created_at}], "
+        "has_more, next_cursor, and key influencers."
     )
+    response = await agent.ainvoke({"messages": [{"role": "user", "content": prompt}]})
 
-    print(response["messages"][-1].content)
+    Path("xquik-langchain-handoff.json").write_text(
+        str(response["messages"][-1].content),
+        encoding="utf-8",
+    )
 
 
 asyncio.run(main())
@@ -61,12 +68,32 @@ asyncio.run(main())
 
 That's it. The agent auto-discovers all Xquik tools (explore + xquik) and can call any of the 120 API endpoints.
 
+LangChain's MCP adapter loads tools with `MultiServerMCPClient`. The client is stateless by default, so persist returned IDs, cursors, and write-action status in your job state instead of relying on the next tool call to remember them. The MCP runtime returns normalized snake_case fields through `xquik.request()`, so keep prompts aligned with `tweet_id`, `has_more`, `next_cursor`, and returned job IDs.
+
+## Handoff Checklist
+
+<CardGroup cols={2}>
+  <Card title="Tweet search rows" icon="search">
+    Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.
+  </Card>
+  <Card title="Monitor and webhook setup" icon="radio">
+    Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager.
+  </Card>
+  <Card title="Extraction jobs" icon="database">
+    Store `extraction_id`, `status`, `poll`, and `export_after_complete`; poll before loading CSV, JSON, or XLSX rows.
+  </Card>
+  <Card title="Writes" icon="send">
+    Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, and `poll`; do not resend pending writes.
+  </Card>
+</CardGroup>
+
 ## Using LangGraph Directly
 
 If you prefer building the graph manually instead of using `create_agent`:
 
 ```python
 import asyncio
+from pathlib import Path
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain.chat_models import init_chat_model
 from langgraph.graph import StateGraph, MessagesState, START
@@ -97,10 +124,15 @@ async def main():
     builder.add_edge("tools", "call_model")
     graph = builder.compile()
 
-    result = await graph.ainvoke(
-        {"messages": [{"role": "user", "content": "Look up @elonmusk's profile"}]}
+    prompt = (
+        "Look up @xquikcom's public profile. Return compact JSON with "
+        "username, name, user_id, description, followers_count, and route_used."
     )
-    print(result["messages"][-1].content)
+    result = await graph.ainvoke({"messages": [{"role": "user", "content": prompt}]})
+    Path("xquik-langgraph-handoff.json").write_text(
+        str(result["messages"][-1].content),
+        encoding="utf-8",
+    )
 
 
 asyncio.run(main())

@@ -3927,6 +3927,27 @@ const REQUIRED_PYDANTIC_AI_GUIDE_SNIPPETS = [
   '"mcpServers": {',
 ] as const;
 
+const REQUIRED_LANGCHAIN_GUIDE_SNIPPETS = [
+  'Build a LangChain agent that can search tweets, hand off IDs and cursors, post tweets, and run extraction jobs',
+  'from pathlib import Path',
+  'query, route_used, tweets[{tweet_id,text,author_username,created_at}]',
+  'Path("xquik-langchain-handoff.json").write_text(',
+  "LangChain's MCP adapter loads tools with `MultiServerMCPClient`.",
+  'The client is stateless by default, so persist returned IDs, cursors, and write-action status in your job state',
+  'The MCP runtime returns normalized snake_case fields through `xquik.request()`',
+  '## Handoff Checklist',
+  '<Card title="Tweet search rows" icon="search">',
+  'Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.',
+  '<Card title="Monitor and webhook setup" icon="radio">',
+  'Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager.',
+  '<Card title="Extraction jobs" icon="database">',
+  'Store `extraction_id`, `status`, `poll`, and `export_after_complete`',
+  '<Card title="Writes" icon="send">',
+  'Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, and `poll`; do not resend pending writes.',
+  'Path("xquik-langgraph-handoff.json").write_text(',
+  'username, name, user_id, description, followers_count, and route_used',
+] as const;
+
 const REQUIRED_N8N_ALTERNATIVE_SNIPPETS = [
   '## Source-backed n8n scope',
   "n8n's official X node docs list built-in operations for direct messages",
@@ -7193,6 +7214,22 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('print(result.output)');
     expect(source).not.toContain('print(result1.output)');
     expect(source).not.toContain('print(result2.output)');
+  });
+
+  it('keeps the LangChain guide handoff concrete', (): void => {
+    expect.assertions(3);
+
+    const source = readFileSync('guides/langchain.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'LangChain guide',
+        REQUIRED_LANGCHAIN_GUIDE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(source).not.toContain('print(response["messages"][-1].content)');
+    expect(source).not.toContain('print(result["messages"][-1].content)');
   });
 
   it('keeps the alternatives workflow shortlist concrete', (): void => {
