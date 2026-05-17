@@ -65,6 +65,8 @@ Use this endpoint after a write request returns `202 x_write_unconfirmed`. The o
     <ResponseField name="messageId" type="string">Message ID when the action sent a DM.</ResponseField>
     <ResponseField name="targetId" type="string | null">Target user, tweet, or resource ID when available.</ResponseField>
     <ResponseField name="charged" type="boolean">Whether the original write action was charged.</ResponseField>
+    <ResponseField name="chargedCredits" type="string">Credits charged or reserved for the write action.</ResponseField>
+    <ResponseField name="media" type="object">Create-tweet media billing details. `count` is the attached media count, `credits` is the media credit total, `kind` is `none`, `image`, or `video`, and `totalBytes` is a stringified byte count.</ResponseField>
     <ResponseField name="sendDispatched" type="boolean">Whether the write was dispatched.</ResponseField>
     <ResponseField name="retryable" type="boolean">Always `false` for this status response.</ResponseField>
     <ResponseField name="confirmationAttempts" type="number">Number of confirmation attempts.</ResponseField>
@@ -81,6 +83,13 @@ Use this endpoint after a write request returns `202 x_write_unconfirmed`. The o
       "action": "create_tweet",
       "status": "pending_confirmation",
       "charged": false,
+      "chargedCredits": "0",
+      "media": {
+        "count": 0,
+        "credits": "0",
+        "kind": "none",
+        "totalBytes": "0"
+      },
       "sendDispatched": true,
       "retryable": false,
       "confirmationAttempts": 2,
@@ -116,8 +125,9 @@ Use `GET /x/write-actions/{id}` to close the queue record created after `202 x_w
 
 <CardGroup cols={2}>
   <Card title="success" icon="circle-check">
-    Store `writeActionId`, `action`, `charged`, and the returned `tweetId`,
-    `messageId`, or `resultId`. Mark the original job as complete.
+    Store `writeActionId`, `action`, `charged`, `chargedCredits`, `media`, and
+    the returned `tweetId`, `messageId`, or `resultId`. Mark the original job
+    as complete.
   </Card>
   <Card title="pending_confirmation" icon="clock">
     Store `writeActionId`, `sendDispatched`, `confirmationAttempts`,
@@ -126,8 +136,8 @@ Use `GET /x/write-actions/{id}` to close the queue record created after `202 x_w
   </Card>
   <Card title="failed" icon="triangle-alert">
     Store `writeActionId`, `action`, `sendDispatched`, `targetId`, `message`,
-    and `charged`. Mark the job failed, then fix the account, target, content,
-    or billing state before sending a new request.
+    `charged`, `chargedCredits`, and `media`. Mark the job failed, then fix the
+    account, target, content, or billing state before sending a new request.
   </Card>
 </CardGroup>
 
@@ -140,7 +150,9 @@ For tweet replies, `targetId` is the parent tweet ID when available. For DMs, `t
   "status": "success",
   "published_tweet_id": "2052816150136832166",
   "reply_to_tweet_id": "1893456789012345678",
-  "charged": true
+  "charged": true,
+  "charged_credits": "12",
+  "media": { "count": 1, "credits": "2", "kind": "image", "totalBytes": "834921" }
 }
 ```
 

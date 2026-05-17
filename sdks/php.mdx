@@ -360,6 +360,7 @@ function createTweetHandoff(Client $client, array $payload): array
         'status' => $body['status'],
         'write_action_id' => $body['writeActionId'],
         'charged' => $body['charged'],
+        'charged_credits' => $body['chargedCredits'],
         'retryable' => $body['retryable'],
         'poll' => 'GET /x/write-actions/{id}',
       ];
@@ -371,7 +372,8 @@ function createTweetHandoff(Client $client, array $payload): array
   return [
     'status' => 'success',
     'tweet_id' => $tweet->tweetID,
-    'charged' => true,
+    'charged' => $tweet->charged,
+    'charged_credits' => $tweet->chargedCredits,
   ];
 }
 
@@ -432,7 +434,7 @@ fwrite(
 );
 ```
 
-Store `write_action_id` and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before retrying a pending tweet or reply. Store `tweet_id` on the CMS, queue job, or agent state after confirmed writes. Store `$dm->messageID` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `$media->mediaID` values to `$client->x->tweets->create()`; that method uses `media` with public media URLs.
+Store `write_action_id` and `charged_credits`, then poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before retrying a pending tweet or reply. Store `tweet_id` on the CMS, queue job, or agent state after confirmed writes. Store `$dm->messageID` on the support ticket or CRM note. Text-only tweet and reply writes cost 10 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `$media->mediaID` values to `$client->x->tweets->create()`; that method uses `media` with public media URLs.
 
 ## Error Handling
 

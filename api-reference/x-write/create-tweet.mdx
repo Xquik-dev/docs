@@ -10,7 +10,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <LlmsDirective />
 
 <Callout icon="coins" color="#5c3327">
-  **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+  **10 credits text-only** · attached media adds 2 credits per started MB across all files
 </Callout>
 
 <CodeGroup>
@@ -93,7 +93,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 ## Post with public media URLs
 
-Use `media` when your image or MP4 video is already a public HTTPS URL or when [Upload Media](/api-reference/x-write/upload-media) returned `mediaUrl`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not send `media_ids`; that field is for DMs only.
+Use `media` when your image or MP4 video is already a public HTTPS URL or when [Upload Media](/api-reference/x-write/upload-media) returned `mediaUrl`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not send `media_ids`; that field is for DMs only. Attached media adds 2 credits per started MB across all files.
 
 <CodeGroup>
   ```bash Image tweet
@@ -131,7 +131,7 @@ Use `media` when your image or MP4 video is already a public HTTPS URL or when [
   ```
 </CodeGroup>
 
-Store `tweetId` on a `200 Success` response. If the API returns `202 x_write_unconfirmed`, store `writeActionId`, poll [Get Write Action Status](/api-reference/x-write/get-write-action-status), and do not retry-send the same body. Keep `reply_to_tweet_id` and `media` in your downstream record.
+Store `tweetId`, `charged`, and `chargedCredits` on a `200 Success` response. If the API returns `202 x_write_unconfirmed`, store `writeActionId`, poll [Get Write Action Status](/api-reference/x-write/get-write-action-status), and do not retry-send the same body. Keep `reply_to_tweet_id` and `media` in your downstream record.
 
 ## Headers
 
@@ -170,7 +170,7 @@ Store `tweetId` on a `200 Success` response. If the API returns `202 x_write_unc
 </ParamField>
 
 <ParamField body="media" type="string[]">
-  Array of public media URLs to attach directly. Send up to 4 JPEG, PNG, GIF, WebP, or AVIF image URLs, or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. Use [Upload Media](/api-reference/x-write/upload-media) first if you need Xquik to host a local file, then pass the returned `mediaUrl` in `media`. Do not pass uploaded `mediaId` values or `media_ids`.
+  Array of public media URLs to attach directly. Send up to 4 JPEG, PNG, GIF, WebP, or AVIF image URLs, or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. Use [Upload Media](/api-reference/x-write/upload-media) first if you need Xquik to host a local file, then pass the returned `mediaUrl` in `media`. Do not pass uploaded `mediaId` values or `media_ids`. Attached media adds 2 credits per started MB across all files.
 </ParamField>
 
 ## Response
@@ -179,11 +179,16 @@ Store `tweetId` on a `200 Success` response. If the API returns `202 x_write_unc
   <Tab title="200 Success">
     <ResponseField name="tweetId" type="string">ID of the newly created tweet.</ResponseField>
     <ResponseField name="success" type="boolean">Always `true` on success.</ResponseField>
+    <ResponseField name="charged" type="boolean">Whether credits were charged for the confirmed write.</ResponseField>
+    <ResponseField name="chargedCredits" type="string">Credits charged for this tweet. Text-only tweets cost 10 credits; attached media adds 2 credits per started MB.</ResponseField>
+    <ResponseField name="writeActionId" type="string">Write action ID when the write was logged for later reconciliation.</ResponseField>
 
     ```json
     {
       "tweetId": "1895432178065391234",
-      "success": true
+      "success": true,
+      "charged": true,
+      "chargedCredits": "12"
     }
     ```
   </Tab>
@@ -194,11 +199,12 @@ Store `tweetId` on a `200 Success` response. If the API returns `202 x_write_unc
       "status": "pending_confirmation",
       "writeActionId": "42",
       "charged": false,
+      "chargedCredits": "0",
       "retryable": false,
       "message": "Action may have completed, but confirmation is still pending."
     }
     ```
-    The write was dispatched but final confirmation is still pending. `writeActionId` identifies the action to poll with [Get write action status](/api-reference/x-write/get-write-action-status). `charged` is `false` while confirmation is pending, and `retryable` is `false`; do not retry-send the same tweet blindly.
+    The write was dispatched but final confirmation is still pending. `writeActionId` identifies the action to poll with [Get write action status](/api-reference/x-write/get-write-action-status). `charged` is `false` and `chargedCredits` is `"0"` while confirmation is pending, and `retryable` is `false`; do not retry-send the same tweet blindly.
   </Tab>
   <Tab title="400 Invalid Input">
     ```json
@@ -212,6 +218,8 @@ Store `tweetId` on a `200 Success` response. If the API returns `202 x_write_unc
       "error": "unsupported_field",
       "message": "media_ids is not supported on POST /x/tweets. Pass media as an array of public image or MP4 video URLs.",
       "retryable": false,
+      "charged": false,
+      "chargedCredits": "0",
       "details": {
         "action": "create_tweet",
         "suggestion": "Use the media field with public URLs instead of media_ids. Send up to 4 images or exactly 1 MP4 video up to 100 MB."
@@ -289,11 +297,13 @@ Store a compact record after every tweet or reply so queues, CRMs, support tools
       "account": "brand_account",
       "reply_to_tweet_id": "1893456789012345678",
       "media": ["https://cdn.example.com/release-card.png"],
-      "cost_credits": 10
+      "charged": true,
+      "charged_credits": "12",
+      "media_credits": "2"
     }
     ```
 
-    Copy `tweetId` from the response into `tweet_id`. Keep `reply_to_tweet_id` when the post is a reply, and store the public media URLs you sent in `media`. If you uploaded first, store the returned `mediaUrl`, not the upload `mediaId`.
+    Copy `tweetId` from the response into `tweet_id`. Keep `reply_to_tweet_id` when the post is a reply, and store `chargedCredits` as `charged_credits`. Store the public media URLs you sent in `media`. If you uploaded first, store the returned `mediaUrl`, not the upload `mediaId`.
   </Tab>
   <Tab title="Pending Confirmation">
     ```json
@@ -303,6 +313,7 @@ Store a compact record after every tweet or reply so queues, CRMs, support tools
       "account": "brand_account",
       "reply_to_tweet_id": "1893456789012345678",
       "charged": false,
+      "charged_credits": "0",
       "retryable": false,
       "poll": "GET /x/write-actions/{id}"
     }

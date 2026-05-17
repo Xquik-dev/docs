@@ -255,7 +255,7 @@ x-twitter-scraper x:tweets create \
   --format-error json > posted-reply.json
 ```
 
-The response returns `tweetId` and `success`. If the API returns `202 x_write_unconfirmed`, store `writeActionId` and poll `GET /x/write-actions/{id}` before sending another write. Keep one JSON Lines handoff shape for both outcomes:
+The response returns `tweetId`, `success`, `charged`, and `chargedCredits`. If the API returns `202 x_write_unconfirmed`, store `writeActionId`, `chargedCredits`, and poll `GET /x/write-actions/{id}` before sending another write. Keep one JSON Lines handoff shape for both outcomes:
 
 ```bash
 write_handoff() {
@@ -267,6 +267,7 @@ write_handoff() {
         status,
         write_action_id: .writeActionId,
         charged,
+        charged_credits: .chargedCredits,
         retryable,
         poll: "GET /x/write-actions/{id}"
       }
@@ -274,7 +275,9 @@ write_handoff() {
       {
         status: "posted",
         tweet_id: .tweetId,
-        charged: true
+        charged,
+        charged_credits: .chargedCredits,
+        write_action_id: .writeActionId
       }
     end
   ' "$input_file"
@@ -331,7 +334,7 @@ Do not pass uploaded `mediaId` values to `x:tweets create`; that command uses `-
     Run `x-twitter-scraper x:users retrieve-followers` to return user profiles, follower counts, and cursor fields.
   </Card>
   <Card title="Post a tweet or reply" icon="send">
-    Run `x-twitter-scraper x:tweets create` to return `tweetId` and `success`, or `writeActionId` when confirmation is pending.
+    Run `x-twitter-scraper x:tweets create` to return `tweetId`, `success`, `charged`, and `chargedCredits`, or `writeActionId` when confirmation is pending.
   </Card>
   <Card title="Upload media for a DM attachment" icon="image">
     Run `x-twitter-scraper x:media upload` to return `mediaId` for one-item DM `media_ids` and `mediaUrl` for tweet `media` URL handoff.

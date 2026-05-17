@@ -309,16 +309,20 @@ def create_tweet_handoff(client, payload)
       "status" => response.fetch(:status),
       "write_action_id" => response.fetch(:writeActionId),
       "charged" => response.fetch(:charged),
+      "charged_credits" => response.fetch(:chargedCredits),
       "retryable" => response.fetch(:retryable),
       "poll" => "GET /x/write-actions/{id}"
     }
   end
 
-  {
+  handoff = {
     "status" => "success",
     "tweet_id" => response.fetch(:tweetId),
-    "charged" => true
+    "charged" => response.fetch(:charged),
+    "charged_credits" => response.fetch(:chargedCredits)
   }
+  handoff["write_action_id"] = response.fetch(:writeActionId) if response.key?(:writeActionId)
+  handoff
 end
 
 tweet_handoff = create_tweet_handoff(
@@ -369,9 +373,9 @@ File.open("./handoff.png", "rb") do |file|
 end
 ```
 
-Store `write_action_id` and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before retrying a pending tweet or reply. `client.x.tweets.create` returns `tweet.tweet_id` for confirmed-only flows. `client.x.media.upload` returns `media.media_id` for DM attachments, and `client.x.dm.send_` returns `dm.message_id` for support tickets, CRM records, queue jobs, or agent memory.
+Store `write_action_id` and `charged_credits`, then poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before retrying a pending tweet or reply. `client.x.tweets.create` returns `tweet.tweet_id` for confirmed-only flows. `client.x.media.upload` returns `media.media_id` for DM attachments, and `client.x.dm.send_` returns `dm.message_id` for support tickets, CRM records, queue jobs, or agent memory.
 
-Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.media_id` values to `client.x.tweets.create`; that method uses `media` with public media URLs.
+Text-only tweet and reply writes cost 10 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.media_id` values to `client.x.tweets.create`; that method uses `media` with public media URLs.
 
 ## Cost, Limits & Retries
 

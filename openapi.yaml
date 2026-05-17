@@ -3164,7 +3164,8 @@ paths:
                   description:
                     Array of public media URLs to attach. Supports up to 4
                     images or exactly 1 MP4 video up to 100 MB. Each URL must be
-                    publicly reachable.
+                    publicly reachable. Attached media adds 2 credits per
+                    started MB across all files.
                   example: ['https://example.com/video.mp4']
             example:
               account: '@elonmusk'
@@ -3176,7 +3177,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [tweetId, success]
+                required: [tweetId, success, charged, chargedCredits]
                 properties:
                   tweetId:
                     type: string
@@ -3185,9 +3186,23 @@ paths:
                     type: boolean
                     const: true
                     example: true
+                  charged:
+                    type: boolean
+                    example: true
+                  chargedCredits:
+                    type: string
+                    description:
+                      Credits charged for this tweet. Text-only tweets cost 10
+                      credits; attached media adds 2 credits per started MB.
+                    example: '12'
+                  writeActionId:
+                    type: string
+                    example: '42'
               example:
                 tweetId: '1234567890'
                 success: true
+                charged: true
+                chargedCredits: '12'
         '202':
           description:
             Write was dispatched but final confirmation is still pending. Do not
@@ -3201,6 +3216,7 @@ paths:
                   - status
                   - writeActionId
                   - charged
+                  - chargedCredits
                   - retryable
                 properties:
                   error:
@@ -3215,6 +3231,9 @@ paths:
                   charged:
                     type: boolean
                     const: false
+                  chargedCredits:
+                    type: string
+                    example: '0'
                   retryable:
                     type: boolean
                     const: false
@@ -3228,6 +3247,7 @@ paths:
                 status: pending_confirmation
                 writeActionId: '42'
                 charged: false
+                chargedCredits: '0'
                 retryable: false
                 message:
                   Action may have completed, but confirmation is still pending.
@@ -3298,6 +3318,8 @@ paths:
                   - action
                   - status
                   - charged
+                  - chargedCredits
+                  - media
                   - sendDispatched
                   - retryable
                   - createdAt
@@ -3324,6 +3346,26 @@ paths:
                   charged:
                     type: boolean
                     example: false
+                  chargedCredits:
+                    type: string
+                    example: '12'
+                  media:
+                    type: object
+                    required: [count, credits, kind, totalBytes]
+                    properties:
+                      count:
+                        type: integer
+                        example: 1
+                      credits:
+                        type: string
+                        example: '2'
+                      kind:
+                        type: string
+                        enum: [none, image, video]
+                        example: video
+                      totalBytes:
+                        type: string
+                        example: '834921'
                   sendDispatched:
                     type: boolean
                     example: true
@@ -3361,6 +3403,12 @@ paths:
                 action: create_tweet
                 status: pending_confirmation
                 charged: false
+                chargedCredits: '0'
+                media:
+                  count: 0
+                  credits: '0'
+                  kind: none
+                  totalBytes: '0'
                 sendDispatched: true
                 retryable: false
                 confirmationAttempts: 2

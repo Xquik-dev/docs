@@ -460,6 +460,7 @@ static async Task<Dictionary<string, object?>> CreateTweetHandoff(
         row["status"] = "pending_confirmation";
         row["write_action_id"] = payload.GetProperty("writeActionId").GetString();
         row["charged"] = payload.GetProperty("charged").GetBoolean();
+        row["charged_credits"] = payload.GetProperty("chargedCredits").GetString();
         row["retryable"] = payload.GetProperty("retryable").GetBoolean();
         row["poll"] = "GET /x/write-actions/{id}";
         return row;
@@ -471,11 +472,17 @@ static async Task<Dictionary<string, object?>> CreateTweetHandoff(
 
     row["status"] = "sent";
     row["tweet_id"] = tweet.TweetID;
+    row["charged"] = payload.GetProperty("charged").GetBoolean();
+    row["charged_credits"] = payload.GetProperty("chargedCredits").GetString();
+    if (payload.TryGetProperty("writeActionId", out JsonElement writeActionId))
+    {
+        row["write_action_id"] = writeActionId.GetString();
+    }
     return row;
 }
 ```
 
-Use `client.X.Tweets.WithRawResponse.Create` when a write worker must branch on the REST `202 x_write_unconfirmed` response. If the API returns pending confirmation, store `writeActionId` as `write_action_id` and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before scheduling follow-up work. Do not retry-send the same write while status is pending. Store confirmed `tweet_id` values on the CMS, queue job, or agent state, and store `dm.MessageID` plus `media.MediaID` on the support ticket or CRM note. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.MediaID` values to `client.X.Tweets.Create`; that method uses `Media` with public media URLs.
+Use `client.X.Tweets.WithRawResponse.Create` when a write worker must branch on the REST `202 x_write_unconfirmed` response. Store `chargedCredits` as `charged_credits` for both confirmed and pending responses. If the API returns pending confirmation, store `writeActionId` as `write_action_id` and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before scheduling follow-up work. Do not retry-send the same write while status is pending. Store confirmed `tweet_id` values on the CMS, queue job, or agent state, and store `dm.MessageID` plus `media.MediaID` on the support ticket or CRM note. Text-only tweet and reply writes cost 10 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.MediaID` values to `client.X.Tweets.Create`; that method uses `Media` with public media URLs.
 
 ## Error Handling
 

@@ -374,11 +374,17 @@ fun createTweetHandoff(
         handoff["status"] = "pending_confirmation"
         handoff["write_action_id"] = payload["writeActionId"]
         handoff["charged"] = payload["charged"]
+        handoff["charged_credits"] = payload["chargedCredits"]
         handoff["retryable"] = payload["retryable"]
         handoff["poll"] = "GET /x/write-actions/{id}"
     } else {
         handoff["status"] = "posted"
         handoff["tweet_id"] = payload["tweetId"]
+        handoff["charged"] = payload["charged"]
+        handoff["charged_credits"] = payload["chargedCredits"]
+        if (payload.containsKey("writeActionId")) {
+            handoff["write_action_id"] = payload["writeActionId"]
+        }
     }
 
     handoff.putAll(base)
@@ -458,7 +464,7 @@ println(objectMapper.writeValueAsString(replyHandoff))
 println(objectMapper.writeValueAsString(dmHandoff))
 ```
 
-The generated Kotlin response model covers confirmed `tweetId` responses. Use `client.x().tweets().withRawResponse().create(...)` when a write worker must branch on the REST `202 x_write_unconfirmed` response, store `writeActionId`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write. Store `tweetHandoff`, `replyHandoff`, and `dmHandoff` on the CMS, support ticket, queue job, CRM note, or agent state before scheduling follow-up work. Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.mediaId()` values to `client.x().tweets().create`; that method uses public media URLs through `media`.
+The generated Kotlin response model covers confirmed `tweetId` responses. Use `client.x().tweets().withRawResponse().create(...)` when a write worker must branch on the REST `202 x_write_unconfirmed` response, store `writeActionId` and `chargedCredits`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write. Store `tweetHandoff`, `replyHandoff`, and `dmHandoff` on the CMS, support ticket, queue job, CRM note, or agent state before scheduling follow-up work. Text-only tweet and reply writes cost 10 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.mediaId()` values to `client.x().tweets().create`; that method uses public media URLs through `media`.
 
 ## Error Handling
 

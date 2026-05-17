@@ -397,19 +397,22 @@ Tweet and reply media posts use public media URLs directly on `client.X.Tweets.N
 
 ```go
 type tweetCreatePayload struct {
-	Success       bool   `json:"success"`
-	TweetID       string `json:"tweetId"`
-	Error         string `json:"error"`
-	Status        string `json:"status"`
-	WriteActionID string `json:"writeActionId"`
-	Charged       bool   `json:"charged"`
-	Retryable     bool   `json:"retryable"`
+	Success        bool   `json:"success"`
+	TweetID        string `json:"tweetId"`
+	Error          string `json:"error"`
+	Status         string `json:"status"`
+	WriteActionID  string `json:"writeActionId"`
+	Charged        bool   `json:"charged"`
+	ChargedCredits string `json:"chargedCredits"`
+	Retryable      bool   `json:"retryable"`
 }
 
 func createTweetHandoff(payload tweetCreatePayload, base map[string]any) map[string]any {
 	handoff := map[string]any{
-		"status":   "posted",
-		"tweet_id": payload.TweetID,
+		"status":          "posted",
+		"tweet_id":        payload.TweetID,
+		"charged":         payload.Charged,
+		"charged_credits": payload.ChargedCredits,
 	}
 
 	if payload.Error == "x_write_unconfirmed" && payload.Status == "pending_confirmation" {
@@ -417,9 +420,14 @@ func createTweetHandoff(payload tweetCreatePayload, base map[string]any) map[str
 			"status":          "pending_confirmation",
 			"write_action_id": payload.WriteActionID,
 			"charged":         payload.Charged,
+			"charged_credits": payload.ChargedCredits,
 			"retryable":       payload.Retryable,
 			"poll":            "GET /x/write-actions/{id}",
 		}
+	}
+
+	if payload.WriteActionID != "" {
+		handoff["write_action_id"] = payload.WriteActionID
 	}
 
 	for key, value := range base {
@@ -430,7 +438,7 @@ func createTweetHandoff(payload tweetCreatePayload, base map[string]any) map[str
 }
 ```
 
-The generated Go response model covers confirmed `TweetID` responses. Use `option.WithResponseBodyInto` when a write worker must branch on the REST `202 x_write_unconfirmed` response, store `writeActionId`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write.
+The generated Go response model covers confirmed `TweetID` responses. Use `option.WithResponseBodyInto` when a write worker must branch on the REST `202 x_write_unconfirmed` response, store `writeActionId` and `chargedCredits`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write.
 
 ```go
 ctx := context.Background()
@@ -517,7 +525,7 @@ if err := json.NewEncoder(os.Stdout).Encode(dmHandoff); err != nil {
 
 `client.X.Tweets.New` returns `TweetID` for confirmed posts. Raw create responses can also include the pending write fields above when confirmation is still running. `client.X.Media.Upload` returns `media.MediaID` for DM attachments, and `client.X.Dm.Send` returns `dm.MessageID` for support tickets, CRM records, queue jobs, or agent memory.
 
-Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `MediaID` values to `client.X.Tweets.New`; that method uses `Media` with public media URLs.
+Text-only tweet and reply writes cost 10 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `MediaID` values to `client.X.Tweets.New`; that method uses `Media` with public media URLs.
 
 ## Cost, Limits & Retries
 

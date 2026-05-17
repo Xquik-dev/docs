@@ -115,7 +115,7 @@ declare const spec: { endpoints: EndpointInfo[] };
 
 `xquik.request()` uses the normalized v1 contract automatically. List and search responses use `has_more` and `next_cursor`, even when the REST API page shows the default `has_next_page` field. Pass `next_cursor` back as the `cursor` query parameter for most X data pages. Use `after` instead for `/api/v1/draws`, `/api/v1/extractions`, `/api/v1/events`, and `/api/v1/radar`.
 
-Write and media responses also use the MCP-normalized snake_case contract. Read `tweet_id`, `write_action_id`, `media_id`, `media_url`, and `message_id` from `xquik.request()` results. REST and generated SDK pages may show camelCase fields such as `tweetId`, `writeActionId`, `mediaId`, and `messageId`; keep MCP agents on snake_case when reading tool results.
+Write and media responses also use the MCP-normalized snake_case contract. Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `xquik.request()` results. REST and generated SDK pages may show camelCase fields such as `tweetId`, `writeActionId`, `chargedCredits`, `mediaId`, and `messageId`; keep MCP agents on snake_case when reading tool results.
 
 **Workflow Examples:**
 
@@ -519,13 +519,13 @@ MCP returns JSON. Use extraction export endpoints when you need Xquik to generat
     Call `GET /api/v1/x/users/{id}/followers` or `POST /api/v1/extractions` with `follower_explorer`. Store `users[].id`, `users[].username`, `users[].name`, `users[].followers`, `has_more`, and `next_cursor`. Cost: 1 credit per follower returned or extracted.
   </Card>
   <Card title="Post media tweets or replies" icon="image">
-    Call `POST /api/v1/x/tweets` with `media: ["https://..."]`. Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `account`, and the original `media` URLs. Cost: 10 credits per write call.
+    Call `POST /api/v1/x/tweets` with `media: ["https://..."]`. Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `account`, `charged_credits`, and the original `media` URLs. Cost: 10 credits text-only, plus 2 credits per started MB across attached media.
   </Card>
   <Card title="Send DMs with media" icon="send">
     Call `POST /api/v1/x/media`, then `POST /api/v1/x/dm/{userId}` with one `media_ids` value. Store `media_id`, `media_url`, `message_id`, `user_id`, `account`, and source URL or filename. Cost: 10 credits per media upload plus 10 credits per DM send.
   </Card>
   <Card title="Track tweet or reply writes" icon="activity">
-    Call `POST /api/v1/x/tweets`, then `GET /api/v1/x/write-actions/{id}` when pending. Store `tweet_id`, `reply_to_tweet_id`, `write_action_id`, `status`, and `charged`. Cost: 10 credits per write call.
+    Call `POST /api/v1/x/tweets`, then `GET /api/v1/x/write-actions/{id}` when pending. Store `tweet_id`, `reply_to_tweet_id`, `write_action_id`, `status`, `charged`, `charged_credits`, and `media`. Cost: 10 credits text-only, plus 2 credits per started MB across attached media.
   </Card>
   <Card title="Monitor tweets to webhooks" icon="radio">
     Call `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then `POST /api/v1/webhooks`. Store `monitor.id`, `event_types`, `next_billing_at`, `webhook.id`, webhook URL, and the one-time `webhook.secret`; run `POST /api/v1/webhooks/{id}/test` before routing production events. Verify `X-Xquik-Signature`, de-dupe production payloads with `deliveryId` and `streamEventId`, and inspect `GET /api/v1/webhooks/{id}/deliveries` for retry status rows. Cost: 21 credits per active monitor-hour; webhook delivery is included.

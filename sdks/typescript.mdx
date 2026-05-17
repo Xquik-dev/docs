@@ -285,12 +285,16 @@ type TweetCreateResult =
   | {
       success: true;
       tweetId: string;
+      charged: true;
+      chargedCredits: string;
+      writeActionId?: string;
     }
   | {
       error: "x_write_unconfirmed";
       status: "pending_confirmation";
       writeActionId: string;
       charged: false;
+      chargedCredits: "0";
       retryable: false;
     };
 
@@ -311,6 +315,7 @@ function createTweetHandoff(
       status: "pending_confirmation",
       write_action_id: result.writeActionId,
       charged: result.charged,
+      charged_credits: result.chargedCredits,
       retryable: result.retryable,
       poll: "GET /x/write-actions/{id}",
       ...base,
@@ -318,16 +323,23 @@ function createTweetHandoff(
     };
   }
 
+  const writeAction = result.writeActionId
+    ? { write_action_id: result.writeActionId }
+    : {};
+
   return {
     status: "posted",
     tweet_id: result.tweetId,
+    charged: result.charged,
+    charged_credits: result.chargedCredits,
+    ...writeAction,
     ...base,
     ...thread,
   };
 }
 ```
 
-The generated TypeScript SDK models confirmed `tweetId` responses. The REST API can also return `202 x_write_unconfirmed`; treat that runtime value as pending, store `writeActionId`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write.
+The generated TypeScript SDK models confirmed `tweetId`, `charged`, and `chargedCredits` responses. The REST API can also return `202 x_write_unconfirmed`; treat that runtime value as pending, store `writeActionId` and `chargedCredits`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write.
 
 ```ts
 const tweet = (await client.x.tweets.create({
@@ -392,7 +404,7 @@ process.stdout.write(`${JSON.stringify(dmHandoff)}\n`);
 
 `client.x.tweets.create` returns `tweet.tweetId` for confirmed posts or the pending write fields above when confirmation is still running. `client.x.media.upload` returns `media.mediaId` for DM attachments, and `client.x.dm.send` returns `dm.messageId` for support tickets, CRM records, queue jobs, or agent memory.
 
-Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.mediaId` values to `client.x.tweets.create`; that method uses `media` with public media URLs.
+Text-only tweet and reply writes cost 10 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.mediaId` values to `client.x.tweets.create`; that method uses `media` with public media URLs.
 
 Useful endpoints:
 

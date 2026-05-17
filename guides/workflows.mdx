@@ -47,7 +47,7 @@ Use these X API workflows to wire Xquik into monitoring dashboards, webhook pipe
     Use the follower export CRM workflow. Returned data: CSV, XLSX, JSON, and a CRM field map.
   </Card>
   <Card title="Post a tweet or reply" icon="send">
-    Use the create tweet workflow. Returned data: published `tweetId` and `success`.
+    Use the create tweet workflow. Returned data: published `tweetId`, `success`, `charged`, and `chargedCredits`.
   </Card>
   <Card title="Score and refine a draft tweet" icon="sparkles">
     Use tweet composition. Returned data: algorithm guidance, refined text, and score.
@@ -100,9 +100,9 @@ Use this matrix before choosing code, webhooks, MCP, or exports. Each row maps t
   <Accordion title="Post tweets or replies">
     Setup: connected X account plus text, media URLs, or parent tweet ID.
     First call: `POST /x/tweets`.
-    Returned data: `tweetId` and `success`.
-    Handoff: published tweet ID for queue, CRM, CMS, or agent state.
-    Cost check: 10 credits per write.
+    Returned data: `tweetId`, `success`, `charged`, and `chargedCredits`.
+    Handoff: published tweet ID and charged credits for queue, CRM, CMS, or agent state.
+    Cost check: 10 credits text-only, plus 2 credits per started MB across attached media.
   </Accordion>
   <Accordion title="Tweet draft workflow">
     Setup: topic, goal, tone, and optional style username.
@@ -145,8 +145,8 @@ Start here when you need to decide which Xquik tools to build around first. Thes
   <Card title="5. Post media tweets or replies" icon="image">
     Publishes media-backed tweets or replies from public image URLs or 1 public MP4 video URL up to 100 MB without a separate upload step.
     First endpoint: `POST /x/tweets` with `media`.
-    Handoff: `tweetId`, `success`, original `media` URLs, and optional `reply_to_tweet_id`.
-    Cost model: 10 credits per post tweet call.
+    Handoff: `tweetId`, `success`, `chargedCredits`, original `media` URLs, and optional `reply_to_tweet_id`.
+    Cost model: 10 credits text-only, plus 2 credits per started MB across attached media.
   </Card>
   <Card title="6. Send direct messages with returned IDs" icon="send">
     Lets support, sales, and agent systems read a conversation and store the outbound message ID.
@@ -242,7 +242,7 @@ curl -X POST https://xquik.com/api/v1/x/tweets \
   }' | jq
 ```
 
-The response returns `tweetId` and `success`, or `202 x_write_unconfirmed` with `writeActionId` if final confirmation is still pending. Store the original media URLs next to `tweetId`, `reply_to_tweet_id`, or `writeActionId`. Use `POST /x/media` only when you need a one-item `media_ids` array for [`POST /x/dm/{userId}`](/api-reference/x-write/send-dm).
+The response returns `tweetId`, `success`, `charged`, and `chargedCredits`, or `202 x_write_unconfirmed` with `writeActionId` if final confirmation is still pending. Store the original media URLs next to `tweetId`, `reply_to_tweet_id`, `chargedCredits`, or `writeActionId`. Text-only tweet writes cost 10 credits; attached media adds 2 credits per started MB across all files. Use `POST /x/media` only when you need a one-item `media_ids` array for [`POST /x/dm/{userId}`](/api-reference/x-write/send-dm).
 
 ### 6. Send direct messages with returned IDs
 

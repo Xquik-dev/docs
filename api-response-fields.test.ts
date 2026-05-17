@@ -1076,11 +1076,13 @@ function productCreateTweetFields(): readonly string[] {
   );
   if (
     !writeActionSource.includes('success: true') ||
-    !writeActionSource.includes('tweetId: result.tweetId')
+    !writeActionSource.includes('tweetId: result.tweetId') ||
+    !writeActionSource.includes('charged: chargeResult.charged') ||
+    !writeActionSource.includes('chargedCredits: chargeResult.chargedCredits')
   ) {
     throw new Error('Could not verify create tweet success response fields.');
   }
-  return ['success', 'tweetId'];
+  return ['charged', 'chargedCredits', 'success', 'tweetId', 'writeActionId'];
 }
 
 function productSimpleWriteFields(
@@ -1106,7 +1108,7 @@ function productSimpleWriteFields(
   if (
     !writeActionSource.includes('success: true') ||
     !writeActionSource.includes(
-      'return buildSuccessResponse(result, context.responseFields);',
+      'return buildSuccessResponse(result, context.responseFields, chargeResult);',
     )
   ) {
     throw new Error(`Could not verify ${actionType} success response.`);

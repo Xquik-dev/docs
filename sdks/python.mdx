@@ -342,6 +342,7 @@ def create_tweet_handoff(
             "status": "pending_confirmation",
             "write_action_id": payload["writeActionId"],
             "charged": payload["charged"],
+            "charged_credits": payload["chargedCredits"],
             "retryable": payload["retryable"],
             "poll": "GET /x/write-actions/{id}",
             **base,
@@ -350,11 +351,18 @@ def create_tweet_handoff(
     return {
         "status": "posted",
         "tweet_id": payload["tweetId"],
+        "charged": payload["charged"],
+        "charged_credits": payload["chargedCredits"],
+        **(
+            {"write_action_id": payload["writeActionId"]}
+            if "writeActionId" in payload
+            else {}
+        ),
         **base,
     }
 ```
 
-The generated Python model covers confirmed `tweet_id` responses. Use `with_raw_response.create` when a write worker must branch on the REST `202 x_write_unconfirmed` response, store `writeActionId`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write.
+The generated Python model covers confirmed `tweet_id` responses. Use `with_raw_response.create` when a write worker must branch on the REST `202 x_write_unconfirmed` response, store `writeActionId` and `chargedCredits`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write.
 
 ```python
 response = client.x.tweets.with_raw_response.create(
@@ -430,7 +438,7 @@ sys.stdout.write(json.dumps(dm_handoff, ensure_ascii=False) + "\n")
 
 `client.x.tweets.create` returns `tweet.tweet_id` for confirmed posts. Raw create responses can also include the pending write fields above when confirmation is still running. `client.x.media.upload` returns `media.media_id` for DM attachments, and `client.x.dm.send` returns `dm.message_id` for support tickets, CRM records, queue jobs, or agent memory.
 
-Each tweet or reply write costs 10 credits. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.media_id` values to `client.x.tweets.create`; that method uses `media` with public media URLs.
+Text-only tweet and reply writes cost 10 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.media_id` values to `client.x.tweets.create`; that method uses `media` with public media URLs.
 
 ## Cost, Limits & Retries
 
