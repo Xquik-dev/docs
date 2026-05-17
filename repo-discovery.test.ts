@@ -2158,6 +2158,25 @@ const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   '`Retry-After`',
 ] as const;
 
+const REQUIRED_GET_TWEET_API_HANDOFF_SNIPPETS = [
+  '`GET /x/tweets/{id}`',
+  'tweet_id: data.tweet.id',
+  'author_username: data.author?.username ?? null',
+  'created_at: data.tweet.createdAt ?? null',
+  'media_urls: data.tweet.media?.map((item) => item.mediaUrl) ?? []',
+  '"tweet_id": data["tweet"]["id"]',
+  '"author_username": data.get("author", {}).get("username")',
+  '"created_at": data["tweet"].get("createdAt")',
+  '"media_urls": [item["mediaUrl"] for item in data["tweet"].get("media", [])]',
+  'shape a durable handoff row instead of printing',
+  '`tweet_id`, `text`, `author_username`,',
+] as const;
+
+const FORBIDDEN_GET_TWEET_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct follower handoff',
   '<CardGroup cols={2}>',
@@ -6423,6 +6442,30 @@ describe('repository discovery', (): void => {
         source,
         'Tweet replies endpoint page',
         REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the get tweet API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/get-tweet.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Get tweet endpoint page',
+        REQUIRED_GET_TWEET_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_GET_TWEET_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Get tweet API page prints raw tweet data with "${snippet}".`,
+                },
+              ]
+            : [],
       ),
     ).toStrictEqual([]);
   });

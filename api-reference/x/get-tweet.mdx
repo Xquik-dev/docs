@@ -25,10 +25,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const handoff = {
+    tweet_id: data.tweet.id,
+    text: data.tweet.text,
+    author_username: data.author?.username ?? null,
+    created_at: data.tweet.createdAt ?? null,
+    media_urls: data.tweet.media?.map((item) => item.mediaUrl) ?? [],
+  };
+  process.stdout.write(`${JSON.stringify(handoff)}\n`);
   ```
 
   ```python Python
+  import json
   import requests
 
   tweet_id = "1893456789012345678"
@@ -37,7 +45,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  handoff = {
+      "tweet_id": data["tweet"]["id"],
+      "text": data["tweet"]["text"],
+      "author_username": data.get("author", {}).get("username"),
+      "created_at": data["tweet"].get("createdAt"),
+      "media_urls": [item["mediaUrl"] for item in data["tweet"].get("media", [])],
+  }
+  print(json.dumps(handoff))
   ```
 
   ```go Go
@@ -72,6 +87,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   }
   ```
 </CodeGroup>
+
+Use `GET /x/tweets/{id}` when a workflow needs one tweet plus author context.
+The Node.js and Python snippets shape a durable handoff row instead of printing
+the full lookup response. Store `tweet_id`, `text`, `author_username`,
+`created_at`, and `media_urls` with the downstream record.
 
 ## Path parameters
 
