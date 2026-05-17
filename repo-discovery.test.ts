@@ -249,6 +249,7 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
   '"created_at":      tweet.CreatedAt',
   'if err := encoder.Encode(row); err != nil {',
   '## Workflow: Search Tweets to JSON Lines, CSV, or XLSX',
+  '## Workflow: Follower Export to CSV, JSON, or XLSX',
   '## Workflow: Tweet Replies to CSV, JSON, or XLSX',
   '## Workflow: Post Media Tweets and DM Attachments',
   '`client.X.Tweets.Search`',
@@ -277,6 +278,17 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
   '`client.Extractions.Run`',
   '`client.Extractions.Get`',
   '`client.Extractions.ExportResults`',
+  '`follower_explorer` requires `TargetUsername`.',
+  'ExtractionEstimateCostParamsToolTypeFollowerExplorer',
+  'ExtractionRunParamsToolTypeFollowerExplorer',
+  'TargetUsername: xtwitterscraper.String(targetUsername)',
+  'writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatCsv, "xquik-followers.csv")',
+  'writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatXlsx, "xquik-followers.xlsx")',
+  'Persist `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling',
+  '`client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`; pass `NextCursor` back as `After`',
+  'Map exported `User ID` or row `xUserId` as the CRM unique key.',
+  'Cost: 1 credit per follower extracted or returned.',
+  'Exports are free after the extraction job exists.',
   '`reply_extractor` requires `TargetTweetID`.',
   '`client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`',
   '`client.Extractions.ExportResults` supports CSV, JSON, and XLSX',
@@ -317,6 +329,7 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
 
 const FORBIDDEN_GO_SDK_WEAK_SEARCH_SNIPPETS = [
   'fmt.Printf("%+v\\n", tweets.HasNextPage)',
+  'ResultsLimit',
 ] as const;
 
 const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
