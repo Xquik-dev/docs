@@ -63,8 +63,8 @@ Use this matrix before choosing code, webhooks, MCP, or exports. Each row maps t
 
 <AccordionGroup>
   <Accordion title="Competitor or brand monitoring">
-    Setup: API key, monitor target, and event types.
-    First call: `POST /monitors`, then `GET /events`.
+    Setup: API key, account username or keyword query, and event types.
+    First call: `POST /monitors` for accounts or `POST /monitors/keywords` for search queries, then `GET /events`.
     Returned data: tweet, reply, quote, and retweet events.
     Handoff: polling cursor or signed webhook payload.
     Cost check: active instant monitors bill 21 credits per hour while enabled.
@@ -138,7 +138,7 @@ Start here when you need to decide which Xquik tools to build around first. Thes
   </Card>
   <Card title="4. Monitor tweets to signed webhooks" icon="radio">
     Delivers new posts, replies, quotes, and retweets to queues without polling.
-    First endpoint: `POST /monitors`, then `POST /webhooks`.
+    First endpoint: `POST /monitors` for accounts or `POST /monitors/keywords` for search queries, then `POST /webhooks`.
     Handoff: signed payload with `deliveryId`, `streamEventId`, `eventType`, and tweet data.
     Cost model: 21 credits per active monitor-hour; webhook delivery is included.
   </Card>
@@ -210,7 +210,7 @@ After `status` becomes `completed`, export `format=csv` for CRM import, `format=
 
 ### 4. Monitor tweets to signed webhooks
 
-Use this when a workflow needs tweet alerts, support routing, warehouse ingest, or queue fanout within seconds. Create the monitor, register the webhook URL, test delivery, then process signed events asynchronously.
+Use this when a workflow needs account alerts, keyword alerts, support routing, warehouse ingest, or queue fanout within seconds. Create an account monitor or keyword monitor, register the webhook URL, test delivery, then process signed events asynchronously.
 
 ```bash
 curl -X POST https://xquik.com/api/v1/monitors \
@@ -221,6 +221,8 @@ curl -X POST https://xquik.com/api/v1/monitors \
     "eventTypes": ["tweet.new", "tweet.reply", "tweet.quote"]
   }' | jq
 ```
+
+For query alerts, call `POST /monitors/keywords` with `query` and `eventTypes` instead of `username`. Account and keyword monitors both check every 1 second while active, and both can deliver events to the same signed webhooks.
 
 Webhook payloads include durable IDs for downstream systems: persist `deliveryId` for delivery-level idempotency and `streamEventId` when the same monitor event must be processed once across retries or endpoints. Store the one-time `secret` returned by `POST /webhooks` and verify `X-Xquik-Signature` against the raw body before accepting the event. Return `2xx` before slow CRM, Slack, warehouse, or queue work starts.
 
