@@ -8,7 +8,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Build a Mastra agent in TypeScript that can search tweets, look up users, post tweets, and run extractions - connected to Xquik's MCP server.
+Build a Mastra agent in TypeScript that can search tweets, hand off IDs and cursors, post tweets, and run extraction jobs - connected to Xquik's MCP server.
 
 ## Prerequisites
 
@@ -25,6 +25,7 @@ npm install @mastra/mcp @mastra/core
 ## Full Example
 
 ```typescript
+import { writeFile } from "node:fs/promises";
 import { MCPClient } from "@mastra/mcp";
 import { Agent } from "@mastra/core/agent";
 
@@ -50,26 +51,54 @@ const agent = new Agent({
   tools: await mcp.listTools(),
 });
 
-const result = await agent.generate(
-  "Search for tweets about AI agents"
+const handoffPrompt = (
+  "Search for the latest tweets about AI agents. Return compact JSON " +
+  "with query, route_used, tweets[{tweet_id,text,author_username,created_at}], " +
+  "has_more, next_cursor, and key influencers."
 );
-console.log(result.text);
+const result = await agent.generate(handoffPrompt);
+
+await writeFile("xquik-mastra-handoff.json", result.text, "utf8");
 
 await mcp.disconnect();
 ```
 
-The `MCPClient` auto-detects StreamableHTTP transport from the URL and discovers all Xquik tools.
+The agent auto-discovers all Xquik tools and can call any of the 120 API endpoints.
+
+Mastra's `MCPClient` loads tools with `listTools()` for agent setup and `listToolsets()` for per-call tools. For HTTP MCP servers, it uses `requestInit` for headers, tries Streamable HTTP from the URL, and falls back to SSE when needed. The MCP runtime returns normalized snake_case fields through `xquik.request()`, so keep prompts aligned with `tweet_id`, `has_more`, `next_cursor`, and returned job IDs.
+
+## Handoff Checklist
+
+<CardGroup cols={2}>
+  <Card title="Tweet search rows" icon="search">
+    Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.
+  </Card>
+  <Card title="Monitor and webhook setup" icon="radio">
+    Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager.
+  </Card>
+  <Card title="Extraction jobs" icon="database">
+    Store `extraction_id`, `status`, `poll`, and `export_after_complete`; poll before loading CSV, JSON, or XLSX rows.
+  </Card>
+  <Card title="Writes" icon="send">
+    Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, and `poll`; do not resend pending writes.
+  </Card>
+</CardGroup>
 
 ## Streaming Responses
 
 ```typescript
+import { writeFile } from "node:fs/promises";
+
 const stream = await agent.stream(
   "What are the trending topics right now?"
 );
 
+let handoff = "";
 for await (const chunk of stream.textStream) {
-  process.stdout.write(chunk);
+  handoff += chunk;
 }
+
+await writeFile("xquik-mastra-stream-handoff.json", handoff, "utf8");
 ```
 
 ## Dynamic Toolsets (Per-User API Keys)
@@ -77,6 +106,7 @@ for await (const chunk of stream.textStream) {
 For multi-tenant apps, create an `MCPClient` per request with the user's API key:
 
 ```typescript
+import { writeFile } from "node:fs/promises";
 import { MCPClient } from "@mastra/mcp";
 import { Agent } from "@mastra/core/agent";
 
@@ -99,12 +129,16 @@ async function handleRequest(prompt: string, userApiKey: string) {
     },
   });
 
-  const response = await agent.generate(prompt, {
-    toolsets: await mcp.listToolsets(),
-  });
+  try {
+    const response = await agent.generate(prompt, {
+      toolsets: await mcp.listToolsets(),
+    });
 
-  await mcp.disconnect();
-  return response.text;
+    await writeFile("xquik-mastra-user-handoff.json", response.text, "utf8");
+    return response.text;
+  } finally {
+    await mcp.disconnect();
+  }
 }
 ```
 
