@@ -2504,6 +2504,34 @@ const FORBIDDEN_FOLLOWING_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_LIST_FOLLOWERS_API_HANDOFF_SNIPPETS = [
+  '## Direct list follower handoff',
+  '`GET /x/lists/{id}/followers`',
+  'CRM, warehouse, audience, enrichment,',
+  '`list_follower_explorer`',
+  'CSV/JSON/XLSX file export',
+  'const followerRows = data.users.map',
+  'list_id: listId',
+  'follower_id: user.id',
+  'follower_count: user.followers ?? null',
+  'profile_image_url: user.profilePicture ?? null',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  'follower_rows = [',
+  '"list_id": list_id',
+  '"follower_id": user["id"]',
+  '"follower_count": user.get("followers")',
+  '"profile_image_url": user.get("profilePicture")',
+  'next_cursor = data["next_cursor"] if data["has_next_page"] else None',
+  'shape durable list-follower rows instead of',
+  '`list_id`, `follower_id`, `username`,',
+  '`has_next_page`, and `next_cursor`',
+] as const;
+
+const FORBIDDEN_LIST_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_VERIFIED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct verified followers handoff',
   '`GET /x/users/{id}/verified-followers`',
@@ -7045,6 +7073,30 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Following API page prints raw following data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the list followers API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/list-followers.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'List followers API page',
+        REQUIRED_LIST_FOLLOWERS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_LIST_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `List followers API page prints raw follower data with "${snippet}".`,
                 },
               ]
             : [],

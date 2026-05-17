@@ -29,20 +29,63 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const followerRows = data.users.map((user) => ({
+    list_id: listId,
+    follower_id: user.id,
+    username: user.username,
+    display_name: user.name,
+    bio: user.description ?? null,
+    follower_count: user.followers ?? null,
+    following_count: user.following ?? null,
+    verified: user.verified ?? false,
+    profile_image_url: user.profilePicture ?? null,
+  }));
+  const nextCursor = data.has_next_page ? data.next_cursor : null;
   ```
 
   ```python Python
   import requests
 
+  list_id = "1234567890"
   response = requests.get(
-      "https://xquik.com/api/v1/x/lists/1234567890/followers",
+      f"https://xquik.com/api/v1/x/lists/{list_id}/followers",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  follower_rows = [
+      {
+          "list_id": list_id,
+          "follower_id": user["id"],
+          "username": user["username"],
+          "display_name": user["name"],
+          "bio": user.get("description"),
+          "follower_count": user.get("followers"),
+          "following_count": user.get("following"),
+          "verified": user.get("verified", False),
+          "profile_image_url": user.get("profilePicture"),
+      }
+      for user in data["users"]
+  ]
+  next_cursor = data["next_cursor"] if data["has_next_page"] else None
   ```
 </CodeGroup>
+
+The Node.js and Python snippets shape durable list-follower rows instead of
+printing full profile pages. Persist `followerRows` or `follower_rows` with
+`nextCursor` before requesting the next page.
+
+## Direct list follower handoff
+
+Use `GET /x/lists/{id}/followers` when a CRM, warehouse, audience, enrichment,
+or agent workflow needs one JSON page of accounts that follow a list. Use
+[`list_follower_explorer`](/api-reference/extractions/create) when you need a
+saved extraction, estimated job, or CSV/JSON/XLSX file export.
+
+Store `list_id`, `follower_id`, `username`, `display_name`, profile metrics,
+verification state, `has_next_page`, and `next_cursor`. Treat `next_cursor` as
+opaque and pass it back as `cursor` only when `has_next_page` is true. Direct
+calls return the default paid page size and cost 1 credit per user returned.
+Zero affordable results return `402 insufficient_credits`.
 
 ## Path parameters
 
