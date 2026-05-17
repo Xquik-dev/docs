@@ -1116,11 +1116,13 @@ const FORBIDDEN_SKILL_RATE_LIMIT_SNIPPETS = [
 const REQUIRED_SKILL_DECISION_GUIDANCE_SNIPPETS = [
   '## Decision guidance',
   '- **Use the REST API** for backend services, automation scripts, interval polling, file exports, and fine-grained pagination or request control.',
-  '- **Use the MCP server** for AI agents in Claude, ChatGPT, Cursor, VS Code, Codex, and similar clients, especially natural language queries.',
+  '- **Use Docs MCP** for AI agents that need API parameters, examples, error codes, billing rules, webhook setup, or SDK guidance.',
+  '- **Use API MCP** for AI agents that need authenticated Xquik account actions in Claude, ChatGPT, Cursor, VS Code, Codex, and similar clients.',
   '- **Use webhooks** when monitor events must reach an HTTPS endpoint in real time. Add them to REST or MCP workflows when pushed events are better than polling.',
 ] as const;
 
 const FORBIDDEN_SKILL_DECISION_GUIDANCE_SNIPPETS = [
+  '- **Use the MCP server** for AI agents in Claude, ChatGPT, Cursor, VS Code, Codex, and similar clients, especially natural language queries.',
   '| Scenario | Use REST API | Use MCP Server | Use Webhooks |',
   '| Backend service or automation script | Yes | No | Optional |',
   '| AI agent in Claude, ChatGPT, Cursor, VS Code, or Codex | Optional | Yes | Optional |',
@@ -1130,6 +1132,33 @@ const FORBIDDEN_SKILL_DECISION_GUIDANCE_SNIPPETS = [
   '| Natural language queries | No | Yes | No |',
   '| Fine-grained pagination and request control | Yes | Optional | No |',
 ] as const;
+
+const REQUIRED_SKILL_MCP_HANDOFF_SNIPPETS = [
+  '- **Connecting AI agents**: Use Docs MCP for no-auth documentation search and API MCP for authenticated account actions.',
+  '- **OAuth 2.1**: API MCP server also supports Bearer tokens for browser-based MCP clients.',
+  '### Connect an AI agent through MCP',
+  '1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only documentation search.',
+  '2. Configure API MCP at `https://xquik.com/mcp` for authenticated account actions.',
+  '3. Authenticate API MCP with an `x-api-key` header or OAuth Bearer token.',
+  '4. Use `explore` to search the in-memory API catalog and `xquik` to run authenticated requests.',
+  '- The REST API and API MCP server connect to the same backend and share the same account state.',
+  '- Docs MCP server: https://docs.xquik.com/mcp',
+  '- API MCP server: https://docs.xquik.com/mcp/overview',
+] as const;
+
+const FORBIDDEN_SKILL_MCP_HANDOFF_SNIPPETS = [
+  'Use the MCP server to let Claude, ChatGPT, Cursor, VS Code, Codex, or other agents interact with X data.',
+  '1. Configure the MCP endpoint `https://xquik.com/mcp`.',
+  '- The REST API and MCP server connect to the same backend and share the same account state.',
+  '- MCP server: https://docs.xquik.com/mcp/overview',
+] as const;
+
+const REQUIRED_SKILL_CONFIDENTIALITY_SNIPPETS = [
+  "- **Trending data**: Access real-time trends across 12 regions plus radar topics from Xquik's own infrastructure.",
+] as const;
+
+const FORBIDDEN_SKILL_CONFIDENTIALITY_PATTERN =
+  /radar topics from (?!Xquik's own infrastructure\.)[^\n.]+(?:,| and )[^\n.]+/u;
 
 const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'MCP server discovery metadata is available at:',
@@ -5491,6 +5520,56 @@ describe('repository discovery', (): void => {
                 ]
               : [],
         ),
+      ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the public skill clear about Docs MCP vs API MCP', (): void => {
+    expect.assertions(1);
+
+    const skill = readFileSync('skill.md', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          skill,
+          'Public skill MCP handoff',
+          REQUIRED_SKILL_MCP_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_SKILL_MCP_HANDOFF_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            skill.includes(snippet)
+              ? [
+                  {
+                    issue: `Public skill MCP handoff contains stale single-server wording "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the public skill clear of private radar source names', (): void => {
+    expect.assertions(1);
+
+    const skill = readFileSync('skill.md', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          skill,
+          'Public skill confidentiality wording',
+          REQUIRED_SKILL_CONFIDENTIALITY_SNIPPETS,
+        ),
+        ...(FORBIDDEN_SKILL_CONFIDENTIALITY_PATTERN.test(skill)
+          ? [
+              {
+                issue:
+                  'Public skill confidentiality wording contains a private radar source list.',
+              },
+            ]
+          : []),
       ],
     ).toStrictEqual([]);
   });
