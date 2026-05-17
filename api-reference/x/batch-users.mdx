@@ -24,26 +24,74 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 
   ```javascript Node.js
-  const ids = "44196397,987654321";
-  const response = await fetch(`https://xquik.com/api/v1/x/users/batch?ids=${ids}`, {
-    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
-  });
+  const ids = ["44196397", "987654321"];
+  const response = await fetch(
+    `https://xquik.com/api/v1/x/users/batch?ids=${ids.join(",")}`,
+    {
+      headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+    }
+  );
   const data = await response.json();
-  console.log(data);
+  const profilesById = new Map(data.users.map((user) => [user.id, user]));
+  const profileRows = data.users.map((user) => ({
+    user_id: user.id,
+    username: user.username,
+    display_name: user.name,
+    bio: user.description ?? null,
+    follower_count: user.followers ?? null,
+    following_count: user.following ?? null,
+    verified: user.verified ?? false,
+    profile_image_url: user.profilePicture ?? null,
+  }));
+  const missingIds = ids.filter((id) => !profilesById.has(id));
   ```
 
   ```python Python
   import requests
 
+  ids = ["44196397", "987654321"]
   response = requests.get(
       "https://xquik.com/api/v1/x/users/batch",
-      params={"ids": "44196397,987654321"},
+      params={"ids": ",".join(ids)},
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  profiles_by_id = {user["id"]: user for user in data["users"]}
+  profile_rows = [
+      {
+          "user_id": user["id"],
+          "username": user["username"],
+          "display_name": user["name"],
+          "bio": user.get("description"),
+          "follower_count": user.get("followers"),
+          "following_count": user.get("following"),
+          "verified": user.get("verified", False),
+          "profile_image_url": user.get("profilePicture"),
+      }
+      for user in data["users"]
+  ]
+  missing_ids = [user_id for user_id in ids if user_id not in profiles_by_id]
   ```
 </CodeGroup>
+
+The Node.js and Python snippets shape durable profile rows instead of printing
+full profile objects. Persist `profileRows` or `profile_rows` and `missingIds`
+or `missing_ids` with the original ID list so retries only request missing
+profiles.
+
+## Direct batch user handoff
+
+Use `GET /x/users/batch` when a CRM, warehouse, enrichment, lead scoring, or
+agent workflow already has numeric X user IDs and needs profile details in one
+JSON response. Use [Get User](/api-reference/x/get-user) when you have one ID
+or username to resolve.
+
+Store `requested_ids`, `user_id`, `username`, `display_name`, profile metrics,
+verification state, `profile_image_url`, `has_next_page`, and `next_cursor`.
+Join returned users by `user_id` instead of relying on response order. Send at
+most 100 IDs per request. Batch requests always return `has_next_page: false`
+and `next_cursor: ""`; zero affordable results return
+`402 insufficient_credits`.
 
 ## Query parameters
 

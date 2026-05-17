@@ -2582,6 +2582,32 @@ const FORBIDDEN_LIST_MEMBERS_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_BATCH_USERS_API_HANDOFF_SNIPPETS = [
+  '## Direct batch user handoff',
+  '`GET /x/users/batch`',
+  'CRM, warehouse, enrichment, lead scoring,',
+  '[Get User](/api-reference/x/get-user)',
+  'const profilesById = new Map(data.users.map',
+  'const profileRows = data.users.map',
+  'const missingIds = ids.filter',
+  'profiles_by_id = {user["id"]: user for user in data["users"]}',
+  'profile_rows = [',
+  'missing_ids = [user_id for user_id in ids if user_id not in profiles_by_id]',
+  'shape durable profile rows instead of printing',
+  '`requested_ids`, `user_id`, `username`,',
+  '`has_next_page`, and `next_cursor`',
+  'Join returned users by `user_id` instead of relying on response order.',
+  '100 IDs per request',
+  '`has_next_page: false`',
+  '`next_cursor: ""`',
+  '`402 insufficient_credits`',
+] as const;
+
+const FORBIDDEN_BATCH_USERS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_VERIFIED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct verified followers handoff',
   '`GET /x/users/{id}/verified-followers`',
@@ -7177,6 +7203,30 @@ describe('repository discovery', (): void => {
         REQUIRED_LIST_MEMBERS_API_HANDOFF_SNIPPETS,
       ),
       ...forbiddenRawOutputFindings,
+    ]).toStrictEqual([]);
+  });
+
+  it('keeps the batch users API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/batch-users.mdx', 'utf8');
+
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Batch users API page',
+        REQUIRED_BATCH_USERS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_BATCH_USERS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Batch users API page prints raw profile data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
     ]).toStrictEqual([]);
   });
 
