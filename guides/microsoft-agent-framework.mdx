@@ -8,7 +8,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Build a Microsoft Agent Framework agent that can search tweets, look up users, post tweets, and run extractions - all through Xquik's MCP server.
+Build a Microsoft Agent Framework agent that can search tweets, hand off IDs and cursors, post tweets, and run extraction jobs - all through Xquik's MCP server.
 
 ## Prerequisites
 
@@ -28,6 +28,7 @@ The `agent-framework` meta-package installs all core and provider sub-packages. 
 
 ```python
 import asyncio
+from pathlib import Path
 from agent_framework import ChatAgent, MCPStreamableHTTPTool
 from agent_framework.openai import OpenAIChatClient
 
@@ -48,14 +49,36 @@ async def main():
             tools=[mcp_tool],
         )
 
-        response = await agent.run("Search for tweets about AI agents")
-        print(response)
+        handoff_prompt = (
+            "Search for tweets about AI agents. Return compact JSON with "
+            "query, route_used, tweets[{tweet_id,text,author_username,created_at}], "
+            "has_more, next_cursor."
+        )
+        response = await agent.run(handoff_prompt)
+        Path("xquik-agent-handoff.json").write_text(response.text, encoding="utf-8")
 
 
 asyncio.run(main())
 ```
 
-The agent auto-discovers all Xquik tools (`explore` + `xquik`) and can call any of the 120 API endpoints.
+The agent auto-discovers all Xquik tools (`explore` + `xquik`) and can call any of the 120 API endpoints. The MCP runtime returns normalized snake_case fields through `xquik.request()`, so keep prompts aligned with `tweet_id`, `has_more`, `next_cursor`, and returned job IDs.
+
+## Handoff Checklist
+
+<CardGroup cols={2}>
+  <Card title="Tweet search rows" icon="search">
+    Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.
+  </Card>
+  <Card title="Monitor and webhook setup" icon="radio">
+    Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager.
+  </Card>
+  <Card title="Extraction jobs" icon="database">
+    Store `extraction_id`, `status`, `poll`, and `export_after_complete`; poll before loading CSV, JSON, or XLSX rows.
+  </Card>
+  <Card title="Writes" icon="send">
+    Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, and `poll`; do not resend pending writes.
+  </Card>
+</CardGroup>
 
 ## Streaming Responses
 
@@ -81,6 +104,7 @@ Use `GroupChatBuilder` to coordinate specialized agents sharing the same MCP too
 
 ```python
 import asyncio
+from pathlib import Path
 from agent_framework import ChatAgent, MCPStreamableHTTPTool, GroupChatBuilder
 from agent_framework.openai import OpenAIChatClient
 
@@ -99,7 +123,11 @@ async def main():
         researcher = ChatAgent(
             chat_client=client,
             name="researcher",
-            instructions="Search X for tweets and user profiles. Return raw data.",
+            instructions=(
+                "Search X for tweets and user profiles. Return compact JSON with "
+                "tweet_id, author_username, text, created_at, has_more, next_cursor, "
+                "and route_used."
+            ),
             tools=[mcp_tool],
         )
 
@@ -125,7 +153,10 @@ async def main():
         result = await workflow.run(
             "Find the top 10 most engaged tweets about AI agents and analyze the sentiment."
         )
-        print(result)
+        Path("xquik-agent-workflow-handoff.json").write_text(
+            result.text,
+            encoding="utf-8",
+        )
 
 
 asyncio.run(main())

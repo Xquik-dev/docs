@@ -3845,6 +3845,25 @@ const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
   'Pin the release wheel in production images until PyPI publication is available.',
 ] as const;
 
+const REQUIRED_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS = [
+  'Build a Microsoft Agent Framework agent that can search tweets, hand off IDs and cursors, post tweets, and run extraction jobs',
+  'from pathlib import Path',
+  'query, route_used, tweets[{tweet_id,text,author_username,created_at}]',
+  'Path("xquik-agent-handoff.json").write_text(response.text, encoding="utf-8")',
+  'The MCP runtime returns normalized snake_case fields through `xquik.request()`',
+  '## Handoff Checklist',
+  '<Card title="Tweet search rows" icon="search">',
+  'Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.',
+  '<Card title="Monitor and webhook setup" icon="radio">',
+  'Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager.',
+  '<Card title="Extraction jobs" icon="database">',
+  'Store `extraction_id`, `status`, `poll`, and `export_after_complete`',
+  '<Card title="Writes" icon="send">',
+  'Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, and `poll`; do not resend pending writes.',
+  'tweet_id, author_username, text, created_at, has_more, next_cursor,',
+  'Path("xquik-agent-workflow-handoff.json").write_text(',
+] as const;
+
 const REQUIRED_N8N_ALTERNATIVE_SNIPPETS = [
   '## Source-backed n8n scope',
   "n8n's official X node docs list built-in operations for direct messages",
@@ -7048,6 +7067,23 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('|');
     expect(source).not.toContain('https://api.xquik.com');
     expect(source).not.toContain('0.1.2');
+  });
+
+  it('keeps the Microsoft Agent Framework guide handoff concrete', (): void => {
+    expect.assertions(4);
+
+    const source = readFileSync('guides/microsoft-agent-framework.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Microsoft Agent Framework guide',
+        REQUIRED_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(source).not.toContain('Return raw data.');
+    expect(source).not.toContain('print(response)');
+    expect(source).not.toContain('print(result)');
   });
 
   it('keeps the alternatives workflow shortlist concrete', (): void => {
