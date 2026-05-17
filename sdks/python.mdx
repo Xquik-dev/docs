@@ -189,6 +189,72 @@ The method accepts the same query inputs as the REST endpoint:
 
 Write `page.tweets` to CSV for analysts. Write JSON Lines for queues and data lakes to `xquik-tweet-search.jsonl` with `tweet.to_json(indent=None)`, or use `.to_dict()` records before loading a warehouse. Load the projected rows into pandas or openpyxl when account teams need an XLSX workbook. Pass `id`, `text`, `author.username`, `created_at`, and engagement counts to a CRM or enrichment job.
 
+## Workflow: Follower Export to CSV, JSON, or XLSX
+
+Use this workflow when a Python script, notebook, worker, or agent tool needs an owned follower list for a CRM import, warehouse load, analyst CSV file, XLSX workbook, or resumable JSON handoff. It calls `POST /extractions/estimate` through `client.extractions.estimate_cost`, creates the job with `client.extractions.run`, reads saved rows with `client.extractions.retrieve`, and downloads files with `client.extractions.export_results`.
+
+```python
+import json
+import time
+from pathlib import Path
+
+from x_twitter_scraper import XTwitterScraper
+
+client = XTwitterScraper()
+target_username = "xquikcom"
+
+estimate = client.extractions.estimate_cost(
+    tool_type="follower_explorer",
+    target_username=target_username,
+)
+
+if not estimate.allowed:
+    raise RuntimeError("Insufficient credits for follower export.")
+
+job = client.extractions.run(
+    tool_type="follower_explorer",
+    target_username=target_username,
+)
+
+while True:
+    status_page = client.extractions.retrieve(job.id, limit=1)
+    status = status_page.job.get("status")
+
+    if status == "completed":
+        break
+
+    if status == "failed":
+        raise RuntimeError("Follower export failed.")
+
+    time.sleep(10)
+
+after = None
+
+with Path("xquik-followers.jsonl").open("w", encoding="utf-8") as jsonl_file:
+    while True:
+        page = client.extractions.retrieve(job.id, limit=1000, after=after)
+
+        for row in page.results:
+            jsonl_file.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+        if not page.has_more or not page.next_cursor:
+            break
+
+        after = page.next_cursor
+
+client.extractions.export_results(job.id, format="csv").write_to_file(
+    Path("xquik-followers.csv"),
+)
+client.extractions.export_results(job.id, format="json").write_to_file(
+    Path("xquik-followers.json"),
+)
+client.extractions.export_results(job.id, format="xlsx").write_to_file(
+    Path("xquik-followers.xlsx"),
+)
+```
+
+`follower_explorer` requires `target_username`. Persist `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling so a notebook restart, queue retry, or worker restart can resume the same follower export. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; pass `next_cursor` back as `after` when you need stored JSON pages before exporting files. Map exported `User ID` or row `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
 Use this workflow when a Python script, notebook, worker, or agent tool needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV/JSON/XLSX file export. It calls `POST /extractions/estimate` through `client.extractions.estimate_cost`, creates the job with `client.extractions.run`, reads rows with `client.extractions.retrieve`, and downloads files with `client.extractions.export_results`.
