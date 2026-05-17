@@ -156,6 +156,31 @@ Call `throwForXquikError(z, response)` after each `z.request`.
   </Card>
 </CardGroup>
 
+## Result Handoff
+
+Use Zapier samples and `outputFields` so later Zap steps map stable values. Return compact objects from actions and arrays from triggers; do not pass full API responses into Zap history, Slack messages, CRM rows, or retry queues.
+
+<CardGroup cols={2}>
+  <Card title="Search Tweets action" icon="search">
+    Return tweet rows with `id`, `text`, `author__username`, `createdAt`, and optional `url`; carry `has_next_page` and `next_cursor` when a Zap loops pages.
+  </Card>
+  <Card title="Tweet or Reply write" icon="send">
+    Return `tweetId` on `200 Success`. For `202 x_write_unconfirmed`, return `writeActionId`, `status`, and `charged`, then poll `GET /x/write-actions/{id}` before retrying.
+  </Card>
+  <Card title="Public media upload" icon="image">
+    Return `mediaId`, `mediaUrl`, and `success`. Pass `mediaUrl` to `POST /x/tweets` in `media`; reserve uploaded media IDs for one-item DMs.
+  </Card>
+  <Card title="Monitor and webhook setup" icon="radio">
+    Return monitor `id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`; return webhook `id`, `url`, `eventTypes`, and one-time `secret`.
+  </Card>
+  <Card title="REST Hook trigger" icon="fingerprint">
+    Return `id`, `deliveryId`, and `streamEventId`; choose `deliveryId` for endpoint retry de-dupe or `streamEventId` when one monitor event should process once across webhook changes.
+  </Card>
+  <Card title="Extraction polling trigger" icon="database">
+    Return completed job `id`, `toolType`, and `status`; fetch detail rows and carry `hasMore` plus `nextCursor` into batch Zaps.
+  </Card>
+</CardGroup>
+
 Use a Zapier dropdown to map friendly region names to WOEID values before calling Xquik.
 
 Example search action:
