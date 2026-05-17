@@ -3878,6 +3878,32 @@ const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
   'Pin the release wheel in production images until PyPI publication is available.',
 ] as const;
 
+const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
+  'Hermes Tweet is the native Hermes Agent plugin for using Xquik as a structured X automation toolset.',
+  'hermes plugins install Xquik-dev/hermes-tweet --enable',
+  'uv pip install --python ~/.hermes/hermes-agent/venv/bin/python hermes-tweet',
+  'The current package version is `0.1.6`.',
+  'The plugin name is `hermes-tweet`, and the Python entry point is `hermes-tweet = hermes_tweet`.',
+  '<Card title="tweet_explore" icon="search">',
+  'Search the bundled Xquik endpoint catalog without making an API call.',
+  '<Card title="tweet_read" icon="book-open">',
+  'Call catalog-listed read-only endpoints after `XQUIK_API_KEY` is configured.',
+  '<Card title="tweet_action" icon="shield-check">',
+  'Call write-like or private endpoints only when `HERMES_TWEET_ENABLE_ACTIONS=true`.',
+  '## Workflow Handoffs',
+  '<Card title="Tweet Search Read" icon="search">',
+  'Use `tweet_read` with `GET /api/v1/x/tweets/search`, a concrete `q`, and a',
+  '<Card title="Follower Export Action" icon="users">',
+  'Use `tweet_action` to estimate and create `follower_explorer`, then use',
+  '<Card title="Media Tweet or DM Action" icon="image">',
+  'Use public media URLs in `media` for tweet or reply actions.',
+  'For a tweet or reply, call tweet_action for POST /api/v1/x/tweets with media set to public HTTPS image or MP4 URLs. Do not send media_ids.',
+  'For a DM attachment, call tweet_action for POST /api/v1/x/media first, then POST /api/v1/x/dm/{userId} with one media_ids value.',
+  'Return tweetId for posts, and return mediaId plus messageId for DMs.',
+  '`tweet_action` stays hidden or disabled unless `HERMES_TWEET_ENABLE_ACTIONS=true`.',
+  'Hermes Tweet includes 101 agent-callable Xquik endpoints generated from the OpenAPI contract, plus 31 MPP-tagged read endpoints in the bundled catalog.',
+] as const;
+
 const REQUIRED_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS = [
   'Build a Microsoft Agent Framework agent that can search tweets, hand off IDs and cursors, post tweets, and run extraction jobs',
   'from pathlib import Path',
@@ -7238,6 +7264,23 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('|');
     expect(source).not.toContain('https://api.xquik.com');
     expect(source).not.toContain('0.1.4');
+  });
+
+  it('keeps the Hermes Tweet guide aligned with the current plugin scope', (): void => {
+    expect.assertions(4);
+
+    const source = readFileSync('guides/hermes-tweet.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Hermes Tweet guide',
+        REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(source).not.toContain('The current package version is `0.1.5`');
+    expect(source).not.toContain('Hermes Tweet includes 99');
+    expect(source).not.toContain('tweet_action` stays enabled');
   });
 
   it('keeps the Microsoft Agent Framework guide handoff concrete', (): void => {
