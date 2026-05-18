@@ -115,8 +115,10 @@ Use `tweet_explore` first, then choose `tweet_read` for public reads or
     `tweet_read` to poll the job and export CSV, JSON, or XLSX results.
   </Card>
   <Card title="Media Tweet or DM Action" icon="image">
-    Use public media URLs in `media` for tweet or reply actions. For DM
-    attachments, upload media first, pass one returned `mediaId` in
+    Use public media URLs in `media` for tweet or reply actions. Store
+    `tweetId` when confirmed; if the response includes `writeActionId`, poll
+    `GET /api/v1/x/write-actions/{id}` with `tweet_read` before retrying. For
+    DM attachments, upload media first, pass one returned `mediaId` in
     `media_ids`, then store `messageId`.
   </Card>
 </CardGroup>
@@ -137,8 +139,9 @@ Poll /api/v1/extractions/{id}, then export CSV, JSON, and XLSX with tweet_read.
 ```text
 Use tweet_explore with include_actions true to find media write endpoints.
 For a tweet or reply, call tweet_action for POST /api/v1/x/tweets with media set to public HTTPS image or MP4 URLs. Do not send media_ids.
+If tweet_action for POST /api/v1/x/tweets returns writeActionId, store write_action_id, status, charged_credits, and poll GET /api/v1/x/write-actions/{id} with tweet_read before retrying.
 For a DM attachment, call tweet_action for POST /api/v1/x/media first, then POST /api/v1/x/dm/{userId} with one media_ids value.
-Return tweetId for posts, and return mediaId plus messageId for DMs.
+Return tweetId for confirmed posts, writeActionId for pending posts, and mediaId plus messageId for DMs.
 ```
 
 ## Runtime Diagnostics
