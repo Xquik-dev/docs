@@ -4507,6 +4507,25 @@ const FORBIDDEN_KEYWORD_MONITOR_UPDATE_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_KEYWORD_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
+  'const result = await response.json();',
+  'const deletionReceipt = {',
+  'keyword_monitor_id: monitorId',
+  'success: result.success === true',
+  'verify_endpoint: `/api/v1/monitors/keywords/${monitorId}`',
+  'list_endpoint: "/api/v1/monitors/keywords"',
+  'process.stdout.write(`${JSON.stringify(deletionReceipt)}\\n`);',
+  'result = response.json()',
+  'deletion_receipt = {',
+  '"keyword_monitor_id": monitor_id',
+  '"success": result["success"] is True',
+  'print(json.dumps(deletion_receipt))',
+  'type KeywordMonitorDeletion struct',
+  'KeywordMonitorID string `json:"keyword_monitor_id"`',
+  'VerifyEndpoint   string `json:"verify_endpoint"`',
+  'json.NewEncoder(os.Stdout).Encode(receipt)',
+  'one receipt row.',
+  'Store `keyword_monitor_id`, `success`, `verify_endpoint`, and',
+  '`list_endpoint`, then verify',
   '## Deletion handoff',
   'Use this endpoint when a keyword query should stop permanently.',
   '[Update Keyword Monitor](/api-reference/monitors/update-keyword)',
@@ -4531,6 +4550,14 @@ const REQUIRED_KEYWORD_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
   '<Card title="Webhook Reuse" icon="webhook">',
   'Existing webhook endpoints remain configured.',
   '[Test Webhook](/api-reference/webhooks/test)',
+] as const;
+
+const FORBIDDEN_KEYWORD_MONITOR_DELETE_RAW_OUTPUT_SNIPPETS = [
+  'const data = await response.json();',
+  'JSON.stringify(data, null, 2)',
+  'data = response.json()',
+  'print(data)',
+  'fmt.Println(data)',
 ] as const;
 
 const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
@@ -9156,6 +9183,16 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Delete keyword monitor API page should keep inline card prose out of JSON shape "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+        ...FORBIDDEN_KEYWORD_MONITOR_DELETE_RAW_OUTPUT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Delete keyword monitor API page should map deletion receipts instead of raw response output "${snippet}".`,
                   },
                 ]
               : [],
