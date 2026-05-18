@@ -4554,6 +4554,32 @@ const FORBIDDEN_ACCOUNT_MONITOR_LIST_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_ACCOUNT_MONITOR_UPDATE_API_HANDOFF_SNIPPETS = [
+  'const monitor = await response.json();',
+  'const monitorState = {',
+  'monitor_id: monitor.id',
+  'x_user_id: monitor.xUserId',
+  'event_types: monitor.eventTypes',
+  'verify_endpoint: `/api/v1/monitors/${monitor.id}`',
+  'events_endpoint: `/api/v1/events?monitorId=${monitor.id}`',
+  'process.stdout.write(`${JSON.stringify(monitorState)}\\n`);',
+  'monitor = response.json()',
+  'monitor_state = {',
+  '"monitor_id": monitor["id"]',
+  '"x_user_id": monitor["xUserId"]',
+  '"event_types": monitor["eventTypes"]',
+  '"verify_endpoint": f"/api/v1/monitors/{monitor[\'id\']}"',
+  '"events_endpoint": f"/api/v1/events?monitorId={monitor[\'id\']}"',
+  'print(json.dumps(monitor_state))',
+  'type MonitorState struct',
+  'VerifyEndpoint string   `json:"verify_endpoint"`',
+  'EventsEndpoint string   `json:"events_endpoint"`',
+  'VerifyEndpoint: "/api/v1/monitors/" + monitor.ID',
+  'EventsEndpoint: "/api/v1/events?monitorId=" + monitor.ID',
+  'json.NewEncoder(os.Stdout).Encode(state)',
+  'The Node.js, Python, and Go examples convert the updated account monitor into',
+  'one state row.',
+  '`monitor_id`, `event_types`, `is_active`,',
+  '`next_billing_at`, `verify_endpoint`, and `events_endpoint`',
   'monitors do not consume hourly monitor credits.',
   '## Update handoff',
   'Use this endpoint when an account alert changes event scope',
@@ -4574,6 +4600,12 @@ const REQUIRED_ACCOUNT_MONITOR_UPDATE_API_HANDOFF_SNIPPETS = [
   '`monitorId` and `username` from',
   '[List Events](/api-reference/events/list)',
   'signed webhook payloads after the update.',
+] as const;
+
+const FORBIDDEN_ACCOUNT_MONITOR_UPDATE_RAW_OUTPUT_SNIPPETS = [
+  'const data = await response.json();',
+  'data = response.json()',
+  'fmt.Println(data)',
 ] as const;
 
 const FORBIDDEN_ACCOUNT_MONITOR_UPDATE_FULL_EVENT_TYPE_EXAMPLES = [
@@ -9035,6 +9067,16 @@ describe('repository discovery', (): void => {
           source,
           'Update account monitor API page',
           REQUIRED_ACCOUNT_MONITOR_UPDATE_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_ACCOUNT_MONITOR_UPDATE_RAW_OUTPUT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Update account monitor API page should map state rows instead of raw response output "${snippet}".`,
+                  },
+                ]
+              : [],
         ),
         ...FORBIDDEN_ACCOUNT_MONITOR_UPDATE_FULL_EVENT_TYPE_EXAMPLES.flatMap(
           (snippet): readonly DiscoveryFinding[] =>
