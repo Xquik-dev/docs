@@ -36,11 +36,34 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       text: "Hello from Xquik!",
     }),
   });
-  const data = await response.json();
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(JSON.stringify(result));
+  }
+  const postRecord =
+    result.status === "pending_confirmation"
+      ? {
+          status: result.status,
+          write_action_id: result.writeActionId,
+          account: "elonmusk",
+          charged: result.charged,
+          charged_credits: result.chargedCredits,
+          retryable: result.retryable,
+          poll_path: `/api/v1/x/write-actions/${result.writeActionId}`,
+        }
+      : {
+          status: "posted",
+          tweet_id: result.tweetId,
+          account: "elonmusk",
+          charged: result.charged,
+          charged_credits: result.chargedCredits,
+        };
+  process.stdout.write(`${JSON.stringify(postRecord)}\n`);
   ```
 
   ```python Python
   import requests
+  import json
 
   response = requests.post(
       "https://xquik.com/api/v1/x/tweets",
@@ -50,7 +73,27 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           "text": "Hello from Xquik!",
       },
   )
-  data = response.json()
+  result = response.json()
+  response.raise_for_status()
+  if result.get("status") == "pending_confirmation":
+      post_record = {
+          "status": result["status"],
+          "write_action_id": result["writeActionId"],
+          "account": "elonmusk",
+          "charged": result["charged"],
+          "charged_credits": result["chargedCredits"],
+          "retryable": result["retryable"],
+          "poll_path": f"/api/v1/x/write-actions/{result['writeActionId']}",
+      }
+  else:
+      post_record = {
+          "status": "posted",
+          "tweet_id": result["tweetId"],
+          "account": "elonmusk",
+          "charged": result["charged"],
+          "charged_credits": result["chargedCredits"],
+      }
+  print(json.dumps(post_record))
   ```
 
   ```go Go
@@ -60,8 +103,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "bytes"
       "encoding/json"
       "fmt"
+      "io"
       "net/http"
   )
+
+  type CreateTweetResponse struct {
+      TweetID string `json:"tweetId"`
+      Status string `json:"status"`
+      WriteActionID string `json:"writeActionId"`
+      Charged bool `json:"charged"`
+      ChargedCredits string `json:"chargedCredits"`
+      Retryable bool `json:"retryable"`
+  }
 
   func main() {
       body, _ := json.Marshal(map[string]interface{}{
@@ -81,12 +134,39 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           panic(err)
       }
       defer resp.Body.Close()
+      if resp.StatusCode >= 400 {
+          body, _ := io.ReadAll(resp.Body)
+          panic(string(body))
+      }
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      var result CreateTweetResponse
+      if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      status := "posted"
+      postRecord := map[string]any{
+          "status": status,
+          "tweet_id": result.TweetID,
+          "account": "elonmusk",
+          "charged": result.Charged,
+          "charged_credits": result.ChargedCredits,
+      }
+      if result.Status == "pending_confirmation" {
+          postRecord = map[string]any{
+              "status": result.Status,
+              "write_action_id": result.WriteActionID,
+              "account": "elonmusk",
+              "charged": result.Charged,
+              "charged_credits": result.ChargedCredits,
+              "retryable": result.Retryable,
+              "poll_path": "/api/v1/x/write-actions/" + result.WriteActionID,
+          }
+      }
+      encoded, err := json.Marshal(postRecord)
+      if err != nil {
+          panic(err)
+      }
+      fmt.Println(string(encoded))
   }
   ```
 </CodeGroup>

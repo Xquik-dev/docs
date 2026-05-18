@@ -1848,6 +1848,19 @@ const REQUIRED_CREATE_TWEET_API_SNIPPETS = [
   '"post tweet replies"',
   '`reply_to_tweet_id`',
   '`media`',
+  'const result = await response.json();',
+  'const postRecord =',
+  'write_action_id: result.writeActionId',
+  'tweet_id: result.tweetId',
+  'process.stdout.write(`${JSON.stringify(postRecord)}\\n`);',
+  'result = response.json()',
+  'post_record = {',
+  '"write_action_id": result["writeActionId"]',
+  '"tweet_id": result["tweetId"]',
+  'type CreateTweetResponse struct',
+  'TweetID string `json:"tweetId"`',
+  'WriteActionID string `json:"writeActionId"`',
+  '"write_action_id": result.WriteActionID',
   'Array of public media URLs to attach directly.',
   'Send up to 4 JPEG, PNG, GIF, WebP, or AVIF image URLs, or exactly 1 MP4 video URL up to 100 MB.',
   'Do not mix video with other media.',
@@ -1887,6 +1900,10 @@ const REQUIRED_CREATE_TWEET_API_SNIPPETS = [
 const FORBIDDEN_CREATE_TWEET_API_SNIPPETS = [
   '"media_ids": [',
   '"mediaIds": [',
+  'const data = await response.json();',
+  'data = response.json()',
+  'var data map[string]interface{}',
+  'fmt.Println(data)',
 ] as const;
 
 const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
