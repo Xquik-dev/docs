@@ -29,20 +29,61 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const verifiedRows = data.users.map((user) => ({
+    source_user_id: userId,
+    x_user_id: user.id,
+    username: user.username,
+    display_name: user.name,
+    verified_type: user.verifiedType ?? "standard",
+    follower_count: user.followers ?? null,
+    following_count: user.following ?? null,
+    profile_image_url: user.profilePicture ?? null,
+  }));
+  const nextCursor = data.has_next_page ? data.next_cursor : null;
+  const checkpoint = { source_user_id: userId, next_cursor: nextCursor };
+
+  for (const row of verifiedRows) {
+    process.stdout.write(`${JSON.stringify(row)}\n`);
+  }
+  process.stdout.write(`${JSON.stringify(checkpoint)}\n`);
   ```
 
   ```python Python
+  import json
   import requests
 
+  user_id = "44196397"
   response = requests.get(
-      "https://xquik.com/api/v1/x/users/44196397/verified-followers",
+      f"https://xquik.com/api/v1/x/users/{user_id}/verified-followers",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  verified_rows = [
+      {
+          "source_user_id": user_id,
+          "x_user_id": user["id"],
+          "username": user["username"],
+          "display_name": user["name"],
+          "verified_type": user.get("verifiedType", "standard"),
+          "follower_count": user.get("followers"),
+          "following_count": user.get("following"),
+          "profile_image_url": user.get("profilePicture"),
+      }
+      for user in data["users"]
+  ]
+  next_cursor = data["next_cursor"] if data["has_next_page"] else None
+  checkpoint = {"source_user_id": user_id, "next_cursor": next_cursor}
+
+  for row in verified_rows:
+      print(json.dumps(row))
+  print(json.dumps(checkpoint))
   ```
 </CodeGroup>
+
+The Node.js and Python snippets shape durable verified follower rows instead of
+printing the full response page. Persist `verifiedRows` or `verified_rows` with
+the checkpoint so a worker can resume pagination with `next_cursor` without
+duplicating already imported profiles.
 
 ## Direct verified followers handoff
 

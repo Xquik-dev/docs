@@ -2808,9 +2808,33 @@ const REQUIRED_VERIFIED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '`users[].username` and `users[].name`',
   '`users[].verified` and `verifiedType`',
   '`has_next_page` and `next_cursor`',
+  'const verifiedRows = data.users.map((user) => ({',
+  'source_user_id: userId',
+  'x_user_id: user.id',
+  'verified_type: user.verifiedType ?? "standard"',
+  'follower_count: user.followers ?? null',
+  'profile_image_url: user.profilePicture ?? null',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  'const checkpoint = { source_user_id: userId, next_cursor: nextCursor };',
+  'import json',
+  'user_id = "44196397"',
+  'verified_rows = [',
+  '"source_user_id": user_id',
+  '"x_user_id": user["id"]',
+  '"verified_type": user.get("verifiedType", "standard")',
+  'next_cursor = data["next_cursor"] if data["has_next_page"] else None',
+  'checkpoint = {"source_user_id": user_id, "next_cursor": next_cursor}',
+  'shape durable verified follower rows instead of',
+  '`verifiedRows` or `verified_rows`',
+  'resume pagination with `next_cursor`',
   '1 credit per user returned',
   '`402 insufficient_credits`',
   'USD 0.00015 per user returned',
+] as const;
+
+const FORBIDDEN_VERIFIED_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
 ] as const;
 
 const REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS = [
@@ -7537,13 +7561,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/x/verified-followers.mdx', 'utf8');
 
-    expect(
-      collectSnippetFindings(
+    expect([
+      ...collectSnippetFindings(
         source,
         'Verified followers API page',
         REQUIRED_VERIFIED_FOLLOWERS_API_HANDOFF_SNIPPETS,
       ),
-    ).toStrictEqual([]);
+      ...FORBIDDEN_VERIFIED_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Verified followers API page prints raw follower data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the followers you know API handoff concrete', (): void => {
