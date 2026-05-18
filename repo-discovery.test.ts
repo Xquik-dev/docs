@@ -3339,6 +3339,66 @@ const REQUIRED_TWEET_LIST_FILTER_SNIPPETS = [
   '<TweetResultFilterParams />',
 ] as const;
 
+const HIGH_VALUE_ROW_HANDOFF_API_PAGES = [
+  {
+    file: 'api-reference/x/search-tweets.mdx',
+    label: 'Search tweets endpoint page',
+  },
+  {
+    file: 'api-reference/x/user-tweets.mdx',
+    label: 'User tweets endpoint page',
+  },
+  {
+    file: 'api-reference/x/user-likes.mdx',
+    label: 'User likes endpoint page',
+  },
+  {
+    file: 'api-reference/x/user-media.mdx',
+    label: 'User media endpoint page',
+  },
+  {
+    file: 'api-reference/x/user-mentions.mdx',
+    label: 'User mentions endpoint page',
+  },
+  {
+    file: 'api-reference/x/tweet-replies.mdx',
+    label: 'Tweet replies endpoint page',
+  },
+  {
+    file: 'api-reference/x/followers.mdx',
+    label: 'Followers endpoint page',
+  },
+  {
+    file: 'api-reference/x-write/create-tweet.mdx',
+    label: 'Create tweet endpoint page',
+  },
+  {
+    file: 'api-reference/x-write/upload-media.mdx',
+    label: 'Upload media endpoint page',
+  },
+  {
+    file: 'api-reference/x-write/send-dm.mdx',
+    label: 'Send DM endpoint page',
+  },
+] as const;
+
+const FORBIDDEN_HIGH_VALUE_ROW_HANDOFF_RAW_RESPONSE_SNIPPETS = [
+  'const data = await response.json();',
+  'console.log(data);',
+  'console.log(data.tweets);',
+  'console.log(page.tweets);',
+  'console.log((await next.json()).tweets);',
+  'JSON.stringify(data, null, 2)',
+  'process.stdout.write(JSON.stringify(data, null, 2));',
+  'data = response.json()',
+  'print(data)',
+  'print(data["tweets"])',
+  'print(json.dumps(data, indent=2))',
+  'var data map[string]interface{}',
+  'fmt.Println(data)',
+  'fmt.Println(string(body))',
+] as const;
+
 const REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS = [
   '## User timeline handoff',
   '`GET /x/users/{id}/tweets`',
@@ -8526,6 +8586,30 @@ describe('repository discovery', (): void => {
         file,
         REQUIRED_TWEET_LIST_FILTER_SNIPPETS,
       ),
+    );
+
+    expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps high-value API examples from dumping raw responses', (): void => {
+    expect.assertions(1);
+
+    const findings = HIGH_VALUE_ROW_HANDOFF_API_PAGES.flatMap(
+      ({ file, label }) => {
+        const source = readFileSync(file, 'utf8');
+
+        return FORBIDDEN_HIGH_VALUE_ROW_HANDOFF_RAW_RESPONSE_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    file,
+                    issue: `${label} should map durable handoff rows instead of raw response output "${snippet}".`,
+                  },
+                ]
+              : [],
+        );
+      },
     );
 
     expect(findings).toStrictEqual([]);
