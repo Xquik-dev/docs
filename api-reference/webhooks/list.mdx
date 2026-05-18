@@ -24,10 +24,24 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const webhookRows = data.webhooks.map((webhook) => ({
+    webhook_id: webhook.id,
+    url: webhook.url,
+    event_types: webhook.eventTypes,
+    is_active: webhook.isActive,
+    created_at: webhook.createdAt,
+    test_endpoint: `/api/v1/webhooks/${webhook.id}/test`,
+    deliveries_endpoint: `/api/v1/webhooks/${webhook.id}/deliveries`,
+    signing_secret_available: false,
+  }));
+
+  for (const row of webhookRows) {
+    process.stdout.write(`${JSON.stringify(row)}\n`);
+  }
   ```
 
   ```python Python
+  import json
   import requests
 
   response = requests.get(
@@ -35,40 +49,98 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  webhook_rows = [
+      {
+          "webhook_id": webhook["id"],
+          "url": webhook["url"],
+          "event_types": webhook["eventTypes"],
+          "is_active": webhook["isActive"],
+          "created_at": webhook["createdAt"],
+          "test_endpoint": f"/api/v1/webhooks/{webhook['id']}/test",
+          "deliveries_endpoint": f"/api/v1/webhooks/{webhook['id']}/deliveries",
+          "signing_secret_available": False,
+      }
+      for webhook in data["webhooks"]
+  ]
+  for row in webhook_rows:
+      print(json.dumps(row))
   ```
 
   ```go Go
   package main
 
   import (
-  	"fmt"
-  	"io"
-  	"log"
-  	"net/http"
+    "encoding/json"
+    "log"
+    "net/http"
+    "os"
   )
 
+  type Webhook struct {
+    ID         string   `json:"id"`
+    URL        string   `json:"url"`
+    EventTypes []string `json:"eventTypes"`
+    IsActive   bool     `json:"isActive"`
+    CreatedAt  string   `json:"createdAt"`
+  }
+
+  type WebhookResponse struct {
+    Webhooks []Webhook `json:"webhooks"`
+  }
+
+  type WebhookRow struct {
+    WebhookID              string   `json:"webhook_id"`
+    URL                    string   `json:"url"`
+    EventTypes             []string `json:"event_types"`
+    IsActive               bool     `json:"is_active"`
+    CreatedAt              string   `json:"created_at"`
+    TestEndpoint           string   `json:"test_endpoint"`
+    DeliveriesEndpoint     string   `json:"deliveries_endpoint"`
+    SigningSecretAvailable bool     `json:"signing_secret_available"`
+  }
+
   func main() {
-  	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/webhooks", nil)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+    req, err := http.NewRequest("GET", "https://xquik.com/api/v1/webhooks", nil)
+    if err != nil {
+      log.Fatal(err)
+    }
+    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 
-  	resp, err := http.DefaultClient.Do(req)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	defer resp.Body.Close()
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+      log.Fatal(err)
+    }
+    defer resp.Body.Close()
 
-  	body, err := io.ReadAll(resp.Body)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	fmt.Println(string(body))
+    var data WebhookResponse
+    if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      log.Fatal(err)
+    }
+
+    encoder := json.NewEncoder(os.Stdout)
+    for _, webhook := range data.Webhooks {
+      row := WebhookRow{
+        WebhookID:              webhook.ID,
+        URL:                    webhook.URL,
+        EventTypes:             webhook.EventTypes,
+        IsActive:               webhook.IsActive,
+        CreatedAt:              webhook.CreatedAt,
+        TestEndpoint:           "/api/v1/webhooks/" + webhook.ID + "/test",
+        DeliveriesEndpoint:     "/api/v1/webhooks/" + webhook.ID + "/deliveries",
+        SigningSecretAvailable: false,
+      }
+      if err := encoder.Encode(row); err != nil {
+        log.Fatal(err)
+      }
+    }
   }
   ```
 </CodeGroup>
+
+The Node.js, Python, and Go examples shape one inventory row per webhook
+instead of printing the full response page. List responses never include the
+signing secret; keep the one-time `secret` from
+[Create Webhook](/api-reference/webhooks/create) in your secret manager.
 
 ## Headers
 

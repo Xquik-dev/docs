@@ -3629,6 +3629,23 @@ const FORBIDDEN_WEBHOOK_CREATE_SECRET_LOG_SNIPPETS = [
 
 const REQUIRED_WEBHOOK_LIST_API_SNIPPETS = [
   '## Inventory handoff',
+  'const webhookRows = data.webhooks.map((webhook) => ({',
+  'webhook_id: webhook.id',
+  'event_types: webhook.eventTypes',
+  'test_endpoint: `/api/v1/webhooks/${webhook.id}/test`',
+  'deliveries_endpoint: `/api/v1/webhooks/${webhook.id}/deliveries`',
+  'signing_secret_available: false',
+  'webhook_rows = [',
+  '"webhook_id": webhook["id"]',
+  '"event_types": webhook["eventTypes"]',
+  '"test_endpoint": f"/api/v1/webhooks/{webhook[\'id\']}/test"',
+  '"deliveries_endpoint": f"/api/v1/webhooks/{webhook[\'id\']}/deliveries"',
+  '"signing_secret_available": False',
+  'type WebhookRow struct',
+  'SigningSecretAvailable bool     `json:"signing_secret_available"`',
+  'encoder.Encode(row)',
+  'one inventory row per webhook',
+  'List responses never include the',
   'Store `webhooks[].id` for updates, deletes, test deliveries, and delivery',
   'Store `webhooks[].url` so configuration reviews can detect stale receiver',
   'Store `webhooks[].eventTypes` and compare it with monitor event types',
@@ -3638,6 +3655,12 @@ const REQUIRED_WEBHOOK_LIST_API_SNIPPETS = [
   'The signing `secret` is not listed.',
   '[Create Webhook](/api-reference/webhooks/create)',
   '[Signature Verification](/webhooks/verification)',
+] as const;
+
+const FORBIDDEN_WEBHOOK_LIST_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+  'fmt.Println(string(body))',
 ] as const;
 
 const REQUIRED_WEBHOOK_TEST_API_SNIPPETS = [
@@ -8331,6 +8354,16 @@ describe('repository discovery', (): void => {
           listWebhookApi,
           'List webhook API docs',
           REQUIRED_WEBHOOK_LIST_API_SNIPPETS,
+        ),
+        ...FORBIDDEN_WEBHOOK_LIST_RAW_OUTPUT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            listWebhookApi.includes(snippet)
+              ? [
+                  {
+                    issue: `List webhook API docs print raw webhook responses with "${snippet}".`,
+                  },
+                ]
+              : [],
         ),
         ...collectSnippetFindings(
           updateWebhookApi,
