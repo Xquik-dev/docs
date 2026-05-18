@@ -5748,6 +5748,7 @@ const REQUIRED_PYDANTIC_AI_GUIDE_SNIPPETS = [
   'Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.',
   '<Card title="Monitor and webhook setup" icon="radio">',
   'Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager.',
+  'On production deliveries, store `delivery_id` for receiver retry de-dupe and `stream_event_id` when one monitor event should process once across endpoint changes.',
   '<Card title="Extraction jobs" icon="database">',
   'Store `extraction_id`, `status`, `poll`, and `export_after_complete`',
   '<Card title="Writes" icon="send">',
