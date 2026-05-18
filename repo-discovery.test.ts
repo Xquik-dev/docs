@@ -5388,6 +5388,7 @@ const REQUIRED_ZAPIER_GUIDE_SNIPPETS = [
   '<Card title="Monitor and webhook setup" icon="radio">',
   'Return monitor `id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`;',
   'return webhook `id`, `url`, `eventTypes`, and one-time `secret`.',
+  'For Zap storage rows, map production `deliveryId` to `delivery_id` for receiver retry de-dupe and `streamEventId` to `stream_event_id` when one monitor event should process once across endpoint changes.',
   '<Card title="REST Hook trigger" icon="fingerprint">',
   'Return `id`, `deliveryId`, and `streamEventId`;',
   'choose `deliveryId` for endpoint retry de-dupe or `streamEventId` when one monitor event should process once across webhook changes.',
