@@ -3357,6 +3357,41 @@ const FORBIDDEN_USER_TWEETS_API_RAW_SNIPPETS = [
   'print(data["tweets"])',
 ] as const;
 
+const REQUIRED_USER_MEDIA_API_HANDOFF_SNIPPETS = [
+  '## User media handoff',
+  '`GET /x/users/{id}/media`',
+  'gallery, moderation queue, warehouse, or',
+  'The examples above write JSON',
+  'Lines rows with the source user',
+  'media tweet ID, text, tweet URL, author join',
+  'resume from the last saved `next_cursor`',
+  'const mediaRows = page.tweets.map',
+  'source_user_id: userId',
+  'media_tweet_id: tweet.id',
+  'tweet_url: tweet.url ?? null',
+  'author_username: tweet.author?.username ?? null',
+  'media_urls: (tweet.media ?? []).map',
+  'media_types: (tweet.media ?? []).map',
+  'page_cursor: pageCursor',
+  'process.stdout.write(`${JSON.stringify(row)}\\n`);',
+  'user_id = "44196397"',
+  '"source_user_id": user_id',
+  '"media_tweet_id": tweet["id"]',
+  '"tweet_url": tweet.get("url")',
+  '"author_username": (tweet.get("author") or {}).get("username")',
+  '"media_urls": [',
+  '"media_types": [item["type"] for item in media_items if item.get("type")]',
+  'print(json.dumps(media_row, separators=(",", ":")))',
+] as const;
+
+const FORBIDDEN_USER_MEDIA_API_RAW_SNIPPETS = [
+  'const data = await response.json();',
+  'console.log(data.tweets);',
+  'console.log((await next.json()).tweets);',
+  'data = response.json()',
+  'print(data["tweets"])',
+] as const;
+
 const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   'Scrape tweets, export followers, estimate credits, start extraction jobs, paginate JSON results, and export CSV, JSON, or XLSX files',
   'Use this workflow to scrape tweets, export followers, pull tweet replies, save CSV/JSON/XLSX files, or hand paginated JSON to a CRM, warehouse, queue, or AI agent.',
@@ -8468,6 +8503,32 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `User tweets endpoint page should map timeline rows instead of raw response output "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the user media API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/user-media.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'User media endpoint page',
+          REQUIRED_USER_MEDIA_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_USER_MEDIA_API_RAW_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `User media endpoint page should map media tweet rows instead of raw response output "${snippet}".`,
                   },
                 ]
               : [],
