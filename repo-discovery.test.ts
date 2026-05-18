@@ -5974,6 +5974,7 @@ const REQUIRED_MAKE_GUIDE_SNIPPETS = [
   'Store `mediaId`, `mediaUrl`, and `success`. Use `mediaUrl` in tweet `media` arrays; reserve uploaded media IDs for one-item DMs.',
   '<Card title="Monitor and webhook setup" icon="radio">',
   'Store monitor `id`, `username`, `xUserId`, `eventTypes`, `isActive`, `nextBillingAt`, webhook `id`, `url`, `eventTypes`, and the one-time `secret`.',
+  'For Make storage rows, map production `deliveryId` to `delivery_id` for receiver retry de-dupe and `streamEventId` to `stream_event_id` when one monitor event should process once across endpoint changes.',
   '<Card title="Extraction jobs" icon="database">',
   'Store `id`, `toolType`, and `status` from `POST /extractions`; poll `GET /extractions/{id}`, then carry `hasMore` and `nextCursor`.',
   '<Card title="Webhook event dedupe" icon="fingerprint">',
