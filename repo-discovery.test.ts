@@ -3525,6 +3525,18 @@ const REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
   'Store the `account` you submitted',
   '<Card title="Source input" icon="file-image">',
   'Store the source URL or filename',
+  'The file and URL examples both build the same handoff shape.',
+  'const result = await response.json();',
+  'const handoff = {',
+  'media_id: result.mediaId',
+  'dm_media_ids: [result.mediaId]',
+  'tweet_media_url: result.mediaUrl',
+  'result = response.json()',
+  '"media_id": result["mediaId"]',
+  '"dm_media_ids": [result["mediaId"]]',
+  'type UploadMediaResponse struct',
+  'MediaID string `json:"mediaId"`',
+  '"tweet_media_url": upload.MediaURL',
   'For tweets with already-public image URLs or exactly 1 public MP4 video URL up to 100 MB, skip this endpoint and call [`POST /x/tweets`](/api-reference/x-write/create-tweet) directly with `media`.',
   'After uploading through this endpoint, call `POST /x/tweets` and pass `media: ["<mediaUrl>"]`.',
   'To post a media reply, also pass `reply_to_tweet_id`.',
@@ -3535,6 +3547,13 @@ const REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
   '15,728,640 bytes',
   '422 media_download_failed',
   'Posting the tweet, posting the reply, or sending the DM is a separate 10-credit write call.',
+] as const;
+
+const FORBIDDEN_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
+  'const data = await response.json();',
+  'data = response.json()',
+  'var data map[string]interface{}',
+  'fmt.Println(data)',
 ] as const;
 
 const REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
@@ -8501,7 +8520,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the upload media API handoff concrete', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('api-reference/x-write/upload-media.mdx', 'utf8');
 
@@ -8510,6 +8529,11 @@ describe('repository discovery', (): void => {
         source,
         'Upload media endpoint page',
         REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
       ),
     ).toStrictEqual([]);
   });

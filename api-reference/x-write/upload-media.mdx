@@ -33,19 +33,40 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     },
     body: form,
   });
-  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+  const result = await response.json();
+  const handoff = {
+    media_id: result.mediaId,
+    media_url: result.mediaUrl,
+    dm_media_ids: [result.mediaId],
+    dm_endpoint: "/api/v1/x/dm/{userId}",
+    tweet_media_url: result.mediaUrl,
+    success: result.success,
+  };
   ```
 
   ```python Python
   import requests
 
-  response = requests.post(
-      "https://xquik.com/api/v1/x/media",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-      files={"file": open("/path/to/image.png", "rb")},
-      data={"account": "myxhandle"},
-  )
-  data = response.json()
+  with open("/path/to/image.png", "rb") as media_file:
+      response = requests.post(
+          "https://xquik.com/api/v1/x/media",
+          headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+          files={"file": media_file},
+          data={"account": "myxhandle"},
+      )
+  response.raise_for_status()
+  result = response.json()
+  handoff = {
+      "media_id": result["mediaId"],
+      "media_url": result["mediaUrl"],
+      "dm_media_ids": [result["mediaId"]],
+      "dm_endpoint": "/api/v1/x/dm/{userId}",
+      "tweet_media_url": result["mediaUrl"],
+      "success": result["success"],
+  }
   ```
 
   ```go Go
@@ -60,6 +81,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "net/http"
       "os"
   )
+
+  type UploadMediaResponse struct {
+      MediaID string `json:"mediaId"`
+      MediaURL string `json:"mediaUrl"`
+      Success bool `json:"success"`
+  }
 
   func main() {
       var buf bytes.Buffer
@@ -85,12 +112,28 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           panic(err)
       }
       defer resp.Body.Close()
+      if resp.StatusCode >= 300 {
+          body, _ := io.ReadAll(resp.Body)
+          panic(string(body))
+      }
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      var upload UploadMediaResponse
+      if err := json.NewDecoder(resp.Body).Decode(&upload); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      handoff := map[string]any{
+          "media_id": upload.MediaID,
+          "media_url": upload.MediaURL,
+          "dm_media_ids": []string{upload.MediaID},
+          "dm_endpoint": "/api/v1/x/dm/{userId}",
+          "tweet_media_url": upload.MediaURL,
+          "success": upload.Success,
+      }
+      encoded, err := json.Marshal(handoff)
+      if err != nil {
+          panic(err)
+      }
+      fmt.Println(string(encoded))
   }
   ```
 </CodeGroup>
@@ -117,7 +160,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       url: "https://example.com/image.png",
     }),
   });
-  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+  const result = await response.json();
+  const handoff = {
+    media_id: result.mediaId,
+    media_url: result.mediaUrl,
+    dm_media_ids: [result.mediaId],
+    dm_endpoint: "/api/v1/x/dm/{userId}",
+    tweet_media_url: result.mediaUrl,
+    success: result.success,
+  };
   ```
 
   ```python Python
@@ -134,9 +188,20 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           "url": "https://example.com/image.png",
       },
   )
-  data = response.json()
+  response.raise_for_status()
+  result = response.json()
+  handoff = {
+      "media_id": result["mediaId"],
+      "media_url": result["mediaUrl"],
+      "dm_media_ids": [result["mediaId"]],
+      "dm_endpoint": "/api/v1/x/dm/{userId}",
+      "tweet_media_url": result["mediaUrl"],
+      "success": result["success"],
+  }
   ```
 </CodeGroup>
+
+The file and URL examples both build the same handoff shape. Store `media_id`, `media_url`, `dm_media_ids`, `dm_endpoint`, and `tweet_media_url`; pass `dm_media_ids` only to `POST /x/dm/{userId}`, and pass `tweet_media_url` in the `media` array on `POST /x/tweets`.
 
 ## Media upload handoff
 
