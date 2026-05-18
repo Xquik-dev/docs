@@ -26,17 +26,43 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "x-api-key": "xq_YOUR_KEY_HERE",
     },
   });
-  const data = await response.json();
+  const payload = await response.json();
+  for (const monitor of payload.monitors) {
+    const monitorRow = {
+      monitor_id: monitor.id,
+      username: monitor.username,
+      x_user_id: monitor.xUserId,
+      event_types: monitor.eventTypes,
+      is_active: monitor.isActive,
+      created_at: monitor.createdAt,
+      next_billing_at: monitor.nextBillingAt,
+      events_endpoint: `/api/v1/events?monitorId=${monitor.id}`,
+    };
+    process.stdout.write(`${JSON.stringify(monitorRow)}\n`);
+  }
   ```
 
   ```python Python
+  import json
   import requests
 
   response = requests.get(
       "https://xquik.com/api/v1/monitors",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
-  data = response.json()
+  payload = response.json()
+  for monitor in payload["monitors"]:
+      monitor_row = {
+          "monitor_id": monitor["id"],
+          "username": monitor["username"],
+          "x_user_id": monitor["xUserId"],
+          "event_types": monitor["eventTypes"],
+          "is_active": monitor["isActive"],
+          "created_at": monitor["createdAt"],
+          "next_billing_at": monitor["nextBillingAt"],
+          "events_endpoint": f"/api/v1/events?monitorId={monitor['id']}",
+      }
+      print(json.dumps(monitor_row))
   ```
 
   ```go Go
@@ -44,31 +70,77 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
   import (
       "encoding/json"
-      "fmt"
+      "log"
       "net/http"
+      "os"
   )
+
+  type Monitor struct {
+      ID            string   `json:"id"`
+      Username      string   `json:"username"`
+      XUserID       string   `json:"xUserId"`
+      EventTypes    []string `json:"eventTypes"`
+      IsActive      bool     `json:"isActive"`
+      CreatedAt     string   `json:"createdAt"`
+      NextBillingAt string   `json:"nextBillingAt"`
+  }
+
+  type MonitorListResponse struct {
+      Monitors []Monitor `json:"monitors"`
+      Total    int       `json:"total"`
+  }
+
+  type MonitorRow struct {
+      MonitorID      string   `json:"monitor_id"`
+      Username       string   `json:"username"`
+      XUserID        string   `json:"x_user_id"`
+      EventTypes     []string `json:"event_types"`
+      IsActive       bool     `json:"is_active"`
+      CreatedAt      string   `json:"created_at"`
+      NextBillingAt  string   `json:"next_billing_at"`
+      EventsEndpoint string   `json:"events_endpoint"`
+  }
 
   func main() {
       req, err := http.NewRequest("GET", "https://xquik.com/api/v1/monitors", nil)
       if err != nil {
-          panic(err)
+          log.Fatal(err)
       }
       req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 
       resp, err := http.DefaultClient.Do(req)
       if err != nil {
-          panic(err)
+          log.Fatal(err)
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-          panic(err)
+      var payload MonitorListResponse
+      if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+          log.Fatal(err)
       }
-      fmt.Println(data)
+      encoder := json.NewEncoder(os.Stdout)
+      for _, monitor := range payload.Monitors {
+          row := MonitorRow{
+              MonitorID:      monitor.ID,
+              Username:       monitor.Username,
+              XUserID:        monitor.XUserID,
+              EventTypes:     monitor.EventTypes,
+              IsActive:       monitor.IsActive,
+              CreatedAt:      monitor.CreatedAt,
+              NextBillingAt:  monitor.NextBillingAt,
+              EventsEndpoint: "/api/v1/events?monitorId=" + monitor.ID,
+          }
+          if err := encoder.Encode(row); err != nil {
+              log.Fatal(err)
+          }
+      }
   }
   ```
 </CodeGroup>
+
+The Node.js, Python, and Go examples convert each account monitor into one
+inventory row. Store `monitor_id`, `username`, `x_user_id`, `event_types`,
+`is_active`, `next_billing_at`, and the `events_endpoint` join for backfills.
 
 ## Inventory handoff
 

@@ -4495,6 +4495,30 @@ const REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS = [
 ] as const;
 
 const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
+  'const payload = await response.json();',
+  'const monitorRow = {',
+  'monitor_id: monitor.id',
+  'x_user_id: monitor.xUserId',
+  'event_types: monitor.eventTypes',
+  'events_endpoint: `/api/v1/events?monitorId=${monitor.id}`',
+  'process.stdout.write(`${JSON.stringify(monitorRow)}\\n`);',
+  'payload = response.json()',
+  'monitor_row = {',
+  '"monitor_id": monitor["id"]',
+  '"x_user_id": monitor["xUserId"]',
+  '"event_types": monitor["eventTypes"]',
+  '"events_endpoint": f"/api/v1/events?monitorId={monitor[\'id\']}"',
+  'print(json.dumps(monitor_row))',
+  'type MonitorListResponse struct',
+  'type MonitorRow struct',
+  'EventsEndpoint string   `json:"events_endpoint"`',
+  'encoder := json.NewEncoder(os.Stdout)',
+  'EventsEndpoint: "/api/v1/events?monitorId=" + monitor.ID',
+  'if err := encoder.Encode(row); err != nil',
+  'The Node.js, Python, and Go examples convert each account monitor into one',
+  'inventory row.',
+  '`monitor_id`, `username`, `x_user_id`, `event_types`,',
+  '`is_active`, `next_billing_at`, and the `events_endpoint` join',
   '## Inventory handoff',
   'Use `GET /monitors` after create, update, pause, or delete operations',
   'your account monitor inventory.',
@@ -4521,6 +4545,12 @@ const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   'toggle `isActive`.',
   '[Delete Monitor](/api-reference/monitors/delete)',
   'tracked account should stop permanently.',
+] as const;
+
+const FORBIDDEN_ACCOUNT_MONITOR_LIST_RAW_OUTPUT_SNIPPETS = [
+  'const data = await response.json();',
+  'data = response.json()',
+  'fmt.Println(data)',
 ] as const;
 
 const REQUIRED_ACCOUNT_MONITOR_UPDATE_API_HANDOFF_SNIPPETS = [
@@ -8979,6 +9009,16 @@ describe('repository discovery', (): void => {
         source,
         'List account monitor API page',
         REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_ACCOUNT_MONITOR_LIST_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `List account monitor API page should map inventory rows instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
       ),
     ).toStrictEqual([]);
   });
