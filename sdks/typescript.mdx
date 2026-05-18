@@ -61,23 +61,48 @@ for (const row of tweetRows) {
 
 ## Workflow: Search Tweets to JSON Lines, CSV, or XLSX
 
-This job is for Node.js, Bun, and queue workers that need searchable tweet data in a stable handoff format for queues, data lakes, analyst CSV files, or XLSX workbooks. It calls `GET /x/tweets/search` through `client.x.tweets.search`, uses the generated `TweetSearchParams` shape, and writes each returned tweet as one JSON object per line.
+This job is for Node.js, Bun, and queue workers that need searchable tweet data in a stable handoff format for queues, data lakes, analyst CSV files, or XLSX workbooks. It calls `GET /x/tweets/search` through `client.x.tweets.search`, uses the generated `TweetSearchParams` shape, and writes each returned tweet as one projected JSON object per line.
 
 ```ts
 import XTwitterScraper from "x-twitter-scraper";
 
 const client = new XTwitterScraper();
+const query = "from:xquikcom webhook OR SDK";
 let cursor: string | undefined;
+let pageIndex = 0;
 
 while (true) {
+  const pageCursor = cursor ?? null;
   const page = await client.x.tweets.search({
-    q: "from:xquikcom webhook OR SDK",
+    q: query,
     queryType: "Latest",
     cursor,
   });
 
   for (const tweet of page.tweets) {
-    process.stdout.write(`${JSON.stringify(tweet)}\n`);
+    const row = {
+      source: "xquik.typescript.search",
+      query,
+      tweet_id: tweet.id,
+      text: tweet.text,
+      author_id: tweet.author?.id ?? null,
+      author_username: tweet.author?.username ?? null,
+      author_name: tweet.author?.name ?? null,
+      created_at: tweet.createdAt ?? null,
+      like_count: tweet.likeCount ?? 0,
+      reply_count: tweet.replyCount ?? 0,
+      retweet_count: tweet.retweetCount ?? 0,
+      quote_count: tweet.quoteCount ?? 0,
+      view_count: tweet.viewCount ?? 0,
+      bookmark_count: tweet.bookmarkCount ?? 0,
+      is_note_tweet: tweet.isNoteTweet ?? false,
+      page_index: pageIndex,
+      page_cursor: pageCursor,
+      next_cursor: page.next_cursor || null,
+      has_next_page: page.has_next_page,
+    };
+
+    process.stdout.write(`${JSON.stringify(row)}\n`);
   }
 
   if (!page.has_next_page || !page.next_cursor) {
@@ -85,6 +110,7 @@ while (true) {
   }
 
   cursor = page.next_cursor;
+  pageIndex += 1;
 }
 ```
 
@@ -127,7 +153,7 @@ The generated params map directly to the REST endpoint:
   </Card>
 </CardGroup>
 
-Write `page.tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets. Pass `id`, `text`, `author.username`, `createdAt`, and engagement counts into your CRM or enrichment pipeline.
+Project `page.tweets` into JSON Lines rows in `xquik-tweet-search.jsonl` for queues and data lakes, transform the same projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets. Store `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so a worker can resume from the last saved cursor without replaying raw SDK objects.
 
 ## Workflow: Follower Export to CSV, JSON, or XLSX
 

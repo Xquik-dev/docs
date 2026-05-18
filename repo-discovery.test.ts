@@ -199,6 +199,17 @@ const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
   '`client.x.tweets.search`',
   '`GET /x/tweets/search`',
   '`TweetSearchParams`',
+  'const query = "from:xquikcom webhook OR SDK";',
+  'let pageIndex = 0;',
+  'const pageCursor = cursor ?? null;',
+  'source: "xquik.typescript.search"',
+  'author_id: tweet.author?.id ?? null',
+  'author_name: tweet.author?.name ?? null',
+  'like_count: tweet.likeCount ?? 0',
+  'page_index: pageIndex',
+  'page_cursor: pageCursor',
+  'has_next_page: page.has_next_page',
+  'process.stdout.write(`${JSON.stringify(row)}\\n`);',
   '`q`',
   '`limit`',
   '`cursor`',
@@ -215,7 +226,9 @@ const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
   'JSON field `tweets`. Contains tweet records with `id`, `text`, optional `author`, `createdAt`, `likeCount`, `replyCount`, `retweetCount`, `quoteCount`, `bookmarkCount`, `viewCount`, and `isNoteTweet` when available.',
   'JSON field `next_cursor`. Store it with the job checkpoint and pass it back as `cursor`.',
   'Tweet search costs 1 credit per tweet returned.',
-  'Write `page.tweets` as JSON Lines to `xquik-tweet-search.jsonl`',
+  'Project `page.tweets` into JSON Lines rows in `xquik-tweet-search.jsonl`',
+  'Store `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`',
+  'without replaying raw SDK objects.',
   'projected records into CSV for analysts',
   'produce XLSX from those rows',
   '## Workflow: Follower Export to CSV, JSON, or XLSX',
@@ -271,6 +284,8 @@ const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_TYPESCRIPT_SDK_RAW_SEARCH_SNIPPETS = [
+  'process.stdout.write(`${JSON.stringify(tweet)}\\n`);',
+  'Write `page.tweets` as JSON Lines to `xquik-tweet-search.jsonl`',
   'process.stdout.write(JSON.stringify(tweets, null, 2));',
   'results_limit',
 ] as const;
