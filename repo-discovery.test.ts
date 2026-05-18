@@ -3292,6 +3292,37 @@ const REQUIRED_TWEET_LIST_FILTER_SNIPPETS = [
   '<TweetResultFilterParams />',
 ] as const;
 
+const REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS = [
+  '## User timeline handoff',
+  '`GET /x/users/{id}/tweets`',
+  'CRM, queue worker, or warehouse job needs',
+  'The examples above write JSON Lines rows',
+  'source user, tweet ID, text, reply context, engagement counts, media URLs, and',
+  'resume from the last saved `next_cursor`',
+  'const timelineRows = page.tweets.map',
+  'source_user_id: userId',
+  'tweet_id: tweet.id',
+  'is_reply: tweet.isReply ?? false',
+  'in_reply_to_id: tweet.inReplyToId ?? null',
+  'media_urls: (tweet.media ?? []).map',
+  'page_cursor: pageCursor',
+  'process.stdout.write(`${JSON.stringify(row)}\\n`);',
+  'user_id = "44196397"',
+  '"source_user_id": user_id',
+  '"tweet_id": tweet["id"]',
+  '"is_reply": tweet.get("isReply", False)',
+  '"in_reply_to_id": tweet.get("inReplyToId")',
+  'print(json.dumps(timeline_row, separators=(",", ":")))',
+] as const;
+
+const FORBIDDEN_USER_TWEETS_API_RAW_SNIPPETS = [
+  'const data = await response.json();',
+  'console.log(data.tweets);',
+  'console.log(page.tweets);',
+  'data = response.json()',
+  'print(data["tweets"])',
+] as const;
+
 const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   'Scrape tweets, export followers, estimate credits, start extraction jobs, paginate JSON results, and export CSV, JSON, or XLSX files',
   'Use this workflow to scrape tweets, export followers, pull tweet replies, save CSV/JSON/XLSX files, or hand paginated JSON to a CRM, warehouse, queue, or AI agent.',
@@ -8383,6 +8414,32 @@ describe('repository discovery', (): void => {
     );
 
     expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps the user tweets API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/user-tweets.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'User tweets endpoint page',
+          REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_USER_TWEETS_API_RAW_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `User tweets endpoint page should map timeline rows instead of raw response output "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
   });
 
   it('keeps the extraction workflow concrete for credits, JSON, and file handoffs', (): void => {
