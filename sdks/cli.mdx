@@ -53,49 +53,150 @@ Use this workflow when an analyst, data engineer, or growth operator needs tweet
 The CLI command below calls `GET /x/tweets/search`. It maps the same REST API query parameters to flags: `--q`, `--limit`, `--cursor`, `--since-time`, `--until-time`, and `--query-type`.
 
 ```bash
-x-twitter-scraper x:tweets search \
-  --q "from:xquikcom webhook OR SDK" \
-  --query-type Latest \
-  --limit 100 \
-  --format json > first-page.json
+query="from:xquikcom webhook OR SDK"
+cursor=""
+page_index=0
+headers='["source","query","tweet_id","text","author_id","author_username","author_name","created_at","like_count","reply_count","retweet_count","quote_count","view_count","bookmark_count","is_note_tweet","page_index","page_cursor","next_cursor","has_next_page"]'
+
+: > xquik-tweet-search.jsonl
+jq -nr "$headers | @csv" > xquik-tweet-search.csv
+
+while :; do
+  page_cursor="$cursor"
+
+  if [ -n "$cursor" ]; then
+    x-twitter-scraper x:tweets search \
+      --q "$query" \
+      --query-type Latest \
+      --cursor "$cursor" \
+      --format json \
+      --format-error json > search-page.json
+  else
+    x-twitter-scraper x:tweets search \
+      --q "$query" \
+      --query-type Latest \
+      --limit 100 \
+      --format json \
+      --format-error json > search-page.json
+  fi
+
+  has_next_page="$(jq -r '.has_next_page // false' search-page.json)"
+  next_cursor="$(jq -r 'if .has_next_page then (.next_cursor // "") else "" end' search-page.json)"
+
+  jq -c \
+    --arg source "xquik.cli.search" \
+    --arg query "$query" \
+    --arg page_cursor "$page_cursor" \
+    --arg next_cursor "$next_cursor" \
+    --argjson page_index "$page_index" \
+    --argjson has_next_page "$has_next_page" \
+    '.tweets[] | {
+      source: $source,
+      query: $query,
+      tweet_id: .id,
+      text: .text,
+      author_id: (.author.id // ""),
+      author_username: (.author.username // ""),
+      author_name: (.author.name // ""),
+      created_at: (.createdAt // ""),
+      like_count: (.likeCount // 0),
+      reply_count: (.replyCount // 0),
+      retweet_count: (.retweetCount // 0),
+      quote_count: (.quoteCount // 0),
+      view_count: (.viewCount // 0),
+      bookmark_count: (.bookmarkCount // 0),
+      is_note_tweet: (.isNoteTweet // false),
+      page_index: $page_index,
+      page_cursor: $page_cursor,
+      next_cursor: $next_cursor,
+      has_next_page: $has_next_page
+    }' search-page.json >> xquik-tweet-search.jsonl
+
+  jq -r \
+    --arg source "xquik.cli.search" \
+    --arg query "$query" \
+    --arg page_cursor "$page_cursor" \
+    --arg next_cursor "$next_cursor" \
+    --argjson page_index "$page_index" \
+    --argjson has_next_page "$has_next_page" \
+    '.tweets[] | [
+      $source,
+      $query,
+      .id,
+      .text,
+      (.author.id // ""),
+      (.author.username // ""),
+      (.author.name // ""),
+      (.createdAt // ""),
+      (.likeCount // 0),
+      (.replyCount // 0),
+      (.retweetCount // 0),
+      (.quoteCount // 0),
+      (.viewCount // 0),
+      (.bookmarkCount // 0),
+      (.isNoteTweet // false),
+      $page_index,
+      $page_cursor,
+      $next_cursor,
+      $has_next_page
+    ] | @csv' search-page.json >> xquik-tweet-search.csv
+
+  [ "$has_next_page" = "true" ] || break
+  [ -n "$next_cursor" ] || break
+  cursor="$next_cursor"
+  page_index=$((page_index + 1))
+done
 ```
 
-The response includes `.tweets[]`, `.has_next_page`, and `.next_cursor`. Each tweet can include `id`, `text`, `createdAt`, engagement counts, `author`, `media`, `quoted_tweet`, and `retweeted_tweet`, depending on what X returns for the result.
+The response includes `.tweets[]`, `.has_next_page`, and `.next_cursor`. Each tweet can include `id`, `text`, `createdAt`, engagement counts, `bookmarkCount`, `isNoteTweet`, `author`, `media`, `quoted_tweet`, and `retweeted_tweet`, depending on what X returns for the result.
 
-Write one JSON object per line for downstream jobs:
+Project `.tweets[]` into `xquik-tweet-search.jsonl` and `xquik-tweet-search.csv` rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so scripts can resume safely or load the same records into XLSX, CRM, warehouse, or agent workflows.
 
 ```bash
-jq -c '.tweets[] | {
-  id,
-  text,
-  author_username: (.author.username // ""),
-  created_at: (.createdAt // ""),
-  like_count: (.likeCount // 0),
-  reply_count: (.replyCount // 0),
-  retweet_count: (.retweetCount // 0),
-  quote_count: (.quoteCount // 0),
-  view_count: (.viewCount // 0)
-}' first-page.json > xquik-tweet-search.jsonl
+python3 - <<'PY'
+import csv
+import json
+
+rows = [json.loads(line) for line in open("xquik-tweet-search.jsonl", encoding="utf-8")]
+fieldnames = [
+    "source",
+    "query",
+    "tweet_id",
+    "text",
+    "author_id",
+    "author_username",
+    "author_name",
+    "created_at",
+    "like_count",
+    "reply_count",
+    "retweet_count",
+    "quote_count",
+    "view_count",
+    "bookmark_count",
+    "is_note_tweet",
+    "page_index",
+    "page_cursor",
+    "next_cursor",
+    "has_next_page",
+]
+with open("xquik-tweet-search-from-jsonl.csv", "w", newline="", encoding="utf-8") as handle:
+    writer = csv.DictWriter(handle, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(rows)
+PY
 ```
 
 Save the cursor with the job checkpoint before requesting the next page:
 
 ```bash
-cursor="$(jq -r '.next_cursor // empty' first-page.json)"
-
-if [ -n "$cursor" ]; then
-  x-twitter-scraper x:tweets search \
-    --q "from:xquikcom webhook OR SDK" \
-    --cursor "$cursor" \
-    --format json > next-page.json
-fi
+tail -n 1 xquik-tweet-search.jsonl | jq '{query, page_index, next_cursor, has_next_page}'
 ```
 
 Use `--limit` for a bounded request from 1 to 200. Omit it when passing `--cursor` in page loops.
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `--limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. Use `--format-error json` so batch jobs can branch on `status` and `code`, and retry `429` or temporary `5xx` responses with backoff.
 
-For CSV or XLSX handoff, keep `xquik-tweet-search.jsonl` as the source of truth and convert it in your pipeline. For example, a Python step can load each JSON Lines row and write projected records to CSV for analysts, or produce XLSX from those rows for account management workflows.
+For XLSX handoff, keep `xquik-tweet-search.jsonl` as the source of truth and convert the same projected rows in your pipeline when account managers need a workbook.
 
 ## Workflow: Follower Export to CSV, JSON, or XLSX
 

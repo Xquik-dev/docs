@@ -615,10 +615,23 @@ const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
   '`.next_cursor`',
   'Tweet search costs 1 credit per tweet returned.',
   'Use `--limit` for a bounded request from 1 to 200. Omit it when passing `--cursor` in page loops.',
-  'Write one JSON object per line for downstream jobs',
   '`xquik-tweet-search.jsonl`',
-  'projected records to CSV for analysts',
-  'produce XLSX from those rows',
+  '`xquik-tweet-search.csv`',
+  'xquik.cli.search',
+  'page_cursor="$cursor"',
+  'headers=\'["source","query","tweet_id","text","author_id","author_username","author_name","created_at","like_count","reply_count","retweet_count","quote_count","view_count","bookmark_count","is_note_tweet","page_index","page_cursor","next_cursor","has_next_page"]\'',
+  'jq -nr "$headers | @csv" > xquik-tweet-search.csv',
+  'bookmark_count: (.bookmarkCount // 0)',
+  'is_note_tweet: (.isNoteTweet // false)',
+  'page_index: $page_index',
+  'page_cursor: $page_cursor',
+  'next_cursor: $next_cursor',
+  'has_next_page: $has_next_page',
+  'Project `.tweets[]` into `xquik-tweet-search.jsonl` and `xquik-tweet-search.csv` rows',
+  '`page_index`',
+  '`page_cursor`',
+  '`next_cursor`',
+  '`has_next_page`',
   '`--format-error json`',
   'x-twitter-scraper extractions estimate-cost',
   '`POST /extractions/estimate`',
@@ -684,7 +697,12 @@ const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
   'Do not pass uploaded `mediaId` values to `x:tweets create`',
 ] as const;
 
-const FORBIDDEN_CLI_SDK_WORKFLOW_SNIPPETS = ['--results-limit'] as const;
+const FORBIDDEN_CLI_SDK_WORKFLOW_SNIPPETS = [
+  '--results-limit',
+  'Write one JSON object per line for downstream jobs',
+  'projected records to CSV for analysts',
+  'produce XLSX from those rows',
+] as const;
 
 const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
   'Search tweets and write durable JSON Lines handoff rows:',
