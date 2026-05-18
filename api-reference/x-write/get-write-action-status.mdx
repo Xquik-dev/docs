@@ -28,9 +28,34 @@ Use this endpoint after a write request returns `202 x_write_unconfirmed`. The o
     },
   );
   const status = await response.json();
+
+  const resultId =
+    status.tweetId ?? status.messageId ?? status.resultId ?? null;
+
+  const queueState = {
+    write_action_id: status.writeActionId,
+    action: status.action,
+    status: status.status,
+    result_id: resultId,
+    target_id: status.targetId ?? null,
+    charged: status.charged,
+    charged_credits: status.chargedCredits,
+    media: status.media,
+    send_dispatched: status.sendDispatched,
+    confirmation_attempts: status.confirmationAttempts ?? 0,
+    confirmation_checked_at: status.confirmationCheckedAt ?? null,
+    retryable: status.retryable,
+    poll_endpoint:
+      status.status === "pending_confirmation"
+        ? `/api/v1/x/write-actions/${status.writeActionId}`
+        : null,
+  };
+
+  process.stdout.write(`${JSON.stringify(queueState)}\n`);
   ```
 
   ```python Python
+  import json
   import requests
 
   write_action_id = "42"
@@ -39,8 +64,147 @@ Use this endpoint after a write request returns `202 x_write_unconfirmed`. The o
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   status = response.json()
+
+  result_id = (
+      status.get("tweetId")
+      or status.get("messageId")
+      or status.get("resultId")
+  )
+
+  queue_state = {
+      "write_action_id": status["writeActionId"],
+      "action": status["action"],
+      "status": status["status"],
+      "result_id": result_id,
+      "target_id": status.get("targetId"),
+      "charged": status["charged"],
+      "charged_credits": status["chargedCredits"],
+      "media": status["media"],
+      "send_dispatched": status["sendDispatched"],
+      "confirmation_attempts": status.get("confirmationAttempts", 0),
+      "confirmation_checked_at": status.get("confirmationCheckedAt"),
+      "retryable": status["retryable"],
+      "poll_endpoint": (
+          f"/api/v1/x/write-actions/{status['writeActionId']}"
+          if status["status"] == "pending_confirmation"
+          else None
+      ),
+  }
+
+  print(json.dumps(queue_state))
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "encoding/json"
+      "log"
+      "net/http"
+      "os"
+  )
+
+  type WriteActionStatus struct {
+      WriteActionID         string         `json:"writeActionId"`
+      Action                string         `json:"action"`
+      Status                string         `json:"status"`
+      TweetID               *string        `json:"tweetId"`
+      MessageID             *string        `json:"messageId"`
+      ResultID              *string        `json:"resultId"`
+      TargetID              *string        `json:"targetId"`
+      Charged               bool           `json:"charged"`
+      ChargedCredits        string         `json:"chargedCredits"`
+      Media                 map[string]any `json:"media"`
+      SendDispatched        bool           `json:"sendDispatched"`
+      ConfirmationAttempts  int            `json:"confirmationAttempts"`
+      ConfirmationCheckedAt *string        `json:"confirmationCheckedAt"`
+      Retryable             bool           `json:"retryable"`
+  }
+
+  type QueueState struct {
+      WriteActionID         string         `json:"write_action_id"`
+      Action                string         `json:"action"`
+      Status                string         `json:"status"`
+      ResultID              *string        `json:"result_id"`
+      TargetID              *string        `json:"target_id"`
+      Charged               bool           `json:"charged"`
+      ChargedCredits        string         `json:"charged_credits"`
+      Media                 map[string]any `json:"media"`
+      SendDispatched        bool           `json:"send_dispatched"`
+      ConfirmationAttempts  int            `json:"confirmation_attempts"`
+      ConfirmationCheckedAt *string        `json:"confirmation_checked_at"`
+      Retryable             bool           `json:"retryable"`
+      PollEndpoint          *string        `json:"poll_endpoint"`
+  }
+
+  func resultID(status WriteActionStatus) *string {
+      if status.TweetID != nil {
+          return status.TweetID
+      }
+      if status.MessageID != nil {
+          return status.MessageID
+      }
+      return status.ResultID
+  }
+
+  func pollEndpoint(status WriteActionStatus) *string {
+      if status.Status != "pending_confirmation" {
+          return nil
+      }
+      endpoint := "/api/v1/x/write-actions/" + status.WriteActionID
+      return &endpoint
+  }
+
+  func main() {
+      writeActionID := "42"
+      req, err := http.NewRequest(
+          "GET",
+          "https://xquik.com/api/v1/x/write-actions/"+writeActionID,
+          nil,
+      )
+      if err != nil {
+          log.Fatal(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          log.Fatal(err)
+      }
+      defer resp.Body.Close()
+
+      var status WriteActionStatus
+      if err := json.NewDecoder(resp.Body).Decode(&status); err != nil {
+          log.Fatal(err)
+      }
+
+      queueState := QueueState{
+          WriteActionID:         status.WriteActionID,
+          Action:                status.Action,
+          Status:                status.Status,
+          ResultID:              resultID(status),
+          TargetID:              status.TargetID,
+          Charged:               status.Charged,
+          ChargedCredits:        status.ChargedCredits,
+          Media:                 status.Media,
+          SendDispatched:        status.SendDispatched,
+          ConfirmationAttempts:  status.ConfirmationAttempts,
+          ConfirmationCheckedAt: status.ConfirmationCheckedAt,
+          Retryable:             status.Retryable,
+          PollEndpoint:          pollEndpoint(status),
+      }
+
+      if err := json.NewEncoder(os.Stdout).Encode(queueState); err != nil {
+          log.Fatal(err)
+      }
+  }
   ```
 </CodeGroup>
+
+The Node.js, Python, and Go examples convert the status response into one
+queue-state row. Store `write_action_id`, `status`, `result_id`, `target_id`,
+`charged_credits`, `media`, `send_dispatched`, `confirmation_attempts`, and
+`poll_endpoint`; keep polling only while `status` is `pending_confirmation`.
 
 ## Headers
 

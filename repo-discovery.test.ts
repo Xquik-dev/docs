@@ -1893,6 +1893,24 @@ const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
   'Poll post tweet, tweet reply, and DM write actions after pending confirmation responses',
   '"tweet reply status"',
   '`GET /x/write-actions/{id}`',
+  'const queueState = {',
+  'result_id: resultId',
+  'poll_endpoint:',
+  'process.stdout.write(`${JSON.stringify(queueState)}\\n`);',
+  'queue_state = {',
+  '"result_id": result_id',
+  '"poll_endpoint": (',
+  'print(json.dumps(queue_state))',
+  'type WriteActionStatus struct {',
+  'type QueueState struct {',
+  'PollEndpoint          *string        `json:"poll_endpoint"`',
+  'json.NewEncoder(os.Stdout).Encode(queueState)',
+  'The Node.js, Python, and Go examples convert the status response into one',
+  'queue-state row.',
+  '`write_action_id`, `status`, `result_id`, `target_id`,',
+  '`charged_credits`, `media`, `send_dispatched`, `confirmation_attempts`, and',
+  '`poll_endpoint`',
+  'keep polling only while `status` is `pending_confirmation`.',
   '## Resolve the write queue',
   '`202 x_write_unconfirmed`',
   '<Card title="success" icon="circle-check">',
@@ -1918,6 +1936,13 @@ const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
   '[Direct Message Workflow](/guides/direct-message-workflow)',
   'returns `messageId` after a confirmed direct message send.',
   'shows how to store DM `messageId` values.',
+] as const;
+
+const FORBIDDEN_WRITE_ACTION_STATUS_API_SNIPPETS = [
+  'JSON.stringify(status, null, 2)',
+  'console.log(status)',
+  'print(status)',
+  'fmt.Println(status)',
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS = [
@@ -8976,7 +9001,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the write action status API page useful for queue handoffs', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync(
       'api-reference/x-write/get-write-action-status.mdx',
@@ -8988,6 +9013,11 @@ describe('repository discovery', (): void => {
         source,
         'Get write action status API docs',
         REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_WRITE_ACTION_STATUS_API_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
       ),
     ).toStrictEqual([]);
   });
