@@ -5860,6 +5860,7 @@ const REQUIRED_N8N_GUIDE_SNIPPETS = [
   'Store `mediaId`, `mediaUrl`, and `success`. Pass `mediaUrl` to `POST /x/tweets` in `media`; reserve uploaded media IDs for one-item DMs.',
   '<Card title="Monitor and webhook setup" icon="radio">',
   'Store monitor `id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`; store webhook `id`, `url`, `eventTypes`, and one-time `secret`.',
+  'For storage rows, map production `deliveryId` to `delivery_id` for receiver retry de-dupe and `streamEventId` to `stream_event_id` when one monitor event should process once across endpoint changes.',
   '<Card title="Webhook event de-dupe" icon="fingerprint">',
   'Store `deliveryId` for receiver retry de-dupe and `streamEventId` when one monitor event should process once across endpoint changes.',
   '<Card title="Extraction job" icon="database">',
