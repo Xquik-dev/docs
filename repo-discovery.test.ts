@@ -36,6 +36,7 @@ const REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS = [
   '#content > span[data-as="p"]',
   'overflow-wrap: anywhere;',
   '#content blockquote a[href$="/llms.txt"]',
+  '#content-area blockquote a[href$="/llms.txt"]',
   'word-break: break-word !important;',
   'white-space: normal !important;',
 ] as const;
