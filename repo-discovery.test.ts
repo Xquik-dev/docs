@@ -2593,6 +2593,24 @@ const FORBIDDEN_FOLLOWING_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const FORBIDDEN_CHECK_FOLLOWER_RENDER_RISK_SNIPPETS = [
+  '## Direct follow relationship handoff',
+  'const source = "xquikcom";',
+  'const target = "elonmusk";',
+  'const relationshipRow = {',
+  'source_username: data.sourceUsername',
+  'target_username: data.targetUsername',
+  'source_follows_target: data.isFollowing',
+  'target_follows_source: data.isFollowedBy',
+  'process.stdout.write(`${JSON.stringify(relationshipRow)}\\n`);',
+  'relationship_row = {',
+  '"source_username": data["sourceUsername"]',
+  '"target_username": data["targetUsername"]',
+  '"source_follows_target": data["isFollowing"]',
+  '"target_follows_source": data["isFollowedBy"]',
+  'print(json.dumps(relationship_row))',
+] as const;
+
 const REQUIRED_LIST_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct list follower handoff',
   '`GET /x/lists/{id}/followers`',
@@ -7339,6 +7357,28 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Following API page prints raw following data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Check Follower page off the reverted relationship-row pattern', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/check-follower.mdx', 'utf8');
+
+    expect(
+      FORBIDDEN_CHECK_FOLLOWER_RENDER_RISK_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: [
+                    `Check Follower API page reintroduces the reverted relationship-row snippet "${snippet}".`,
+                    'Keep it raw until a render-safe pattern is proven.',
+                  ].join(' '),
                 },
               ]
             : [],
