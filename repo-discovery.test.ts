@@ -5599,6 +5599,20 @@ const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
   'Pin the release wheel in production images until PyPI publication is available.',
 ] as const;
 
+const REQUIRED_COMPOSIO_MIGRATION_SNIPPETS = [
+  '## Result Handoff',
+  'When you replace Composio agent steps, map raw tool responses into stable rows before sending them to Slack, Sheets, queues, databases, or dashboards.',
+  '<Card title="Tweet Search Page" icon="search">',
+  'Store request `q`, each tweet `id`, `text`, `author.username`, `createdAt`, and `url`. Keep `has_next_page` and `next_cursor` for page loops.',
+  '<Card title="User Page" icon="users">',
+  'Store each user `id`, `username`, `name`, `followers`, `verified`, and `profilePicture`. Keep pagination cursors when the response includes them.',
+  '<Card title="Trend Page" icon="trending-up">',
+  'Store each trend `name`, `rank`, `query`, and `description`. Keep response `count` and `woeid` for regional audit trails.',
+  '<Card title="Monitor Webhook" icon="radio">',
+  'Store `deliveryId` for receiver retry de-dupe. Store `streamEventId` when one monitor event should process once across endpoint changes.',
+  'For downstream tables, keep `tweet_rows`, `user_rows`, `trend_rows`, and `webhook_event_rows` as separate shapes instead of passing the whole MCP result through the workflow.',
+] as const;
+
 const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
   'Hermes Tweet is the native Hermes Agent plugin for using Xquik as a structured X automation toolset.',
   'hermes plugins install Xquik-dev/hermes-tweet --enable',
@@ -10083,6 +10097,22 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('|');
     expect(source).not.toContain('https://api.xquik.com');
     expect(source).not.toContain('0.1.4');
+  });
+
+  it('keeps the Composio migration guide handoff concrete', (): void => {
+    expect.assertions(3);
+
+    const source = readFileSync('guides/composio-migration.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Composio migration guide',
+        REQUIRED_COMPOSIO_MIGRATION_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(source).not.toContain('Pass the raw response to');
+    expect(source).not.toContain('Store the entire MCP result');
   });
 
   it('keeps the Hermes Tweet guide aligned with the current plugin scope', (): void => {
