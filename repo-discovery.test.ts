@@ -5471,6 +5471,7 @@ const REQUIRED_PIPEDREAM_GUIDE_SNIPPETS = [
   'Export `mediaId`, `mediaUrl`, and `success`. Pass `mediaUrl` to `POST /x/tweets` in `media`; reserve uploaded media IDs for one-item DMs.',
   '<Card title="Monitor and webhook setup" icon="radio">',
   'Export monitor `id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`; export webhook `id`, `url`, `eventTypes`, and one-time `secret`.',
+  'For Pipedream data stores, map production `deliveryId` to `delivery_id` for receiver retry de-dupe and `streamEventId` to `stream_event_id` when one monitor event should process once across endpoint changes.',
   '<Card title="Monitor event source" icon="fingerprint">',
   'Emit `deliveryId` for endpoint-level retry de-dupe, `streamEventId` for event-level de-dupe across endpoint changes, and `occurredAt` as `ts`.',
   '<Card title="Extraction polling source" icon="database">',
