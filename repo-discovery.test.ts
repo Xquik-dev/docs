@@ -4460,6 +4460,25 @@ const FORBIDDEN_KEYWORD_MONITOR_GET_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_KEYWORD_MONITOR_UPDATE_API_HANDOFF_SNIPPETS = [
+  'const monitor = await response.json();',
+  'const monitorState = {',
+  'keyword_monitor_id: monitor.id',
+  'query: monitor.query',
+  'event_types: monitor.eventTypes',
+  'verify_endpoint: `/api/v1/monitors/keywords/${monitor.id}`',
+  'events_endpoint: `/api/v1/events?monitorId=${monitor.id}`',
+  'process.stdout.write(`${JSON.stringify(monitorState)}\\n`);',
+  'monitor = response.json()',
+  'monitor_state = {',
+  '"keyword_monitor_id": monitor["id"]',
+  '"verify_endpoint": f"/api/v1/monitors/keywords/{monitor[\'id\']}"',
+  'print(json.dumps(monitor_state))',
+  'type KeywordMonitorState struct',
+  'KeywordMonitorID string   `json:"keyword_monitor_id"`',
+  'VerifyEndpoint   string   `json:"verify_endpoint"`',
+  'json.NewEncoder(os.Stdout).Encode(state)',
+  'one state row.',
+  'Store `keyword_monitor_id`, `query`, `event_types`,',
   '## Update handoff',
   'Use this endpoint when a keyword alert changes scope',
   'Store returned `id`, `query`, `eventTypes`, `isActive`, `createdAt`, and',
@@ -4477,6 +4496,14 @@ const REQUIRED_KEYWORD_MONITOR_UPDATE_API_HANDOFF_SNIPPETS = [
   'monitor when the X search query changes.',
   '`keywordMonitorId` and `query` from',
   '[List Events](/api-reference/events/list)',
+] as const;
+
+const FORBIDDEN_KEYWORD_MONITOR_UPDATE_RAW_OUTPUT_SNIPPETS = [
+  'const data = await response.json();',
+  'JSON.stringify(data, null, 2)',
+  'data = response.json()',
+  'print(data)',
+  'fmt.Println(data)',
 ] as const;
 
 const REQUIRED_KEYWORD_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
@@ -9090,6 +9117,16 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Update keyword monitor API page should use a plain query example instead of nested quoted query "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+        ...FORBIDDEN_KEYWORD_MONITOR_UPDATE_RAW_OUTPUT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Update keyword monitor API page should map state rows instead of raw response output "${snippet}".`,
                   },
                 ]
               : [],
