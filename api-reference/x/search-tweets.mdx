@@ -47,84 +47,218 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
   const response = await fetch(`https://xquik.com/api/v1/x/tweets/search?${params}`, {
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
-  const data = await response.json();
-  console.log(data.tweets);
+  const firstPage = await response.json();
+  if (!response.ok) throw new Error(JSON.stringify(firstPage));
 
-  // Paginate through all results
-  let cursor = data.next_cursor;
-  while (data.has_next_page) {
-    const next = await fetch(
-      `https://xquik.com/api/v1/x/tweets/search?${new URLSearchParams({ q: "giveaway", fromUser: "xquikcom", mediaType: "media", cursor })}`,
-      { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
-    );
-    const page = await next.json();
-    console.log(page.tweets);
-    if (!page.has_next_page) break;
-    cursor = page.next_cursor;
+  let page = firstPage;
+  let pageCursor = "";
+  for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
+    const searchRows = page.tweets.map((tweet) => ({
+      tweet_id: tweet.id,
+      text: tweet.text,
+      author_id: tweet.author?.id ?? null,
+      author_username: tweet.author?.username ?? null,
+      created_at: tweet.createdAt ?? null,
+      like_count: tweet.likeCount ?? null,
+      reply_count: tweet.replyCount ?? null,
+      retweet_count: tweet.retweetCount ?? null,
+      quote_count: tweet.quoteCount ?? null,
+      view_count: tweet.viewCount ?? null,
+      media_urls: (tweet.media ?? []).map((item) => item.mediaUrl).filter(Boolean),
+      query: params.get("q"),
+      page_index: pageIndex,
+      page_cursor: pageCursor,
+      next_cursor: page.next_cursor,
+      has_next_page: page.has_next_page,
+    }));
+    for (const row of searchRows) process.stdout.write(`${JSON.stringify(row)}\n`);
+
+    if (!page.has_next_page || page.next_cursor === "") break;
+
+    pageCursor = page.next_cursor;
+    const nextParams = new URLSearchParams(params);
+    nextParams.set("cursor", pageCursor);
+    const nextResponse = await fetch(`https://xquik.com/api/v1/x/tweets/search?${nextParams}`, {
+      headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+    });
+    page = await nextResponse.json();
+    if (!nextResponse.ok) throw new Error(JSON.stringify(page));
   }
   ```
 
   ```python Python
+  import json
   import requests
 
-  response = requests.get(
-      "https://xquik.com/api/v1/x/tweets/search",
-      params={"q": "giveaway", "fromUser": "xquikcom", "mediaType": "media"},
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-  )
-  data = response.json()
-  print(data["tweets"])
+  base_params = {"q": "giveaway", "fromUser": "xquikcom", "mediaType": "media"}
+  page_cursor = ""
 
-  # Paginate through all results
-  while data["has_next_page"]:
-      data = requests.get(
+  for page_index in range(3):
+      params = dict(base_params)
+      if page_cursor:
+          params["cursor"] = page_cursor
+
+      response = requests.get(
           "https://xquik.com/api/v1/x/tweets/search",
-          params={
-              "q": "giveaway",
-              "fromUser": "xquikcom",
-              "mediaType": "media",
-              "cursor": data["next_cursor"],
-          },
+          params=params,
           headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-      ).json()
-      print(data["tweets"])
+      )
+      page = response.json()
+      if not response.ok:
+          raise RuntimeError(page)
+
+      for tweet in page["tweets"]:
+          search_row = {
+              "tweet_id": tweet["id"],
+              "text": tweet["text"],
+              "author_id": tweet.get("author", {}).get("id"),
+              "author_username": tweet.get("author", {}).get("username"),
+              "created_at": tweet.get("createdAt"),
+              "like_count": tweet.get("likeCount"),
+              "reply_count": tweet.get("replyCount"),
+              "retweet_count": tweet.get("retweetCount"),
+              "quote_count": tweet.get("quoteCount"),
+              "view_count": tweet.get("viewCount"),
+              "media_urls": [
+                  item["mediaUrl"] for item in tweet.get("media", []) if item.get("mediaUrl")
+              ],
+              "query": base_params["q"],
+              "page_index": page_index,
+              "page_cursor": page_cursor,
+              "next_cursor": page["next_cursor"],
+              "has_next_page": page["has_next_page"],
+          }
+          print(json.dumps(search_row, separators=(",", ":")))
+
+      if not page["has_next_page"] or not page["next_cursor"]:
+          break
+      page_cursor = page["next_cursor"]
   ```
 
   ```go Go
   package main
 
   import (
-  	"fmt"
-  	"io"
-  	"log"
-  	"net/http"
-  	"net/url"
+    "encoding/json"
+    "io"
+    "log"
+    "net/http"
+    "net/url"
+    "os"
   )
 
-  func main() {
-  	baseURL := "https://xquik.com/api/v1/x/tweets/search"
-  	params := url.Values{}
+  type Author struct {
+    ID       string `json:"id"`
+    Username string `json:"username"`
+  }
+
+  type Media struct {
+    MediaURL string `json:"mediaUrl"`
+  }
+
+  type Tweet struct {
+    ID           string  `json:"id"`
+    Text         string  `json:"text"`
+    CreatedAt    *string `json:"createdAt"`
+    LikeCount    *int    `json:"likeCount"`
+    ReplyCount   *int    `json:"replyCount"`
+    RetweetCount *int    `json:"retweetCount"`
+    QuoteCount   *int    `json:"quoteCount"`
+    ViewCount    *int    `json:"viewCount"`
+    Author       *Author `json:"author"`
+    Media        []Media `json:"media"`
+  }
+
+  type SearchPage struct {
+    Tweets      []Tweet `json:"tweets"`
+    HasNextPage bool    `json:"has_next_page"`
+    NextCursor  string  `json:"next_cursor"`
+  }
+
+  func mediaURLs(items []Media) []string {
+    urls := make([]string, 0, len(items))
+    for _, item := range items {
+      if item.MediaURL != "" {
+        urls = append(urls, item.MediaURL)
+      }
+    }
+    return urls
+  }
+
+  func fetchPage(cursor string) SearchPage {
+    baseURL := "https://xquik.com/api/v1/x/tweets/search"
+    params := url.Values{}
     params.Set("q", "giveaway")
     params.Set("fromUser", "xquikcom")
     params.Set("mediaType", "media")
+    if cursor != "" {
+      params.Set("cursor", cursor)
+    }
 
-  	req, err := http.NewRequest("GET", baseURL+"?"+params.Encode(), nil)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+    req, err := http.NewRequest("GET", baseURL+"?"+params.Encode(), nil)
+    if err != nil {
+      log.Fatal(err)
+    }
+    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 
-  	resp, err := http.DefaultClient.Do(req)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	defer resp.Body.Close()
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+      log.Fatal(err)
+    }
+    defer resp.Body.Close()
 
-  	body, err := io.ReadAll(resp.Body)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	fmt.Println(string(body))
+    if resp.StatusCode >= 400 {
+      body, _ := io.ReadAll(resp.Body)
+      log.Fatalf("search failed: %s", string(body))
+    }
+
+    var page SearchPage
+    if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
+      log.Fatal(err)
+    }
+    return page
+  }
+
+  func main() {
+    encoder := json.NewEncoder(os.Stdout)
+    pageCursor := ""
+
+    for pageIndex := 0; pageIndex < 3; pageIndex++ {
+      page := fetchPage(pageCursor)
+      for _, tweet := range page.Tweets {
+        var authorID *string
+        var authorUsername *string
+        if tweet.Author != nil {
+          authorID = &tweet.Author.ID
+          authorUsername = &tweet.Author.Username
+        }
+        searchRow := map[string]any{
+          "tweet_id":        tweet.ID,
+          "text":            tweet.Text,
+          "author_id":       authorID,
+          "author_username": authorUsername,
+          "created_at":      tweet.CreatedAt,
+          "like_count":      tweet.LikeCount,
+          "reply_count":     tweet.ReplyCount,
+          "retweet_count":   tweet.RetweetCount,
+          "quote_count":     tweet.QuoteCount,
+          "view_count":      tweet.ViewCount,
+          "media_urls":      mediaURLs(tweet.Media),
+          "query":           "giveaway",
+          "page_index":      pageIndex,
+          "page_cursor":     pageCursor,
+          "next_cursor":     page.NextCursor,
+          "has_next_page":   page.HasNextPage,
+        }
+        if err := encoder.Encode(searchRow); err != nil {
+          log.Fatal(err)
+        }
+      }
+      if !page.HasNextPage || page.NextCursor == "" {
+        break
+      }
+      pageCursor = page.NextCursor
+    }
   }
   ```
 </CodeGroup>
@@ -133,8 +267,10 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
 
 Use `GET /x/tweets/search` when an app, queue worker, CRM enrichment job, or
 agent needs the latest matching tweets without creating a stored extraction job.
-It returns paginated JSON for live search pages and app ingestion. For CSV or
-XLSX output, project the returned `tweets[]` rows locally or use
+It returns paginated JSON for live search pages and app ingestion. The examples
+above write JSON Lines rows with tweet, author, media, and cursor fields so a
+worker can resume from the last saved `next_cursor`. For CSV or XLSX output,
+project the returned `tweets[]` rows locally or use
 [`tweet_search_extractor`](/guides/tweet-search-export) for saved CSV, JSON, or
 XLSX files.
 
