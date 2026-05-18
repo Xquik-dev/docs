@@ -29,10 +29,20 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const folderRows = data.folders.map((folder) => ({
+    folder_id: folder.id,
+    folder_name: folder.name,
+    bookmarks_endpoint: `/x/bookmarks?folderId=${encodeURIComponent(folder.id)}`,
+    has_more_folders: data.has_next_page,
+  }));
+
+  for (const row of folderRows) {
+    process.stdout.write(`${JSON.stringify(row)}\n`);
+  }
   ```
 
   ```python Python
+  import json
   import requests
 
   response = requests.get(
@@ -40,9 +50,35 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  folder_rows = [
+      {
+          "folder_id": folder["id"],
+          "folder_name": folder["name"],
+          "bookmarks_endpoint": f"/x/bookmarks?folderId={folder['id']}",
+          "has_more_folders": data["has_next_page"],
+      }
+      for folder in data["folders"]
+  ]
+
+  for row in folder_rows:
+      print(json.dumps(row))
   ```
 </CodeGroup>
+
+The Node.js and Python snippets shape durable bookmark folder rows instead of
+printing the full response page. Persist `folderRows` or `folder_rows` so a
+worker can pass `folder_id` into `GET /x/bookmarks?folderId=...`.
+
+## Direct bookmark folder handoff
+
+Use `GET /x/bookmarks/folders` when a saved-tweet workflow, CRM enrichment job,
+research queue, or agent needs the current bookmark folder IDs for the
+authenticated X account.
+
+Store `folder_id` and `folder_name`. The current route returns one folder page
+with `has_next_page: false` and `next_cursor: ""`; use each `folder_id` with
+[Bookmarks](/api-reference/x/bookmarks) to fetch the saved tweets inside that
+folder.
 
 ## Headers
 

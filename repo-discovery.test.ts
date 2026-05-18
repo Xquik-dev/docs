@@ -2721,6 +2721,36 @@ const FORBIDDEN_BATCH_USERS_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_BOOKMARK_FOLDERS_API_HANDOFF_SNIPPETS = [
+  '## Direct bookmark folder handoff',
+  '`GET /x/bookmarks/folders`',
+  'saved-tweet workflow, CRM enrichment job,',
+  'authenticated X account',
+  'Store `folder_id` and `folder_name`',
+  '`has_next_page: false`',
+  '`next_cursor: ""`',
+  '[Bookmarks](/api-reference/x/bookmarks)',
+  'const folderRows = data.folders.map((folder) => ({',
+  'folder_id: folder.id',
+  'folder_name: folder.name',
+  'bookmarks_endpoint: `/x/bookmarks?folderId=${encodeURIComponent(folder.id)}`',
+  'has_more_folders: data.has_next_page',
+  'import json',
+  'folder_rows = [',
+  '"folder_id": folder["id"]',
+  '"folder_name": folder["name"]',
+  '"bookmarks_endpoint": f"/x/bookmarks?folderId={folder',
+  '"has_more_folders": data["has_next_page"]',
+  'shape durable bookmark folder rows instead of',
+  '`folderRows` or `folder_rows`',
+  'pass `folder_id` into `GET /x/bookmarks?folderId=...`',
+] as const;
+
+const FORBIDDEN_BOOKMARK_FOLDERS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_SEARCH_USERS_API_HANDOFF_SNIPPETS = [
   '## Direct user search handoff',
   '`GET /x/users/search`',
@@ -7501,6 +7531,30 @@ describe('repository discovery', (): void => {
             ? [
                 {
                   issue: `Batch tweets API page prints raw tweet data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
+  });
+
+  it('keeps the bookmark folders API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/bookmark-folders.mdx', 'utf8');
+
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Bookmark folders API page',
+        REQUIRED_BOOKMARK_FOLDERS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_BOOKMARK_FOLDERS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Bookmark folders API page prints raw folder data with "${snippet}".`,
                 },
               ]
             : [],
