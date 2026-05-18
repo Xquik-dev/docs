@@ -4474,6 +4474,32 @@ const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
 ] as const;
 
 const REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS = [
+  'const monitor = await response.json();',
+  'const monitorState = {',
+  'monitor_id: monitor.id',
+  'x_user_id: monitor.xUserId',
+  'event_types: monitor.eventTypes',
+  'update_endpoint: `/api/v1/monitors/${monitor.id}`',
+  'events_endpoint: `/api/v1/events?monitorId=${monitor.id}`',
+  'process.stdout.write(`${JSON.stringify(monitorState)}\\n`);',
+  'monitor = response.json()',
+  'monitor_state = {',
+  '"monitor_id": monitor["id"]',
+  '"x_user_id": monitor["xUserId"]',
+  '"event_types": monitor["eventTypes"]',
+  '"update_endpoint": f"/api/v1/monitors/{monitor[\'id\']}"',
+  '"events_endpoint": f"/api/v1/events?monitorId={monitor[\'id\']}"',
+  'print(json.dumps(monitor_state))',
+  'type MonitorState struct',
+  'UpdateEndpoint string   `json:"update_endpoint"`',
+  'EventsEndpoint string   `json:"events_endpoint"`',
+  'UpdateEndpoint: "/api/v1/monitors/" + monitor.ID',
+  'EventsEndpoint: "/api/v1/events?monitorId=" + monitor.ID',
+  'json.NewEncoder(os.Stdout).Encode(state)',
+  'The Node.js, Python, and Go examples convert the fetched account monitor',
+  'one state snapshot row.',
+  '`monitor_id`, `event_types`, `is_active`,',
+  '`next_billing_at`, `update_endpoint`, and `events_endpoint`',
   '## State handoff',
   'Use `GET /monitors/{id}` before changing routing, billing checks, or alert',
   'state for one account monitor.',
@@ -4492,6 +4518,12 @@ const REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS = [
   '<Card title="Event Join" icon="link">',
   'Use `id` as `monitorId` with [List Events](/api-reference/events/list)',
   'reconcile stored events and webhook deliveries for this account.',
+] as const;
+
+const FORBIDDEN_ACCOUNT_MONITOR_GET_RAW_OUTPUT_SNIPPETS = [
+  'const data = await response.json();',
+  'data = response.json()',
+  'fmt.Println(data)',
 ] as const;
 
 const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
@@ -9023,11 +9055,23 @@ describe('repository discovery', (): void => {
     const source = readFileSync('api-reference/monitors/get.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'Get account monitor API page',
-        REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'Get account monitor API page',
+          REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_ACCOUNT_MONITOR_GET_RAW_OUTPUT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Get account monitor API page should map state snapshots instead of raw response output "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 

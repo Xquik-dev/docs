@@ -27,10 +27,23 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "x-api-key": "xq_YOUR_KEY_HERE",
     },
   });
-  const data = await response.json();
+  const monitor = await response.json();
+  const monitorState = {
+    monitor_id: monitor.id,
+    username: monitor.username,
+    x_user_id: monitor.xUserId,
+    event_types: monitor.eventTypes,
+    is_active: monitor.isActive,
+    created_at: monitor.createdAt,
+    next_billing_at: monitor.nextBillingAt,
+    update_endpoint: `/api/v1/monitors/${monitor.id}`,
+    events_endpoint: `/api/v1/events?monitorId=${monitor.id}`,
+  };
+  process.stdout.write(`${JSON.stringify(monitorState)}\n`);
   ```
 
   ```python Python
+  import json
   import requests
 
   monitor_id = "7"
@@ -38,7 +51,19 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       f"https://xquik.com/api/v1/monitors/{monitor_id}",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
-  data = response.json()
+  monitor = response.json()
+  monitor_state = {
+      "monitor_id": monitor["id"],
+      "username": monitor["username"],
+      "x_user_id": monitor["xUserId"],
+      "event_types": monitor["eventTypes"],
+      "is_active": monitor["isActive"],
+      "created_at": monitor["createdAt"],
+      "next_billing_at": monitor["nextBillingAt"],
+      "update_endpoint": f"/api/v1/monitors/{monitor['id']}",
+      "events_endpoint": f"/api/v1/events?monitorId={monitor['id']}",
+  }
+  print(json.dumps(monitor_state))
   ```
 
   ```go Go
@@ -46,32 +71,73 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
   import (
       "encoding/json"
-      "fmt"
+      "log"
       "net/http"
+      "os"
   )
+
+  type Monitor struct {
+      ID            string   `json:"id"`
+      Username      string   `json:"username"`
+      XUserID       string   `json:"xUserId"`
+      EventTypes    []string `json:"eventTypes"`
+      IsActive      bool     `json:"isActive"`
+      CreatedAt     string   `json:"createdAt"`
+      NextBillingAt string   `json:"nextBillingAt"`
+  }
+
+  type MonitorState struct {
+      MonitorID      string   `json:"monitor_id"`
+      Username       string   `json:"username"`
+      XUserID        string   `json:"x_user_id"`
+      EventTypes     []string `json:"event_types"`
+      IsActive       bool     `json:"is_active"`
+      CreatedAt      string   `json:"created_at"`
+      NextBillingAt  string   `json:"next_billing_at"`
+      UpdateEndpoint string   `json:"update_endpoint"`
+      EventsEndpoint string   `json:"events_endpoint"`
+  }
 
   func main() {
       monitorID := "7"
       req, err := http.NewRequest("GET", "https://xquik.com/api/v1/monitors/"+monitorID, nil)
       if err != nil {
-          panic(err)
+          log.Fatal(err)
       }
       req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 
       resp, err := http.DefaultClient.Do(req)
       if err != nil {
-          panic(err)
+          log.Fatal(err)
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-          panic(err)
+      var monitor Monitor
+      if err := json.NewDecoder(resp.Body).Decode(&monitor); err != nil {
+          log.Fatal(err)
       }
-      fmt.Println(data)
+      state := MonitorState{
+          MonitorID:      monitor.ID,
+          Username:       monitor.Username,
+          XUserID:        monitor.XUserID,
+          EventTypes:     monitor.EventTypes,
+          IsActive:       monitor.IsActive,
+          CreatedAt:      monitor.CreatedAt,
+          NextBillingAt:  monitor.NextBillingAt,
+          UpdateEndpoint: "/api/v1/monitors/" + monitor.ID,
+          EventsEndpoint: "/api/v1/events?monitorId=" + monitor.ID,
+      }
+      if err := json.NewEncoder(os.Stdout).Encode(state); err != nil {
+          log.Fatal(err)
+      }
   }
   ```
 </CodeGroup>
+
+The Node.js, Python, and Go examples convert the fetched account monitor into
+one state snapshot row. Store `monitor_id`, `event_types`, `is_active`,
+`next_billing_at`, `update_endpoint`, and `events_endpoint` before changing
+filters, pausing alerts, or reconciling webhooks.
 
 ## State handoff
 
