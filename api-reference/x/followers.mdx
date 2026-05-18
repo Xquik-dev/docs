@@ -21,45 +21,113 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
   ```javascript Node.js
   const userId = "44196397";
-  const response = await fetch(`https://xquik.com/api/v1/x/users/${userId}/followers`, {
-    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
-  });
-  const data = await response.json();
-  const importRows = data.users.map((user) => ({
-    x_user_id: user.id,
-    x_username: user.username,
-    display_name: user.name,
-  }));
-  const nextCursor = data.has_next_page ? data.next_cursor : null;
+  let pageCursor = "";
+
+  for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
+    const params = new URLSearchParams({ pageSize: "200" });
+    if (pageCursor !== "") params.set("cursor", pageCursor);
+
+    const response = await fetch(
+      `https://xquik.com/api/v1/x/users/${userId}/followers?${params}`,
+      { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
+    );
+    const page = await response.json();
+    if (!response.ok) throw new Error(JSON.stringify(page));
+
+    const importRows = page.users.map((user) => ({
+      source_user_id: userId,
+      x_user_id: user.id,
+      x_username: user.username,
+      display_name: user.name,
+      description: user.description ?? null,
+      location: user.location ?? null,
+      website_url: user.url ?? null,
+      follower_count: user.followers ?? null,
+      following_count: user.following ?? null,
+      verified: user.verified ?? false,
+      verified_type: user.verifiedType ?? null,
+      profile_picture_url: user.profilePicture ?? null,
+      cover_picture_url: user.coverPicture ?? null,
+      account_created_at: user.createdAt ?? null,
+      statuses_count: user.statusesCount ?? null,
+      can_dm: user.canDm ?? null,
+      page_index: pageIndex,
+      page_cursor: pageCursor,
+      next_cursor: page.next_cursor,
+      has_next_page: page.has_next_page,
+    }));
+    for (const row of importRows) process.stdout.write(`${JSON.stringify(row)}\n`);
+
+    if (!page.has_next_page || page.next_cursor === "") break;
+    pageCursor = page.next_cursor;
+  }
   ```
 
   ```python Python
+  import json
   import requests
 
-  response = requests.get(
-      "https://xquik.com/api/v1/x/users/44196397/followers",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-  )
-  data = response.json()
-  import_rows = [
-      {
-          "x_user_id": user["id"],
-          "x_username": user["username"],
-          "display_name": user["name"],
-      }
-      for user in data["users"]
-  ]
-  next_cursor = data["next_cursor"] if data["has_next_page"] else None
+  user_id = "44196397"
+  page_cursor = ""
+
+  for page_index in range(3):
+      params = {"pageSize": "200"}
+      if page_cursor:
+          params["cursor"] = page_cursor
+
+      response = requests.get(
+          f"https://xquik.com/api/v1/x/users/{user_id}/followers",
+          params=params,
+          headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      )
+      page = response.json()
+      if not response.ok:
+          raise RuntimeError(page)
+
+      for user in page["users"]:
+          import_row = {
+              "source_user_id": user_id,
+              "x_user_id": user["id"],
+              "x_username": user["username"],
+              "display_name": user["name"],
+              "description": user.get("description"),
+              "location": user.get("location"),
+              "website_url": user.get("url"),
+              "follower_count": user.get("followers"),
+              "following_count": user.get("following"),
+              "verified": user.get("verified", False),
+              "verified_type": user.get("verifiedType"),
+              "profile_picture_url": user.get("profilePicture"),
+              "cover_picture_url": user.get("coverPicture"),
+              "account_created_at": user.get("createdAt"),
+              "statuses_count": user.get("statusesCount"),
+              "can_dm": user.get("canDm"),
+              "page_index": page_index,
+              "page_cursor": page_cursor,
+              "next_cursor": page["next_cursor"],
+              "has_next_page": page["has_next_page"],
+          }
+          print(json.dumps(import_row, separators=(",", ":")))
+
+      if not page["has_next_page"] or not page["next_cursor"]:
+          break
+      page_cursor = page["next_cursor"]
   ```
 </CodeGroup>
 
-The Node.js and Python snippets shape CRM-safe import rows instead of printing
-full follower profiles. Persist the mapped rows and `nextCursor` in your sync
-job.
+The Node.js and Python snippets write JSON Lines import rows instead of raw
+follower pages. Persist each mapped row and the latest `next_cursor` in your
+sync job so it can resume from the last completed page.
 
 ## Direct follower handoff
 
-Use `GET /x/users/{id}/followers` when a CRM, warehouse, audience, or agent workflow needs one paginated JSON page now. Use [`follower_explorer`](/guides/follower-export-crm) when you need an estimated job, saved extraction, or CSV/JSON/XLSX file export.
+Use `GET /x/users/{id}/followers` when a CRM, warehouse, audience, or agent
+workflow needs follower rows now. The examples above write JSON Lines rows with
+`source_user_id`, `x_user_id`, `x_username`, `display_name`, profile
+enrichment, segmentation fields, `page_index`, `page_cursor`, `next_cursor`,
+and `has_next_page` for imports or upserts. Use
+[`follower_explorer`](/guides/follower-export-crm) when you need an estimated
+job, saved extraction, or CSV/JSON/XLSX file export.
 
 <CardGroup cols={2}>
   <Card title="Follower rows" icon="rows-3">
