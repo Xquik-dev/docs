@@ -66,7 +66,9 @@ Use this workflow when a .NET worker, console job, or ASP.NET background service
 `client.X.Tweets.Search` calls `GET /x/tweets/search`. Build a `TweetSearchParams` object with the same query parameters the REST API accepts: `Q`, `Limit`, `Cursor`, `SinceTime`, `UntilTime`, and `QueryType`.
 
 ```csharp
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using XTwitterScraper;
 using XTwitterScraper.Models;
@@ -74,15 +76,43 @@ using XTwitterScraper.Models.X.Tweets;
 
 XTwitterScraperClient client = new();
 
+string query = "from:xquikcom webhook OR SDK";
 string? cursor = null;
-using StreamWriter writer = File.CreateText("xquik-tweet-search.jsonl");
+int pageIndex = 0;
+string[] headers = new[]
+{
+    "source",
+    "query",
+    "tweet_id",
+    "text",
+    "author_id",
+    "author_username",
+    "author_name",
+    "created_at",
+    "like_count",
+    "reply_count",
+    "retweet_count",
+    "quote_count",
+    "view_count",
+    "bookmark_count",
+    "is_note_tweet",
+    "page_index",
+    "page_cursor",
+    "next_cursor",
+    "has_next_page",
+};
+
+using StreamWriter jsonlWriter = File.CreateText("xquik-tweet-search.jsonl");
+using StreamWriter csvWriter = File.CreateText("xquik-tweet-search.csv");
+await WriteCsvRow(csvWriter, headers);
 
 do
 {
+    string? pageCursor = cursor;
     PaginatedTweets page = await client.X.Tweets.Search(
         new TweetSearchParams
         {
-            Q = "from:xquikcom webhook OR SDK",
+            Q = query,
             Cursor = cursor,
             QueryType = QueryType.Latest,
         }
@@ -90,24 +120,47 @@ do
 
     foreach (SearchTweet tweet in page.Tweets)
     {
-        var row = new
+        Dictionary<string, object?> row = new()
         {
-            id = tweet.ID,
-            text = tweet.Text,
-            author_username = tweet.Author?.Username,
-            created_at = tweet.CreatedAt,
-            like_count = tweet.LikeCount,
-            reply_count = tweet.ReplyCount,
-            retweet_count = tweet.RetweetCount,
-            quote_count = tweet.QuoteCount,
-            view_count = tweet.ViewCount,
+            ["source"] = "xquik.csharp.search",
+            ["query"] = query,
+            ["tweet_id"] = tweet.ID,
+            ["text"] = tweet.Text,
+            ["author_id"] = tweet.Author?.ID,
+            ["author_username"] = tweet.Author?.Username,
+            ["author_name"] = tweet.Author?.Name,
+            ["created_at"] = tweet.CreatedAt,
+            ["like_count"] = tweet.LikeCount ?? 0,
+            ["reply_count"] = tweet.ReplyCount ?? 0,
+            ["retweet_count"] = tweet.RetweetCount ?? 0,
+            ["quote_count"] = tweet.QuoteCount ?? 0,
+            ["view_count"] = tweet.ViewCount ?? 0,
+            ["bookmark_count"] = tweet.BookmarkCount ?? 0,
+            ["is_note_tweet"] = tweet.IsNoteTweet ?? false,
+            ["page_index"] = pageIndex,
+            ["page_cursor"] = pageCursor,
+            ["next_cursor"] = page.HasNextPage ? page.NextCursor : null,
+            ["has_next_page"] = page.HasNextPage,
         };
 
-        await writer.WriteLineAsync(JsonSerializer.Serialize(row));
+        await jsonlWriter.WriteLineAsync(JsonSerializer.Serialize(row));
+        await WriteCsvRow(csvWriter, headers.Select(header => row[header]));
     }
 
     cursor = page.HasNextPage ? page.NextCursor : null;
+    pageIndex++;
 } while (!string.IsNullOrEmpty(cursor));
+
+static async Task WriteCsvRow(StreamWriter writer, IEnumerable<object?> values)
+{
+    static string Escape(object? value)
+    {
+        string cell = value?.ToString() ?? "";
+        return "\"" + cell.Replace("\"", "\"\"") + "\"";
+    }
+
+    await writer.WriteLineAsync(string.Join(",", values.Select(Escape)));
+}
 ```
 
 ### Request Mapping
@@ -137,7 +190,7 @@ do
 
 `client.X.Tweets.Search` returns `PaginatedTweets`. Use `page.Tweets` for the tweet array, `page.HasNextPage` to decide whether another page exists, and `page.NextCursor` as the checkpoint for the next request.
 
-Each `SearchTweet` includes typed properties such as `ID`, `Text`, `Author`, `CreatedAt`, `LikeCount`, `ReplyCount`, `RetweetCount`, `QuoteCount`, and `ViewCount` when available. Write `page.Tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the same projected rows into CSV for analysts, or write XLSX from those rows when account managers need a workbook.
+Each `SearchTweet` includes typed properties such as `ID`, `Text`, `Author`, `CreatedAt`, `LikeCount`, `ReplyCount`, `RetweetCount`, `QuoteCount`, `ViewCount`, `BookmarkCount`, and `IsNoteTweet` when available. Project `page.Tweets` into JSON Lines and CSV rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so workers can resume safely or load the same records into XLSX, CRM, warehouse, or agent workflows.
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `Limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, 408, 409, 429, and 5xx responses 2 times by default. For longer workers, set `MaxRetries` on the client and persist `NextCursor` after each page.
 
