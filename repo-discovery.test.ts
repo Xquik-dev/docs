@@ -2535,6 +2535,45 @@ const FORBIDDEN_COMMUNITY_TWEETS_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_COMMUNITY_TWEET_SEARCH_API_HANDOFF_SNIPPETS = [
+  '## Direct community tweet search handoff',
+  '`GET /x/communities/tweets`',
+  'monitoring job, research queue,',
+  'social listening workflow, or agent needs tweets across X',
+  'const searchQuery = "machine learning";',
+  'const queryType = "Latest";',
+  'const tweetRows = data.tweets.map((tweet) => ({',
+  'search_query: searchQuery',
+  'query_type: queryType',
+  'tweet_id: tweet.id',
+  'author_username: tweet.author?.username ?? null',
+  'created_at: tweet.createdAt ?? null',
+  'media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? []',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  'const checkpoint = {',
+  'search_query = "machine learning"',
+  'query_type = "Latest"',
+  'tweet_rows = [',
+  '"search_query": search_query',
+  '"query_type": query_type',
+  '"tweet_id": tweet["id"]',
+  '"author_username": tweet.get("author", {}).get("username")',
+  '"created_at": tweet.get("createdAt")',
+  '"media_urls": [',
+  'next_cursor = data["next_cursor"] if data["has_next_page"] else None',
+  'shape one durable row per matching community',
+  'with the same `q` & `queryType`',
+  '`search_query`, `query_type`, `tweet_id`,',
+  '`created_at`, engagement counts, & `media_urls`',
+  'Set `queryType=Latest` for recent queues or backfills',
+  'Set `queryType=Top` for',
+] as const;
+
+const FORBIDDEN_COMMUNITY_TWEET_SEARCH_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct follower handoff',
   '<CardGroup cols={2}>',
@@ -7405,6 +7444,33 @@ describe('repository discovery', (): void => {
             : [],
       ),
     ).toStrictEqual([]);
+  });
+
+  it('keeps the community tweet search API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x/search-community-tweets.mdx',
+      'utf8',
+    );
+
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Community tweet search API page',
+        REQUIRED_COMMUNITY_TWEET_SEARCH_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_COMMUNITY_TWEET_SEARCH_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Community tweet search API page prints raw tweet data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the followers API handoff concrete', (): void => {

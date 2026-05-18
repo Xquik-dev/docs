@@ -25,26 +25,102 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 
   ```javascript Node.js
-  const params = new URLSearchParams({ q: "machine learning" });
+  const searchQuery = "machine learning";
+  const queryType = "Latest";
+  const params = new URLSearchParams({ q: searchQuery, queryType });
   const response = await fetch(`https://xquik.com/api/v1/x/communities/tweets?${params}`, {
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  const tweetRows = data.tweets.map((tweet) => ({
+    search_query: searchQuery,
+    query_type: queryType,
+    tweet_id: tweet.id,
+    text: tweet.text,
+    author_username: tweet.author?.username ?? null,
+    created_at: tweet.createdAt ?? null,
+    like_count: tweet.likeCount ?? null,
+    reply_count: tweet.replyCount ?? null,
+    retweet_count: tweet.retweetCount ?? null,
+    media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
+  }));
+  const nextCursor = data.has_next_page ? data.next_cursor : null;
+
+  for (const row of tweetRows) {
+    process.stdout.write(`${JSON.stringify(row)}\n`);
+  }
+  if (nextCursor !== null) {
+    const checkpoint = {
+      search_query: searchQuery,
+      query_type: queryType,
+      next_cursor: nextCursor,
+    };
+    process.stdout.write(`${JSON.stringify(checkpoint)}\n`);
+  }
   ```
 
   ```python Python
+  import json
   import requests
 
+  search_query = "machine learning"
+  query_type = "Latest"
   response = requests.get(
       "https://xquik.com/api/v1/x/communities/tweets",
-      params={"q": "machine learning"},
+      params={"q": search_query, "queryType": query_type},
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  tweet_rows = [
+      {
+          "search_query": search_query,
+          "query_type": query_type,
+          "tweet_id": tweet["id"],
+          "text": tweet.get("text"),
+          "author_username": tweet.get("author", {}).get("username"),
+          "created_at": tweet.get("createdAt"),
+          "like_count": tweet.get("likeCount"),
+          "reply_count": tweet.get("replyCount"),
+          "retweet_count": tweet.get("retweetCount"),
+          "media_urls": [
+              item["mediaUrl"]
+              for item in tweet.get("media", [])
+              if item.get("mediaUrl")
+          ],
+      }
+      for tweet in data["tweets"]
+  ]
+  next_cursor = data["next_cursor"] if data["has_next_page"] else None
+
+  for row in tweet_rows:
+      print(json.dumps(row))
+  if next_cursor is not None:
+      print(json.dumps({
+          "search_query": search_query,
+          "query_type": query_type,
+          "next_cursor": next_cursor,
+      }))
   ```
 </CodeGroup>
+
+The Node.js & Python snippets shape one durable row per matching community
+tweet instead of printing the full response page. Persist the final
+`next_cursor` row when `has_next_page` is true, then pass it back as `cursor`
+with the same `q` & `queryType`.
+
+## Direct community tweet search handoff
+
+Use `GET /x/communities/tweets` when a monitoring job, research queue,
+moderation review, social listening workflow, or agent needs tweets across X
+communities by keyword.
+
+Store `search_query`, `query_type`, `tweet_id`, `text`, `author_username`,
+`created_at`, engagement counts, & `media_urls` for each row. Keep
+`has_next_page` & `next_cursor` with the export checkpoint so the next run can
+continue the same community search without duplicating earlier rows.
+
+Set `queryType=Latest` for recent queues or backfills. Set `queryType=Top` for
+relevance-ranked review.
 
 ## Query parameters
 
