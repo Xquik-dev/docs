@@ -1771,6 +1771,35 @@ const FORBIDDEN_EVENT_LIST_RAW_OUTPUT_SNIPPETS = [
   'fmt.Println(string(body))',
 ] as const;
 
+const REQUIRED_EVENT_GET_API_HANDOFF_SNIPPETS = [
+  'const eventRow = {',
+  'event_id: event.id',
+  'event_type: event.type',
+  'monitor_type: event.monitorType',
+  'monitor_id: event.monitorId',
+  'x_event_id: event.xEventId ?? null',
+  'tweet_id: event.xEventId ?? event.data?.id ?? null',
+  'author_username: event.data?.author?.userName ?? null',
+  'event_row = {',
+  '"event_id": event["id"]',
+  '"monitor_type": event["monitorType"]',
+  '"x_event_id": event.get("xEventId")',
+  '"tweet_id": event.get("xEventId") or tweet.get("id")',
+  '"author_username": author.get("userName")',
+  'type EventRow struct',
+  'XEventID         *string `json:"x_event_id"`',
+  'tweetID := event.XEventID',
+  'json.NewEncoder(os.Stdout).Encode(row)',
+  'convert one event into an audit row',
+  'keyword monitor events use',
+] as const;
+
+const FORBIDDEN_EVENT_GET_RAW_OUTPUT_SNIPPETS = [
+  'console.log(event);',
+  'print(event)',
+  'fmt.Println(string(body))',
+] as const;
+
 const REQUIRED_DRAFT_TYPES_GUIDE_SNIPPETS = [
   'interface Draft',
   'updatedAt: string;',
@@ -8317,6 +8346,32 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `List events API docs print raw event responses with "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the get event API page useful for detail row handoff', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/events/get.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'Get event API docs',
+          REQUIRED_EVENT_GET_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_EVENT_GET_RAW_OUTPUT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Get event API docs print raw event responses with "${snippet}".`,
                   },
                 ]
               : [],
