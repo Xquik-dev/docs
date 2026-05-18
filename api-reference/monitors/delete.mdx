@@ -27,10 +27,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "x-api-key": "xq_YOUR_KEY_HERE",
     },
   });
-  const data = await response.json();
+  const result = await response.json();
+  const deletionReceipt = {
+    monitor_id: monitorId,
+    success: result.success === true,
+    verify_endpoint: `/api/v1/monitors/${monitorId}`,
+    list_endpoint: "/api/v1/monitors",
+  };
+  process.stdout.write(`${JSON.stringify(deletionReceipt)}\n`);
   ```
 
   ```python Python
+  import json
   import requests
 
   monitor_id = "7"
@@ -38,7 +46,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       f"https://xquik.com/api/v1/monitors/{monitor_id}",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
-  data = response.json()
+  result = response.json()
+  deletion_receipt = {
+      "monitor_id": monitor_id,
+      "success": result["success"] is True,
+      "verify_endpoint": f"/api/v1/monitors/{monitor_id}",
+      "list_endpoint": "/api/v1/monitors",
+  }
+  print(json.dumps(deletion_receipt))
   ```
 
   ```go Go
@@ -46,32 +61,61 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
   import (
       "encoding/json"
-      "fmt"
+      "log"
       "net/http"
+      "os"
   )
+
+  type DeleteResult struct {
+      Success bool `json:"success"`
+  }
+
+  type AccountMonitorDeletion struct {
+      MonitorID      string `json:"monitor_id"`
+      Success        bool   `json:"success"`
+      VerifyEndpoint string `json:"verify_endpoint"`
+      ListEndpoint   string `json:"list_endpoint"`
+  }
 
   func main() {
       monitorID := "7"
-      req, err := http.NewRequest("DELETE", "https://xquik.com/api/v1/monitors/"+monitorID, nil)
+      req, err := http.NewRequest(
+          "DELETE",
+          "https://xquik.com/api/v1/monitors/"+monitorID,
+          nil,
+      )
       if err != nil {
-          panic(err)
+          log.Fatal(err)
       }
       req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 
       resp, err := http.DefaultClient.Do(req)
       if err != nil {
-          panic(err)
+          log.Fatal(err)
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-          panic(err)
+      var result DeleteResult
+      if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+          log.Fatal(err)
       }
-      fmt.Println(data)
+      receipt := AccountMonitorDeletion{
+          MonitorID:      monitorID,
+          Success:        result.Success,
+          VerifyEndpoint: "/api/v1/monitors/" + monitorID,
+          ListEndpoint:   "/api/v1/monitors",
+      }
+      if err := json.NewEncoder(os.Stdout).Encode(receipt); err != nil {
+          log.Fatal(err)
+      }
   }
   ```
 </CodeGroup>
+
+The Node.js, Python, and Go examples convert the delete response into one receipt row.
+Store `monitor_id`, `success`, `verify_endpoint`, and `list_endpoint`, then
+verify that the deleted ID no longer appears in the list and that the verify
+endpoint returns `404`.
 
 ## Path parameters
 

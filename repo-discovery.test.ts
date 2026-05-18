@@ -4773,6 +4773,24 @@ const FORBIDDEN_MONITOR_DELETE_INLINE_SUCCESS_JSON_SNIPPETS = [
 ] as const;
 
 const REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
+  'const result = await response.json();',
+  'const deletionReceipt = {',
+  'monitor_id: monitorId',
+  'success: result.success === true',
+  'verify_endpoint: `/api/v1/monitors/${monitorId}`',
+  'list_endpoint: "/api/v1/monitors"',
+  'process.stdout.write(`${JSON.stringify(deletionReceipt)}\\n`);',
+  'result = response.json()',
+  'deletion_receipt = {',
+  '"monitor_id": monitor_id',
+  '"success": result["success"] is True',
+  'print(json.dumps(deletion_receipt))',
+  'type AccountMonitorDeletion struct',
+  'MonitorID      string `json:"monitor_id"`',
+  'VerifyEndpoint string `json:"verify_endpoint"`',
+  'json.NewEncoder(os.Stdout).Encode(receipt)',
+  'one receipt row.',
+  'Store `monitor_id`, `success`, `verify_endpoint`, and `list_endpoint`, then',
   '## Deletion handoff',
   'Use this endpoint when a tracked account should stop permanently.',
   '[Update Monitor](/api-reference/monitors/update)',
@@ -4799,6 +4817,12 @@ const REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
   '<Card title="Webhook Reuse" icon="webhook">',
   'Existing webhook endpoints remain configured.',
   '[Test Webhook](/api-reference/webhooks/test)',
+] as const;
+
+const FORBIDDEN_ACCOUNT_MONITOR_DELETE_RAW_OUTPUT_SNIPPETS = [
+  'const data = await response.json();',
+  'data = response.json()',
+  'fmt.Println(data)',
 ] as const;
 
 const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
@@ -9193,6 +9217,16 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Delete keyword monitor API page should map deletion receipts instead of raw response output "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+        ...FORBIDDEN_ACCOUNT_MONITOR_DELETE_RAW_OUTPUT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Delete account monitor API page should map deletion receipts instead of raw response output "${snippet}".`,
                   },
                 ]
               : [],
