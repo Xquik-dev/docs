@@ -5611,7 +5611,7 @@ const REQUIRED_HAYSTACK_GUIDE_SNIPPETS = [
   '## Pipeline Handoff',
   'Use this shape when Haystack hands results to a vector store, evaluation job, queue, CSV export, or dashboard.',
   '<Card title="Document Rows" icon="file-text">',
-  'Store each `Document.content`, `meta.endpoint`, `meta.id`, `meta.url`, `meta.created_at`, `meta.author.username`, and public metrics before embedding or export.',
+  'Store each `Document.content`, `meta.endpoint`, `meta.id`, `meta.url`, `meta.created_at`, `meta.author.username`, `meta.author.verified`, `meta.author.profilePicture`, and public metrics before embedding or export.',
   '<Card title="Citation Links" icon="link">',
   'Store `links` as the canonical tweet URLs returned by the component. Join them to `meta.id` when a citation, audit row, or UI card needs a source link.',
   '<Card title="Pagination Checkpoint" icon="list-tree">',
