@@ -194,23 +194,47 @@ async () => {
 
 ```javascript
 async () => {
-  const tweets = [];
+  const query = 'from:xquikcom giveaway';
+  const rows = [];
   let cursor;
+  let hasMore = false;
+  let nextCursor = '';
 
   for (let pageNumber = 0; pageNumber < 2; pageNumber += 1) {
     const page = await xquik.request('/api/v1/x/tweets/search', {
       query: {
-        q: 'from:xquikcom giveaway',
+        q: query,
         ...(cursor ? { cursor } : {})
       }
     });
 
-    tweets.push(...page.tweets);
-    if (!page.has_more) break;
-    cursor = page.next_cursor;
+    rows.push(...page.tweets.map(tweet => ({
+      source: 'xquik_mcp',
+      job: 'tweet_search',
+      query,
+      tweet_id: tweet.id,
+      text: tweet.text,
+      author_id: tweet.author?.id ?? null,
+      author_username: tweet.author?.username ?? null,
+      created: tweet['created'] ?? null,
+      url: tweet.url ?? null,
+      like_count: tweet.like_count ?? null,
+      reply_count: tweet.reply_count ?? null,
+      retweet_count: tweet.retweet_count ?? null
+    })));
+    hasMore = Boolean(page.has_more);
+    nextCursor = page.next_cursor ?? '';
+    if (!hasMore || nextCursor === '') break;
+    cursor = nextCursor;
   }
 
-  return { tweets, next_cursor: cursor };
+  return {
+    source: 'xquik_mcp',
+    job: 'tweet_search',
+    rows,
+    has_more: hasMore,
+    next_cursor: nextCursor
+  };
 }
 ```
 
@@ -218,23 +242,47 @@ async () => {
 
 ```javascript
 async () => {
-  const users = [];
+  const sourceUser = 'xquikcom';
+  const rows = [];
   let cursor;
+  let hasMore = false;
+  let nextCursor = '';
 
   for (let pageNumber = 0; pageNumber < 2; pageNumber += 1) {
-    const page = await xquik.request('/api/v1/x/users/xquikcom/followers', {
+    const page = await xquik.request(`/api/v1/x/users/${sourceUser}/followers`, {
       query: {
         pageSize: '50',
         ...(cursor ? { cursor } : {})
       }
     });
 
-    users.push(...page.users);
-    if (!page.has_more) break;
-    cursor = page.next_cursor;
+    rows.push(...page.users.map(user => ({
+      source: 'xquik_mcp',
+      job: 'follower_export',
+      source_user: sourceUser,
+      user_id: user.id,
+      username: user.username,
+      name: user.name ?? null,
+      followers: user.followers ?? null,
+      following: user.following ?? null,
+      verified: user.verified ?? null,
+      profile_picture: user.profile_picture ?? null,
+      page_index: pageNumber
+    })));
+    hasMore = Boolean(page.has_more);
+    nextCursor = page.next_cursor ?? '';
+    if (!hasMore || nextCursor === '') break;
+    cursor = nextCursor;
   }
 
-  return { users, next_cursor: cursor };
+  return {
+    source: 'xquik_mcp',
+    job: 'follower_export',
+    source_user: sourceUser,
+    rows,
+    has_more: hasMore,
+    next_cursor: nextCursor
+  };
 }
 ```
 
@@ -506,7 +554,12 @@ async () => {
 
 ## Agent handoff patterns
 
-MCP returns JSON. Use extraction export endpoints when you need Xquik to generate CSV, JSON, XLSX, Markdown, or PDF files. For agent queues, CRMs, and warehouses, return a small object with the original job, the route used, the rows or IDs to store, and the next cursor or write action to poll.
+MCP returns JSON. Use extraction export endpoints when you need Xquik to generate
+CSV, JSON, XLSX, Markdown, or PDF files. For agent queues, CRMs, and
+warehouses, return a small object with the original job, the route used,
+normalized rows or IDs to store, and the next cursor or write action to poll.
+Avoid returning raw `tweets` or `users` pages when the next agent or worker
+needs durable handoff rows.
 
 <CardGroup cols={2}>
   <Card title="Search tweets to JSON" icon="search">
