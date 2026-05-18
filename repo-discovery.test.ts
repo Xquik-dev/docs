@@ -2365,6 +2365,44 @@ const FORBIDDEN_X_TRENDS_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_TRENDS_API_HANDOFF_SNIPPETS = [
+  '## Direct trends handoff',
+  '`GET /trends`',
+  'dashboard, alerting job, content queue, warehouse, or',
+  'const regionWoeid = "23424977";',
+  'const requestedCount = "10";',
+  'const trendRows = data.trends.map((trend) => ({',
+  'trend_name: trend.name',
+  'search_query: trend.query ?? trend.name',
+  'region_woeid: data.woeid',
+  'requested_count: Number(requestedCount)',
+  'returned_total: data.total',
+  'region_woeid = 23424977',
+  'requested_count = 10',
+  'trend_rows = [',
+  '"trend_name": trend["name"]',
+  '"search_query": trend.get("query", trend["name"])',
+  '"region_woeid": data["woeid"]',
+  '"requested_count": requested_count',
+  '"returned_total": data["total"]',
+  'type TrendsResponse struct {',
+  'type TrendRow struct {',
+  'RequestedCount int     `json:"requested_count"`',
+  'ReturnedTotal  int     `json:"returned_total"`',
+  'searchQuery := trend.Name',
+  'encoder.Encode(TrendRow{',
+  'one JSON line per trend',
+  '`trend_name`, `rank`, `description`,',
+  '`requested_count`, and `returned_total`',
+  '`total` is the number of valid trends available before `count` slicing',
+] as const;
+
+const FORBIDDEN_TRENDS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+  'fmt.Println(string(body))',
+] as const;
+
 const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
   '`GET /x/articles/{tweetId}`',
   'tweet_id: tweetId',
@@ -7306,6 +7344,30 @@ describe('repository discovery', (): void => {
             : [],
       ),
     ).toStrictEqual([]);
+  });
+
+  it('keeps the trends API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/trends/list.mdx', 'utf8');
+
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Trends API page',
+        REQUIRED_TRENDS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_TRENDS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Trends API page prints raw trend data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the get article API handoff concrete', (): void => {
