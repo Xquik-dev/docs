@@ -184,12 +184,13 @@ curl -G https://xquik.com/api/v1/x/tweets/1893704267862470862/replies \
 
 ## Copy-ready workflow: replies to moderation queue
 
-Use this direct API workflow when you need the latest reply pages as JSON Lines before deciding what to store, hide, label, or route. Each row maps the API response into stable downstream fields: `reply_tweet_id`, `reply_text`, `reply_author_id`, `reply_author_username`, `created_at`, `in_reply_to_id`, `conversation_id`, `like_count`, `reply_count`, `quote_count`, and `view_count`.
+Use this direct API workflow when you need the latest reply pages as JSON Lines before deciding what to store, hide, label, or route. Each row maps the API response into stable downstream fields: `handoff_source`, `parent_tweet_id`, `reply_tweet_id`, `reply_text`, `reply_author_id`, `reply_author_username`, `reply_author_name`, `created_at`, `in_reply_to_id`, `conversation_id`, engagement counts, `bookmark_count`, `is_note_tweet`, `tweet_source`, `media_urls`, and cursor fields.
 
 ```javascript
 const apiKey = process.env.XQUIK_API_KEY;
 const tweetId = "1893704267862470862";
 let cursor;
+let pageIndex = 0;
 
 do {
   const url = new URL(
@@ -214,22 +215,37 @@ do {
   const page = await response.json();
   for (const tweet of page.tweets ?? []) {
     const row = {
+      handoff_source: "xquik.replies.direct",
+      parent_tweet_id: tweetId,
       reply_tweet_id: tweet.id,
       reply_text: tweet.text,
-      reply_author_id: tweet.author?.id,
-      reply_author_username: tweet.author?.username,
-      created_at: tweet.createdAt,
-      in_reply_to_id: tweet.inReplyToId,
-      conversation_id: tweet.conversationId,
+      reply_author_id: tweet.author?.id ?? null,
+      reply_author_username: tweet.author?.username ?? null,
+      reply_author_name: tweet.author?.name ?? null,
+      created_at: tweet.createdAt ?? null,
+      in_reply_to_id: tweet.inReplyToId ?? null,
+      conversation_id: tweet.conversationId ?? null,
       like_count: tweet.likeCount ?? 0,
       reply_count: tweet.replyCount ?? 0,
+      retweet_count: tweet.retweetCount ?? 0,
       quote_count: tweet.quoteCount ?? 0,
       view_count: tweet.viewCount ?? 0,
+      bookmark_count: tweet.bookmarkCount ?? 0,
+      is_note_tweet: tweet.isNoteTweet ?? false,
+      tweet_source: tweet.source ?? null,
+      media_urls: (tweet.media ?? [])
+        .map((item) => item.mediaUrl)
+        .filter(Boolean),
+      page_index: pageIndex,
+      page_cursor: cursor ?? "",
+      next_cursor: page.next_cursor,
+      has_next_page: page.has_next_page,
     };
     process.stdout.write(JSON.stringify(row) + "\n");
   }
 
   cursor = page.has_next_page ? page.next_cursor : undefined;
+  pageIndex += 1;
 } while (cursor);
 ```
 
