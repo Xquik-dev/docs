@@ -31,10 +31,29 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     }
   );
   const data = await response.json();
-  process.stdout.write(`${JSON.stringify(data, null, 2)}\n`);
+  const eventRows = data.events.map((event) => ({
+    event_id: event.id,
+    event_type: event.type,
+    monitor_type: event.monitorType,
+    monitor_id: event.monitorId,
+    keyword_monitor_id: event.keywordMonitorId ?? null,
+    username: event.username ?? null,
+    query: event.query ?? null,
+    occurred_at: event.occurredAt,
+    tweet_id: event.data?.id ?? null,
+    tweet_text: event.data?.text ?? null,
+    author_username: event.data?.author?.userName ?? null,
+    has_more: data.hasMore,
+    next_cursor: data.nextCursor ?? null,
+  }));
+
+  for (const row of eventRows) {
+    process.stdout.write(`${JSON.stringify(row)}\n`);
+  }
   ```
 
   ```python Python
+  import json
   import requests
 
   response = requests.get(
@@ -43,40 +62,137 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       params={"limit": 10, "monitorId": "7"},
   )
   data = response.json()
-  print(data)
+  event_rows = []
+  for event in data["events"]:
+      tweet = event.get("data") if isinstance(event.get("data"), dict) else {}
+      author = tweet.get("author") if isinstance(tweet.get("author"), dict) else {}
+      event_rows.append(
+          {
+              "event_id": event["id"],
+              "event_type": event["type"],
+              "monitor_type": event["monitorType"],
+              "monitor_id": event["monitorId"],
+              "keyword_monitor_id": event.get("keywordMonitorId"),
+              "username": event.get("username"),
+              "query": event.get("query"),
+              "occurred_at": event["occurredAt"],
+              "tweet_id": tweet.get("id"),
+              "tweet_text": tweet.get("text"),
+              "author_username": author.get("userName"),
+              "has_more": data["hasMore"],
+              "next_cursor": data.get("nextCursor"),
+          }
+      )
+  for row in event_rows:
+      print(json.dumps(row))
   ```
 
   ```go Go
   package main
 
   import (
-  	"fmt"
-  	"io"
-  	"log"
-  	"net/http"
+    "encoding/json"
+    "log"
+    "net/http"
+    "os"
   )
 
+  type EventAuthor struct {
+    UserName *string `json:"userName"`
+  }
+
+  type EventPayload struct {
+    ID     *string      `json:"id"`
+    Text   *string      `json:"text"`
+    Author *EventAuthor `json:"author"`
+  }
+
+  type Event struct {
+    ID               string       `json:"id"`
+    Type             string       `json:"type"`
+    MonitorType      string       `json:"monitorType"`
+    MonitorID        string       `json:"monitorId"`
+    KeywordMonitorID *string      `json:"keywordMonitorId"`
+    Username         *string      `json:"username"`
+    Query            *string      `json:"query"`
+    OccurredAt       string       `json:"occurredAt"`
+    Data             EventPayload `json:"data"`
+  }
+
+  type EventResponse struct {
+    Events     []Event `json:"events"`
+    HasMore    bool    `json:"hasMore"`
+    NextCursor *string `json:"nextCursor"`
+  }
+
+  type EventRow struct {
+    EventID          string  `json:"event_id"`
+    EventType        string  `json:"event_type"`
+    MonitorType      string  `json:"monitor_type"`
+    MonitorID        string  `json:"monitor_id"`
+    KeywordMonitorID *string `json:"keyword_monitor_id"`
+    Username         *string `json:"username"`
+    Query            *string `json:"query"`
+    OccurredAt       string  `json:"occurred_at"`
+    TweetID          *string `json:"tweet_id"`
+    TweetText        *string `json:"tweet_text"`
+    AuthorUsername   *string `json:"author_username"`
+    HasMore          bool    `json:"has_more"`
+    NextCursor       *string `json:"next_cursor"`
+  }
+
   func main() {
-  	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/events?limit=10&monitorId=7", nil)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+    req, err := http.NewRequest("GET", "https://xquik.com/api/v1/events?limit=10&monitorId=7", nil)
+    if err != nil {
+      log.Fatal(err)
+    }
+    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 
-  	resp, err := http.DefaultClient.Do(req)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	defer resp.Body.Close()
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+      log.Fatal(err)
+    }
+    defer resp.Body.Close()
 
-  	body, err := io.ReadAll(resp.Body)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	fmt.Println(string(body))
+    var data EventResponse
+    if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      log.Fatal(err)
+    }
+
+    encoder := json.NewEncoder(os.Stdout)
+    for _, event := range data.Events {
+      var authorUsername *string
+      if event.Data.Author != nil {
+        authorUsername = event.Data.Author.UserName
+      }
+
+      row := EventRow{
+        EventID:          event.ID,
+        EventType:        event.Type,
+        MonitorType:      event.MonitorType,
+        MonitorID:        event.MonitorID,
+        KeywordMonitorID: event.KeywordMonitorID,
+        Username:         event.Username,
+        Query:            event.Query,
+        OccurredAt:       event.OccurredAt,
+        TweetID:          event.Data.ID,
+        TweetText:        event.Data.Text,
+        AuthorUsername:   authorUsername,
+        HasMore:          data.HasMore,
+        NextCursor:       data.NextCursor,
+      }
+      if err := encoder.Encode(row); err != nil {
+        log.Fatal(err)
+      }
+    }
   }
   ```
 </CodeGroup>
+
+The Node.js, Python, and Go examples emit one stored event row per line. Store
+`event_id`, `monitor_type`, `monitor_id`, `event_type`, `occurred_at`, tweet
+fields from `data`, and `next_cursor`; pass `nextCursor` as `after` until
+`hasMore` is `false`.
 
 ## Query parameters
 

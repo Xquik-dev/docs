@@ -1741,6 +1741,36 @@ const REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS = [
   'Use `nextCursor` with the `after` query parameter to fetch subsequent pages.',
 ] as const;
 
+const REQUIRED_EVENT_LIST_API_HANDOFF_SNIPPETS = [
+  'const eventRows = data.events.map((event) => ({',
+  'event_id: event.id',
+  'event_type: event.type',
+  'monitor_type: event.monitorType',
+  'monitor_id: event.monitorId',
+  'keyword_monitor_id: event.keywordMonitorId ?? null',
+  'tweet_id: event.data?.id ?? null',
+  'author_username: event.data?.author?.userName ?? null',
+  'has_more: data.hasMore',
+  'next_cursor: data.nextCursor ?? null',
+  'event_rows = []',
+  '"event_id": event["id"]',
+  '"monitor_type": event["monitorType"]',
+  '"tweet_id": tweet.get("id")',
+  '"author_username": author.get("userName")',
+  'type EventRow struct',
+  'EventID          string  `json:"event_id"`',
+  'NextCursor       *string `json:"next_cursor"`',
+  'encoder.Encode(row)',
+  'one stored event row per line',
+  'pass `nextCursor` as `after` until',
+] as const;
+
+const FORBIDDEN_EVENT_LIST_RAW_OUTPUT_SNIPPETS = [
+  'JSON.stringify(data, null, 2)',
+  'print(data)',
+  'fmt.Println(string(body))',
+] as const;
+
 const REQUIRED_DRAFT_TYPES_GUIDE_SNIPPETS = [
   'interface Draft',
   'updatedAt: string;',
@@ -8266,6 +8296,32 @@ describe('repository discovery', (): void => {
         'Types guide event object',
         REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS,
       ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the list events API page useful for event row handoff', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/events/list.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'List events API docs',
+          REQUIRED_EVENT_LIST_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_EVENT_LIST_RAW_OUTPUT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `List events API docs print raw event responses with "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
