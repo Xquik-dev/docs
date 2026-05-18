@@ -4174,6 +4174,21 @@ const REQUIRED_SEND_DM_API_SNIPPETS = [
   'X direct message API',
   'send DM with media',
   'messageId',
+  'const dmHandoff = {',
+  'message_id: result.messageId',
+  'source_endpoint: `/api/v1/x/dm/${recipientUserId}`',
+  'process.stdout.write(`${JSON.stringify(dmHandoff)}\\n`);',
+  'dm_handoff = {',
+  '"message_id": result["messageId"]',
+  '"source_endpoint": f"/api/v1/x/dm/{recipient_user_id}"',
+  'print(json.dumps(dm_handoff))',
+  'type SendDmResult struct {',
+  'type DmHandoff struct {',
+  'SourceEndpoint string  `json:"source_endpoint"`',
+  'json.NewEncoder(os.Stdout).Encode(handoff)',
+  'The Node.js, Python, and Go examples convert the response into one DM send row.',
+  'Store `message_id`, `user_id`, `account`, `send_status`, optional `media_id`,',
+  'that you passed as the single `media_ids` item.',
   '## Send with media',
   'Upload media first with [Upload Media](/api-reference/x-write/upload-media)',
   '`media_ids` must contain exactly one uploaded media ID.',
@@ -4205,6 +4220,12 @@ const REQUIRED_SEND_DM_API_SNIPPETS = [
   '[Get DM History](/api-reference/x/dm-history)',
   '[Upload Media](/api-reference/x-write/upload-media)',
   'to create the one `mediaId` allowed in `media_ids`.',
+] as const;
+
+const FORBIDDEN_SEND_DM_API_SNIPPETS = [
+  'const data = await response.json();',
+  'data = response.json()',
+  'fmt.Println(data)',
 ] as const;
 
 const REQUIRED_COMPOSE_STYLE_SNIPPETS = [
@@ -8965,7 +8986,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Send DM endpoint page clear about media attachments', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('api-reference/x-write/send-dm.mdx', 'utf8');
 
@@ -8974,6 +8995,11 @@ describe('repository discovery', (): void => {
         source,
         'Send DM endpoint docs',
         REQUIRED_SEND_DM_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_SEND_DM_API_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
       ),
     ).toStrictEqual([]);
   });
