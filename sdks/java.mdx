@@ -93,23 +93,60 @@ import com.x_twitter_scraper.api.models.SearchTweet;
 import com.x_twitter_scraper.api.models.x.tweets.TweetSearchParams;
 import com.x_twitter_scraper.api.models.x.tweets.TweetSearchParams.QueryType;
 import java.io.BufferedWriter;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 XTwitterScraperClient client = XTwitterScraperOkHttpClient.fromEnv();
 ObjectMapper objectMapper = new ObjectMapper();
 
+String query = "from:xquikcom webhook OR SDK";
 String cursor = null;
-try (BufferedWriter writer = Files.newBufferedWriter(
-    Paths.get("xquik-tweet-search.jsonl"),
-    StandardCharsets.UTF_8
-)) {
+int pageIndex = 0;
+List<String> headers = Arrays.asList(
+    "source",
+    "query",
+    "tweet_id",
+    "text",
+    "author_id",
+    "author_username",
+    "author_name",
+    "created_at",
+    "like_count",
+    "reply_count",
+    "retweet_count",
+    "quote_count",
+    "view_count",
+    "bookmark_count",
+    "is_note_tweet",
+    "page_index",
+    "page_cursor",
+    "next_cursor",
+    "has_next_page"
+);
+
+try (
+    BufferedWriter jsonlWriter = Files.newBufferedWriter(
+        Paths.get("xquik-tweet-search.jsonl"),
+        StandardCharsets.UTF_8
+    );
+    BufferedWriter csvWriter = Files.newBufferedWriter(
+        Paths.get("xquik-tweet-search.csv"),
+        StandardCharsets.UTF_8
+    )
+) {
+    writeCsvRow(csvWriter, headers);
+
     do {
+        String pageCursor = cursor;
         TweetSearchParams.Builder builder = TweetSearchParams.builder()
-            .q("from:xquikcom webhook OR SDK")
+            .q(query)
             .queryType(QueryType.LATEST);
 
         if (cursor != null && !cursor.isEmpty()) {
@@ -120,25 +157,53 @@ try (BufferedWriter writer = Files.newBufferedWriter(
 
         for (SearchTweet tweet : page.tweets()) {
             Map<String, Object> row = new LinkedHashMap<>();
-            row.put("id", tweet.id());
+            row.put("source", "xquik.java.search");
+            row.put("query", query);
+            row.put("tweet_id", tweet.id());
             row.put("text", tweet.text());
-            row.put(
-                "author_username",
-                tweet.author().map(author -> author.username()).orElse(null)
-            );
+            row.put("author_id", tweet.author().map(SearchTweet.Author::id).orElse(null));
+            row.put("author_username", tweet.author().map(SearchTweet.Author::username).orElse(null));
+            row.put("author_name", tweet.author().map(SearchTweet.Author::name).orElse(null));
             row.put("created_at", tweet.createdAt().orElse(null));
-            row.put("like_count", tweet.likeCount().orElse(null));
-            row.put("reply_count", tweet.replyCount().orElse(null));
-            row.put("retweet_count", tweet.retweetCount().orElse(null));
-            row.put("quote_count", tweet.quoteCount().orElse(null));
-            row.put("view_count", tweet.viewCount().orElse(null));
+            row.put("like_count", tweet.likeCount().orElse(0L));
+            row.put("reply_count", tweet.replyCount().orElse(0L));
+            row.put("retweet_count", tweet.retweetCount().orElse(0L));
+            row.put("quote_count", tweet.quoteCount().orElse(0L));
+            row.put("view_count", tweet.viewCount().orElse(0L));
+            row.put("bookmark_count", tweet.bookmarkCount().orElse(0L));
+            row.put("is_note_tweet", tweet.isNoteTweet().orElse(false));
+            row.put("page_index", pageIndex);
+            row.put("page_cursor", pageCursor);
+            row.put("next_cursor", page.hasNextPage() ? page.nextCursor() : null);
+            row.put("has_next_page", page.hasNextPage());
 
-            writer.write(objectMapper.writeValueAsString(row));
-            writer.newLine();
+            List<Object> csvRow = new ArrayList<>();
+            for (String header : headers) {
+                csvRow.add(row.get(header));
+            }
+
+            jsonlWriter.write(objectMapper.writeValueAsString(row));
+            jsonlWriter.newLine();
+            writeCsvRow(csvWriter, csvRow);
         }
 
+        pageIndex++;
         cursor = page.hasNextPage() ? page.nextCursor() : null;
     } while (cursor != null && !cursor.isEmpty());
+}
+
+static void writeCsvRow(BufferedWriter writer, List<?> values) throws IOException {
+    for (int index = 0; index < values.size(); index++) {
+        if (index > 0) {
+            writer.write(",");
+        }
+
+        Object value = values.get(index);
+        String cell = value == null ? "" : String.valueOf(value);
+        writer.write("\"" + cell.replace("\"", "\"\"") + "\"");
+    }
+
+    writer.newLine();
 }
 ```
 
@@ -169,7 +234,7 @@ try (BufferedWriter writer = Files.newBufferedWriter(
 
 `client.x().tweets().search` returns `PaginatedTweets`. Use `page.tweets()` for the tweet list, `page.hasNextPage()` to decide whether another page exists, and `page.nextCursor()` as the checkpoint for the next request.
 
-Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, `createdAt()`, `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, and `viewCount()` when available. Write `page.tweets()` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the same projected records into CSV for analysts, or produce XLSX from those rows when account teams need a workbook.
+Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, `createdAt()`, `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, `viewCount()`, `bookmarkCount()`, and `isNoteTweet()` when available. Project `page.tweets()` into JSON Lines and CSV rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so workers can resume safely or load the same records into XLSX, CRM, warehouse, or agent workflows.
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `.limit()` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For longer workers, set an explicit retry limit and persist `page.nextCursor()` after each page.
 
