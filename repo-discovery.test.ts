@@ -2672,6 +2672,39 @@ const FORBIDDEN_LIST_MEMBERS_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_LIST_TWEETS_API_HANDOFF_SNIPPETS = [
+  '## Direct list tweet handoff',
+  '`GET /x/lists/{id}/tweets`',
+  'CRM, warehouse, newsroom, monitoring',
+  'agent needs tweets from a curated X List',
+  'const tweetRows = data.tweets.map',
+  'list_id: listId',
+  'tweet_id: tweet.id',
+  'author_username: tweet.author?.username ?? null',
+  'created_at: tweet.createdAt ?? null',
+  'media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? []',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  'tweet_rows = [',
+  '"list_id": list_id',
+  '"tweet_id": tweet["id"]',
+  '"author_username": tweet.get("author", {}).get("username")',
+  '"created_at": tweet.get("createdAt")',
+  '"media_urls": [',
+  'next_cursor = data["next_cursor"] if data["has_next_page"] else None',
+  'shape one durable row per returned list tweet',
+  '`has_next_page` is true',
+  'pass it back as `cursor`',
+  '`list_id`, `tweet_id`, `text`,',
+  'engagement counts, & `media_urls`',
+  'Use `sinceTime` & `untilTime` for bounded backfills',
+  '`includeReplies=true`',
+] as const;
+
+const FORBIDDEN_LIST_TWEETS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+] as const;
+
 const REQUIRED_BATCH_TWEETS_API_HANDOFF_SNIPPETS = [
   '## Direct batch tweet handoff',
   '`GET /x/tweets`',
@@ -7491,6 +7524,30 @@ describe('repository discovery', (): void => {
         REQUIRED_LIST_MEMBERS_API_HANDOFF_SNIPPETS,
       ),
       ...forbiddenRawOutputFindings,
+    ]).toStrictEqual([]);
+  });
+
+  it('keeps the list tweets API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/list-tweets.mdx', 'utf8');
+
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'List tweets API page',
+        REQUIRED_LIST_TWEETS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_LIST_TWEETS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `List tweets API page prints raw tweet data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
     ]).toStrictEqual([]);
   });
 
