@@ -154,6 +154,27 @@ Each returned tweet becomes a Haystack `Document`.
 
 The `links` output contains each non-empty tweet URL found in `Document.meta["url"]`.
 
+## Pipeline Handoff
+
+Use this shape when Haystack hands results to a vector store, evaluation job, queue, CSV export, or dashboard.
+
+<CardGroup cols={2}>
+  <Card title="Document Rows" icon="file-text">
+    Store each `Document.content`, `meta.endpoint`, `meta.id`, `meta.url`, `meta.created_at`, `meta.author.username`, and public metrics before embedding or export.
+  </Card>
+  <Card title="Citation Links" icon="link">
+    Store `links` as the canonical tweet URLs returned by the component. Join them to `meta.id` when a citation, audit row, or UI card needs a source link.
+  </Card>
+  <Card title="Pagination Checkpoint" icon="list-tree">
+    Store request `query` or `user_id`, component options, `has_more`, and `next_cursor`. Resume with `cursor=next_cursor`; do not decode cursors.
+  </Card>
+  <Card title="Failure Branch" icon="route">
+    Catch `httpx.HTTPStatusError`, branch on `response.status_code`, and store the status with the pipeline run ID instead of retrying bad inputs unchanged.
+  </Card>
+</CardGroup>
+
+Keep `document_rows`, `citation_rows`, and `pagination_checkpoints` separate from embeddings so later reruns can refresh X context without rebuilding the whole pipeline.
+
 ## Async Usage
 
 Both components expose `run_async()` with the same inputs and outputs as `run()`.

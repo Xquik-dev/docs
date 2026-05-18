@@ -5599,6 +5599,20 @@ const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
   'Pin the release wheel in production images until PyPI publication is available.',
 ] as const;
 
+const REQUIRED_HAYSTACK_GUIDE_SNIPPETS = [
+  '## Pipeline Handoff',
+  'Use this shape when Haystack hands results to a vector store, evaluation job, queue, CSV export, or dashboard.',
+  '<Card title="Document Rows" icon="file-text">',
+  'Store each `Document.content`, `meta.endpoint`, `meta.id`, `meta.url`, `meta.created_at`, `meta.author.username`, and public metrics before embedding or export.',
+  '<Card title="Citation Links" icon="link">',
+  'Store `links` as the canonical tweet URLs returned by the component. Join them to `meta.id` when a citation, audit row, or UI card needs a source link.',
+  '<Card title="Pagination Checkpoint" icon="list-tree">',
+  'Store request `query` or `user_id`, component options, `has_more`, and `next_cursor`. Resume with `cursor=next_cursor`; do not decode cursors.',
+  '<Card title="Failure Branch" icon="route">',
+  'Catch `httpx.HTTPStatusError`, branch on `response.status_code`, and store the status with the pipeline run ID instead of retrying bad inputs unchanged.',
+  'Keep `document_rows`, `citation_rows`, and `pagination_checkpoints` separate from embeddings so later reruns can refresh X context without rebuilding the whole pipeline.',
+] as const;
+
 const REQUIRED_COMPOSIO_MIGRATION_SNIPPETS = [
   '## Result Handoff',
   'When you replace Composio agent steps, map raw tool responses into stable rows before sending them to Slack, Sheets, queues, databases, or dashboards.',
@@ -10097,6 +10111,23 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('|');
     expect(source).not.toContain('https://api.xquik.com');
     expect(source).not.toContain('0.1.4');
+  });
+
+  it('keeps the Haystack guide handoff concrete', (): void => {
+    expect.assertions(4);
+
+    const source = readFileSync('guides/haystack.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Haystack guide',
+        REQUIRED_HAYSTACK_GUIDE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(source).not.toContain('print(result["documents"])');
+    expect(source).not.toContain('Store the raw Xquik response');
+    expect(source).not.toContain('Store the entire MCP result');
   });
 
   it('keeps the Composio migration guide handoff concrete', (): void => {
