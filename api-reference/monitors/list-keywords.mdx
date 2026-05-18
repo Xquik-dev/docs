@@ -24,21 +24,121 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     method: "GET",
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
-  const data = await response.json();
-  process.stdout.write(`${JSON.stringify(data, null, 2)}\n`);
+  const payload = await response.json();
+  for (const monitor of payload.monitors) {
+    const monitorRow = {
+      keyword_monitor_id: monitor.id,
+      query: monitor.query,
+      event_types: monitor.eventTypes,
+      is_active: monitor.isActive,
+      created_at: monitor.createdAt,
+      next_billing_at: monitor.nextBillingAt,
+      events_endpoint: `/api/v1/events?monitorId=${monitor.id}`,
+      verify_endpoint: `/api/v1/monitors/keywords/${monitor.id}`,
+    };
+    process.stdout.write(`${JSON.stringify(monitorRow)}\n`);
+  }
   ```
 
   ```python Python
+  import json
   import requests
 
   response = requests.get(
       "https://xquik.com/api/v1/monitors/keywords",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
-  data = response.json()
-  print(data)
+  payload = response.json()
+  for monitor in payload["monitors"]:
+      monitor_row = {
+          "keyword_monitor_id": monitor["id"],
+          "query": monitor["query"],
+          "event_types": monitor["eventTypes"],
+          "is_active": monitor["isActive"],
+          "created_at": monitor["createdAt"],
+          "next_billing_at": monitor["nextBillingAt"],
+          "events_endpoint": f"/api/v1/events?monitorId={monitor['id']}",
+          "verify_endpoint": f"/api/v1/monitors/keywords/{monitor['id']}",
+      }
+      print(json.dumps(monitor_row))
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "encoding/json"
+      "log"
+      "net/http"
+      "os"
+  )
+
+  type KeywordMonitor struct {
+      ID            string   `json:"id"`
+      Query         string   `json:"query"`
+      EventTypes    []string `json:"eventTypes"`
+      IsActive      bool     `json:"isActive"`
+      CreatedAt     string   `json:"createdAt"`
+      NextBillingAt string   `json:"nextBillingAt"`
+  }
+
+  type KeywordMonitorListResponse struct {
+      Monitors []KeywordMonitor `json:"monitors"`
+      Total    int              `json:"total"`
+  }
+
+  type KeywordMonitorRow struct {
+      KeywordMonitorID string   `json:"keyword_monitor_id"`
+      Query            string   `json:"query"`
+      EventTypes       []string `json:"event_types"`
+      IsActive         bool     `json:"is_active"`
+      CreatedAt        string   `json:"created_at"`
+      NextBillingAt    string   `json:"next_billing_at"`
+      EventsEndpoint   string   `json:"events_endpoint"`
+      VerifyEndpoint   string   `json:"verify_endpoint"`
+  }
+
+  func main() {
+      req, err := http.NewRequest("GET", "https://xquik.com/api/v1/monitors/keywords", nil)
+      if err != nil {
+          log.Fatal(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          log.Fatal(err)
+      }
+      defer resp.Body.Close()
+
+      var payload KeywordMonitorListResponse
+      if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+          log.Fatal(err)
+      }
+      encoder := json.NewEncoder(os.Stdout)
+      for _, monitor := range payload.Monitors {
+          row := KeywordMonitorRow{
+              KeywordMonitorID: monitor.ID,
+              Query:            monitor.Query,
+              EventTypes:       monitor.EventTypes,
+              IsActive:         monitor.IsActive,
+              CreatedAt:        monitor.CreatedAt,
+              NextBillingAt:    monitor.NextBillingAt,
+              EventsEndpoint:   "/api/v1/events?monitorId=" + monitor.ID,
+              VerifyEndpoint:   "/api/v1/monitors/keywords/" + monitor.ID,
+          }
+          if err := encoder.Encode(row); err != nil {
+              log.Fatal(err)
+          }
+      }
+  }
   ```
 </CodeGroup>
+
+The Node.js, Python, and Go examples convert each keyword monitor into one
+inventory row. Store `keyword_monitor_id`, `query`, `event_types`, `is_active`,
+`next_billing_at`, `events_endpoint`, and `verify_endpoint` before reconciling
+events, webhooks, or paused queries.
 
 ## Inventory handoff
 
