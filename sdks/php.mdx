@@ -73,47 +73,91 @@ $client = new Client(
   apiKey: getenv('X_TWITTER_SCRAPER_API_KEY') ?: ''
 );
 
+$query = 'from:xquikcom webhook OR SDK';
 $cursor = null;
-$handle = fopen('xquik-tweet-search.jsonl', 'wb');
+$pageIndex = 0;
+$headers = [
+  'source',
+  'query',
+  'tweet_id',
+  'text',
+  'author_id',
+  'author_username',
+  'author_name',
+  'created_at',
+  'like_count',
+  'reply_count',
+  'retweet_count',
+  'quote_count',
+  'view_count',
+  'bookmark_count',
+  'is_note_tweet',
+  'page_index',
+  'page_cursor',
+  'next_cursor',
+  'has_next_page',
+];
+$jsonlHandle = fopen('xquik-tweet-search.jsonl', 'wb');
+$csvHandle = fopen('xquik-tweet-search.csv', 'wb');
 
-if (false === $handle) {
-  throw new RuntimeException('Could not open xquik-tweet-search.jsonl');
+if (false === $jsonlHandle || false === $csvHandle) {
+  throw new RuntimeException('Could not open tweet search handoff files');
 }
 
 try {
+  fputcsv($csvHandle, $headers);
+
   do {
+    $pageCursor = $cursor;
+
     /** @var PaginatedTweets $page */
     $page = $client->x->tweets->search(
-      q: 'from:xquikcom webhook OR SDK',
+      q: $query,
       cursor: $cursor,
       queryType: QueryType::LATEST,
     );
 
     foreach ($page->tweets as $tweet) {
       /** @var SearchTweet $tweet */
+      $row = [
+        'source' => 'xquik.php.search',
+        'query' => $query,
+        'tweet_id' => $tweet->id,
+        'text' => $tweet->text,
+        'author_id' => $tweet->author?->id,
+        'author_username' => $tweet->author?->username,
+        'author_name' => $tweet->author?->name,
+        'created_at' => $tweet->createdAt,
+        'like_count' => $tweet->likeCount ?? 0,
+        'reply_count' => $tweet->replyCount ?? 0,
+        'retweet_count' => $tweet->retweetCount ?? 0,
+        'quote_count' => $tweet->quoteCount ?? 0,
+        'view_count' => $tweet->viewCount ?? 0,
+        'bookmark_count' => $tweet->bookmarkCount ?? 0,
+        'is_note_tweet' => $tweet->isNoteTweet ?? false,
+        'page_index' => $pageIndex,
+        'page_cursor' => $pageCursor,
+        'next_cursor' => '' === $page->nextCursor ? null : $page->nextCursor,
+        'has_next_page' => $page->hasNextPage,
+      ];
+      $csvRow = [];
+      foreach ($headers as $header) {
+        $csvRow[] = $row[$header];
+      }
+
+      fputcsv($csvHandle, $csvRow);
       fwrite(
-        $handle,
-        json_encode(
-          [
-            'id' => $tweet->id,
-            'text' => $tweet->text,
-            'author_username' => $tweet->author?->username,
-            'created_at' => $tweet->createdAt,
-            'like_count' => $tweet->likeCount,
-            'reply_count' => $tweet->replyCount,
-            'retweet_count' => $tweet->retweetCount,
-            'quote_count' => $tweet->quoteCount,
-            'view_count' => $tweet->viewCount,
-          ],
-          JSON_THROW_ON_ERROR
-        ) . PHP_EOL
+        $jsonlHandle,
+        json_encode($row, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . PHP_EOL
       );
     }
 
     $cursor = $page->hasNextPage ? $page->nextCursor : null;
+    $pageIndex++;
   } while (null !== $cursor && '' !== $cursor);
 } finally {
-  fclose($handle);
+  fclose($jsonlHandle);
+  fclose($csvHandle);
 }
 ```
 
@@ -144,7 +188,7 @@ try {
 
 `$client->x->tweets->search()` returns `PaginatedTweets`. Use `$page->tweets` for the tweet array, `$page->hasNextPage` to decide whether another page exists, and `$page->nextCursor` as the checkpoint for the next request.
 
-Each `SearchTweet` includes typed properties such as `$id`, `$text`, `$author`, `$createdAt`, `$likeCount`, `$replyCount`, `$retweetCount`, `$quoteCount`, and `$viewCount` when available. Write `$page->tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the same projected rows into CSV for analysts, or generate XLSX from those rows when account teams need a workbook.
+Each `SearchTweet` includes typed properties such as `$id`, `$text`, `$author`, `$createdAt`, `$likeCount`, `$replyCount`, `$retweetCount`, `$quoteCount`, `$bookmarkCount`, `$viewCount`, and `$isNoteTweet` when available. Project `$page->tweets` into JSON Lines and CSV rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so workers can resume safely or load the same records into XLSX, CRM, warehouse, or agent workflows.
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, timeouts, 408, 409, 429, and 5xx responses 2 times by default. For long-running workers, pass `requestOptions: ['maxRetries' => 5]` and persist `$page->nextCursor` after each page.
 
