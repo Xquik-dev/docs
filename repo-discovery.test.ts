@@ -3357,6 +3357,39 @@ const FORBIDDEN_USER_TWEETS_API_RAW_SNIPPETS = [
   'print(data["tweets"])',
 ] as const;
 
+const REQUIRED_USER_LIKES_API_HANDOFF_SNIPPETS = [
+  '## User likes handoff',
+  '`GET /x/users/{id}/likes`',
+  'CRM, warehouse, recommendation job, or',
+  'The examples above write JSON',
+  'Lines rows with the liked-by user',
+  'liked tweet ID, text, tweet URL, author join',
+  'from the last saved `next_cursor`',
+  'const likedRows = page.tweets.map',
+  'liked_by_user_id: userId',
+  'liked_tweet_id: tweet.id',
+  'tweet_url: tweet.url ?? null',
+  'author_username: tweet.author?.username ?? null',
+  'media_urls: (tweet.media ?? []).map',
+  'page_cursor: pageCursor',
+  'process.stdout.write(`${JSON.stringify(row)}\\n`);',
+  'user_id = "44196397"',
+  '"liked_by_user_id": user_id',
+  '"liked_tweet_id": tweet["id"]',
+  '"tweet_url": tweet.get("url")',
+  '"author_username": (tweet.get("author") or {}).get("username")',
+  '"media_urls": [',
+  'print(json.dumps(liked_row, separators=(",", ":")))',
+] as const;
+
+const FORBIDDEN_USER_LIKES_API_RAW_SNIPPETS = [
+  'const data = await response.json();',
+  'console.log(data.tweets);',
+  'console.log((await next.json()).tweets);',
+  'data = response.json()',
+  'print(data["tweets"])',
+] as const;
+
 const REQUIRED_USER_MEDIA_API_HANDOFF_SNIPPETS = [
   '## User media handoff',
   '`GET /x/users/{id}/media`',
@@ -8503,6 +8536,32 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `User tweets endpoint page should map timeline rows instead of raw response output "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the user likes API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/user-likes.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'User likes endpoint page',
+          REQUIRED_USER_LIKES_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_USER_LIKES_API_RAW_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `User likes endpoint page should map liked tweet rows instead of raw response output "${snippet}".`,
                   },
                 ]
               : [],

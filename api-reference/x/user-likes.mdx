@@ -31,42 +31,102 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 
   ```javascript Node.js
   const userId = "44196397";
-  const response = await fetch(`https://xquik.com/api/v1/x/users/${userId}/likes`, {
-    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
-  });
-  const data = await response.json();
-  console.log(data.tweets);
+  let pageCursor = "";
 
-  // Paginate
-  if (data.has_next_page) {
-    const next = await fetch(
-      `https://xquik.com/api/v1/x/users/${userId}/likes?cursor=${data.next_cursor}`,
+  for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
+    const params =
+      pageCursor === "" ? "" : `?${new URLSearchParams({ cursor: pageCursor })}`;
+    const response = await fetch(
+      `https://xquik.com/api/v1/x/users/${userId}/likes${params}`,
       { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
     );
-    console.log((await next.json()).tweets);
+    const page = await response.json();
+    if (!response.ok) throw new Error(JSON.stringify(page));
+
+    const likedRows = page.tweets.map((tweet) => ({
+      liked_by_user_id: userId,
+      liked_tweet_id: tweet.id,
+      text: tweet.text,
+      tweet_url: tweet.url ?? null,
+      created_at: tweet.createdAt ?? null,
+      author_id: tweet.author?.id ?? null,
+      author_username: tweet.author?.username ?? null,
+      like_count: tweet.likeCount ?? null,
+      reply_count: tweet.replyCount ?? null,
+      retweet_count: tweet.retweetCount ?? null,
+      quote_count: tweet.quoteCount ?? null,
+      view_count: tweet.viewCount ?? null,
+      media_urls: (tweet.media ?? []).map((item) => item.mediaUrl).filter(Boolean),
+      page_index: pageIndex,
+      page_cursor: pageCursor,
+      next_cursor: page.next_cursor,
+      has_next_page: page.has_next_page,
+    }));
+
+    for (const row of likedRows) process.stdout.write(`${JSON.stringify(row)}\n`);
+
+    if (!page.has_next_page || page.next_cursor === "") break;
+    pageCursor = page.next_cursor;
   }
   ```
 
   ```python Python
+  import json
   import requests
 
-  response = requests.get(
-      "https://xquik.com/api/v1/x/users/44196397/likes",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-  )
-  data = response.json()
-  print(data["tweets"])
+  user_id = "44196397"
+  page_cursor = ""
 
-  # Paginate
-  while data["has_next_page"]:
-      data = requests.get(
-          "https://xquik.com/api/v1/x/users/44196397/likes",
-          params={"cursor": data["next_cursor"]},
+  for page_index in range(3):
+      params = {"cursor": page_cursor} if page_cursor else {}
+      response = requests.get(
+          f"https://xquik.com/api/v1/x/users/{user_id}/likes",
+          params=params,
           headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-      ).json()
-      print(data["tweets"])
+      )
+      page = response.json()
+      if not response.ok:
+          raise RuntimeError(page)
+
+      for tweet in page["tweets"]:
+          liked_row = {
+              "liked_by_user_id": user_id,
+              "liked_tweet_id": tweet["id"],
+              "text": tweet["text"],
+              "tweet_url": tweet.get("url"),
+              "created_at": tweet.get("createdAt"),
+              "author_id": (tweet.get("author") or {}).get("id"),
+              "author_username": (tweet.get("author") or {}).get("username"),
+              "like_count": tweet.get("likeCount"),
+              "reply_count": tweet.get("replyCount"),
+              "retweet_count": tweet.get("retweetCount"),
+              "quote_count": tweet.get("quoteCount"),
+              "view_count": tweet.get("viewCount"),
+              "media_urls": [
+                  item["mediaUrl"]
+                  for item in tweet.get("media", [])
+                  if item.get("mediaUrl")
+              ],
+              "page_index": page_index,
+              "page_cursor": page_cursor,
+              "next_cursor": page["next_cursor"],
+              "has_next_page": page["has_next_page"],
+          }
+          print(json.dumps(liked_row, separators=(",", ":")))
+
+      if not page["has_next_page"] or not page["next_cursor"]:
+          break
+      page_cursor = page["next_cursor"]
   ```
 </CodeGroup>
+
+## User likes handoff
+
+Use `GET /x/users/{id}/likes` when a CRM, warehouse, recommendation job, or
+agent needs liked tweet rows from one account. The examples above write JSON
+Lines rows with the liked-by user, liked tweet ID, text, tweet URL, author join
+fields, engagement counts, media URLs, and cursor fields so a worker can resume
+from the last saved `next_cursor`.
 
 ## Path parameters
 
