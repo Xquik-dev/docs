@@ -5580,6 +5580,7 @@ const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
   '`get_trends` returns `trends`, `count`, and `woeid`.',
   '<Card title="Downstream Rows" icon="table">',
   'Normalize raw dictionaries in a follow-up task before writing to Slack, Sheets, a warehouse, or a dashboard.',
+  'Keep `tweet_rows` with `id`, `text`, `author.username`, `createdAt`, and `url`; `user_rows` with `id`, `username`, `name`, and `followers`; and `trend_rows` with `name`, `rank`, `query`, and `description`.',
   'search_recent_tweets = search_tweets.with_options(',
   'Respect `Retry-After` for repeated `429` responses, and keep `limit` at or below `200` for bounded tweet search pulls.',
   'Omit `limit` when passing a cursor.',
