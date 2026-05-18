@@ -73,49 +73,73 @@ client = XTwitterScraper::Client.new(
   api_key: ENV["X_TWITTER_SCRAPER_API_KEY"]
 )
 
+query = "from:xquikcom webhook OR SDK"
 cursor = nil
+page_index = 0
 
 headers = [
-  "id",
+  "source",
+  "query",
+  "tweet_id",
   "text",
+  "author_id",
   "author_username",
+  "author_name",
   "created_at",
   "like_count",
   "reply_count",
   "retweet_count",
   "quote_count",
-  "view_count"
+  "view_count",
+  "bookmark_count",
+  "is_note_tweet",
+  "page_index",
+  "page_cursor",
+  "next_cursor",
+  "has_next_page"
 ]
 
 CSV.open("xquik-tweet-search.csv", "w", write_headers: true, headers: headers) do |csv|
   File.open("xquik-tweet-search.jsonl", "w") do |jsonl|
     loop do
+      page_cursor = cursor
       page = client.x.tweets.search(
-        q: "from:xquikcom webhook OR SDK",
+        q: query,
         query_type: :Latest,
         cursor: cursor
       )
 
       page.tweets.each do |tweet|
-        row = [
-          tweet.id,
-          tweet.text,
-          tweet.author&.username,
-          tweet.created_at,
-          tweet.like_count || 0,
-          tweet.reply_count || 0,
-          tweet.retweet_count || 0,
-          tweet.quote_count || 0,
-          tweet.view_count || 0
-        ]
+        row = {
+          "source" => "xquik.ruby.search",
+          "query" => query,
+          "tweet_id" => tweet.id,
+          "text" => tweet.text,
+          "author_id" => tweet.author&.id,
+          "author_username" => tweet.author&.username,
+          "author_name" => tweet.author&.name,
+          "created_at" => tweet.created_at,
+          "like_count" => tweet.like_count || 0,
+          "reply_count" => tweet.reply_count || 0,
+          "retweet_count" => tweet.retweet_count || 0,
+          "quote_count" => tweet.quote_count || 0,
+          "view_count" => tweet.view_count || 0,
+          "bookmark_count" => tweet.bookmark_count || 0,
+          "is_note_tweet" => tweet.is_note_tweet || false,
+          "page_index" => page_index,
+          "page_cursor" => page_cursor,
+          "next_cursor" => page.next_cursor == "" ? nil : page.next_cursor,
+          "has_next_page" => page.has_next_page
+        }
 
-        csv << row
-        jsonl.puts(tweet.to_json)
+        csv << headers.map { |header| row.fetch(header) }
+        jsonl.puts(JSON.generate(row))
       end
 
       break unless page.has_next_page && page.next_cursor != ""
 
       cursor = page.next_cursor
+      page_index += 1
     end
   end
 end
@@ -160,7 +184,7 @@ The generated params map directly to the REST endpoint:
   </Card>
 </CardGroup>
 
-Write `page.tweets` to CSV for analysts. Write JSON Lines for queues and data lakes to `xquik-tweet-search.jsonl` with `tweet.to_json`, or call `tweet.deep_to_h` before loading a warehouse. Load the projected rows into an XLSX writer when account teams need a workbook. Pass `id`, `text`, `author.username`, `created_at`, and engagement counts to a CRM or enrichment job.
+Project `page.tweets` into CSV rows for analysts and JSON Lines rows for queues and data lakes. Store `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` in `xquik-tweet-search.jsonl` so workers can resume safely or load the same records into XLSX, CRM, warehouse, or agent workflows.
 
 ## Workflow: Follower Export to CSV, JSON, or XLSX
 
