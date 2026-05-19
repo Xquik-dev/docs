@@ -3630,6 +3630,10 @@ const HIGH_VALUE_ROW_HANDOFF_API_PAGES = [
     label: 'User mentions endpoint page',
   },
   {
+    file: 'api-reference/x/timeline.mdx',
+    label: 'Timeline endpoint page',
+  },
+  {
     file: 'api-reference/x/tweet-replies.mdx',
     label: 'Tweet replies endpoint page',
   },
@@ -3666,6 +3670,52 @@ const FORBIDDEN_HIGH_VALUE_ROW_HANDOFF_RAW_RESPONSE_SNIPPETS = [
   'var data map[string]interface{}',
   'fmt.Println(data)',
   'fmt.Println(string(body))',
+] as const;
+
+const REQUIRED_TIMELINE_API_HANDOFF_SNIPPETS = [
+  '## Home timeline handoff',
+  '`GET /x/timeline`',
+  "authenticated account's home feed",
+  'The examples write JSON Lines rows',
+  'author ID, username, display name,',
+  'follower count, verified state, profile image URL',
+  '`seenTweetIds`, and cursor fields',
+  'pass them as `seenTweetIds` with the last saved `next_cursor`',
+  'const seenTweetIds = new Set();',
+  'const timelineRows = page.tweets.map',
+  'timeline_source: "home"',
+  'tweet_url: tweet.url ?? null',
+  'author_id: tweet.author?.id ?? null',
+  'author_username: tweet.author?.username ?? null',
+  'author_name: tweet.author?.name ?? null',
+  'author_followers: tweet.author?.followers ?? null',
+  'author_verified: tweet.author?.verified ?? null',
+  'author_profile_picture: tweet.author?.profilePicture ?? null',
+  'process.stdout.write(`${JSON.stringify(row)}\\n`);',
+  'seen_tweet_ids = set()',
+  'params["seenTweetIds"] = ",".join(sorted(seen_tweet_ids))',
+  'seen_tweet_ids.add(tweet["id"])',
+  '"timeline_source": "home"',
+  '"tweet_url": tweet.get("url")',
+  '"author_id": (tweet.get("author") or {}).get("id")',
+  '"author_username": (tweet.get("author") or {}).get("username")',
+  '"author_name": (tweet.get("author") or {}).get("name")',
+  '"author_followers": (tweet.get("author") or {}).get("followers")',
+  '"author_verified": (tweet.get("author") or {}).get("verified")',
+  '"author_profile_picture": (tweet.get("author") or {}).get("profilePicture")',
+  'print(json.dumps(timeline_row, separators=(",", ":")))',
+  'Tweet author profile. Omitted if unavailable.',
+  '<ResponseField name="profilePicture" type="string">Profile picture URL.',
+  '"followers": 150000000',
+  '"profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"',
+] as const;
+
+const FORBIDDEN_TIMELINE_API_RAW_SNIPPETS = [
+  'const data = await response.json();',
+  'console.log(data.tweets);',
+  'console.log((await next.json()).tweets);',
+  'data = response.json()',
+  'print(data["tweets"])',
 ] as const;
 
 const REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS = [
@@ -9002,6 +9052,32 @@ describe('repository discovery', (): void => {
     );
 
     expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps the timeline API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/timeline.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'Timeline endpoint page',
+          REQUIRED_TIMELINE_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_TIMELINE_API_RAW_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Timeline endpoint page should map timeline rows instead of raw response output "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
   });
 
   it('keeps the user tweets API handoff concrete', (): void => {
