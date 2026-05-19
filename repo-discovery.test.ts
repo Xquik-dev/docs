@@ -3958,7 +3958,14 @@ const REQUIRED_USER_MEDIA_API_HANDOFF_SNIPPETS = [
   '"media_urls": [',
   '"media_types": [item["type"] for item in media_items if item.get("type")]',
   'print(json.dumps(media_row, separators=(",", ":")))',
-  'Tweet author profile (id, username, name, followers, verified, profilePicture).',
+  'Tweet author profile. Omitted if unavailable.',
+  '<Expandable title="Author object fields">',
+  '<ResponseField name="id" type="string">Author user ID.',
+  '<ResponseField name="username" type="string">Author handle without `@`.',
+  '<ResponseField name="name" type="string">Author display name.',
+  '<ResponseField name="followers" type="number">Follower count.',
+  '<ResponseField name="verified" type="boolean">Whether the author is verified.',
+  '<ResponseField name="profilePicture" type="string">Author profile image URL.',
 ] as const;
 
 const FORBIDDEN_USER_MEDIA_API_RAW_SNIPPETS = [
