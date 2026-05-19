@@ -33,22 +33,30 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   );
   const data = await response.json();
   const tweetsById = new Map(data.tweets.map((tweet) => [tweet.id, tweet]));
-  const tweetRows = data.tweets.map((tweet) => ({
-    requested_ids: ids,
-    tweet_id: tweet.id,
-    text: tweet.text,
-    author_id: tweet.author?.id ?? null,
-    author_username: tweet.author?.username ?? null,
-    created_at: tweet.createdAt ?? null,
-    conversation_id: tweet.conversationId ?? null,
-    like_count: tweet.likeCount ?? null,
-    reply_count: tweet.replyCount ?? null,
-    retweet_count: tweet.retweetCount ?? null,
-    quote_count: tweet.quoteCount ?? null,
-    media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
-    has_next_page: data.has_next_page,
-    next_cursor: data.next_cursor || null,
-  }));
+  const tweetRows = data.tweets.map((tweet) => {
+    const author = tweet.author ?? {};
+
+    return {
+      requested_ids: ids,
+      tweet_id: tweet.id,
+      text: tweet.text,
+      author_id: author.id ?? null,
+      author_username: author.username ?? null,
+      author_name: author.name ?? null,
+      author_followers: author.followers ?? null,
+      author_verified: author.verified ?? null,
+      author_profile_picture: author.profilePicture ?? null,
+      created_at: tweet.createdAt ?? null,
+      conversation_id: tweet.conversationId ?? null,
+      like_count: tweet.likeCount ?? null,
+      reply_count: tweet.replyCount ?? null,
+      retweet_count: tweet.retweetCount ?? null,
+      quote_count: tweet.quoteCount ?? null,
+      media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
+      has_next_page: data.has_next_page,
+      next_cursor: data.next_cursor || null,
+    };
+  });
   const missingIds = ids.filter((id) => !tweetsById.has(id));
   ```
 
@@ -63,29 +71,36 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   )
   data = response.json()
   tweets_by_id = {tweet["id"]: tweet for tweet in data["tweets"]}
-  tweet_rows = [
-      {
-          "requested_ids": ids,
-          "tweet_id": tweet["id"],
-          "text": tweet["text"],
-          "author_id": (tweet.get("author") or {}).get("id"),
-          "author_username": (tweet.get("author") or {}).get("username"),
-          "created_at": tweet.get("createdAt"),
-          "conversation_id": tweet.get("conversationId"),
-          "like_count": tweet.get("likeCount"),
-          "reply_count": tweet.get("replyCount"),
-          "retweet_count": tweet.get("retweetCount"),
-          "quote_count": tweet.get("quoteCount"),
-          "media_urls": [
-              item["mediaUrl"]
-              for item in tweet.get("media", [])
-              if item.get("mediaUrl")
-          ],
-          "has_next_page": data["has_next_page"],
-          "next_cursor": data["next_cursor"] or None,
-      }
-      for tweet in data["tweets"]
-  ]
+  tweet_rows = []
+  for tweet in data["tweets"]:
+      author = tweet.get("author") or {}
+      tweet_rows.append(
+          {
+              "requested_ids": ids,
+              "tweet_id": tweet["id"],
+              "text": tweet["text"],
+              "author_id": author.get("id"),
+              "author_username": author.get("username"),
+              "author_name": author.get("name"),
+              "author_followers": author.get("followers"),
+              "author_verified": author.get("verified"),
+              "author_profile_picture": author.get("profilePicture"),
+              "created_at": tweet.get("createdAt"),
+              "conversation_id": tweet.get("conversationId"),
+              "like_count": tweet.get("likeCount"),
+              "reply_count": tweet.get("replyCount"),
+              "retweet_count": tweet.get("retweetCount"),
+              "quote_count": tweet.get("quoteCount"),
+              "media_urls": [
+                  item["mediaUrl"]
+                  for item in tweet.get("media", [])
+                  if item.get("mediaUrl")
+              ],
+              "has_next_page": data["has_next_page"],
+              "next_cursor": data["next_cursor"] or None,
+          }
+      )
+
   missing_ids = [tweet_id for tweet_id in ids if tweet_id not in tweets_by_id]
   ```
 </CodeGroup>
@@ -103,9 +118,10 @@ when you need one tweet by ID, or [Search Tweets](/api-reference/x/search-tweets
 when you need to find tweets by query.
 
 Store `requested_ids`, `tweet_id`, `text`, `author_id`, `author_username`,
-`created_at`, `conversation_id`, engagement counts, media URLs,
-`has_next_page`, and `next_cursor`. Join returned tweets by `tweet_id` instead
-of relying on response order. Send at most 100 IDs per request. Batch requests
+`author_name`, `author_followers`, `author_verified`,
+`author_profile_picture`, `created_at`, `conversation_id`, engagement counts,
+media URLs, `has_next_page`, and `next_cursor`. Join returned tweets by
+`tweet_id` instead of relying on response order. Send at most 100 IDs per request. Batch requests
 always return `has_next_page: false` and `next_cursor: ""`; zero affordable
 results return `402 insufficient_credits`.
 
@@ -151,7 +167,17 @@ results return `402 insufficient_credits`.
         <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
         <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
         <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
-        <ResponseField name="author" type="object">Tweet author profile. Omitted if unavailable.</ResponseField>
+        <ResponseField name="author" type="object">
+          Tweet author profile. Omitted if unavailable.
+          <Expandable title="Author object fields">
+            <ResponseField name="id" type="string">Author user ID.</ResponseField>
+            <ResponseField name="username" type="string">Author handle without `@`.</ResponseField>
+            <ResponseField name="name" type="string">Author display name. Omitted if unavailable.</ResponseField>
+            <ResponseField name="followers" type="number">Follower count. Omitted if unavailable.</ResponseField>
+            <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
+            <ResponseField name="profilePicture" type="string">Author profile image URL. Omitted if unavailable.</ResponseField>
+          </Expandable>
+        </ResponseField>
         <ResponseField name="media" type="object[]">
           Media attachments. Omitted when the tweet has no media.
           <Expandable title="Media object fields">
@@ -179,7 +205,10 @@ results return `402 insufficient_credits`.
           "author": {
             "id": "9876543210",
             "username": "xquikcom",
-            "name": "Xquik"
+            "name": "Xquik",
+            "followers": 12000,
+            "verified": true,
+            "profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"
           }
         }
       ],
