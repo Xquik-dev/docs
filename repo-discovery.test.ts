@@ -1259,6 +1259,7 @@ const REQUIRED_LLMS_SNIPPETS = [
   '**Tweet result filters**',
   '`GET /x/users/{id}/tweets`',
   '`GET /x/tweets/{id}/quotes`',
+  'signed `webhook.test` payloads without `deliveryId`/`streamEventId`',
 ] as const;
 
 const REQUIRED_SKILL_RATE_LIMIT_SNIPPETS = [
