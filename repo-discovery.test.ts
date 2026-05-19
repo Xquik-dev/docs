@@ -4723,8 +4723,13 @@ const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
   'Do not hash the raw request body when `deliveryId` is available.',
   'if (event.eventType === "webhook.test")',
   'if event.get("eventType") == "webhook.test":',
+  'if event.EventType == "webhook.test" {',
   'processedDeliveries.add(event.deliveryId)',
   'processed_events.add(stream_event_id)',
+  'processedDeliveries.LoadOrStore(',
+  'event.DeliveryID,',
+  'processedEvents.LoadOrStore(',
+  'event.StreamEventID,',
 ] as const;
 
 const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [

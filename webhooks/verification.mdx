@@ -339,6 +339,68 @@ def webhook():
     return "OK", 200
 ```
 
+```go Go
+type WebhookEvent struct {
+	Data          map[string]any `json:"data"`
+	DeliveryID    string         `json:"deliveryId"`
+	EventType     string         `json:"eventType"`
+	StreamEventID string         `json:"streamEventId"`
+}
+
+var (
+	processedDeliveries sync.Map
+	processedEvents     sync.Map
+)
+
+func processSignedWebhook(w http.ResponseWriter, r *http.Request) {
+	payload, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	if !verifyWebhook(payload, r.Header, webhookSecret) {
+		http.Error(w, "Invalid signature", http.StatusUnauthorized)
+		return
+	}
+
+	var event WebhookEvent
+	if err := json.Unmarshal(payload, &event); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	if event.EventType == "webhook.test" {
+		fmt.Fprint(w, "Test accepted")
+		return
+	}
+
+	if event.DeliveryID == "" || event.StreamEventID == "" {
+		http.Error(w, "Missing idempotency fields", http.StatusBadRequest)
+		return
+	}
+
+	if _, replayed := processedDeliveries.LoadOrStore(
+		event.DeliveryID,
+		true,
+	); replayed {
+		fmt.Fprint(w, "Delivery already processed")
+		return
+	}
+
+	if _, seen := processedEvents.LoadOrStore(
+		event.StreamEventID,
+		true,
+	); seen {
+		fmt.Fprint(w, "Event already processed")
+		return
+	}
+
+	handleEvent(event)
+	fmt.Fprint(w, "OK")
+}
+```
+
 </CodeGroup>
 
 <Warning>
