@@ -2854,6 +2854,34 @@ const FORBIDDEN_RETWEETERS_API_RAW_OUTPUT_SNIPPETS = [
   'print(data)',
 ] as const;
 
+const REQUIRED_FAVORITERS_API_HANDOFF_SNIPPETS = [
+  '`GET /x/tweets/{id}/favoriters`',
+  'source_tweet_id: tweetId',
+  'liker_id: user.id',
+  'username: user.username',
+  'display_name: user.name',
+  'follower_count: user.followers ?? null',
+  'following_count: user.following ?? null',
+  'verified: user.verified ?? false',
+  'profile_image_url: user.profilePicture ?? null',
+  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
+  '"source_tweet_id": tweet_id',
+  '"liker_id": user["id"]',
+  '"display_name": user["name"]',
+  '"follower_count": user.get("followers")',
+  '"following_count": user.get("following")',
+  '"profile_image_url": user.get("profilePicture")',
+  'one row per account',
+  '`source_tweet_id`, `liker_id`, `username`,',
+  '`display_name`, `follower_count`, `following_count`,',
+] as const;
+
+const FORBIDDEN_FAVORITERS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data.users);',
+  'console.log((await next.json()).users);',
+  'print(data["users"])',
+] as const;
+
 const REQUIRED_COMMUNITY_INFO_API_HANDOFF_SNIPPETS = [
   '`GET /x/communities/{id}/info`',
   'const communityRecord = {',
@@ -8680,6 +8708,30 @@ describe('repository discovery', (): void => {
             : [],
       ),
     ).toStrictEqual([]);
+  });
+
+  it('keeps the favoriters API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/favoriters.mdx', 'utf8');
+
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Favoriters endpoint page',
+        REQUIRED_FAVORITERS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_FAVORITERS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Favoriters API page prints raw liker data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the community info API handoff concrete', (): void => {

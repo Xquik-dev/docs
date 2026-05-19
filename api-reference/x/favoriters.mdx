@@ -34,38 +34,60 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data.users);
+  const nextCursor = data.has_next_page ? data.next_cursor : null;
+  const likerRows = data.users.map((user) => ({
+    source_tweet_id: tweetId,
+    liker_id: user.id,
+    username: user.username,
+    display_name: user.name,
+    follower_count: user.followers ?? null,
+    following_count: user.following ?? null,
+    verified: user.verified ?? false,
+    profile_image_url: user.profilePicture ?? null,
+    next_cursor: nextCursor,
+  }));
 
-  // Paginate
-  if (data.has_next_page) {
-    const next = await fetch(
-      `https://xquik.com/api/v1/x/tweets/${tweetId}/favoriters?cursor=${data.next_cursor}`,
-      { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
-    );
-    console.log((await next.json()).users);
+  for (const row of likerRows) {
+    process.stdout.write(`${JSON.stringify(row)}\n`);
   }
   ```
 
   ```python Python
+  import json
   import requests
 
+  tweet_id = "1893456789012345678"
   response = requests.get(
-      "https://xquik.com/api/v1/x/tweets/1893456789012345678/favoriters",
+      f"https://xquik.com/api/v1/x/tweets/{tweet_id}/favoriters",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data["users"])
-
-  # Paginate
-  while data["has_next_page"]:
-      data = requests.get(
-          "https://xquik.com/api/v1/x/tweets/1893456789012345678/favoriters",
-          params={"cursor": data["next_cursor"]},
-          headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-      ).json()
-      print(data["users"])
+  next_cursor = data["next_cursor"] if data["has_next_page"] else None
+  liker_rows = [
+      {
+          "source_tweet_id": tweet_id,
+          "liker_id": user["id"],
+          "username": user["username"],
+          "display_name": user["name"],
+          "follower_count": user.get("followers"),
+          "following_count": user.get("following"),
+          "verified": user.get("verified", False),
+          "profile_image_url": user.get("profilePicture"),
+          "next_cursor": next_cursor,
+      }
+      for user in data["users"]
+  ]
+  for row in liker_rows:
+      print(json.dumps(row))
   ```
 </CodeGroup>
+
+Use `GET /x/tweets/{id}/favoriters` when a workflow needs one row per account
+that liked a tweet for giveaway checks, CRM enrichment, audience analysis, or
+follow-up jobs. Store `source_tweet_id`, `liker_id`, `username`,
+`display_name`, `follower_count`, `following_count`, `verified`,
+`profile_image_url`, and `next_cursor` instead of logging the full page
+response.
 
 ## Path parameters
 
