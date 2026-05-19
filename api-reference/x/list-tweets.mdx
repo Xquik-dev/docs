@@ -33,7 +33,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     list_id: listId,
     tweet_id: tweet.id,
     text: tweet.text,
+    author_id: tweet.author?.id ?? null,
     author_username: tweet.author?.username ?? null,
+    author_name: tweet.author?.name ?? null,
+    author_followers: tweet.author?.followers ?? null,
+    author_verified: tweet.author?.verified ?? null,
+    author_profile_picture: tweet.author?.profilePicture ?? null,
     created_at: tweet.createdAt ?? null,
     like_count: tweet.likeCount ?? null,
     reply_count: tweet.replyCount ?? null,
@@ -65,7 +70,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           "list_id": list_id,
           "tweet_id": tweet["id"],
           "text": tweet.get("text"),
-          "author_username": tweet.get("author", {}).get("username"),
+          "author_id": (tweet.get("author") or {}).get("id"),
+          "author_username": (tweet.get("author") or {}).get("username"),
+          "author_name": (tweet.get("author") or {}).get("name"),
+          "author_followers": (tweet.get("author") or {}).get("followers"),
+          "author_verified": (tweet.get("author") or {}).get("verified"),
+          "author_profile_picture": (tweet.get("author") or {}).get("profilePicture"),
           "created_at": tweet.get("createdAt"),
           "like_count": tweet.get("likeCount"),
           "reply_count": tweet.get("replyCount"),
@@ -97,10 +107,11 @@ page.
 Use `GET /x/lists/{id}/tweets` when a CRM, warehouse, newsroom, monitoring
 job, or agent needs tweets from a curated X List.
 
-Store `list_id`, `tweet_id`, `text`, `author_username`, `created_at`,
-engagement counts, & `media_urls` for each row. Keep `has_next_page` &
-`next_cursor` with the export checkpoint so the next run can resume the list
-timeline without duplicating earlier rows.
+Store `list_id`, `tweet_id`, `text`, `author_id`, `author_username`,
+`author_name`, `author_followers`, `author_verified`,
+`author_profile_picture`, `created_at`, engagement counts, & `media_urls` for
+each row. Keep `has_next_page` & `next_cursor` with the export checkpoint so
+the next run can resume the list timeline without duplicating earlier rows.
 
 Use `sinceTime` & `untilTime` for bounded backfills, and set
 `includeReplies=true` only when reply tweets belong in the downstream queue.
@@ -165,7 +176,17 @@ Use `sinceTime` & `untilTime` for bounded backfills, and set
         <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
         <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
         <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
-        <ResponseField name="author" type="object">Tweet author profile. Omitted if unavailable.</ResponseField>
+        <ResponseField name="author" type="object">
+          Tweet author profile. Omitted if unavailable.
+          <Expandable title="Author object fields">
+            <ResponseField name="id" type="string">Author user ID.</ResponseField>
+            <ResponseField name="username" type="string">Author X username.</ResponseField>
+            <ResponseField name="name" type="string">Author display name.</ResponseField>
+            <ResponseField name="followers" type="number">Follower count. Omitted if unavailable.</ResponseField>
+            <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
+            <ResponseField name="profilePicture" type="string">Profile picture URL. Omitted if unavailable.</ResponseField>
+          </Expandable>
+        </ResponseField>
         <ResponseField name="media" type="object[]">
           Media attachments. Omitted when the tweet has no media.
           <Expandable title="Media object fields">
@@ -190,7 +211,15 @@ Use `sinceTime` & `untilTime` for bounded backfills, and set
           "createdAt": "2026-03-27T10:00:00.000Z",
           "likeCount": 42,
           "retweetCount": 5,
-          "viewCount": 1200
+          "viewCount": 1200,
+          "author": {
+            "id": "987654321",
+            "username": "xquikcom",
+            "name": "Xquik",
+            "followers": 12400,
+            "verified": true,
+            "profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"
+          }
         }
       ],
       "has_next_page": true,
