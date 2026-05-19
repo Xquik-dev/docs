@@ -32,18 +32,27 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  const tweetRows = data.tweets.map((tweet) => ({
-    search_query: searchQuery,
-    query_type: queryType,
-    tweet_id: tweet.id,
-    text: tweet.text,
-    author_username: tweet.author?.username ?? null,
-    created_at: tweet.createdAt ?? null,
-    like_count: tweet.likeCount ?? null,
-    reply_count: tweet.replyCount ?? null,
-    retweet_count: tweet.retweetCount ?? null,
-    media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
-  }));
+  const tweetRows = data.tweets.map((tweet) => {
+    const author = tweet.author ?? {};
+
+    return {
+      search_query: searchQuery,
+      query_type: queryType,
+      tweet_id: tweet.id,
+      text: tweet.text,
+      author_id: author.id ?? null,
+      author_username: author.username ?? null,
+      author_name: author.name ?? null,
+      author_followers: author.followers ?? null,
+      author_verified: author.verified ?? null,
+      author_profile_picture: author.profilePicture ?? null,
+      created_at: tweet.createdAt ?? null,
+      like_count: tweet.likeCount ?? null,
+      reply_count: tweet.replyCount ?? null,
+      retweet_count: tweet.retweetCount ?? null,
+      media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
+    };
+  });
   const nextCursor = data.has_next_page ? data.next_cursor : null;
 
   for (const row of tweetRows) {
@@ -71,25 +80,33 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  tweet_rows = [
-      {
-          "search_query": search_query,
-          "query_type": query_type,
-          "tweet_id": tweet["id"],
-          "text": tweet.get("text"),
-          "author_username": tweet.get("author", {}).get("username"),
-          "created_at": tweet.get("createdAt"),
-          "like_count": tweet.get("likeCount"),
-          "reply_count": tweet.get("replyCount"),
-          "retweet_count": tweet.get("retweetCount"),
-          "media_urls": [
-              item["mediaUrl"]
-              for item in tweet.get("media", [])
-              if item.get("mediaUrl")
-          ],
-      }
-      for tweet in data["tweets"]
-  ]
+  tweet_rows = []
+  for tweet in data["tweets"]:
+      author = tweet.get("author") or {}
+      tweet_rows.append(
+          {
+              "search_query": search_query,
+              "query_type": query_type,
+              "tweet_id": tweet["id"],
+              "text": tweet.get("text"),
+              "author_id": author.get("id"),
+              "author_username": author.get("username"),
+              "author_name": author.get("name"),
+              "author_followers": author.get("followers"),
+              "author_verified": author.get("verified"),
+              "author_profile_picture": author.get("profilePicture"),
+              "created_at": tweet.get("createdAt"),
+              "like_count": tweet.get("likeCount"),
+              "reply_count": tweet.get("replyCount"),
+              "retweet_count": tweet.get("retweetCount"),
+              "media_urls": [
+                  item["mediaUrl"]
+                  for item in tweet.get("media", [])
+                  if item.get("mediaUrl")
+              ],
+          }
+      )
+
   next_cursor = data["next_cursor"] if data["has_next_page"] else None
 
   for row in tweet_rows:
@@ -114,8 +131,10 @@ Use `GET /x/communities/search` when a monitoring job, research queue,
 moderation review, social listening workflow, or agent needs tweets across X
 communities by keyword.
 
-Store `search_query`, `query_type`, `tweet_id`, `text`, `author_username`,
-`created_at`, engagement counts, & `media_urls` for each row. Keep
+Store `search_query`, `query_type`, `tweet_id`, `text`, `author_id`,
+`author_username`, `author_name`, `author_followers`, `author_verified`,
+`author_profile_picture`, `created_at`, engagement counts, & `media_urls` for
+each row. Keep
 `has_next_page` & `next_cursor` with the export checkpoint so the next run can
 continue the same community search without duplicating earlier rows.
 
@@ -172,7 +191,17 @@ relevance-ranked review.
         <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
         <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
         <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
-        <ResponseField name="author" type="object">Tweet author profile. Omitted if unavailable.</ResponseField>
+        <ResponseField name="author" type="object">
+          Tweet author profile. Omitted if unavailable.
+          <Expandable title="Author object fields">
+            <ResponseField name="id" type="string">Author user ID.</ResponseField>
+            <ResponseField name="username" type="string">Author handle without `@`.</ResponseField>
+            <ResponseField name="name" type="string">Author display name. Omitted if unavailable.</ResponseField>
+            <ResponseField name="followers" type="number">Follower count. Omitted if unavailable.</ResponseField>
+            <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
+            <ResponseField name="profilePicture" type="string">Author profile image URL. Omitted if unavailable.</ResponseField>
+          </Expandable>
+        </ResponseField>
         <ResponseField name="media" type="object[]">
           Media attachments. Omitted when the tweet has no media.
           <Expandable title="Media object fields">
@@ -203,7 +232,9 @@ relevance-ranked review.
             "id": "987654321",
             "username": "devuser",
             "name": "Developer",
-            "verified": false
+            "followers": 25000,
+            "verified": false,
+            "profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"
           }
         }
       ],
