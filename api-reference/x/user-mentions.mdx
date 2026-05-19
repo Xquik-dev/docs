@@ -45,6 +45,10 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
       tweet_url: tweet.url ?? null,
       author_id: tweet.author?.id ?? null,
       author_username: tweet.author?.username ?? null,
+      author_name: tweet.author?.name ?? null,
+      author_followers: tweet.author?.followers ?? null,
+      author_verified: tweet.author?.verified ?? null,
+      author_profile_picture: tweet.author?.profilePicture ?? null,
       created_at: tweet.createdAt ?? null,
       conversation_id: tweet.conversationId ?? null,
       is_reply: tweet.isReply ?? false,
@@ -93,6 +97,10 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
               "tweet_url": tweet.get("url"),
               "author_id": (tweet.get("author") or {}).get("id"),
               "author_username": (tweet.get("author") or {}).get("username"),
+              "author_name": (tweet.get("author") or {}).get("name"),
+              "author_followers": (tweet.get("author") or {}).get("followers"),
+              "author_verified": (tweet.get("author") or {}).get("verified"),
+              "author_profile_picture": (tweet.get("author") or {}).get("profilePicture"),
               "created_at": tweet.get("createdAt"),
               "conversation_id": tweet.get("conversationId"),
               "is_reply": tweet.get("isReply", False),
@@ -130,11 +138,12 @@ It returns one JSON page at a time. Use [`mentions`](/api-reference/extractions/
 when you need a saved extraction, estimate, or CSV/JSON/XLSX file export.
 
 Store `mentioned_user`, `tweet_id`, `text`, `tweet_url`, `author_id`,
-`author_username`, `created_at`, `conversation_id`, reply context, engagement
-counts, media URLs, `page_cursor`, `has_next_page`, and `next_cursor`. Treat
-`next_cursor` as opaque and pass it back as `cursor` only when
-`has_next_page` is true. Use `sinceTime` and `untilTime` to bound a poller
-window. Zero affordable results return `402 insufficient_credits`.
+`author_username`, `author_name`, `author_followers`, `author_verified`,
+`author_profile_picture`, `created_at`, `conversation_id`, reply context,
+engagement counts, media URLs, `page_cursor`, `has_next_page`, and
+`next_cursor`. Treat `next_cursor` as opaque and pass it back as `cursor` only
+when `has_next_page` is true. Use `sinceTime` and `untilTime` to bound a
+poller window. Zero affordable results return `402 insufficient_credits`.
 
 ## Path parameters
 
@@ -200,7 +209,17 @@ filters can return fewer rows than an unfiltered page.
         <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
         <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
         <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
-        <ResponseField name="author" type="object">Tweet author profile. Omitted if unavailable.</ResponseField>
+        <ResponseField name="author" type="object">
+          Tweet author profile. Omitted if unavailable.
+          <Expandable title="author object">
+            <ResponseField name="id" type="string">Author user ID.</ResponseField>
+            <ResponseField name="username" type="string">Author X username.</ResponseField>
+            <ResponseField name="name" type="string">Author display name.</ResponseField>
+            <ResponseField name="followers" type="number">Follower count. Omitted if unavailable.</ResponseField>
+            <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
+            <ResponseField name="profilePicture" type="string">Profile picture URL. Omitted if unavailable.</ResponseField>
+          </Expandable>
+        </ResponseField>
         <ResponseField name="media" type="object[]">
           Media attachments. Omitted when the tweet has no media.
           <Expandable title="Media object fields">
@@ -223,7 +242,15 @@ filters can return fewer rows than an unfiltered page.
           "id": "1893456789012345678",
           "text": "Hey @user check this out!",
           "createdAt": "2026-03-27T10:00:00.000Z",
-          "likeCount": 5
+          "likeCount": 5,
+          "author": {
+            "id": "987654321",
+            "username": "customer",
+            "name": "Customer",
+            "followers": 4200,
+            "verified": false,
+            "profilePicture": "https://pbs.twimg.com/profile_images/customer/photo.jpg"
+          }
         }
       ],
       "has_next_page": true,
