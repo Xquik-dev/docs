@@ -3906,7 +3906,14 @@ const REQUIRED_USER_LIKES_API_HANDOFF_SNIPPETS = [
   '"author_profile_picture": (tweet.get("author") or {}).get("profilePicture")',
   '"media_urls": [',
   'print(json.dumps(liked_row, separators=(",", ":")))',
-  'Tweet author profile (id, username, name, followers, verified, profilePicture).',
+  'Tweet author profile. Omitted if unavailable.',
+  '<Expandable title="Author object fields">',
+  '<ResponseField name="id" type="string">Author user ID.',
+  '<ResponseField name="username" type="string">Author handle without `@`.',
+  '<ResponseField name="name" type="string">Author display name.',
+  '<ResponseField name="followers" type="number">Follower count.',
+  '<ResponseField name="verified" type="boolean">Whether the author is verified.',
+  '<ResponseField name="profilePicture" type="string">Author profile image URL.',
 ] as const;
 
 const FORBIDDEN_USER_LIKES_API_RAW_SNIPPETS = [
