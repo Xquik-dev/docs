@@ -2835,15 +2835,18 @@ const REQUIRED_RETWEETERS_API_HANDOFF_SNIPPETS = [
   'username: user.username',
   'display_name: user.name',
   'follower_count: user.followers ?? null',
+  'following_count: user.following ?? null',
   'profile_image_url: user.profilePicture ?? null',
   'const nextCursor = data.has_next_page ? data.next_cursor : null;',
   '"source_tweet_id": "1893456789012345678"',
   '"retweeter_id": user["id"]',
   '"display_name": user["name"]',
   '"follower_count": user.get("followers")',
+  '"following_count": user.get("following")',
   '"profile_image_url": user.get("profilePicture")',
   'one row per account',
   '`source_tweet_id`, `retweeter_id`, `username`,',
+  '`display_name`, `follower_count`, `following_count`,',
 ] as const;
 
 const FORBIDDEN_RETWEETERS_API_RAW_OUTPUT_SNIPPETS = [
