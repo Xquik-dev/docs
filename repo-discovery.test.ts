@@ -1394,6 +1394,9 @@ const FORBIDDEN_SKILL_CONFIDENTIALITY_PATTERN =
 
 const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'MCP server discovery metadata is available at:',
+  'This page covers the API MCP server at `https://xquik.com/mcp` for',
+  'authenticated account actions. For read-only documentation search, use the',
+  '[Docs MCP server](/mcp/docs-mcp) at `https://docs.xquik.com/mcp`.',
   'https://xquik.com/.well-known/mcp.json',
   '`GET` and `POST` requests to `/.well-known/mcp.json` return the MCP registry',
   'server card JSON directly.',
