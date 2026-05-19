@@ -3630,6 +3630,10 @@ const HIGH_VALUE_ROW_HANDOFF_API_PAGES = [
     label: 'User mentions endpoint page',
   },
   {
+    file: 'api-reference/x/bookmarks.mdx',
+    label: 'Bookmarks endpoint page',
+  },
+  {
     file: 'api-reference/x/timeline.mdx',
     label: 'Timeline endpoint page',
   },
@@ -3670,6 +3674,53 @@ const FORBIDDEN_HIGH_VALUE_ROW_HANDOFF_RAW_RESPONSE_SNIPPETS = [
   'var data map[string]interface{}',
   'fmt.Println(data)',
   'fmt.Println(string(body))',
+] as const;
+
+const REQUIRED_BOOKMARKS_API_HANDOFF_SNIPPETS = [
+  '## Bookmarks handoff',
+  '`GET /x/bookmarks`',
+  'reading list, CRM, research queue, or agent',
+  'The examples write JSON Lines rows',
+  'bookmark source, folder ID, tweet ID, tweet URL, text, author ID,',
+  'username, display name, follower count, verified state, profile image URL,',
+  'Store the last saved',
+  '`next_cursor` per folder',
+  'const bookmarkFolderId = "";',
+  'const bookmarkRows = page.tweets.map',
+  'bookmark_source: bookmarkFolderId === "" ? "all_bookmarks" : "folder"',
+  'folder_id: bookmarkFolderId || null',
+  'tweet_url: tweet.url ?? null',
+  'author_id: tweet.author?.id ?? null',
+  'author_username: tweet.author?.username ?? null',
+  'author_name: tweet.author?.name ?? null',
+  'author_followers: tweet.author?.followers ?? null',
+  'author_verified: tweet.author?.verified ?? null',
+  'author_profile_picture: tweet.author?.profilePicture ?? null',
+  'process.stdout.write(`${JSON.stringify(row)}\\n`);',
+  'bookmark_folder_id = ""',
+  'params["folderId"] = bookmark_folder_id',
+  '"bookmark_source": "all_bookmarks" if not bookmark_folder_id else "folder"',
+  '"folder_id": bookmark_folder_id or None',
+  '"tweet_url": tweet.get("url")',
+  '"author_id": (tweet.get("author") or {}).get("id")',
+  '"author_username": (tweet.get("author") or {}).get("username")',
+  '"author_name": (tweet.get("author") or {}).get("name")',
+  '"author_followers": (tweet.get("author") or {}).get("followers")',
+  '"author_verified": (tweet.get("author") or {}).get("verified")',
+  '"author_profile_picture": (tweet.get("author") or {}).get("profilePicture")',
+  'print(json.dumps(bookmark_row, separators=(",", ":")))',
+  'Tweet author profile. Omitted if unavailable.',
+  '<ResponseField name="profilePicture" type="string">Profile picture URL.',
+  '"followers": 150000000',
+  '"profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"',
+] as const;
+
+const FORBIDDEN_BOOKMARKS_API_RAW_SNIPPETS = [
+  'const data = await response.json();',
+  'console.log(data.tweets);',
+  'console.log((await next.json()).tweets);',
+  'data = response.json()',
+  'print(data["tweets"])',
 ] as const;
 
 const REQUIRED_TIMELINE_API_HANDOFF_SNIPPETS = [
@@ -9052,6 +9103,32 @@ describe('repository discovery', (): void => {
     );
 
     expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps the bookmarks API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/bookmarks.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'Bookmarks endpoint page',
+          REQUIRED_BOOKMARKS_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_BOOKMARKS_API_RAW_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Bookmarks endpoint page should map bookmark rows instead of raw response output "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
   });
 
   it('keeps the timeline API handoff concrete', (): void => {
