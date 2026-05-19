@@ -43,6 +43,12 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
       source_user_id: userId,
       tweet_id: tweet.id,
       text: tweet.text,
+      author_id: tweet.author?.id ?? null,
+      author_username: tweet.author?.username ?? null,
+      author_name: tweet.author?.name ?? null,
+      author_followers: tweet.author?.followers ?? null,
+      author_verified: tweet.author?.verified ?? null,
+      author_profile_picture: tweet.author?.profilePicture ?? null,
       created_at: tweet.createdAt ?? null,
       is_reply: tweet.isReply ?? false,
       in_reply_to_id: tweet.inReplyToId ?? null,
@@ -94,6 +100,12 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
               "source_user_id": user_id,
               "tweet_id": tweet["id"],
               "text": tweet["text"],
+              "author_id": (tweet.get("author") or {}).get("id"),
+              "author_username": (tweet.get("author") or {}).get("username"),
+              "author_name": (tweet.get("author") or {}).get("name"),
+              "author_followers": (tweet.get("author") or {}).get("followers"),
+              "author_verified": (tweet.get("author") or {}).get("verified"),
+              "author_profile_picture": (tweet.get("author") or {}).get("profilePicture"),
               "created_at": tweet.get("createdAt"),
               "is_reply": tweet.get("isReply", False),
               "in_reply_to_id": tweet.get("inReplyToId"),
@@ -122,8 +134,9 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 
 Use `GET /x/users/{id}/tweets` when a CRM, queue worker, or warehouse job needs
 recent posts from one user. The examples above write JSON Lines rows with the
-source user, tweet ID, text, reply context, engagement counts, media URLs, and
-cursor fields so a worker can resume from the last saved `next_cursor`.
+source user, tweet ID, text, author ID, username, display name, follower count,
+verified state, profile image URL, reply context, engagement counts, media URLs,
+and cursor fields so a worker can resume from the last saved `next_cursor`.
 
 ## Path parameters
 
@@ -189,7 +202,17 @@ filters can return fewer rows than an unfiltered page.
         <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
         <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
         <ResponseField name="entities" type="object">Parsed entities (URLs, hashtags, mentions). Omitted if unavailable.</ResponseField>
-        <ResponseField name="author" type="object">Tweet author. Omitted if unavailable.</ResponseField>
+        <ResponseField name="author" type="object">
+          Tweet author profile. Omitted if unavailable.
+          <Expandable title="author object">
+            <ResponseField name="id" type="string">Author user ID.</ResponseField>
+            <ResponseField name="username" type="string">Author X username.</ResponseField>
+            <ResponseField name="name" type="string">Author display name.</ResponseField>
+            <ResponseField name="followers" type="number">Follower count. Omitted if unavailable.</ResponseField>
+            <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
+            <ResponseField name="profilePicture" type="string">Profile picture URL. Omitted if unavailable.</ResponseField>
+          </Expandable>
+        </ResponseField>
         <ResponseField name="media" type="object[]">
           Media attachments. Omitted if unavailable.
           <Expandable title="media item">
@@ -221,6 +244,14 @@ filters can return fewer rows than an unfiltered page.
           "replyCount": 45,
           "viewCount": 25000,
           "url": "https://x.com/elonmusk/status/1893456789012345678",
+          "author": {
+            "id": "44196397",
+            "username": "elonmusk",
+            "name": "Elon Musk",
+            "followers": 150000000,
+            "verified": true,
+            "profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"
+          },
           "media": [{ "type": "photo", "mediaUrl": "https://pbs.twimg.com/media/example.jpg" }]
         }
       ],
