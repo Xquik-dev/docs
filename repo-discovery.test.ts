@@ -1645,6 +1645,10 @@ const FORBIDDEN_MCP_CONTRACT_SNIPPETS = [
   'const users = [];',
   'users.push(...page.users);',
   'return { users, next_cursor: cursor };',
+  "idempotency_keys: ['deliveryId']",
+  "idempotency_keys: ['streamEventId']",
+  'console.log(webhook.secret)',
+  'console.log(test)',
 ] as const;
 
 const REQUIRED_BILLING_RECOVERY_SNIPPETS = [
