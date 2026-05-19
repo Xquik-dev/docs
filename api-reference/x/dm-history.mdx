@@ -39,28 +39,76 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```javascript Node.js
   const userId = "44196397";
   const account = "your_handle";
-  const response = await fetch(
-    `https://xquik.com/api/v1/x/dm/${userId}/history?account=${account}`,
-    { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
-  );
+
+  function historyUrl(userId, account, cursor) {
+    const params = new URLSearchParams({ account });
+    if (cursor) params.set("cursor", cursor);
+    return `https://xquik.com/api/v1/x/dm/${userId}/history?${params}`;
+  }
+
+  function toDmHistoryRows(page, { account, userId }) {
+    return page.messages.map((message) => ({
+      record_type: "dm_history",
+      conversation_user_id: userId,
+      sender_account: account,
+      message_id: message.id,
+      sender_id: message.senderId,
+      receiver_id: message.receiverId,
+      message_text: message.text ?? null,
+      created_at: message.createdAt ?? null,
+      media_url: message.mediaUrl ?? null,
+      page_next_cursor: page.has_next_page ? page.next_cursor : null,
+      source_endpoint: `/api/v1/x/dm/${userId}/history`,
+    }));
+  }
+
+  async function savePrivateDmHistoryRows(rows) {
+    // Replace this with a private CRM, warehouse, or agent memory write.
+    return rows.length;
+  }
+
+  const response = await fetch(historyUrl(userId, account), {
+    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+  });
   const data = await response.json();
-  const messages = data.messages;
-  // Store messages in a private system; avoid logging DM text.
+  const historyRows = toDmHistoryRows(data, { account, userId });
+  await savePrivateDmHistoryRows(historyRows);
 
   // Paginate
   if (data.has_next_page) {
-    const next = await fetch(
-      `https://xquik.com/api/v1/x/dm/${userId}/history?account=${account}&cursor=${data.next_cursor}`,
-      { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
-    );
+    const next = await fetch(historyUrl(userId, account, data.next_cursor), {
+      headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+    });
     const nextData = await next.json();
-    const nextMessages = nextData.messages;
-    // Store nextMessages in the same private system before requesting more pages.
+    const nextRows = toDmHistoryRows(nextData, { account, userId });
+    await savePrivateDmHistoryRows(nextRows);
   }
   ```
 
   ```python Python
   import requests
+
+  def to_dm_history_rows(page, account, user_id):
+      return [
+          {
+              "record_type": "dm_history",
+              "conversation_user_id": user_id,
+              "sender_account": account,
+              "message_id": message["id"],
+              "sender_id": message["senderId"],
+              "receiver_id": message["receiverId"],
+              "message_text": message.get("text"),
+              "created_at": message.get("createdAt"),
+              "media_url": message.get("mediaUrl"),
+              "page_next_cursor": page["next_cursor"] if page["has_next_page"] else None,
+              "source_endpoint": f"/api/v1/x/dm/{user_id}/history",
+          }
+          for message in page["messages"]
+      ]
+
+  def save_private_dm_history_rows(rows):
+      # Replace this with a private CRM, warehouse, or agent memory write.
+      return len(rows)
 
   response = requests.get(
       "https://xquik.com/api/v1/x/dm/44196397/history",
@@ -68,8 +116,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  messages = data["messages"]
-  # Store messages in a private system; avoid logging DM text.
+  history_rows = to_dm_history_rows(data, "your_handle", "44196397")
+  save_private_dm_history_rows(history_rows)
 
   # Paginate
   while data["has_next_page"]:
@@ -78,10 +126,16 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           params={"account": "your_handle", "cursor": data["next_cursor"]},
           headers={"x-api-key": "xq_YOUR_KEY_HERE"},
       ).json()
-      next_messages = data["messages"]
-      # Store next_messages in the same private system before requesting more pages.
+      next_rows = to_dm_history_rows(data, "your_handle", "44196397")
+      save_private_dm_history_rows(next_rows)
   ```
 </CodeGroup>
+
+The examples normalize each page into private `dm_history` rows. Store
+`message_id`, `sender_id`, `receiver_id`, `message_text`, `created_at`,
+optional `media_url`, `conversation_user_id`, `sender_account`, and
+`page_next_cursor`. Keep `message_text` only in private systems; use the IDs,
+timestamp, media URL, and job status in shared logs.
 
 ## Path parameters
 
