@@ -81,30 +81,89 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   package main
 
   import (
-  	"fmt"
-  	"io"
-  	"log"
-  	"net/http"
+    "encoding/json"
+    "log"
+    "net/http"
   )
 
+  type Delivery struct {
+    ID             string  `json:"id"`
+    StreamEventID  string  `json:"streamEventId"`
+    Status         string  `json:"status"`
+    Attempts       int     `json:"attempts"`
+    LastStatusCode *int    `json:"lastStatusCode"`
+    LastError      *string `json:"lastError"`
+    CreatedAt      string  `json:"createdAt"`
+    DeliveredAt    *string `json:"deliveredAt"`
+  }
+
+  type DeliveriesResponse struct {
+    Deliveries []Delivery `json:"deliveries"`
+  }
+
+  type DeliveryTriage struct {
+    DeliveryID     string  `json:"delivery_id"`
+    StreamEventID  string  `json:"stream_event_id"`
+    Status         string  `json:"status"`
+    Attempts       int     `json:"attempts"`
+    ReceiverStatus *int    `json:"receiver_status"`
+    LastError      *string `json:"last_error"`
+    QueuedAt       string  `json:"queued_at"`
+    DeliveredAt    *string `json:"delivered_at"`
+    Action         string  `json:"action"`
+  }
+
+  func actionForDelivery(delivery Delivery) string {
+    if delivery.Status == "exhausted" {
+      return "page"
+    }
+    if delivery.Status == "failed" && delivery.Attempts >= 3 {
+      return "warn"
+    }
+    return "track"
+  }
+
   func main() {
-  	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/webhooks/15/deliveries", nil)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+    req, err := http.NewRequest("GET", "https://xquik.com/api/v1/webhooks/15/deliveries", nil)
+    if err != nil {
+      log.Fatal(err)
+    }
+    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 
-  	resp, err := http.DefaultClient.Do(req)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	defer resp.Body.Close()
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+      log.Fatal(err)
+    }
+    defer resp.Body.Close()
 
-  	body, err := io.ReadAll(resp.Body)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	fmt.Println(string(body))
+    var data DeliveriesResponse
+    if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      log.Fatal(err)
+    }
+
+    deliveryTriage := make([]DeliveryTriage, 0, len(data.Deliveries))
+    for _, delivery := range data.Deliveries {
+      row := DeliveryTriage{
+        DeliveryID:     delivery.ID,
+        StreamEventID:  delivery.StreamEventID,
+        Status:         delivery.Status,
+        Attempts:       delivery.Attempts,
+        ReceiverStatus: delivery.LastStatusCode,
+        LastError:      delivery.LastError,
+        QueuedAt:       delivery.CreatedAt,
+        DeliveredAt:    delivery.DeliveredAt,
+        Action:         actionForDelivery(delivery),
+      }
+      deliveryTriage = append(deliveryTriage, row)
+    }
+
+    retryCandidates := make([]DeliveryTriage, 0)
+    for _, row := range deliveryTriage {
+      if row.Action != "track" {
+        retryCandidates = append(retryCandidates, row)
+      }
+    }
+    _ = retryCandidates
   }
   ```
 </CodeGroup>

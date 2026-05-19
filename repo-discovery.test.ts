@@ -4663,6 +4663,13 @@ const REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS = [
   '"delivered_at": delivery.get("deliveredAt")',
   '"action": "page"',
   'retry_candidates = [',
+  'type Delivery struct',
+  'LastStatusCode *int',
+  'type DeliveryTriage struct',
+  'ReceiverStatus *int',
+  'func actionForDelivery(delivery Delivery) string',
+  'deliveryTriage := make([]DeliveryTriage, 0, len(data.Deliveries))',
+  'retryCandidates := make([]DeliveryTriage, 0)',
   'Map each delivery into a small incident row',
   'avoid dumping the full response into logs',
   '<Card title="Delivery ID" icon="fingerprint">',
@@ -4700,6 +4707,7 @@ const REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS = [
 const FORBIDDEN_WEBHOOK_DELIVERIES_RAW_OUTPUT_SNIPPETS = [
   'console.log(data);',
   'print(data)',
+  'fmt.Println(string(body))',
 ] as const;
 
 const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
