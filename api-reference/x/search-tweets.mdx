@@ -58,6 +58,10 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
       text: tweet.text,
       author_id: tweet.author?.id ?? null,
       author_username: tweet.author?.username ?? null,
+      author_name: tweet.author?.name ?? null,
+      author_followers: tweet.author?.followers ?? null,
+      author_verified: tweet.author?.verified ?? null,
+      author_profile_picture: tweet.author?.profilePicture ?? null,
       created_at: tweet.createdAt ?? null,
       like_count: tweet.likeCount ?? null,
       reply_count: tweet.replyCount ?? null,
@@ -113,6 +117,10 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
               "text": tweet["text"],
               "author_id": tweet.get("author", {}).get("id"),
               "author_username": tweet.get("author", {}).get("username"),
+              "author_name": (tweet.get("author") or {}).get("name"),
+              "author_followers": (tweet.get("author") or {}).get("followers"),
+              "author_verified": (tweet.get("author") or {}).get("verified"),
+              "author_profile_picture": (tweet.get("author") or {}).get("profilePicture"),
               "created_at": tweet.get("createdAt"),
               "like_count": tweet.get("likeCount"),
               "reply_count": tweet.get("replyCount"),
@@ -148,8 +156,12 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
   )
 
   type Author struct {
-    ID       string `json:"id"`
-    Username string `json:"username"`
+    ID             string  `json:"id"`
+    Username       string  `json:"username"`
+    Name           *string `json:"name"`
+    Followers      *int    `json:"followers"`
+    Verified       *bool   `json:"verified"`
+    ProfilePicture *string `json:"profilePicture"`
   }
 
   type Media struct {
@@ -228,27 +240,39 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
       for _, tweet := range page.Tweets {
         var authorID *string
         var authorUsername *string
+        var authorName *string
+        var authorFollowers *int
+        var authorVerified *bool
+        var authorProfilePicture *string
         if tweet.Author != nil {
           authorID = &tweet.Author.ID
           authorUsername = &tweet.Author.Username
+          authorName = tweet.Author.Name
+          authorFollowers = tweet.Author.Followers
+          authorVerified = tweet.Author.Verified
+          authorProfilePicture = tweet.Author.ProfilePicture
         }
         searchRow := map[string]any{
-          "tweet_id":        tweet.ID,
-          "text":            tweet.Text,
-          "author_id":       authorID,
-          "author_username": authorUsername,
-          "created_at":      tweet.CreatedAt,
-          "like_count":      tweet.LikeCount,
-          "reply_count":     tweet.ReplyCount,
-          "retweet_count":   tweet.RetweetCount,
-          "quote_count":     tweet.QuoteCount,
-          "view_count":      tweet.ViewCount,
-          "media_urls":      mediaURLs(tweet.Media),
-          "query":           "giveaway",
-          "page_index":      pageIndex,
-          "page_cursor":     pageCursor,
-          "next_cursor":     page.NextCursor,
-          "has_next_page":   page.HasNextPage,
+          "tweet_id":               tweet.ID,
+          "text":                   tweet.Text,
+          "author_id":              authorID,
+          "author_username":        authorUsername,
+          "author_name":            authorName,
+          "author_followers":       authorFollowers,
+          "author_verified":        authorVerified,
+          "author_profile_picture": authorProfilePicture,
+          "created_at":             tweet.CreatedAt,
+          "like_count":             tweet.LikeCount,
+          "reply_count":            tweet.ReplyCount,
+          "retweet_count":          tweet.RetweetCount,
+          "quote_count":            tweet.QuoteCount,
+          "view_count":             tweet.ViewCount,
+          "media_urls":             mediaURLs(tweet.Media),
+          "query":                  "giveaway",
+          "page_index":             pageIndex,
+          "page_cursor":            pageCursor,
+          "next_cursor":            page.NextCursor,
+          "has_next_page":          page.HasNextPage,
         }
         if err := encoder.Encode(searchRow); err != nil {
           log.Fatal(err)
@@ -268,9 +292,11 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
 Use `GET /x/tweets/search` when an app, queue worker, CRM enrichment job, or
 agent needs the latest matching tweets without creating a stored extraction job.
 It returns paginated JSON for live search pages and app ingestion. The examples
-above write JSON Lines rows with tweet, author, media, and cursor fields so a
-worker can resume from the last saved `next_cursor`. For CSV or XLSX output,
-project the returned `tweets[]` rows locally or use
+above write JSON Lines rows with tweet fields, author ID, username, display
+name, follower count, verified state, profile image URL, media, and cursor
+fields so a worker can resume from the last saved `next_cursor`.
+
+For CSV or XLSX output, project the returned `tweets[]` rows locally or use
 [`tweet_search_extractor`](/guides/tweet-search-export) for saved CSV, JSON, or
 XLSX files.
 
@@ -285,7 +311,9 @@ XLSX files.
     Store `tweets[].text` and `tweets[].createdAt` for search hit context and time ordering.
   </Card>
   <Card title="Author joins" icon="user-round">
-    Store `tweets[].author.id` and `tweets[].author.username` as the stable author join key and readable handle.
+    Store `tweets[].author.id`, `tweets[].author.username`, `tweets[].author.name`,
+    `tweets[].author.followers`, `tweets[].author.verified`, and
+    `tweets[].author.profilePicture` for author joins and enrichment.
   </Card>
   <Card title="Scoring fields" icon="chart-no-axes-combined">
     Store engagement counts for scoring, routing, and prioritization.
