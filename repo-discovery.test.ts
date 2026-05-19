@@ -2648,15 +2648,25 @@ const FORBIDDEN_TWEET_QUOTES_API_RAW_OUTPUT_SNIPPETS = [
 const REQUIRED_GET_TWEET_API_HANDOFF_SNIPPETS = [
   '`GET /x/tweets/{id}`',
   'tweet_id: data.tweet.id',
+  'author_id: data.author?.id ?? null',
   'author_username: data.author?.username ?? null',
+  'author_followers: data.author?.followers ?? null',
+  'author_verified: data.author?.verified ?? null',
+  'author_profile_picture: data.author?.profilePicture ?? null',
   'created_at: data.tweet.createdAt ?? null',
   'media_urls: data.tweet.media?.map((item) => item.mediaUrl) ?? []',
   '"tweet_id": data["tweet"]["id"]',
+  '"author_id": data.get("author", {}).get("id")',
   '"author_username": data.get("author", {}).get("username")',
+  '"author_followers": data.get("author", {}).get("followers")',
+  '"author_verified": data.get("author", {}).get("verified")',
+  '"author_profile_picture": data.get("author", {}).get("profilePicture")',
   '"created_at": data["tweet"].get("createdAt")',
   '"media_urls": [item["mediaUrl"] for item in data["tweet"].get("media", [])]',
   'shape a durable handoff row instead of printing',
-  '`tweet_id`, `text`, `author_username`,',
+  '`tweet_id`, `text`, `author_id`,',
+  '`author_username`, `author_followers`, `author_verified`,',
+  '`author_profile_picture`, `created_at`, and `media_urls`',
 ] as const;
 
 const FORBIDDEN_GET_TWEET_API_RAW_OUTPUT_SNIPPETS = [
