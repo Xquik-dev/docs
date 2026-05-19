@@ -4595,7 +4595,10 @@ const REQUIRED_WEBHOOK_TEST_API_SNIPPETS = [
   'Store `accepted`,',
   '`webhook_inactive` means no test was sent.',
   '[Update Webhook](/api-reference/webhooks/update)',
-  'Validate `X-Xquik-Signature` on the raw request body',
+  '`X-Xquik-Signature`, `X-Xquik-Timestamp`, and',
+  '`X-Xquik-Nonce` on the raw request body',
+  '`webhook.test` payloads include `eventType`, `data`, and `timestamp`.',
+  'They do not include `deliveryId` or `streamEventId`.',
 ] as const;
 
 const FORBIDDEN_WEBHOOK_TEST_RAW_OUTPUT_SNIPPETS = [

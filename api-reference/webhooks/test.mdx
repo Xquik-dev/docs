@@ -127,7 +127,14 @@ Xquik sends a `webhook.test` event to your endpoint, HMAC-signed with the webhoo
 }
 ```
 
-The delivery includes the `X-Xquik-Signature` header, identical to production deliveries. Use this to verify your [signature verification](/webhooks/verification) logic is working correctly.
+The signed request includes the `X-Xquik-Signature`, `X-Xquik-Timestamp`, and
+`X-Xquik-Nonce` headers. Verify the signature against the raw request body
+before parsing JSON, reject stale timestamps, and de-dupe recent nonces exactly
+as you do for production monitor deliveries.
+
+`webhook.test` payloads include `eventType`, `data`, and `timestamp`. They do
+not include `deliveryId` or `streamEventId`, so use them for reachability and
+signature checks rather than receiver idempotency checks.
 
 ## Response
 
@@ -229,8 +236,14 @@ after changing webhook code, secrets, firewall rules, or queue routing.
   </Card>
 
   <Card title="Signature path" icon="shield-check">
-    Validate `X-Xquik-Signature` on the raw request body before accepting test
-    or production events.
+    Validate `X-Xquik-Signature`, `X-Xquik-Timestamp`, and
+    `X-Xquik-Nonce` on the raw request body before accepting test or production
+    events.
+  </Card>
+
+  <Card title="Test payload" icon="file-json">
+    `webhook.test` payloads include `eventType`, `data`, and `timestamp`.
+    They do not include `deliveryId` or `streamEventId`.
   </Card>
 </CardGroup>
 
