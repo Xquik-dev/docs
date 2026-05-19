@@ -33,6 +33,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 
   ```javascript Node.js
+  const singleTweetId = "1893456789012345678";
+
   // Single tweet
   const single = await fetch("https://xquik.com/api/v1/x/media/download", {
     method: "POST",
@@ -40,8 +42,19 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "x-api-key": "xq_YOUR_KEY_HERE",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ tweetInput: "1893456789012345678" }),
+    body: JSON.stringify({ tweetInput: singleTweetId }),
   });
+  const singleResult = await single.json();
+  const singleRow = {
+    input_mode: "single",
+    requested_tweet_id: singleTweetId,
+    tweet_id: singleResult.tweetId,
+    gallery_url: singleResult.galleryUrl,
+    cache_hit: singleResult.cacheHit,
+  };
+  process.stdout.write(`${JSON.stringify(singleRow)}\n`);
+
+  const bulkTweetIds = ["1893456789012345678", "1893456789012345999"];
 
   // Bulk (up to 50 tweets)
   const bulk = await fetch("https://xquik.com/api/v1/x/media/download", {
@@ -50,28 +63,58 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "x-api-key": "xq_YOUR_KEY_HERE",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      tweetIds: ["1893456789012345678", "1893456789012345999"],
-    }),
+    body: JSON.stringify({ tweetIds: bulkTweetIds }),
   });
+  const bulkResult = await bulk.json();
+  const bulkRow = {
+    input_mode: "bulk",
+    requested_tweet_ids: bulkTweetIds,
+    gallery_url: bulkResult.galleryUrl,
+    successful_tweet_count: bulkResult.totalTweets,
+    media_item_count: bulkResult.totalMedia,
+  };
+  process.stdout.write(`${JSON.stringify(bulkRow)}\n`);
   ```
 
   ```python Python
+  import json
   import requests
+
+  single_tweet_id = "1893456789012345678"
 
   # Single tweet
   single = requests.post(
       "https://xquik.com/api/v1/x/media/download",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-      json={"tweetInput": "1893456789012345678"},
+      json={"tweetInput": single_tweet_id},
   )
+  single_result = single.json()
+  single_row = {
+      "input_mode": "single",
+      "requested_tweet_id": single_tweet_id,
+      "tweet_id": single_result["tweetId"],
+      "gallery_url": single_result["galleryUrl"],
+      "cache_hit": single_result["cacheHit"],
+  }
+  print(json.dumps(single_row))
+
+  bulk_tweet_ids = ["1893456789012345678", "1893456789012345999"]
 
   # Bulk (up to 50 tweets)
   bulk = requests.post(
       "https://xquik.com/api/v1/x/media/download",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-      json={"tweetIds": ["1893456789012345678", "1893456789012345999"]},
+      json={"tweetIds": bulk_tweet_ids},
   )
+  bulk_result = bulk.json()
+  bulk_row = {
+      "input_mode": "bulk",
+      "requested_tweet_ids": bulk_tweet_ids,
+      "gallery_url": bulk_result["galleryUrl"],
+      "successful_tweet_count": bulk_result["totalTweets"],
+      "media_item_count": bulk_result["totalMedia"],
+  }
+  print(json.dumps(bulk_row))
   ```
 
   ```go Go
@@ -81,15 +124,31 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "bytes"
       "encoding/json"
       "fmt"
-      "io"
       "log"
       "net/http"
   )
 
+  type MediaDownloadResponse struct {
+      CacheHit    bool   `json:"cacheHit"`
+      GalleryURL  string `json:"galleryUrl"`
+      TweetID     string `json:"tweetId"`
+      TotalMedia  int    `json:"totalMedia"`
+      TotalTweets int    `json:"totalTweets"`
+  }
+
+  type MediaDownloadRow struct {
+      InputMode        string `json:"input_mode"`
+      RequestedTweetID string `json:"requested_tweet_id"`
+      TweetID          string `json:"tweet_id"`
+      GalleryURL       string `json:"gallery_url"`
+      CacheHit         bool   `json:"cache_hit"`
+  }
+
   func main() {
       // Single tweet
+      tweetID := "1893456789012345678"
       payload, _ := json.Marshal(map[string]interface{}{
-          "tweetInput": "1893456789012345678",
+          "tweetInput": tweetID,
       })
 
       req, err := http.NewRequest("POST", "https://xquik.com/api/v1/x/media/download", bytes.NewReader(payload))
@@ -105,8 +164,23 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       }
       defer resp.Body.Close()
 
-      body, _ := io.ReadAll(resp.Body)
-      fmt.Println(string(body))
+      var result MediaDownloadResponse
+      if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+          log.Fatal(err)
+      }
+
+      row := MediaDownloadRow{
+          InputMode:        "single",
+          RequestedTweetID: tweetID,
+          TweetID:          result.TweetID,
+          GalleryURL:       result.GalleryURL,
+          CacheHit:         result.CacheHit,
+      }
+      output, err := json.Marshal(row)
+      if err != nil {
+          log.Fatal(err)
+      }
+      fmt.Println(string(output))
   }
   ```
 </CodeGroup>
@@ -144,16 +218,19 @@ Use `tweetIds` for bulk downloads. If `tweetIds` is present with at least 1 stri
 ## Media download handoff
 
 Use this endpoint when your agent needs a saved gallery for tweet images, videos, or GIFs.
+Write one manifest row per request so downstream jobs can store the gallery
+link without treating it as an uploaded media ID or an individual media file
+URL.
 
 <CardGroup cols={2}>
   <Card title="Gallery URL" icon="images">
-    Store `galleryUrl` as the durable link for downloaded media.
+    Store `gallery_url` from `galleryUrl` as the durable link for downloaded media.
   </Card>
   <Card title="Single tweet" icon="message-square">
-    Store `tweetId` and `cacheHit`. `cacheHit: true` means the single-tweet request used cached media and is free.
+    Store `requested_tweet_id`, `tweet_id`, and `cache_hit`. `cacheHit: true` means the single-tweet request used cached media and is free.
   </Card>
   <Card title="Bulk result" icon="list-checks">
-    Store `totalTweets` and `totalMedia`. `totalTweets` counts successful tweets with media after invalid or failed IDs are skipped.
+    Store `requested_tweet_ids`, `successful_tweet_count` from `totalTweets`, and `media_item_count` from `totalMedia`. `totalTweets` counts successful tweets with media after invalid or failed IDs are skipped.
   </Card>
   <Card title="Input mode" icon="list-filter">
     Send `tweetIds` for bulk. When it contains at least 1 string, bulk mode ignores `tweetInput`, `tweetId`, and `tweetUrl`.

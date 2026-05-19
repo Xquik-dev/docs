@@ -4354,13 +4354,30 @@ const REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
   'Download media',
   '## Media download handoff',
   'Use this endpoint when your agent needs a saved gallery for tweet images, videos, or GIFs.',
+  'const singleResult = await single.json();',
+  'input_mode: "single"',
+  'requested_tweet_id: singleTweetId',
+  'gallery_url: singleResult.galleryUrl',
+  'cache_hit: singleResult.cacheHit',
+  'successful_tweet_count: bulkResult.totalTweets',
+  'media_item_count: bulkResult.totalMedia',
+  '"input_mode": "single"',
+  '"requested_tweet_id": single_tweet_id',
+  '"gallery_url": single_result["galleryUrl"]',
+  '"cache_hit": single_result["cacheHit"]',
+  '"successful_tweet_count": bulk_result["totalTweets"]',
+  '"media_item_count": bulk_result["totalMedia"]',
+  'type MediaDownloadRow struct',
+  'GalleryURL       string `json:"gallery_url"`',
+  'fmt.Println(string(output))',
+  'Write one manifest row per request',
   '<Card title="Gallery URL" icon="images">',
-  'Store `galleryUrl` as the durable link for downloaded media.',
+  'Store `gallery_url` from `galleryUrl` as the durable link for downloaded media.',
   '<Card title="Single tweet" icon="message-square">',
-  'Store `tweetId` and `cacheHit`.',
+  'Store `requested_tweet_id`, `tweet_id`, and `cache_hit`.',
   '`cacheHit: true` means the single-tweet request used cached media and is free.',
   '<Card title="Bulk result" icon="list-checks">',
-  'Store `totalTweets` and `totalMedia`.',
+  'Store `requested_tweet_ids`, `successful_tweet_count` from `totalTweets`, and `media_item_count` from `totalMedia`.',
   '`totalTweets` counts successful tweets with media after invalid or failed IDs are skipped.',
   '<Card title="Input mode" icon="list-filter">',
   'When it contains at least 1 string, bulk mode ignores `tweetInput`, `tweetId`, and `tweetUrl`.',
@@ -4371,6 +4388,11 @@ const REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
   '[Upload Media](/api-reference/x-write/upload-media)',
   'Fresh downloads cost 1 credit per tweet processed with media.',
   'Bulk responses do not return `freshCount`',
+] as const;
+
+const FORBIDDEN_DOWNLOAD_MEDIA_RAW_OUTPUT_SNIPPETS = [
+  'fmt.Println(string(body))',
+  'io.ReadAll(resp.Body)',
 ] as const;
 
 const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
@@ -9602,13 +9624,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/x/download-media.mdx', 'utf8');
 
-    expect(
-      collectSnippetFindings(
+    expect([
+      ...collectSnippetFindings(
         source,
         'Download media API page',
         REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS,
       ),
-    ).toStrictEqual([]);
+      ...FORBIDDEN_DOWNLOAD_MEDIA_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Download media API page prints raw media download data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the direct message workflow aligned with DM API behavior', (): void => {
