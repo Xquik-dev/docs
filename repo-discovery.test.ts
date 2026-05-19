@@ -4676,6 +4676,8 @@ const REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS = [
   'retryCandidates := make([]DeliveryTriage, 0)',
   'Map each delivery into a small incident row',
   'avoid dumping the full response into logs',
+  'Do not depend on a `nextRetryAt` field.',
+  'route incidents from `status`, `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt`.',
   '<Card title="Delivery ID" icon="fingerprint">',
   'Store `id` for delivery-level idempotency and support lookup.',
   '<Card title="Event Join" icon="link">',
