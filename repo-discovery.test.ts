@@ -5232,7 +5232,7 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   '<Card title="Tweet replies exports" icon="messages-square" href="/guides/tweet-replies-export">',
   '<Card title="Follower CRM export" icon="users" href="/guides/follower-export-crm">',
   '<Card title="Monitor webhooks" icon="webhook" href="/guides/webhook-testing">',
-  'Test signed deliveries, verify `X-Xquik-Signature`, store `deliveryId`, and return `2xx` before slow work.',
+  'Test signed deliveries, verify `X-Xquik-Signature`, store `deliveryId` and `streamEventId`, and return `2xx` before slow work.',
   '<Card title="Media tweets and DMs" icon="image" href="/guides/media-upload-workflow">',
   '<Card title="Direct messages" icon="send" href="/guides/direct-message-workflow">',
   '<Card title="MCP agents" icon="bot" href="/mcp/overview">',
