@@ -1112,9 +1112,18 @@ const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
   'Exports are free after the extraction job exists.',
   'ExtractionEstimateCostParams.ToolType.REPLY_EXTRACTOR',
   'ExtractionRunParams.ToolType.REPLY_EXTRACTOR',
+  'Paths.get("xquik-replies.jsonl")',
   'ExtractionExportResultsParams.Format.CSV',
-  '`ExtractionExportResultsParams.Format.JSON`',
-  '`ExtractionExportResultsParams.Format.XLSX`',
+  'Paths.get("xquik-replies.csv")',
+  'ExtractionExportResultsParams.Format.JSON',
+  'Paths.get("xquik-replies.json")',
+  'ExtractionExportResultsParams.Format.XLSX',
+  'Paths.get("xquik-replies.xlsx")',
+  'Keep `page.nextCursor()` as the checkpoint when you stream replies to JSON Lines.',
+  '`xquik-replies.jsonl` for queue replay or warehouse loads',
+  '`xquik-replies.json` for app ingestion',
+  '`xquik-replies.csv` for CRM import',
+  '`xquik-replies.xlsx` for analyst handoff',
   'HttpResponse export',
   'export.body()',
   'Persist `job.id()` before polling',
@@ -1162,6 +1171,7 @@ const FORBIDDEN_JAVA_SDK_WEAK_SEARCH_SNIPPETS = [
   'row.put("id", tweet.id());',
   'transform the same projected records into CSV for analysts',
   'results_limit',
+  'xquik-tweet-replies',
 ] as const;
 
 const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
