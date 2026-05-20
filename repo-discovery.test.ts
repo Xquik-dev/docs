@@ -4464,6 +4464,9 @@ const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   '"recipient_user_id": "987654321"',
   '"message_id": "1893726451029384192"',
   'use your own job timestamp if the downstream system needs `sent_at`',
+  'Text-only DM sends omit media fields.',
+  'Add `media_ids` in the request and',
+  '`media_id` in the handoff only for the media send in Step 4.',
   '`message_id`, `sender_id`, `receiver_id`, `created_at`, optional `media_url`, and `conversation_user_id`',
   '### JSON Lines handoff',
   '`xquik-dm-handoff.jsonl`',
@@ -4472,6 +4475,9 @@ const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   '"conversation_user_id": "987654321"',
   '"page_next_cursor": "1893726451029384190"',
   '"handoff_format": "jsonl"',
+  'History rows include `media_url` only when the message has media.',
+  'Text-only send',
+  'rows omit `media_id` and `media_ids`; media send rows use the Step 4 shape.',
   'for queues, warehouse loads, CRM syncs, or agent memory',
   '`media_ids`',
   'exactly one uploaded media ID',
@@ -4996,6 +5002,8 @@ const FORBIDDEN_WEBHOOK_VERIFICATION_SNIPPETS = [
 
 const FORBIDDEN_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   'It can contain up to 10,000 characters.',
+  '"media_id": null',
+  '"media_url": null',
 ] as const;
 
 const REQUIRED_DM_HISTORY_API_SNIPPETS = [
