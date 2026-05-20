@@ -48,6 +48,57 @@ Run bulk data extractions from X in 5 stages: check credits, estimate costs, run
   </Step>
 </Steps>
 
+## End-to-end agent handoff
+
+Store one checkpoint per extraction run so another worker can resume without rereading logs:
+
+```json
+{
+  "workflow": "reply_extractor_to_csv",
+  "request": {
+    "toolType": "reply_extractor",
+    "targetTweetId": "1893704267862470862",
+    "resultsLimit": 500
+  },
+  "estimate": {
+    "estimatedResults": 500,
+    "creditsRequired": "500",
+    "creditsAvailable": "77000",
+    "allowed": true,
+    "source": "replyCount"
+  },
+  "create_receipt": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "status": "running",
+    "poll_path": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  },
+  "json_pages": {
+    "limit": 1000,
+    "page_cursor": null,
+    "next_cursor": "990200",
+    "has_more": true
+  },
+  "inventory_path": "/api/v1/extractions?status=completed&toolType=reply_extractor",
+  "export_path": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=csv",
+  "handoff_state": "poll_until_completed_then_export"
+}
+```
+
+<CardGroup cols={2}>
+  <Card title="Estimate checkpoint" icon="calculator">
+    Store `estimatedResults`, `creditsRequired`, `creditsAvailable`, `allowed`, and `source` before creating the job.
+  </Card>
+  <Card title="Create receipt" icon="clipboard-check">
+    Store the returned job `id`, `status`, and `poll_path`; result rows arrive from `GET /extractions/{id}`.
+  </Card>
+  <Card title="Cursor state" icon="shuffle">
+    Store `page_cursor`, `next_cursor`, and `has_more` for each JSON page so workers can resume pagination.
+  </Card>
+  <Card title="File handoff" icon="download">
+    Store `inventory_path` for later job lookup and `export_path` for the CSV, JSON, or XLSX download.
+  </Card>
+</CardGroup>
+
 ## Step 1: Check credits
 
 Before running an extraction, verify your subscription status and credit balance.
