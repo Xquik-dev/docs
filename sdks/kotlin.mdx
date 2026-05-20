@@ -341,19 +341,23 @@ Use this workflow when a Kotlin worker needs every reply to a campaign, support 
 `client.extractions().estimateCost` maps to `POST /extractions/estimate`, `client.extractions().run` maps to `POST /extractions`, `client.extractions().retrieve` maps to `GET /extractions/{id}`, and `client.extractions().exportResults` maps to `GET /extractions/{id}/export`.
 
 ```kotlin
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.x_twitter_scraper.api.client.XTwitterScraperClient
 import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient
 import com.x_twitter_scraper.api.models.extractions.ExtractionEstimateCostParams
 import com.x_twitter_scraper.api.models.extractions.ExtractionEstimateCostResponse
 import com.x_twitter_scraper.api.models.extractions.ExtractionExportResultsParams
+import com.x_twitter_scraper.api.models.extractions.ExtractionRetrieveParams
 import com.x_twitter_scraper.api.models.extractions.ExtractionRetrieveResponse
 import com.x_twitter_scraper.api.models.extractions.ExtractionRunParams
 import com.x_twitter_scraper.api.models.extractions.ExtractionRunResponse
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 
 val client: XTwitterScraperClient = XTwitterScraperOkHttpClient.fromEnv()
+val objectMapper = ObjectMapper()
 val targetTweetId = "1893704267862470862"
 
 val estimate: ExtractionEstimateCostResponse = client.extractions().estimateCost(
@@ -374,8 +378,48 @@ val job: ExtractionRunResponse = client.extractions().run(
         .build()
 )
 
-val results: ExtractionRetrieveResponse = client.extractions().retrieve(job.id())
-println("job=${job.id()} replies=${results.results().size} hasMore=${results.hasMore()}")
+var completed = false
+var attempts = 0
+while (!completed && attempts < 120) {
+    val statusPage = client.extractions().retrieve(job.id())
+    val status = statusPage.job()._additionalProperties()["status"]?.asString() ?: "unknown"
+
+    if (status == "completed") {
+        completed = true
+    } else if (status == "failed") {
+        error("Reply export failed.")
+    } else {
+        Thread.sleep(10_000L)
+    }
+
+    attempts += 1
+}
+
+if (!completed) {
+    error("Reply export did not complete before timeout.")
+}
+
+var after: String? = null
+Files.newBufferedWriter(Paths.get("xquik-replies.jsonl"), StandardCharsets.UTF_8).use { writer ->
+    do {
+        val pageParams = ExtractionRetrieveParams.builder()
+            .id(job.id())
+            .limit(1000L)
+
+        if (!after.isNullOrEmpty()) {
+            pageParams.after(after)
+        }
+
+        val page: ExtractionRetrieveResponse = client.extractions().retrieve(pageParams.build())
+
+        for (row in page.results()) {
+            writer.write(objectMapper.writeValueAsString(row._additionalProperties()))
+            writer.newLine()
+        }
+
+        after = if (page.hasMore()) page.nextCursor() else null
+    } while (!after.isNullOrEmpty())
+}
 
 client.extractions().exportResults(
     ExtractionExportResultsParams.builder()
@@ -383,15 +427,29 @@ client.extractions().exportResults(
         .format(ExtractionExportResultsParams.Format.CSV)
         .build()
 ).use { export ->
-    Files.copy(
-        export.body(),
-        Paths.get("xquik-replies.csv"),
-        StandardCopyOption.REPLACE_EXISTING,
-    )
+    Files.copy(export.body(), Paths.get("xquik-replies.csv"), StandardCopyOption.REPLACE_EXISTING)
+}
+
+client.extractions().exportResults(
+    ExtractionExportResultsParams.builder()
+        .id(job.id())
+        .format(ExtractionExportResultsParams.Format.JSON)
+        .build()
+).use { export ->
+    Files.copy(export.body(), Paths.get("xquik-replies.json"), StandardCopyOption.REPLACE_EXISTING)
+}
+
+client.extractions().exportResults(
+    ExtractionExportResultsParams.builder()
+        .id(job.id())
+        .format(ExtractionExportResultsParams.Format.XLSX)
+        .build()
+).use { export ->
+    Files.copy(export.body(), Paths.get("xquik-replies.xlsx"), StandardCopyOption.REPLACE_EXISTING)
 }
 ```
 
-Use `ExtractionExportResultsParams.Format.JSON` for a JSON file handoff or `ExtractionExportResultsParams.Format.XLSX` for workbook delivery. Persist `job.id()` before polling so a queue retry can resume with `client.extractions().retrieve(job.id())` and repeat `client.extractions().exportResults(...)` after completion.
+Persist `job.id()` before polling so a queue retry can resume with `client.extractions().retrieve(job.id())` and repeat `client.extractions().exportResults(...)` after completion. Keep `page.nextCursor()` as the checkpoint when you stream replies to JSON Lines. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. Cost: 1 credit per reply extracted or returned.
 
 ## Workflow: Post Media Tweets and DM Attachments
 
