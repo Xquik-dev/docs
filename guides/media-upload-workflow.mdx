@@ -64,6 +64,97 @@ If you already have public image URLs or a public MP4 video URL for a tweet or r
   </Card>
 </CardGroup>
 
+## End-to-end media handoff
+
+Use one checkpoint object after upload and the downstream tweet, reply, or DM
+write. Keep the field boundary explicit: tweets and replies use public
+`mediaUrl` values in `media`; DMs use the uploaded `mediaId` as the only
+`media_ids` item.
+
+```json
+{
+  "workflow": "media_upload_handoff",
+  "upload": {
+    "endpoint": "/api/v1/x/media",
+    "account": "myxhandle",
+    "source_type": "url",
+    "source": "https://example.com/image.png",
+    "media_id": "1893726451023847424",
+    "media_url": "https://media.xquik.com/uploads/1893726451023847424.png",
+    "media_id_expires_in_hours": 24,
+    "success": true
+  },
+  "tweet_post": {
+    "endpoint": "/api/v1/x/tweets",
+    "account": "myxhandle",
+    "media": ["https://media.xquik.com/uploads/1893726451023847424.png"],
+    "tweet_id": "1895432178065391234",
+    "success": true,
+    "charged_credits": "12"
+  },
+  "reply_post": {
+    "endpoint": "/api/v1/x/tweets",
+    "account": "myxhandle",
+    "reply_to_tweet_id": "1893704267862470862",
+    "media": ["https://media.xquik.com/uploads/1893726451023847424.png"],
+    "tweet_id": "1895432178065391235",
+    "write_status": "posted"
+  },
+  "dm_send": {
+    "endpoint": "/api/v1/x/dm/44196397",
+    "account": "myxhandle",
+    "recipient_user_id": "44196397",
+    "media_ids": ["1893726451023847424"],
+    "message_id": "1893726451029384192",
+    "success": true
+  },
+  "field_boundary": {
+    "tweet_media_field": "media",
+    "tweet_media_value": "mediaUrl",
+    "dm_media_field": "media_ids[0]",
+    "dm_media_value": "mediaId",
+    "forbidden_tweet_field": "media_ids"
+  },
+  "audit_row": {
+    "record_type": "media_upload_handoff",
+    "source_endpoint": "/api/v1/x/media",
+    "account": "myxhandle",
+    "media_id": "1893726451023847424",
+    "media_url": "https://media.xquik.com/uploads/1893726451023847424.png",
+    "tweet_id": "1895432178065391234",
+    "message_id": "1893726451029384192",
+    "handoff_format": "jsonl"
+  },
+  "handoff_state": "store_media_url_for_tweets_and_media_id_for_dms"
+}
+```
+
+<CardGroup cols={2}>
+  <Card title="Upload checkpoint" icon="paperclip">
+    Store returned `mediaId`, `mediaUrl`, `success`, source URL or filename, and the upload endpoint.
+  </Card>
+
+  <Card title="Tweet URL checkpoint" icon="send">
+    Store the public `mediaUrl` in `media`, plus returned `tweetId`, `chargedCredits`, and optional `writeActionId`.
+  </Card>
+
+  <Card title="Reply URL checkpoint" icon="message-square">
+    Store `reply_to_tweet_id`, public `mediaUrl`, returned `tweetId`, and pending confirmation state when present.
+  </Card>
+
+  <Card title="DM ID checkpoint" icon="mail">
+    Store exactly one uploaded `mediaId` in `media_ids`, plus returned `messageId` and recipient ID.
+  </Card>
+
+  <Card title="Field boundary" icon="split">
+    Reject tweet handoffs that put uploaded media IDs in `media` or send `media_ids` to `POST /x/tweets`.
+  </Card>
+
+  <Card title="Audit row" icon="file-check">
+    Store upload, tweet, reply, and DM IDs together so downstream systems can reconcile each media path.
+  </Card>
+</CardGroup>
+
 ## Step 1: Upload media by URL
 
 Use JSON URL upload when an AI agent, MCP client, or workflow tool has a generated image or MP4 URL that Xquik should validate and host. For tweet-only workflows with already public image URLs or exactly 1 public MP4 video URL up to 100 MB, call `POST /x/tweets` directly with `media`.
