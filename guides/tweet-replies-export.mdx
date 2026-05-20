@@ -51,6 +51,71 @@ Reply exports include base user fields, reply tweet fields, engagement counts, a
 
 For extraction jobs, `GET /extractions/{id}` returns `job`, `results`, `hasMore`, and `nextCursor`. Each reply row includes `xUserId`, `xUsername`, `xDisplayName`, `tweetId`, `tweetText`, `tweetCreatedAt`, `createdAt`, and optional `enrichmentData` fields such as `likeCount`, `replyCount`, `repostCount`, `quoteCount`, `viewCount`, `bookmarkCount`, `conversationId`, `lang`, and `source`.
 
+## End-to-end reply export handoff
+
+Store one checkpoint that carries the target tweet through estimate, job creation, JSON pagination, and file export:
+
+```json
+{
+  "workflow": "reply_export",
+  "request": {
+    "toolType": "reply_extractor",
+    "targetTweetId": "1893704267862470862",
+    "resultsLimit": 500
+  },
+  "estimate": {
+    "estimatedResults": 500,
+    "creditsRequired": "500",
+    "creditsAvailable": "77000",
+    "allowed": true,
+    "source": "resultsLimit"
+  },
+  "create_receipt": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "toolType": "reply_extractor",
+    "status": "running",
+    "poll_path": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  },
+  "json_pages": {
+    "limit": 1000,
+    "page_cursor": null,
+    "next_cursor": "990200",
+    "has_more": true
+  },
+  "export_paths": {
+    "csv": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=csv",
+    "json": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=json",
+    "xlsx": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=xlsx"
+  },
+  "normalized_row": {
+    "parent_tweet_id": "1893704267862470862",
+    "reply_tweet_id": "1893710452812718080",
+    "reply_text": "Thanks for the update.",
+    "reply_created_at": "2026-05-01T10:05:00.000Z",
+    "reply_author_id": "44196397",
+    "reply_author_username": "xquikcom",
+    "conversation_id": "1893704267862470862",
+    "export_format": "csv"
+  },
+  "handoff_state": "poll_until_completed_then_export"
+}
+```
+
+<CardGroup cols={2}>
+  <Card title="Estimate checkpoint" icon="calculator">
+    Keep `estimatedResults`, `creditsRequired`, `creditsAvailable`, `allowed`, and `source` with `targetTweetId`; `source` can be `replyCount`, `paginationCap`, or `resultsLimit`.
+  </Card>
+  <Card title="Job checkpoint" icon="clipboard-check">
+    Store the returned job `id`, `status`, and `poll_path`; do not expect reply rows in the create response.
+  </Card>
+  <Card title="Cursor checkpoint" icon="shuffle">
+    Store `page_cursor`, `next_cursor`, and `has_more` for JSON page loops, then pass `nextCursor` back as `after`.
+  </Card>
+  <Card title="Export checkpoint" icon="download">
+    Store the chosen CSV, JSON, or XLSX `export_paths` and the normalized reply fields sent downstream.
+  </Card>
+</CardGroup>
+
 ## Step 1: Estimate replies and credits
 
 Call `POST /extractions/estimate` before scraping. `reply_extractor` requires `targetTweetId`. Add `resultsLimit` when you want a sample or a hard cost cap.
