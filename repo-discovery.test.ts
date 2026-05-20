@@ -1367,6 +1367,21 @@ const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
   'Do not pass uploaded media IDs to this resource',
   'Terraform state for `x-twitter-scraper_x_tweet` does not expose `write_action_id`, media upload resources, or direct-message send resources.',
   'store returned DM `message_id`, use the REST API, MCP tools, or a generated SDK instead of Terraform.',
+  'Terraform should not be the handoff surface for extraction files.',
+  'use the REST extraction endpoints, CLI, MCP tools, or generated SDKs to write CSV, JSON, XLSX, or JSON Lines files.',
+  'Keep Terraform state focused on long-lived resources and IDs that must be reviewed through plan and apply.',
+] as const;
+
+const FORBIDDEN_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
+  'x-twitter-scraper_x_media',
+  'x-twitter-scraper_x_dm',
+  'x-twitter-scraper_direct_message',
+  'media_ids =',
+  'message_id =',
+  'write_action_id =',
+  'xquik-replies.csv',
+  'xquik-followers.csv',
+  'exportResults(',
 ] as const;
 
 const REQUIRED_LLMS_SNIPPETS = [
@@ -8287,13 +8302,27 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     const source = readFileSync('sdks/terraform.mdx', 'utf8');
+    const forbiddenFindings =
+      FORBIDDEN_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Terraform provider workflow docs contains unsupported state handoff "${snippet}".`,
+                },
+              ]
+            : [],
+      );
 
     expect(
-      collectSnippetFindings(
-        source,
-        'Terraform provider workflow docs',
-        REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'Terraform provider workflow docs',
+          REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS,
+        ),
+        ...forbiddenFindings,
+      ],
     ).toStrictEqual([]);
   });
 
