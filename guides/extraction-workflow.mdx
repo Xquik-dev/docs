@@ -8,7 +8,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Run bulk data extractions from X in 4 steps: check credits, estimate costs, run the job, and retrieve results. Use this workflow to scrape tweets, export followers, pull tweet replies, save CSV/JSON/XLSX files, or hand paginated JSON to a CRM, warehouse, queue, or AI agent.
+Run bulk data extractions from X in 5 stages: check credits, estimate costs, run the job, retrieve JSON pages, and export files. Use this workflow to scrape tweets, export followers, pull tweet replies, save CSV/JSON/XLSX files, or hand paginated JSON to a CRM, warehouse, queue, or AI agent.
 
 ## Workflow overview
 
@@ -42,6 +42,9 @@ Run bulk data extractions from X in 4 steps: check credits, estimate costs, run 
   </Step>
   <Step title="Retrieve results">
     Paginate through extracted data via the API, or export as CSV, JSON, XLSX, Markdown, PDF, or TXT.
+  </Step>
+  <Step title="Export files">
+    Download CSV, JSON, XLSX, Markdown, PDF, or TXT when a downstream tool expects a file.
   </Step>
 </Steps>
 
@@ -440,6 +443,27 @@ for {
 fmt.Printf("Fetched %d results\n", len(allResults))
 ```
 </CodeGroup>
+
+### Durable JSON Lines handoff
+
+Use JSON Lines when a queue, warehouse, or agent needs replayable rows without the export row cap. Write each paginated result with the cursor state that produced it.
+
+```json
+{
+  "extraction_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "row_id": "990001",
+  "x_user_id": "44196397",
+  "x_username": "elonmusk",
+  "tweet_id": "1893710452812718080",
+  "tweet_text": "This is a great thread, thanks for sharing.",
+  "page_cursor": "990100",
+  "next_cursor": "990200",
+  "has_more": true,
+  "handoff_format": "jsonl"
+}
+```
+
+Store rows in `xquik-extraction-results.jsonl` for queue replay, warehouse loads, or agent audits. Keep `page_cursor` and `next_cursor` so the job can resume from the last successful page.
 
 Each result contains user profile data and (for tweet-based tools) tweet data:
 

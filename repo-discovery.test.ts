@@ -4220,13 +4220,22 @@ const FORBIDDEN_USER_MEDIA_API_RAW_SNIPPETS = [
 
 const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   'Scrape tweets, export followers, estimate credits, start extraction jobs, paginate JSON results, and export CSV, JSON, or XLSX files',
+  'Run bulk data extractions from X in 5 stages:',
   'Use this workflow to scrape tweets, export followers, pull tweet replies, save CSV/JSON/XLSX files, or hand paginated JSON to a CRM, warehouse, queue, or AI agent.',
+  '<Step title="Export files">',
   '## Data handoff',
   '`job`, `results`, `hasMore`, `nextCursor`',
   'Use `limit` up to 1,000 and pass `nextCursor` as `after`',
   '`xUserId`, `xUsername`, `tweetId`, `tweetText`, `createdAt`',
   'Paginated JSON is not row-capped by the export limit.',
   'File exports are capped at 100,000 rows, and PDF exports are capped at 10,000 rows.',
+  '### Durable JSON Lines handoff',
+  'Use JSON Lines when a queue, warehouse, or agent needs replayable rows without the export row cap.',
+  '"page_cursor": "990100"',
+  '"next_cursor": "990200"',
+  '"handoff_format": "jsonl"',
+  '`xquik-extraction-results.jsonl`',
+  'Keep `page_cursor` and `next_cursor` so the job can resume from the last successful page.',
   'Use structured fields first for common jobs such as search tweets from a user, search tweet replies, scrape tweets with images, or export posts in a date range.',
   'Use `advancedQuery` only when you already know the X search operator string you want to append.',
   '`502 x_api_unavailable` means the read service is temporarily unavailable.',
@@ -4427,6 +4436,7 @@ const FORBIDDEN_EXTRACTION_EXPORT_COLUMNS_SNIPPETS = [
 
 const FORBIDDEN_EXTRACTION_WORKFLOW_SNIPPETS = [
   'quota',
+  'Run bulk data extractions from X in 4 steps',
   '| `502 x_api_unavailable` | X data source temporarily down | Retry with exponential backoff |',
 ] as const;
 
