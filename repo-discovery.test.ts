@@ -4357,6 +4357,37 @@ const FORBIDDEN_EXTRACTION_CREATE_RECEIPT_SNIPPETS = [
   'const results = data.results',
 ] as const;
 
+const REQUIRED_EXTRACTION_ESTIMATE_HANDOFF_SNIPPETS = [
+  '## Decision handoff',
+  'Treat the `200 OK` response as a planning checkpoint, not a running extraction.',
+  '"checkpoint_type": "extraction_estimate"',
+  '"estimatedResults": 500',
+  '"creditsRequired": "500"',
+  '"creditsAvailable": "50000"',
+  '"allowed": true',
+  '"source": "replyCount"',
+  '"next_action": "create_extraction"',
+  '"create_path": "/api/v1/extractions"',
+  '"fallback_action": "lower_results_limit_or_add_credits"',
+  '<Card title="Allowed run" icon="circle-check">',
+  'send the same `toolType`, target fields, filters, and `resultsLimit`',
+  'Store the returned job ID from that `202 Accepted` receipt.',
+  '<Card title="Blocked run" icon="circle-alert">',
+  'lower `resultsLimit`, narrow the target or filters, or add credits',
+  '<Card title="Source signal" icon="gauge">',
+  'Store `source` so operators know whether the estimate came from',
+  '<Card title="Audit fields" icon="clipboard-check">',
+  'Store `estimatedResults`, `creditsRequired`, `creditsAvailable`, `allowed`, and `source`',
+] as const;
+
+const FORBIDDEN_EXTRACTION_ESTIMATE_HANDOFF_SNIPPETS = [
+  '"status": "running"',
+  '"receipt_format": "extraction_job"',
+  '"results": [',
+  '"hasMore": true',
+  'poll_path',
+] as const;
+
 const REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS = [
   'curl --fail -X GET',
   'import { writeFile } from "node:fs/promises";',
@@ -9999,6 +10030,32 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Extraction create response should stay a receipt and not include result data "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps extraction estimate framed as a decision checkpoint', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/extractions/estimate.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'Extraction estimate decision handoff',
+          REQUIRED_EXTRACTION_ESTIMATE_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_EXTRACTION_ESTIMATE_HANDOFF_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Extraction estimate should stay a decision checkpoint and not include job output "${snippet}".`,
                   },
                 ]
               : [],

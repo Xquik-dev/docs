@@ -226,6 +226,42 @@ The request body accepts the same fields as [Create Extraction](/api-reference/e
   </Tab>
 </Tabs>
 
+## Decision handoff
+
+Treat the `200 OK` response as a planning checkpoint, not a running extraction. Store the estimate with the request you plan to run:
+
+```json
+{
+  "checkpoint_type": "extraction_estimate",
+  "toolType": "reply_extractor",
+  "targetTweetId": "1893704267862470862",
+  "resultsLimit": 500,
+  "estimatedResults": 500,
+  "creditsRequired": "500",
+  "creditsAvailable": "50000",
+  "allowed": true,
+  "source": "replyCount",
+  "next_action": "create_extraction",
+  "create_path": "/api/v1/extractions",
+  "fallback_action": "lower_results_limit_or_add_credits"
+}
+```
+
+<CardGroup cols={2}>
+  <Card title="Allowed run" icon="circle-check">
+    When `allowed` is `true`, send the same `toolType`, target fields, filters, and `resultsLimit` to [Create Extraction](/api-reference/extractions/create). Store the returned job ID from that `202 Accepted` receipt.
+  </Card>
+  <Card title="Blocked run" icon="circle-alert">
+    When `allowed` is `false`, lower `resultsLimit`, narrow the target or filters, or add credits before calling [Create Extraction](/api-reference/extractions/create).
+  </Card>
+  <Card title="Source signal" icon="gauge">
+    Store `source` so operators know whether the estimate came from `replyCount`, `followers`, `resultsLimit`, `paginationCap`, or another supported signal.
+  </Card>
+  <Card title="Audit fields" icon="clipboard-check">
+    Store `estimatedResults`, `creditsRequired`, `creditsAvailable`, `allowed`, and `source` with the planned extraction request.
+  </Card>
+</CardGroup>
+
 <Note>
   **Always call this endpoint before running an extraction** to avoid hitting credit limits. If `allowed` is `false`, the corresponding [Create Extraction](/api-reference/extractions/create) request will return a `402` error. Check your current usage on the [dashboard](https://xquik.com/dashboard).
 </Note>
