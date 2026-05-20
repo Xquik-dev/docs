@@ -176,21 +176,93 @@ Results are ordered by creation date (newest first). To iterate through all extr
 3. Repeat until `hasMore` is `false`.
 
 ```javascript
+import { appendFile } from "node:fs/promises";
+
 let cursor = undefined;
-const allExtractions = [];
+let pageIndex = 0;
 
 do {
-  const params = new URLSearchParams({ limit: "100" });
+  const params = new URLSearchParams({
+    limit: "100",
+    status: "completed",
+  });
   if (cursor) params.set("after", cursor);
+  const pageCursor = cursor ?? null;
 
   const response = await fetch(`https://xquik.com/api/v1/extractions?${params}`, {
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
 
-  allExtractions.push(...data.extractions);
+  const rows = data.extractions.map((job) => ({
+    extraction_id: job.id,
+    tool_type: job.toolType,
+    status: job.status,
+    total_results: job.totalResults,
+    created_at: job.createdAt,
+    completed_at: job.completedAt ?? null,
+    detail_path: `/api/v1/extractions/${job.id}`,
+    export_path:
+      job.status === "completed"
+        ? `/api/v1/extractions/${job.id}/export?format=csv`
+        : null,
+    page_index: pageIndex,
+    page_cursor: pageCursor,
+    next_cursor: data.nextCursor ?? null,
+    has_more: data.hasMore,
+    handoff_format: "jsonl",
+  }));
+
+  if (rows.length > 0) {
+    await appendFile(
+      "xquik-extraction-jobs.jsonl",
+      `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`,
+    );
+  }
+
   cursor = data.hasMore ? data.nextCursor : undefined;
+  pageIndex += 1;
 } while (cursor);
+```
+
+## Job inventory handoff
+
+Use `GET /extractions` as the job inventory step before fetching details or
+exporting files. Treat `nextCursor` as opaque and pass it back as `after`; do
+not dump raw job lists into shared logs.
+
+<CardGroup cols={2}>
+  <Card title="Page checkpoint" icon="bookmark">
+    Store `page_index`, `page_cursor`, `next_cursor`, `has_more`, `limit`,
+    `tool_type_filter`, and `status_filter` after each successful page.
+  </Card>
+  <Card title="Completed jobs" icon="circle-check">
+    Store completed job `id`, `toolType`, `totalResults`, `completedAt`,
+    `detail_path`, and `export_path` for the next fetch or file export.
+  </Card>
+  <Card title="Running or failed jobs" icon="circle-alert">
+    Keep `status`, `createdAt`, and `id` so dashboards can retry failed jobs or
+    poll running jobs without rereading older pages.
+  </Card>
+  <Card title="Next API step" icon="route">
+    Use [Get Extraction](/api-reference/extractions/get) for paginated JSON
+    rows, or [Export Extraction](/api-reference/extractions/export) for files.
+  </Card>
+</CardGroup>
+
+Store page checkpoints separately from job rows:
+
+```json
+{
+  "page_index": 2,
+  "page_cursor": "eyJjIjoiMjAyNi0wMi0yM1QxODozMTo0NS4wMDBaIiwiaSI6Ijc3NzY4In0",
+  "next_cursor": "eyJjIjoiMjAyNi0wMi0yM1QxMjowMDowMC4wMDBaIiwiaSI6Ijc3NzY0In0",
+  "has_more": true,
+  "limit": 100,
+  "tool_type_filter": "reply_extractor",
+  "status_filter": "completed",
+  "handoff_format": "jsonl"
+}
 ```
 
 <Note>

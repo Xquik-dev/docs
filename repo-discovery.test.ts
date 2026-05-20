@@ -4476,6 +4476,35 @@ const FORBIDDEN_EXTRACTION_GET_HANDOFF_SNIPPETS = [
   'allResults.push(...data.results);',
 ] as const;
 
+const REQUIRED_EXTRACTION_LIST_HANDOFF_SNIPPETS = [
+  'import { appendFile } from "node:fs/promises";',
+  'status: "completed",',
+  'const pageCursor = cursor ?? null;',
+  '"xquik-extraction-jobs.jsonl"',
+  'detail_path: `/api/v1/extractions/${job.id}`',
+  '? `/api/v1/extractions/${job.id}/export?format=csv`',
+  'handoff_format: "jsonl"',
+  '## Job inventory handoff',
+  'Use `GET /extractions` as the job inventory step before fetching details or',
+  'Treat `nextCursor` as opaque and pass it back as `after`',
+  'not dump raw job lists into shared logs.',
+  '<Card title="Page checkpoint" icon="bookmark">',
+  '`tool_type_filter`, and `status_filter`',
+  '<Card title="Completed jobs" icon="circle-check">',
+  '`detail_path`, and `export_path`',
+  '<Card title="Running or failed jobs" icon="circle-alert">',
+  '<Card title="Next API step" icon="route">',
+  'Use [Get Extraction](/api-reference/extractions/get)',
+  'or [Export Extraction](/api-reference/extractions/export) for files.',
+  '"tool_type_filter": "reply_extractor"',
+  '"status_filter": "completed"',
+] as const;
+
+const FORBIDDEN_EXTRACTION_LIST_HANDOFF_SNIPPETS = [
+  'const allExtractions = [];',
+  'allExtractions.push(...data.extractions);',
+] as const;
+
 const REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
   'media upload',
   'POST /x/media',
@@ -9803,6 +9832,32 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Get extraction page contains stale single-page accumulation "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the list extractions page cursor-safe for job inventory handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/extractions/list.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'List extractions job inventory handoff',
+          REQUIRED_EXTRACTION_LIST_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_EXTRACTION_LIST_HANDOFF_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `List extractions page contains stale single-page accumulation "${snippet}".`,
                   },
                 ]
               : [],
