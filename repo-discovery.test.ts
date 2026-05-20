@@ -2423,6 +2423,19 @@ const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   '"hasMore": true',
   '"nextCursor": "1001"',
   'Use `limit` up to `1000` and pass `nextCursor` as `after`',
+  'import { writeFile } from "node:fs/promises";',
+  'const exportFilePath = "x-followers-elonmusk.json";',
+  'throw new Error(`Export failed with ${response.status}`);',
+  'const bytes = Buffer.from(await response.arrayBuffer());',
+  'await writeFile(exportFilePath, bytes);',
+  'const exportHandoff = {',
+  'export_file_path: exportFilePath',
+  'content_disposition: response.headers.get("Content-Disposition") ?? ""',
+  'export_file_path = "x-followers-elonmusk.csv"',
+  'response.raise_for_status()',
+  'Use the local `-o` path, `exportFilePath`, or `export_file_path` as the durable',
+  '"job": "follower_export_file"',
+  '"export_file_path": "x-followers-elonmusk.csv"',
   'const extractionHandoff = {',
   'extraction_id: job.id',
   'status: job.status',
@@ -4174,6 +4187,12 @@ const REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS = [
   '"fmt"',
   'if resp.StatusCode < 200 || resp.StatusCode >= 300',
   'panic(fmt.Sprintf("export failed with %d", resp.StatusCode))',
+  '## File handoff',
+  'Treat the response body as file bytes.',
+  '"export_file_path": "extraction-reply_extractor.csv"',
+  '"content_type": "text/csv; charset=utf-8"',
+  'Do not print downloaded',
+  'export bytes to shared logs.',
   'Returns a file download. The response includes a `Content-Disposition` header with the filename.',
   '<CardGroup cols={2}>',
   '<Card title="CSV" icon="table">',
@@ -8594,7 +8613,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps follower export CRM handoff steps concrete', (): void => {
-    expect.assertions(3);
+    expect.assertions(4);
 
     const source = readFileSync('guides/follower-export-crm.mdx', 'utf8');
 
@@ -8607,6 +8626,7 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(source).not.toContain('console.log(job.id, job.status);');
     expect(source).not.toContain('console.log(JSON.stringify(row));');
+    expect(source).not.toContain('const followers = await response.json();');
   });
 
   it('keeps tweet replies export workflow steps concrete', (): void => {
