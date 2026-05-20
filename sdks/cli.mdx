@@ -242,6 +242,36 @@ done
 The retrieve command returns `.job`, `.results`, `.hasMore`, and `.nextCursor`. When `.hasMore` is true, pass `.nextCursor` back as `--after` to fetch the next saved page.
 
 ```bash
+: > xquik-followers.jsonl
+after=""
+
+while :; do
+  if [ -n "$after" ]; then
+    x-twitter-scraper extractions retrieve \
+      --id "$job_id" \
+      --after "$after" \
+      --limit 1000 \
+      --format json > followers-page.json
+  else
+    x-twitter-scraper extractions retrieve \
+      --id "$job_id" \
+      --limit 1000 \
+      --format json > followers-page.json
+  fi
+
+  jq -c '.results[]' followers-page.json >> xquik-followers.jsonl
+
+  has_more="$(jq -r '.hasMore // false' followers-page.json)"
+  next_cursor="$(
+    jq -r 'if .hasMore then (.nextCursor // "") else "" end' followers-page.json
+  )"
+  [ "$has_more" = "true" ] || break
+  [ -n "$next_cursor" ] || break
+  after="$next_cursor"
+done
+```
+
+```bash
 x-twitter-scraper extractions export-results \
   --id "$job_id" \
   --format csv \
@@ -249,11 +279,22 @@ x-twitter-scraper extractions export-results \
 
 x-twitter-scraper extractions export-results \
   --id "$job_id" \
+  --format json \
+  --output xquik-followers.json
+
+x-twitter-scraper extractions export-results \
+  --id "$job_id" \
   --format xlsx \
   --output xquik-followers.xlsx
 ```
 
-Map `User ID` or result `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+Map `User ID` or result `xUserId` as the CRM unique key. Keep
+`xquik-followers.jsonl` for queue replay or warehouse loads, use
+`xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import,
+and `xquik-followers.xlsx` for analyst handoff.
+
+Cost: 1 credit per follower extracted or returned. Exports are free after the
+extraction job exists.
 
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
