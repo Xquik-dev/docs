@@ -321,7 +321,7 @@ while True:
 
 after = None
 
-with Path("xquik-tweet-replies.jsonl").open("w", encoding="utf-8") as jsonl_file:
+with Path("xquik-replies.jsonl").open("w", encoding="utf-8") as jsonl_file:
     while True:
         page = client.extractions.retrieve(job.id, limit=1000, after=after)
 
@@ -334,11 +334,17 @@ with Path("xquik-tweet-replies.jsonl").open("w", encoding="utf-8") as jsonl_file
         after = page.next_cursor
 
 client.extractions.export_results(job.id, format="csv").write_to_file(
-    Path("xquik-tweet-replies.csv"),
+    Path("xquik-replies.csv"),
+)
+client.extractions.export_results(job.id, format="json").write_to_file(
+    Path("xquik-replies.json"),
+)
+client.extractions.export_results(job.id, format="xlsx").write_to_file(
+    Path("xquik-replies.xlsx"),
 )
 ```
 
-`reply_extractor` requires `target_tweet_id`. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; store those values when you need resumable JSON pagination. `client.extractions.export_results` supports `csv`, `json`, and `xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
+`reply_extractor` requires `target_tweet_id`. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; store those values when you need resumable JSON pagination. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.extractions.export_results` supports `csv`, `json`, and `xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
 
 ## Workflow: Post Media Tweets and DM Attachments
 
