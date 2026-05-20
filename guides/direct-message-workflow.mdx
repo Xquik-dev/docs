@@ -54,6 +54,85 @@ Use this workflow when a support, sales, community, or agent system needs to rea
   </Card>
 </CardGroup>
 
+## End-to-end direct message handoff
+
+Use one checkpoint object after recipient lookup, history sync, a text send, and
+an optional media send. Keep full DM bodies in restricted support, CRM,
+warehouse, or agent memory systems; shared run logs should carry IDs, status,
+cursors, and media references.
+
+```json
+{
+  "workflow": "direct_message_handoff",
+  "recipient_lookup": {
+    "id": "987654321",
+    "username": "xquikcom",
+    "canDm": true
+  },
+  "history_page": {
+    "account": "myxhandle",
+    "conversation_user_id": "987654321",
+    "messages_count": 25,
+    "page_cursor": null,
+    "next_cursor": "1893726451029384190",
+    "has_next_page": true
+  },
+  "text_send": {
+    "endpoint": "/api/v1/x/dm/987654321",
+    "account": "myxhandle",
+    "recipient_user_id": "987654321",
+    "message_id": "1893726451029384192",
+    "success": true,
+    "send_status": "sent"
+  },
+  "media_send": {
+    "upload_media_id": "1893726451023847424",
+    "media_ids": ["1893726451023847424"],
+    "media_url": "https://media.example.com/support-image.png",
+    "message_id": "1893726451029384193",
+    "success": true,
+    "send_status": "sent"
+  },
+  "audit_row": {
+    "record_type": "dm_handoff_checkpoint",
+    "sender_account": "myxhandle",
+    "recipient_user_id": "987654321",
+    "message_id": "1893726451029384193",
+    "media_id": "1893726451023847424",
+    "source_endpoint": "/api/v1/x/dm/987654321",
+    "handoff_format": "jsonl",
+    "message_text_storage": "restricted_system_only"
+  },
+  "handoff_state": "store_message_ids_and_private_rows"
+}
+```
+
+<CardGroup cols={2}>
+  <Card title="Recipient checkpoint" icon="user-check">
+    Store the numeric `id`, `username`, and optional `canDm` preflight hint from user lookup.
+  </Card>
+
+  <Card title="History checkpoint" icon="history">
+    Store `messages_count`, `next_cursor`, and `has_next_page` for each synced history page.
+  </Card>
+
+  <Card title="Text send checkpoint" icon="send">
+    Store the `message_id`, `success`, `send_status`, sender account, and recipient ID after `POST /x/dm/{userId}`.
+  </Card>
+
+  <Card title="Media checkpoint" icon="image">
+    Store exactly one uploaded `media_id` beside the returned DM `message_id`.
+  </Card>
+
+  <Card title="Audit checkpoint" icon="file-check">
+    Keep shared audit rows limited to IDs, cursors, status, endpoints, and media references.
+  </Card>
+
+  <Card title="Invalid fields" icon="ban">
+    Do not pass `reply_to_message_id`, empty `media_ids`, or more than one media ID.
+  </Card>
+</CardGroup>
+
 ## Step 1: Look up the recipient user ID
 
 `POST /x/dm/{userId}` requires the numeric X user ID in the path. If you only have a username, call `GET /x/users/{id}` first.
