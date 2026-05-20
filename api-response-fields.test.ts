@@ -466,7 +466,32 @@ function productMapperFields(functionName: string): readonly string[] {
   ]
     .map((match): string => match.groups?.['field'] ?? '')
     .filter((field): boolean => field.length > 0);
-  return uniqueSorted([...directFields, ...optionalFields]);
+  const appendStart = body.indexOf('appendOptionalFields({');
+  const groupedAppendStart = body.indexOf(
+    'appendOptionalFields(\n',
+    appendStart,
+  );
+  const appendSearchStart = appendStart < 0 ? groupedAppendStart : appendStart;
+  const appendObjectStart =
+    appendSearchStart < 0 ? -1 : body.indexOf('{', appendSearchStart);
+  const appendObjectEnd = body.indexOf('}', appendObjectStart);
+  const appendDirectFields =
+    appendObjectStart < 0 || appendObjectEnd < 0
+      ? []
+      : objectLiteralPropertyFields(
+          body.slice(appendObjectStart, appendObjectEnd + 1),
+        );
+  const appendOptionalFields = [
+    ...body.matchAll(/\[\s*'(?<field>[^']+)'\s*,/gu),
+  ]
+    .map((match): string => match.groups?.['field'] ?? '')
+    .filter((field): boolean => field.length > 0);
+  return uniqueSorted([
+    ...directFields,
+    ...optionalFields,
+    ...appendDirectFields,
+    ...appendOptionalFields,
+  ]);
 }
 
 function objectLiteralPropertyFields(source: string): readonly string[] {
@@ -491,19 +516,45 @@ function productReturnFieldsFromPath(
   return objectLiteralPropertyFields(body.slice(start, end + 1));
 }
 
-function productNotificationFields(): readonly string[] {
-  const source = readFileSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH, 'utf8');
-  const start = source.indexOf('notifications: result.items.map');
-  const end = source.indexOf('has_next_page:', start);
-  if (start < 0 || end < 0) {
-    throw new Error('Could not locate notification response mapper.');
+function productDmMessageFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_DM_HISTORY_ROUTE_PATH, 'utf8');
+  const body = mapFunctionBody(source, 'mapMessage');
+  const literalStart = body.indexOf(
+    'const message: Record<string, unknown> = {',
+  );
+  const literalEnd = body.indexOf('};', literalStart);
+  if (literalStart < 0 || literalEnd < 0) {
+    throw new Error('Could not locate DM history message object.');
   }
-  const body = source.slice(start, end);
-  const directFields = [...body.matchAll(/^\s{10}(?<field>[A-Za-z_]\w*):/gmu)]
+  const initialFields = objectLiteralPropertyFields(
+    body.slice(literalStart, literalEnd + 1),
+  );
+  const assignedFields = [
+    ...body.matchAll(/message\[['"](?<field>[^'"]+)['"]\]\s*=/gu),
+  ]
     .map((match): string => match.groups?.['field'] ?? '')
     .filter((field): boolean => field.length > 0);
   const optionalFields = [
-    ...body.matchAll(/\{\s*(?<field>[A-Za-z_]\w*):\s*n\./gu),
+    ...body.matchAll(/\[\s*'(?<field>[^']+)'\s*,/gu),
+  ]
+    .map((match): string => match.groups?.['field'] ?? '')
+    .filter((field): boolean => field.length > 0);
+  return uniqueSorted([...initialFields, ...assignedFields, ...optionalFields]);
+}
+
+function productNotificationFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_NOTIFICATIONS_ROUTE_PATH, 'utf8');
+  const body = mapFunctionBody(source, 'mapNotification');
+  const inlineStart = body.indexOf('appendOptionalFields({');
+  const inlineEnd = body.indexOf('}, [', inlineStart);
+  if (inlineStart < 0 || inlineEnd < 0) {
+    throw new Error('Could not locate notification response mapper.');
+  }
+  const directFields = objectLiteralPropertyFields(
+    body.slice(inlineStart, inlineEnd + 1),
+  );
+  const optionalFields = [
+    ...body.matchAll(/\[\s*'(?<field>[^']+)'\s*,/gu),
   ]
     .map((match): string => match.groups?.['field'] ?? '')
     .filter((field): boolean => field.length > 0);
@@ -571,19 +622,10 @@ function productMediaDownloadFields(): readonly string[] {
 }
 
 function productBookmarkFolderFields(): readonly string[] {
-  const source = readFileSync(PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH, 'utf8');
-  const responseStart = source.indexOf('return NextResponse.json({');
-  if (responseStart < 0) {
-    throw new Error('Could not locate bookmark folder success response.');
-  }
-  const responseEnd = source.indexOf('});', responseStart);
-  const responseBody = source.slice(responseStart, responseEnd + 1);
-  const folderStart = responseBody.indexOf('=> ({');
-  const folderEnd = responseBody.indexOf('}))', folderStart);
-  return uniqueSorted([
-    ...objectLiteralFields(responseBody),
-    ...objectLiteralFields(responseBody.slice(folderStart, folderEnd)),
-  ]);
+  return productReturnFieldsFromPath(
+    PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH,
+    'buildBookmarkFoldersResponse',
+  );
 }
 
 function productXTrendsFields(): readonly string[] {
@@ -610,15 +652,10 @@ function productXTrendsFields(): readonly string[] {
 }
 
 function productFollowCheckFields(): readonly string[] {
-  const source = readFileSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH, 'utf8');
-  const responseStart = source.indexOf(
-    'return NextResponse.json({\n        isFollowing:',
+  return productReturnFieldsFromPath(
+    PRODUCT_FOLLOW_CHECK_ROUTE_PATH,
+    'buildFollowCheckResponse',
   );
-  if (responseStart < 0) {
-    throw new Error('Could not locate follow check success response.');
-  }
-  const responseEnd = source.indexOf('});', responseStart);
-  return objectLiteralFields(source.slice(responseStart, responseEnd + 1));
 }
 
 function productAccountMonitorBillingFields(): readonly string[] {
@@ -811,7 +848,7 @@ function productDmHistoryFields(): readonly string[] {
   const responseEnd = source.indexOf('});', responseStart);
   return uniqueSorted([
     ...objectLiteralFields(source.slice(responseStart, responseEnd + 1)),
-    ...productReturnFieldsFromPath(PRODUCT_DM_HISTORY_ROUTE_PATH, 'mapMessage'),
+    ...productDmMessageFields(),
   ]);
 }
 
@@ -857,9 +894,7 @@ function productUploadMediaFields(): readonly string[] {
     !helperSource.includes(
       'const responseFields = await buildPublicMediaResponseFields(',
     ) ||
-    !helperSource.includes(
-      '...(responseFields === undefined ? {} : { responseFields })',
-    )
+    !helperSource.includes('withImageUploadResponseFields(')
   ) {
     throw new Error('Could not verify upload media public URL response field.');
   }

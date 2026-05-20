@@ -764,8 +764,11 @@ const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
   'string targetUsername = "xquikcom";',
   'TargetUsername = targetUsername',
   'File.CreateText("xquik-followers.jsonl")',
+  'new ExtractionExportResultsParams { Format = Format.Csv }',
   'File.WriteAllTextAsync("xquik-followers.csv", await csvResponse.ReadAsString())',
+  'new ExtractionExportResultsParams { Format = Format.Json }',
   'File.WriteAllTextAsync("xquik-followers.json", await jsonResponse.ReadAsString())',
+  'new ExtractionExportResultsParams { Format = Format.Xlsx }',
   'File.Create("xquik-followers.xlsx")',
   'Persist `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling',
   'map exported `User ID` or row `xUserId` as the CRM unique key.',
@@ -877,8 +880,11 @@ const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
   'EstimateToolType::FOLLOWER_EXPLORER',
   'RunToolType::FOLLOWER_EXPLORER',
   "'xquik-followers.jsonl'",
+  'format: ExportFormat::CSV',
   "'xquik-followers.csv'",
+  'format: ExportFormat::JSON',
   "'xquik-followers.json'",
+  'format: ExportFormat::XLSX',
   "'xquik-followers.xlsx'",
   'Persist `$job->id`, `$targetUsername`, `$estimate->estimatedResults`, and `$estimate->source` before polling',
   'pass `$page->nextCursor` back as `after`',
@@ -4665,7 +4671,7 @@ const FORBIDDEN_WEBHOOK_TEST_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS = [
-  'Updated event types to subscribe to. Replaces the existing list. At least 1 required when provided.',
+  'Use any valid account monitor event type listed below.',
   '<Card title="tweet.new" icon="bell">',
   'new posts that are not replies, quotes, or retweets.',
   '<Card title="tweet.quote" icon="quote">',
@@ -4793,7 +4799,7 @@ const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
 
 const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
   'Webhooks deliver events from account or keyword monitors to your server in real time.',
-  'matching keyword queries must reach your app without polling.',
+  'Keyword monitors support tweet event types only.',
   'Output: monitor ID, username or query, and selected event types.',
   'POST https://xquik.com/api/v1/monitors/keywords',
   '"query": "xquik launch"',
