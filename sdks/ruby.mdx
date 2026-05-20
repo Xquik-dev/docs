@@ -291,7 +291,7 @@ end
 
 after = nil
 
-File.open("xquik-tweet-replies.jsonl", "w") do |jsonl|
+File.open("xquik-replies.jsonl", "w") do |jsonl|
   loop do
     page = client.extractions.retrieve(job.id, limit: 1000, after: after)
 
@@ -307,10 +307,18 @@ end
 
 csv_response = client.extractions.export_results(job.id, format_: :csv)
 csv_response.rewind
-File.binwrite("xquik-tweet-replies.csv", csv_response.read)
+File.binwrite("xquik-replies.csv", csv_response.read)
+
+json_response = client.extractions.export_results(job.id, format_: :json)
+json_response.rewind
+File.binwrite("xquik-replies.json", json_response.read)
+
+xlsx_response = client.extractions.export_results(job.id, format_: :xlsx)
+xlsx_response.rewind
+File.binwrite("xquik-replies.xlsx", xlsx_response.read)
 ```
 
-`reply_extractor` requires `target_tweet_id`. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; store those values when you need resumable JSON pagination. `client.extractions.export_results` supports `:csv`, `:json`, and `:xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
+`reply_extractor` requires `target_tweet_id`. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; store those values when you need resumable JSON pagination. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.extractions.export_results` supports `:csv`, `:json`, and `:xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
 
 ## Workflow: Post Media Tweets and DM Attachments
 
