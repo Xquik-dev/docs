@@ -10,7 +10,7 @@ metadata:
 
 ## Product summary
 
-Xquik is a real-time X (Twitter) data platform with 120 documented REST API operations, webhooks, a Docs MCP server for documentation search, and an API MCP server for authenticated AI agent integration. Use it to extract followers, replies, retweets, and other X data; monitor accounts and keywords for real-time events; run transparent giveaway draws; compose algorithm-optimized tweets; and build X integrations. The REST API base URL is `https://xquik.com/api/v1`. Authenticate with the `x-api-key` header. Primary docs: https://docs.xquik.com
+Xquik is a real-time X (Twitter) data platform with 120 documented REST API operations, webhooks, a Docs MCP server for read-only docs search and page retrieval, and an API MCP server for authenticated AI agent integration. Use it to extract followers, replies, retweets, and other X data; monitor accounts and keywords for real-time events; run transparent giveaway draws; compose algorithm-optimized tweets; and build X integrations. The REST API base URL is `https://xquik.com/api/v1`. Authenticate with the `x-api-key` header. Primary docs: https://docs.xquik.com
 
 ## When to use
 
@@ -21,7 +21,7 @@ Reach for Xquik when:
 - **Setting up webhooks**: Receive real-time event notifications at your HTTPS endpoint with HMAC-signed payloads.
 - **Running giveaway draws**: Execute transparent, auditable random draws on tweets with public result pages.
 - **Composing tweets**: Generate algorithm-optimized tweet drafts with scoring against X ranking factors.
-- **Connecting AI agents**: Use Docs MCP for no-auth documentation search and API MCP for authenticated account actions.
+- **Connecting AI agents**: Use Docs MCP for no-auth docs search and page retrieval, and API MCP for authenticated account actions.
 - **Analyzing styles**: Analyze tweet styles, compare accounts, track engagement performance, or save drafts.
 - **Writing to X**: Post tweets, like, retweet, follow, send DMs, upload media, or manage community membership from connected accounts.
 - **Trending data**: Access real-time trends across 12 regions plus radar topics from Xquik's own infrastructure.
@@ -84,7 +84,7 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 ## Decision guidance
 
 - **Use the REST API** for backend services, automation scripts, interval polling, file exports, and fine-grained pagination or request control.
-- **Use Docs MCP** for AI agents that need API parameters, examples, error codes, billing rules, webhook setup, or SDK guidance.
+- **Use Docs MCP** for AI agents that need read-only docs search and page retrieval for API parameters, examples, error codes, billing rules, webhook setup, or SDK guidance.
 - **Use API MCP** for AI agents that need authenticated Xquik account actions in Claude, ChatGPT, Cursor, VS Code, Codex, and similar clients.
 - **Use webhooks** when monitor events must reach an HTTPS endpoint in real time. Add them to REST or MCP workflows when pushed events are better than polling.
 
@@ -121,7 +121,7 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 
 ### Connect an AI agent through MCP
 
-1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only documentation search.
+1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only docs search and page retrieval.
 2. Configure API MCP at `https://xquik.com/mcp` for authenticated account actions.
 3. Authenticate API MCP with an `x-api-key` header or OAuth Bearer token.
 4. Use `explore` to search the in-memory API catalog and `xquik` to run authenticated requests.

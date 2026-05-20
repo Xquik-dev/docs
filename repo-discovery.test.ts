@@ -1245,6 +1245,7 @@ const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
 const REQUIRED_LLMS_SNIPPETS = [
   '## Agent Entry Points',
   'https://context7.com/xquik-dev/xquik-docs',
+  'Docs `https://docs.xquik.com/mcp` (docs, no auth)',
   'https://xquik.com/mcp',
   'npx skills add Xquik-dev/x-twitter-scraper',
   'https://docs.xquik.com/openapi.yaml',
@@ -1260,6 +1261,7 @@ const REQUIRED_LLMS_SNIPPETS = [
   '`GET /x/users/{id}/tweets`',
   '`GET /x/tweets/{id}/quotes`',
   'signed `webhook.test` payloads without `deliveryId`/`streamEventId`',
+  'Search and read indexed public docs',
 ] as const;
 
 const REQUIRED_SKILL_RATE_LIMIT_SNIPPETS = [
@@ -1348,7 +1350,7 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
 const REQUIRED_SKILL_DECISION_GUIDANCE_SNIPPETS = [
   '## Decision guidance',
   '- **Use the REST API** for backend services, automation scripts, interval polling, file exports, and fine-grained pagination or request control.',
-  '- **Use Docs MCP** for AI agents that need API parameters, examples, error codes, billing rules, webhook setup, or SDK guidance.',
+  '- **Use Docs MCP** for AI agents that need read-only docs search and page retrieval for API parameters, examples, error codes, billing rules, webhook setup, or SDK guidance.',
   '- **Use API MCP** for AI agents that need authenticated Xquik account actions in Claude, ChatGPT, Cursor, VS Code, Codex, and similar clients.',
   '- **Use webhooks** when monitor events must reach an HTTPS endpoint in real time. Add them to REST or MCP workflows when pushed events are better than polling.',
 ] as const;
@@ -1366,10 +1368,10 @@ const FORBIDDEN_SKILL_DECISION_GUIDANCE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_SKILL_MCP_HANDOFF_SNIPPETS = [
-  '- **Connecting AI agents**: Use Docs MCP for no-auth documentation search and API MCP for authenticated account actions.',
+  '- **Connecting AI agents**: Use Docs MCP for no-auth docs search and page retrieval, and API MCP for authenticated account actions.',
   '- **OAuth 2.1**: API MCP server also supports Bearer tokens for browser-based MCP clients.',
   '### Connect an AI agent through MCP',
-  '1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only documentation search.',
+  '1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only docs search and page retrieval.',
   '2. Configure API MCP at `https://xquik.com/mcp` for authenticated account actions.',
   '3. Authenticate API MCP with an `x-api-key` header or OAuth Bearer token.',
   '4. Use `explore` to search the in-memory API catalog and `xquik` to run authenticated requests.',
@@ -1381,6 +1383,8 @@ const REQUIRED_SKILL_MCP_HANDOFF_SNIPPETS = [
 const FORBIDDEN_SKILL_MCP_HANDOFF_SNIPPETS = [
   'Use the MCP server to let Claude, ChatGPT, Cursor, VS Code, Codex, or other agents interact with X data.',
   '1. Configure the MCP endpoint `https://xquik.com/mcp`.',
+  'Use Docs MCP for no-auth documentation search and API MCP',
+  'for read-only documentation search.',
   '- The REST API and MCP server connect to the same backend and share the same account state.',
   '- MCP server: https://docs.xquik.com/mcp/overview',
 ] as const;
