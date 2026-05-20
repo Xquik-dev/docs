@@ -4450,6 +4450,32 @@ const FORBIDDEN_EXTRACTION_WORKFLOW_SNIPPETS = [
   '| `502 x_api_unavailable` | X data source temporarily down | Retry with exponential backoff |',
 ] as const;
 
+const REQUIRED_EXTRACTION_GET_HANDOFF_SNIPPETS = [
+  'import { appendFile } from "node:fs/promises";',
+  'let pageIndex = 0;',
+  'const pageCursor = cursor ?? null;',
+  '"xquik-extraction-results.jsonl"',
+  'handoff_format: "jsonl"',
+  '## Cursor handoff',
+  'Use `GET /extractions/{id}` when an integration needs structured JSON rows,',
+  '`nextCursor` as an opaque checkpoint and pass it back as `after`.',
+  '<Card title="Page checkpoint" icon="bookmark">',
+  '`page_cursor`, `next_cursor`,',
+  '<Card title="Row shape" icon="braces">',
+  '`tweet_id`, and `tweet_text`. Do not dump raw result arrays into shared logs.',
+  '<Card title="Large jobs" icon="list-tree">',
+  'Stream pages to `xquik-extraction-results.jsonl` when you need replayable',
+  '<Card title="File handoff" icon="download">',
+  'Use [Export Extraction](/api-reference/extractions/export)',
+  '"page_index": 3',
+  '"result_count": 1000',
+] as const;
+
+const FORBIDDEN_EXTRACTION_GET_HANDOFF_SNIPPETS = [
+  'const allResults = [];',
+  'allResults.push(...data.results);',
+] as const;
+
 const REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
   'media upload',
   'POST /x/media',
@@ -9751,6 +9777,32 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Extraction workflow guide contains stale wording "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the get extraction page cursor-safe for JSON handoffs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/extractions/get.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'Get extraction cursor handoff',
+          REQUIRED_EXTRACTION_GET_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_EXTRACTION_GET_HANDOFF_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Get extraction page contains stale single-page accumulation "${snippet}".`,
                   },
                 ]
               : [],

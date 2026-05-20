@@ -219,13 +219,16 @@ Results are ordered by ID ascending. To iterate through all results for a large 
 3. Repeat until `hasMore` is `false`.
 
 ```javascript
+import { appendFile } from "node:fs/promises";
+
 const extractionId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 let cursor = undefined;
-const allResults = [];
+let pageIndex = 0;
 
 do {
   const params = new URLSearchParams({ limit: "1000" });
   if (cursor) params.set("after", cursor);
+  const pageCursor = cursor ?? null;
 
   const response = await fetch(
     `https://xquik.com/api/v1/extractions/${extractionId}?${params}`,
@@ -233,9 +236,69 @@ do {
   );
   const data = await response.json();
 
-  allResults.push(...data.results);
+  const rows = data.results.map((result) => ({
+    extraction_id: extractionId,
+    row_id: result.id,
+    x_user_id: result.xUserId,
+    x_username: result.xUsername,
+    tweet_id: result.tweetId,
+    tweet_text: result.tweetText,
+    page_index: pageIndex,
+    page_cursor: pageCursor,
+    next_cursor: data.nextCursor ?? null,
+    has_more: data.hasMore,
+    handoff_format: "jsonl",
+  }));
+
+  if (rows.length > 0) {
+    await appendFile(
+      "xquik-extraction-results.jsonl",
+      `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`,
+    );
+  }
+
   cursor = data.hasMore ? data.nextCursor : undefined;
+  pageIndex += 1;
 } while (cursor);
+```
+
+## Cursor handoff
+
+Use `GET /extractions/{id}` when an integration needs structured JSON rows,
+incremental checkpoints, or more rows than a file export can return. Treat
+`nextCursor` as an opaque checkpoint and pass it back as `after`.
+
+<CardGroup cols={2}>
+  <Card title="Page checkpoint" icon="bookmark">
+    Store `extraction_id`, `page_index`, `page_cursor`, `next_cursor`,
+    `has_more`, and `result_count` after each successful page.
+  </Card>
+  <Card title="Row shape" icon="braces">
+    Persist selected fields such as `row_id`, `x_user_id`, `x_username`,
+    `tweet_id`, and `tweet_text`. Do not dump raw result arrays into shared logs.
+  </Card>
+  <Card title="Large jobs" icon="list-tree">
+    Stream pages to `xquik-extraction-results.jsonl` when you need replayable
+    rows or results beyond the export row cap.
+  </Card>
+  <Card title="File handoff" icon="download">
+    Use [Export Extraction](/api-reference/extractions/export) when CSV, JSON,
+    XLSX, Markdown, PDF, or TXT files are enough.
+  </Card>
+</CardGroup>
+
+Store page checkpoints separately from row data:
+
+```json
+{
+  "extraction_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "page_index": 3,
+  "page_cursor": "990100",
+  "next_cursor": "990200",
+  "has_more": true,
+  "result_count": 1000,
+  "handoff_format": "jsonl"
+}
 ```
 
 <Note>
