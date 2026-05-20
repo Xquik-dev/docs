@@ -46,6 +46,72 @@ Use this workflow when a research, sales, support, or monitoring system needs tw
 
 Use extraction jobs for repeatable exports and audit trails. Use the direct API for low-latency pages or small app handoffs.
 
+## End-to-end export handoff
+
+Store one checkpoint that carries the search request through estimate, job creation, JSON pagination, and file export:
+
+```json
+{
+  "workflow": "tweet_search_export",
+  "request": {
+    "toolType": "tweet_search_extractor",
+    "searchQuery": "launch announcement",
+    "language": "en",
+    "sinceDate": "2026-05-01",
+    "mediaType": "media",
+    "resultsLimit": 500
+  },
+  "estimate": {
+    "estimatedResults": 500,
+    "creditsRequired": "500",
+    "creditsAvailable": "77000",
+    "allowed": true,
+    "source": "resultsLimit"
+  },
+  "create_receipt": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "toolType": "tweet_search_extractor",
+    "status": "running",
+    "poll_path": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  },
+  "json_pages": {
+    "limit": 1000,
+    "page_cursor": null,
+    "next_cursor": "990200",
+    "has_more": true
+  },
+  "export_paths": {
+    "csv": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=csv",
+    "json": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=json",
+    "xlsx": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=xlsx"
+  },
+  "normalized_row": {
+    "tweet_id": "1893710452812718080",
+    "tweet_text": "We launched the new workflow today.",
+    "tweet_created_at": "2026-05-01T10:05:00.000Z",
+    "author_user_id": "44196397",
+    "author_username": "xquikcom",
+    "export_format": "csv"
+  },
+  "handoff_state": "poll_until_completed_then_export"
+}
+```
+
+<CardGroup cols={2}>
+  <Card title="Estimate checkpoint" icon="calculator">
+    Keep `estimatedResults`, `creditsRequired`, `creditsAvailable`, `allowed`, and `source` with the original query and filters.
+  </Card>
+  <Card title="Job checkpoint" icon="clipboard-check">
+    Store the returned job `id`, `status`, and `poll_path`; do not expect result rows in the create response.
+  </Card>
+  <Card title="Cursor checkpoint" icon="shuffle">
+    Store `page_cursor`, `next_cursor`, and `has_more` for JSON page loops, then pass `nextCursor` back as `after`.
+  </Card>
+  <Card title="Export checkpoint" icon="download">
+    Store the chosen CSV, JSON, or XLSX `export_paths` and the normalized row fields sent downstream.
+  </Card>
+</CardGroup>
+
 ## Data you get
 
 Tweet search exports include base user fields, tweet fields, engagement counts, and metadata when available.
