@@ -1576,11 +1576,11 @@ const REQUIRED_MCP_SETUP_TAB_SNIPPETS = [
 const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   'title: Docs MCP server',
   'Xquik documentation is available as an MCP server at `https://docs.xquik.com/mcp`.',
-  'AI tools can search the full docs site',
+  'AI tools can search the full docs site and retrieve indexed public pages',
   'This is separate from the [Xquik API MCP server](/mcp/overview) at `xquik.com/mcp`',
   'The docs MCP server is read-only and requires no authentication.',
   '<Card title="Docs MCP Server" icon="book-open">',
-  'Search docs at `https://docs.xquik.com/mcp`. No auth required. One search tool. Free.',
+  'Search docs and read indexed public pages at `https://docs.xquik.com/mcp`. No auth required. Free.',
   '<Card title="API MCP Server" icon="terminal">',
   'Interact with X data at `https://xquik.com/mcp`. Use an API key or OAuth 2.1.',
   'Includes `explore` and `xquik`; costs follow the endpoint.',
@@ -1634,6 +1634,7 @@ const FORBIDDEN_DOCS_MCP_SERVER_SNIPPETS = [
   'Docs MCP server executes actions',
   'Search docs at `https://docs.xquik.com/mcp`. Use an API key',
   'Interact with X data at `https://docs.xquik.com/mcp`',
+  'One search tool.',
 ] as const;
 
 const FORBIDDEN_MCP_CONTRACT_SNIPPETS = [
