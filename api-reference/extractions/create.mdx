@@ -342,6 +342,43 @@ works with every type when you want to cap returned rows.
   </Tab>
 </Tabs>
 
+## Run receipt handoff
+
+Treat the `202 Accepted` body as a run receipt, not as extracted data. Store the
+job ID immediately, then poll or list jobs until the job reaches `completed` or
+`failed`.
+
+```json
+{
+  "extraction_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "tool_type": "reply_extractor",
+  "status": "running",
+  "receipt_format": "extraction_job",
+  "poll_path": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "inventory_path": "/api/v1/extractions?status=completed&toolType=reply_extractor",
+  "export_path_after_complete": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=csv"
+}
+```
+
+<CardGroup cols={2}>
+  <Card title="Receipt fields" icon="clipboard-check">
+    Store `id`, `toolType`, and `status`. Do not wait for `results`,
+    `totalResults`, `createdAt`, `hasMore`, or `nextCursor` in this response.
+  </Card>
+  <Card title="Poll results" icon="rotate-cw">
+    Use [Get Extraction](/api-reference/extractions/get) with the returned `id`
+    to read `job.status`, paginated `results`, `hasMore`, and `nextCursor`.
+  </Card>
+  <Card title="Find later" icon="list">
+    Use [List Extractions](/api-reference/extractions/list) with `status` and
+    `toolType` filters when a worker needs to resume from job inventory.
+  </Card>
+  <Card title="Export after completion" icon="download">
+    Use [Export Extraction](/api-reference/extractions/export) after the detail
+    response reports `job.status` as `completed`.
+  </Card>
+</CardGroup>
+
 <Note>
   **Next steps:** [Get Extraction](/api-reference/extractions/get) to retrieve results with pagination, [Export Extraction](/api-reference/extractions/export) to download as CSV/XLSX/Markdown, or [Estimate Extraction](/api-reference/extractions/estimate) to check costs before running.
 </Note>
