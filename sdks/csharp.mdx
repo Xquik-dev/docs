@@ -362,7 +362,7 @@ while (true)
 }
 
 string? after = null;
-using StreamWriter writer = File.CreateText("xquik-tweet-replies.jsonl");
+using StreamWriter writer = File.CreateText("xquik-replies.jsonl");
 
 do
 {
@@ -383,24 +383,24 @@ using HttpResponse csvResponse = await client.Extractions.ExportResults(
     job.ID,
     new ExtractionExportResultsParams { Format = Format.Csv }
 );
-await File.WriteAllTextAsync("xquik-tweet-replies.csv", await csvResponse.ReadAsString());
+await File.WriteAllTextAsync("xquik-replies.csv", await csvResponse.ReadAsString());
 
 using HttpResponse jsonResponse = await client.Extractions.ExportResults(
     job.ID,
     new ExtractionExportResultsParams { Format = Format.Json }
 );
-await File.WriteAllTextAsync("xquik-tweet-replies.json", await jsonResponse.ReadAsString());
+await File.WriteAllTextAsync("xquik-replies.json", await jsonResponse.ReadAsString());
 
 using HttpResponse xlsxResponse = await client.Extractions.ExportResults(
     job.ID,
     new ExtractionExportResultsParams { Format = Format.Xlsx }
 );
 using Stream xlsxStream = await xlsxResponse.ReadAsStream();
-using FileStream xlsxFile = File.Create("xquik-tweet-replies.xlsx");
+using FileStream xlsxFile = File.Create("xquik-replies.xlsx");
 await xlsxStream.CopyToAsync(xlsxFile);
 ```
 
-Cost: 1 credit per reply extracted or returned. Store `job.ID` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `client.Extractions.Retrieve`. Keep `page.NextCursor` as the checkpoint when you stream replies to JSON Lines, and use the export endpoint when a downstream user needs CSV, JSON, or XLSX files.
+Cost: 1 credit per reply extracted or returned. Store `job.ID` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `client.Extractions.Retrieve`. Keep `page.NextCursor` as the checkpoint when you stream replies to JSON Lines. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff.
 
 ## Workflow: Post Media Tweets and DM Attachments
 

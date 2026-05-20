@@ -845,6 +845,14 @@ const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
   '`client.Extractions.Retrieve` returns `Results`, `HasMore`, and `NextCursor`',
   '`client.Extractions.ExportResults` returns an `HttpResponse`',
   'read CSV and JSON as strings, and copy XLSX from the response stream',
+  'File.CreateText("xquik-replies.jsonl")',
+  'File.WriteAllTextAsync("xquik-replies.csv", await csvResponse.ReadAsString())',
+  'File.WriteAllTextAsync("xquik-replies.json", await jsonResponse.ReadAsString())',
+  'File.Create("xquik-replies.xlsx")',
+  '`xquik-replies.jsonl` for queue replay or warehouse loads',
+  '`xquik-replies.json` for app ingestion',
+  '`xquik-replies.csv` for CRM import',
+  '`xquik-replies.xlsx` for analyst handoff',
   'Cost: 1 credit per reply extracted or returned.',
   'Store `job.ID` on the queue job, ticket, or warehouse batch before polling',
   '## Workflow: Post Media Tweets and DM Attachments',
@@ -891,6 +899,7 @@ const FORBIDDEN_CSHARP_SDK_WEAK_SEARCH_SNIPPETS = [
   '\n            id = tweet.ID,',
   'projected rows into CSV for analysts',
   'results_limit',
+  'xquik-tweet-replies',
 ] as const;
 
 const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
