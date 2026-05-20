@@ -333,6 +333,7 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
   'ExtractionRunParamsToolTypeFollowerExplorer',
   'TargetUsername: xtwitterscraper.String(targetUsername)',
   'writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatCsv, "xquik-followers.csv")',
+  'writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatJson, "xquik-followers.json")',
   'writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatXlsx, "xquik-followers.xlsx")',
   'Persist `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling',
   '`client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`; pass `NextCursor` back as `After`',
