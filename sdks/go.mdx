@@ -377,7 +377,7 @@ func main() {
 		time.Sleep(3 * time.Second)
 	}
 
-	jsonlFile, err := os.Create("xquik-tweet-replies.jsonl")
+	jsonlFile, err := os.Create("xquik-replies.jsonl")
 	if err != nil {
 		panic(err)
 	}
@@ -411,27 +411,39 @@ func main() {
 		cursor = page.NextCursor
 	}
 
-	csvResponse, err := client.Extractions.ExportResults(ctx, job.ID, xtwitterscraper.ExtractionExportResultsParams{
-		Format: xtwitterscraper.ExtractionExportResultsParamsFormatCsv,
+	writeReplyExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatCsv, "xquik-replies.csv")
+	writeReplyExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatJson, "xquik-replies.json")
+	writeReplyExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatXlsx, "xquik-replies.xlsx")
+}
+
+func writeReplyExport(
+	ctx context.Context,
+	client xtwitterscraper.Client,
+	jobID string,
+	format xtwitterscraper.ExtractionExportResultsParamsFormat,
+	filename string,
+) {
+	response, err := client.Extractions.ExportResults(ctx, jobID, xtwitterscraper.ExtractionExportResultsParams{
+		Format: format,
 	})
 	if err != nil {
 		panic(err)
 	}
-	defer csvResponse.Body.Close()
+	defer response.Body.Close()
 
-	csvFile, err := os.Create("xquik-tweet-replies.csv")
+	out, err := os.Create(filename)
 	if err != nil {
 		panic(err)
 	}
-	defer csvFile.Close()
+	defer out.Close()
 
-	if _, err := io.Copy(csvFile, csvResponse.Body); err != nil {
+	if _, err := io.Copy(out, response.Body); err != nil {
 		panic(err)
 	}
 }
 ```
 
-`reply_extractor` requires `TargetTweetID`. `client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`; store those values when you need resumable JSON pagination. `client.Extractions.ExportResults` supports CSV, JSON, and XLSX for file handoff. Cost: 1 credit per reply extracted or returned.
+`reply_extractor` requires `TargetTweetID`. `client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`; store those values when you need resumable JSON pagination. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.Extractions.ExportResults` supports CSV, JSON, and XLSX for file handoff. Cost: 1 credit per reply extracted or returned.
 
 ## Workflow: Post Media Tweets and DM Attachments
 
