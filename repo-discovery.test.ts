@@ -2080,6 +2080,9 @@ const REQUIRED_CREATE_TWEET_API_SNIPPETS = [
 const FORBIDDEN_CREATE_TWEET_API_SNIPPETS = [
   '"media_ids": [',
   '"mediaIds": [',
+  'Pass uploaded `mediaId` values in `media`',
+  'Pass `mediaId` to `POST /x/tweets`',
+  'Use uploaded media IDs for tweet media',
   'const data = await response.json();',
   'data = response.json()',
   'var data map[string]interface{}',
@@ -4310,6 +4313,9 @@ const REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
 
 const FORBIDDEN_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
   'one-image direct messages',
+  'Pass returned `mediaId` in the `media` array on `POST /x/tweets`',
+  'Use `mediaId` for tweet and reply `media` arrays.',
+  'Use `mediaUrl` for the single DM `media_ids` item.',
 ] as const;
 
 const REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
@@ -4357,6 +4363,9 @@ const REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
+  'Pass `mediaId` in the `media` array on `POST /x/tweets`',
+  'Use `mediaUrl` as the only item in `media_ids`',
+  'Store `mediaId` for tweet and reply attachments.',
   'const data = await response.json();',
   'data = response.json()',
   'var data map[string]interface{}',
