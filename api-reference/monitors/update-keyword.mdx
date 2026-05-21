@@ -21,7 +21,21 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     -d '{
       "eventTypes": ["tweet.new", "tweet.reply"],
       "isActive": true
-    }' | jq
+    }' |
+    jq -c '{
+      keyword_monitor_id: .id,
+      query: .query,
+      event_types: .eventTypes,
+      is_active: .isActive,
+      created_at: .createdAt,
+      next_billing_at: .nextBillingAt,
+      verify_endpoint: "/api/v1/monitors/keywords/\(.id)",
+      delete_endpoint: "/api/v1/monitors/keywords/\(.id)",
+      events_endpoint: "/api/v1/events?monitorId=\(.id)",
+      event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
+      webhooks_endpoint: "/api/v1/webhooks",
+      deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"
+    }'
   ```
 
   ```javascript Node.js
@@ -49,7 +63,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     created_at: monitor.createdAt,
     next_billing_at: monitor.nextBillingAt,
     verify_endpoint: `/api/v1/monitors/keywords/${monitor.id}`,
+    delete_endpoint: `/api/v1/monitors/keywords/${monitor.id}`,
     events_endpoint: `/api/v1/events?monitorId=${monitor.id}`,
+    event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
+    webhooks_endpoint: "/api/v1/webhooks",
+    deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries",
   };
   process.stdout.write(`${JSON.stringify(monitorState)}\n`);
   ```
@@ -73,7 +91,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "created_at": monitor["createdAt"],
       "next_billing_at": monitor["nextBillingAt"],
       "verify_endpoint": f"/api/v1/monitors/keywords/{monitor['id']}",
+      "delete_endpoint": f"/api/v1/monitors/keywords/{monitor['id']}",
       "events_endpoint": f"/api/v1/events?monitorId={monitor['id']}",
+      "event_detail_endpoint_pattern": "/api/v1/events/{event_id}",
+      "webhooks_endpoint": "/api/v1/webhooks",
+      "deliveries_endpoint_pattern": "/api/v1/webhooks/{webhook_id}/deliveries",
   }
   print(json.dumps(monitor_state))
   ```
@@ -99,14 +121,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   }
 
   type KeywordMonitorState struct {
-      KeywordMonitorID string   `json:"keyword_monitor_id"`
-      Query            string   `json:"query"`
-      EventTypes       []string `json:"event_types"`
-      IsActive         bool     `json:"is_active"`
-      CreatedAt        string   `json:"created_at"`
-      NextBillingAt    string   `json:"next_billing_at"`
-      VerifyEndpoint   string   `json:"verify_endpoint"`
-      EventsEndpoint   string   `json:"events_endpoint"`
+      KeywordMonitorID           string   `json:"keyword_monitor_id"`
+      Query                      string   `json:"query"`
+      EventTypes                 []string `json:"event_types"`
+      IsActive                   bool     `json:"is_active"`
+      CreatedAt                  string   `json:"created_at"`
+      NextBillingAt              string   `json:"next_billing_at"`
+      VerifyEndpoint             string   `json:"verify_endpoint"`
+      DeleteEndpoint             string   `json:"delete_endpoint"`
+      EventsEndpoint             string   `json:"events_endpoint"`
+      EventDetailEndpointPattern string   `json:"event_detail_endpoint_pattern"`
+      WebhooksEndpoint           string   `json:"webhooks_endpoint"`
+      DeliveriesEndpointPattern  string   `json:"deliveries_endpoint_pattern"`
   }
 
   func main() {
@@ -138,14 +164,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           log.Fatal(err)
       }
       state := KeywordMonitorState{
-          KeywordMonitorID: monitor.ID,
-          Query:            monitor.Query,
-          EventTypes:       monitor.EventTypes,
-          IsActive:         monitor.IsActive,
-          CreatedAt:        monitor.CreatedAt,
-          NextBillingAt:    monitor.NextBillingAt,
-          VerifyEndpoint:   "/api/v1/monitors/keywords/" + monitor.ID,
-          EventsEndpoint:   "/api/v1/events?monitorId=" + monitor.ID,
+          KeywordMonitorID:           monitor.ID,
+          Query:                      monitor.Query,
+          EventTypes:                 monitor.EventTypes,
+          IsActive:                   monitor.IsActive,
+          CreatedAt:                  monitor.CreatedAt,
+          NextBillingAt:              monitor.NextBillingAt,
+          VerifyEndpoint:             "/api/v1/monitors/keywords/" + monitor.ID,
+          DeleteEndpoint:             "/api/v1/monitors/keywords/" + monitor.ID,
+          EventsEndpoint:             "/api/v1/events?monitorId=" + monitor.ID,
+          EventDetailEndpointPattern: "/api/v1/events/{event_id}",
+          WebhooksEndpoint:           "/api/v1/webhooks",
+          DeliveriesEndpointPattern:  "/api/v1/webhooks/{webhook_id}/deliveries",
       }
       if err := json.NewEncoder(os.Stdout).Encode(state); err != nil {
           log.Fatal(err)
@@ -154,10 +184,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 </CodeGroup>
 
-The Node.js, Python, and Go examples convert the updated keyword monitor into
-one state row. Store `keyword_monitor_id`, `query`, `event_types`,
-`is_active`, `next_billing_at`, `verify_endpoint`, and `events_endpoint` before
-resuming alerts or webhook checks.
+The cURL, Node.js, Python, and Go examples convert the updated keyword monitor
+into one state row. Store `keyword_monitor_id`, `query`, `event_types`,
+`is_active`, `next_billing_at`, `verify_endpoint`, `delete_endpoint`,
+`events_endpoint`, `event_detail_endpoint_pattern`, `webhooks_endpoint`, and
+`deliveries_endpoint_pattern` before resuming alerts or webhook checks.
 
 ## Path parameters
 
@@ -206,8 +237,9 @@ or must resume without creating a new monitor ID.
   </Card>
 
   <Card title="Event Filter" icon="funnel">
-    `eventTypes` replaces the current filter. Keep webhook subscriptions aligned
-    with the monitor event types you expect to deliver.
+    `eventTypes` replaces the current filter. Keep
+    [List Webhooks](/api-reference/webhooks/list) subscriptions aligned with the
+    monitor event types you expect to deliver.
   </Card>
 
   <Card title="Pause Monitoring" icon="circle-pause">
@@ -229,7 +261,20 @@ or must resume without creating a new monitor ID.
   <Card title="Downstream Join" icon="link">
     Keep using `keywordMonitorId` and `query` from
     [List Events](/api-reference/events/list) to reconcile stored events and
-    signed webhook payloads after the update.
+    signed webhook payloads after the update. Use
+    [Get Event](/api-reference/events/get) for one event's full payload.
+  </Card>
+
+  <Card title="Delivery Audit" icon="activity">
+    Use [List Deliveries](/api-reference/webhooks/deliveries) when webhook
+    delivery evidence must be retained. Join delivery `streamEventId` to event
+    IDs. Do not use `x_event_id` as the delivery join key.
+  </Card>
+
+  <Card title="Delete Path" icon="trash-2">
+    Use [Delete Keyword Monitor](/api-reference/monitors/delete-keyword) only
+    when the query should stop permanently. Export event and delivery evidence
+    first when support or audit workflows need history.
   </Card>
 </CardGroup>
 
@@ -287,5 +332,5 @@ or must resume without creating a new monitor ID.
 </Tabs>
 
 <Note>
-  **Related:** [Get Keyword Monitor](/api-reference/monitors/get-keyword) to verify state, or [Delete Keyword Monitor](/api-reference/monitors/delete-keyword) to remove it.
+  **Related:** [Get Keyword Monitor](/api-reference/monitors/get-keyword) to verify state, [Delete Keyword Monitor](/api-reference/monitors/delete-keyword) to remove it, [List Events](/api-reference/events/list), [Get Event](/api-reference/events/get), [List Webhooks](/api-reference/webhooks/list), or [List Deliveries](/api-reference/webhooks/deliveries).
 </Note>
