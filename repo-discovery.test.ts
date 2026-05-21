@@ -5109,6 +5109,15 @@ const REQUIRED_WEBHOOK_TEST_API_SNIPPETS = [
   '`X-Xquik-Nonce` on the raw request body',
   '`webhook.test` payloads include `eventType`, `data`, and `timestamp`.',
   'They do not include `deliveryId` or `streamEventId`.',
+  '<Card title="Production triage" icon="activity">',
+  '[List Deliveries](/api-reference/webhooks/deliveries)',
+  '`id`, `streamEventId`, `status`, `attempts`,',
+  '`lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt`',
+  '<Card title="Event join" icon="link">',
+  'use delivery `streamEventId`',
+  '[Get Event](/api-reference/events/get)',
+  'Store the event',
+  '`monitorId`, `monitorType`, `type`, `occurredAt`, and `data`',
 ] as const;
 
 const FORBIDDEN_WEBHOOK_TEST_RAW_OUTPUT_SNIPPETS = [
