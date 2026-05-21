@@ -5177,6 +5177,18 @@ const FORBIDDEN_WEBHOOK_UPDATE_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_WEBHOOK_DELETE_API_SNIPPETS = [
+  'webhook_id: $webhook_id',
+  'inventory_endpoint: "/api/v1/webhooks"',
+  'deliveries_endpoint: ("/api/v1/webhooks/" + $webhook_id + "/deliveries")',
+  'const deactivationHandoff = {',
+  'deliveries_endpoint: `/api/v1/webhooks/${webhookId}/deliveries`',
+  'deactivation_handoff = {',
+  '"deliveries_endpoint": f"/api/v1/webhooks/{webhook_id}/deliveries"',
+  'type DeactivationHandoff struct',
+  'DeliveriesEndpoint string `json:"deliveries_endpoint"`',
+  'InventoryEndpoint  string `json:"inventory_endpoint"`',
+  'These snippets shape a deactivation receipt.',
+  'Store the webhook ID with its',
   '## Deactivation handoff',
   'Use this endpoint when a receiver should stop getting future monitor events',
   'The endpoint sets `isActive` to `false` and returns `{ "success": true }`.',
@@ -5187,11 +5199,27 @@ const REQUIRED_WEBHOOK_DELETE_API_SNIPPETS = [
   '`webhooks[].isActive: false`',
   '[List Deliveries](/api-reference/webhooks/deliveries)',
   'status, attempts, errors, and timestamps.',
+  '<Card title="Delivery Audit" icon="activity">',
+  'Delivery rows for inactive endpoints can show `pending`, `failed`, or',
+  '`exhausted` attempts.',
+  'Store `streamEventId`, `status`, `attempts`,',
+  '`lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt`',
+  '<Card title="Event Join" icon="link">',
+  'Use delivery `streamEventId` as the `{id}`',
+  '[Get Event](/api-reference/events/get)',
+  'Store `monitorId`, `monitorType`,',
+  '`type`, `occurredAt`, and `data`',
   'Remove queue, CRM, alerting, or warehouse routing',
   '[Update Webhook](/api-reference/webhooks/update)',
   '`isActive: true`',
   '[Test Webhook](/api-reference/webhooks/test)',
   'Delete returns no `secret`.',
+] as const;
+
+const FORBIDDEN_WEBHOOK_DELETE_RAW_OUTPUT_SNIPPETS = [
+  'console.log(result)',
+  'print(result)',
+  'fmt.Println(string(body))',
 ] as const;
 
 const REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS = [
@@ -10697,6 +10725,16 @@ describe('repository discovery', (): void => {
           deleteWebhookApi,
           'Delete webhook API docs',
           REQUIRED_WEBHOOK_DELETE_API_SNIPPETS,
+        ),
+        ...FORBIDDEN_WEBHOOK_DELETE_RAW_OUTPUT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            deleteWebhookApi.includes(snippet)
+              ? [
+                  {
+                    issue: `Delete webhook API docs print raw delete responses with "${snippet}".`,
+                  },
+                ]
+              : [],
         ),
         ...collectSnippetFindings(
           testWebhookApi,
