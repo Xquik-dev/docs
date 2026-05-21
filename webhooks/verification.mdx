@@ -50,6 +50,73 @@ handler routing and logs.
 5. Reject the request if the timestamp is older than 5 minutes (clock-skew tolerant).
 6. Reject the request if the nonce was already seen in the last 5 minutes (replay protection).
 
+## Receiver hardening handoff
+
+Use this handoff when you promote a webhook receiver from a signed test
+request to production monitor events. It keeps signing, replay protection,
+idempotency, and incident routing visible in one review record.
+
+```json
+{
+  "workflow": "webhook_receiver_hardening",
+  "signature": {
+    "raw_body": true,
+    "signing_string": "<timestamp>.<nonce>.<rawBody>",
+    "headers": [
+      "X-Xquik-Signature",
+      "X-Xquik-Timestamp",
+      "X-Xquik-Nonce"
+    ],
+    "replay_window_ms": 300000,
+    "secret_logging": "never"
+  },
+  "nonce_store": {
+    "key": "webhook_id:nonce",
+    "ttl_seconds": 300,
+    "on_duplicate": "reject"
+  },
+  "production_idempotency": {
+    "delivery_id": "502",
+    "stream_event_id": "9002",
+    "test_payload_omits_ids": true
+  },
+  "incident_row": {
+    "source": "GET /api/v1/webhooks/15/deliveries",
+    "fields": [
+      "status",
+      "attempts",
+      "lastStatusCode",
+      "lastError",
+      "createdAt",
+      "deliveredAt"
+    ]
+  },
+  "handoff_state": "verify_raw_body_store_nonce_then_dedupe_delivery"
+}
+```
+
+<CardGroup cols={2}>
+  <Card title="Raw body first" icon="braces">
+    Keep raw request bytes available until signature verification succeeds.
+    Parse JSON only after the HMAC check passes.
+  </Card>
+
+  <Card title="Nonce store" icon="database">
+    Store each nonce with the webhook ID for 5 minutes. Reject duplicates before
+    queueing or acknowledging the event.
+  </Card>
+
+  <Card title="Secret hygiene" icon="shield-check">
+    Store the webhook secret once, use it only for HMAC checks, and never write
+    it to logs, queues, traces, or incident rows.
+  </Card>
+
+  <Card title="Incident fields" icon="activity">
+    Send `status`, `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and
+    `deliveredAt` from the deliveries API to your alerting or support queue.
+  </Card>
+</CardGroup>
+
 ## Implementation
 
 <CodeGroup>
