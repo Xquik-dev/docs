@@ -365,6 +365,60 @@ After the 10th failed attempt, the delivery is marked as `exhausted`. A `410 Gon
   **Terminal failures:** Return `410 Gone` only when Xquik should stop retrying that delivery. Other non-`2xx` responses and network failures retry until the delivery is exhausted.
 </Warning>
 
+## Troubleshoot a delivery
+
+Use this handoff when a receiver fails tests, repeats failures, or reaches an
+`exhausted` delivery state.
+
+```json
+{
+  "record_type": "webhook_delivery_troubleshooting",
+  "webhook_id": "15",
+  "signed_test": "POST /api/v1/webhooks/15/test",
+  "delivery_log": "GET /api/v1/webhooks/15/deliveries",
+  "event_join": "GET /api/v1/events/{id}",
+  "event_id_source": "streamEventId",
+  "route_on": [
+    "status",
+    "attempts",
+    "lastStatusCode",
+    "lastError",
+    "createdAt",
+    "deliveredAt"
+  ],
+  "test_payload_has_ids": false,
+  "production_payload_ids": ["deliveryId", "streamEventId"],
+  "handoff_state": "verify_signature_check_delivery_join_event"
+}
+```
+
+<CardGroup cols={2}>
+  <Card title="Signed receiver test" icon="flask-conical">
+    Run [Test Webhook](/api-reference/webhooks/test) after changing endpoint
+    code, secrets, firewall rules, or queue routing. Treat `success: true`
+    with a `2xx` `statusCode` as receiver proof.
+  </Card>
+
+  <Card title="Signature and IDs" icon="shield-check">
+    Verify `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` on
+    the raw request body. `webhook.test` omits `deliveryId` and
+    `streamEventId`; production deliveries include both IDs.
+  </Card>
+
+  <Card title="Delivery triage" icon="activity">
+    Check [List Deliveries](/api-reference/webhooks/deliveries) for `status`,
+    `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and
+    `deliveredAt`. Page on `exhausted`, warn on repeated `failed`, and ignore
+    `delivered`.
+  </Card>
+
+  <Card title="Event context" icon="link">
+    Join `streamEventId` to [Get Event](/api-reference/events/get) when the
+    receiver owner needs the original monitor event, tweet fields, username, or
+    keyword query that triggered the delivery.
+  </Card>
+</CardGroup>
+
 ## Requirements
 
 - Endpoint **must** use HTTPS
