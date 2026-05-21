@@ -16,7 +16,23 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <CodeGroup>
   ```bash cURL
   curl https://xquik.com/api/v1/events/9001 \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    | jq '{
+      event_id: .id,
+      event_type: .type,
+      monitor_type: .monitorType,
+      monitor_id: .monitorId,
+      keyword_monitor_id: (.keywordMonitorId // null),
+      username: (.username // null),
+      query: (.query // null),
+      occurred_at: .occurredAt,
+      x_event_id: (.xEventId // null),
+      tweet_id: (.xEventId // .data.id // null),
+      tweet_text: (.data.text // null),
+      author_username: (.data.author.userName // null),
+      event_detail_endpoint: ("/api/v1/events/" + .id),
+      delivery_join_key: .id
+    }'
   ```
 
   ```javascript Node.js
@@ -37,6 +53,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     tweet_id: event.xEventId ?? event.data?.id ?? null,
     tweet_text: event.data?.text ?? null,
     author_username: event.data?.author?.userName ?? null,
+    event_detail_endpoint: `/api/v1/events/${event.id}`,
+    delivery_join_key: event.id,
   };
 
   process.stdout.write(`${JSON.stringify(eventRow)}\n`);
@@ -66,6 +84,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "tweet_id": event.get("xEventId") or tweet.get("id"),
       "tweet_text": tweet.get("text"),
       "author_username": author.get("userName"),
+      "event_detail_endpoint": f"/api/v1/events/{event['id']}",
+      "delivery_join_key": event["id"],
   }
   print(json.dumps(event_row))
   ```
@@ -104,18 +124,20 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   }
 
   type EventRow struct {
-    EventID          string  `json:"event_id"`
-    EventType        string  `json:"event_type"`
-    MonitorType      string  `json:"monitor_type"`
-    MonitorID        string  `json:"monitor_id"`
-    KeywordMonitorID *string `json:"keyword_monitor_id"`
-    Username         *string `json:"username"`
-    Query            *string `json:"query"`
-    OccurredAt       string  `json:"occurred_at"`
-    XEventID         *string `json:"x_event_id"`
-    TweetID          *string `json:"tweet_id"`
-    TweetText        *string `json:"tweet_text"`
-    AuthorUsername   *string `json:"author_username"`
+    DeliveryJoinKey      string  `json:"delivery_join_key"`
+    EventDetailEndpoint  string  `json:"event_detail_endpoint"`
+    EventID              string  `json:"event_id"`
+    EventType            string  `json:"event_type"`
+    MonitorType          string  `json:"monitor_type"`
+    MonitorID            string  `json:"monitor_id"`
+    KeywordMonitorID     *string `json:"keyword_monitor_id"`
+    Username             *string `json:"username"`
+    Query                *string `json:"query"`
+    OccurredAt           string  `json:"occurred_at"`
+    XEventID             *string `json:"x_event_id"`
+    TweetID              *string `json:"tweet_id"`
+    TweetText            *string `json:"tweet_text"`
+    AuthorUsername       *string `json:"author_username"`
   }
 
   func main() {
@@ -147,18 +169,20 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     }
 
     row := EventRow{
-      EventID:          event.ID,
-      EventType:        event.Type,
-      MonitorType:      event.MonitorType,
-      MonitorID:        event.MonitorID,
-      KeywordMonitorID: event.KeywordMonitorID,
-      Username:         event.Username,
-      Query:            event.Query,
-      OccurredAt:       event.OccurredAt,
-      XEventID:         event.XEventID,
-      TweetID:          tweetID,
-      TweetText:        event.Data.Text,
-      AuthorUsername:   authorUsername,
+      DeliveryJoinKey:     event.ID,
+      EventDetailEndpoint: "/api/v1/events/" + event.ID,
+      EventID:             event.ID,
+      EventType:           event.Type,
+      MonitorType:         event.MonitorType,
+      MonitorID:           event.MonitorID,
+      KeywordMonitorID:    event.KeywordMonitorID,
+      Username:            event.Username,
+      Query:               event.Query,
+      OccurredAt:          event.OccurredAt,
+      XEventID:            event.XEventID,
+      TweetID:             tweetID,
+      TweetText:           event.Data.Text,
+      AuthorUsername:      authorUsername,
     }
     if err := json.NewEncoder(os.Stdout).Encode(row); err != nil {
       log.Fatal(err)
@@ -169,8 +193,42 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 The Node.js, Python, and Go examples convert one event into an audit row. Store
 `event_id`, `monitor_type`, `monitor_id`, `event_type`, `occurred_at`,
-`x_event_id`, and tweet fields from `data`; keyword monitor events use
-`keyword_monitor_id` and `query` instead of `username`.
+`x_event_id`, tweet fields from `data`, `event_detail_endpoint`, and
+`delivery_join_key`; keyword monitor events use `keyword_monitor_id` and
+`query` instead of `username`.
+
+## Event detail handoff
+
+Use this endpoint after list or delivery workflows find an event that needs full
+tweet data, author context, or support/audit review.
+
+<CardGroup cols={2}>
+  <Card title="Detail Row" icon="fingerprint">
+    Store `event_id`, `event_type`, `occurred_at`, `event_detail_endpoint`, and
+    `delivery_join_key`. Keep `event_id` as the Xquik event identifier.
+  </Card>
+
+  <Card title="Delivery Join" icon="link">
+    Match `delivery_join_key` to webhook delivery `streamEventId` from
+    [List Deliveries](/api-reference/webhooks/deliveries). Do not use
+    `x_event_id` for delivery joins.
+  </Card>
+
+  <Card title="Monitor Source" icon="radar">
+    Store `monitor_type`, `monitor_id`, `keyword_monitor_id`, `username`, and
+    `query` so account and keyword monitor audits stay separate.
+  </Card>
+
+  <Card title="Tweet Payload" icon="message-circle">
+    Store `x_event_id`, `tweet_id`, `tweet_text`, and `author_username` from
+    `data` when the event contains tweet content.
+  </Card>
+
+  <Card title="Delivery Status" icon="activity">
+    After joining deliveries, attach `status`, `attempts`, `lastStatusCode`,
+    `lastError`, `createdAt`, and `deliveredAt` to the event detail row.
+  </Card>
+</CardGroup>
 
 ## Path parameters
 
@@ -271,5 +329,5 @@ The Node.js, Python, and Go examples convert one event into an audit row. Store
 </Tabs>
 
 <Note>
-  **Related:** [List Events](/api-reference/events/list) &middot; [Get Monitor](/api-reference/monitors/get)
+  **Related:** [List Events](/api-reference/events/list) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [Get Monitor](/api-reference/monitors/get)
 </Note>
