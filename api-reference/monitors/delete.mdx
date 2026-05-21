@@ -16,7 +16,17 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <CodeGroup>
   ```bash cURL
   curl -X DELETE https://xquik.com/api/v1/monitors/7 \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+    -H "x-api-key: xq_YOUR_KEY_HERE" |
+    jq -c '{
+      monitor_id: "7",
+      success: .success == true,
+      verify_endpoint: "/api/v1/monitors/7",
+      list_endpoint: "/api/v1/monitors",
+      events_endpoint: "/api/v1/events?monitorId=7",
+      event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
+      webhooks_endpoint: "/api/v1/webhooks",
+      deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"
+    }'
   ```
 
   ```javascript Node.js
@@ -33,6 +43,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     success: result.success === true,
     verify_endpoint: `/api/v1/monitors/${monitorId}`,
     list_endpoint: "/api/v1/monitors",
+    events_endpoint: `/api/v1/events?monitorId=${monitorId}`,
+    event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
+    webhooks_endpoint: "/api/v1/webhooks",
+    deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries",
   };
   process.stdout.write(`${JSON.stringify(deletionReceipt)}\n`);
   ```
@@ -52,6 +66,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "success": result["success"] is True,
       "verify_endpoint": f"/api/v1/monitors/{monitor_id}",
       "list_endpoint": "/api/v1/monitors",
+      "events_endpoint": f"/api/v1/events?monitorId={monitor_id}",
+      "event_detail_endpoint_pattern": "/api/v1/events/{event_id}",
+      "webhooks_endpoint": "/api/v1/webhooks",
+      "deliveries_endpoint_pattern": "/api/v1/webhooks/{webhook_id}/deliveries",
   }
   print(json.dumps(deletion_receipt))
   ```
@@ -71,10 +89,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   }
 
   type AccountMonitorDeletion struct {
-      MonitorID      string `json:"monitor_id"`
-      Success        bool   `json:"success"`
-      VerifyEndpoint string `json:"verify_endpoint"`
-      ListEndpoint   string `json:"list_endpoint"`
+      MonitorID                 string `json:"monitor_id"`
+      Success                   bool   `json:"success"`
+      VerifyEndpoint            string `json:"verify_endpoint"`
+      ListEndpoint              string `json:"list_endpoint"`
+      EventsEndpoint            string `json:"events_endpoint"`
+      EventDetailEndpointPattern string `json:"event_detail_endpoint_pattern"`
+      WebhooksEndpoint          string `json:"webhooks_endpoint"`
+      DeliveriesEndpointPattern string `json:"deliveries_endpoint_pattern"`
   }
 
   func main() {
@@ -100,10 +122,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           log.Fatal(err)
       }
       receipt := AccountMonitorDeletion{
-          MonitorID:      monitorID,
-          Success:        result.Success,
-          VerifyEndpoint: "/api/v1/monitors/" + monitorID,
-          ListEndpoint:   "/api/v1/monitors",
+          MonitorID:                 monitorID,
+          Success:                   result.Success,
+          VerifyEndpoint:            "/api/v1/monitors/" + monitorID,
+          ListEndpoint:              "/api/v1/monitors",
+          EventsEndpoint:            "/api/v1/events?monitorId=" + monitorID,
+          EventDetailEndpointPattern: "/api/v1/events/{event_id}",
+          WebhooksEndpoint:          "/api/v1/webhooks",
+          DeliveriesEndpointPattern: "/api/v1/webhooks/{webhook_id}/deliveries",
       }
       if err := json.NewEncoder(os.Stdout).Encode(receipt); err != nil {
           log.Fatal(err)
@@ -112,10 +138,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 </CodeGroup>
 
-The Node.js, Python, and Go examples convert the delete response into one receipt row.
-Store `monitor_id`, `success`, `verify_endpoint`, and `list_endpoint`, then
-verify that the deleted ID no longer appears in the list and that the verify
-endpoint returns `404`.
+The cURL, Node.js, Python, and Go examples convert the delete response into one
+receipt row. Store `monitor_id`, `success`, `verify_endpoint`, `list_endpoint`,
+`events_endpoint`, `event_detail_endpoint_pattern`, `webhooks_endpoint`, and
+`deliveries_endpoint_pattern`, then verify that the deleted ID no longer appears
+in the list and that the verify endpoint returns `404`.
 
 ## Path parameters
 
@@ -180,7 +207,21 @@ you only need to pause alerts and keep the monitor available.
 
   <Card title="Stored History" icon="database">
     Stored events and webhook delivery records tied to this account monitor are
-    removed with it. Export or reconcile records before deletion.
+    removed with it. Export or reconcile records before deletion when support or
+    audit workflows need history.
+  </Card>
+
+  <Card title="Event Audit" icon="list-tree">
+    Use [List Events](/api-reference/events/list) before deletion to capture
+    monitor events. Use [Get Event](/api-reference/events/get) when you need one
+    event's full payload before removing the monitor.
+  </Card>
+
+  <Card title="Delivery Audit" icon="activity">
+    Use [List Deliveries](/api-reference/webhooks/deliveries) before deletion
+    when webhook delivery evidence must be retained. Join delivery
+    `streamEventId` to event IDs. Do not use `x_event_id` as the delivery join
+    key.
   </Card>
 
   <Card title="Pause Instead" icon="circle-pause">
@@ -200,7 +241,8 @@ you only need to pause alerts and keep the monitor available.
   </Card>
 
   <Card title="Webhook Reuse" icon="webhook">
-    Existing webhook endpoints remain configured. Keep their `eventTypes`
+    Existing webhook endpoints remain configured. Check
+    [List Webhooks](/api-reference/webhooks/list), keep their `eventTypes`
     aligned, then run [Test Webhook](/api-reference/webhooks/test) before
     relying on new account monitor alerts.
   </Card>
@@ -212,5 +254,5 @@ you only need to pause alerts and keep the monitor available.
 </Info>
 
 <Note>
-  **Related:** [List Monitors](/api-reference/monitors/list) to verify the monitor was removed, or [Create Monitor](/api-reference/monitors/create) to set up a new one.
+  **Related:** [List Monitors](/api-reference/monitors/list) to verify the monitor was removed, [Get Monitor](/api-reference/monitors/get) to confirm `404`, [List Events](/api-reference/events/list) and [Get Event](/api-reference/events/get) to preserve event evidence, [List Webhooks](/api-reference/webhooks/list) and [List Deliveries](/api-reference/webhooks/deliveries) to retain delivery evidence, or [Create Monitor](/api-reference/monitors/create) to set up a new one.
 </Note>

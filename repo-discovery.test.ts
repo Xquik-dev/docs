@@ -6549,24 +6549,42 @@ const FORBIDDEN_MONITOR_DELETE_INLINE_SUCCESS_JSON_SNIPPETS = [
 ] as const;
 
 const REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
+  'jq -c \'{',
+  'monitor_id: "7"',
+  'events_endpoint: "/api/v1/events?monitorId=7"',
+  'event_detail_endpoint_pattern: "/api/v1/events/{event_id}"',
+  'webhooks_endpoint: "/api/v1/webhooks"',
+  'deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"',
   'const result = await response.json();',
   'const deletionReceipt = {',
   'monitor_id: monitorId',
   'success: result.success === true',
   'verify_endpoint: `/api/v1/monitors/${monitorId}`',
   'list_endpoint: "/api/v1/monitors"',
+  'events_endpoint: `/api/v1/events?monitorId=${monitorId}`',
+  'event_detail_endpoint_pattern: "/api/v1/events/{event_id}"',
+  'webhooks_endpoint: "/api/v1/webhooks"',
+  'deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"',
   'process.stdout.write(`${JSON.stringify(deletionReceipt)}\\n`);',
   'result = response.json()',
   'deletion_receipt = {',
   '"monitor_id": monitor_id',
   '"success": result["success"] is True',
+  '"events_endpoint": f"/api/v1/events?monitorId={monitor_id}"',
+  '"event_detail_endpoint_pattern": "/api/v1/events/{event_id}"',
+  '"webhooks_endpoint": "/api/v1/webhooks"',
+  '"deliveries_endpoint_pattern": "/api/v1/webhooks/{webhook_id}/deliveries"',
   'print(json.dumps(deletion_receipt))',
   'type AccountMonitorDeletion struct',
-  'MonitorID      string `json:"monitor_id"`',
-  'VerifyEndpoint string `json:"verify_endpoint"`',
+  'MonitorID                 string `json:"monitor_id"`',
+  'EventsEndpoint            string `json:"events_endpoint"`',
+  'EventDetailEndpointPattern string `json:"event_detail_endpoint_pattern"`',
+  'WebhooksEndpoint          string `json:"webhooks_endpoint"`',
+  'DeliveriesEndpointPattern string `json:"deliveries_endpoint_pattern"`',
   'json.NewEncoder(os.Stdout).Encode(receipt)',
-  'one receipt row.',
-  'Store `monitor_id`, `success`, `verify_endpoint`, and `list_endpoint`, then',
+  'receipt row. Store `monitor_id`',
+  '`events_endpoint`, `event_detail_endpoint_pattern`, `webhooks_endpoint`, and',
+  '`deliveries_endpoint_pattern`, then',
   '## Deletion handoff',
   'Use this endpoint when a tracked account should stop permanently.',
   '[Update Monitor](/api-reference/monitors/update)',
@@ -6579,6 +6597,16 @@ const REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
   'updated, resumed, or billed again.',
   '<Card title="Stored History" icon="database">',
   'Stored events and webhook delivery records tied to this account monitor',
+  'when support or',
+  'audit workflows need history.',
+  '<Card title="Event Audit" icon="list-tree">',
+  '[List Events](/api-reference/events/list)',
+  '[Get Event](/api-reference/events/get)',
+  '<Card title="Delivery Audit" icon="activity">',
+  '[List Deliveries](/api-reference/webhooks/deliveries)',
+  'Join delivery',
+  '`streamEventId` to event IDs.',
+  'Do not use `x_event_id` as',
   '<Card title="Pause Instead" icon="circle-pause">',
   'Use `PATCH /monitors/{id}` with `isActive: false`',
   'while preserving the monitor record.',
@@ -6592,6 +6620,7 @@ const REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
   '`id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`.',
   '<Card title="Webhook Reuse" icon="webhook">',
   'Existing webhook endpoints remain configured.',
+  '[List Webhooks](/api-reference/webhooks/list)',
   '[Test Webhook](/api-reference/webhooks/test)',
 ] as const;
 
@@ -11574,6 +11603,24 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Delete account monitor API page should keep inline card prose out of JSON shape "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+        ...(source.includes('-H "x-api-key: xq_YOUR_KEY_HERE" | jq\n')
+          ? [
+              {
+                issue:
+                  'Delete account monitor API page should map cURL output into a deletion receipt.',
+              },
+            ]
+          : []),
+        ...FORBIDDEN_ACCOUNT_MONITOR_DELETE_RAW_OUTPUT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Delete account monitor API page should map deletion receipts instead of raw response output "${snippet}".`,
                   },
                 ]
               : [],
