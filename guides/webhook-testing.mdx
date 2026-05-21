@@ -85,7 +85,12 @@ production monitor deliveries to prove idempotency and storage behavior.
     "last_status_code": 500,
     "last_error": "Internal Server Error"
   },
-  "handoff_state": "verified_signature_then_store_delivery_rows"
+  "event_context": {
+    "endpoint": "GET /api/v1/events/{id}",
+    "id_source": "streamEventId",
+    "store": ["monitorId", "monitorType", "type", "occurredAt", "data"]
+  },
+  "handoff_state": "verified_signature_then_join_event_context"
 }
 ```
 
@@ -111,6 +116,12 @@ production monitor deliveries to prove idempotency and storage behavior.
     Query `GET /api/v1/webhooks/{id}/deliveries` for `status`, `attempts`,
     `lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt` before
     paging or replaying work.
+  </Card>
+
+  <Card title="Event join" icon="link">
+    Use delivery `streamEventId` as the `{id}` for
+    [Get Event](/api-reference/events/get). Store the event `monitorId`,
+    `monitorType`, `type`, `occurredAt`, and `data` with the receiver incident.
   </Card>
 </CardGroup>
 
@@ -299,6 +310,18 @@ curl https://xquik.com/api/v1/webhooks/15/deliveries \
   ]
 }
 ```
+
+Join `streamEventId` to [Get Event](/api-reference/events/get) when a receiver
+owner needs the original monitor event behind a failed or exhausted delivery.
+
+```bash
+curl https://xquik.com/api/v1/events/9002 \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+Store the event `monitorId`, `monitorType`, `type`, `occurredAt`, and `data`
+with the delivery `id`, `status`, `attempts`, `lastStatusCode`, and
+`lastError` before paging support, queue, or receiver owners.
 
 ### Delivery statuses
 
