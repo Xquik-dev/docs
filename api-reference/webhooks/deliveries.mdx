@@ -219,6 +219,50 @@ Store these fields for support and retry triage:
   </Card>
 </CardGroup>
 
+## Incident response handoff
+
+Use one compact handoff row when a delivery needs receiver-owner action. Route
+`delivered` rows out of the incident path, track `pending`, warn on repeated
+`failed`, and page on `exhausted`.
+
+```json
+{
+  "record_type": "webhook_delivery_incident_handoff",
+  "webhook_id": "15",
+  "delivery_id": "503",
+  "stream_event_id": "9003",
+  "status": "exhausted",
+  "attempts": 1,
+  "receiver_status": 410,
+  "last_error": "HTTP 410",
+  "terminal_reason": "receiver_returned_410",
+  "event_join": "GET /api/v1/events/9003",
+  "verification_check": "POST /api/v1/webhooks/15/test",
+  "action": "page_receiver_owner",
+  "handoff_state": "fix_receiver_then_send_signed_test"
+}
+```
+
+<CardGroup cols={2}>
+  <Card title="Repeated failure" icon="repeat-2">
+    Warn after repeated `failed` rows. Include `attempts`, `lastStatusCode`,
+    and `lastError` so the receiver owner can separate code errors from
+    reachability failures.
+  </Card>
+  <Card title="Terminal delivery" icon="circle-x">
+    Page when `status` is `exhausted`. This means retryable failures reached
+    the 10-attempt cap, or the receiver returned `410 Gone`.
+  </Card>
+  <Card title="Event join" icon="link">
+    Store `streamEventId` and link `GET /api/v1/events/{id}` so support can
+    inspect the monitor event that triggered the delivery.
+  </Card>
+  <Card title="Receiver proof" icon="shield-check">
+    After fixing the endpoint, send `POST /webhooks/{id}/test` and attach the
+    signed test result to the incident before waiting for the next event.
+  </Card>
+</CardGroup>
+
 Failures retry up to 10 attempts with exponential backoff, starting at 1 second and capped at 60 seconds. A `410 Gone` response marks the delivery `exhausted` immediately. Other non-`2xx` responses and network failures stay `failed` until they are delivered or exhaust all attempts.
 
 For incident response, page on `exhausted`, warn on repeated `failed`, and ignore `delivered`. Fix the receiving endpoint, then use [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) to confirm it accepts signed requests before waiting for the next production event.
@@ -282,7 +326,7 @@ For incident response, page on `exhausted`, warn on repeated `failed`, and ignor
           "id": "503",
           "streamEventId": "9003",
           "status": "exhausted",
-          "attempts": 5,
+          "attempts": 10,
           "lastStatusCode": 503,
           "lastError": "HTTP 503",
           "createdAt": "2026-02-24T14:30:00.000Z"
