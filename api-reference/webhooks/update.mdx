@@ -22,7 +22,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "url": "https://new-server.com/webhook",
       "eventTypes": ["tweet.new"],
       "isActive": false
-    }' | jq
+    }' | jq '{
+      webhook_id: .id,
+      url,
+      event_types: .eventTypes,
+      is_active: .isActive,
+      test_endpoint: ("/api/v1/webhooks/" + .id + "/test"),
+      deliveries_endpoint: ("/api/v1/webhooks/" + .id + "/deliveries")
+    }'
   ```
 
   ```javascript Node.js
@@ -39,7 +46,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     }),
   });
   const webhook = await response.json();
-  console.log(webhook);
+  const updateHandoff = {
+    webhook_id: webhook.id,
+    url: webhook.url,
+    event_types: webhook.eventTypes,
+    is_active: webhook.isActive,
+    test_endpoint: `/api/v1/webhooks/${webhook.id}/test`,
+    deliveries_endpoint: `/api/v1/webhooks/${webhook.id}/deliveries`,
+  };
   ```
 
   ```python Python
@@ -55,53 +69,86 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       },
   )
   webhook = response.json()
-  print(webhook)
+  update_handoff = {
+      "webhook_id": webhook["id"],
+      "url": webhook["url"],
+      "event_types": webhook["eventTypes"],
+      "is_active": webhook["isActive"],
+      "test_endpoint": f"/api/v1/webhooks/{webhook['id']}/test",
+      "deliveries_endpoint": f"/api/v1/webhooks/{webhook['id']}/deliveries",
+  }
   ```
 
   ```go Go
   package main
 
   import (
-  	"bytes"
-  	"encoding/json"
-  	"fmt"
-  	"io"
-  	"log"
-  	"net/http"
+    "bytes"
+    "encoding/json"
+    "log"
+    "net/http"
   )
 
+  type Webhook struct {
+    EventTypes []string `json:"eventTypes"`
+    ID         string   `json:"id"`
+    IsActive   bool     `json:"isActive"`
+    URL        string   `json:"url"`
+  }
+
+  type UpdateHandoff struct {
+    DeliveriesEndpoint string   `json:"deliveries_endpoint"`
+    EventTypes         []string `json:"event_types"`
+    IsActive           bool     `json:"is_active"`
+    TestEndpoint       string   `json:"test_endpoint"`
+    URL                string   `json:"url"`
+    WebhookID          string   `json:"webhook_id"`
+  }
+
   func main() {
-  	payload := map[string]interface{}{
-  		"url":        "https://new-server.com/webhook",
-  		"eventTypes": []string{"tweet.new"},
-  		"isActive":   false,
-  	}
-  	body, err := json.Marshal(payload)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
+    payload := map[string]interface{}{
+      "url":        "https://new-server.com/webhook",
+      "eventTypes": []string{"tweet.new"},
+      "isActive":   false,
+    }
+    body, err := json.Marshal(payload)
+    if err != nil {
+      log.Fatal(err)
+    }
 
-  	req, err := http.NewRequest("PATCH", "https://xquik.com/api/v1/webhooks/15", bytes.NewReader(body))
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-  	req.Header.Set("Content-Type", "application/json")
+    req, err := http.NewRequest("PATCH", "https://xquik.com/api/v1/webhooks/15", bytes.NewReader(body))
+    if err != nil {
+      log.Fatal(err)
+    }
+    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+    req.Header.Set("Content-Type", "application/json")
 
-  	resp, err := http.DefaultClient.Do(req)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	defer resp.Body.Close()
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+      log.Fatal(err)
+    }
+    defer resp.Body.Close()
 
-  	respBody, err := io.ReadAll(resp.Body)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	fmt.Println(string(respBody))
+    var webhook Webhook
+    if err := json.NewDecoder(resp.Body).Decode(&webhook); err != nil {
+      log.Fatal(err)
+    }
+    handoff := UpdateHandoff{
+      DeliveriesEndpoint: "/api/v1/webhooks/" + webhook.ID + "/deliveries",
+      EventTypes:         webhook.EventTypes,
+      IsActive:           webhook.IsActive,
+      TestEndpoint:       "/api/v1/webhooks/" + webhook.ID + "/test",
+      URL:                webhook.URL,
+      WebhookID:          webhook.ID,
+    }
+    _ = handoff
   }
   ```
 </CodeGroup>
+
+These snippets shape a reconfiguration row. Store the current webhook
+configuration with its test and delivery-log endpoints instead of printing the
+full update response.
 
 ## Path parameters
 
@@ -266,10 +313,23 @@ endpoint.
     This endpoint does not rotate or return `secret`. Keep using the secret from
     [Create Webhook](/api-reference/webhooks/create) for signature verification.
   </Card>
+
+  <Card title="Delivery check" icon="activity">
+    After the signed test passes, use
+    [List Deliveries](/api-reference/webhooks/deliveries) if production monitor
+    events still miss the receiver. Check `status`, `attempts`,
+    `lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt`.
+  </Card>
+
+  <Card title="Event join" icon="link">
+    Use delivery `streamEventId` as the `{id}` for
+    [Get Event](/api-reference/events/get). Store `monitorId`, `monitorType`,
+    `type`, `occurredAt`, and `data` with the reconfiguration incident.
+  </Card>
 </CardGroup>
 
 <Note>
   This endpoint supports **dual authentication**: API key (`x-api-key` header) or session cookie from the dashboard.
 
-  **Related:** [List Webhooks](/api-reference/webhooks/list) &middot; [Delete Webhook](/api-reference/webhooks/delete)
+  **Related:** [List Webhooks](/api-reference/webhooks/list) &middot; [Test Webhook](/api-reference/webhooks/test) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [Get Event](/api-reference/events/get) &middot; [Delete Webhook](/api-reference/webhooks/delete)
 </Note>

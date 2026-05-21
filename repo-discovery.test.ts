@@ -5127,6 +5127,20 @@ const FORBIDDEN_WEBHOOK_TEST_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS = [
+  'webhook_id: .id',
+  'test_endpoint: ("/api/v1/webhooks/" + .id + "/test")',
+  'deliveries_endpoint: ("/api/v1/webhooks/" + .id + "/deliveries")',
+  'const updateHandoff = {',
+  'test_endpoint: `/api/v1/webhooks/${webhook.id}/test`',
+  'deliveries_endpoint: `/api/v1/webhooks/${webhook.id}/deliveries`',
+  'update_handoff = {',
+  '"test_endpoint": f"/api/v1/webhooks/{webhook[\'id\']}/test"',
+  '"deliveries_endpoint": f"/api/v1/webhooks/{webhook[\'id\']}/deliveries"',
+  'type UpdateHandoff struct',
+  'DeliveriesEndpoint string   `json:"deliveries_endpoint"`',
+  'TestEndpoint       string   `json:"test_endpoint"`',
+  'These snippets shape a reconfiguration row.',
+  'Store the current webhook',
   'Use any valid account monitor event type listed below.',
   '<Card title="tweet.new" icon="bell">',
   'new posts that are not replies, quotes, or retweets.',
@@ -5144,7 +5158,22 @@ const REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS = [
   '`isActive: false` stops future deliveries.',
   '`isActive: true` resumes delivery for matching future monitor events.',
   'This endpoint does not rotate or return `secret`.',
+  '<Card title="Delivery check" icon="activity">',
+  '[List Deliveries](/api-reference/webhooks/deliveries)',
+  '`status`, `attempts`,',
+  '`lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt`',
+  '<Card title="Event join" icon="link">',
+  'Use delivery `streamEventId` as the `{id}`',
+  '[Get Event](/api-reference/events/get)',
+  'Store `monitorId`, `monitorType`,',
+  '`type`, `occurredAt`, and `data`',
   '[Create Webhook](/api-reference/webhooks/create)',
+] as const;
+
+const FORBIDDEN_WEBHOOK_UPDATE_RAW_OUTPUT_SNIPPETS = [
+  'console.log(webhook)',
+  'print(webhook)',
+  'fmt.Println(string(respBody))',
 ] as const;
 
 const REQUIRED_WEBHOOK_DELETE_API_SNIPPETS = [
@@ -10653,6 +10682,16 @@ describe('repository discovery', (): void => {
           updateWebhookApi,
           'Update webhook API docs',
           REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS,
+        ),
+        ...FORBIDDEN_WEBHOOK_UPDATE_RAW_OUTPUT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            updateWebhookApi.includes(snippet)
+              ? [
+                  {
+                    issue: `Update webhook API docs print raw webhook responses with "${snippet}".`,
+                  },
+                ]
+              : [],
         ),
         ...collectSnippetFindings(
           deleteWebhookApi,
