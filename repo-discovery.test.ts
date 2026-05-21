@@ -6354,30 +6354,55 @@ const FORBIDDEN_ACCOUNT_MONITOR_GET_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
+  "jq -c '.monitors[] | {",
+  'monitor_id: .id',
+  'monitor_detail_endpoint: ("/api/v1/monitors/" + .id)',
+  'events_endpoint: ("/api/v1/events?monitorId=" + .id)',
+  'event_detail_endpoint_pattern: "/api/v1/events/{event_id}"',
+  'webhooks_endpoint: "/api/v1/webhooks"',
+  'deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"',
   'const payload = await response.json();',
   'const monitorRow = {',
   'monitor_id: monitor.id',
   'x_user_id: monitor.xUserId',
   'event_types: monitor.eventTypes',
+  'monitor_detail_endpoint: `/api/v1/monitors/${monitor.id}`',
   'events_endpoint: `/api/v1/events?monitorId=${monitor.id}`',
+  'event_detail_endpoint_pattern: "/api/v1/events/{event_id}"',
+  'webhooks_endpoint: "/api/v1/webhooks"',
+  'deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"',
   'process.stdout.write(`${JSON.stringify(monitorRow)}\\n`);',
   'payload = response.json()',
   'monitor_row = {',
   '"monitor_id": monitor["id"]',
   '"x_user_id": monitor["xUserId"]',
   '"event_types": monitor["eventTypes"]',
+  '"monitor_detail_endpoint": f"/api/v1/monitors/{monitor[\'id\']}"',
   '"events_endpoint": f"/api/v1/events?monitorId={monitor[\'id\']}"',
+  '"event_detail_endpoint_pattern": "/api/v1/events/{event_id}"',
+  '"webhooks_endpoint": "/api/v1/webhooks"',
+  '"deliveries_endpoint_pattern": "/api/v1/webhooks/{webhook_id}/deliveries"',
   'print(json.dumps(monitor_row))',
   'type MonitorListResponse struct',
   'type MonitorRow struct',
-  'EventsEndpoint string   `json:"events_endpoint"`',
+  'DeliveriesEndpointPattern  string   `json:"deliveries_endpoint_pattern"`',
+  'EventDetailEndpointPattern string   `json:"event_detail_endpoint_pattern"`',
+  'EventsEndpoint             string   `json:"events_endpoint"`',
+  'MonitorDetailEndpoint      string   `json:"monitor_detail_endpoint"`',
+  'WebhooksEndpoint           string   `json:"webhooks_endpoint"`',
   'encoder := json.NewEncoder(os.Stdout)',
-  'EventsEndpoint: "/api/v1/events?monitorId=" + monitor.ID',
+  'DeliveriesEndpointPattern:  "/api/v1/webhooks/{webhook_id}/deliveries"',
+  'EventDetailEndpointPattern: "/api/v1/events/{event_id}"',
+  'EventsEndpoint:             "/api/v1/events?monitorId=" + monitor.ID',
+  'MonitorDetailEndpoint:      "/api/v1/monitors/" + monitor.ID',
+  'WebhooksEndpoint:           "/api/v1/webhooks"',
   'if err := encoder.Encode(row); err != nil',
   'The Node.js, Python, and Go examples convert each account monitor into one',
   'inventory row.',
   '`monitor_id`, `username`, `x_user_id`, `event_types`,',
-  '`is_active`, `next_billing_at`, and the `events_endpoint` join',
+  '`is_active`, `next_billing_at`, `monitor_detail_endpoint`, `events_endpoint`,',
+  '`event_detail_endpoint_pattern`, `webhooks_endpoint`, and',
+  '`deliveries_endpoint_pattern` for backfills',
   '## Inventory handoff',
   'Use `GET /monitors` after create, update, pause, or delete operations',
   'your account monitor inventory.',
@@ -6386,6 +6411,9 @@ const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   '<Card title="Tracked Accounts" icon="users">',
   "Store each monitor's `id`, `username`, and `xUserId`",
   'warehouse, or queue records.',
+  '<Card title="Detail Handoff" icon="file-search">',
+  '[Get Monitor](/api-reference/monitors/get)',
+  'latest event filter, active state, or billing',
   '<Card title="Active Billing" icon="activity">',
   'Filter monitors where `isActive` is `true`.',
   'Each active account monitor',
@@ -6393,11 +6421,17 @@ const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   '`nextBillingAt` to schedule',
   'credit checks or pause stale alerts.',
   '<Card title="Webhook Alignment" icon="webhook">',
-  "Compare each monitor's `eventTypes` with webhook subscriptions",
+  "Compare each monitor's `eventTypes` with [List Webhooks](/api-reference/webhooks/list)",
   'relying on signed alerts.',
   '<Card title="Event Backfill" icon="database">',
   'Use `id` as `monitorId` with [List Events](/api-reference/events/list)',
   'audit stored account monitor events.',
+  '[Get Event](/api-reference/events/get)',
+  'workflow needs the full tweet',
+  '<Card title="Delivery Audit" icon="link">',
+  '[List Deliveries](/api-reference/webhooks/deliveries)',
+  'delivery `streamEventId` to event IDs.',
+  'Do not use `x_event_id` as',
   '<Card title="State Repair" icon="sliders-horizontal">',
   '[Update Monitor](/api-reference/monitors/update)',
   'replace `eventTypes`',
@@ -6407,6 +6441,7 @@ const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_ACCOUNT_MONITOR_LIST_RAW_OUTPUT_SNIPPETS = [
+  '-H "x-api-key: xq_YOUR_KEY_HERE" | jq\n',
   'const data = await response.json();',
   'data = response.json()',
   'fmt.Println(data)',
@@ -11420,21 +11455,23 @@ describe('repository discovery', (): void => {
     const source = readFileSync('api-reference/monitors/list.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'List account monitor API page',
-        REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS,
-      ),
-      ...FORBIDDEN_ACCOUNT_MONITOR_LIST_RAW_OUTPUT_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? [
-                {
-                  issue: `List account monitor API page should map inventory rows instead of raw response output "${snippet}".`,
-                },
-              ]
-            : [],
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'List account monitor API page',
+          REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS,
+        ),
+        ...FORBIDDEN_ACCOUNT_MONITOR_LIST_RAW_OUTPUT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `List account monitor API page should map inventory rows instead of raw response output "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
