@@ -25,7 +25,22 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     -d '{
       "query": "xquik api",
       "eventTypes": ["tweet.new"]
-    }' | jq
+    }' |
+    jq -c '{
+      keyword_monitor_id: .id,
+      query: .query,
+      event_types: .eventTypes,
+      is_active: .isActive,
+      created_at: .createdAt,
+      next_billing_at: .nextBillingAt,
+      verify_endpoint: "/api/v1/monitors/keywords/\(.id)",
+      update_endpoint: "/api/v1/monitors/keywords/\(.id)",
+      delete_endpoint: "/api/v1/monitors/keywords/\(.id)",
+      events_endpoint: "/api/v1/events?monitorId=\(.id)",
+      event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
+      webhooks_endpoint: "/api/v1/webhooks",
+      deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"
+    }'
   ```
 
   ```javascript Node.js
@@ -40,11 +55,27 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       eventTypes: ["tweet.new"],
     }),
   });
-  const data = await response.json();
-  process.stdout.write(`${JSON.stringify(data, null, 2)}\n`);
+  const monitor = await response.json();
+  const monitorState = {
+    keyword_monitor_id: monitor.id,
+    query: monitor.query,
+    event_types: monitor.eventTypes,
+    is_active: monitor.isActive,
+    created_at: monitor.createdAt,
+    next_billing_at: monitor.nextBillingAt,
+    verify_endpoint: `/api/v1/monitors/keywords/${monitor.id}`,
+    update_endpoint: `/api/v1/monitors/keywords/${monitor.id}`,
+    delete_endpoint: `/api/v1/monitors/keywords/${monitor.id}`,
+    events_endpoint: `/api/v1/events?monitorId=${monitor.id}`,
+    event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
+    webhooks_endpoint: "/api/v1/webhooks",
+    deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries",
+  };
+  process.stdout.write(`${JSON.stringify(monitorState)}\n`);
   ```
 
   ```python Python
+  import json
   import requests
 
   response = requests.post(
@@ -52,10 +83,32 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
       json={"query": "xquik api", "eventTypes": ["tweet.new"]},
   )
-  data = response.json()
-  print(data)
+  monitor = response.json()
+  monitor_state = {
+      "keyword_monitor_id": monitor["id"],
+      "query": monitor["query"],
+      "event_types": monitor["eventTypes"],
+      "is_active": monitor["isActive"],
+      "created_at": monitor["createdAt"],
+      "next_billing_at": monitor["nextBillingAt"],
+      "verify_endpoint": f"/api/v1/monitors/keywords/{monitor['id']}",
+      "update_endpoint": f"/api/v1/monitors/keywords/{monitor['id']}",
+      "delete_endpoint": f"/api/v1/monitors/keywords/{monitor['id']}",
+      "events_endpoint": f"/api/v1/events?monitorId={monitor['id']}",
+      "event_detail_endpoint_pattern": "/api/v1/events/{event_id}",
+      "webhooks_endpoint": "/api/v1/webhooks",
+      "deliveries_endpoint_pattern": "/api/v1/webhooks/{webhook_id}/deliveries",
+  }
+  print(json.dumps(monitor_state))
   ```
 </CodeGroup>
+
+The cURL, Node.js, and Python examples convert the created or reactivated
+keyword monitor into one state row. Store `keyword_monitor_id`, `query`,
+`event_types`, `is_active`, `next_billing_at`, `verify_endpoint`,
+`update_endpoint`, `delete_endpoint`, `events_endpoint`,
+`event_detail_endpoint_pattern`, `webhooks_endpoint`, and
+`deliveries_endpoint_pattern` before routing alerts.
 
 ## Keyword monitor handoff
 
@@ -63,15 +116,19 @@ Use `POST /monitors/keywords` when a queue, CRM, warehouse, Slack alert, or agen
 
 <CardGroup cols={2}>
   <Card title="Monitor ID" icon="fingerprint">
-    Store `id` as `monitorId` for `GET /events`, updates, pauses, and deletes.
+    Store `id` as `keyword_monitor_id`. Use
+    [Get Keyword Monitor](/api-reference/monitors/get-keyword) to verify state,
+    [Update Keyword Monitor](/api-reference/monitors/update-keyword) to pause or
+    resume, and [Delete Keyword Monitor](/api-reference/monitors/delete-keyword)
+    only when the query should stop permanently.
   </Card>
   <Card title="Normalized Query" icon="search">
     Store `query`; Xquik includes it on keyword monitor events and signed
     webhook payloads.
   </Card>
   <Card title="Event Filter" icon="funnel">
-    Store `eventTypes`; subscribe webhooks to matching event types so expected
-    tweets deliver.
+    Store `eventTypes`; keep [List Webhooks](/api-reference/webhooks/list)
+    subscriptions aligned so expected tweets deliver.
   </Card>
   <Card title="Active State" icon="clock">
     Read `isActive` and `nextBillingAt` before enabling alerts or estimating
@@ -79,16 +136,19 @@ Use `POST /monitors/keywords` when a queue, CRM, warehouse, Slack alert, or agen
   </Card>
   <Card title="Stored Event Join" icon="link">
     Use `monitorType: "keyword"`, `keywordMonitorId`, and `query` from
-    `GET /events` to join stored events back to the monitor.
+    [List Events](/api-reference/events/list) to join stored events back to the
+    monitor. Use [Get Event](/api-reference/events/get) for one event's full
+    payload.
   </Card>
   <Card title="Webhook Delivery Join" icon="webhook">
-    Use `deliveryId` for receiver idempotency and `streamEventId` to join the
-    signed webhook back to `GET /events/{id}`. Store `eventType`, `occurredAt`,
-    and `data` with the downstream job.
+    Use `deliveryId` for receiver idempotency and
+    [List Deliveries](/api-reference/webhooks/deliveries) for delivery audit
+    rows. Join delivery `streamEventId` to event IDs. Do not use `x_event_id` as
+    the delivery join key.
   </Card>
 </CardGroup>
 
-Active keyword monitors check every 1 second and cost 21 credits per active monitor-hour. Creation or reactivation requires 22 available credits. Pause with `PATCH /monitors/keywords/{id}` and `{ "isActive": false }` when the alert should stop.
+Active keyword monitors check every 1 second and cost 21 credits per active monitor-hour. Creation or reactivation requires 22 available credits. Pause with [Update Keyword Monitor](/api-reference/monitors/update-keyword) and `{ "isActive": false }` when the alert should stop.
 
 ## Headers
 
@@ -194,5 +254,5 @@ Valid keyword monitor types: `tweet.new`, `tweet.quote`, `tweet.reply`,
 </Info>
 
 <Note>
-  **Next steps:** [List Keyword Monitors](/api-reference/monitors/list-keywords) to see all keyword monitors, or [Create Webhook](/api-reference/webhooks/create) to receive matching events.
+  **Next steps:** [List Keyword Monitors](/api-reference/monitors/list-keywords), [Get Keyword Monitor](/api-reference/monitors/get-keyword), [Update Keyword Monitor](/api-reference/monitors/update-keyword), [Create Webhook](/api-reference/webhooks/create), [List Webhooks](/api-reference/webhooks/list), [List Events](/api-reference/events/list), [Get Event](/api-reference/events/get), or [List Deliveries](/api-reference/webhooks/deliveries).
 </Note>
