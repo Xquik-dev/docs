@@ -20,7 +20,24 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <CodeGroup>
   ```bash cURL
   curl "https://xquik.com/api/v1/events?limit=10&monitorId=7" \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    | jq '. as $page | .events[] | {
+      event_id: .id,
+      event_type: .type,
+      monitor_type: .monitorType,
+      monitor_id: .monitorId,
+      keyword_monitor_id: (.keywordMonitorId // null),
+      username: (.username // null),
+      query: (.query // null),
+      occurred_at: .occurredAt,
+      tweet_id: (.data.id // null),
+      tweet_text: (.data.text // null),
+      author_username: (.data.author.userName // null),
+      event_detail_endpoint: ("/api/v1/events/" + .id),
+      delivery_join_key: .id,
+      has_more: $page.hasMore,
+      next_cursor: ($page.nextCursor // null)
+    }'
   ```
 
   ```javascript Node.js
@@ -43,6 +60,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     tweet_id: event.data?.id ?? null,
     tweet_text: event.data?.text ?? null,
     author_username: event.data?.author?.userName ?? null,
+    event_detail_endpoint: `/api/v1/events/${event.id}`,
+    delivery_join_key: event.id,
     has_more: data.hasMore,
     next_cursor: data.nextCursor ?? null,
   }));
@@ -79,6 +98,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
               "tweet_id": tweet.get("id"),
               "tweet_text": tweet.get("text"),
               "author_username": author.get("userName"),
+              "event_detail_endpoint": f"/api/v1/events/{event['id']}",
+              "delivery_join_key": event["id"],
               "has_more": data["hasMore"],
               "next_cursor": data.get("nextCursor"),
           }
@@ -126,19 +147,21 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   }
 
   type EventRow struct {
-    EventID          string  `json:"event_id"`
-    EventType        string  `json:"event_type"`
-    MonitorType      string  `json:"monitor_type"`
-    MonitorID        string  `json:"monitor_id"`
-    KeywordMonitorID *string `json:"keyword_monitor_id"`
-    Username         *string `json:"username"`
-    Query            *string `json:"query"`
-    OccurredAt       string  `json:"occurred_at"`
-    TweetID          *string `json:"tweet_id"`
-    TweetText        *string `json:"tweet_text"`
-    AuthorUsername   *string `json:"author_username"`
-    HasMore          bool    `json:"has_more"`
-    NextCursor       *string `json:"next_cursor"`
+    DeliveryJoinKey      string  `json:"delivery_join_key"`
+    EventDetailEndpoint  string  `json:"event_detail_endpoint"`
+    EventID              string  `json:"event_id"`
+    EventType            string  `json:"event_type"`
+    MonitorType          string  `json:"monitor_type"`
+    MonitorID            string  `json:"monitor_id"`
+    KeywordMonitorID     *string `json:"keyword_monitor_id"`
+    Username             *string `json:"username"`
+    Query                *string `json:"query"`
+    OccurredAt           string  `json:"occurred_at"`
+    TweetID              *string `json:"tweet_id"`
+    TweetText            *string `json:"tweet_text"`
+    AuthorUsername       *string `json:"author_username"`
+    HasMore              bool    `json:"has_more"`
+    NextCursor           *string `json:"next_cursor"`
   }
 
   func main() {
@@ -167,19 +190,21 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       }
 
       row := EventRow{
-        EventID:          event.ID,
-        EventType:        event.Type,
-        MonitorType:      event.MonitorType,
-        MonitorID:        event.MonitorID,
-        KeywordMonitorID: event.KeywordMonitorID,
-        Username:         event.Username,
-        Query:            event.Query,
-        OccurredAt:       event.OccurredAt,
-        TweetID:          event.Data.ID,
-        TweetText:        event.Data.Text,
-        AuthorUsername:   authorUsername,
-        HasMore:          data.HasMore,
-        NextCursor:       data.NextCursor,
+        DeliveryJoinKey:     event.ID,
+        EventDetailEndpoint: "/api/v1/events/" + event.ID,
+        EventID:             event.ID,
+        EventType:           event.Type,
+        MonitorType:         event.MonitorType,
+        MonitorID:           event.MonitorID,
+        KeywordMonitorID:    event.KeywordMonitorID,
+        Username:            event.Username,
+        Query:               event.Query,
+        OccurredAt:          event.OccurredAt,
+        TweetID:             event.Data.ID,
+        TweetText:           event.Data.Text,
+        AuthorUsername:      authorUsername,
+        HasMore:             data.HasMore,
+        NextCursor:          data.NextCursor,
       }
       if err := encoder.Encode(row); err != nil {
         log.Fatal(err)
@@ -189,10 +214,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 </CodeGroup>
 
-The Node.js, Python, and Go examples emit one stored event row per line. Store
-`event_id`, `monitor_type`, `monitor_id`, `event_type`, `occurred_at`, tweet
-fields from `data`, and `next_cursor`; pass `nextCursor` as `after` until
-`hasMore` is `false`.
+These examples emit one stored event row per line. Store `event_id`,
+`monitor_type`, `monitor_id`, `event_type`, `occurred_at`, tweet fields from
+`data`, `event_detail_endpoint`, `delivery_join_key`, and `next_cursor`; pass
+`nextCursor` as `after` until `hasMore` is `false`.
 
 ## Query parameters
 
@@ -339,6 +364,47 @@ fields from `data`, and `next_cursor`; pass `nextCursor` as `after` until
   </Tab>
 </Tabs>
 
+## Event inventory handoff
+
+Use this endpoint when an agent, dashboard, or support workflow needs a compact
+inventory of stored monitor events before looking up details or webhook
+delivery status.
+
+<CardGroup cols={2}>
+  <Card title="Event Row" icon="fingerprint">
+    Store `event_id`, `event_type`, `occurred_at`, and
+    `event_detail_endpoint`. Use [Get Event](/api-reference/events/get) when a
+    later step needs the full event payload.
+  </Card>
+
+  <Card title="Monitor Source" icon="radar">
+    Store `monitor_type`, `monitor_id`, `keyword_monitor_id`, `username`, and
+    `query` so account and keyword monitor events stay separate in exports.
+  </Card>
+
+  <Card title="Tweet Fields" icon="message-circle">
+    Store `tweet_id`, `tweet_text`, and `author_username` from `data` when the
+    event contains tweet content. Other event types can leave those fields
+    empty.
+  </Card>
+
+  <Card title="Delivery Join" icon="link">
+    Store `delivery_join_key` as the event ID. In webhook delivery rows, match
+    it to `streamEventId` from
+    [List Deliveries](/api-reference/webhooks/deliveries).
+  </Card>
+
+  <Card title="Delivery Status" icon="activity">
+    After joining deliveries, store `status`, `attempts`, `lastStatusCode`,
+    `lastError`, `createdAt`, and `deliveredAt` with the event row.
+  </Card>
+
+  <Card title="Cursor Checkpoint" icon="milestone">
+    Store `next_cursor` only when `has_more` is `true`. Pass it as `after` for
+    the next page and stop when `has_more` is `false`.
+  </Card>
+</CardGroup>
+
 ## Pagination
 
 Events use **cursor-based pagination**. Each response includes `hasMore` and (when `true`) a `nextCursor` value. Pass `nextCursor` as the `after` query parameter to retrieve the next page.
@@ -346,17 +412,19 @@ Events use **cursor-based pagination**. Each response includes `hasMore` and (wh
 <CodeGroup>
   ```bash First page
   curl "https://xquik.com/api/v1/events?limit=10&monitorId=7" \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    | jq '{event_ids: [.events[].id], has_more: .hasMore, next_cursor: (.nextCursor // null)}'
   ```
 
   ```bash Next page
   curl "https://xquik.com/api/v1/events?limit=10&monitorId=7&after=MjAyNi0wMi0yNFQxNTowNTozMC4wMDBafDkwMDI=" \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    | jq '{event_ids: [.events[].id], has_more: .hasMore, next_cursor: (.nextCursor // null)}'
   ```
 </CodeGroup>
 
 Continue fetching pages until `hasMore` is `false`. Cursors are opaque strings. Do not parse or construct them manually.
 
 <Note>
-  **Related:** [Get Event](/api-reference/events/get) &middot; [List Monitors](/api-reference/monitors/list)
+  **Related:** [Get Event](/api-reference/events/get) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [List Monitors](/api-reference/monitors/list)
 </Note>
