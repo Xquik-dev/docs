@@ -21,7 +21,21 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     -d '{
       "eventTypes": ["tweet.new", "tweet.reply"],
       "isActive": true
-    }' | jq
+    }' | jq -c '{
+      monitor_id: .id,
+      username,
+      x_user_id: .xUserId,
+      event_types: .eventTypes,
+      is_active: .isActive,
+      created_at: .createdAt,
+      next_billing_at: .nextBillingAt,
+      verify_endpoint: ("/api/v1/monitors/" + .id),
+      list_endpoint: "/api/v1/monitors",
+      events_endpoint: ("/api/v1/events?monitorId=" + .id),
+      event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
+      webhooks_endpoint: "/api/v1/webhooks",
+      deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"
+    }'
   ```
 
   ```javascript Node.js
@@ -47,7 +61,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     created_at: monitor.createdAt,
     next_billing_at: monitor.nextBillingAt,
     verify_endpoint: `/api/v1/monitors/${monitor.id}`,
+    list_endpoint: "/api/v1/monitors",
     events_endpoint: `/api/v1/events?monitorId=${monitor.id}`,
+    event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
+    webhooks_endpoint: "/api/v1/webhooks",
+    deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries",
   };
   process.stdout.write(`${JSON.stringify(monitorState)}\n`);
   ```
@@ -75,7 +93,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "created_at": monitor["createdAt"],
       "next_billing_at": monitor["nextBillingAt"],
       "verify_endpoint": f"/api/v1/monitors/{monitor['id']}",
+      "list_endpoint": "/api/v1/monitors",
       "events_endpoint": f"/api/v1/events?monitorId={monitor['id']}",
+      "event_detail_endpoint_pattern": "/api/v1/events/{event_id}",
+      "webhooks_endpoint": "/api/v1/webhooks",
+      "deliveries_endpoint_pattern": "/api/v1/webhooks/{webhook_id}/deliveries",
   }
   print(json.dumps(monitor_state))
   ```
@@ -102,15 +124,19 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   }
 
   type MonitorState struct {
-      MonitorID      string   `json:"monitor_id"`
-      Username       string   `json:"username"`
-      XUserID        string   `json:"x_user_id"`
-      EventTypes     []string `json:"event_types"`
-      IsActive       bool     `json:"is_active"`
-      CreatedAt      string   `json:"created_at"`
-      NextBillingAt  string   `json:"next_billing_at"`
-      VerifyEndpoint string   `json:"verify_endpoint"`
-      EventsEndpoint string   `json:"events_endpoint"`
+      DeliveriesEndpointPattern  string   `json:"deliveries_endpoint_pattern"`
+      EventDetailEndpointPattern string   `json:"event_detail_endpoint_pattern"`
+      EventsEndpoint             string   `json:"events_endpoint"`
+      EventTypes                 []string `json:"event_types"`
+      CreatedAt                  string   `json:"created_at"`
+      IsActive                   bool     `json:"is_active"`
+      ListEndpoint               string   `json:"list_endpoint"`
+      MonitorID                  string   `json:"monitor_id"`
+      NextBillingAt              string   `json:"next_billing_at"`
+      Username                   string   `json:"username"`
+      VerifyEndpoint             string   `json:"verify_endpoint"`
+      WebhooksEndpoint           string   `json:"webhooks_endpoint"`
+      XUserID                    string   `json:"x_user_id"`
   }
 
   func main() {
@@ -138,15 +164,19 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           log.Fatal(err)
       }
       state := MonitorState{
-          MonitorID:      monitor.ID,
-          Username:       monitor.Username,
-          XUserID:        monitor.XUserID,
-          EventTypes:     monitor.EventTypes,
-          IsActive:       monitor.IsActive,
-          CreatedAt:      monitor.CreatedAt,
-          NextBillingAt:  monitor.NextBillingAt,
-          VerifyEndpoint: "/api/v1/monitors/" + monitor.ID,
-          EventsEndpoint: "/api/v1/events?monitorId=" + monitor.ID,
+          DeliveriesEndpointPattern:  "/api/v1/webhooks/{webhook_id}/deliveries",
+          EventDetailEndpointPattern: "/api/v1/events/{event_id}",
+          EventsEndpoint:             "/api/v1/events?monitorId=" + monitor.ID,
+          EventTypes:                 monitor.EventTypes,
+          CreatedAt:                  monitor.CreatedAt,
+          IsActive:                   monitor.IsActive,
+          ListEndpoint:               "/api/v1/monitors",
+          MonitorID:                  monitor.ID,
+          NextBillingAt:              monitor.NextBillingAt,
+          Username:                   monitor.Username,
+          VerifyEndpoint:             "/api/v1/monitors/" + monitor.ID,
+          WebhooksEndpoint:           "/api/v1/webhooks",
+          XUserID:                    monitor.XUserID,
       }
       if err := json.NewEncoder(os.Stdout).Encode(state); err != nil {
           log.Fatal(err)
@@ -157,8 +187,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 The Node.js, Python, and Go examples convert the updated account monitor into
 one state row. Store `monitor_id`, `event_types`, `is_active`,
-`next_billing_at`, `verify_endpoint`, and `events_endpoint` before resuming
-alerts or webhook checks.
+`next_billing_at`, `verify_endpoint`, `list_endpoint`, `events_endpoint`,
+`event_detail_endpoint_pattern`, `webhooks_endpoint`, and
+`deliveries_endpoint_pattern` before resuming alerts or webhook checks.
 
 ## Path parameters
 
@@ -209,9 +240,15 @@ pause, or must resume without creating a new monitor ID.
     configuration.
   </Card>
 
+  <Card title="Inventory Sync" icon="list-checks">
+    Refresh [List Monitors](/api-reference/monitors/list) after the PATCH and
+    compare [Get Monitor](/api-reference/monitors/get) for the same `id` before
+    updating queues, CRM records, or support notes.
+  </Card>
+
   <Card title="Event Filter" icon="funnel">
-    `eventTypes` replaces the current filter. Keep webhook subscriptions aligned
-    with the monitor event types you expect to deliver.
+    `eventTypes` replaces the current filter. Keep [List Webhooks](/api-reference/webhooks/list)
+    subscriptions aligned with the monitor event types you expect to deliver.
   </Card>
 
   <Card title="Pause Monitoring" icon="circle-pause">
@@ -232,8 +269,15 @@ pause, or must resume without creating a new monitor ID.
 
   <Card title="Downstream Join" icon="link">
     Keep using `monitorId` and `username` from
-    [List Events](/api-reference/events/list) to reconcile stored events and
-    signed webhook payloads after the update.
+    [List Events](/api-reference/events/list) to reconcile stored events after
+    the update. Use returned event IDs with [Get Event](/api-reference/events/get)
+    when a workflow needs the full tweet payload.
+  </Card>
+
+  <Card title="Delivery Audit" icon="activity">
+    Use [List Deliveries](/api-reference/webhooks/deliveries) for each webhook
+    and join delivery `streamEventId` to event IDs. Do not use `x_event_id` as
+    the delivery join key.
   </Card>
 </CardGroup>
 
@@ -299,5 +343,5 @@ pause, or must resume without creating a new monitor ID.
 </Info>
 
 <Note>
-  **Related:** [Get Monitor](/api-reference/monitors/get) to verify the updated state, or [Delete Monitor](/api-reference/monitors/delete) to remove the monitor entirely.
+  **Related:** [List Monitors](/api-reference/monitors/list) to refresh inventory, [Get Monitor](/api-reference/monitors/get) to verify this monitor, [List Events](/api-reference/events/list) to audit stored events, [Get Event](/api-reference/events/get) to inspect one event, [List Webhooks](/api-reference/webhooks/list) to compare subscriptions, or [List Deliveries](/api-reference/webhooks/deliveries) to audit webhook delivery status.
 </Note>
