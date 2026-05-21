@@ -44,6 +44,76 @@ curl -X POST https://xquik.com/api/v1/webhooks/15/test \
 
 Check your server logs for the `webhook.test` payload, verify the HMAC before processing it, and return a 2xx response only after your handler accepts the event.
 
+## End-to-end handoff check
+
+Use a signed test delivery to prove the receiver can verify requests, then use
+production monitor deliveries to prove idempotency and storage behavior.
+
+```json
+{
+  "workflow": "signed_webhook_test_handoff",
+  "webhook": {
+    "webhook_id": "15",
+    "url": "https://example.com/xquik/webhook",
+    "event_types": ["tweet.new", "tweet.reply"],
+    "secret_storage": "store_once"
+  },
+  "test_delivery": {
+    "endpoint": "/api/v1/webhooks/15/test",
+    "event_type": "webhook.test",
+    "has_delivery_id": false,
+    "has_stream_event_id": false,
+    "signature_headers": [
+      "X-Xquik-Signature",
+      "X-Xquik-Timestamp",
+      "X-Xquik-Nonce"
+    ],
+    "receiver_status": 200,
+    "success": true
+  },
+  "production_delivery": {
+    "event_type": "tweet.new",
+    "delivery_id": "502",
+    "stream_event_id": "9002",
+    "dedupe_keys": ["deliveryId", "streamEventId"],
+    "return_status": "2xx_before_slow_work"
+  },
+  "delivery_triage": {
+    "endpoint": "/api/v1/webhooks/15/deliveries",
+    "status": "failed",
+    "attempts": 3,
+    "last_status_code": 500,
+    "last_error": "Internal Server Error"
+  },
+  "handoff_state": "verified_signature_then_store_delivery_rows"
+}
+```
+
+<CardGroup cols={2}>
+  <Card title="Signature checkpoint" icon="shield-check">
+    Store the webhook `secret` once. Verify the raw body with
+    `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` before
+    parsing or queueing the event.
+  </Card>
+
+  <Card title="Test payload checkpoint" icon="file-json">
+    Treat `webhook.test` as a signed reachability check. It includes
+    `eventType`, `data.message`, and `timestamp`, and omits `deliveryId` and
+    `streamEventId`.
+  </Card>
+
+  <Card title="Production de-dupe" icon="copy-check">
+    Use `deliveryId` for receiver retry de-dupe. Use `streamEventId` when one
+    monitor event should process once across endpoint changes.
+  </Card>
+
+  <Card title="Delivery triage" icon="activity">
+    Query `GET /api/v1/webhooks/{id}/deliveries` for `status`, `attempts`,
+    `lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt` before
+    paging or replaying work.
+  </Card>
+</CardGroup>
+
 ## Local testing with ngrok
 
 [ngrok](https://ngrok.com) creates a public HTTPS tunnel to your local server, letting Xquik deliver webhooks to your development machine.
