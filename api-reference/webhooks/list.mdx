@@ -16,7 +16,19 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <CodeGroup>
   ```bash cURL
   curl https://xquik.com/api/v1/webhooks \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    | jq '.webhooks[] | {
+      webhook_id: .id,
+      url,
+      event_types: .eventTypes,
+      is_active: .isActive,
+      created_at: .createdAt,
+      update_endpoint: ("/api/v1/webhooks/" + .id),
+      delete_endpoint: ("/api/v1/webhooks/" + .id),
+      test_endpoint: ("/api/v1/webhooks/" + .id + "/test"),
+      deliveries_endpoint: ("/api/v1/webhooks/" + .id + "/deliveries"),
+      signing_secret_available: false
+    }'
   ```
 
   ```javascript Node.js
@@ -30,6 +42,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     event_types: webhook.eventTypes,
     is_active: webhook.isActive,
     created_at: webhook.createdAt,
+    update_endpoint: `/api/v1/webhooks/${webhook.id}`,
+    delete_endpoint: `/api/v1/webhooks/${webhook.id}`,
     test_endpoint: `/api/v1/webhooks/${webhook.id}/test`,
     deliveries_endpoint: `/api/v1/webhooks/${webhook.id}/deliveries`,
     signing_secret_available: false,
@@ -56,6 +70,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           "event_types": webhook["eventTypes"],
           "is_active": webhook["isActive"],
           "created_at": webhook["createdAt"],
+          "update_endpoint": f"/api/v1/webhooks/{webhook['id']}",
+          "delete_endpoint": f"/api/v1/webhooks/{webhook['id']}",
           "test_endpoint": f"/api/v1/webhooks/{webhook['id']}/test",
           "deliveries_endpoint": f"/api/v1/webhooks/{webhook['id']}/deliveries",
           "signing_secret_available": False,
@@ -94,6 +110,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     EventTypes             []string `json:"event_types"`
     IsActive               bool     `json:"is_active"`
     CreatedAt              string   `json:"created_at"`
+    UpdateEndpoint         string   `json:"update_endpoint"`
+    DeleteEndpoint         string   `json:"delete_endpoint"`
     TestEndpoint           string   `json:"test_endpoint"`
     DeliveriesEndpoint     string   `json:"deliveries_endpoint"`
     SigningSecretAvailable bool     `json:"signing_secret_available"`
@@ -125,6 +143,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
         EventTypes:             webhook.EventTypes,
         IsActive:               webhook.IsActive,
         CreatedAt:              webhook.CreatedAt,
+        UpdateEndpoint:         "/api/v1/webhooks/" + webhook.ID,
+        DeleteEndpoint:         "/api/v1/webhooks/" + webhook.ID,
         TestEndpoint:           "/api/v1/webhooks/" + webhook.ID + "/test",
         DeliveriesEndpoint:     "/api/v1/webhooks/" + webhook.ID + "/deliveries",
         SigningSecretAvailable: false,
@@ -137,8 +157,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 </CodeGroup>
 
-The Node.js, Python, and Go examples shape one inventory row per webhook
-instead of printing the full response page. List responses never include the
+These examples shape one inventory row per webhook instead of printing the full
+response page. Split the rows by `is_active`, then store update, delete, test,
+and delivery-log endpoints with each receiver. List responses never include the
 signing secret; keep the one-time `secret` from
 [Create Webhook](/api-reference/webhooks/create) in your secret manager.
 
@@ -236,6 +257,30 @@ to reconcile which signed webhook endpoints are configured for the account.
     events and must be reactivated before testing.
   </Card>
 
+  <Card title="Change Links" icon="route">
+    For each row, link active receivers to
+    [Update Webhook](/api-reference/webhooks/update), [Test Webhook](/api-reference/webhooks/test),
+    and [List Deliveries](/api-reference/webhooks/deliveries). Link stale
+    receivers to [Delete Webhook](/api-reference/webhooks/delete).
+  </Card>
+
+  <Card title="Inactive Review" icon="toggle-left">
+    Inactive rows are configuration records, not active delivery targets. Keep
+    their `webhooks[].id` so deactivation receipts and rollback plans can find
+    the same webhook.
+  </Card>
+
+  <Card title="Delivery Audit" icon="activity">
+    Use the per-webhook deliveries endpoint to store `streamEventId`, `status`,
+    `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt`.
+  </Card>
+
+  <Card title="Event Join" icon="link">
+    Use delivery `streamEventId` as the `{id}` for
+    [Get Event](/api-reference/events/get). Store `monitorId`, `monitorType`,
+    `type`, `occurredAt`, and `data` with the inventory audit.
+  </Card>
+
   <Card title="Created At" icon="calendar-clock">
     Store `webhooks[].createdAt` for audit logs and configuration drift checks.
   </Card>
@@ -250,5 +295,5 @@ to reconcile which signed webhook endpoints are configured for the account.
 <Note>
   This endpoint supports **dual authentication**: API key (`x-api-key` header) or session cookie from the dashboard.
 
-  **Next steps:** [Create Webhook](/api-reference/webhooks/create) &middot; [Update Webhook](/api-reference/webhooks/update) &middot; [Delete Webhook](/api-reference/webhooks/delete)
+  **Next steps:** [Create Webhook](/api-reference/webhooks/create) &middot; [Update Webhook](/api-reference/webhooks/update) &middot; [Test Webhook](/api-reference/webhooks/test) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [Get Event](/api-reference/events/get) &middot; [Delete Webhook](/api-reference/webhooks/delete)
 </Note>
