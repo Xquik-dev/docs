@@ -7774,6 +7774,11 @@ const FORBIDDEN_STALE_CREDIT_COST_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
+  [['browser', 'service'].join('-'), 'capacity'].join(' '),
+  ['declared', 'proxy', 'region', 'was', 'unavailable'].join(' '),
+  ['login', 'fell', 'back', 'to', 'a', 'single', 'US', 'consumer', 'device'].join(' '),
+  ['one-time', 'US', 'browser', 'session'].join(' '),
+  [['one', 'time'].join('-'), 'US', 'fallback'].join(' '),
   ['proxy', 'service'].join(' '),
   ['participant', 'session'].join(' '),
   ['session', 'reads', 'the', 'conversation'].join(' '),
