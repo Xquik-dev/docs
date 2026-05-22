@@ -6956,7 +6956,7 @@ const REQUIRED_ZAPIER_GUIDE_SNIPPETS = [
   'Completed polling, and Webhook Delivery Failure polling.',
   '## Starter Actions',
   '<Card title="Search Tweets" icon="search">',
-  'Call `GET /x/tweets/search` with `q`; use `cursor` for page loops or `limit` for bounded pulls.',
+  'Call `GET /x/tweets/search` with `q`; use `cursor` for page loops and keep `limit` on bounded resumes.',
   '<Card title="Get Tweet" icon="message-square">',
   'Call `GET /x/tweets/{id}` with a tweet ID.',
   '<Card title="Get User" icon="user">',
@@ -11964,7 +11964,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Zapier guide setup cards source-backed', (): void => {
-    expect.assertions(4);
+    expect.assertions(5);
 
     const source = readFileSync('guides/zapier.mdx', 'utf8');
 
@@ -11978,6 +11978,9 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('| Surface | Initial scope |');
     expect(source).not.toContain('| Action | Method and path | Notes |');
     expect(source).not.toContain('| Test | Expected assertion |');
+    expect(source).not.toContain(
+      'Call `GET /x/tweets/search` with `q`; use `cursor` for page loops or `limit` for bounded pulls.',
+    );
   });
 
   it('keeps Pipedream comparison workflow details source-backed', (): void => {
