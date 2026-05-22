@@ -168,7 +168,7 @@ try {
     PHP argument `q` maps to REST `q`. Use it for an X search query such as `from:username`, a keyword, hashtag, or boolean operator query.
   </Card>
   <Card title="limit" icon="list">
-    PHP argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.
+    PHP argument `limit` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `$page->hasNextPage` is true, keep the same `q`, filters, `queryType`, and `limit` when you continue with `$page->nextCursor`.
   </Card>
   <Card title="cursor" icon="arrow-right">
     PHP argument `cursor` maps to REST `cursor`. Pass the opaque cursor from `$page->nextCursor` to request the next page.
@@ -186,11 +186,11 @@ try {
 
 ### Returned Data & Handoff
 
-`$client->x->tweets->search()` returns `PaginatedTweets`. Use `$page->tweets` for the tweet array, `$page->hasNextPage` to decide whether another page exists, and `$page->nextCursor` as the checkpoint for the next request.
+`$client->x->tweets->search()` returns `PaginatedTweets`. Use `$page->tweets` for the tweet array, `$page->hasNextPage` to decide whether another page exists, and `$page->nextCursor` as the checkpoint for the next request. For bounded pulls that return fewer tweets than `limit`, pass `$page->nextCursor` back as `cursor` with the same query, filters, `queryType`, and `limit`.
 
 Each `SearchTweet` includes typed properties such as `$id`, `$text`, `$author`, `$createdAt`, `$likeCount`, `$replyCount`, `$retweetCount`, `$quoteCount`, `$bookmarkCount`, `$viewCount`, and `$isNoteTweet` when available. Project `$page->tweets` into JSON Lines and CSV rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so workers can resume safely or load the same records into XLSX, CRM, warehouse, or agent workflows.
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, timeouts, 408, 409, 429, and 5xx responses 2 times by default. For long-running workers, pass `requestOptions: ['maxRetries' => 5]` and persist `$page->nextCursor` after each page.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, timeouts, 408, 409, 429, and 5xx responses 2 times by default. For explicit `limit` pulls, resume with the same query, filters, `queryType`, and `limit`; only `cursor` changes.
 
 ## Workflow: Follower Export to CSV, JSON, or XLSX
 
