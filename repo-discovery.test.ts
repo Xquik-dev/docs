@@ -7612,7 +7612,7 @@ const REQUIRED_MAKE_GUIDE_SNIPPETS = [
   'Xquik service unavailable. Retry with exponential backoff.',
   '## Starter Modules',
   '<Card title="Search Tweets" icon="search">',
-  'Search module. Call `GET /x/tweets/search` with `q`; use `cursor` for page loops or `limit` for bounded pulls.',
+  'Search module. Call `GET /x/tweets/search` with `q`; use `cursor` for page loops and keep `limit` on bounded resumes.',
   '<Card title="Get Tweet" icon="message-circle">',
   'Action module. Call `GET /x/tweets/{id}` with a tweet ID.',
   '<Card title="Get User" icon="user-round">',
@@ -7629,7 +7629,8 @@ const REQUIRED_MAKE_GUIDE_SNIPPETS = [
   'Action module. Call `POST /webhooks` with callback URL and event types.',
   '<Card title="Make an API Call" icon="terminal">',
   'Universal module. Accept any `/api/v1` path as an escape hatch for endpoints not yet modeled.',
-  'Add a separate bounded-pull variant that sends `limit` and omits `cursor`.',
+  'Add a bounded-pull variant that sends `limit`.',
+  'If `body.has_next_page` is `true`, send `body.next_cursor` as `cursor` with the same `q`, filters, and `limit`.',
   '## Output Handoff',
   'Make response handling lets search modules `iterate` over `body.tweets` while `body` stays available for output, wrapper, and pagination fields.',
   '<Card title="Tweet search page" icon="search">',
@@ -7679,7 +7680,7 @@ const REQUIRED_MAKE_GUIDE_SNIPPETS = [
   '<Card title="Schedule Trigger" icon="calendar-clock">',
   'Run the scenario on a daily schedule for repeatable topic research.',
   '<Card title="Search Tweets" icon="search">',
-  'Call Xquik Search Tweets with `q`; use `cursor` for page loops or `limit` for bounded pulls.',
+  'Call Xquik Search Tweets with `q`; use `cursor` for page loops and keep `limit` on bounded resumes.',
   '<Card title="Iterator" icon="list">',
   'Iterate over `tweets` and pass one tweet bundle to each downstream module.',
   '<Card title="Sheet Row" icon="table">',
@@ -12241,7 +12242,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Make guide app shape concrete', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('guides/make.mdx', 'utf8');
 
@@ -12252,6 +12253,9 @@ describe('repository discovery', (): void => {
         REQUIRED_MAKE_GUIDE_SNIPPETS,
       ),
     ).toStrictEqual([]);
+    expect(source).not.toContain(
+      'Add a separate bounded-pull variant that sends `limit` and omits `cursor`.',
+    );
   });
 
   it('keeps the Make alternative focused on source-backed workflow handoffs', (): void => {
