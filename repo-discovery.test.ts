@@ -7551,7 +7551,7 @@ const REQUIRED_GOOGLE_ADK_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CREWAI_GUIDE_SNIPPETS = [
-  'Build a CrewAI crew that can search tweets, hand off IDs and cursors, monitor accounts, and run extraction jobs',
+  'Build a CrewAI crew that can search tweets, hand off IDs and cursors, monitor accounts, replay stored monitor events, and run extraction jobs',
   'from pathlib import Path',
   'query, route_used, tweets[{tweet_id,text,author_username,created_at}]',
   'Path("xquik-crewai-handoff.json").write_text(str(result), encoding="utf-8")',
@@ -7566,10 +7566,15 @@ const REQUIRED_CREWAI_GUIDE_SNIPPETS = [
   '<Card title="Monitor and webhook setup" icon="radio">',
   'Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager.',
   'On production deliveries, store `delivery_id` for receiver retry de-dupe and `stream_event_id` when one monitor event should process once across endpoint changes.',
+  '<Card title="Stored event replay" icon="activity">',
+  'Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, `next_cursor`, and the `after` query for the next page.',
   '<Card title="Extraction jobs" icon="database">',
   'Store `extraction_id`, `status`, `poll`, and `export_after_complete`',
   '<Card title="Writes" icon="send">',
   'Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, `charged_credits`, and `poll`; do not resend pending writes.',
+  '<Card title="Media attachments" icon="image">',
+  'For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`.',
+  'For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.',
   'goal="Gather compact JSON handoff rows from X about a given topic"',
   'structured social data',
   'Compact JSON with tweet_id, author_username, text, created_at, has_more, next_cursor, and route_used',
