@@ -779,6 +779,8 @@ const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
   'message_id: .messageId',
   'dm-handoff.jsonl',
   'DMs accept exactly 1 uploaded media ID.',
+  'Keep DM body text in private systems.',
+  'Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, recipient/account identifiers from your job context, and send status instead of full DM bodies.',
   'Do not pass `--reply-to-message-id` to `x:dm send`; the REST endpoint rejects `reply_to_message_id`.',
   'Do not pass uploaded `mediaId` values to `x:tweets create`',
 ] as const;
