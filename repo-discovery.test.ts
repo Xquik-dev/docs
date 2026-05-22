@@ -4934,6 +4934,8 @@ const REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
   '"dm_media_field": "media_ids[0]"',
   '"handoff_format": "jsonl"',
   'Use `media_url` for tweet and reply `media` arrays. Use `media_id` for the single DM `media_ids` item.',
+  'Store `message_id`, `media_id`, recipient, account, and send status in shared handoff rows.',
+  'Keep full DM body text in private systems only.',
   'Store upload, tweet/reply, or DM handoff rows in `xquik-media-handoff.jsonl` with `media_id` and `media_url`.',
 ] as const;
 
