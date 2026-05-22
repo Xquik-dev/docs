@@ -125,6 +125,38 @@ production monitor deliveries to prove idempotency and storage behavior.
   </Card>
 </CardGroup>
 
+### Receiver replay row
+
+Store signed test deliveries separately from production delivery rows. A
+`webhook.test` row proves reachability and HMAC verification only. Production
+rows carry the IDs your receiver needs for retry de-dupe, event de-dupe, and
+event detail joins.
+
+```json
+{
+  "record_type": "webhook_receiver_replay_check",
+  "webhook_id": "15",
+  "test_payload_has_ids": false,
+  "production_delivery_id": "502",
+  "production_stream_event_id": "9002",
+  "signature_verified": true,
+  "nonce_cache_key": "webhook:15:nonce_hash",
+  "event_join": "GET /api/v1/events/9002",
+  "delivery_log": "GET /api/v1/webhooks/15/deliveries",
+  "shared_storage_excludes": [
+    "endpoint_signing_values",
+    "raw_request_body",
+    "raw_signature",
+    "full_headers"
+  ]
+}
+```
+
+Use this row after verification succeeds and before slow downstream work. Keep
+the raw body available for the HMAC check, then store only the de-dupe IDs,
+join route, verification state, and sanitized delivery context in shared
+systems.
+
 ## Local testing with ngrok
 
 [ngrok](https://ngrok.com) creates a public HTTPS tunnel to your local server, letting Xquik deliver webhooks to your development machine.
