@@ -7650,7 +7650,7 @@ const REQUIRED_LANGCHAIN_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_MASTRA_GUIDE_SNIPPETS = [
-  'Build a Mastra agent in TypeScript that can search tweets, hand off IDs and cursors, post tweets, and run extraction jobs',
+  'Build a Mastra agent in TypeScript that can search tweets, hand off IDs and cursors, post tweets, replay stored monitor events, and run extraction jobs',
   'import { writeFile } from "node:fs/promises";',
   'query, route_used, tweets[{tweet_id,text,author_username,created_at}]',
   'await writeFile("xquik-mastra-handoff.json", result.text, "utf8");',
@@ -7667,10 +7667,15 @@ const REQUIRED_MASTRA_GUIDE_SNIPPETS = [
   '<Card title="Monitor and webhook setup" icon="radio">',
   'Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager.',
   'On production deliveries, store `delivery_id` for receiver retry de-dupe and `stream_event_id` when one monitor event should process once across endpoint changes.',
+  '<Card title="Stored event replay" icon="activity">',
+  'Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, `next_cursor`, and the `after` query for the next page.',
   '<Card title="Extraction jobs" icon="database">',
   'Store `extraction_id`, `status`, `poll`, and `export_after_complete`',
   '<Card title="Writes" icon="send">',
   'Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, `charged_credits`, and `poll`; do not resend pending writes.',
+  '<Card title="Media attachments" icon="image">',
+  'For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`.',
+  'For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.',
   'await writeFile("xquik-mastra-stream-handoff.json", handoff, "utf8");',
   'await writeFile("xquik-mastra-user-handoff.json", response.text, "utf8");',
 ] as const;
