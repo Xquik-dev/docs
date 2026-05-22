@@ -510,6 +510,40 @@ async () => {
 }
 ```
 
+> Poll stored monitor events (free)
+
+```javascript
+async () => {
+  const monitor_id = 'mon_123';
+  const event_type = 'tweet.new';
+  const page = await xquik.request('/api/v1/events', {
+    query: { monitorId: monitor_id, eventType: event_type }
+  });
+
+  return {
+    source: 'xquik_mcp',
+    job: 'monitor_event_poll',
+    monitor_id,
+    event_type,
+    rows: page.events.map(event => ({
+      event_id: event.id,
+      type: event.type,
+      username: event.username ?? null,
+      query: event.query ?? null,
+      monitor_id: event.monitor_id,
+      monitor_type: event.monitor_type,
+      occurred_at: event.occurred_at,
+      data: event.data
+    })),
+    has_more: page.has_more,
+    next_cursor: page.next_cursor,
+    next_query: page.next_cursor
+      ? { monitorId: monitor_id, eventType: event_type, after: page.next_cursor }
+      : null
+  };
+}
+```
+
 > Run an extraction with a resumable handoff (subscription required)
 
 ```javascript
@@ -587,6 +621,9 @@ needs durable handoff rows.
   </Card>
   <Card title="Monitor tweets to webhooks" icon="radio">
     Call `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then `POST /api/v1/webhooks`. Store `monitor.id`, `event_types`, `next_billing_at`, `webhook.id`, webhook URL, and the one-time `webhook.secret`; run `POST /api/v1/webhooks/{id}/test` before routing production events. Verify `X-Xquik-Signature`, de-dupe production payloads with `deliveryId` and `streamEventId`, and inspect `GET /api/v1/webhooks/{id}/deliveries` for retry status rows. Cost: 21 credits per active monitor-hour; webhook delivery is included.
+  </Card>
+  <Card title="Replay monitor events" icon="activity">
+    Call `GET /api/v1/events` when a receiver missed webhook delivery or a downstream queue needs replay. Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, and `next_cursor`; use `after` for the next page. Do not use `cursor` on event pages.
   </Card>
 </CardGroup>
 
