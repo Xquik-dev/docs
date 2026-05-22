@@ -2341,6 +2341,18 @@ const FORBIDDEN_CREATE_TWEET_API_SNIPPETS = [
   'fmt.Println(data)',
 ] as const;
 
+const FORBIDDEN_PUBLIC_TWEET_MEDIA_ID_SNIPPETS = [
+  'Pass returned `mediaId` in the `media` array on `POST /x/tweets`',
+  'Pass `mediaId` to `POST /x/tweets`',
+  'Pass uploaded `mediaId` values in `media`',
+  'Use uploaded media IDs for tweet media',
+  'Use `mediaId` for tweet and reply `media` arrays.',
+  'Store `mediaId` for tweet and reply attachments.',
+  '"media": ["1893726451023847424"]',
+  '"media": ["<mediaId>"]',
+  'For tweets or replies, call `POST /api/v1/x/tweets` with uploaded media IDs',
+] as const;
+
 const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
   'Poll post tweet, tweet reply, and DM write actions after pending confirmation responses',
   '"tweet reply status"',
@@ -8647,6 +8659,25 @@ function collectUnsupportedDmHistorySdkExampleFindings(): readonly DiscoveryFind
   return findings;
 }
 
+function collectPublicTweetMediaIdBoundaryFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const file of listPublicMarkdownFiles()) {
+    const source = readFileSync(file, 'utf8');
+
+    for (const snippet of FORBIDDEN_PUBLIC_TWEET_MEDIA_ID_SNIPPETS) {
+      if (source.includes(snippet)) {
+        findings.push({
+          file,
+          issue: `Public Markdown tells tweet callers to use uploaded media IDs with POST /x/tweets: "${snippet}". Use public media URLs in media and reserve media_ids for one-item DMs.`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
 function collectSnippetFindings(
   source: string,
   label: string,
@@ -9238,6 +9269,12 @@ describe('repository discovery', (): void => {
     });
 
     expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps public tweet media docs on public URLs, not uploaded IDs', (): void => {
+    expect.assertions(1);
+
+    expect(collectPublicTweetMediaIdBoundaryFindings()).toStrictEqual([]);
   });
 
   it('keeps the Terraform provider page useful for monitor webhook handoffs', (): void => {
