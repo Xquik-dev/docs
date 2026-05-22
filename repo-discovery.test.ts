@@ -1573,6 +1573,14 @@ const REQUIRED_SKILL_MCP_HANDOFF_SNIPPETS = [
   '- API MCP server: https://docs.xquik.com/mcp/overview',
 ] as const;
 
+const REQUIRED_SKILL_DIRECT_MESSAGE_HANDOFF_SNIPPETS = [
+  '### Direct message handoff',
+  '1. Send text DMs with `POST /api/v1/x/dm/{userId}` and store `messageId`.',
+  '2. For media DMs, call `POST /api/v1/x/media` first, then pass exactly 1 returned `mediaId` in `media_ids`.',
+  '3. Keep DM body text in private systems. Shared outputs should store IDs, status, timestamps, and media references instead of full DM bodies.',
+  '4. Leave `reply_to_message_id` unset because the REST endpoint rejects DM reply threading.',
+] as const;
+
 const FORBIDDEN_SKILL_MCP_HANDOFF_SNIPPETS = [
   'Use the MCP server to let Claude, ChatGPT, Cursor, VS Code, Codex, or other agents interact with X data.',
   '1. Configure the MCP endpoint `https://xquik.com/mcp`.',
@@ -8958,6 +8966,20 @@ describe('repository discovery', (): void => {
               : [],
         ),
       ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the public skill clear about direct message handoffs', (): void => {
+    expect.assertions(1);
+
+    const skill = readFileSync('skill.md', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        skill,
+        'Public skill direct message handoff',
+        REQUIRED_SKILL_DIRECT_MESSAGE_HANDOFF_SNIPPETS,
+      ),
     ).toStrictEqual([]);
   });
 

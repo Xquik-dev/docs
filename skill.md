@@ -119,6 +119,13 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 3. Score a draft with `step: "score"`.
 4. Iterate until the checklist passes.
 
+### Direct message handoff
+
+1. Send text DMs with `POST /api/v1/x/dm/{userId}` and store `messageId`.
+2. For media DMs, call `POST /api/v1/x/media` first, then pass exactly 1 returned `mediaId` in `media_ids`.
+3. Keep DM body text in private systems. Shared outputs should store IDs, status, timestamps, and media references instead of full DM bodies.
+4. Leave `reply_to_message_id` unset because the REST endpoint rejects DM reply threading.
+
 ### Connect an AI agent through MCP
 
 1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only docs search and page retrieval.
