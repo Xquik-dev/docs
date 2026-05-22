@@ -141,7 +141,7 @@ The example builds an `XTweetSearchParams` request so the Go fields stay aligned
     Go field `Q` maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.
   </Card>
   <Card title="Limit" icon="list">
-    Go field `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.
+    Go field `Limit` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `page.HasNextPage` is true, keep the same `Q`, filters, `QueryType`, and `Limit` when you continue with `page.NextCursor`.
   </Card>
   <Card title="Cursor" icon="arrow-right">
     Go field `Cursor` maps to REST `cursor`. Pass the opaque cursor from `NextCursor` to request the next page.
@@ -169,11 +169,11 @@ The example builds an `XTweetSearchParams` request so the Go fields stay aligned
     Go field `HasNextPage`. JSON field `has_next_page`. Tells your worker whether another page exists.
   </Card>
   <Card title="NextCursor" icon="arrow-right">
-    JSON field `next_cursor`. Store it with the job checkpoint and pass it back as `Cursor`.
+    JSON field `next_cursor`. Store it only when `page.HasNextPage` is true. For bounded pulls that return fewer tweets than `Limit`, pass it back as `Cursor` with the same query, filters, `QueryType`, and `Limit`.
   </Card>
 </CardGroup>
 
-Write `Tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets. Pass `ID`, `Text`, `Author.Username`, `CreatedAt`, and engagement counts into your CRM or enrichment pipeline.
+Write `Tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets. Pass `ID`, `Text`, `Author.Username`, `CreatedAt`, and engagement counts into your CRM or enrichment pipeline. For explicit `Limit` pulls, resume with the same query, filters, `QueryType`, and `Limit`; only `Cursor` changes.
 
 ## Workflow: Follower Export to CSV, JSON, or XLSX
 

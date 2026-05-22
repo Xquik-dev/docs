@@ -329,16 +329,20 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
   '`UntilTime`',
   '`QueryType`',
   'Go field `Q` maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.',
-  'Go field `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.',
+  'Go field `Limit` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull.',
+  'If `page.HasNextPage` is true, keep the same `Q`, filters, `QueryType`, and `Limit`',
   'Go field `Cursor` maps to REST `cursor`. Pass the opaque cursor from `NextCursor` to request the next page.',
   '`PaginatedTweets`',
   '`Tweets`',
   '`HasNextPage`',
   '`NextCursor`',
   'JSON field `tweets`. Contains tweet records with `ID`, `Text`, `Author`, `CreatedAt`, `LikeCount`, `ReplyCount`, `RetweetCount`, `QuoteCount`, `BookmarkCount`, `ViewCount`, and `IsNoteTweet` when available.',
-  'JSON field `next_cursor`. Store it with the job checkpoint and pass it back as `Cursor`.',
+  'JSON field `next_cursor`. Store it only when `page.HasNextPage` is true.',
+  'bounded pulls that return fewer tweets than `Limit`',
+  'same query, filters, `QueryType`, and `Limit`',
   'Tweet search costs 1 credit per tweet returned.',
   'Write `Tweets` as JSON Lines to `xquik-tweet-search.jsonl`',
+  'For explicit `Limit` pulls, resume with the same query, filters, `QueryType`, and `Limit`; only `Cursor` changes.',
   'projected records into CSV for analysts',
   'produce XLSX from those rows',
   '`client.Extractions.EstimateCost`',
@@ -416,6 +420,7 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
 const FORBIDDEN_GO_SDK_WEAK_SEARCH_SNIPPETS = [
   'fmt.Printf("%+v\\n", tweets.HasNextPage)',
   'ResultsLimit',
+  'Go field `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.',
 ] as const;
 
 const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
