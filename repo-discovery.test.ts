@@ -5939,7 +5939,8 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   '### 1. Scrape tweets to CSV, JSON, or XLSX',
   '`tweet_search_extractor`',
   '`GET /x/tweets/search`',
-  'use `limit` only for bounded pulls',
+  'leave `limit` unset for a simple cursor loop',
+  'keep the same `q`, filters, and `limit` while sending `next_cursor` as `cursor`',
   '`tweets`, `has_next_page`, and `next_cursor`',
   'For reply-specific exports, use the next workflow.',
   '1 credit per tweet returned or extracted',
@@ -6021,6 +6022,10 @@ const FORBIDDEN_WORKFLOW_OVERVIEW_BLOAT_SNIPPETS = [
   '<Tab title="AI Agent (MCP)">',
   '<Tab title="Tweet Composition">',
   '## Publish Tweets & Replies',
+] as const;
+
+const FORBIDDEN_WORKFLOW_OVERVIEW_STALE_SNIPPETS = [
+  'use `limit` only for bounded pulls',
 ] as const;
 
 const REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS = [
@@ -11571,6 +11576,16 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Workflows guide reintroduced duplicate deep tutorial content with "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+        ...FORBIDDEN_WORKFLOW_OVERVIEW_STALE_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Workflows guide reintroduced stale pagination copy with "${snippet}".`,
                   },
                 ]
               : [],
