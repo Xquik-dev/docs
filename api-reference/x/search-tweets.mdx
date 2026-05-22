@@ -12,7 +12,12 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
 <LlmsDirective />
 
 <Note>
-  Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+  Requested result counts are upper bounds for paid authenticated calls. When
+  remaining credits cannot cover the full page or ID list, Xquik returns fewer
+  results. Large `limit` pulls are resumable: if `has_next_page` is `true`, pass
+  `next_cursor` back as `cursor` with the same query, filters, `queryType`, and
+  `limit`. If zero paid results are affordable, it returns
+  `402 insufficient_credits`.
 </Note>
 
 <Callout icon="coins" color="#5c3327">
@@ -296,6 +301,11 @@ above write JSON Lines rows with tweet fields, author ID, username, display
 name, follower count, verified state, profile image URL, media, and cursor
 fields so a worker can resume from the last saved `next_cursor`.
 
+For explicit `limit` pulls, treat `limit` as a batch-size upper bound. If the
+response returns fewer tweets than `limit` and `has_next_page` is `true`, store
+`next_cursor` and continue with the same `q`, structured filters, `queryType`,
+and `limit` plus `cursor`.
+
 For CSV or XLSX output, project the returned `tweets[]` rows locally or use
 [`tweet_search_extractor`](/guides/tweet-search-export) for saved CSV, JSON, or
 XLSX files.
@@ -322,14 +332,20 @@ XLSX files.
     Store `tweets[].media`, `quoted_tweet`, and `retweeted_tweet` to preserve attached media and relationship context when available.
   </Card>
   <Card title="Next page" icon="arrow-right">
-    Store `has_next_page` and `next_cursor` as the cursor handoff for the next request.
+    Store `has_next_page` and `next_cursor` as the cursor handoff. For bounded
+    `limit` batches, keep the same query, filters, `queryType`, and `limit`
+    when resuming.
   </Card>
   <Card title="File exports" icon="file-spreadsheet">
     Use `tweet_search_extractor` when the output must be saved CSV, JSON, or XLSX.
   </Card>
 </CardGroup>
 
-`limit` is an upper bound from 1 to 200 for a bounded one-request pull. Omit it when you want cursor pagination, then pass the previous response's `next_cursor` as `cursor`. Do not combine `limit` with `cursor` for page-by-page loops.
+`limit` is an upper bound from 1 to 200 for a bounded request. Omit it for a
+simple cursor-driven page loop. When a bounded request returns
+`has_next_page: true`, continue by sending the same `q`, filters, `queryType`,
+and `limit` with `cursor` set to `next_cursor`. This can happen when the route
+returns a partial batch before reaching `limit`.
 
 Tweet search costs 1 credit per tweet returned. Low credit balances can return fewer tweets than `limit`; zero affordable results return `402 insufficient_credits`. Retry `429` with the `Retry-After` header, and retry `424` or `502` after a short backoff.
 
@@ -356,7 +372,9 @@ Tweet search costs 1 credit per tweet returned. Low credit balances can return f
 </ParamField>
 
 <ParamField query="limit" type="integer">
-  Maximum number of tweets to collect in one bounded request (1-200). Omit it for cursor-based pagination.
+  Maximum number of tweets to collect in one bounded request (1-200). If the
+  response includes `has_next_page: true`, keep the same `limit` when continuing
+  with `cursor`.
 </ParamField>
 
 ### Structured filters
