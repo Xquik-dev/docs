@@ -7065,6 +7065,11 @@ const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
   '1,000 requests every 5 minutes',
   'task tiers from 100 tasks/month through custom task limits',
   'MCP tool calls that use two tasks from the plan quota',
+  '## Monitor webhook receiver handoff',
+  'When a Zapier REST Hook, Catch Hook, or Catch Raw Hook receives Xquik monitor events, verify `X-Xquik-Signature` before field mapping.',
+  'Store `deliveryId` and `streamEventId` as separate Zap storage keys:',
+  'Return `2xx` after accepting a duplicate `deliveryId` or `streamEventId`;',
+  'Do not store endpoint signing values, raw request body, raw signature, or full headers in Zap history, tables, Slack messages, CRM rows, or retry queues.',
   '/guides/zapier',
 ] as const;
 
@@ -7155,6 +7160,11 @@ const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
   'pd publish',
   'use npm packages without a package file',
   'add app props for managed auth',
+  '## Monitor webhook receiver handoff',
+  'When a Pipedream HTTP trigger or source receives Xquik monitor events, verify `X-Xquik-Signature` before exporting data to later steps.',
+  'Store `deliveryId` and `streamEventId` as separate workflow keys:',
+  'Return `2xx` after accepting a duplicate `deliveryId` or `streamEventId`;',
+  'Do not store endpoint signing values, raw request body, raw signature, or full headers in logs, data stores, Slack messages, CRM rows, or retry queues.',
   '/guides/pipedream',
 ] as const;
 
@@ -7842,6 +7852,11 @@ const REQUIRED_MAKE_ALTERNATIVE_SNIPPETS = [
   'offset, page, URL/link, or cursor-style pagination',
   'instant webhooks, custom webhooks, webhook queues, response handling',
   'action, search, polling trigger, instant trigger, universal, and responder module types',
+  '## Monitor webhook receiver handoff',
+  'When a Make webhook receives Xquik monitor events, verify `X-Xquik-Signature` before routing bundles to routers, Slack, Sheets, queues, or CRMs.',
+  'Store `deliveryId` and `streamEventId` as separate Make data-store keys:',
+  'Return `2xx` after accepting a duplicate `deliveryId` or `streamEventId`;',
+  'Do not store endpoint signing values, raw request body, raw signature, or full headers in scenario logs, data stores, Slack messages, CRM rows, or retry queues.',
   'Make webhooks',
   'Make custom app modules',
   '/guides/make',

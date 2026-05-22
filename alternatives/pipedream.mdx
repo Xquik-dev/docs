@@ -99,6 +99,12 @@ Start with the smallest reusable component package. Add endpoints only after wor
 | Instant monitor events | HTTP trigger or source | Register the Pipedream endpoint in Xquik and read event fields from `steps.trigger.event`. |
 | Batch export | Scheduled workflow or polling source | Create extraction jobs, poll status, then fetch details or export files. |
 
+## Monitor webhook receiver handoff
+
+When a Pipedream HTTP trigger or source receives Xquik monitor events, verify `X-Xquik-Signature` before exporting data to later steps. Store `deliveryId` and `streamEventId` as separate workflow keys: use `deliveryId` for endpoint retry de-dupe and `streamEventId` when one monitor event should process once across source or workflow changes.
+
+Return `2xx` after accepting a duplicate `deliveryId` or `streamEventId`; later code or action steps can skip the already-processed event. Keep shared step exports to `deliveryId`, `streamEventId`, `eventType`, `occurredAt`, `username` or `query`, and mapped tweet fields. Do not store endpoint signing values, raw request body, raw signature, or full headers in logs, data stores, Slack messages, CRM rows, or retry queues.
+
 ## Trial checklist
 
 <Steps>
