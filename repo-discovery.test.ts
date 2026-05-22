@@ -2353,6 +2353,16 @@ const FORBIDDEN_PUBLIC_TWEET_MEDIA_ID_SNIPPETS = [
   'For tweets or replies, call `POST /api/v1/x/tweets` with uploaded media IDs',
 ] as const;
 
+const FORBIDDEN_PUBLIC_DM_REPLY_FIELD_EXAMPLES = [
+  '"reply_to_message_id": "',
+  'reply_to_message_id: "',
+  'reply_to_message_id="',
+  'replyToMessageId: "',
+  '.replyToMessageId(',
+  '--reply-to-message-id "',
+  '--reply-to-message-id=',
+] as const;
+
 const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
   'Poll post tweet, tweet reply, and DM write actions after pending confirmation responses',
   '"tweet reply status"',
@@ -8678,6 +8688,25 @@ function collectPublicTweetMediaIdBoundaryFindings(): readonly DiscoveryFinding[
   return findings;
 }
 
+function collectPublicDmReplyFieldExampleFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const file of listPublicMarkdownFiles()) {
+    const source = readFileSync(file, 'utf8');
+
+    for (const snippet of FORBIDDEN_PUBLIC_DM_REPLY_FIELD_EXAMPLES) {
+      if (source.includes(snippet)) {
+        findings.push({
+          file,
+          issue: `Public Markdown shows an unsupported DM reply field example with "${snippet}". Leave reply_to_message_id unset for POST /x/dm/{userId}.`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
 function collectSnippetFindings(
   source: string,
   label: string,
@@ -9275,6 +9304,12 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     expect(collectPublicTweetMediaIdBoundaryFindings()).toStrictEqual([]);
+  });
+
+  it('keeps public DM docs from showing unsupported reply field examples', (): void => {
+    expect.assertions(1);
+
+    expect(collectPublicDmReplyFieldExampleFindings()).toStrictEqual([]);
   });
 
   it('keeps the Terraform provider page useful for monitor webhook handoffs', (): void => {
