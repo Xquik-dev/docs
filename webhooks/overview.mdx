@@ -211,6 +211,28 @@ Webhook events are delivered as HTTPS POST requests.
   The `data` field contains the raw tweet object for the monitor event. Fields may vary by tweet type.
 </Note>
 
+### Receiver storage row
+
+After signature verification succeeds, store a compact receiver row before handing the event to workers. Use `deliveryId` for delivery-level retries and `streamEventId` for event-level processing. Do not store endpoint signing values, the raw request body, the raw signature, or full headers in shared incident rows.
+
+```json
+{
+  "record_type": "webhook_receiver_event",
+  "webhook_id": "15",
+  "delivery_id": "502",
+  "stream_event_id": "9001",
+  "event_type": "tweet.new",
+  "source": "account",
+  "username": "elonmusk",
+  "signature_verified": true,
+  "nonce_cache_key": "webhook:15:nonce_hash",
+  "occurred_at": "2026-02-24T14:22:00.000Z",
+  "receiver_status": 202,
+  "event_join": "GET /api/v1/events/9001",
+  "delivery_log": "GET /api/v1/webhooks/15/deliveries"
+}
+```
+
 ## Event data shapes
 
 Each event type includes a `data` object. Tweet events contain the raw tweet. The `webhook.test` event contains a test message and timestamp. The examples below show the most common fields.
