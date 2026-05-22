@@ -3990,11 +3990,11 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   'those fields arrive from `GET /extractions/{id}`',
   '`tweets[].id`, `tweets[].text`, `tweets[].createdAt`, `tweets[].author.id`, `tweets[].author.username`, `has_next_page`, and `next_cursor`',
   '`xquik-tweet-search.jsonl`',
-  'Omit `limit` for',
-  'simple cursor-driven page loop.',
-  'Pass `limit` when you want Xquik to collect up',
+  'Leave `limit` unset for a simple cursor-driven page loop',
+  'Set `limit` when you want Xquik to collect up',
   'if `has_next_page` is `true`, continue',
-  'with the same query, filters, `queryType`, `limit`, and `cursor`.',
+  'with the same query, filters, `queryType`, and `limit`, and set `cursor` to',
+  '`next_cursor`. Cost is 1 credit per tweet returned.',
   '`next_cursor`',
   '`resultsLimit`',
   'credit per tweet returned.',
@@ -10453,7 +10453,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps tweet search export workflow steps concrete', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('guides/tweet-search-export.mdx', 'utf8');
 
@@ -10464,6 +10464,9 @@ describe('repository discovery', (): void => {
         REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS,
       ),
     ).toStrictEqual([]);
+    expect(source).not.toContain(
+      'Omit `limit` for a\nsimple cursor-driven page loop.',
+    );
   });
 
   it('keeps the search tweets API handoff concrete', (): void => {
