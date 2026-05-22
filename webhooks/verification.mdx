@@ -327,6 +327,38 @@ Webhook deliveries can be retried on failure, so your endpoint may receive the s
 
 `webhook.test` deliveries include `eventType`, `data`, and `timestamp`; they omit monitor idempotency fields. Use them to verify signatures and receiver reachability, then skip production event de-dupe for the test request.
 
+### Production store contract
+
+Use a persistent store before acknowledging production events. Scope nonce,
+delivery, and event keys by webhook ID so retries for one endpoint never block
+another endpoint. Duplicate `deliveryId` or `streamEventId` checks should
+return `2xx` after verification, because the receiver has already accepted the
+work.
+
+```json
+{
+  "record_type": "webhook_receiver_store_contract",
+  "webhook_id": "15",
+  "nonce_key": "webhook:15:nonce_hash",
+  "nonce_ttl_seconds": 300,
+  "delivery_key": "webhook:15:delivery:502",
+  "event_key": "event:9002",
+  "duplicate_delivery_status": 200,
+  "duplicate_event_status": 200,
+  "event_join": "GET /api/v1/events/9002",
+  "shared_storage_excludes": [
+    "endpoint_signing_values",
+    "raw_request_body",
+    "raw_signature",
+    "full_headers"
+  ]
+}
+```
+
+Keep raw request bytes only for signature verification. Store the nonce cache
+marker, delivery key, event key, join route, and processing status in the
+shared table or queue.
+
 <CodeGroup>
 
 ```javascript Node.js
