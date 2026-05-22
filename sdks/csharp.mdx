@@ -170,7 +170,7 @@ static async Task WriteCsvRow(StreamWriter writer, IEnumerable<object?> values)
     C# property `Q` maps to REST `q`. Use it for an X search query such as `from:username`, a keyword, hashtag, or boolean operator query.
   </Card>
   <Card title="Limit" icon="list">
-    C# property `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.
+    C# property `Limit` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `page.HasNextPage` is true, keep the same `Q`, filters, `QueryType`, and `Limit` when you continue with `page.NextCursor`.
   </Card>
   <Card title="Cursor" icon="arrow-right">
     C# property `Cursor` maps to REST `cursor`. Pass the opaque cursor from `page.NextCursor` to request the next page.
@@ -188,11 +188,11 @@ static async Task WriteCsvRow(StreamWriter writer, IEnumerable<object?> values)
 
 ### Returned Data & Handoff
 
-`client.X.Tweets.Search` returns `PaginatedTweets`. Use `page.Tweets` for the tweet array, `page.HasNextPage` to decide whether another page exists, and `page.NextCursor` as the checkpoint for the next request.
+`client.X.Tweets.Search` returns `PaginatedTweets`. Use `page.Tweets` for the tweet array, `page.HasNextPage` to decide whether another page exists, and `page.NextCursor` as the checkpoint for the next request. For bounded pulls that return fewer tweets than `Limit`, pass `page.NextCursor` back as `Cursor` with the same query, filters, `QueryType`, and `Limit`.
 
 Each `SearchTweet` includes typed properties such as `ID`, `Text`, `Author`, `CreatedAt`, `LikeCount`, `ReplyCount`, `RetweetCount`, `QuoteCount`, `ViewCount`, `BookmarkCount`, and `IsNoteTweet` when available. Project `page.Tweets` into JSON Lines and CSV rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so workers can resume safely or load the same records into XLSX, CRM, warehouse, or agent workflows.
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `Limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, 408, 409, 429, and 5xx responses 2 times by default. For longer workers, set `MaxRetries` on the client and persist `NextCursor` after each page.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `Limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, 408, 409, 429, and 5xx responses 2 times by default. For explicit `Limit` pulls, resume with the same query, filters, `QueryType`, and `Limit`; only `Cursor` changes.
 
 ## Workflow: Follower Export to CSV, JSON, or XLSX
 
