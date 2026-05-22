@@ -690,7 +690,10 @@ const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
   '`.has_next_page`',
   '`.next_cursor`',
   'Tweet search costs 1 credit per tweet returned.',
-  'Use `--limit` for a bounded request from 1 to 200. Omit it when passing `--cursor` in page loops.',
+  'Use `--limit` as a 1 to 200 upper bound for a bounded pull.',
+  'When `.has_next_page` is true, keep the same `--q`, filters, `--query-type`, and `--limit`; only `--cursor` changes.',
+  'For bounded pulls that return fewer tweets than the requested `--limit`',
+  'pass `.next_cursor` back as `--cursor` with the same query, filters, `--query-type`, and `--limit`.',
   '`xquik-tweet-search.jsonl`',
   '`xquik-tweet-search.csv`',
   'xquik.cli.search',
@@ -784,6 +787,7 @@ const FORBIDDEN_CLI_SDK_WORKFLOW_SNIPPETS = [
   'Write one JSON object per line for downstream jobs',
   'projected records to CSV for analysts',
   'produce XLSX from those rows',
+  'Use `--limit` for a bounded request from 1 to 200. Omit it when passing `--cursor` in page loops.',
 ] as const;
 
 const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
@@ -1367,7 +1371,6 @@ const FORBIDDEN_TWEET_SEARCH_CURSOR_LIMIT_SNIPPETS = [
   'Use it for the maximum tweets to return for the page',
   '`q`, `limit`, and optional `cursor`',
   'with `q`, `limit`, and optional `cursor`',
-  '--cursor "$cursor" \\\n    --limit 100',
   'limit: 100,\n    queryType: "Latest",\n    cursor,',
   'limit=100,\n            query_type="Latest",\n            cursor=cursor,',
   'Limit:     xtwitterscraper.Int(100),\n\t\t\tQueryType:',

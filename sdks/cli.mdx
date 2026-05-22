@@ -69,6 +69,7 @@ while :; do
       --q "$query" \
       --query-type Latest \
       --cursor "$cursor" \
+      --limit 100 \
       --format json \
       --format-error json > search-page.json
   else
@@ -192,9 +193,9 @@ Save the cursor with the job checkpoint before requesting the next page:
 tail -n 1 xquik-tweet-search.jsonl | jq '{query, page_index, next_cursor, has_next_page}'
 ```
 
-Use `--limit` for a bounded request from 1 to 200. Omit it when passing `--cursor` in page loops.
+Use `--limit` as a 1 to 200 upper bound for a bounded pull. When `.has_next_page` is true, keep the same `--q`, filters, `--query-type`, and `--limit`; only `--cursor` changes.
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `--limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. Use `--format-error json` so batch jobs can branch on `status` and `code`, and retry `429` or temporary `5xx` responses with backoff.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `--limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. For bounded pulls that return fewer tweets than the requested `--limit`, pass `.next_cursor` back as `--cursor` with the same query, filters, `--query-type`, and `--limit`. Use `--format-error json` so batch jobs can branch on `status` and `code`, and retry `429` or temporary `5xx` responses with backoff.
 
 For XLSX handoff, keep `xquik-tweet-search.jsonl` as the source of truth and convert the same projected rows in your pipeline when account managers need a workbook.
 
