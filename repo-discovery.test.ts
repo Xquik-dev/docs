@@ -47,6 +47,7 @@ const REQUIRED_README_SNIPPETS = [
   'follower exports',
   'media uploads',
   'direct messages',
+  'send DMs with returned message IDs',
   '1-second tweet monitors',
   'signed webhooks',
   'SDK clients',
