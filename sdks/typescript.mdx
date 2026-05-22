@@ -121,7 +121,7 @@ The generated params map directly to the REST endpoint:
     Maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.
   </Card>
   <Card title="limit" icon="list">
-    Maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.
+    Maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `page.has_next_page` is true, keep the same `q`, filters, `queryType`, and `limit` when you continue with `page.next_cursor`.
   </Card>
   <Card title="cursor" icon="arrow-right">
     Maps to REST `cursor`. Pass the opaque cursor from `page.next_cursor` to request the next page.
@@ -149,11 +149,11 @@ The generated params map directly to the REST endpoint:
     TypeScript field `page.has_next_page`. JSON field `has_next_page`. Tells your worker whether another page exists.
   </Card>
   <Card title="page.next_cursor" icon="arrow-right">
-    JSON field `next_cursor`. Store it with the job checkpoint and pass it back as `cursor`.
+    JSON field `next_cursor`. Store it only when `page.has_next_page` is true. For bounded pulls that return fewer tweets than `limit`, pass it back as `cursor` with the same query, filters, `queryType`, and `limit`.
   </Card>
 </CardGroup>
 
-Project `page.tweets` into JSON Lines rows in `xquik-tweet-search.jsonl` for queues and data lakes, transform the same projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets. Store `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so a worker can resume from the last saved cursor without replaying raw SDK objects.
+Project `page.tweets` into JSON Lines rows in `xquik-tweet-search.jsonl` for queues and data lakes, transform the same projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets. Store `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so a worker can resume from the last saved cursor without replaying raw SDK objects. For explicit `limit` pulls, resume with the same query, filters, `queryType`, and `limit`; only `cursor` changes.
 
 ## Workflow: Follower Export to CSV, JSON, or XLSX
 
