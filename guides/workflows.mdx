@@ -226,6 +226,31 @@ For query alerts, call `POST /monitors/keywords` with `query` and `eventTypes` i
 
 Webhook payloads include durable IDs for downstream systems: persist `deliveryId` for delivery-level idempotency and `streamEventId` when the same monitor event must be processed once across retries or endpoints. Store the one-time `secret` returned by `POST /webhooks` and verify `X-Xquik-Signature` against the raw body before accepting the event. Return `2xx` before slow CRM, Slack, warehouse, or queue work starts.
 
+#### Receiver storage handoff
+
+For Zapier, Make, and Pipedream receivers, map production payload IDs before enqueueing slow work:
+
+```json
+{
+  "record_type": "workflow_webhook_receiver_parity",
+  "delivery_id": "502",
+  "stream_event_id": "9002",
+  "event_type": "tweet.new",
+  "occurred_at": "2026-02-24T14:22:00.000Z",
+  "duplicate_delivery_status": "2xx",
+  "duplicate_event_status": "2xx",
+  "event_join": "GET /api/v1/events/9002",
+  "shared_storage_excludes": [
+    "endpoint_signing_values",
+    "raw_request_body",
+    "raw_signature",
+    "full_headers"
+  ]
+}
+```
+
+Return `2xx` for duplicate `deliveryId` or `streamEventId` after signature verification. Store raw request bytes only long enough to verify `X-Xquik-Signature`; do not put endpoint signing values, raw body, raw signature, or full headers in shared workflow rows.
+
 ### 5. Post media tweets or replies
 
 Use this when an agent or app has public image URLs or exactly 1 public MP4 video URL up to 100 MB and needs to post a tweet or reply. Pass those URLs directly in the `media` array on `POST /x/tweets`. Do not call `POST /x/media` first for tweet posts when the media is already public; `POST /x/tweets` rejects `media_ids` with `400 unsupported_field`.
