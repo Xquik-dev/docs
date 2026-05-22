@@ -418,6 +418,9 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
   '"message_id": dm.MessageID',
   '"media_id":   media.MediaID',
   'json.NewEncoder(os.Stdout).Encode(dmHandoff)',
+  'Keep DM body text in private systems.',
+  'Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies.',
+  'Leave `ReplyToMessageID` unset even if generated SDK params expose it; the REST endpoint rejects DM reply threading.',
   'Do not pass uploaded `MediaID` values to `client.X.Tweets.New`',
 ] as const;
 
