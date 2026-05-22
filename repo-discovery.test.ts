@@ -1378,7 +1378,6 @@ const FORBIDDEN_TWEET_SEARCH_CURSOR_LIMIT_SNIPPETS = [
   'Limit = 100,\n            Cursor = cursor,',
   'limit: 100,\n      cursor: $cursor,',
   '"limit": "{{parameters.limit || 25}}",\n    "cursor": "{{parameters.cursor}}"',
-  'cursor=str(next_cursor),\n        limit=100,',
   '.limit(100L)\n            .queryType(QueryType.LATEST)',
 ] as const;
 
@@ -7188,8 +7187,11 @@ const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
   'Normalize raw dictionaries in a follow-up task before writing to Slack, Sheets, a warehouse, or a dashboard.',
   'Keep `tweet_rows` with `id`, `text`, `author.username`, `createdAt`, and `url`; `user_rows` with `id`, `username`, `name`, `followers`, `verified`, and `profilePicture`; and `trend_rows` with `name`, `rank`, `query`, and `description`.',
   'search_recent_tweets = search_tweets.with_options(',
-  'Respect `Retry-After` for repeated `429` responses, and keep `limit` at or below `200` for bounded tweet search pulls.',
-  'Omit `limit` when passing a cursor.',
+  'Respect `Retry-After` for repeated `429` responses.',
+  'Keep `limit` at or below `200` for bounded tweet search pulls.',
+  'Pass `next_cursor` with the same `query`, `query_type`, and `limit`.',
+  'For bounded tweet search pulls, keep `query`, `query_type`, and `limit` unchanged.',
+  'Only `cursor` changes.',
   '## Failure Routing',
   '`XquikError` exposes `status_code` and `response_text` when an HTTP response is available.',
   '<Card title="Inspect Status" icon="route">',
@@ -12008,7 +12010,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Prefect guide aligned with the current collection scope', (): void => {
-    expect.assertions(4);
+    expect.assertions(5);
 
     const source = readFileSync('guides/prefect.mdx', 'utf8');
 
@@ -12022,6 +12024,7 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('|');
     expect(source).not.toContain('https://api.xquik.com');
     expect(source).not.toContain('0.1.4');
+    expect(source).not.toContain('Omit `limit` when passing a cursor.');
   });
 
   it('keeps the Haystack guide handoff concrete', (): void => {
