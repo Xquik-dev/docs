@@ -1371,6 +1371,11 @@ const FORBIDDEN_TWEET_SEARCH_CURSOR_LIMIT_SNIPPETS = [
   'Use it for the maximum tweets to return for the page',
   '`q`, `limit`, and optional `cursor`',
   'with `q`, `limit`, and optional `cursor`',
+  'page loops or `limit` for bounded pulls',
+  'use `limit` only for bounded pulls',
+  'sends `limit` and omits `cursor`',
+  'Omit `limit` when passing a cursor.',
+  'Omit `limit` for a\nsimple cursor-driven page loop.',
   'limit: 100,\n    queryType: "Latest",\n    cursor,',
   'limit=100,\n            query_type="Latest",\n            cursor=cursor,',
   'Limit:     xtwitterscraper.Int(100),\n\t\t\tQueryType:',
@@ -9216,23 +9221,7 @@ describe('repository discovery', (): void => {
   it('keeps tweet search cursor loops separate from bounded limit pulls', (): void => {
     expect.assertions(1);
 
-    const files = [
-      'sdks/typescript.mdx',
-      'sdks/python.mdx',
-      'sdks/go.mdx',
-      'sdks/ruby.mdx',
-      'sdks/cli.mdx',
-      'sdks/csharp.mdx',
-      'sdks/php.mdx',
-      'sdks/java.mdx',
-      'sdks/kotlin.mdx',
-      'guides/zapier.mdx',
-      'guides/make.mdx',
-      'guides/prefect.mdx',
-      'guides/workflows.mdx',
-    ] as const;
-
-    const findings = files.flatMap((file): readonly DiscoveryFinding[] => {
+    const findings = listPublicMarkdownFiles().flatMap((file): readonly DiscoveryFinding[] => {
       const source = readFileSync(file, 'utf8');
 
       return FORBIDDEN_TWEET_SEARCH_CURSOR_LIMIT_SNIPPETS.flatMap(
@@ -9240,8 +9229,8 @@ describe('repository discovery', (): void => {
           source.includes(snippet)
             ? [
                 {
-                  label: file,
-                  snippet,
+                  file,
+                  issue: `Public Markdown contains stale tweet search pagination wording "${snippet}". Keep simple cursor loops separate from bounded limit resumes.`,
                 },
               ]
             : [],
