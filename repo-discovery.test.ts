@@ -2345,6 +2345,13 @@ const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   '`charged: false`, and `retryable: false`.',
   '<Card title="Recovery" icon="circle-check">',
   'Store `writeActionId`, call [Get Write Action Status](/api-reference/x-write/get-write-action-status), and do not retry-send while status is `pending_confirmation`.',
+  '## Write confirmation recovery',
+  'Because `202` is a successful HTTP status, check `response.status` before',
+  'generic `response.ok` handling.',
+  'If `response.status === 202` and `error === "x_write_unconfirmed"`, store `writeActionId`, `status`, `charged`, `chargedCredits`, and `retryable`.',
+  'Poll `GET /api/v1/x/write-actions/{id}` until `status` is `success` or `failed`.',
+  'Only persist `tweetId` or `messageId` after the status endpoint confirms success.',
+  'Do not retry-send while the write action status is `pending_confirmation`.',
 ] as const;
 
 const REQUIRED_CREATE_TWEET_API_SNIPPETS = [

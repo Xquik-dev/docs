@@ -421,6 +421,27 @@ Some errors include additional context fields (e.g. `limit`, `retryAfter`).
   </Accordion>
 </AccordionGroup>
 
+## Write confirmation recovery
+
+Because `202` is a successful HTTP status, check `response.status` before
+generic `response.ok` handling. This keeps pending tweet and reply writes out of
+your normal success path.
+
+<Steps>
+  <Step title="Branch on the pending write response">
+    If `response.status === 202` and `error === "x_write_unconfirmed"`, store `writeActionId`, `status`, `charged`, `chargedCredits`, and `retryable`.
+  </Step>
+  <Step title="Poll the write action">
+    Poll `GET /api/v1/x/write-actions/{id}` until `status` is `success` or `failed`.
+  </Step>
+  <Step title="Persist the final ID">
+    Only persist `tweetId` or `messageId` after the status endpoint confirms success.
+  </Step>
+  <Step title="Avoid duplicate writes">
+    Do not retry-send while the write action status is `pending_confirmation`.
+  </Step>
+</Steps>
+
 ## Retry with exponential backoff
 
 Retry only on `429` and `5xx` responses. Use exponential backoff with random jitter to avoid thundering herds. Max 3 retries.
