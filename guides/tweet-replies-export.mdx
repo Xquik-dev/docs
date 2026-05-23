@@ -26,7 +26,8 @@ Use this workflow when a support, community, research, or giveaway system needs 
     Use `GET /x/tweets/{id}/replies` when you only need the newest reply page.
   </Card>
   <Card title="Cost control" icon="gauge">
-    Set `resultsLimit` on estimate and create requests before scraping.
+    Estimate the target tweet first, then set `resultsLimit` on create
+    requests to cap the run.
   </Card>
 </CardGroup>
 
@@ -64,11 +65,11 @@ Store one checkpoint that carries the target tweet through estimate, job creatio
     "resultsLimit": 500
   },
   "estimate": {
-    "estimatedResults": 500,
-    "creditsRequired": "500",
+    "estimatedResults": 1200,
+    "creditsRequired": "1200",
     "creditsAvailable": "77000",
     "allowed": true,
-    "source": "resultsLimit"
+    "source": "replyCount"
   },
   "create_receipt": {
     "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -103,7 +104,9 @@ Store one checkpoint that carries the target tweet through estimate, job creatio
 
 <CardGroup cols={2}>
   <Card title="Estimate checkpoint" icon="calculator">
-    Keep `estimatedResults`, `creditsRequired`, `creditsAvailable`, `allowed`, and `source` with `targetTweetId`; `source` can be `replyCount`, `paginationCap`, or `resultsLimit`.
+    Keep `estimatedResults`, `creditsRequired`, `creditsAvailable`, `allowed`,
+    and `source` with `targetTweetId`; `source` is `replyCount` when the tweet
+    count lookup succeeds.
   </Card>
   <Card title="Job checkpoint" icon="clipboard-check">
     Store the returned job `id`, `status`, and `poll_path`; do not expect reply rows in the create response.
@@ -118,7 +121,9 @@ Store one checkpoint that carries the target tweet through estimate, job creatio
 
 ## Step 1: Estimate replies and credits
 
-Call `POST /extractions/estimate` before scraping. `reply_extractor` requires `targetTweetId`. Add `resultsLimit` when you want a sample or a hard cost cap.
+Call `POST /extractions/estimate` before scraping. `reply_extractor` requires
+`targetTweetId`. The estimate uses the tweet's current `replyCount`, even when
+you plan to cap the created job.
 
 ```bash
 curl -X POST https://xquik.com/api/v1/extractions/estimate \
@@ -126,12 +131,15 @@ curl -X POST https://xquik.com/api/v1/extractions/estimate \
   -H "Content-Type: application/json" \
   -d '{
     "toolType": "reply_extractor",
-    "targetTweetId": "1893704267862470862",
-    "resultsLimit": 500
+    "targetTweetId": "1893704267862470862"
   }' | jq
 ```
 
-The estimate returns `allowed`, `estimatedResults`, `creditsRequired`, `creditsAvailable`, and `source`. For reply scraping, `source` is usually `replyCount` or `resultsLimit`.
+The estimate returns `allowed`, `estimatedResults`, `creditsRequired`,
+`creditsAvailable`, and `source`. For reply scraping, `source` is `replyCount`
+when the tweet count lookup succeeds. Set `resultsLimit` on the create request
+when you want a smaller sample or hard run cap; final rows and credits can be
+lower than the estimate.
 
 ## Step 2: Run the reply extraction
 
@@ -353,7 +361,7 @@ Handle common errors before retrying:
     Export `format=json` to `xquik-replies.json`, convert it to `xquik-replies.jsonl`, or paginate `GET /extractions/{id}`.
   </Card>
   <Card title="Cost control" icon="gauge">
-    Set `resultsLimit` on both estimate and create calls.
+    Set `resultsLimit` on create calls when you need a smaller run.
   </Card>
   <Card title="Real-time replies" icon="radio">
     Create an account or keyword monitor with `tweet.reply` events.
