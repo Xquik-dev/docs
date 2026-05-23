@@ -5213,6 +5213,11 @@ const FORBIDDEN_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
 
 const REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
   'Download media',
+  'Use this endpoint to turn one tweet, or up to 50 tweet URLs or IDs, into a',
+  'saved media gallery.',
+  'The response gives a `galleryUrl` plus cache or bulk',
+  'it does not return per-file downloads, file metadata, or an uploaded',
+  '`mediaId`.',
   '## Media download handoff',
   'Use this endpoint when your agent needs a saved gallery for tweet images, videos, or GIFs.',
   'const singleResult = await single.json();',
