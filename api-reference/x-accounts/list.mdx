@@ -1,6 +1,6 @@
 ---
 title: "List X accounts"
-description: "Retrieve all connected X accounts for your Xquik account"
+description: "List connected X accounts and decide whether each account can write, retry, or needs action"
 api: "GET /x/accounts"
 keywords: ["x accounts", "list", "connected accounts"]
 ---
@@ -12,6 +12,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <Callout icon="circle-check" color="#16a34a">
   **Free** - does not consume credits
 </Callout>
+
+<Info>
+  Check `accounts[].health` before scheduling writes. `healthy` can write now. `recovering` can retry automatically on the next account use. `temporaryIssue` is still paused by a transient cooldown. `needsReauth` requires fresh credentials, TOTP setup, or a resolved security challenge through [Re-authenticate X Account](/api-reference/x-accounts/reauth). `locked` and `suspended` stay blocked until the account is fixed on X.
+</Info>
 
 <CodeGroup>
   ```bash cURL
@@ -140,7 +144,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 ## Account health
 
-The `health` field is derived from recent login and cookie state. Use it to decide whether to attempt writes or trigger a reauth.
+The `health` field is derived from recent login and cookie state. Use it before writes so your workflow proceeds, waits, retries automatically, or asks the operator to fix the account first.
 
 <CardGroup cols={2}>
   <Card title="healthy" icon="circle-check">
@@ -148,23 +152,28 @@ The `health` field is derived from recent login and cookie state. Use it to deci
   </Card>
 
   <Card title="needsReauth" icon="refresh-cw">
-    Credentials were rejected. Submit fresh credentials via
-    [reauth](/api-reference/x-accounts/reauth).
+    Credentials, TOTP, email verification, passkey, or another security
+    challenge blocked login. Use [reauth](/api-reference/x-accounts/reauth)
+    with current credentials and a valid TOTP secret before retrying writes.
   </Card>
 
   <Card title="locked" icon="lock">
-    X locked the account. Unlock it at `x.com/account/access`, then reauth.
+    X locked the account or requires account-side verification. Complete the X
+    check, then reauth or reconnect after the account works again.
   </Card>
 
   <Card title="suspended" icon="circle-x">
-    X banned the account. Appeal on X; writes will not recover automatically.
+    X suspended the account. Appeal on X; writes and automatic retries stay
+    paused until the account is restored.
   </Card>
 
   <Card title="recovering" icon="activity">
-    Past a transient cooldown. Xquik will auto-retry on next use.
+    Past a transient cooldown. Xquik will retry automatically on the next
+    account use.
   </Card>
 
   <Card title="temporaryIssue" icon="triangle-alert">
-    Transient service problem. Retry shortly.
+    Transient or automated cooldown is still active. Wait for recovery, or use
+    [bulk retry](/api-reference/x-accounts/bulk-retry) for temporary failures.
   </Card>
 </CardGroup>

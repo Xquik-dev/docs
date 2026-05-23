@@ -2504,21 +2504,26 @@ const FORBIDDEN_WRITE_ACTION_STATUS_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS = [
-  'Retrieve all connected X accounts for your Xquik account',
+  'List connected X accounts and decide whether each account can write, retry, or needs action',
+  'Check `accounts[].health` before scheduling writes.',
+  '`temporaryIssue` is still paused by a transient cooldown.',
+  '`locked` and `suspended` stay blocked until the account is fixed on X.',
   'Derived login/cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`.',
   '## Account health',
+  'Use it before writes so your workflow proceeds, waits, retries automatically, or asks the operator to fix the account first.',
   '<Card title="healthy" icon="circle-check">',
   'Cookies are valid. Writes can proceed.',
   '<Card title="needsReauth" icon="refresh-cw">',
+  'Credentials, TOTP, email verification, passkey, or another security',
   '[reauth](/api-reference/x-accounts/reauth)',
   '<Card title="locked" icon="lock">',
-  '`x.com/account/access`',
+  'requires account-side verification',
   '<Card title="suspended" icon="circle-x">',
-  'writes will not recover automatically',
+  'writes and automatic retries stay',
   '<Card title="recovering" icon="activity">',
-  'Xquik will auto-retry on next use.',
+  'Xquik will retry automatically on the next',
   '<Card title="temporaryIssue" icon="triangle-alert">',
-  'Transient service problem. Retry shortly.',
+  '[bulk retry](/api-reference/x-accounts/bulk-retry)',
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
