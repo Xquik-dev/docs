@@ -2619,6 +2619,22 @@ const REQUIRED_X_ACCOUNTS_GET_STATE_SNIPPETS = [
   'The separate `loginCountry` field appears only in connect or re-authenticate responses',
 ] as const;
 
+const REQUIRED_X_ACCOUNTS_DISCONNECT_SNIPPETS = [
+  '## What disconnect does',
+  '<CardGroup cols={1}>',
+  '<Card title="Removes this connection" icon="trash-2">',
+  'Future `GET /x/accounts/{id}` calls for the same ID return `404`.',
+  '<Card title="Stops writes immediately" icon="send">',
+  'The dashboard Disconnect button uses the same endpoint',
+  'new write, DM, media upload, and profile actions must choose another connected account',
+  '<Card title="Keeps monitors separate" icon="radio">',
+  'Account and keyword monitors are independent.',
+  'does not remove monitors that track that username.',
+  '<Card title="Reconnect with a new ID" icon="refresh-cw">',
+  '[Connect X Account](/api-reference/x-accounts/connect)',
+  'Store the new account `id` from the connect response instead of reusing the deleted ID.',
+] as const;
+
 const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
   '<Accordion title="Server & service errors (500/502/503)">',
   '<Card title="x_api_rate_limited" icon="timer-reset">',
@@ -12133,6 +12149,23 @@ describe('repository discovery', (): void => {
         source,
         'Get X account state recovery',
         REQUIRED_X_ACCOUNTS_GET_STATE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the disconnect X account API page clear about removal effects', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x-accounts/disconnect.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Disconnect X account removal effects',
+        REQUIRED_X_ACCOUNTS_DISCONNECT_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
