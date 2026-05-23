@@ -5136,6 +5136,9 @@ const REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
   'Store `message_id`, `media_id`, recipient, account, and send status in shared handoff rows.',
   'Keep full DM body text in private systems only.',
   'Store upload, tweet/reply, or DM handoff rows in `xquik-media-handoff.jsonl` with `media_id` and `media_url`.',
+  'Use JSON URL upload only when the agent needs Xquik to validate or host a',
+  'For tweet-only public URLs, pass',
+  'them directly to `POST /x/tweets`.',
 ] as const;
 
 const FORBIDDEN_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
@@ -5143,6 +5146,7 @@ const FORBIDDEN_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
   'Pass returned `mediaId` in the `media` array on `POST /x/tweets`',
   'Use `mediaId` for tweet and reply `media` arrays.',
   'Use `mediaUrl` for the single DM `media_ids` item.',
+  'Prefer JSON URL upload when the agent produces a hosted image URL.',
   '"media": ["1893726451023847424"]',
   '"media": ["<mediaId>"]',
   '{"record_type":"media_upload"',
