@@ -4326,6 +4326,12 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
 
 const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   'return paginated JSON tweet data for CRM, agents, or export handoff',
+  'Use Search Tweets for keyword, hashtag, operator, and filtered discovery.',
+  '[User Tweets](/api-reference/x/user-tweets)',
+  '`GET /x/users/{id}/tweets`',
+  'When `limit` is present, a bare',
+  '`q=from:username` with no `sinceTime` or `untilTime` is handled as a user',
+  'timeline pull and returns one bounded page.',
   '## Direct API handoff',
   '`GET /x/tweets/search`',
   'app, queue worker, CRM enrichment job, or',
