@@ -217,14 +217,16 @@ The estimate calls `POST /extractions/estimate` and returns `allowed`, `estimate
 ```bash
 jq -e '.allowed == true' follower-estimate.json >/dev/null
 
-job_id="$(x-twitter-scraper extractions run \
+x-twitter-scraper extractions run \
   --tool-type follower_explorer \
   --target-username xquikcom \
-  --transform id \
-  --raw-output)"
+  --format json > follower-run.json
+
+jq -e '.status == "running" and .toolType == "follower_explorer"' follower-run.json >/dev/null
+job_id="$(jq -r '.id' follower-run.json)"
 ```
 
-Persist `job_id`, the source username, and the estimate before polling so a shell restart, queue retry, or CI rerun can resume the same follower export.
+The run command calls `POST /extractions` and returns the queued `202 Accepted` receipt: `id`, `toolType`, and `status: "running"`. Persist `follower-run.json`, `job_id`, the source username, and the estimate before polling so a shell restart, queue retry, or CI rerun can resume the same follower export. Credit reservation happens after the job starts. If available credits changed since the estimate, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
 
 ```bash
 while :; do
