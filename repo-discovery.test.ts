@@ -2592,6 +2592,11 @@ const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_BULK_RETRY_SNIPPETS = [
+  'description: "Clear only temporary login failures; use re-authentication or X-side fixes for credentials, TOTP, passkeys, locked, or suspended accounts"',
+  'Bulk retry only clears `transient` and `automated` login-failure states.',
+  'It does not update passwords, TOTP secret keys, passkeys, email challenges, locked accounts, or suspended accounts.',
+  'Use re-authentication or reconnect for credential and 2FA fixes',
+  'resolve locks or suspensions on X first.',
   '## What gets retried',
   '<CardGroup cols={1}>',
   '<Card title="Temporary issues are cleared" icon="refresh-cw">',
