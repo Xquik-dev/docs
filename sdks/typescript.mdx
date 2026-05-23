@@ -159,6 +159,10 @@ Project `page.tweets` into JSON Lines rows in `xquik-tweet-search.jsonl` for que
 
 Use this workflow when a Node.js, Bun, or queue worker needs an owned follower list for CRM import, warehouse loading, account scoring, analyst CSV, XLSX workbook delivery, or a resumable JSON handoff. It calls `POST /extractions/estimate` through `client.extractions.estimateCost`, creates the job with `client.extractions.run`, reads saved rows with `client.extractions.retrieve`, and downloads files with `client.extractions.exportResults`.
 
+<Info>
+`client.extractions.run` returns the queued `202 Accepted` receipt from `POST /extractions`: `id`, `toolType`, and `status: "running"`. Store `job.id` immediately, then poll `client.extractions.retrieve` before reading pages or calling `client.extractions.exportResults`. Credit reservation happens after the job starts. If available credits changed since `estimateCost`, the API can set `resultsLimit` to the affordable count before fetching rows or mark the job `failed` with `insufficient_credits`.
+</Info>
+
 ```ts
 import { open, writeFile } from "node:fs/promises";
 import XTwitterScraper from "x-twitter-scraper";
