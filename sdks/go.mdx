@@ -179,6 +179,10 @@ Write `Tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data l
 
 Use this workflow when a Go worker needs an owned follower list for a CRM import, warehouse load, analyst CSV file, XLSX workbook, or resumable JSON handoff. It calls `POST /extractions/estimate` through `client.Extractions.EstimateCost`, creates the job with `client.Extractions.Run`, reads saved rows with `client.Extractions.Get`, and downloads files with `client.Extractions.ExportResults`.
 
+<Info>
+`client.Extractions.Run` returns the queued `202 Accepted` receipt from `POST /extractions`: REST `id`, `toolType`, and `status: "running"` as Go `job.ID`, `job.ToolType`, and `job.Status`. Store `job.ID` immediately, then poll `client.Extractions.Get` before reading pages or calling `client.Extractions.ExportResults`. Credit reservation happens after the job starts. If available credits changed since `EstimateCost`, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
+</Info>
+
 ```go
 package main
 
