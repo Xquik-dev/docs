@@ -1,4 +1,4 @@
-# Xquik Docs
+# Xquik Docs - X API, Tweet Scraper & Automation Reference
 
 <a href="https://nothumansearch.ai/site/xquik.com" target="_blank" rel="noopener"><img src="https://nothumansearch.ai/badge/xquik.com.svg" alt="NHS Agentic Readiness Score" height="28"></a>
 [![Ask DeepWiki](https://deepwiki.com/badge.svg?url=https%3A%2F%2Fgithub.com%2FXquik-dev%2Fxquik-docs)](https://deepwiki.com/Xquik-dev/xquik-docs)
