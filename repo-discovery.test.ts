@@ -3262,6 +3262,10 @@ const FORBIDDEN_TWEET_QUOTES_API_RAW_OUTPUT_SNIPPETS = [
 
 const REQUIRED_GET_TWEET_API_HANDOFF_SNIPPETS = [
   '`GET /x/tweets/{id}`',
+  'Pass a 15 to 20 digit numeric tweet ID in the path.',
+  'extract the final status ID first',
+  '`400 invalid_tweet_id`',
+  'optional author data, engagement counts, quote metadata, and media URLs',
   'tweet_id: data.tweet.id',
   'author_id: data.author?.id ?? null',
   'author_username: data.author?.username ?? null',
