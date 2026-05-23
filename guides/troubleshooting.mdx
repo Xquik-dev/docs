@@ -76,6 +76,7 @@ You've exceeded the API rate limit. The API uses fixed windows per tier:
 Solutions:
 
 - Respect `Retry-After`; otherwise start at 1 second, add jitter, and stop after 3 retries.
+- Requests sent before the fixed window resets keep returning `429` until `Retry-After` elapses.
 - Check the `Retry-After` header for the server-recommended wait time.
 - Use webhooks instead of polling. Webhooks push events to you in real time, eliminating the need for repeated API calls.
 - Batch your logic. Fetch events once per minute instead of once per second.
@@ -104,8 +105,9 @@ Webhooks can fail silently. Walk through this checklist:
 2. **HTTPS required:** HTTP endpoints are rejected. Your URL must start with `https://`.
 3. **Response time:** We recommend responding with `2xx` within 10 seconds. Slow responses may be treated as failures.
 4. **Check deliveries:** Call `GET /api/v1/webhooks/{id}/deliveries` to see delivery status, attempt count, and error messages.
-5. **Local testing:** If using ngrok or a tunnel, verify it's running and the URL is current. Ngrok URLs change on restart (free plan).
-6. **Event type mismatch:** Your webhook must subscribe to the event types your monitors produce. A webhook listening for `tweet.new` won't receive `tweet.reply` events.
+5. **Correlate source events:** Call `GET /api/v1/events/{id}` with the stored `streamEventId`.
+6. **Local testing:** If using ngrok or a tunnel, verify it's running and the URL is current. Ngrok URLs change on restart (free plan).
+7. **Event type mismatch:** Your webhook must subscribe to the event types your monitors produce. A webhook listening for `tweet.new` won't receive `tweet.reply` events.
 
 > **Tip:** See the [Webhook Testing](/guides/webhook-testing) guide for a step-by-step local setup with ngrok.
 
@@ -118,6 +120,23 @@ If your monitor is active but no events appear:
 - **Event types:** Verify your monitor's `eventTypes` array includes the type you expect. A monitor tracking only `["tweet.new"]` won't capture replies or retweets.
 - **Account activity:** The monitored X account must actually post content matching your event types. No posts = no events.
 - **Pagination:** If listing events, check `hasMore` in the response. Older events may be on subsequent pages.
+
+### How do I replay stored monitor events?
+
+Call `GET /api/v1/events?monitorId={id}&limit=50` and process each event once.
+If `hasMore` is `true`, store `nextCursor` and pass it as `after` on the next
+request. Add `eventType` when you need to separate follows, tweets, replies, or
+keyword matches.
+
+### Write action still pending?
+
+If a tweet or reply returns `202 x_write_unconfirmed`, the send was dispatched
+but final confirmation is pending.
+
+- Store `writeActionId`, `status`, `charged`, and `chargedCredits`
+- Do not retry-send the same post while status is `pending_confirmation`
+- Poll `GET /api/v1/x/write-actions/{id}` before scheduling follow-up work
+- Store `tweetId` only after the status response confirms success
 
 ### How do I check my usage?
 

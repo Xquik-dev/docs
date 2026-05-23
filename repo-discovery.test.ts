@@ -2153,6 +2153,17 @@ const FORBIDDEN_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
   'Sending requests before the window resets may extend your cooldown.',
 ] as const;
 
+const REQUIRED_TROUBLESHOOTING_RECOVERY_SNIPPETS = [
+  'GET /api/v1/events/{id}',
+  'streamEventId',
+  'GET /api/v1/events?monitorId={id}&limit=50',
+  'If `hasMore` is `true`, store `nextCursor` and pass it as `after`',
+  '202 x_write_unconfirmed',
+  'Store `writeActionId`, `status`, `charged`, and `chargedCredits`',
+  'Do not retry-send the same post while status is `pending_confirmation`',
+  'Poll `GET /api/v1/x/write-actions/{id}` before scheduling follow-up work',
+] as const;
+
 const REQUIRED_MONITOR_TYPES_GUIDE_SNIPPETS = [
   'interface Monitor',
   'xUserId: string;',
@@ -9947,6 +9958,20 @@ describe('repository discovery', (): void => {
               : [],
         ),
       ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps troubleshooting recovery handoffs source-backed', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/troubleshooting.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Troubleshooting recovery handoffs',
+        REQUIRED_TROUBLESHOOTING_RECOVERY_SNIPPETS,
+      ),
     ).toStrictEqual([]);
   });
 
