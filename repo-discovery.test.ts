@@ -2548,6 +2548,9 @@ const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
   'Finish enabling 2FA on X by entering the current 6-digit code',
   'Do not stop after copying the secret key.',
   'Passkeys and security keys cannot satisfy this flow.',
+  '"error": "passkey_required"',
+  'X asked for passkey verification.',
+  'then connect with `totp_secret`.',
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
@@ -2573,6 +2576,9 @@ const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
   'Send the saved long key in `totp_secret` when you call Xquik.',
   'If setup is abandoned before confirmation, re-authentication cannot use that key.',
   '[2FA secret key setup](/api-reference/x-accounts/connect#2fa-secret-key-setup)',
+  '"error": "passkey_required"',
+  'X asked for passkey verification.',
+  'then re-authenticate with `totp_secret`.',
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
