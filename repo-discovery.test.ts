@@ -5418,6 +5418,8 @@ const REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS = [
   'These snippets shape a reconfiguration row.',
   'Store the current webhook',
   'Use any valid account monitor event type listed below.',
+  'Keyword monitor webhooks should stay on `tweet.*`',
+  'webhooks can use both `tweet.*` and `profile.*`',
   '<Card title="tweet.new" icon="bell">',
   'new posts that are not replies, quotes, or retweets.',
   '<Card title="tweet.quote" icon="quote">',
