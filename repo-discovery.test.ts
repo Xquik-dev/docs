@@ -2456,6 +2456,8 @@ const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
   'Poll post tweet, tweet reply, and DM write actions after pending confirmation responses',
   '"tweet reply status"',
   '`GET /x/write-actions/{id}`',
+  'While status is `pending_confirmation`, keep `charged` as `false`, `chargedCredits` as `"0"`, and poll again.',
+  'Store the final `tweetId` or `messageId` only after the status response returns it.',
   'const queueState = {',
   'result_id: resultId',
   'poll_endpoint:',
