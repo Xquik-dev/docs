@@ -2522,6 +2522,7 @@ const REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
+  'description: "Connect an X account to Xquik and prepare the saved TOTP secret key when Authenticator App 2FA is enabled"',
   'If this X account uses 2FA, prepare `totp_secret` before sending the request.',
   'If 2FA is already enabled and you did not save the long secret key',
   'turn Authentication App off and on again in X to reveal a new text secret.',
