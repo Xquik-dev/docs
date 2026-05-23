@@ -2578,6 +2578,9 @@ const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
   '"error": "passkey_required"',
   'X asked for passkey verification.',
   'then connect with `totp_secret`.',
+  '{ "error": "login_failed", "message": "Login failed. Check credentials and try again." }',
+  'X rejected the submitted username, email, password, or TOTP secret.',
+  'Retry with the current password and the saved Authenticator App secret key, not a 6-digit code.',
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
@@ -2606,6 +2609,9 @@ const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
   '"error": "passkey_required"',
   'X asked for passkey verification.',
   'then re-authenticate with `totp_secret`.',
+  '{ "error": "login_failed", "message": "Login failed. Check credentials and try again." }',
+  'X rejected the submitted password or TOTP secret.',
+  'Retry with the current password and the saved Authenticator App secret key, not a 6-digit code.',
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
