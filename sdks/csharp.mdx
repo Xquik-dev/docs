@@ -200,6 +200,10 @@ Use this workflow when a .NET worker, console job, or ASP.NET background service
 
 `client.Extractions.EstimateCost` and `client.Extractions.Run` map to the extraction workflow. For follower exports, use `ExtractionEstimateCostParamsToolType.FollowerExplorer` and `ExtractionRunParamsToolType.FollowerExplorer`; `follower_explorer` requires `TargetUsername`. `client.Extractions.Retrieve` returns `Results`, `HasMore`, and `NextCursor` for pagination. `client.Extractions.ExportResults` returns an `HttpResponse`; read CSV and JSON as strings, and copy XLSX from the response stream.
 
+<Info>
+`client.Extractions.Run` returns the queued `202 Accepted` receipt from `POST /extractions`: REST `id`, `toolType`, and `status: "running"` as C# `job.ID`, `job.ToolType`, and `job.Status`. Store `job.ID` immediately, then poll `client.Extractions.Retrieve` before reading pages or calling `client.Extractions.ExportResults`. Credit reservation happens after the job starts. If available credits changed since `EstimateCost`, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
+</Info>
+
 ```csharp
 using System;
 using System.IO;
