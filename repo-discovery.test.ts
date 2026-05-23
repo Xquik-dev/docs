@@ -2566,6 +2566,22 @@ const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
   '[2FA secret key setup](/api-reference/x-accounts/connect#2fa-secret-key-setup)',
 ] as const;
 
+const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
+  '## Continue the pending login',
+  '<CardGroup cols={1}>',
+  '<Card title="Use the returned challenge ID" icon="ticket-check">',
+  'The challenge belongs to the same pending login attempt.',
+  '<Card title="Enter the account email code" icon="mail-check">',
+  'Use the one-time code X sent to the account email inbox.',
+  'Xquik strips spaces before submission',
+  '<Card title="Handle another code prompt" icon="refresh-cw">',
+  'If X asks for a new email code, this endpoint returns `202` again.',
+  '<Card title="Start over when stale" icon="timer-reset">',
+  '`410` means the code expired.',
+  '`409` means the challenge was already completed, failed, expired, or replaced.',
+  'The dashboard follows the same flow',
+] as const;
+
 const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
   '<Accordion title="Server & service errors (500/502/503)">',
   '<Card title="x_api_rate_limited" icon="timer-reset">',
@@ -12032,6 +12048,23 @@ describe('repository discovery', (): void => {
         source,
         'Re-authenticate X account TOTP docs',
         REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the submit X account email code API page clear about the pending login handoff', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x-accounts/submit-challenge.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Submit X account email code pending login handoff',
+        REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });

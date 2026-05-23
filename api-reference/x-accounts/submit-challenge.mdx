@@ -13,7 +13,26 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **Free** - does not consume credits
 </Callout>
 
-Use this endpoint after [Connect X Account](/api-reference/x-accounts/connect) returns `202 Email Code Required`. Submit the code from the account email inbox before `expiresAt`.
+Use this endpoint after [Connect X Account](/api-reference/x-accounts/connect) returns `202 Email Code Required`. Submit the one-time code from the account email inbox before `expiresAt`.
+
+## Continue the pending login
+
+<CardGroup cols={1}>
+  <Card title="Use the returned challenge ID" icon="ticket-check">
+    Keep the `id` from the `202` response and submit the inbox code to that challenge. The challenge belongs to the same pending login attempt.
+  </Card>
+  <Card title="Enter the account email code" icon="mail-check">
+    Use the one-time code X sent to the account email inbox. Xquik strips spaces before submission, so `123 456` and `123456` are handled the same way.
+  </Card>
+  <Card title="Handle another code prompt" icon="refresh-cw">
+    If X asks for a new email code, this endpoint returns `202` again. Keep the same flow open and submit the next inbox code before `expiresAt`.
+  </Card>
+  <Card title="Start over when stale" icon="timer-reset">
+    `410` means the code expired. `409` means the challenge was already completed, failed, expired, or replaced. Start a new connection to get a fresh challenge.
+  </Card>
+</CardGroup>
+
+The dashboard follows the same flow: it keeps the pending row open, asks for the email code, accepts a new `202` prompt if X asks again, and refreshes the account list after the `201` response.
 
 <CodeGroup>
   ```bash cURL
