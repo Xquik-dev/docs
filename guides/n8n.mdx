@@ -97,15 +97,16 @@ Handle these response classes explicitly:
 
 Use an Edit Fields node after each HTTP Request node when the next node only
 needs stable handoff fields. Keep raw responses out of Slack messages, Sheets
-rows, and retry queues.
+rows, and retry queues. Use snake_case storage keys for handoff rows even when
+direct API responses use camelCase.
 
 <CardGroup cols={2}>
   <Card title="Tweet search page" icon="search">
-    Store request `q`, each tweet `id`, `text`, `author.username`, `createdAt`, plus `has_next_page` and `next_cursor` for page loops.
+    Store request `q`; map each tweet `id`, `text`, `author.username`, and `createdAt` to `tweet_id`, `text`, `author_username`, and `created_at`; keep `has_next_page` and `next_cursor` for page loops.
   </Card>
 
   <Card title="User profile rows" icon="users">
-    Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profilePicture`, `has_next_page`, `next_cursor`, and the lookup or search input.
+    Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profile_picture`, `has_next_page`, `next_cursor`, and the lookup or search input.
   </Card>
 
   <Card title="Trend rows" icon="trending-up">
@@ -113,11 +114,11 @@ rows, and retry queues.
   </Card>
 
   <Card title="Tweet or reply write" icon="send">
-    Store `tweetId`, `charged`, and `chargedCredits` on `200 Success`. For `202 x_write_unconfirmed`, store `writeActionId`, `status`, `charged`, and `chargedCredits`, then poll `GET /x/write-actions/{id}` before retrying.
+    Store `tweetId`, `charged`, and `chargedCredits` on `200 Success` as `tweet_id`, `charged`, and `charged_credits`. For `202 x_write_unconfirmed`, store `write_action_id`, `status`, `charged`, and `charged_credits`, then poll `GET /x/write-actions/{id}` before retrying.
   </Card>
 
-  <Card title="Public media upload" icon="image">
-    Store `mediaId`, `mediaUrl`, and `success`. Pass `mediaUrl` to `POST /x/tweets` in `media`; reserve uploaded media IDs for one-item DMs.
+  <Card title="Media attachments" icon="image">
+    For tweets or replies, pass public URLs in `media`; do not send `media_ids`. For DMs, upload first, pass 1 `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.
   </Card>
 
   <Card title="Monitor and webhook setup" icon="radio">
@@ -128,12 +129,16 @@ rows, and retry queues.
     Store `deliveryId` for receiver retry de-dupe and `streamEventId` when one monitor event should process once across endpoint changes.
   </Card>
 
+  <Card title="Stored Event Replay" icon="activity">
+    Call `GET /events` with `after` when a workflow needs replay. Map `id`, `monitorId`, `monitorType`, `occurredAt`, `hasMore`, and `nextCursor` to `event_id`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, and `next_cursor`.
+  </Card>
+
   <Card title="Receiver acceptance" icon="copy-check">
     Return `2xx` after accepting duplicate `deliveryId` or `streamEventId`; keep endpoint signing values, raw request body, raw signature, and full headers out of n8n executions, data stores, Slack messages, Sheets rows, and retry queues.
   </Card>
 
   <Card title="Extraction job" icon="database">
-    Store `id`, `toolType`, and `status`; poll `GET /extractions/{id}` and carry `hasMore` plus `nextCursor` into batch loops.
+    Store `id` as `extraction_id`, `toolType` as `tool_type`, plus `status`, `has_more`, and `next_cursor` before batch loops fetch detail rows.
   </Card>
 </CardGroup>
 
