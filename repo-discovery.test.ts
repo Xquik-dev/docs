@@ -2600,6 +2600,25 @@ const REQUIRED_X_ACCOUNTS_BULK_RETRY_SNIPPETS = [
   'It does not perform the next login immediately.',
 ] as const;
 
+const REQUIRED_X_ACCOUNTS_GET_STATE_SNIPPETS = [
+  '## Read the account state',
+  '<CardGroup cols={1}>',
+  '<Card title="Ready for actions" icon="circle-check">',
+  '`health: "healthy"` means the stored session is usable.',
+  '`cookiesObtainedAt` shows when the session was last obtained',
+  '<Card title="Needs credentials" icon="key-round">',
+  '`health: "needsReauth"` means the account needs fresh credentials or a resolved security challenge.',
+  '[Re-authenticate](/api-reference/x-accounts/reauth)',
+  '<Card title="Temporary recovery" icon="refresh-cw">',
+  '`health: "temporaryIssue"` means wait or use [Bulk retry](/api-reference/x-accounts/bulk-retry).',
+  '`health: "recovering"` means Xquik will retry on the next account use.',
+  '<Card title="X restriction" icon="shield-alert">',
+  '`health: "locked"` or `health: "suspended"` means resolve the account on X first',
+  '<Card title="Region fields" icon="globe-2">',
+  '`proxyCountry` is the selected login region stored on the account.',
+  'The separate `loginCountry` field appears only in connect or re-authenticate responses',
+] as const;
+
 const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
   '<Accordion title="Server & service errors (500/502/503)">',
   '<Card title="x_api_rate_limited" icon="timer-reset">',
@@ -12100,6 +12119,20 @@ describe('repository discovery', (): void => {
         source,
         'Bulk retry X accounts retry boundaries',
         REQUIRED_X_ACCOUNTS_BULK_RETRY_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the get X account API page clear about account state recovery', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x-accounts/get.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Get X account state recovery',
+        REQUIRED_X_ACCOUNTS_GET_STATE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
