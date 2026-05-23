@@ -241,17 +241,28 @@ func apiRequest(url string) (*http.Response, error) {
 
 ```bash cURL
 #!/bin/bash
-# Simple rate limiter using sleep between requests
-# Read tier: 60 per 1s = ~17ms between requests
+# Replay stored events in 100-item pages.
+# Read tier: 60 per 1s = ~17ms between requests.
 
-URLS=(
-  "https://xquik.com/api/v1/events?monitorId=7"
-  "https://xquik.com/api/v1/events?monitorId=8"
-  "https://xquik.com/api/v1/events?monitorId=9"
-)
+cursor=""
 
-for url in "${URLS[@]}"; do
-  curl -s "$url" -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+while :; do
+  url="https://xquik.com/api/v1/events?limit=100"
+
+  if [ -n "$cursor" ]; then
+    url="${url}&after=${cursor}"
+  fi
+
+  response=$(curl -s "$url" -H "x-api-key: xq_YOUR_KEY_HERE")
+  echo "$response" | jq ".events[]"
+
+  has_more=$(echo "$response" | jq -r ".hasMore")
+  cursor=$(echo "$response" | jq -r ".nextCursor // empty")
+
+  if [ "$has_more" != "true" ] || [ -z "$cursor" ]; then
+    break
+  fi
+
   sleep 0.02  # 20ms stays under 60 requests per second
 done
 ```
@@ -294,11 +305,11 @@ const response = await limiter.schedule(() =>
 ## Best practices
 
 <AccordionGroup>
-  <Accordion title="Batch operations where possible">
-    Fetch events in larger pages (`limit=100`) instead of many small requests. 1 request for 100 events is better than 10 requests for 10 events each.
+  <Accordion title="Batch event replays with cursors">
+    Fetch `GET /api/v1/events?limit=100`. If `hasMore` is `true`, store `nextCursor` and pass it as `after` on the next page. This uses 1 read slot per page instead of 1 request per monitor.
   </Accordion>
   <Accordion title="Use webhooks instead of polling">
-    Webhooks deliver events in real time with zero polling overhead. You only receive traffic when something happens. See the [webhooks overview](/webhooks/overview).
+    Active monitors already check every 1 second. Use signed webhooks for live delivery, then use `GET /api/v1/events?limit=100&after={nextCursor}` only for backfills and reconciliation. See the [webhooks overview](/webhooks/overview).
   </Accordion>
   <Accordion title="Cache responses client-side">
     Monitor and webhook configurations change infrequently. Cache `GET` responses for list endpoints and invalidate only after mutations (create, update, delete).

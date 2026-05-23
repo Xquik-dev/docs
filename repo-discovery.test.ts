@@ -2146,6 +2146,11 @@ const REQUIRED_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
   '`pip install ratelimit`',
   '<Card title="Go library" icon="package">',
   '`go get golang.org/x/time/rate`',
+  'GET /api/v1/events?limit=100',
+  'If `hasMore` is `true`, store `nextCursor` and pass it as `after`',
+  '1 read slot per page instead of 1 request per monitor',
+  'GET /api/v1/events?limit=100&after={nextCursor}',
+  'only for backfills and reconciliation',
 ] as const;
 
 const FORBIDDEN_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
