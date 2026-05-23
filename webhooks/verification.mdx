@@ -346,6 +346,10 @@ work.
   "duplicate_delivery_status": 200,
   "duplicate_event_status": 200,
   "event_join": "GET /api/v1/events/9002",
+  "ack_after": "signature_verified_and_queue_row_written",
+  "ack_status": 202,
+  "slow_work": "async_worker",
+  "delivery_log": "GET /api/v1/webhooks/15/deliveries",
   "shared_storage_excludes": [
     "endpoint_signing_values",
     "raw_request_body",
@@ -357,7 +361,9 @@ work.
 
 Keep raw request bytes only for signature verification. Store the nonce cache
 marker, delivery key, event key, join route, and processing status in the
-shared table or queue.
+shared table or queue. Return `2xx` only after verification and a durable queue
+write. Move slow enrichment, exports, CRM sync, or alerting to an async worker
+so the receiver can finish within the 10-second delivery timeout.
 
 <CodeGroup>
 
