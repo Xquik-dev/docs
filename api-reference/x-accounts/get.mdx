@@ -1,6 +1,6 @@
 ---
 title: "Get X account"
-description: "Retrieve details for a specific connected X account"
+description: "Use X account health before writes: healthy writes, recovering retries, temporaryIssue waits, needsReauth fixes TOTP or credentials"
 api: "GET /x/accounts/{id}"
 keywords: ["x accounts", "get", "details", "status"]
 ---
@@ -13,7 +13,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **Free** - does not consume credits
 </Callout>
 
-Use this endpoint before a workflow acts with a specific connected account. The response tells you whether the account is ready, needs a credential fix, is waiting out a temporary failure, or is blocked on X.
+Use this endpoint before a workflow acts with one connected account. Read `health` first: write with `healthy`, let `recovering` retry on next use, wait or bulk retry `temporaryIssue`, re-authenticate `needsReauth`, and fix `locked` or `suspended` on X before retrying writes.
 
 ## Read the account state
 
@@ -22,13 +22,13 @@ Use this endpoint before a workflow acts with a specific connected account. The 
     `health: "healthy"` means the stored session is usable. `cookiesObtainedAt` shows when the session was last obtained and is omitted if the account has not authenticated yet.
   </Card>
   <Card title="Needs credentials" icon="key-round">
-    `health: "needsReauth"` means the account needs fresh credentials or a resolved security challenge. Use [Re-authenticate](/api-reference/x-accounts/reauth) before retrying writes.
+    `health: "needsReauth"` means credentials, TOTP, email verification, passkey, or another security challenge blocked login. Use [Re-authenticate](/api-reference/x-accounts/reauth) with current credentials and a valid TOTP secret before retrying writes.
   </Card>
   <Card title="Temporary recovery" icon="refresh-cw">
-    `health: "temporaryIssue"` means wait or use [Bulk retry](/api-reference/x-accounts/bulk-retry). `health: "recovering"` means Xquik will retry on the next account use.
+    `health: "temporaryIssue"` means a transient or automated cooldown is still active. Wait for recovery, or use [Bulk retry](/api-reference/x-accounts/bulk-retry) for temporary failures. `health: "recovering"` means Xquik will retry automatically on the next account use.
   </Card>
   <Card title="X restriction" icon="shield-alert">
-    `health: "locked"` or `health: "suspended"` means resolve the account on X first, then re-authenticate or reconnect when the account is usable again.
+    `health: "locked"` or `health: "suspended"` means writes stay blocked until the account is fixed on X. Re-authenticate or reconnect only after the account is usable again.
   </Card>
   <Card title="Region fields" icon="globe">
     `proxyCountry` is the selected login region stored on the account. The separate `loginCountry` field appears only in connect or re-authenticate responses when the actual login region differs.
