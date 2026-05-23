@@ -13,7 +13,26 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **Free** - does not consume credits
 </Callout>
 
-Clears `loginFailedAt` and `loginFailureReason` for all accounts with transient or automated failure reasons, making them eligible for retry on next use.
+Clears temporary login-failure state for accounts that can safely retry on the next read, write, monitor, or account action. Use it when the dashboard shows accounts with temporary issues.
+
+## What gets retried
+
+<CardGroup cols={1}>
+  <Card title="Temporary issues are cleared" icon="refresh-cw">
+    Xquik clears accounts whose stored failure reason is `transient` or `automated`. These accounts become eligible for the next automatic login attempt.
+  </Card>
+  <Card title="Credential fixes are skipped" icon="key-round">
+    Accounts that need fresh credentials or a security challenge stay unchanged. Use [Re-authenticate](/api-reference/x-accounts/reauth) or reconnect the account instead.
+  </Card>
+  <Card title="X restrictions stay blocked" icon="shield-alert">
+    Locked and suspended accounts stay unchanged. Resolve the restriction on X first, then re-authenticate or reconnect if needed.
+  </Card>
+  <Card title="Response is an aggregate" icon="list-checks">
+    The API returns only `cleared`, the number of accounts reset for retry. Call [List X Accounts](/api-reference/x-accounts/list) before and after if you need per-account status.
+  </Card>
+</CardGroup>
+
+The dashboard button follows the same model: it appears when accounts have temporary issues, asks for confirmation, clears retryable failures, then refreshes the account list. It does not perform the next login immediately.
 
 <CodeGroup>
   ```bash cURL

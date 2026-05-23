@@ -2582,6 +2582,24 @@ const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
   'The dashboard follows the same flow',
 ] as const;
 
+const REQUIRED_X_ACCOUNTS_BULK_RETRY_SNIPPETS = [
+  '## What gets retried',
+  '<CardGroup cols={1}>',
+  '<Card title="Temporary issues are cleared" icon="refresh-cw">',
+  'stored failure reason is `transient` or `automated`',
+  'eligible for the next automatic login attempt.',
+  '<Card title="Credential fixes are skipped" icon="key-round">',
+  'Accounts that need fresh credentials or a security challenge stay unchanged.',
+  '[Re-authenticate](/api-reference/x-accounts/reauth)',
+  '<Card title="X restrictions stay blocked" icon="shield-alert">',
+  'Locked and suspended accounts stay unchanged.',
+  '<Card title="Response is an aggregate" icon="list-checks">',
+  'The API returns only `cleared`',
+  'Call [List X Accounts](/api-reference/x-accounts/list) before and after',
+  'The dashboard button follows the same model',
+  'It does not perform the next login immediately.',
+] as const;
+
 const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
   '<Accordion title="Server & service errors (500/502/503)">',
   '<Card title="x_api_rate_limited" icon="timer-reset">',
@@ -12065,6 +12083,23 @@ describe('repository discovery', (): void => {
         source,
         'Submit X account email code pending login handoff',
         REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the bulk retry X accounts API page clear about retry boundaries', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x-accounts/bulk-retry.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Bulk retry X accounts retry boundaries',
+        REQUIRED_X_ACCOUNTS_BULK_RETRY_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
