@@ -2576,6 +2576,10 @@ const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
+  'description: "Submit an email code for an active pending challenge; stale challenges need a fresh connection"',
+  'This endpoint cannot reopen an expired, failed, completed, or replaced challenge.',
+  'After `409`, `410`, or `422`, start [Connect X Account](/api-reference/x-accounts/connect) again',
+  'with the current password and any required TOTP secret key.',
   '## Continue the pending login',
   '<CardGroup cols={1}>',
   '<Card title="Use the returned challenge ID" icon="ticket-check">',
@@ -2588,6 +2592,7 @@ const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
   '<Card title="Start over when stale" icon="timer-reset">',
   '`410` means the code expired.',
   '`409` means the challenge was already completed, failed, expired, or replaced.',
+  'Start a new connection to get a fresh challenge instead of resubmitting the old code.',
   'The dashboard follows the same flow',
 ] as const;
 
