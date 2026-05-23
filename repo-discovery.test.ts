@@ -5258,6 +5258,8 @@ const REQUIRED_WEBHOOK_CREATE_API_SNIPPETS = [
   '## Integration handoff',
   'Use this endpoint after creating an account monitor with [`POST /monitors`](/api-reference/monitors/create) or a keyword monitor with [`POST /monitors/keywords`](/api-reference/monitors/create-keyword).',
   'Active monitors produce the events; webhook delivery is included with monitor billing.',
+  'Keyword monitors emit only `tweet.*`',
+  'Account monitors can emit both `tweet.*` and `profile.*`',
   'const webhookSecret = webhook.secret;',
   'Store webhookSecret in your secret manager; do not print it in logs.',
   'webhook_secret = webhook["secret"]',
