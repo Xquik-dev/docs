@@ -267,6 +267,36 @@ Failures retry up to 10 attempts with exponential backoff, starting at 1 second 
 
 For incident response, page on `exhausted`, warn on repeated `failed`, and ignore `delivered`. Fix the receiving endpoint, then use [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) to confirm it accepts signed requests before waiting for the next production event.
 
+### Receiver backfill handoff
+
+This endpoint returns the latest 100 delivery rows for one webhook. Use those
+rows to identify receiver failures, then use stored event pages to rebuild your
+own downstream queue after the receiver is fixed.
+
+```json
+{
+  "record_type": "webhook_delivery_backfill_handoff",
+  "delivery_source": "GET /api/v1/webhooks/15/deliveries",
+  "event_source": "GET /api/v1/events?limit=100&after={nextCursor}",
+  "join_key": "delivery.streamEventId == event.id",
+  "store": [
+    "deliveryId",
+    "streamEventId",
+    "status",
+    "attempts",
+    "eventId",
+    "nextCursor"
+  ],
+  "stop_when": "hasMore is false",
+  "handoff_state": "receiver_fixed_backfill_events_then_resume_webhooks"
+}
+```
+
+Store `nextCursor` after every event page. Continue
+`GET /api/v1/events?limit=100&after={nextCursor}` until `hasMore` is `false`,
+then compare each event `id` with delivery `streamEventId` values before
+replaying your own downstream work.
+
 ## Response
 
 <Tabs>
