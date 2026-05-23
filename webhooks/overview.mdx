@@ -387,6 +387,38 @@ After the 10th failed attempt, the delivery is marked as `exhausted`. A `410 Gon
   **Terminal failures:** Return `410 Gone` only when Xquik should stop retrying that delivery. Other non-`2xx` responses and network failures retry until the delivery is exhausted.
 </Warning>
 
+## Backfill after a receiver outage
+
+Use this handoff after your receiver was down, returned repeated non-`2xx`
+responses, or exhausted deliveries. Fix the receiver first, then use delivery
+rows to identify failed attempts and stored event pages to rebuild downstream
+work. Do not use `410 Gone` for temporary throttling; it exhausts that delivery.
+
+```json
+{
+  "record_type": "webhook_receiver_backfill",
+  "webhook_id": "15",
+  "delivery_log": "GET /api/v1/webhooks/15/deliveries",
+  "event_backfill_endpoint": "GET /api/v1/events?limit=100&after={nextCursor}",
+  "join_key": "delivery.streamEventId == event.id",
+  "resume_fields": [
+    "deliveryId",
+    "streamEventId",
+    "status",
+    "attempts",
+    "lastStatusCode",
+    "lastError",
+    "nextCursor"
+  ],
+  "stop_when": "hasMore is false",
+  "handoff_state": "receiver_fixed_page_events_join_deliveries"
+}
+```
+
+Store `nextCursor` after every event page. Reprocess events whose `id` matches
+failed or exhausted delivery `streamEventId` values, then leave delivered rows
+alone.
+
 ## Troubleshoot a delivery
 
 Use this handoff when a receiver fails tests, repeats failures, or reaches an
