@@ -218,6 +218,10 @@ Project `page.tweets` into CSV rows for analysts and JSON Lines rows for queues 
 
 Use this workflow when a Python script, notebook, worker, or agent tool needs an owned follower list for a CRM import, warehouse load, analyst CSV file, XLSX workbook, or resumable JSON handoff. It calls `POST /extractions/estimate` through `client.extractions.estimate_cost`, creates the job with `client.extractions.run`, reads saved rows with `client.extractions.retrieve`, and downloads files with `client.extractions.export_results`.
 
+<Info>
+`client.extractions.run` returns the queued `202 Accepted` receipt from `POST /extractions`: REST `id`, `toolType`, and `status: "running"` as Python `job.id`, `job.tool_type`, and `job.status`. Store `job.id` immediately, then poll `client.extractions.retrieve` before reading pages or calling `client.extractions.export_results`. Credit reservation happens after the job starts. If available credits changed since `estimate_cost`, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
+</Info>
+
 ```python
 import json
 import time
