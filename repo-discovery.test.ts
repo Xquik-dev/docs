@@ -2551,6 +2551,10 @@ const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
+  'description: "Re-authenticate a connected X account and send the saved TOTP secret key when Authenticator App 2FA is enabled"',
+  'If this account uses Authenticator App 2FA, send the saved long key in `totp_secret`.',
+  'If you never saved it or X rejects it, turn Authentication App off and on again in X to reveal a new text secret.',
+  'finish the 6-digit confirmation on X, then re-authenticate with that saved key.',
   '## 2FA re-authentication',
   'Use the long authenticator app secret key in `totp_secret`.',
   'Do not send the 6-digit authenticator code',
