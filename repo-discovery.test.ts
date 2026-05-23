@@ -110,12 +110,15 @@ const REQUIRED_QUICKSTART_SNIPPETS = [
   'Store webhook_secret in your secret manager; do not print it.',
   'Save the `secret` from the response in a secret manager.',
   'Do not print it in shared logs.',
+  'https://dashboard.xquik.com/en/account?tab=subscription',
+  'https://dashboard.xquik.com/en/account?tab=api-keys',
 ] as const;
 
 const FORBIDDEN_QUICKSTART_SECRET_LOG_SNIPPETS = [
   'process.stdout.write(`${JSON.stringify(webhook, null, 2)}\\n`);',
   'print(webhook)',
   'fmt.Println(string(respBody))\n        // Save the "secret" field for signature verification',
+  'https://xquik.com/dashboard/account',
 ] as const;
 
 const REQUIRED_SDK_OVERVIEW_SNIPPETS = [
@@ -2030,10 +2033,18 @@ const REQUIRED_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS = [
   'Top-up credits are added to your balance immediately and do not expire.',
 ] as const;
 
+const REQUIRED_GLOSSARY_API_KEY_SNIPPETS = [
+  '<Accordion title="API key">',
+  'Authentication credential passed via the `x-api-key` header.',
+  '[API Keys dashboard](https://dashboard.xquik.com/en/account?tab=api-keys)',
+  '[API keys endpoint](/api-reference/api-keys/create)',
+] as const;
+
 const FORBIDDEN_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS = [
   'Credits are included in your subscription and reset each billing period.',
   'reset each billing period',
   'Credits reset',
+  'https://xquik.com/dashboard/account',
 ] as const;
 
 const REQUIRED_QUICK_TOPUP_PAGE_SNIPPETS = [
@@ -10118,6 +10129,20 @@ describe('repository discovery', (): void => {
               : [],
         ),
       ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps glossary API key links aligned with dashboard routing', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/glossary.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Glossary API key dashboard link',
+        REQUIRED_GLOSSARY_API_KEY_SNIPPETS,
+      ),
     ).toStrictEqual([]);
   });
 
