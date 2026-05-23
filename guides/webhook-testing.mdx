@@ -355,6 +355,35 @@ Store the event `monitorId`, `monitorType`, `type`, `occurredAt`, and `data`
 with the delivery `id`, `status`, `attempts`, `lastStatusCode`, and
 `lastError` before paging support, queue, or receiver owners.
 
+### Reconcile missed deliveries
+
+Use delivery rows for receiver attempts and event pages for stored monitor
+history. The delivery `streamEventId` is the event `id`, so a failed receiver
+can rebuild its downstream queue from stored events after the handler is fixed.
+
+```json
+{
+  "record_type": "webhook_delivery_reconciliation",
+  "delivery_endpoint": "GET /api/v1/webhooks/15/deliveries",
+  "event_backfill_endpoint": "GET /api/v1/events?limit=100&after={nextCursor}",
+  "join_key": "delivery.streamEventId == event.id",
+  "store": [
+    "deliveryId",
+    "streamEventId",
+    "status",
+    "attempts",
+    "eventId",
+    "nextCursor"
+  ],
+  "next_action": "rebuild_receiver_queue_after_handler_fix"
+}
+```
+
+Store `nextCursor` after each event page. Continue with
+`GET /api/v1/events?limit=100&after={nextCursor}` until `hasMore` is `false`,
+then compare event IDs with delivery `streamEventId` values before replaying
+your own downstream work.
+
 ### Delivery statuses
 
 <CardGroup cols={2}>
