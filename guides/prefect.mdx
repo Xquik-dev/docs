@@ -1,7 +1,7 @@
 ---
 title: Prefect
-description: Run scheduled Xquik read workflows in Prefect with a credentials block, async tasks, retries, and raw JSON handoffs
-keywords: ["prefect", "workflow orchestration", "python", "twitter", "x", "xquik"]
+description: Run scheduled Xquik read workflows in Prefect and hand off writes, monitor replays, and extraction jobs to REST, SDKs, or MCP
+keywords: ["prefect", "workflow orchestration", "python", "twitter", "x", "xquik", "mcp", "webhooks", "extractions"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -186,6 +186,25 @@ prefect deploy social_signal_flow.py:social_signal_flow --name xquik-social-sign
   </Card>
   <Card title="Downstream Rows" icon="table">
     Normalize raw dictionaries in a follow-up task before writing to Slack, Sheets, a warehouse, or a dashboard. Keep `tweet_rows` with `id`, `text`, `author.username`, `createdAt`, and `url`; `user_rows` with `id`, `username`, `name`, `followers`, `verified`, and `profilePicture`; and `trend_rows` with `name`, `rank`, `query`, and `description`.
+  </Card>
+</CardGroup>
+
+## REST and MCP Handoff
+
+When a Prefect flow needs writes, monitors, webhooks, event replay, or extraction jobs, keep the `prefect-xquik` task scope focused on reads. Call REST, a generated SDK, or MCP from a follow-up task, then normalize REST camelCase fields to compact snake_case handoff rows before downstream retries.
+
+<CardGroup cols={2}>
+  <Card title="Tweet or Reply Write" icon="send">
+    Call `POST /x/tweets` through REST or an SDK. Pass public image or MP4 URLs in `media`; do not send `media_ids`. Store confirmed `tweet_id` and `charged_credits`, or store `write_action_id` and poll `GET /x/write-actions/{id}` before retrying a pending write.
+  </Card>
+  <Card title="DM Media Handoff" icon="message-circle">
+    Upload local media with `POST /x/media`, pass exactly 1 returned `mediaId` as `media_ids` on `POST /x/dm/{userId}`, and store `message_id`, `media_id`, `account`, and `user_id`. Leave `reply_to_message_id` unset.
+  </Card>
+  <Card title="Stored Event Replay" icon="activity">
+    Call `GET /events` with `after` when a flow needs stored monitor replay. Store `event_id`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, and `next_cursor`, then pass `next_cursor` as the next `after` value.
+  </Card>
+  <Card title="Extraction Job" icon="boxes">
+    Start or poll extraction jobs through REST, SDKs, or MCP. Store `extraction_id`, `tool_type`, `status`, `has_more`, `next_cursor`, and the export path before loading CSV, JSON, or XLSX rows.
   </Card>
 </CardGroup>
 
