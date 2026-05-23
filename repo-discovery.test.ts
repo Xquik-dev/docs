@@ -6251,6 +6251,8 @@ const REQUIRED_SEND_DM_API_SNIPPETS = [
   'For media DMs, keep `media_ids` as the',
   'one-item request array',
   'passed as that single item.',
+  'Non-empty message text to send.',
+  'returns `422 x_content_too_long`.',
   '## Send with media',
   'Upload media first with [Upload Media](/api-reference/x-write/upload-media)',
   '`media_ids` must contain exactly one uploaded media ID.',
@@ -6294,6 +6296,7 @@ const FORBIDDEN_SEND_DM_API_SNIPPETS = [
   'uploaded_media_id = None',
   'fmt.Println(data)',
   'var uploadedMediaID *string',
+  'Maximum 10,000 characters.',
 ] as const;
 
 const REQUIRED_COMPOSE_STYLE_SNIPPETS = [
