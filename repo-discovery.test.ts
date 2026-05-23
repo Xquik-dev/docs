@@ -2504,7 +2504,7 @@ const FORBIDDEN_WRITE_ACTION_STATUS_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS = [
-  'List connected X accounts and decide whether each account can write, retry, or needs action',
+  'Use health before writes: healthy writes, recovering retries, temporaryIssue waits, needsReauth fixes TOTP or credentials, locked/suspended need X recovery',
   'Check `accounts[].health` before scheduling writes.',
   '`temporaryIssue` is still paused by a transient cooldown.',
   '`locked` and `suspended` stay blocked until the account is fixed on X.',
