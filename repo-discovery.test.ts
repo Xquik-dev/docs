@@ -6129,6 +6129,13 @@ const FORBIDDEN_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
 const REQUIRED_DM_HISTORY_API_SNIPPETS = [
   'Get DM history',
   'GET /x/dm/{userId}/history',
+  'Read participant-scoped X direct message history with a connected account, store private rows, and resume older pages with next_cursor',
+  'Twitter DM history API',
+  'X DM history API',
+  'Use this endpoint to sync participant-scoped DM pages before a support, CRM,',
+  'Pass the connected participant account in',
+  'store message IDs plus `next_cursor`',
+  'keep full message text only',
   'Requires a connected X account passed via the `account` query parameter.',
   'DM history is participant-scoped',
   'DM history requires a connected participant account.',
