@@ -16,7 +16,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <CodeGroup>
   ```bash cURL
   curl -X POST https://xquik.com/api/v1/webhooks/15/test \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    | jq --arg webhook_id "15" '{
+      webhook_id: $webhook_id,
+      accepted: (.success == true),
+      status_code: .statusCode,
+      error: (.error // null)
+    }'
   ```
 
   ```javascript Node.js
@@ -131,6 +137,16 @@ The signed request includes the `X-Xquik-Signature`, `X-Xquik-Timestamp`, and
 `X-Xquik-Nonce` headers. Verify the signature against the raw request body
 before parsing JSON, reject stale timestamps, and de-dupe recent nonces exactly
 as you do for production monitor deliveries.
+
+The webhook must be active. If `isActive` is `false`, Xquik returns
+`webhook_inactive` and sends no test request. Reactivate with
+[Update Webhook](/api-reference/webhooks/update), then test again before sending
+production monitor events to that receiver.
+
+The test endpoint does not return or rotate the signing secret. Keep using the
+secret returned by [Create Webhook](/api-reference/webhooks/create) for
+signature verification, and keep raw request bodies, raw signatures, and full
+headers out of deployment logs.
 
 `webhook.test` payloads include `eventType`, `data`, and `timestamp`. They do
 not include `deliveryId` or `streamEventId`, so use them for reachability and

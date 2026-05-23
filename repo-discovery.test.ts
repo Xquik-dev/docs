@@ -5398,6 +5398,10 @@ const FORBIDDEN_WEBHOOK_LIST_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_WEBHOOK_TEST_API_SNIPPETS = [
+  'webhook_id: $webhook_id',
+  'accepted: (.success == true)',
+  'status_code: .statusCode',
+  'error: (.error // null)',
   '## Test result handoff',
   'Treat `success: true` and a `2xx` `statusCode` as proof',
   'Treat `success: false` with a non-`2xx` `statusCode` as a receiver error.',
@@ -5412,6 +5416,13 @@ const REQUIRED_WEBHOOK_TEST_API_SNIPPETS = [
   '[Update Webhook](/api-reference/webhooks/update)',
   '`X-Xquik-Signature`, `X-Xquik-Timestamp`, and',
   '`X-Xquik-Nonce` on the raw request body',
+  'The webhook must be active.',
+  'Xquik returns',
+  '`webhook_inactive` and sends no test request.',
+  'The test endpoint does not return or rotate the signing secret.',
+  '[Create Webhook](/api-reference/webhooks/create)',
+  'keep raw request bodies, raw signatures, and full',
+  'headers out of deployment logs.',
   '`webhook.test` payloads include `eventType`, `data`, and `timestamp`.',
   'They do not include `deliveryId` or `streamEventId`.',
   '<Card title="Production triage" icon="activity">',
