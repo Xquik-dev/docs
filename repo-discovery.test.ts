@@ -2521,6 +2521,35 @@ const REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS = [
   'Transient service problem. Retry shortly.',
 ] as const;
 
+const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
+  '## 2FA secret key setup',
+  'Xquik needs the authenticator app secret key, not a live 6-digit code.',
+  'The key is the long base32 string X shows while you set up',
+  '`JBSWY3DPEHPK3PXP`',
+  '<Card title="Use the secret key" icon="key-round">',
+  '<Card title="Do not use backup codes" icon="ban">',
+  'the 12-character backup code, a passkey, or a security key prompt.',
+  'If you did not save it, create a fresh authenticator app secret on X',
+  'Turn Authentication App off.',
+  'Turn Authentication App on again.',
+  "choose **Can't scan the QR code?** to reveal the text secret.",
+  'Finish enabling 2FA on X by entering the 6-digit code',
+  'Do not stop after copying the secret key.',
+  'Passkeys and security keys cannot satisfy this flow.',
+] as const;
+
+const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
+  '## 2FA re-authentication',
+  'Use the long authenticator app secret key in `totp_secret`.',
+  'Do not send the 6-digit authenticator code',
+  'If you never saved the secret key, or X rejects the current one',
+  'Turn Authentication App off, then turn it on again.',
+  "choose **Can't scan the QR code?** to reveal the text secret.",
+  'Finish enabling 2FA on X by entering the 6-digit code',
+  'If setup is abandoned before confirmation, re-authentication cannot use that key.',
+  '[2FA secret key setup](/api-reference/x-accounts/connect#2fa-secret-key-setup)',
+] as const;
+
 const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
   '<Accordion title="Server & service errors (500/502/503)">',
   '<Card title="x_api_rate_limited" icon="timer-reset">',
@@ -11926,6 +11955,34 @@ describe('repository discovery', (): void => {
         source,
         'List X accounts API docs',
         REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the connect X account API page clear about TOTP setup', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x-accounts/connect.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Connect X account TOTP docs',
+        REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the re-authenticate X account API page clear about TOTP setup', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x-accounts/reauth.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Re-authenticate X account TOTP docs',
+        REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
