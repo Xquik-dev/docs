@@ -1,8 +1,8 @@
 ---
 title: "Get quote tweets"
-description: "Retrieve a paginated list of tweets that quote a specific tweet by its ID"
+description: "Retrieve quote tweets for one source tweet with author fields, engagement metrics, filters, and cursor checkpoints"
 api: "GET /x/tweets/{id}/quotes"
-keywords: ["quotes", "quote tweets", "retweets", "x api"]
+keywords: ["get quote tweets", "quote tweets API", "tweet quotes API", "Twitter quote tweets API", "X quote tweets API", "quoted posts", "conversation analysis", "CSV export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -18,15 +18,35 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
   **1 credit per tweet returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Accepts [MPP](/mpp/overview)
 </Callout>
 
+<Info>
+  Get quote tweets returns tweet rows that quote one source tweet. It is also
+  useful as a quote tweets API, tweet quotes API, X quote tweets API, Twitter
+  quote tweets API, or quoted posts endpoint. The canonical endpoint remains
+  `GET /api/v1/x/tweets/{id}/quotes`.
+</Info>
+
 <CodeGroup>
-  ```bash cURL
+  ```bash First page
   curl "https://xquik.com/api/v1/x/tweets/1893456789012345678/quotes" \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+  ```
+
+  ```bash Next page with filters
+  curl -G https://xquik.com/api/v1/x/tweets/1893456789012345678/quotes \
+    --data-urlencode "cursor=abc123" \
+    --data-urlencode "sinceTime=1774500000" \
+    --data-urlencode "includeReplies=false" \
+    --data-urlencode "verifiedOnly=true" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
   ```javascript Node.js
   const tweetId = "1893456789012345678";
-  const response = await fetch(`https://xquik.com/api/v1/x/tweets/${tweetId}/quotes`, {
+  const params = new URLSearchParams({
+    sinceTime: "1774500000",
+    includeReplies: "false",
+  });
+  const response = await fetch(`https://xquik.com/api/v1/x/tweets/${tweetId}/quotes?${params}`, {
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
@@ -47,10 +67,13 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
     retweet_count: tweet.retweetCount ?? null,
     quote_count: tweet.quoteCount ?? null,
     media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
-    next_cursor: nextCursor,
   }));
+  const checkpoint = { quoted_tweet_id: tweetId, next_cursor: nextCursor };
 
-  process.stdout.write(JSON.stringify(quoteRows, null, 2));
+  for (const row of quoteRows) {
+    process.stdout.write(`${JSON.stringify(row)}\n`);
+  }
+  process.stdout.write(`${JSON.stringify({ checkpoint })}\n`);
   ```
 
   ```python Python
@@ -60,6 +83,7 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
   tweet_id = "1893456789012345678"
   response = requests.get(
       f"https://xquik.com/api/v1/x/tweets/{tweet_id}/quotes",
+      params={"sinceTime": "1774500000", "includeReplies": "false"},
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
@@ -83,24 +107,71 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
           "media_urls": [
               item["mediaUrl"] for item in tweet.get("media", []) if item.get("mediaUrl")
           ],
-          "next_cursor": next_cursor,
       }
       for tweet in data["tweets"]
   ]
+  checkpoint = {"quoted_tweet_id": tweet_id, "next_cursor": next_cursor}
 
-  print(json.dumps(quote_rows, indent=2))
+  for row in quote_rows:
+      print(json.dumps(row))
+  print(json.dumps({"checkpoint": checkpoint}))
   ```
 </CodeGroup>
 
+The Node.js and Python snippets write JSON Lines quote rows plus a separate
+checkpoint instead of raw response pages. Persist each mapped row and the latest
+`next_cursor` so a moderation queue, campaign report, research job, or agent
+handoff can resume from the last completed page without duplicate rows.
+
 ## Direct quote tweet handoff
 
-Use `GET /x/tweets/{id}/quotes` when a support, campaign, moderation, research,
-or agent workflow needs quote tweets as JSON rows. It returns one row per quote
-tweet for a single parent tweet. Store `quoted_tweet_id`, `quote_id`, `text`,
-`author_id`, `author_username`, `author_name`, `author_followers`,
+Use `GET /api/v1/x/tweets/{id}/quotes` when a support, campaign, moderation,
+research, or agent workflow needs quote tweets as JSON rows. It returns one row
+per quote tweet for a single source tweet. Store `quoted_tweet_id`, `quote_id`,
+`text`, `author_id`, `author_username`, `author_name`, `author_followers`,
 `author_verified`, `author_profile_picture`, `created_at`, engagement counts,
-media URLs, and `next_cursor`. Use `sinceTime`, `untilTime`, and tweet result
-filters to bound the quote set before exporting rows downstream.
+media URLs, and a separate `next_cursor` checkpoint. Use `sinceTime`,
+`untilTime`, `includeReplies`, and tweet result filters to bound the quote set
+before exporting rows downstream.
+
+<CardGroup cols={2}>
+  <Card title="Quote rows" icon="quote">
+    Store `tweets[]` as quote tweet rows for one source tweet.
+  </Card>
+  <Card title="Stable upserts" icon="key-round">
+    Store `tweets[].id` as `quote_id` with `quoted_tweet_id` for idempotent
+    imports and moderation queues.
+  </Card>
+  <Card title="Author joins" icon="user-round">
+    Store `tweets[].author.id`, `username`, `name`, `followers`, `verified`, and
+    `profilePicture` for CRM, research, and review tools.
+  </Card>
+  <Card title="Engagement metrics" icon="chart-no-axes-combined">
+    Store `likeCount`, `replyCount`, `retweetCount`, `quoteCount`, `viewCount`,
+    and `bookmarkCount` when returned.
+  </Card>
+  <Card title="Media context" icon="image">
+    Store `media[].mediaUrl`, `entities`, `quoted_tweet`, and `retweeted_tweet`
+    when returned to preserve attached context.
+  </Card>
+  <Card title="Window filters" icon="calendar-range">
+    Use `sinceTime`, `untilTime`, `includeReplies`, and tweet result filters to
+    narrow campaign, support, or audit windows.
+  </Card>
+  <Card title="Next page" icon="arrow-right">
+    Store `has_next_page` and `next_cursor`; pass `next_cursor` back as `cursor`
+    only when `has_next_page` is true.
+  </Card>
+  <Card title="Credit-limited pages" icon="coins">
+    Use `tweets.length`, not a requested page size, for row counts. Low balances
+    can return fewer rows.
+  </Card>
+</CardGroup>
+
+Direct quote tweet reads cost 1 credit per tweet returned. Low credit balances
+can return fewer tweets than a full page; zero affordable results return
+`402 insufficient_credits`. For MPP callers, this endpoint is billed as a
+session at USD 0.00015 per tweet returned.
 
 ## Path parameters
 
@@ -111,7 +182,8 @@ filters to bound the quote set before exporting rows downstream.
 ## Query parameters
 
 <ParamField query="cursor" type="string">
-  Pagination cursor from a previous response. Omit for the first page.
+  Pagination cursor from `next_cursor` in a previous response. Omit for the
+  first page. Pass a cursor only when `has_next_page` is true.
 </ParamField>
 
 <ParamField query="sinceTime" type="string">
@@ -133,6 +205,35 @@ same quoted tweet and filter rows after each page is fetched, so selective
 filters can return fewer rows than an unfiltered page.
 
 <TweetResultFilterParams />
+
+## Which tweet engagement endpoint?
+
+<CardGroup cols={2}>
+  <Card title="Quote tweets" icon="quote">
+    Use `GET /x/tweets/{id}/quotes` for tweet rows that quote one source tweet.
+  </Card>
+  <Card title="Tweet replies" icon="message-square-reply">
+    Use [`GET /x/tweets/{id}/replies`](/api-reference/x/tweet-replies) when you
+    need reply tweet rows under the source tweet.
+  </Card>
+  <Card title="Retweeters" icon="repeat-2">
+    Use [`GET /x/tweets/{id}/retweeters`](/api-reference/x/retweeters) for user
+    profiles that reposted one source tweet.
+  </Card>
+  <Card title="Tweet likers" icon="heart">
+    Use [`GET /x/tweets/{id}/favoriters`](/api-reference/x/favoriters) for user
+    profiles that liked one source tweet.
+  </Card>
+  <Card title="Saved exports" icon="file-spreadsheet">
+    Use [`Create extraction`](/api-reference/extractions/create) with
+    `toolType=quote_extractor` when you need a saved job or CSV, JSON, or XLSX
+    export.
+  </Card>
+  <Card title="Search handoff" icon="search">
+    Use [`Search tweets`](/api-reference/x/search-tweets) when you need keyword,
+    operator, or structured-filter discovery across many source tweets.
+  </Card>
+</CardGroup>
 
 ## Headers
 
@@ -256,5 +357,5 @@ filters can return fewer rows than an unfiltered page.
 </Tabs>
 
 <Note>
-  **Related:** [Tweet Replies](/api-reference/x/tweet-replies) · [Tweet Thread](/api-reference/x/tweet-thread) · [Retweeters](/api-reference/x/retweeters) · [Favoriters](/api-reference/x/favoriters)
+  **Related:** [Tweet replies](/api-reference/x/tweet-replies) · [Tweet thread](/api-reference/x/tweet-thread) · [Retweeters](/api-reference/x/retweeters) · [Tweet favoriters](/api-reference/x/favoriters)
 </Note>
