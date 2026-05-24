@@ -4487,6 +4487,17 @@ const REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS = [
   '`has_next_page` is true',
   'window. Zero affordable results return `402 insufficient_credits`',
   '`402 insufficient_credits`',
+  '## Build a mentions triage job',
+  'support inbox, lead queue, campaign report, or',
+  'bounded mention pages with resumable cursor state',
+  '<Card title="Resolve the target" icon="user-round">',
+  '<Card title="Bound the window" icon="calendar-range">',
+  '<Card title="Route the row" icon="git-branch">',
+  '<Card title="Cursor checkpoint" icon="database">',
+  '"mentions_job_id": "brand-mentions-q2"',
+  '"mentions_route": "GET /api/v1/x/users/{id}/mentions"',
+  '"cursor_param": "cursor"',
+  '"saved_export_tool": "mentions"',
 ] as const;
 
 const FORBIDDEN_USER_MENTIONS_API_RAW_OUTPUT_SNIPPETS = [
