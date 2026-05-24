@@ -3553,7 +3553,7 @@ const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
   '`404 article_not_found`',
   '<Card title="Article row" icon="file-text">',
   '<Card title="Body blocks" icon="list-tree">',
-  '<Card title="Not an article" icon="file-question">',
+  '<Card title="Not an article" icon="circle-alert">',
   '<Card title="Saved exports" icon="file-spreadsheet">',
   '## Which article endpoint?',
   '[`Get tweet`](/api-reference/x/get-tweet)',
