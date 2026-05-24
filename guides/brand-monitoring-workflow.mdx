@@ -1,0 +1,212 @@
+---
+title: Brand Monitoring Workflow
+description: Monitor brand accounts, search queries, mentions, and campaign terms with 1-second X monitors, signed webhooks, stored events, and replay-safe rows.
+keywords:
+  [
+    "brand monitoring",
+    "X brand monitoring",
+    "Twitter brand monitoring",
+    "social listening API",
+    "X webhook monitoring",
+    "keyword monitor",
+    "account monitor",
+    "brand mention tracking",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use this workflow when a support, marketing, research, or AI agent pipeline
+needs fresh X activity for a brand, account, product name, or campaign term.
+Create the narrowest monitor first, deliver matching events to a signed
+webhook, and keep a replay path through stored events.
+
+## Pick the Monitor Path
+
+<CardGroup cols={2}>
+  <Card title="Account Monitor" icon="radio">
+    Use `POST /api/v1/monitors` when the workflow follows one account's posts,
+    replies, reposts, quotes, or profile field changes.
+  </Card>
+
+  <Card title="Keyword Monitor" icon="search">
+    Use `POST /api/v1/monitors/keywords` when the workflow follows a brand
+    name, handle mention, hashtag, product name, campaign term, or Boolean
+    search query.
+  </Card>
+
+  <Card title="Signed Webhook" icon="webhook">
+    Use `POST /api/v1/webhooks` to deliver monitor events with
+    `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce`.
+  </Card>
+
+  <Card title="Stored Event Replay" icon="database">
+    Use `GET /api/v1/events` to replay account or keyword monitor events after
+    receiver downtime, queue errors, or warehouse load failures.
+  </Card>
+</CardGroup>
+
+## Create an Account Monitor
+
+Use an account monitor when the workflow tracks an owned account, creator,
+competitor, customer, or partner. Choose only the event types the receiver will
+process.
+
+```bash
+curl -X POST https://xquik.com/api/v1/monitors \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "xquikcom",
+    "eventTypes": ["tweet.new", "tweet.reply", "profile.bio.changed"]
+  }' | jq
+```
+
+Store the returned `id`, `username`, `xUserId`, `eventTypes`, `isActive`,
+`createdAt`, and `nextBillingAt` with the brand workspace.
+
+## Create a Keyword Monitor
+
+Use a keyword monitor when the trigger is a search query instead of one account.
+Keep the query under 160 characters, then store the returned monitor ID with
+the exact query used.
+
+```bash
+curl -X POST https://xquik.com/api/v1/monitors/keywords \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "\"Xquik\" OR @xquikcom",
+    "eventTypes": ["tweet.new", "tweet.reply"]
+  }' | jq
+```
+
+Keyword monitors are best for campaign names, product launches, support terms,
+and category discovery. Account monitors are better when every event should be
+anchored to one known profile.
+
+## Deliver Events to a Webhook
+
+Create one webhook per receiver boundary. Store the returned `secret` once, then
+verify every request before parsing or queueing the event.
+
+```bash
+curl -X POST https://xquik.com/api/v1/webhooks \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/xquik/brand-monitor",
+    "eventTypes": ["tweet.new", "tweet.reply", "profile.bio.changed"]
+  }' | jq
+```
+
+Webhook payloads include `deliveryId`, `streamEventId`, `eventType`, `timestamp`,
+and `data`. Return `2xx` after signature verification and durable enqueueing.
+Use `deliveryId` for receiver retry de-dupe and `streamEventId` for event
+de-dupe across webhook endpoints.
+
+## Replay Stored Events
+
+Use stored events as the recovery lane after failed receiver deploys, queue
+outages, or warehouse backfills. Filter by the monitor type you are replaying.
+
+```bash
+curl "https://xquik.com/api/v1/events?monitorId=42&eventType=tweet.new&limit=50" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```bash
+curl "https://xquik.com/api/v1/events?keywordMonitorId=21&eventType=tweet.new&limit=50" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+Store `hasMore` and `nextCursor`. Pass `nextCursor` back as `after` only when
+`hasMore` is true.
+
+## Add Search Backfill
+
+Monitors catch activity after creation. Use search or mention reads when the
+brand workspace needs historical context before the monitor starts producing
+events.
+
+```bash
+curl "https://xquik.com/api/v1/x/tweets/search?q=%22Xquik%22%20OR%20%40xquikcom&limit=50" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```bash
+curl "https://xquik.com/api/v1/x/users/xquikcom/mentions?limit=50" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+Keep backfill rows separate from monitor events so dashboards can distinguish
+historical search results from live webhook deliveries.
+
+## Receiver Row
+
+Create one durable row per accepted delivery before slow enrichment, routing,
+or AI classification.
+
+```json
+{
+  "brand_monitor_id": "brand-xquik-q2",
+  "monitor_type": "keyword",
+  "account_monitor_id": null,
+  "keyword_monitor_id": "21",
+  "webhook_id": "15",
+  "delivery_id": "502",
+  "stream_event_id": "9002",
+  "event_type": "tweet.new",
+  "tweet_id": "1893704267862470862",
+  "x_user_id": "987654321",
+  "username": "customer_handle",
+  "query": "\"Xquik\" OR @xquikcom",
+  "signature_verified": true,
+  "received_at": "2026-05-24T20:12:00.000Z",
+  "event_replay_route": "GET /api/v1/events?keywordMonitorId=21"
+}
+```
+
+Do not put endpoint signing values, raw request bodies, raw signatures, or full
+headers into shared analytics rows.
+
+## Cost and Retry Notes
+
+<Check>
+  Active account and keyword monitors check every 1 second and cost 21 credits
+  per active monitor-hour. Event storage and webhook delivery are included.
+</Check>
+
+<Check>
+  Stored event listing is free. Search, mention, and other direct read backfills
+  are metered by returned rows.
+</Check>
+
+<Check>
+  Pause inactive monitors with `PATCH /api/v1/monitors/{id}` or
+  `PATCH /api/v1/monitors/keywords/{id}` and `{ "isActive": false }`.
+</Check>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create Account Monitor" icon="radio" href="/api-reference/monitors/create">
+    Track one account's posts, replies, reposts, quotes, and profile field
+    changes.
+  </Card>
+
+  <Card title="Create Keyword Monitor" icon="search" href="/api-reference/monitors/create-keyword">
+    Track a search query for brand, campaign, support, or category terms.
+  </Card>
+
+  <Card title="Create Webhook" icon="webhook" href="/api-reference/webhooks/create">
+    Send signed monitor events to a receiver URL.
+  </Card>
+
+  <Card title="List Events" icon="database" href="/api-reference/events/list">
+    Replay stored monitor events by account monitor, keyword monitor, event type,
+    and cursor.
+  </Card>
+</CardGroup>

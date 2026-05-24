@@ -7061,6 +7061,47 @@ const REQUIRED_TARGET_AUDIENCE_DISCOVERY_WORKFLOW_SNIPPETS = [
   'Treat cursors as opaque route checkpoints.',
 ] as const;
 
+const REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS = [
+  'title: Brand Monitoring Workflow',
+  'Monitor brand accounts, search queries, mentions, and campaign terms with 1-second X monitors, signed webhooks, stored events, and replay-safe rows.',
+  '## Pick the Monitor Path',
+  '<Card title="Account Monitor" icon="radio">',
+  '`POST /api/v1/monitors`',
+  '<Card title="Keyword Monitor" icon="search">',
+  '`POST /api/v1/monitors/keywords`',
+  '<Card title="Signed Webhook" icon="webhook">',
+  '`POST /api/v1/webhooks`',
+  '<Card title="Stored Event Replay" icon="database">',
+  '`GET /api/v1/events`',
+  '## Create an Account Monitor',
+  '"username": "xquikcom"',
+  '"eventTypes": ["tweet.new", "tweet.reply", "profile.bio.changed"]',
+  'Store the returned `id`, `username`, `xUserId`, `eventTypes`, `isActive`,',
+  '## Create a Keyword Monitor',
+  'Keep the query under 160 characters',
+  '"query": "\\"Xquik\\" OR @xquikcom"',
+  '## Deliver Events to a Webhook',
+  'Store the returned `secret` once',
+  '`deliveryId`, `streamEventId`, `eventType`, `timestamp`,',
+  '## Replay Stored Events',
+  '/api/v1/events?monitorId=42&eventType=tweet.new&limit=50',
+  '/api/v1/events?keywordMonitorId=21&eventType=tweet.new&limit=50',
+  'Store `hasMore` and `nextCursor`.',
+  '## Add Search Backfill',
+  '/api/v1/x/tweets/search?q=%22Xquik%22%20OR%20%40xquikcom&limit=50',
+  '/api/v1/x/users/xquikcom/mentions?limit=50',
+  '## Receiver Row',
+  '"brand_monitor_id": "brand-xquik-q2"',
+  '"monitor_type": "keyword"',
+  '"keyword_monitor_id": "21"',
+  '"event_replay_route": "GET /api/v1/events?keywordMonitorId=21"',
+  'endpoint signing values, raw request bodies, raw signatures, or full',
+  '## Cost and Retry Notes',
+  'Active account and keyword monitors check every 1 second and cost 21 credits',
+  'Stored event listing is free.',
+  'Pause inactive monitors with `PATCH /api/v1/monitors/{id}`',
+] as const;
+
 const REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS = [
   'title: Request-efficient API usage',
   'Use this guide when you need fewer duplicate reads, cleaner checkpoints, and better downstream handoffs.',
@@ -13117,6 +13158,20 @@ describe('repository discovery', (): void => {
         source,
         'Target audience discovery workflow',
         REQUIRED_TARGET_AUDIENCE_DISCOVERY_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the brand monitoring workflow source-backed', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/brand-monitoring-workflow.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Brand monitoring workflow',
+        REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
