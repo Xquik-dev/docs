@@ -1,0 +1,162 @@
+---
+title: Campaign Verification Workflow
+description: Verify X campaign participation with follow checks, retweeters, replies, quotes, giveaway draws, and exportable audit rows.
+keywords:
+  [
+    "campaign verification",
+    "Twitter campaign verification",
+    "X campaign verification",
+    "retweet verification",
+    "follower check",
+    "giveaway draw",
+    "campaign audit",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use this workflow when a campaign, quest, giveaway, or community task needs a
+verifiable row per participant. Choose the narrowest check first, then use a
+draw when the output must include winner selection.
+
+## Pick the Proof Path
+
+<CardGroup cols={2}>
+  <Card title="Follow Task" icon="user-check">
+    Use `GET /api/v1/x/followers/check?source={participant}&target={brand}` to
+    check one participant and one target account.
+  </Card>
+
+  <Card title="Retweet Task" icon="repeat-2">
+    Use `GET /api/v1/x/tweets/{id}/retweeters` to page users who retweeted one
+    campaign tweet.
+  </Card>
+
+  <Card title="Reply or Quote Task" icon="messages-square">
+    Use `GET /api/v1/x/tweets/{id}/replies` for reply rows and
+    `GET /api/v1/x/tweets/{id}/quotes` for quote rows.
+  </Card>
+
+  <Card title="Giveaway Selection" icon="trophy">
+    Use `POST /api/v1/draws` when the job is selecting winners with follow,
+    retweet, keyword, hashtag, mention, language, or uniqueness filters.
+  </Card>
+</CardGroup>
+
+## Follow Check
+
+Use this for one participant at a time. Store the participant handle, target
+handle, response, and timestamp with the campaign record.
+
+```bash
+curl "https://xquik.com/api/v1/x/followers/check?source=participant_handle&target=xquikcom" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+## Tweet-Level Checks
+
+Use tweet-level endpoints when the campaign requirement is tied to one source
+tweet. Keep the cursor with the participant batch so the job can resume.
+
+<CardGroup cols={3}>
+  <Card title="Retweeters" icon="repeat-2">
+    `GET /api/v1/x/tweets/{id}/retweeters`
+  </Card>
+
+  <Card title="Replies" icon="messages-square">
+    `GET /api/v1/x/tweets/{id}/replies`
+  </Card>
+
+  <Card title="Quotes" icon="message-square-quote">
+    `GET /api/v1/x/tweets/{id}/quotes`
+  </Card>
+</CardGroup>
+
+For larger audits, page until `has_next_page` is false. Pass `next_cursor` back
+as `cursor`, and store the campaign ID with every page.
+
+## Giveaway Draw
+
+Use draws when the workflow should select winners from replies and optional
+eligibility filters. Draws can require retweets, a follow target, hashtags,
+keywords, mentions, language, account age, follower count, and unique authors.
+
+```bash
+curl -X POST https://xquik.com/api/v1/draws \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tweetUrl": "https://x.com/xquikcom/status/1893704267862470862",
+    "winnerCount": 3,
+    "backupCount": 2,
+    "uniqueAuthorsOnly": true,
+    "mustRetweet": true,
+    "mustFollowUsername": "xquikcom",
+    "requiredKeywords": ["entered"]
+  }' | jq
+```
+
+Export participant rows with `type=entries` and selected winners with
+`type=winners`.
+
+```bash
+curl "https://xquik.com/api/v1/draws/f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345/export?format=csv&type=entries" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -o campaign-entries.csv
+```
+
+## Audit Row
+
+Store one row per checked participant or draw entry. Do not rely on display
+names as keys.
+
+```json
+{
+  "campaign_id": "spring-launch-2026",
+  "x_user_id": "9876543210",
+  "username": "participant_handle",
+  "tweet_id": "1893704267862470862",
+  "proof_endpoint": "GET /api/v1/x/followers/check",
+  "proof_cursor": null,
+  "verification_state": "matched",
+  "checked_at": "2026-05-24T19:30:00.000Z"
+}
+```
+
+## Cost and Retry Notes
+
+<Check>
+  Direct X read endpoints are metered. Budget by participant count and pages.
+</Check>
+
+<Check>
+  Draw execution meters the source tweet lookup, replies, optional retweeter
+  checks, and optional follow checks.
+</Check>
+
+<Check>
+  Treat `402 insufficient_credits` as a stopped audit. Add credits or narrow the
+  participant set before retrying.
+</Check>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create Draw" icon="trophy" href="/api-reference/draws/create">
+    Run a giveaway draw with eligibility filters.
+  </Card>
+
+  <Card title="Export Draw" icon="download" href="/api-reference/draws/export">
+    Export winners or all inspected entries.
+  </Card>
+
+  <Card title="Check Follower" icon="user-check" href="/api-reference/x/check-follower">
+    Verify one source and target relationship.
+  </Card>
+
+  <Card title="Get Retweeters" icon="repeat-2" href="/api-reference/x/retweeters">
+    Page users who retweeted one campaign tweet.
+  </Card>
+</CardGroup>

@@ -6855,6 +6855,8 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   'Conversation rows from replies, quotes, or threads',
   '- **Follower export:** `POST /extractions/estimate`.',
   '`follower_explorer` estimate',
+  '- **Campaign verification:** `GET /x/followers/check`, retweeters, replies, quotes, or draws.',
+  'Handoff: proof exports',
   '- **Direct messages:** `GET /x/dm/{userId}/history`.',
   'outbound `messageId`, and success',
   '- **Real-time monitoring:** `POST /monitors` or `POST /monitors/keywords`.',
@@ -6943,6 +6945,8 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   'Build CSV, JSON, or XLSX exports from `tweet_search_extractor`, or use direct `GET /x/tweets/search` pagination.',
   '<Card title="Tweet replies exports" icon="messages-square" href="/guides/tweet-replies-export">',
   '<Card title="Follower CRM export" icon="users" href="/guides/follower-export-crm">',
+  '<Card title="Campaign verification" icon="badge-check" href="/guides/campaign-verification-workflow">',
+  'Check social actions and draw exports.',
   '<Card title="Monitor webhooks" icon="webhook" href="/guides/webhook-testing">',
   'Test signed deliveries, verify `X-Xquik-Signature`, store `deliveryId` and `streamEventId`, and return `2xx` before slow work.',
   '<Card title="Media tweets and DMs" icon="image" href="/guides/media-upload-workflow">',
@@ -6978,6 +6982,44 @@ const FORBIDDEN_WORKFLOW_ENDPOINT_FINDER_TABLE_SNIPPETS = [
   '| Keyword or advanced search | `GET /x/tweets/search` |',
   '| Profile timeline | `GET /x/users/{id}/tweets` |',
   '| Saved file exports | `GET /extractions/{id}/export` |',
+] as const;
+
+const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
+  'title: Campaign Verification Workflow',
+  'Verify X campaign participation with follow checks, retweeters, replies, quotes, giveaway draws, and exportable audit rows.',
+  '## Pick the Proof Path',
+  '<Card title="Follow Task" icon="user-check">',
+  '`GET /api/v1/x/followers/check?source={participant}&target={brand}`',
+  '<Card title="Retweet Task" icon="repeat-2">',
+  '`GET /api/v1/x/tweets/{id}/retweeters`',
+  '<Card title="Reply or Quote Task" icon="messages-square">',
+  '`GET /api/v1/x/tweets/{id}/replies`',
+  '`GET /api/v1/x/tweets/{id}/quotes`',
+  '<Card title="Giveaway Selection" icon="trophy">',
+  '`POST /api/v1/draws`',
+  '## Follow Check',
+  'participant_handle',
+  '## Tweet-Level Checks',
+  'Pass `next_cursor` back',
+  'as `cursor`',
+  '## Giveaway Draw',
+  '"tweetUrl": "https://x.com/xquikcom/status/1893704267862470862"',
+  '"winnerCount": 3',
+  '"uniqueAuthorsOnly": true',
+  '"mustRetweet": true',
+  '"mustFollowUsername": "xquikcom"',
+  '"requiredKeywords": ["entered"]',
+  '`type=entries`',
+  '`type=winners`',
+  'campaign-entries.csv',
+  '## Audit Row',
+  '"campaign_id": "spring-launch-2026"',
+  '"proof_endpoint": "GET /api/v1/x/followers/check"',
+  '"verification_state": "matched"',
+  '## Cost and Retry Notes',
+  'Direct X read endpoints are metered. Budget by participant count and pages.',
+  'Draw execution meters the source tweet lookup, replies, optional retweeter',
+  'Treat `402 insufficient_credits` as a stopped audit.',
 ] as const;
 
 const REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS = [
@@ -13003,6 +13045,23 @@ describe('repository discovery', (): void => {
               : [],
         ),
       ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the campaign verification workflow source-backed', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'guides/campaign-verification-workflow.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Campaign verification workflow',
+        REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS,
+      ),
     ).toStrictEqual([]);
   });
 
