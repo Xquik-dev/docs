@@ -1,0 +1,126 @@
+---
+title: Request-efficient API usage
+description: Choose the smallest Xquik API route for batch lookups, user timelines, tweet search, home timeline, exports, cursors, tweet media, and DM media handoffs.
+keywords: ["X API request efficiency", "Twitter API pagination", "batch tweets", "batch users", "user timeline API", "tweet search API", "CSV export", "JSON export", "XLSX export"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use this guide when you need fewer duplicate reads, cleaner checkpoints, and better downstream handoffs. Pick the route that matches the job, store returned IDs and cursors, then reuse those checkpoints instead of repeating the same lookup.
+
+<Note>
+  Quick answer: batch known IDs, use profile timelines for one user, use tweet search for keywords, use home timeline for the connected account feed, and use extraction jobs for saved CSV/JSON/XLSX files.
+</Note>
+
+## Choose the smallest route
+
+<CardGroup cols={2}>
+  <Card title="Known tweet IDs" icon="hash">
+    Use `GET /api/v1/x/tweets?ids=...` for up to 100 comma-separated tweet IDs in one request.
+  </Card>
+  <Card title="Known user IDs" icon="users">
+    Use `GET /api/v1/x/users/batch?ids=...` for up to 100 comma-separated user IDs in one request.
+  </Card>
+  <Card title="One profile timeline" icon="list-tree">
+    Use `GET /api/v1/x/users/{id}/tweets` for one user's profile timeline. Pass a username or numeric X user ID.
+  </Card>
+  <Card title="Keyword or advanced search" icon="search">
+    Use `GET /api/v1/x/tweets/search` for keywords, hashtags, operators, date filters, and advanced search pages.
+  </Card>
+  <Card title="Authenticated home timeline" icon="home">
+    Use `GET /api/v1/x/timeline` for the connected account's home timeline. Pass `cursor` and optional `seenTweetIds`.
+  </Card>
+  <Card title="Saved file export" icon="download">
+    Use `POST /api/v1/extractions/estimate`, `POST /api/v1/extractions`, and `GET /api/v1/extractions/{id}/export` for CSV, JSON, or XLSX.
+  </Card>
+</CardGroup>
+
+## Batch known IDs before looping
+
+If your app already has tweet IDs or user IDs, batch them first. Store the IDs that return successfully, then request only missing records later.
+
+<CodeGroup>
+
+```bash Tweets
+curl "https://xquik.com/api/v1/x/tweets?ids=1893710452812718080,1893704267862470862" \
+  -H "x-api-key: xq_YOUR_KEY_HERE"
+```
+
+```bash Users
+curl "https://xquik.com/api/v1/x/users/batch?ids=44196397,783214" \
+  -H "x-api-key: xq_YOUR_KEY_HERE"
+```
+
+</CodeGroup>
+
+Use returned row counts for downstream budgets. Do not assume every requested ID exists or returns data.
+
+## Match timeline intent
+
+<CardGroup cols={3}>
+  <Card title="Profile timeline" icon="user-round">
+    `GET /api/v1/x/users/{id}/tweets` returns one user's profile timeline. Use `cursor`, `includeReplies`, and `includeParentTweet` to control pages and reply context.
+  </Card>
+  <Card title="Tweet search" icon="search">
+    `GET /api/v1/x/tweets/search` returns matching public posts. Use `q`, `queryType`, `cursor`, and `limit` for direct API pages.
+  </Card>
+  <Card title="Home timeline" icon="home">
+    `GET /api/v1/x/timeline` returns the authenticated account's home timeline. Use it for feed-style reads, not keyword search.
+  </Card>
+</CardGroup>
+
+Use `/x/users/{id}/tweets` for one user's profile timeline. Use `/x/tweets/search` for keyword or advanced search. Use `/x/timeline` for the authenticated home timeline.
+
+## Use extraction jobs for files
+
+Use extraction jobs when a workflow needs saved results, repeatable export paths, or analyst-ready files.
+
+<Steps>
+  <Step title="Estimate">
+    Call `POST /api/v1/extractions/estimate` with the same target and `resultsLimit` you plan to run.
+  </Step>
+  <Step title="Create">
+    Call `POST /api/v1/extractions`, then store the returned job `id`, `status`, and poll path.
+  </Step>
+  <Step title="Poll JSON">
+    Call `GET /api/v1/extractions/{id}` until the job is complete. Store `hasMore` and `nextCursor`.
+  </Step>
+  <Step title="Export">
+    Call `GET /api/v1/extractions/{id}/export?format=csv`, `format=json`, or `format=xlsx` for file handoff.
+  </Step>
+</Steps>
+
+For live app pages, call the direct API route. For durable exports, create an extraction job and store the export URL with the run checkpoint.
+
+## Store cursor checkpoints
+
+Store the route, query, cursor, and returned page state together. Treat every cursor as opaque.
+
+```json
+{
+  "route": "/api/v1/x/tweets/search",
+  "query": "from:xquikcom webhook OR SDK",
+  "cursor_sent": null,
+  "has_next_page": true,
+  "next_cursor": "DAACCgACGRElMJcAAA",
+  "next_request": "/api/v1/x/tweets/search?q=from:xquikcom%20webhook%20OR%20SDK&cursor=DAACCgACGRElMJcAAA"
+}
+```
+
+For X data pages, pass `next_cursor` back as `cursor`. For stored extraction JSON pages, pass `nextCursor` as `after`. Do not decode or construct cursors manually.
+
+## Avoid unnecessary media work
+
+For tweet posts, pass public image URLs or one public MP4 URL in `media` on `POST /api/v1/x/tweets`. Do not call `POST /api/v1/x/media` first when the tweet media is already public.
+
+Use `POST /api/v1/x/media` when you need an uploaded `mediaId` for the one-item `media_ids` array on `POST /api/v1/x/dm/{userId}`.
+
+## Checklist
+
+- Batch known tweet or user IDs before looping over single lookups.
+- Store returned IDs, row counts, `has_next_page`, `next_cursor`, and export paths.
+- Use `resultsLimit` on extraction estimates and create requests for bounded jobs.
+- Use monitors and signed webhooks when recurring checks should push events instead of polling every page.
+- Keep public tweet media URLs and uploaded DM media IDs in separate handoffs.

@@ -6923,6 +6923,27 @@ const FORBIDDEN_WORKFLOW_ENDPOINT_FINDER_TABLE_SNIPPETS = [
   '| Saved file exports | `GET /extractions/{id}/export` |',
 ] as const;
 
+const REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS = [
+  'title: Request-efficient API usage',
+  'Use this guide when you need fewer duplicate reads, cleaner checkpoints, and better downstream handoffs.',
+  'Quick answer: batch known IDs, use profile timelines for one user, use tweet search for keywords, use home timeline for the connected account feed, and use extraction jobs for saved CSV/JSON/XLSX files.',
+  'Use `GET /api/v1/x/tweets?ids=...` for up to 100 comma-separated tweet IDs in one request.',
+  'Use `GET /api/v1/x/users/batch?ids=...` for up to 100 comma-separated user IDs in one request.',
+  'Use `GET /api/v1/x/users/{id}/tweets` for one user\'s profile timeline.',
+  'Use `GET /api/v1/x/tweets/search` for keywords, hashtags, operators, date filters, and advanced search pages.',
+  'Use `GET /api/v1/x/timeline` for the connected account\'s home timeline.',
+  'Use `/x/users/{id}/tweets` for one user\'s profile timeline.',
+  'Use `/x/tweets/search` for keyword or advanced search.',
+  'Use `/x/timeline` for the authenticated home timeline.',
+  'Call `POST /api/v1/extractions/estimate` with the same target and `resultsLimit` you plan to run.',
+  'Call `GET /api/v1/extractions/{id}/export?format=csv`, `format=json`, or `format=xlsx` for file handoff.',
+  'For X data pages, pass `next_cursor` back as `cursor`.',
+  'For stored extraction JSON pages, pass `nextCursor` as `after`.',
+  'Do not decode or construct cursors manually.',
+  'For tweet posts, pass public image URLs or one public MP4 URL in `media` on `POST /api/v1/x/tweets`.',
+  'Use `POST /api/v1/x/media` when you need an uploaded `mediaId` for the one-item `media_ids` array on `POST /api/v1/x/dm/{userId}`.',
+] as const;
+
 const REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS = [
   'monitor tweets',
   'signed webhooks',
@@ -12872,6 +12893,20 @@ describe('repository discovery', (): void => {
     const source = readFileSync('guides/workflows.mdx', 'utf8');
 
     expect(source.length).toBeLessThanOrEqual(MAX_WORKFLOWS_OVERVIEW_CHARS);
+  });
+
+  it('keeps request-efficient API usage source-backed', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/request-efficient-api-usage.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Request-efficient API usage guide',
+        REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps the keyword monitor API handoff concrete', (): void => {
