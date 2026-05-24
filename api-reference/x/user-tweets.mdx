@@ -158,6 +158,45 @@ text, author ID, username, display name, follower count, verified state, profile
 image URL, reply context, engagement counts, media URLs, and cursor fields so a
 worker can resume from the last saved `next_cursor`.
 
+## Build a profile timeline job
+
+Use these checkpoints when a timeline sync needs to switch between plain profile
+posts, replies, media-only rows, and resumable page pulls.
+
+<CardGroup cols={2}>
+  <Card title="Original posts" icon="list">
+    Omit `includeReplies` to fetch the profile timeline without replies.
+  </Card>
+  <Card title="Replies with context" icon="message-square">
+    Set `includeReplies=true` and `includeParentTweet=true` when support,
+    community, or research rows need the parent tweet context.
+  </Card>
+  <Card title="Media timeline" icon="image">
+    Use a `mediaType` filter for filtered timeline rows, or switch to
+    [`User media`](/api-reference/x/user-media) when every row should contain
+    media.
+  </Card>
+  <Card title="Cursor checkpoint" icon="database">
+    Store `page_cursor`, `next_cursor`, and `has_next_page` before requesting
+    another page.
+  </Card>
+</CardGroup>
+
+```json
+{
+  "timeline_job_id": "profile-timeline-q2",
+  "timeline_route": "GET /api/v1/x/users/{id}/tweets",
+  "user_id_or_username": "elonmusk",
+  "include_replies": true,
+  "include_parent_tweet": true,
+  "cursor_param": "cursor",
+  "page_cursor": "",
+  "next_cursor": "DAADDAABCgABF...",
+  "has_next_page": true,
+  "media_handoff_route": "GET /api/v1/x/users/{id}/media"
+}
+```
+
 ## Which timeline endpoint?
 
 - Use `GET /api/v1/x/users/{id}/tweets` for one user's profile timeline.
