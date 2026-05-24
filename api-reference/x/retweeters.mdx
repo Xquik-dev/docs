@@ -1,8 +1,8 @@
 ---
 title: "Get retweeters"
-description: "Retrieve a paginated list of users who retweeted a specific tweet by its ID"
+description: "Retrieve user profiles for accounts that retweeted or reposted one tweet with cursor checkpoints and engagement handoffs"
 api: "GET /x/tweets/{id}/retweeters"
-keywords: ["retweeters", "retweets", "users", "x api"]
+keywords: ["get retweeters", "tweet retweeters API", "retweet users API", "users who retweeted a tweet", "Twitter retweeters API", "X retweeters API", "repost audience", "giveaway verification"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -17,9 +17,23 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Accepts [MPP](/mpp/overview)
 </Callout>
 
+<Info>
+  Get retweeters returns user profiles for accounts that retweeted or reposted
+  one tweet. It is also useful as a tweet retweeters API, retweet users API, X
+  retweeters API, Twitter retweeters API, or users who retweeted a tweet
+  endpoint. The canonical endpoint remains
+  `GET /api/v1/x/tweets/{id}/retweeters`.
+</Info>
+
 <CodeGroup>
-  ```bash cURL
+  ```bash First page
   curl "https://xquik.com/api/v1/x/tweets/1893456789012345678/retweeters" \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+  ```
+
+  ```bash Next page
+  curl -G https://xquik.com/api/v1/x/tweets/1893456789012345678/retweeters \
+    --data-urlencode "cursor=abc123" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
@@ -34,54 +48,108 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     retweeter_id: user.id,
     username: user.username,
     display_name: user.name,
+    can_dm: user.canDm ?? null,
     follower_count: user.followers ?? null,
     following_count: user.following ?? null,
     verified: user.verified ?? false,
+    verified_type: user.verifiedType ?? null,
     profile_image_url: user.profilePicture ?? null,
   }));
   const nextCursor = data.has_next_page ? data.next_cursor : null;
+  const checkpoint = { source_tweet_id: tweetId, next_cursor: nextCursor };
 
   for (const row of retweeterRows) {
-    const output = { ...row, next_cursor: nextCursor };
-    process.stdout.write(`${JSON.stringify(output)}\n`);
+    process.stdout.write(`${JSON.stringify(row)}\n`);
   }
+  process.stdout.write(`${JSON.stringify({ checkpoint })}\n`);
   ```
 
   ```python Python
   import json
   import requests
 
+  tweet_id = "1893456789012345678"
   response = requests.get(
-      "https://xquik.com/api/v1/x/tweets/1893456789012345678/retweeters",
+      f"https://xquik.com/api/v1/x/tweets/{tweet_id}/retweeters",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
   next_cursor = data["next_cursor"] if data["has_next_page"] else None
   retweeter_rows = [
       {
-          "source_tweet_id": "1893456789012345678",
+          "source_tweet_id": tweet_id,
           "retweeter_id": user["id"],
           "username": user["username"],
           "display_name": user["name"],
+          "can_dm": user.get("canDm"),
           "follower_count": user.get("followers"),
           "following_count": user.get("following"),
           "verified": user.get("verified", False),
+          "verified_type": user.get("verifiedType"),
           "profile_image_url": user.get("profilePicture"),
-          "next_cursor": next_cursor,
       }
       for user in data["users"]
   ]
+  checkpoint = {"source_tweet_id": tweet_id, "next_cursor": next_cursor}
   for row in retweeter_rows:
       print(json.dumps(row))
+  print(json.dumps({"checkpoint": checkpoint}))
   ```
 </CodeGroup>
 
-Use `GET /x/tweets/{id}/retweeters` when a workflow needs one row per account
-that reposted a tweet for giveaway checks, CRM enrichment, audience analysis,
-or follow-up jobs. Store `source_tweet_id`, `retweeter_id`, `username`,
-`display_name`, `follower_count`, `following_count`, `verified`,
-`profile_image_url`, and
-`next_cursor` instead of logging the full page response.
+The Node.js and Python snippets write JSON Lines retweeter rows plus a separate
+checkpoint instead of raw response pages. Persist each mapped row and the latest
+`next_cursor` so an import, giveaway verifier, CRM sync, or agent job can resume
+from the last completed page without duplicate rows.
+
+## Direct retweeter handoff
+
+Use `GET /api/v1/x/tweets/{id}/retweeters` when a workflow needs one row per
+account that retweeted or reposted a tweet for giveaway checks, CRM enrichment,
+audience analysis, or follow-up jobs. Store `source_tweet_id`, `retweeter_id`,
+`username`, `display_name`, `can_dm`, `follower_count`, `following_count`,
+`verified`, `verified_type`, `profile_image_url`, and a separate `next_cursor`
+checkpoint.
+
+<CardGroup cols={2}>
+  <Card title="Retweeter rows" icon="rows-3">
+    Store `users[]` as the profile rows for accounts that reposted the source
+    tweet.
+  </Card>
+  <Card title="Stable upserts" icon="key-round">
+    Store `users[].id` as `retweeter_id` with `source_tweet_id` for idempotent
+    imports and giveaway checks.
+  </Card>
+  <Card title="Readable labels" icon="badge">
+    Store `users[].username` and `users[].name` for handles, labels, and review
+    queues.
+  </Card>
+  <Card title="Profile enrichment" icon="file-text">
+    Store `description`, `location`, `url`, and `profilePicture` when returned
+    for CRM and warehouse enrichment.
+  </Card>
+  <Card title="Audience signals" icon="chart-no-axes-combined">
+    Store `followers`, `following`, `verified`, and `verifiedType` for reach
+    scoring, filters, and outreach priority.
+  </Card>
+  <Card title="DM preflight" icon="message-square">
+    Store `canDm` when returned, then use DM endpoints only after a user-approved
+    message flow.
+  </Card>
+  <Card title="Next page" icon="arrow-right">
+    Store `has_next_page` and `next_cursor`; pass `next_cursor` back as `cursor`
+    only when `has_next_page` is true.
+  </Card>
+  <Card title="Credit-limited pages" icon="coins">
+    Use `users.length`, not a requested page size, for row counts. Low balances
+    can return fewer rows.
+  </Card>
+</CardGroup>
+
+Direct retweeter reads cost 1 credit per user returned. Low credit balances can
+return fewer users than a full page; zero affordable results return
+`402 insufficient_credits`. For MPP callers, this endpoint is billed as a
+session at USD 0.00015 per user returned.
 
 ## Path parameters
 
@@ -92,8 +160,39 @@ or follow-up jobs. Store `source_tweet_id`, `retweeter_id`, `username`,
 ## Query parameters
 
 <ParamField query="cursor" type="string">
-  Pagination cursor from a previous response. Omit for the first page.
+  Pagination cursor from `next_cursor` in a previous response. Omit for the
+  first page. Pass a cursor only when `has_next_page` is true.
 </ParamField>
+
+## Which tweet engagement endpoint?
+
+<CardGroup cols={2}>
+  <Card title="Retweeters" icon="repeat-2">
+    Use `GET /x/tweets/{id}/retweeters` for user profiles that reposted one
+    source tweet.
+  </Card>
+  <Card title="Tweet likers" icon="heart">
+    Use [`GET /x/tweets/{id}/favoriters`](/api-reference/x/favoriters) for user
+    profiles that liked one source tweet.
+  </Card>
+  <Card title="Quote tweets" icon="quote">
+    Use [`GET /x/tweets/{id}/quotes`](/api-reference/x/tweet-quotes) when you
+    need tweet rows that quote the source tweet.
+  </Card>
+  <Card title="Tweet replies" icon="message-square-reply">
+    Use [`GET /x/tweets/{id}/replies`](/api-reference/x/tweet-replies) when you
+    need reply tweet rows under the source tweet.
+  </Card>
+  <Card title="Saved exports" icon="file-spreadsheet">
+    Use [`Create extraction`](/api-reference/extractions/create) with
+    `toolType=repost_extractor` when you need a saved job or CSV, JSON, or XLSX
+    export.
+  </Card>
+  <Card title="DM handoff" icon="send">
+    Use [`Send DM`](/api-reference/x-write/send-dm) only after your workflow has
+    a user-approved outreach step.
+  </Card>
+</CardGroup>
 
 ## Headers
 
@@ -193,5 +292,5 @@ or follow-up jobs. Store `source_tweet_id`, `retweeter_id`, `username`,
 </Tabs>
 
 <Note>
-  **Related:** [Favoriters](/api-reference/x/favoriters) · [Tweet Quotes](/api-reference/x/tweet-quotes) · [Tweet Replies](/api-reference/x/tweet-replies)
+  **Related:** [Tweet favoriters](/api-reference/x/favoriters) · [Quote tweets](/api-reference/x/tweet-quotes) · [Tweet replies](/api-reference/x/tweet-replies)
 </Note>
