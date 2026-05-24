@@ -40,6 +40,88 @@ The official pagination docs describe the standard loop: request `max_results`, 
 
 The official pricing docs describe credit-based pay-per-usage, per-resource reads, per-request writes, Owned Reads at USD 0.001 per resource for eligible app-owned data, 24-hour UTC deduplication for billable resources, Developer Console usage tracking, auto-recharge, and spending limits.
 
+## Official X API Migration Map
+
+Use this map to move one API-backed workflow at a time. Keep the old call live,
+ship the matching Xquik call behind a feature flag, then compare the record
+shape, pagination cursor, export path, and downstream owner before switching.
+
+<CardGroup cols={2}>
+  <Card title="Auth & Base URL" icon="key-round">
+    Official X API calls use `https://api.x.com/2` plus Bearer or OAuth
+    user-context auth. Xquik REST calls use `https://xquik.com/api/v1` plus
+    the `x-api-key` header.
+  </Card>
+
+  <Card title="Search Posts" icon="search">
+    Replace `GET /2/tweets/search/recent` or `GET /2/tweets/search/all` with
+    `GET /api/v1/x/tweets/search?q={query}`. Keep supported X search operators
+    in `q`, then resume with `cursor`.
+  </Card>
+
+  <Card title="Tweet Lookup" icon="message-square">
+    Replace `GET /2/tweets/:id` with `GET /api/v1/x/tweets/{id}`. Replace
+    `GET /2/tweets?ids=...` with `GET /api/v1/x/tweets?ids=...` for batches up
+    to 100 tweet IDs.
+  </Card>
+
+  <Card title="User Lookup" icon="user">
+    Replace `GET /2/users/:id` and `GET /2/users/by/username/:username` with
+    `GET /api/v1/x/users/{id}`. Xquik accepts a username or numeric user ID.
+    Replace `GET /2/users?ids=...` with `GET /api/v1/x/users/batch?ids=...`.
+  </Card>
+
+  <Card title="Timelines & Mentions" icon="list-tree">
+    Replace user timeline and mention timeline calls with
+    `GET /api/v1/x/users/{id}/tweets` and
+    `GET /api/v1/x/users/{id}/mentions`.
+  </Card>
+
+  <Card title="Followers & Following" icon="users">
+    Replace follower and following list reads with
+    `GET /api/v1/x/users/{id}/followers` and
+    `GET /api/v1/x/users/{id}/following`.
+  </Card>
+
+  <Card title="Engagement Rows" icon="activity">
+    Use `GET /api/v1/x/tweets/{id}/quotes`,
+    `GET /api/v1/x/tweets/{id}/retweeters`,
+    `GET /api/v1/x/tweets/{id}/favoriters`, and
+    `GET /api/v1/x/tweets/{id}/replies` when the task is quote, repost, like,
+    or reply analysis.
+  </Card>
+
+  <Card title="Pagination & Exports" icon="shuffle">
+    Official X API pagination reads `meta.next_token` and sends it back as
+    `pagination_token`. Xquik list and search pages return `next_cursor` and
+    accept it as `cursor`. For CSV, JSON, XLSX, Markdown, PDF, or TXT files,
+    create an extraction job and call `GET /api/v1/extractions/{id}/export`.
+  </Card>
+</CardGroup>
+
+## Migration Checkpoint
+
+Store a small checkpoint per replaced workflow so another engineer can verify
+the endpoint pair and resume from the last page.
+
+```json
+{
+  "migration": "official_x_api_to_xquik",
+  "old_endpoint": "GET /2/users/:id/followers",
+  "new_endpoint": "GET /api/v1/x/users/{id}/followers",
+  "cursor_map": {
+    "old_response": "meta.next_token",
+    "old_request": "pagination_token",
+    "new_response": "next_cursor",
+    "new_request": "cursor"
+  },
+  "handoff": {
+    "export_path": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=csv",
+    "owner": "crm-import-worker"
+  }
+}
+```
+
 ## Comparison
 
 | Area | X API | Xquik |
