@@ -1,8 +1,8 @@
 ---
 title: "Get tweet thread"
-description: "Retrieve the full conversation thread for a tweet, ordered chronologically with pagination"
+description: "Retrieve tweet thread context around one tweet with author fields, reply joins, media, and cursor checkpoints"
 api: "GET /x/tweets/{id}/thread"
-keywords: ["thread", "conversation", "context", "x api"]
+keywords: ["get tweet thread", "tweet thread API", "Twitter thread API", "X thread API", "conversation thread API", "thread context", "tweet conversation", "CSV export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -17,18 +17,39 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **1 credit per tweet returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Accepts [MPP](/mpp/overview)
 </Callout>
 
+<Info>
+  Get tweet thread returns tweet rows in the conversation thread around one
+  source tweet. It is also useful as a tweet thread API, X thread API, Twitter
+  thread API, conversation thread API, or thread context endpoint. The canonical
+  endpoint remains `GET /api/v1/x/tweets/{id}/thread`.
+</Info>
+
 <CodeGroup>
-  ```bash cURL
+  ```bash First page
   curl "https://xquik.com/api/v1/x/tweets/1893456789012345678/thread" \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+  ```
+
+  ```bash Next page
+  curl -G https://xquik.com/api/v1/x/tweets/1893456789012345678/thread \
+    --data-urlencode "cursor=abc123" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
   ```javascript Node.js
   const tweetId = "1893456789012345678";
-  const response = await fetch(`https://xquik.com/api/v1/x/tweets/${tweetId}/thread`, {
+  const cursor = process.env.XQUIK_CURSOR ?? "";
+  const params = new URLSearchParams();
+  if (cursor !== "") {
+    params.set("cursor", cursor);
+  }
+  const query = params.toString();
+  const url = `https://xquik.com/api/v1/x/tweets/${tweetId}/thread${query ? `?${query}` : ""}`;
+  const response = await fetch(url, {
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
+  const nextCursor = data.has_next_page ? data.next_cursor : null;
   const threadRows = data.tweets.map((tweet) => {
     const author = tweet.author ?? {};
 
@@ -48,20 +69,24 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
     };
   });
-  const nextCursor = data.has_next_page ? data.next_cursor : null;
+  const checkpoint = { source_tweet_id: tweetId, next_cursor: nextCursor };
 
   for (const row of threadRows) {
-    const output = { ...row, next_cursor: nextCursor };
-    process.stdout.write(`${JSON.stringify(output)}\n`);
+    process.stdout.write(`${JSON.stringify(row)}\n`);
   }
+  process.stdout.write(`${JSON.stringify({ checkpoint })}\n`);
   ```
 
   ```python Python
   import json
   import requests
 
+  tweet_id = "1893456789012345678"
+  cursor = ""
+  params = {"cursor": cursor} if cursor else None
   response = requests.get(
-      "https://xquik.com/api/v1/x/tweets/1893456789012345678/thread",
+      f"https://xquik.com/api/v1/x/tweets/{tweet_id}/thread",
+      params=params,
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
@@ -71,7 +96,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       author = tweet.get("author") or {}
       thread_rows.append(
           {
-              "source_tweet_id": "1893456789012345678",
+              "source_tweet_id": tweet_id,
               "thread_tweet_id": tweet["id"],
               "text": tweet["text"],
               "author_id": author.get("id"),
@@ -88,22 +113,68 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
                   for item in tweet.get("media", [])
                   if item.get("mediaUrl")
               ],
-              "next_cursor": next_cursor,
           }
       )
+  checkpoint = {"source_tweet_id": tweet_id, "next_cursor": next_cursor}
 
   for row in thread_rows:
       print(json.dumps(row))
+  print(json.dumps({"checkpoint": checkpoint}))
   ```
 </CodeGroup>
 
-Use `GET /x/tweets/{id}/thread` when a workflow needs ordered thread context
-as durable rows. The Node.js and Python snippets write one JSON line per tweet
-instead of printing the full page response. Store `source_tweet_id`,
+The Node.js and Python snippets write JSON Lines thread rows plus a separate
+checkpoint instead of raw response pages. Persist each mapped row and the latest
+`next_cursor` so a support timeline, research job, moderation queue, or agent
+handoff can resume from the last completed page without duplicate rows.
+
+## Direct tweet thread handoff
+
+Use `GET /api/v1/x/tweets/{id}/thread` when a workflow needs ordered thread
+context as durable rows around one tweet. Store `source_tweet_id`,
 `thread_tweet_id`, `text`, `author_id`, `author_username`, `author_name`,
 `author_followers`, `author_verified`, `author_profile_picture`, `created_at`,
-`conversation_id`, `in_reply_to_id`, `media_urls`, and `next_cursor` for
-downstream jobs.
+`conversation_id`, `in_reply_to_id`, media URLs, and a separate `next_cursor`
+checkpoint for downstream jobs.
+
+<CardGroup cols={2}>
+  <Card title="Thread rows" icon="list-tree">
+    Store `tweets[]` as the thread context rows returned for one source tweet.
+  </Card>
+  <Card title="Stable upserts" icon="key-round">
+    Store `tweets[].id` as `thread_tweet_id` with `source_tweet_id` for
+    idempotent imports.
+  </Card>
+  <Card title="Reply joins" icon="message-square-reply">
+    Store `conversationId`, `inReplyToId`, `inReplyToUserId`, and
+    `inReplyToUsername` to rebuild thread structure.
+  </Card>
+  <Card title="Author joins" icon="user-round">
+    Store `tweets[].author.id`, `username`, `name`, `followers`, `verified`, and
+    `profilePicture` for review, CRM, or research tools.
+  </Card>
+  <Card title="Media context" icon="image">
+    Store `media[].mediaUrl`, `entities`, `quoted_tweet`, and `retweeted_tweet`
+    when returned to preserve attached context.
+  </Card>
+  <Card title="Next page" icon="arrow-right">
+    Store `has_next_page` and `next_cursor`; pass `next_cursor` back as `cursor`
+    only when `has_next_page` is true.
+  </Card>
+  <Card title="Credit-limited pages" icon="coins">
+    Use `tweets.length`, not a requested page size, for row counts. Low balances
+    can return fewer rows.
+  </Card>
+  <Card title="Saved exports" icon="file-spreadsheet">
+    Use `thread_extractor` when you need a saved extraction job or CSV, JSON, or
+    XLSX export.
+  </Card>
+</CardGroup>
+
+Direct tweet thread reads cost 1 credit per tweet returned. Low credit balances
+can return fewer tweets than a full page; zero affordable results return
+`402 insufficient_credits`. For MPP callers, this endpoint is billed as a
+session at USD 0.00015 per tweet returned.
 
 ## Path parameters
 
@@ -114,8 +185,39 @@ downstream jobs.
 ## Query parameters
 
 <ParamField query="cursor" type="string">
-  Pagination cursor from a previous response. Omit for the first page.
+  Pagination cursor from `next_cursor` in a previous response. Omit for the
+  first page. Pass a cursor only when `has_next_page` is true.
 </ParamField>
+
+## Which thread endpoint?
+
+<CardGroup cols={2}>
+  <Card title="Tweet thread" icon="list-tree">
+    Use `GET /x/tweets/{id}/thread` for conversation thread context around one
+    tweet.
+  </Card>
+  <Card title="Tweet replies" icon="message-square-reply">
+    Use [`GET /x/tweets/{id}/replies`](/api-reference/x/tweet-replies) when you
+    need reply tweet rows under one source tweet.
+  </Card>
+  <Card title="Quote tweets" icon="quote">
+    Use [`GET /x/tweets/{id}/quotes`](/api-reference/x/tweet-quotes) for tweet
+    rows that quote one source tweet.
+  </Card>
+  <Card title="Search tweets" icon="search">
+    Use [`GET /x/tweets/search`](/api-reference/x/search-tweets) when you need
+    keyword, operator, or structured-filter discovery across many tweets.
+  </Card>
+  <Card title="Saved exports" icon="file-spreadsheet">
+    Use [`Create extraction`](/api-reference/extractions/create) with
+    `toolType=thread_extractor` when you need a saved job or CSV, JSON, or XLSX
+    export.
+  </Card>
+  <Card title="Single tweet" icon="message-square">
+    Use [`Get tweet`](/api-reference/x/get-tweet) when you only need one tweet
+    object by ID.
+  </Card>
+</CardGroup>
 
 ## Headers
 
@@ -238,5 +340,5 @@ downstream jobs.
 </Tabs>
 
 <Note>
-  **Related:** [Tweet Replies](/api-reference/x/tweet-replies) · [Tweet Quotes](/api-reference/x/tweet-quotes) · [Retweeters](/api-reference/x/retweeters)
+  **Related:** [Tweet replies](/api-reference/x/tweet-replies) · [Quote tweets](/api-reference/x/tweet-quotes) · [Retweeters](/api-reference/x/retweeters) · [Create extraction](/api-reference/extractions/create)
 </Note>

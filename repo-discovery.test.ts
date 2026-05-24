@@ -3546,7 +3546,17 @@ const FORBIDDEN_GET_ARTICLE_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWEET_THREAD_API_HANDOFF_SNIPPETS = [
+  'title: "Get tweet thread"',
   '`GET /x/tweets/{id}/thread`',
+  '`GET /api/v1/x/tweets/{id}/thread`',
+  'tweet thread API',
+  'X thread API',
+  'conversation thread API',
+  'thread context endpoint',
+  '```bash First page',
+  '```bash Next page',
+  '--data-urlencode "cursor=abc123"',
+  'const cursor = process.env.XQUIK_CURSOR ?? "";',
   'source_tweet_id: tweetId',
   'thread_tweet_id: tweet.id',
   'const author = tweet.author ?? {};',
@@ -3560,7 +3570,10 @@ const REQUIRED_TWEET_THREAD_API_HANDOFF_SNIPPETS = [
   'in_reply_to_id: tweet.inReplyToId ?? null',
   'media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? []',
   'const nextCursor = data.has_next_page ? data.next_cursor : null;',
-  '"source_tweet_id": "1893456789012345678"',
+  'const checkpoint = { source_tweet_id: tweetId, next_cursor: nextCursor };',
+  'process.stdout.write(`${JSON.stringify(row)}\\n`);',
+  'tweet_id = "1893456789012345678"',
+  '"source_tweet_id": tweet_id',
   '"thread_tweet_id": tweet["id"]',
   'author = tweet.get("author") or {}',
   '"author_id": author.get("id")',
@@ -3572,16 +3585,29 @@ const REQUIRED_TWEET_THREAD_API_HANDOFF_SNIPPETS = [
   '"conversation_id": tweet.get("conversationId")',
   '"in_reply_to_id": tweet.get("inReplyToId")',
   'next_cursor = data["next_cursor"] if data["has_next_page"] else None',
-  'one JSON line per tweet',
+  'checkpoint = {"source_tweet_id": tweet_id, "next_cursor": next_cursor}',
+  'print(json.dumps({"checkpoint": checkpoint}))',
+  '## Direct tweet thread handoff',
+  'JSON Lines thread rows plus a separate',
   '`source_tweet_id`,',
   '`thread_tweet_id`, `text`, `author_id`,',
   '`author_followers`, `author_verified`, `author_profile_picture`,',
+  '<Card title="Thread rows" icon="list-tree">',
+  '<Card title="Reply joins" icon="message-square-reply">',
+  '<Card title="Saved exports" icon="file-spreadsheet">',
+  '## Which thread endpoint?',
+  '[`GET /x/tweets/{id}/replies`](/api-reference/x/tweet-replies)',
+  '[`GET /x/tweets/{id}/quotes`](/api-reference/x/tweet-quotes)',
+  '[`GET /x/tweets/search`](/api-reference/x/search-tweets)',
+  '`toolType=thread_extractor`',
   '<ResponseField name="profilePicture" type="string">',
 ] as const;
 
 const FORBIDDEN_TWEET_THREAD_API_RAW_OUTPUT_SNIPPETS = [
   'console.log(data);',
   'print(data)',
+  'const output = { ...row, next_cursor: nextCursor };',
+  '"next_cursor": next_cursor,',
 ] as const;
 
 const REQUIRED_RETWEETERS_API_HANDOFF_SNIPPETS = [
