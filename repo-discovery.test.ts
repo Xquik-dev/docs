@@ -1935,6 +1935,36 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   '"mcp/docs-mcp"',
 ] as const;
 
+const REQUIRED_AGENT_MCP_HANDOFF_SNIPPETS = [
+  'title: Agent MCP Handoff',
+  'Route AI agents across Xquik Docs MCP, API MCP, REST, SDKs, webhooks, event replay, and file exports.',
+  '<Card title="Docs MCP" icon="book-open">',
+  '`https://docs.xquik.com/mcp`',
+  '<Card title="API MCP" icon="terminal">',
+  '`https://xquik.com/mcp`',
+  '<Card title="REST or SDK" icon="code">',
+  '<Card title="Webhooks and Replay" icon="history">',
+  'Use `explore` before `xquik.request(...)`',
+  '`xquik.request(path, { method?, body?, query? })`',
+  'required parameters, costs, and response shape',
+  "source: 'xquik_mcp'",
+  "job: 'tweet_search'",
+  'has_more: page.has_more',
+  'next_cursor: page.next_cursor',
+  'Pass `next_cursor` back as `cursor`',
+  'Pass `next_cursor` back as `after`.',
+  '`GET /api/v1/credits`',
+  '"surface": "api_mcp"',
+  '"event_replay_route": "GET /api/v1/events?after=9002"',
+  '"export_route": "GET /api/v1/extractions/77777/export?format=json"',
+  'Keep API keys, webhook secrets, raw request bodies, raw signatures, and full',
+  '<Card title="File Exports" icon="file-json" href="/guides/response-formats-exports">',
+  '<Card title="Webhook Receivers" icon="webhook" href="/guides/webhook-testing">',
+  '<Card title="SDK Backends" icon="boxes" href="/sdks">',
+  '"mcp/agent-handoff"',
+  '[Agent MCP Handoff](https://docs.xquik.com/mcp/agent-handoff)',
+] as const;
+
 const REQUIRED_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS = [
   'Xquik has 2 MCP servers. Choose based on what the agent needs to do.',
   '<Card title="Search docs" icon="book-open">',
@@ -10830,6 +10860,24 @@ describe('repository discovery', (): void => {
     }
 
     expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps the Agent MCP handoff page route-specific and source-backed', (): void => {
+    expect.assertions(1);
+
+    const source = [
+      readFileSync('mcp/agent-handoff.mdx', 'utf8'),
+      readFileSync('docs.json', 'utf8'),
+      readFileSync('llms.txt', 'utf8'),
+    ].join('\n');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Agent MCP handoff page',
+        REQUIRED_AGENT_MCP_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps troubleshooting clear about Docs MCP vs API MCP', (): void => {

@@ -1,0 +1,185 @@
+---
+title: Agent MCP Handoff
+description: Route AI agents across Xquik Docs MCP, API MCP, REST, SDKs, webhooks, event replay, and file exports.
+keywords:
+  [
+    "Xquik MCP handoff",
+    "AI agent X API",
+    "Twitter MCP server",
+    "X API MCP",
+    "agent webhook handoff",
+    "MCP xquik.request",
+    "tweet search agent",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use this page when an AI agent needs to choose the right Xquik surface, call
+live X data, hand results to a backend, or recover missed webhook work. Keep
+the agent's live calls narrow, persist cursor state, and move long-running jobs
+to REST, SDKs, or webhooks.
+
+## Pick the Agent Surface
+
+<CardGroup cols={2}>
+  <Card title="Docs MCP" icon="book-open">
+    Use `https://docs.xquik.com/mcp` when the agent needs public docs, API
+    reference pages, examples, troubleshooting, or type definitions. It is
+    read-only and requires no auth.
+  </Card>
+
+  <Card title="API MCP" icon="terminal">
+    Use `https://xquik.com/mcp` when the agent needs account actions, live X
+    reads, extraction jobs, monitors, webhooks, or writes. It requires
+    `x-api-key` or OAuth 2.1.
+  </Card>
+
+  <Card title="REST or SDK" icon="code">
+    Use REST or generated SDKs when a service owns retries, cursor storage,
+    file downloads, queues, or batch jobs outside the chat session.
+  </Card>
+
+  <Card title="Webhooks and Replay" icon="history">
+    Use monitor webhooks for fresh events and `GET /api/v1/events` when a
+    receiver, queue, warehouse, or agent run needs replay.
+  </Card>
+</CardGroup>
+
+## Default Agent Route
+
+1. Search public docs or `llms.txt` for the workflow before calling live data.
+2. Use `explore` before `xquik.request(...)` to confirm the endpoint path,
+   required parameters, costs, and response shape.
+3. Call `xquik.request(path, { method?, body?, query? })` with the smallest
+   useful page size.
+4. Return normalized rows, IDs, `has_more`, and `next_cursor` instead of full
+   raw pages.
+5. Hand long-running or replayable work to REST, SDKs, webhooks, or exports.
+
+```javascript
+async () => {
+  const matches = spec.endpoints.filter((endpoint) =>
+    endpoint.path.includes('/x/tweets/search') ||
+    endpoint.summary.toLowerCase().includes('followers')
+  );
+
+  return matches.map(({ method, path, summary, parameters, responseShape }) => ({
+    method,
+    path,
+    summary,
+    parameters,
+    responseShape
+  }));
+}
+```
+
+## Call With Stored Rows
+
+MCP returns normalized snake_case fields. Keep agents on `has_more` and
+`next_cursor` even when REST or SDK pages show camelCase response fields.
+
+```javascript
+async () => {
+  const query = 'from:xquikcom MCP';
+  const page = await xquik.request('/api/v1/x/tweets/search', {
+    query: { q: query, limit: '50' }
+  });
+
+  return {
+    source: 'xquik_mcp',
+    job: 'tweet_search',
+    query,
+    rows: page.tweets.map((tweet) => ({
+      tweet_id: tweet.id,
+      text: tweet.text ?? null,
+      author_id: tweet.author?.id ?? null,
+      author_username: tweet.author?.username ?? null,
+      created: tweet.created ?? null,
+      url: tweet.url ?? null
+    })),
+    has_more: page.has_more,
+    next_cursor: page.next_cursor
+  };
+}
+```
+
+## Cursor Rules
+
+| Source | Next request |
+| --- | --- |
+| MCP X data pages | Pass `next_cursor` back as `cursor` when `has_more` is true. |
+| MCP `/api/v1/draws`, `/api/v1/extractions`, `/api/v1/events`, and `/api/v1/radar` | Pass `next_cursor` back as `after`. |
+| REST and generated SDKs | Follow the response fields documented on that endpoint page. |
+
+Check `GET /api/v1/credits` before large reads. Low credit balances can return
+smaller pages, and zero affordable rows can return `402 insufficient_credits`.
+
+## Persist Handoff State
+
+Store the values a later agent, service, or workflow needs to resume without
+reading chat history.
+
+```json
+{
+  "agent_job_id": "mcp-research-q2",
+  "surface": "api_mcp",
+  "endpoint": "GET /api/v1/x/tweets/search",
+  "query": "from:xquikcom MCP",
+  "cursor_param": "cursor",
+  "next_cursor": "DAACCgACGRElMJcAAA",
+  "has_more": true,
+  "webhook_id": "15",
+  "delivery_id": "502",
+  "stream_event_id": "9002",
+  "event_replay_route": "GET /api/v1/events?after=9002",
+  "export_route": "GET /api/v1/extractions/77777/export?format=json",
+  "saved_fields": ["tweet_id", "author_username", "text", "url"]
+}
+```
+
+Keep API keys, webhook secrets, raw request bodies, raw signatures, and full
+headers out of chat transcripts, shared agent memory, spreadsheets, CRM rows,
+and queue payloads.
+
+## When to Leave MCP
+
+<CardGroup cols={2}>
+  <Card title="File Exports" icon="file-json" href="/guides/response-formats-exports">
+    Use extraction export endpoints for CSV, JSON, XLSX, Markdown, or PDF files.
+  </Card>
+
+  <Card title="Webhook Receivers" icon="webhook" href="/guides/webhook-testing">
+    Use signed webhooks when downstream systems need fresh monitor events.
+  </Card>
+
+  <Card title="Replay Jobs" icon="database" href="/guides/brand-monitoring-workflow">
+    Use stored events and delivery rows when receivers miss work.
+  </Card>
+
+  <Card title="SDK Backends" icon="boxes" href="/sdks">
+    Use SDKs when a backend owns retries, storage, and batch orchestration.
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="MCP Tools Reference" icon="terminal" href="/mcp/tools">
+    Review `explore`, `xquik`, sandbox inputs, response contracts, and examples.
+  </Card>
+
+  <Card title="Docs MCP Server" icon="book-open" href="/mcp/docs-mcp">
+    Connect read-only documentation search beside the API MCP server.
+  </Card>
+
+  <Card title="No-Code Handoff" icon="workflow" href="/guides/no-code-workflow-handoff">
+    Hand monitor events, exports, and direct reads to workflow platforms.
+  </Card>
+
+  <Card title="Webhook Testing" icon="webhook" href="/guides/webhook-testing">
+    Verify signed receivers before accepting production events.
+  </Card>
+</CardGroup>
