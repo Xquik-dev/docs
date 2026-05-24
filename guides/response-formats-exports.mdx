@@ -1,0 +1,188 @@
+---
+title: Response Formats & Exports
+description: Choose JSON pages, CSV, JSON, XLSX, Markdown, PDF, or TXT handoffs for Xquik API results, extraction jobs, and draw exports.
+keywords:
+  [
+    "X API response formats",
+    "Twitter API export",
+    "CSV export",
+    "JSON export",
+    "XLSX export",
+    "API pagination",
+    "extraction export",
+    "draw export",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Choose the output shape before wiring a worker, dashboard, spreadsheet, or
+archive. Xquik gives you live JSON pages for endpoint calls, saved JSON pages
+for extraction jobs, file exports for downstream tools, and draw exports for
+giveaway audits.
+
+## Choose the Output Shape
+
+<CardGroup cols={2}>
+  <Card title="Live JSON Page" icon="radio">
+    Use endpoints such as `GET /api/v1/x/tweets/search`,
+    `GET /api/v1/x/users/{id}/tweets`, and
+    `GET /api/v1/x/users/{id}/followers` when your app needs fresh API results
+    and endpoint-specific cursors.
+  </Card>
+
+  <Card title="Saved JSON Rows" icon="rows-3">
+    Use `GET /api/v1/extractions/{id}?limit=1000&after={nextCursor}` when a
+    saved extraction job is the source of truth. The response includes `job`,
+    `results`, `hasMore`, and optional `nextCursor`.
+  </Card>
+
+  <Card title="File Export" icon="download">
+    Use `GET /api/v1/extractions/{id}/export?format=csv` when a downstream
+    tool needs a downloaded file. Supported formats are `csv`, `json`, `xlsx`,
+    `md`, `md-document`, `pdf`, and `txt`.
+  </Card>
+
+  <Card title="Draw Export" icon="trophy">
+    Use `GET /api/v1/draws/{id}/export?format=csv&type=winners` when you need
+    giveaway winners or entry rows. Set `type` to `winners` or `entries`.
+  </Card>
+</CardGroup>
+
+## Output Decision Map
+
+<CardGroup cols={2}>
+  <Card title="App UI" icon="monitor">
+    Call the live JSON endpoint and store the endpoint cursor with the filters
+    that produced the page.
+  </Card>
+
+  <Card title="Worker or Queue" icon="route">
+    Read saved extraction pages, append JSON Lines, and resume with `after`
+    when `hasMore` is true.
+  </Card>
+
+  <Card title="CRM or Spreadsheet" icon="table">
+    Download CSV for simple imports, or XLSX when analysts need a workbook.
+  </Card>
+
+  <Card title="Archive or Report" icon="archive">
+    Download JSON for replay, Markdown or TXT for text archives, and PDF for a
+    shareable report file.
+  </Card>
+</CardGroup>
+
+## Pagination and Cursor Map
+
+Direct X API pages expose endpoint-specific cursor fields such as
+`has_next_page` and `next_cursor`. Keep the same query filters between requests
+and only change the cursor parameter documented on that endpoint.
+
+Extraction result pages use `hasMore` and `nextCursor`. Pass `nextCursor` back
+as `after`, and use `limit` up to `1000`; the default is `100`.
+
+File exports do not paginate. File exports are capped at 100,000 rows, and PDF
+exports are capped at 10,000 rows. Use extraction JSON pages or JSON Lines when
+you need to process larger jobs incrementally.
+
+## Format Map
+
+<CardGroup cols={2}>
+  <Card title="CSV" icon="table">
+    Best for spreadsheet imports and CRM uploads. The response content type is
+    `text/csv; charset=utf-8`.
+  </Card>
+
+  <Card title="JSON File" icon="braces">
+    Best for replay, durable archives, and backend handoffs. The response
+    content type is `application/json; charset=utf-8`.
+  </Card>
+
+  <Card title="XLSX" icon="file-spreadsheet">
+    Best for analysts who need a workbook. The response content type is
+    `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`.
+  </Card>
+
+  <Card title="Markdown" icon="file-text">
+    Best for docs and text review. `md` and `md-document` return
+    `text/markdown; charset=utf-8`.
+  </Card>
+
+  <Card title="PDF" icon="file-down">
+    Best for a shareable report snapshot. The response content type is
+    `application/pdf`.
+  </Card>
+
+  <Card title="TXT" icon="file">
+    Best for plain text archives. The response content type is
+    `text/plain; charset=utf-8`.
+  </Card>
+</CardGroup>
+
+## Handoff Checkpoint
+
+Store enough context to resume a job, verify filters, and download the right
+format later.
+
+```json
+{
+  "source": "xquik.response_formats",
+  "extraction_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "detail_path": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890?limit=1000",
+  "export_paths": {
+    "csv": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=csv",
+    "json": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=json",
+    "xlsx": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=xlsx"
+  },
+  "pagination": {
+    "limit": 1000,
+    "after": "990200",
+    "hasMore": true
+  },
+  "draw_export_path": "/api/v1/draws/f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345/export?format=csv&type=winners",
+  "next_action": "poll_until_completed_then_download"
+}
+```
+
+## Safety Checklist
+
+<Check>
+  Do not print downloaded export bytes to shared logs.
+</Check>
+
+<Check>
+  Store the `Content-Disposition` filename if your workflow needs stable file
+  names.
+</Check>
+
+<Check>
+  Validate `format` before making the request. Invalid formats return a 400
+  error.
+</Check>
+
+<Check>
+  Store the job ID, tool type, filters, cursor, and chosen export path with the
+  downstream task.
+</Check>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Extraction Workflow" icon="workflow" href="/guides/extraction-workflow">
+    Build saved extraction jobs, poll results, and export finished rows.
+  </Card>
+
+  <Card title="Export Extraction" icon="download" href="/api-reference/extractions/export">
+    Download saved extraction rows as CSV, JSON, XLSX, Markdown, PDF, or TXT.
+  </Card>
+
+  <Card title="Export Draw" icon="trophy" href="/api-reference/draws/export">
+    Download giveaway winners or entries.
+  </Card>
+
+  <Card title="Follower Export CRM" icon="users" href="/guides/follower-export-crm">
+    Move follower data into CSV and CRM workflows.
+  </Card>
+</CardGroup>

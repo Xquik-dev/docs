@@ -5193,6 +5193,63 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   'Retry with exponential backoff, then contact support if the error persists.',
 ] as const;
 
+const REQUIRED_RESPONSE_FORMATS_EXPORTS_SNIPPETS = [
+  'title: Response Formats & Exports',
+  'Choose JSON pages, CSV, JSON, XLSX, Markdown, PDF, or TXT handoffs',
+  '## Choose the Output Shape',
+  '<Card title="Live JSON Page" icon="radio">',
+  '`GET /api/v1/x/tweets/search`',
+  '`GET /api/v1/x/users/{id}/tweets`',
+  '`GET /api/v1/x/users/{id}/followers`',
+  '<Card title="Saved JSON Rows" icon="rows-3">',
+  '`GET /api/v1/extractions/{id}?limit=1000&after={nextCursor}`',
+  '`job`,',
+  '`results`,',
+  '`hasMore`,',
+  'optional `nextCursor`',
+  '<Card title="File Export" icon="download">',
+  '`GET /api/v1/extractions/{id}/export?format=csv`',
+  '<Card title="Draw Export" icon="trophy">',
+  '`GET /api/v1/draws/{id}/export?format=csv&type=winners`',
+  '## Output Decision Map',
+  '<Card title="Worker or Queue" icon="route">',
+  'append JSON Lines',
+  '## Pagination and Cursor Map',
+  'Direct X API pages expose endpoint-specific cursor fields such as',
+  '`has_next_page` and `next_cursor`',
+  'Extraction result pages use `hasMore` and `nextCursor`.',
+  'Pass `nextCursor` back',
+  'as `after`',
+  'use `limit` up to `1000`; the default is `100`',
+  'File exports do not paginate.',
+  'File exports are capped at 100,000 rows, and PDF',
+  'exports are capped at 10,000 rows.',
+  '## Format Map',
+  '<Card title="CSV" icon="table">',
+  '`text/csv; charset=utf-8`',
+  '<Card title="JSON File" icon="braces">',
+  '`application/json; charset=utf-8`',
+  '<Card title="XLSX" icon="file-spreadsheet">',
+  '`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`',
+  '<Card title="Markdown" icon="file-text">',
+  '<Card title="PDF" icon="file-down">',
+  '<Card title="TXT" icon="file">',
+  '## Handoff Checkpoint',
+  '"source": "xquik.response_formats"',
+  '"detail_path": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890?limit=1000"',
+  '"export_paths": {',
+  '"draw_export_path": "/api/v1/draws/f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345/export?format=csv&type=winners"',
+  'Do not print downloaded export bytes to shared logs.',
+  'Store the `Content-Disposition` filename',
+] as const;
+
+const FORBIDDEN_RESPONSE_FORMATS_EXPORTS_SNIPPETS = [
+  '| Format |',
+  'console.log(await response.text())',
+  'const blob = await response.blob();',
+  'only supports CSV',
+] as const;
+
 const REQUIRED_TRENDS_REGION_SNIPPETS = [
   '<CardGroup cols={3}>',
   '<Card title="Global & Americas" icon="globe">',
@@ -11883,6 +11940,30 @@ describe('repository discovery', (): void => {
         ),
       ],
     ).toStrictEqual([]);
+  });
+
+  it('keeps response formats and exports source-backed', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/response-formats-exports.mdx', 'utf8');
+
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Response formats and exports guide',
+        REQUIRED_RESPONSE_FORMATS_EXPORTS_SNIPPETS,
+      ),
+      ...FORBIDDEN_RESPONSE_FORMATS_EXPORTS_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Response formats and exports guide contains stale or unsafe wording "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the get extraction page cursor-safe for JSON handoffs', (): void => {
