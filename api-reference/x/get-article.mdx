@@ -1,8 +1,8 @@
 ---
-title: "Get article"
-description: "Retrieve one X Article by tweet ID with title, body blocks, cover image, metrics, and author fields"
+title: "Get X article"
+description: "Retrieve one long-form X Article by tweet ID with title, body blocks, cover image, metrics, and author fields"
 api: "GET /x/articles/{tweetId}"
-keywords: ["get article", "X article API", "Twitter article API", "tweet article API", "long-form post", "article body", "cover image", "CSV export"]
+keywords: ["get X Article", "X Articles API", "X article API", "Twitter article API", "tweet article API", "long-form Twitter posts", "article body", "cover image", "CSV export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -14,7 +14,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 </Callout>
 
 <Info>
-  Get article returns one long-form X Article by wrapper tweet ID. It is also
+  Get X Article returns one long-form X Article by wrapper tweet ID. It is also
   useful as an X article API, Twitter article API, tweet article API, long-form
   post API, or article body endpoint. The canonical endpoint remains
   `GET /api/v1/x/articles/{tweetId}`.
@@ -93,6 +93,45 @@ body plus article metadata. Store `tweet_id`,
 `author_profile_picture`, `created_at`, `cover_image_url`, and `body_text` with
 the downstream record. Store `block_count` and `media_urls` when your archive,
 content pipeline, or agent handoff needs block-level completeness checks.
+
+## Find candidate articles
+
+Use this endpoint after you have the numeric wrapper tweet ID for an X Article.
+When a workflow starts from a mixed set of tweets, search first, store candidate
+tweet IDs, then try the article lookup once per candidate.
+
+<CardGroup cols={2}>
+  <Card title="Search first" icon="search">
+    Use [`Search tweets`](/api-reference/x/search-tweets) to find candidate
+    wrapper tweets by author, keyword, URL, or visible tweet text.
+  </Card>
+  <Card title="Article lookup" icon="file-text">
+    Call `GET /api/v1/x/articles/{tweetId}` with the candidate tweet ID when
+    the workflow needs the long-form body.
+  </Card>
+  <Card title="Fallback route" icon="git-branch">
+    If the response is `article_not_found`, store the terminal result and switch
+    to [`Get tweet`](/api-reference/x/get-tweet) or
+    [`Get tweet thread`](/api-reference/x/tweet-thread).
+  </Card>
+  <Card title="Saved export" icon="file-spreadsheet">
+    Use `article_extractor` when the workflow needs an extraction job, estimate,
+    or CSV/JSON/XLSX export.
+  </Card>
+</CardGroup>
+
+```json
+{
+  "content_job_id": "article-archive-q2",
+  "candidate_source": "GET /api/v1/x/tweets/search",
+  "article_route": "GET /api/v1/x/articles/{tweetId}",
+  "tweet_id": "2033891852621840387",
+  "content_type": "x_article",
+  "article_error": null,
+  "fallback_route": "GET /api/v1/x/tweets/{id}",
+  "saved_fields": ["article_title", "preview_text", "body_text", "cover_image_url"]
+}
+```
 
 ## Direct article handoff
 
