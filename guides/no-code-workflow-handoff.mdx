@@ -1,0 +1,202 @@
+---
+title: No-Code Workflow Handoff
+description: Connect Xquik monitor webhooks, extraction jobs, tweet search pages, and follower exports to Zapier, Make, Pipedream, n8n, Sheets, CRM, and queue workflows.
+keywords:
+  [
+    "no-code Twitter workflow",
+    "no-code X API",
+    "Zapier Twitter API",
+    "Make Twitter API",
+    "Pipedream Twitter API",
+    "X webhook workflow",
+    "Twitter webhook workflow",
+    "follower export workflow",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use this guide when a no-code or low-code workflow needs Xquik data without a
+custom backend. Pick one handoff lane, normalize IDs early, and keep webhook
+signing material out of shared workflow history.
+
+## Pick the Handoff Lane
+
+<CardGroup cols={2}>
+  <Card title="Instant Monitor Events" icon="radio">
+    Use `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then
+    `POST /api/v1/webhooks`, when the workflow needs fresh account or keyword
+    events.
+  </Card>
+
+  <Card title="Bulk Export Jobs" icon="database">
+    Use `POST /api/v1/extractions`, poll `GET /api/v1/extractions`, then
+    export CSV, JSON, or XLSX when the workflow needs many rows.
+  </Card>
+
+  <Card title="Direct Read Pages" icon="search">
+    Use `GET /api/v1/x/tweets/search` or follower pages when the workflow owns
+    the cursor loop and can store `next_cursor`.
+  </Card>
+
+  <Card title="Replay and Repair" icon="history">
+    Use `GET /api/v1/events` and `GET /api/v1/webhooks/{id}/deliveries` after
+    receiver downtime, failed steps, or queue backpressure.
+  </Card>
+</CardGroup>
+
+## Instant Monitor Trigger
+
+Create or choose the monitor first, then point a webhook at the no-code
+receiver URL. Test the webhook before routing alerts to Slack, Sheets, CRM, or
+queues.
+
+```bash
+curl -X POST https://xquik.com/api/v1/webhooks \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/xquik/no-code-receiver",
+    "eventTypes": ["tweet.new", "tweet.reply"]
+  }' | jq
+```
+
+```bash
+curl -X POST https://xquik.com/api/v1/webhooks/15/test \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+Use `deliveryId` as the per-endpoint retry key and `streamEventId` when one
+monitor event should process once across receiver changes.
+
+## Bulk Export Trigger
+
+Use extraction jobs when the workflow needs a file, a batch, or a repeatable
+job receipt instead of one live event.
+
+```bash
+curl "https://xquik.com/api/v1/extractions?status=completed&limit=25" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```bash
+curl "https://xquik.com/api/v1/extractions/77777/export?format=csv" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -o xquik-export.csv
+```
+
+Store `job.id`, `job.toolType`, `job.status`, `hasMore`, and `nextCursor`
+before sending rows to Sheets, CRM, or warehouse modules.
+
+## Direct Read Loop
+
+Use direct reads when the workflow needs a small page now and can keep cursor
+state in the platform's store.
+
+```bash
+curl "https://xquik.com/api/v1/x/tweets/search?q=xquik%20min_faves%3A10&limit=50" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```bash
+curl "https://xquik.com/api/v1/x/users/xquikcom/followers?pageSize=200" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+For tweet search, store `has_next_page` and `next_cursor`. For follower pages,
+store `has_next_page` and `next_cursor`, then pass `next_cursor` back as
+`cursor` only when more pages are required.
+
+## Shared Row Shape
+
+Map every no-code receiver into one stable storage row before branching to
+alerts, CRM, spreadsheets, or AI review.
+
+```json
+{
+  "workflow_id": "xquik-no-code-q2",
+  "handoff_lane": "instant_monitor",
+  "platform": "zapier",
+  "source_route": "POST /api/v1/webhooks",
+  "monitor_id": "42",
+  "keyword_monitor_id": null,
+  "webhook_id": "15",
+  "delivery_id": "502",
+  "stream_event_id": "9002",
+  "event_type": "tweet.new",
+  "tweet_id": "1893704267862470862",
+  "user_id": "987654321",
+  "username": "customer_handle",
+  "retry_key": "delivery_id:502",
+  "event_dedupe_key": "stream_event_id:9002",
+  "replay_route": "GET /api/v1/events?after=9002",
+  "received_at": "2026-05-24T20:33:00.000Z"
+}
+```
+
+Keep API keys, endpoint signing values, raw request bodies, raw signatures, and
+full headers out of workflow history, sheet rows, CRM records, and queue
+payloads.
+
+## Platform Notes
+
+<CardGroup cols={2}>
+  <Card title="Zapier" icon="zap" href="/guides/zapier">
+    Use REST Hooks for instant monitor events and polling triggers for
+    completed extractions or delivery failures.
+  </Card>
+
+  <Card title="Make" icon="route" href="/guides/make">
+    Use a custom app with instant webhooks, data stores, iterators, and a
+    universal API call module for endpoints not yet modeled.
+  </Card>
+
+  <Card title="Pipedream" icon="code" href="/guides/pipedream">
+    Use HTTP sources or component sources for monitor events, then export stable
+    fields to later steps.
+  </Card>
+
+  <Card title="n8n" icon="workflow" href="/guides/n8n">
+    Use HTTP Request nodes, webhook triggers, and workflow state for replay,
+    cursor, and dedupe checkpoints.
+  </Card>
+</CardGroup>
+
+## Cost and Retry Notes
+
+<Check>
+  Active account and keyword monitors check every 1 second and cost 21 credits
+  per active monitor-hour. Event storage and webhook delivery are included.
+</Check>
+
+<Check>
+  Direct tweet search and follower pages are metered by returned rows. Store
+  cursors so retries do not restart from page 1.
+</Check>
+
+<Check>
+  Extraction jobs return `202` with `id`, `toolType`, and `status`. Poll job
+  detail or list completed jobs before exporting rows.
+</Check>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Brand Monitoring" icon="radio" href="/guides/brand-monitoring-workflow">
+    Build account and keyword monitor workflows with signed webhooks and replay.
+  </Card>
+
+  <Card title="Extraction Workflow" icon="database" href="/guides/extraction-workflow">
+    Create extraction jobs, fetch paginated results, and export files.
+  </Card>
+
+  <Card title="Webhook Testing" icon="webhook" href="/guides/webhook-testing">
+    Verify signed test deliveries before accepting production events.
+  </Card>
+
+  <Card title="Response Formats" icon="file-json" href="/guides/response-formats-exports">
+    Choose CSV, JSON, XLSX, PDF, or paginated JSON for downstream tools.
+  </Card>
+</CardGroup>

@@ -7102,6 +7102,47 @@ const REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS = [
   'Pause inactive monitors with `PATCH /api/v1/monitors/{id}`',
 ] as const;
 
+const REQUIRED_NO_CODE_WORKFLOW_HANDOFF_SNIPPETS = [
+  'title: No-Code Workflow Handoff',
+  'Connect Xquik monitor webhooks, extraction jobs, tweet search pages, and follower exports to Zapier, Make, Pipedream, n8n, Sheets, CRM, and queue workflows.',
+  '## Pick the Handoff Lane',
+  '<Card title="Instant Monitor Events" icon="radio">',
+  '`POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`',
+  '`POST /api/v1/webhooks`',
+  '<Card title="Bulk Export Jobs" icon="database">',
+  '`POST /api/v1/extractions`',
+  'export CSV, JSON, or XLSX',
+  '<Card title="Direct Read Pages" icon="search">',
+  '`GET /api/v1/x/tweets/search`',
+  '<Card title="Replay and Repair" icon="history">',
+  '`GET /api/v1/events` and `GET /api/v1/webhooks/{id}/deliveries`',
+  '## Instant Monitor Trigger',
+  '/api/v1/webhooks/15/test',
+  '`deliveryId` as the per-endpoint retry key',
+  'and `streamEventId` when one',
+  '## Bulk Export Trigger',
+  '/api/v1/extractions?status=completed&limit=25',
+  '/api/v1/extractions/77777/export?format=csv',
+  'Store `job.id`, `job.toolType`, `job.status`, `hasMore`, and `nextCursor`',
+  '## Direct Read Loop',
+  '/api/v1/x/tweets/search?q=xquik%20min_faves%3A10&limit=50',
+  '/api/v1/x/users/xquikcom/followers?pageSize=200',
+  '## Shared Row Shape',
+  '"handoff_lane": "instant_monitor"',
+  '"retry_key": "delivery_id:502"',
+  '"event_dedupe_key": "stream_event_id:9002"',
+  '"replay_route": "GET /api/v1/events?after=9002"',
+  'Keep API keys, endpoint signing values, raw request bodies, raw signatures, and',
+  '## Platform Notes',
+  '<Card title="Zapier" icon="zap" href="/guides/zapier">',
+  '<Card title="Make" icon="route" href="/guides/make">',
+  '<Card title="Pipedream" icon="code" href="/guides/pipedream">',
+  '<Card title="n8n" icon="workflow" href="/guides/n8n">',
+  '## Cost and Retry Notes',
+  'Active account and keyword monitors check every 1 second and cost 21 credits',
+  'Extraction jobs return `202` with `id`, `toolType`, and `status`.',
+] as const;
+
 const REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS = [
   'title: Request-efficient API usage',
   'Use this guide when you need fewer duplicate reads, cleaner checkpoints, and better downstream handoffs.',
@@ -13172,6 +13213,20 @@ describe('repository discovery', (): void => {
         source,
         'Brand monitoring workflow',
         REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the no-code workflow handoff source-backed', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/no-code-workflow-handoff.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'No-code workflow handoff',
+        REQUIRED_NO_CODE_WORKFLOW_HANDOFF_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
