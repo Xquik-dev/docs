@@ -3235,8 +3235,8 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
-  'title: "Get Tweet Replies"',
-  'Get Tweet Replies returns reply tweets for one X post by numeric tweet ID.',
+  'title: "Get tweet replies"',
+  'Get tweet replies returns reply tweets for one X post by numeric tweet ID.',
   'conversation analysis, support queues, moderation review, giveaway',
   '`GET /api/v1/x/tweets/{id}/replies`',
   '# First page of replies',
@@ -3836,7 +3836,7 @@ const FORBIDDEN_COMMUNITY_SEARCH_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
-  'title: "Get Followers"',
+  'title: "Get followers"',
   'Get an X account\'s followers by username or user ID',
   'Follower Export API',
   'X followers API',
@@ -4196,8 +4196,8 @@ const FORBIDDEN_SEARCH_USERS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS = [
-  'title: "Get User Mentions Timeline"',
-  'Get User Mentions Timeline returns tweets that mention one X account.',
+  'title: "Get user mentions timeline"',
+  'Get user mentions timeline returns tweets that mention one X account.',
   'brand mentions, support inboxes, lead routing, and agent handoffs',
   '`GET /api/v1/x/users/{id}/mentions`',
   '# Username mentions timeline',
@@ -4454,7 +4454,7 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
 const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   'return paginated JSON tweet data for CRM, agents, or export handoff',
   'Use Search Tweets for keyword, hashtag, operator, and filtered discovery.',
-  '[Get User Timeline](/api-reference/x/user-tweets)',
+  '[Get user timeline](/api-reference/x/user-tweets)',
   '`GET /x/users/{id}/tweets`',
   'When `limit` is present, a bare',
   '`q=from:username` with no `sinceTime` or `untilTime` is handled as a user',
@@ -4733,8 +4733,8 @@ const FORBIDDEN_TIMELINE_API_RAW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS = [
-  'title: "Get User Timeline"',
-  'Get User Timeline is the User Timeline API for a single public X profile.',
+  'title: "Get user timeline"',
+  'Get user timeline is the User Timeline API for a single public X profile.',
   '"user tweets," "profile',
   'timeline," or "X user timeline."',
   '`GET /api/v1/x/users/{id}/tweets`',
@@ -4748,7 +4748,7 @@ const REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS = [
   '`GET /x/users/{id}/tweets`',
   'CRM, queue worker, or warehouse job needs',
   'one user\'s profile timeline.',
-  'This Get User Timeline endpoint accepts either a',
+  'This endpoint accepts either a username or numeric',
   'username or numeric user ID',
   'The examples above write JSON Lines rows',
   'source profile, tweet ID,',
@@ -7828,7 +7828,7 @@ const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
   '`search_users(credentials, query, cursor=None)` calls `GET /x/users/search`.',
   '<Card title="Get User" icon="user-round">',
   '`get_user(credentials, user_id)` calls `GET /x/users/{id}`.',
-  '<Card title="Get User Timeline" icon="list">',
+  '<Card title="Get user timeline" icon="list">',
   '`get_user_tweets(credentials, user_id, include_replies=False)` calls `GET /x/users/{id}/tweets`.',
   '<Card title="Get Trends" icon="trending-up">',
   '`get_trends(credentials, woeid=1, count=30)` calls `GET /x/trends`.',
@@ -9218,6 +9218,25 @@ const FORBIDDEN_COMPARISON_POSITIONING = [
   ['high', 'tech'].join('-'),
 ] as const;
 
+const ALLOWED_ENDPOINT_TITLE_UPPERCASE_TOKENS: ReadonlySet<string> = new Set([
+  'API',
+  'CLI',
+  'DM',
+  'HMAC',
+  'ID',
+  'IDs',
+  'JSON',
+  'MCP',
+  'MPP',
+  'OAuth',
+  'REST',
+  'SDK',
+  'TOTP',
+  'URL',
+  'X',
+  'XLSX',
+]);
+
 function listAlternativeFiles(): readonly string[] {
   return [
     'alternatives.mdx',
@@ -9511,6 +9530,40 @@ function collectRedundantApiTitleSuffixFindings(): readonly DiscoveryFinding[] {
   return findings;
 }
 
+function collectEndpointTitleCaseFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const file of listPublicMarkdownFiles('api-reference')) {
+    const source = readFileSync(file, 'utf8');
+
+    if (!source.includes('\napi:')) {
+      continue;
+    }
+
+    const title = source.match(/^title:\s*"?(.*?)"?\s*$/mu)?.[1];
+    if (title === undefined) {
+      continue;
+    }
+
+    const [, ...tokens] = title.split(/\s+/u);
+    for (const token of tokens) {
+      const normalized = token.replace(/^[^A-Za-z0-9#]+|[^A-Za-z0-9#]+$/gu, '');
+      if (
+        normalized !== '' &&
+        !ALLOWED_ENDPOINT_TITLE_UPPERCASE_TOKENS.has(normalized) &&
+        /^[A-Z][a-z]/u.test(normalized)
+      ) {
+        findings.push({
+          file,
+          issue: `Endpoint title "${title}" uses title case token "${normalized}". Use sentence case for endpoint labels and keep acronyms uppercase.`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
 describe('repository discovery', (): void => {
   it('keeps the public README concrete and easy to find from GitHub search', (): void => {
     expect.assertions(1);
@@ -9529,6 +9582,12 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     expect(collectRedundantApiTitleSuffixFindings()).toStrictEqual([]);
+  });
+
+  it('keeps endpoint titles in sentence case', (): void => {
+    expect.assertions(1);
+
+    expect(collectEndpointTitleCaseFindings()).toStrictEqual([]);
   });
 
   it('keeps public confidentiality wording generic and product-approved', (): void => {
