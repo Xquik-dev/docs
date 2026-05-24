@@ -1,8 +1,8 @@
 ---
-title: "Tweet replies"
-description: "Scrape tweet replies from the X API with cursor pagination, Unix timestamp filters, returned reply fields, and 1-credit-per-reply billing"
+title: "Get Tweet Replies"
+description: "Retrieve replies for one X tweet with cursor pagination, Unix timestamp windows, author fields, engagement metrics, media, and export handoffs"
 api: "GET /x/tweets/{id}/replies"
-keywords: ["tweet replies", "scrape tweet replies", "tweet replies API", "Twitter replies API", "X API replies", "reply export", "JSON export", "CSV export", "moderation queue"]
+keywords: ["get tweet replies", "tweet replies API", "Twitter replies API", "X replies API", "tweet comments", "reply export", "JSON export", "CSV export", "moderation queue"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -18,9 +18,28 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
   **1 credit per tweet returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Accepts [MPP](/mpp/overview)
 </Callout>
 
+<Info>
+  Get Tweet Replies returns reply tweets for one X post by numeric tweet ID. Use
+  it for conversation analysis, support queues, moderation review, giveaway
+  audits, and agent handoffs. The canonical route stays
+  `GET /api/v1/x/tweets/{id}/replies`.
+</Info>
+
 <CodeGroup>
   ```bash cURL
+  # First page of replies
   curl "https://xquik.com/api/v1/x/tweets/1893456789012345678/replies" \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+
+  # Resume with the previous next_cursor
+  curl -G "https://xquik.com/api/v1/x/tweets/1893456789012345678/replies" \
+    --data-urlencode "cursor=DAACCgACGE..." \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+
+  # Bound a campaign or moderation window
+  curl -G "https://xquik.com/api/v1/x/tweets/1893456789012345678/replies" \
+    --data-urlencode "sinceTime=1777392000" \
+    --data-urlencode "untilTime=1777478400" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
@@ -158,24 +177,34 @@ giveaway, or agent workflow needs reply rows as JSON. The examples above write J
 
 Direct replies cost 1 credit per tweet returned. Low credit balances can return fewer replies than a full page; zero affordable results return `402 insufficient_credits`. Retry `429` with the `Retry-After` header, and retry `424` or `502` after a short backoff.
 
+## Which replies endpoint?
+
+- Use `GET /api/v1/x/tweets/{id}/replies` for one tweet's replies as JSON rows.
+- Use [`reply_extractor`](/guides/tweet-replies-export) when you need saved CSV, JSON, or XLSX exports.
+- Use `GET /api/v1/x/tweets/search` when you need keyword, operator, structured-filter, or `queryType` search.
+- Use `GET /api/v1/x/tweets/{id}/thread` when you need ordered thread context around a tweet.
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>
-  Tweet ID (numeric string).
+  Numeric X tweet ID. Pass the source tweet whose replies you want to retrieve.
 </ParamField>
 
 ## Query parameters
 
 <ParamField query="cursor" type="string">
-  Pagination cursor from a previous response. Omit for the first page.
+  Opaque pagination cursor for older reply pages. Omit it for the first page,
+  then pass the `next_cursor` value from the previous response.
 </ParamField>
 
 <ParamField query="sinceTime" type="string">
-  Unix timestamp in seconds. Only return replies after this time.
+  Unix timestamp in seconds. Only return replies after this time when a poller,
+  moderation queue, or campaign report needs a bounded window.
 </ParamField>
 
 <ParamField query="untilTime" type="string">
-  Unix timestamp in seconds. Only return replies before this time.
+  Unix timestamp in seconds. Only return replies before this time. Pair with
+  `sinceTime` for closed campaign, support, or audit windows.
 </ParamField>
 
 ### Tweet result filters

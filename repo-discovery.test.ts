@@ -3235,6 +3235,16 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
+  'title: "Get Tweet Replies"',
+  'Get Tweet Replies returns reply tweets for one X post by numeric tweet ID.',
+  'conversation analysis, support queues, moderation review, giveaway',
+  '`GET /api/v1/x/tweets/{id}/replies`',
+  '# First page of replies',
+  '# Resume with the previous next_cursor',
+  '--data-urlencode "cursor=DAACCgACGE..."',
+  '# Bound a campaign or moderation window',
+  '--data-urlencode "sinceTime=1777392000"',
+  '--data-urlencode "untilTime=1777478400"',
   '## Direct replies handoff',
   '`GET /x/tweets/{id}/replies`',
   'let pageCursor = "";',
@@ -3299,6 +3309,14 @@ const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   '1 credit per tweet returned',
   '`402 insufficient_credits`',
   '`Retry-After`',
+  '## Which replies endpoint?',
+  'Use `GET /api/v1/x/tweets/{id}/replies` for one tweet\'s replies as JSON rows.',
+  'Use [`reply_extractor`](/guides/tweet-replies-export) when you need saved CSV, JSON, or XLSX exports.',
+  'Use `GET /api/v1/x/tweets/search` when you need keyword, operator, structured-filter, or `queryType` search.',
+  'Use `GET /api/v1/x/tweets/{id}/thread` when you need ordered thread context around a tweet.',
+  'Opaque pagination cursor for older reply pages.',
+  'Pair with',
+  '`sinceTime` for closed campaign, support, or audit windows.',
 ] as const;
 
 const FORBIDDEN_TWEET_REPLIES_API_RAW_OUTPUT_SNIPPETS = [
