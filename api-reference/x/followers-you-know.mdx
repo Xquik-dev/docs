@@ -1,8 +1,8 @@
 ---
 title: "Get followers you know"
-description: "Export mutual X followers as paginated JSON for warm-intro, CRM, scoring, and agent workflows"
+description: "Retrieve mutual X followers between the authenticated context and one target user for warm-intro, CRM, scoring, and agent workflows"
 api: "GET /x/users/{id}/followers-you-know"
-keywords: ["mutual followers", "followers you know", "Twitter mutual followers API", "X mutual followers API", "warm intro", "CRM enrichment", "MPP"]
+keywords: ["get followers you know", "mutual followers API", "followers you know API", "Twitter mutual followers API", "X mutual followers API", "warm intro", "CRM enrichment", "DM preflight", "MPP"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -17,12 +17,21 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Accepts [MPP](/mpp/overview)
 </Callout>
 
+<Info>
+  Get followers you know returns mutual followers between the authenticated
+  context and one target X user. It is also useful as a mutual followers API,
+  followers you know API, X mutual followers API, or Twitter mutual followers
+  API. The canonical endpoint remains
+  `GET /api/v1/x/users/{id}/followers-you-know`.
+</Info>
+
 <CodeGroup>
-  ```bash cURL
+  ```bash First page
   curl https://xquik.com/api/v1/x/users/44196397/followers-you-know \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+  ```
 
-  # Page 2
+  ```bash Next page
   curl -G https://xquik.com/api/v1/x/users/44196397/followers-you-know \
     --data-urlencode "cursor=abc123" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
@@ -34,42 +43,67 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data.users);
+  const mutualRows = data.users.map((user) => ({
+    target_user_id: userId,
+    x_user_id: user.id,
+    username: user.username,
+    display_name: user.name,
+    can_dm: user.canDm ?? null,
+    follower_count: user.followers ?? null,
+    verified: user.verified ?? false,
+    verified_type: user.verifiedType ?? null,
+    profile_image_url: user.profilePicture ?? null,
+  }));
+  const nextCursor = data.has_next_page ? data.next_cursor : null;
+  const checkpoint = { target_user_id: userId, next_cursor: nextCursor };
 
-  // Paginate
-  if (data.has_next_page) {
-    const next = await fetch(
-      `https://xquik.com/api/v1/x/users/${userId}/followers-you-know?cursor=${data.next_cursor}`,
-      { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
-    );
-    console.log((await next.json()).users);
+  for (const row of mutualRows) {
+    process.stdout.write(`${JSON.stringify(row)}\n`);
   }
+  process.stdout.write(`${JSON.stringify(checkpoint)}\n`);
   ```
 
   ```python Python
+  import json
   import requests
 
+  user_id = "44196397"
   response = requests.get(
-      "https://xquik.com/api/v1/x/users/44196397/followers-you-know",
+      f"https://xquik.com/api/v1/x/users/{user_id}/followers-you-know",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data["users"])
+  mutual_rows = [
+      {
+          "target_user_id": user_id,
+          "x_user_id": user["id"],
+          "username": user["username"],
+          "display_name": user["name"],
+          "can_dm": user.get("canDm"),
+          "follower_count": user.get("followers"),
+          "verified": user.get("verified", False),
+          "verified_type": user.get("verifiedType"),
+          "profile_image_url": user.get("profilePicture"),
+      }
+      for user in data["users"]
+  ]
+  next_cursor = data["next_cursor"] if data["has_next_page"] else None
+  checkpoint = {"target_user_id": user_id, "next_cursor": next_cursor}
 
-  # Paginate
-  while data["has_next_page"]:
-      data = requests.get(
-          "https://xquik.com/api/v1/x/users/44196397/followers-you-know",
-          params={"cursor": data["next_cursor"]},
-          headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-      ).json()
-      print(data["users"])
+  for row in mutual_rows:
+      print(json.dumps(row))
+  print(json.dumps(checkpoint))
   ```
 </CodeGroup>
 
+The Node.js and Python snippets shape durable mutual follower rows instead of
+printing the full response page. Persist the rows with the checkpoint so a
+worker can resume pagination with `next_cursor` without duplicating already
+imported profiles.
+
 ## Direct mutual followers handoff
 
-Use `GET /x/users/{id}/followers-you-know` when a sales, community, recruiting, support, CRM, or agent workflow needs one JSON page of mutual followers for a target user. The endpoint returns people who follow both the authenticated context and the target user.
+Use `GET /x/users/{id}/followers-you-know` when a sales, community, recruiting, support, CRM, or agent workflow needs one JSON page of mutual followers for a target user. The path `id` is the target numeric X user ID. The endpoint returns people who follow both the authenticated context and the target user.
 
 <CardGroup cols={2}>
   <Card title="Mutual rows" icon="users-round">
@@ -100,14 +134,37 @@ Direct mutual followers cost 1 credit per user returned. Low credit balances can
 ## Path parameters
 
 <ParamField path="id" type="string" required>
-  X user ID (numeric string).
+  Target X user ID as a numeric string. Use [Get user](/api-reference/x/get-user)
+  first if you only have a username.
 </ParamField>
 
 ## Query parameters
 
 <ParamField query="cursor" type="string">
-  Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
+  Pagination cursor from `next_cursor` in a previous response. Omit for the
+  first page. Pass a cursor only when `has_next_page` is true.
 </ParamField>
+
+## Which follower graph endpoint?
+
+<CardGroup cols={2}>
+  <Card title="Mutual followers" icon="users-round">
+    Use `GET /x/users/{id}/followers-you-know` for people who follow both the
+    authenticated context and the target user.
+  </Card>
+  <Card title="All followers" icon="list-tree">
+    Use [`GET /x/users/{id}/followers`](/api-reference/x/followers) for all
+    followers of one target profile.
+  </Card>
+  <Card title="Verified followers" icon="badge-check">
+    Use [`GET /x/users/{id}/verified-followers`](/api-reference/x/verified-followers)
+    when you only need verified followers of the target profile.
+  </Card>
+  <Card title="DM handoff" icon="message-square">
+    Use [`Send DM`](/api-reference/x-write/send-dm) only after your workflow has
+    a user-approved outreach step.
+  </Card>
+</CardGroup>
 
 ## Headers
 
@@ -214,5 +271,5 @@ Direct mutual followers cost 1 credit per user returned. Low credit balances can
 </Tabs>
 
 <Note>
-  **Related:** [Direct Message Workflow](/guides/direct-message-workflow) for user-approved outreach after `users[].canDm`, [Send DM](/api-reference/x-write/send-dm) to send and store `messageId`, [DM History](/api-reference/x/dm-history) to read participant-scoped context, [Followers](/api-reference/x/followers), [Following](/api-reference/x/following), and [Verified Followers](/api-reference/x/verified-followers).
+  **Related:** [Direct message workflow](/guides/direct-message-workflow) for user-approved outreach after `users[].canDm`, [Send DM](/api-reference/x-write/send-dm) to send and store `messageId`, [DM history](/api-reference/x/dm-history) to read participant-scoped context, [Get followers](/api-reference/x/followers), [Get following](/api-reference/x/following), and [Get verified followers](/api-reference/x/verified-followers).
 </Note>

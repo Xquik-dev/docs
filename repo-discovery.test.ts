@@ -4363,17 +4363,39 @@ const FORBIDDEN_VERIFIED_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS = [
+  'description: "Retrieve mutual X followers between the authenticated context',
+  'mutual followers API',
+  'followers you know API',
+  'X mutual followers API',
+  'Twitter mutual followers API',
+  'The canonical endpoint remains',
+  '`GET /api/v1/x/users/{id}/followers-you-know`',
+  '```bash First page',
+  '/x/users/44196397/followers-you-know',
+  '```bash Next page',
+  '--data-urlencode "cursor=abc123"',
+  'const mutualRows = data.users.map((user) => ({',
+  'target_user_id: userId',
+  'can_dm: user.canDm ?? null',
+  'const checkpoint = { target_user_id: userId, next_cursor: nextCursor };',
+  'import json',
+  'mutual_rows = [',
+  '"target_user_id": user_id',
+  '"can_dm": user.get("canDm")',
+  'shape durable mutual follower rows instead of',
+  'worker can resume pagination with `next_cursor`',
   '## Direct mutual followers handoff',
   '`GET /x/users/{id}/followers-you-know`',
   'sales, community, recruiting, support, CRM, or agent workflow',
+  'The path `id` is the target numeric X user ID.',
   'people who follow both the authenticated context and the target user',
   '<CardGroup cols={2}>',
   '<Card title="Mutual rows"',
   '<Card title="Warm-intro labels"',
   '<Card title="DM preflight"',
-  '[Direct Message Workflow](/guides/direct-message-workflow)',
+  '[Direct message workflow](/guides/direct-message-workflow)',
   '[Send DM](/api-reference/x-write/send-dm)',
-  '[DM History](/api-reference/x/dm-history)',
+  '[DM history](/api-reference/x/dm-history)',
   '`users[]`',
   '`users[].id`',
   '`x_user_id`',
@@ -4382,9 +4404,26 @@ const REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS = [
   '`messageId`',
   'participant-scoped context',
   '`has_next_page` and `next_cursor`',
+  'Target X user ID as a numeric string.',
+  '[Get user](/api-reference/x/get-user)',
+  'Pass a cursor only when `has_next_page` is true.',
+  '## Which follower graph endpoint?',
+  '<Card title="Mutual followers"',
+  'Use `GET /x/users/{id}/followers-you-know` for people who follow both',
+  '<Card title="All followers"',
+  '[`GET /x/users/{id}/followers`](/api-reference/x/followers)',
+  '<Card title="Verified followers"',
+  '[`GET /x/users/{id}/verified-followers`](/api-reference/x/verified-followers)',
+  '<Card title="DM handoff"',
   '1 credit per user returned',
   '`402 insufficient_credits`',
   'USD 0.00015 per user returned',
+] as const;
+
+const FORBIDDEN_FOLLOWERS_YOU_KNOW_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data.users);',
+  'console.log((await next.json()).users);',
+  'print(data["users"])',
 ] as const;
 
 const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
@@ -11379,13 +11418,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/x/followers-you-know.mdx', 'utf8');
 
-    expect(
-      collectSnippetFindings(
+    expect([
+      ...collectSnippetFindings(
         source,
         'Followers you know API page',
         REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS,
       ),
-    ).toStrictEqual([]);
+      ...FORBIDDEN_FOLLOWERS_YOU_KNOW_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Followers you know API page prints raw mutual follower data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps tweet search export workflow steps concrete', (): void => {
