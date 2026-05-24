@@ -6914,6 +6914,15 @@ const FORBIDDEN_WORKFLOW_OVERVIEW_STALE_SNIPPETS = [
   'use `limit` only for bounded pulls',
 ] as const;
 
+const FORBIDDEN_WORKFLOW_ENDPOINT_FINDER_TABLE_SNIPPETS = [
+  '| Job | First API | Best handoff |',
+  '| One tweet by ID | `GET /x/tweets/{id}` |',
+  '| Many known tweet IDs | `GET /x/tweets` |',
+  '| Keyword or advanced search | `GET /x/tweets/search` |',
+  '| Profile timeline | `GET /x/users/{id}/tweets` |',
+  '| Saved file exports | `GET /extractions/{id}/export` |',
+] as const;
+
 const REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS = [
   'monitor tweets',
   'signed webhooks',
@@ -12839,6 +12848,16 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Workflows guide reintroduced stale pagination copy with "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+        ...FORBIDDEN_WORKFLOW_ENDPOINT_FINDER_TABLE_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Workflows endpoint finder reintroduced a mobile-clipping table with "${snippet}". Use the bullet finder format instead.`,
                   },
                 ]
               : [],
