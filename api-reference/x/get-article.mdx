@@ -1,8 +1,8 @@
 ---
 title: "Get article"
-description: "Retrieve the full content of an X Article (long-form post) by tweet ID"
+description: "Retrieve one X Article by tweet ID with title, body blocks, cover image, metrics, and author fields"
 api: "GET /x/articles/{tweetId}"
-keywords: ["article", "long-form", "content", "body", "cover image", "x api"]
+keywords: ["get article", "X article API", "Twitter article API", "tweet article API", "long-form post", "article body", "cover image", "CSV export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -10,11 +10,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <LlmsDirective />
 
 <Callout icon="coins" color="#5c3327">
-  **5 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+  **5 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Accepts [MPP](/mpp/overview)
 </Callout>
 
+<Info>
+  Get article returns one long-form X Article by wrapper tweet ID. It is also
+  useful as an X article API, Twitter article API, tweet article API, long-form
+  post API, or article body endpoint. The canonical endpoint remains
+  `GET /api/v1/x/articles/{tweetId}`.
+</Info>
+
 <CodeGroup>
-  ```bash cURL
+  ```bash Article tweet ID
   curl https://xquik.com/api/v1/x/articles/2033891852621840387 \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
@@ -27,6 +34,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   const data = await response.json();
   const contentBlocks = data.article.contents ?? [];
   const author = data.author ?? {};
+  const bodyBlocks = contentBlocks.filter((block) => block.text);
+  const mediaBlocks = contentBlocks.filter((block) => block.url);
   const handoff = {
     tweet_id: tweetId,
     article_title: data.article.title ?? null,
@@ -37,10 +46,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     author_profile_picture: author.profilePicture ?? null,
     created_at: data.article.createdAt ?? null,
     cover_image_url: data.article.coverImageUrl ?? null,
-    body_text: contentBlocks
-      .map((block) => block.text)
-      .filter(Boolean)
-      .join("\n\n"),
+    body_text: bodyBlocks.map((block) => block.text).join("\n\n"),
+    block_count: contentBlocks.length,
+    media_urls: mediaBlocks.map((block) => block.url),
   };
   process.stdout.write(`${JSON.stringify(handoff)}\n`);
   ```
@@ -56,6 +64,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   )
   data = response.json()
   content_blocks = data["article"].get("contents", [])
+  body_blocks = [block for block in content_blocks if block.get("text")]
+  media_blocks = [block for block in content_blocks if block.get("url")]
   author = data.get("author") or {}
   handoff = {
       "tweet_id": tweet_id,
@@ -67,59 +77,95 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "author_profile_picture": author.get("profilePicture"),
       "created_at": data["article"].get("createdAt"),
       "cover_image_url": data["article"].get("coverImageUrl"),
-      "body_text": "\n\n".join(
-          block["text"] for block in content_blocks if block.get("text")
-      ),
+      "body_text": "\n\n".join(block["text"] for block in body_blocks),
+      "block_count": len(content_blocks),
+      "media_urls": [block["url"] for block in media_blocks],
   }
   print(json.dumps(handoff))
   ```
 
-  ```go Go
-  package main
-
-  import (
-  	"fmt"
-  	"io"
-  	"log"
-  	"net/http"
-  )
-
-  func main() {
-  	tweetID := "2033891852621840387"
-  	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/x/articles/"+tweetID, nil)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-
-  	resp, err := http.DefaultClient.Do(req)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	defer resp.Body.Close()
-
-  	body, err := io.ReadAll(resp.Body)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	fmt.Println(string(body))
-  }
-  ```
 </CodeGroup>
 
-Use `GET /x/articles/{tweetId}` when a workflow needs one long-form post body
-plus article metadata. The Node.js and Python snippets shape a durable handoff
-row instead of printing the full lookup response. Store `tweet_id`,
+The examples shape durable article handoff rows instead of raw lookup dumps.
+Use `GET /api/v1/x/articles/{tweetId}` when a workflow needs one long-form post
+body plus article metadata. Store `tweet_id`,
 `article_title`, `preview_text`, `author_id`, `author_username`, `author_name`,
 `author_profile_picture`, `created_at`, `cover_image_url`, and `body_text` with
-the downstream record.
+the downstream record. Store `block_count` and `media_urls` when your archive,
+content pipeline, or agent handoff needs block-level completeness checks.
+
+## Direct article handoff
+
+Use `GET /api/v1/x/articles/{tweetId}` when you have the numeric tweet ID for an
+X Article wrapper tweet and need the article body. Use the final status ID from
+an X Article URL. A normal tweet ID can be valid and still return
+`404 article_not_found` when it is not an X Article.
+
+<CardGroup cols={2}>
+  <Card title="Article row" icon="file-text">
+    Store `article.title`, `previewText`, `coverImageUrl`, `createdAt`, metrics,
+    and a derived `body_text` field.
+  </Card>
+  <Card title="Body blocks" icon="list-tree">
+    Store `article.contents[]` when you need headings, lists, quotes, media,
+    dividers, code blocks, and inline styles.
+  </Card>
+  <Card title="Author joins" icon="user-round">
+    Store `author.id`, `username`, `name`, and `profilePicture` when returned.
+  </Card>
+  <Card title="Media assets" icon="image">
+    Store `coverImageUrl` and media-block `url` values for article archives and
+    content review.
+  </Card>
+  <Card title="Not an article" icon="file-question">
+    Treat `article_not_found` as a terminal lookup result for that tweet ID.
+    Ask for an X Article URL or use a tweet/thread endpoint.
+  </Card>
+  <Card title="Saved exports" icon="file-spreadsheet">
+    Use `article_extractor` when you need a saved extraction job or CSV, JSON,
+    or XLSX export.
+  </Card>
+</CardGroup>
+
+Direct article reads cost 5 credits per successful call. For MPP callers, this
+endpoint is billed as a fixed charge at USD 0.00105 per call.
 
 ## Path parameters
 
 <ParamField path="tweetId" type="string" required>
   Numeric tweet ID of the X Article, 15-20 digits. If you have a tweet URL,
-  use the final status ID.
+  use the final status ID. Regular tweet URLs can return `article_not_found`.
 </ParamField>
+
+## Which article endpoint?
+
+<CardGroup cols={2}>
+  <Card title="X article body" icon="file-text">
+    Use `GET /x/articles/{tweetId}` for the title, body blocks, cover image,
+    metrics, and author fields of one X Article.
+  </Card>
+  <Card title="Single tweet" icon="message-square">
+    Use [`Get tweet`](/api-reference/x/get-tweet) for one tweet's text, media,
+    author, and engagement metrics.
+  </Card>
+  <Card title="Tweet thread" icon="list-tree">
+    Use [`Get tweet thread`](/api-reference/x/tweet-thread) for conversation
+    context around the article wrapper tweet.
+  </Card>
+  <Card title="Search tweets" icon="search">
+    Use [`Search tweets`](/api-reference/x/search-tweets) to discover candidate
+    article tweets by keyword, URL, author, or other filters.
+  </Card>
+  <Card title="Saved exports" icon="file-spreadsheet">
+    Use [`Create extraction`](/api-reference/extractions/create) with
+    `toolType=article_extractor` when you need a saved job or CSV, JSON, or XLSX
+    export.
+  </Card>
+  <Card title="Article-not-found handling" icon="circle-alert">
+    Do not retry the same ID after `article_not_found`; switch to tweet lookup
+    or ask for an X Article URL.
+  </Card>
+</CardGroup>
 
 ## Headers
 
@@ -268,9 +314,5 @@ the downstream record.
 </Tabs>
 
 <Note>
-  **Article vs Tweet:** Use [Get Tweet](/api-reference/x/get-tweet) for regular tweet metadata and engagement metrics. Use this endpoint for X Articles (long-form posts) to get the full body content, cover image, and block-level formatting.
-</Note>
-
-<Note>
-  **Next steps:** [Get Tweet](/api-reference/x/get-tweet) to fetch the parent tweet, or [Search Tweets](/api-reference/x/search-tweets) to find articles by query.
+  **Related:** [Get tweet](/api-reference/x/get-tweet) · [Get tweet thread](/api-reference/x/tweet-thread) · [Search tweets](/api-reference/x/search-tweets) · [Create extraction](/api-reference/extractions/create)
 </Note>
