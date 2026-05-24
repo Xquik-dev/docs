@@ -223,6 +223,10 @@ Use this workflow when a Kotlin worker needs an owned follower list for CRM impo
 
 `client.extractions().estimateCost` maps to `POST /extractions/estimate`, `client.extractions().run` maps to `POST /extractions`, `client.extractions().retrieve` maps to `GET /extractions/{id}`, and `client.extractions().exportResults` maps to `GET /extractions/{id}/export`. For follower exports, `follower_explorer` requires `targetUsername`.
 
+<Info>
+`client.extractions().run` returns the queued `202 Accepted` receipt from `POST /extractions`: REST `id`, `toolType`, and `status: "running"` as Kotlin `job.id()`, `job.toolType()`, and `job._status()`. Store `job.id()` immediately, then poll `client.extractions().retrieve` before reading pages or calling `client.extractions().exportResults`. Credit reservation happens after the job starts. If available credits changed since `estimateCost`, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
+</Info>
+
 ```kotlin
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.x_twitter_scraper.api.client.XTwitterScraperClient
