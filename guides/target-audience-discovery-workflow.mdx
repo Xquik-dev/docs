@@ -1,0 +1,216 @@
+---
+title: Target Audience Discovery Workflow
+description: Find X audience segments with user search, follower exports, following pages, verified followers, batch enrichment, and CSV or JSON handoff.
+keywords:
+  [
+    "target audience discovery",
+    "X audience discovery",
+    "Twitter audience discovery",
+    "follower export",
+    "following export",
+    "verified followers",
+    "lead list",
+    "CRM enrichment",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use this workflow when a sales, research, community, or marketing job starts
+with a topic, brand, creator, or competitor account and needs a scored audience
+list. Keep every row keyed by X user ID so exports, CRMs, agents, and warehouse
+loads can dedupe later.
+
+## Pick the Discovery Path
+
+<CardGroup cols={2}>
+  <Card title="Keyword Seeds" icon="search">
+    Use `GET /api/v1/x/users/search?q={query}` or `people_search` to find
+    candidate profiles by name, handle, or topic.
+  </Card>
+
+  <Card title="Follower Expansion" icon="users">
+    Use `follower_explorer` or `GET /api/v1/x/users/{id}/followers` to collect
+    people who already follow one seed account.
+  </Card>
+
+  <Card title="Following Expansion" icon="user-plus">
+    Use `following_explorer` or `GET /api/v1/x/users/{id}/following` to collect
+    accounts one seed profile follows.
+  </Card>
+
+  <Card title="Verified Segment" icon="badge-check">
+    Use `verified_follower_explorer` or
+    `GET /api/v1/x/users/{id}/verified-followers` when verified accounts should
+    be scored separately.
+  </Card>
+</CardGroup>
+
+## Seed Accounts
+
+Start with a query when you do not already have exact handles. Store the search
+query, rank, user ID, username, follower count, verification state, and cursor.
+
+```bash
+curl "https://xquik.com/api/v1/x/users/search?q=ai%20founder" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+If the seed list comes from another system, enrich up to 100 numeric user IDs
+per request before expanding the graph.
+
+```bash
+curl "https://xquik.com/api/v1/x/users/batch?ids=44196397,987654321" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+## Expand the Audience
+
+Use extraction jobs when the output needs estimate, retry, audit, and file
+download handoff. Use direct JSON pages when the app needs the freshest page
+now.
+
+<CardGroup cols={2}>
+  <Card title="Saved Followers" icon="archive">
+    `POST /api/v1/extractions/estimate`, then `POST /api/v1/extractions` with
+    `toolType: "follower_explorer"`.
+  </Card>
+
+  <Card title="Saved Following" icon="route">
+    Use `toolType: "following_explorer"` with `targetUsername` and optional
+    `resultsLimit`.
+  </Card>
+
+  <Card title="Saved People Search" icon="search-check">
+    Use `toolType: "people_search"` with `searchQuery` for reusable profile
+    search exports.
+  </Card>
+
+  <Card title="Saved Verified Followers" icon="shield-check">
+    Use `toolType: "verified_follower_explorer"` for a reusable verified
+    follower export.
+  </Card>
+</CardGroup>
+
+```bash
+curl -X POST https://xquik.com/api/v1/extractions \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolType": "follower_explorer",
+    "targetUsername": "xquikcom",
+    "resultsLimit": 5000
+  }' | jq
+```
+
+Export the completed job when the audience list is ready for a CRM, sheet, or
+warehouse.
+
+```bash
+curl "https://xquik.com/api/v1/extractions/77777/export?format=csv" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -o target-audience.csv
+```
+
+## Direct JSON Pages
+
+Use direct pages when the app owns the loop and checkpoint state.
+
+```bash
+curl "https://xquik.com/api/v1/x/users/xquikcom/followers?pageSize=200" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```bash
+curl "https://xquik.com/api/v1/x/users/xquikcom/following?pageSize=200" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```bash
+curl "https://xquik.com/api/v1/x/users/44196397/verified-followers" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+Store `has_next_page` and `next_cursor` with the seed account and route. Pass
+`next_cursor` back as `cursor` only when `has_next_page` is true.
+
+## Score Rows
+
+Create one normalized row per candidate before enrichment or outreach.
+
+```json
+{
+  "audience_id": "ai-founder-q2",
+  "seed_source": "GET /api/v1/x/users/search",
+  "seed_query": "ai founder",
+  "seed_user_id": "44196397",
+  "candidate_user_id": "987654321",
+  "candidate_username": "xquikcom",
+  "display_name": "Xquik",
+  "follower_count": 2400,
+  "following_count": 430,
+  "verified": true,
+  "verified_type": "Business",
+  "profile_image_url": "https://pbs.twimg.com/profile_images/xquik.jpg",
+  "bio": "X automation platform",
+  "location": "San Francisco",
+  "source_route": "GET /api/v1/x/users/{id}/followers",
+  "page_cursor": null,
+  "matched_at": "2026-05-24T19:51:00.000Z"
+}
+```
+
+Score with fields Xquik already returns: follower count, following count,
+verification state, verification type, bio, location, profile image, account
+creation date, media count, and whether the profile accepts DMs when returned.
+
+## Validate Active Conversation
+
+Use tweet search when a candidate segment must be active around a topic before
+it enters a campaign, CRM list, or agent queue.
+
+```bash
+curl "https://xquik.com/api/v1/x/tweets/search?q=ai%20founder%20min_faves%3A10&verifiedOnly=true" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+Store tweet IDs separately from audience rows. Do not overwrite the candidate
+profile row with the latest matching tweet.
+
+## Cost and Retry Notes
+
+<Check>
+  Estimate extraction jobs before running large follower, following, verified
+  follower, or people search exports.
+</Check>
+
+<Check>
+  Direct JSON pages are metered by returned user or tweet rows. Low credit
+  balances can return smaller pages or `402 insufficient_credits`.
+</Check>
+
+<Check>
+  Treat cursors as opaque route checkpoints. They are not stable profile IDs.
+</Check>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Search Users" icon="search" href="/api-reference/x/search-users">
+    Find seed profiles by topic, name, or handle.
+  </Card>
+
+  <Card title="Export Followers" icon="users" href="/guides/follower-export-crm">
+    Build CSV, JSON, or XLSX follower files for CRM and warehouse handoff.
+  </Card>
+
+  <Card title="Get Following" icon="user-plus" href="/api-reference/x/following">
+    Page accounts followed by one seed profile.
+  </Card>
+
+  <Card title="Batch Users" icon="list-checks" href="/api-reference/x/batch-users">
+    Enrich up to 100 numeric user IDs in one request.
+  </Card>
+</CardGroup>

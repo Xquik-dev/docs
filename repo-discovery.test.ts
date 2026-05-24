@@ -7022,6 +7022,45 @@ const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
   'Treat `402 insufficient_credits` as a stopped audit.',
 ] as const;
 
+const REQUIRED_TARGET_AUDIENCE_DISCOVERY_WORKFLOW_SNIPPETS = [
+  'title: Target Audience Discovery Workflow',
+  'Find X audience segments with user search, follower exports, following pages, verified followers, batch enrichment, and CSV or JSON handoff.',
+  '## Pick the Discovery Path',
+  '<Card title="Keyword Seeds" icon="search">',
+  '`GET /api/v1/x/users/search?q={query}`',
+  '<Card title="Follower Expansion" icon="users">',
+  '`follower_explorer`',
+  '`GET /api/v1/x/users/{id}/followers`',
+  '<Card title="Following Expansion" icon="user-plus">',
+  '`following_explorer`',
+  '`GET /api/v1/x/users/{id}/following`',
+  '<Card title="Verified Segment" icon="badge-check">',
+  '`verified_follower_explorer`',
+  '`GET /api/v1/x/users/{id}/verified-followers`',
+  '## Seed Accounts',
+  '/api/v1/x/users/batch?ids=44196397,987654321',
+  '## Expand the Audience',
+  '"toolType": "follower_explorer"',
+  '"targetUsername": "xquikcom"',
+  '"resultsLimit": 5000',
+  'target-audience.csv',
+  '## Direct JSON Pages',
+  '/api/v1/x/users/xquikcom/followers?pageSize=200',
+  '/api/v1/x/users/xquikcom/following?pageSize=200',
+  '/api/v1/x/users/44196397/verified-followers',
+  'Store `has_next_page` and `next_cursor`',
+  'as `cursor` only when `has_next_page` is true.',
+  '## Score Rows',
+  '"audience_id": "ai-founder-q2"',
+  '"source_route": "GET /api/v1/x/users/{id}/followers"',
+  '## Validate Active Conversation',
+  '/api/v1/x/tweets/search?q=ai%20founder%20min_faves%3A10&verifiedOnly=true',
+  '## Cost and Retry Notes',
+  'Estimate extraction jobs before running large follower, following, verified',
+  'Direct JSON pages are metered by returned user or tweet rows.',
+  'Treat cursors as opaque route checkpoints.',
+] as const;
+
 const REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS = [
   'title: Request-efficient API usage',
   'Use this guide when you need fewer duplicate reads, cleaner checkpoints, and better downstream handoffs.',
@@ -13061,6 +13100,23 @@ describe('repository discovery', (): void => {
         source,
         'Campaign verification workflow',
         REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the target audience discovery workflow source-backed', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'guides/target-audience-discovery-workflow.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Target audience discovery workflow',
+        REQUIRED_TARGET_AUDIENCE_DISCOVERY_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
