@@ -1,8 +1,8 @@
 ---
 title: "Get following"
-description: "Retrieve accounts that an X user follows with profile details"
+description: "Retrieve the accounts one X user follows by username or numeric user ID with cursor pagination for social graph, CRM, warehouse, and agent workflows"
 api: "GET /x/users/{id}/following"
-keywords: ["following", "friends", "users", "x api"]
+keywords: ["get following", "following API", "Twitter following API", "X following API", "who a user follows", "following list", "social graph API", "CRM export", "JSON export", "X API"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -13,8 +13,20 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 </Callout>
 
+<Info>
+  Get following returns the accounts one X profile follows by username or
+  numeric user ID. It is also useful as a Following API, X following API, or
+  Twitter following API. The canonical endpoint remains
+  `GET /api/v1/x/users/{id}/following`.
+</Info>
+
 <CodeGroup>
-  ```bash cURL
+  ```bash Username
+  curl "https://xquik.com/api/v1/x/users/xquikcom/following?pageSize=100" \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+  ```
+
+  ```bash Numeric user ID
   curl "https://xquik.com/api/v1/x/users/44196397/following" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
@@ -69,7 +81,7 @@ job.
 
 ## Direct following handoff
 
-Use `GET /x/users/{id}/following` when a CRM, warehouse, audience, or agent workflow needs one paginated JSON page of accounts followed by a user now. Use [`following_explorer`](/api-reference/extractions/create) when you need an estimated job, saved extraction, or CSV/JSON/XLSX file export.
+Use `GET /x/users/{id}/following` when a CRM, warehouse, audience, or agent workflow needs one paginated JSON page of accounts followed by a user now. The endpoint accepts either a username or numeric user ID and returns followed account profile rows with cursor fields. Use [`following_explorer`](/api-reference/extractions/create) when you need an estimated job, saved extraction, or CSV/JSON/XLSX file export.
 
 <CardGroup cols={2}>
   <Card title="Following rows" icon="list-tree">
@@ -103,7 +115,8 @@ Direct following calls cost 1 credit per user returned. Low credit balances can 
 ## Query parameters
 
 <ParamField query="cursor" type="string">
-  Pagination cursor from a previous response. Omit for the first page.
+  Pagination cursor from `next_cursor` in a previous response. Omit for the
+  first page. Pass a cursor only when `has_next_page` is true.
 </ParamField>
 
 <ParamField query="after" type="string">
@@ -111,12 +124,33 @@ Direct following calls cost 1 credit per user returned. Low credit balances can 
 </ParamField>
 
 <ParamField query="pageSize" type="number">
-  Results per page. Range: 20-200. Default: `200`.
+  Results per page. Range: 20-200. Default: `200`. Remaining credits can reduce
+  the returned row count.
 </ParamField>
 
 <ParamField query="limit" type="number">
   Legacy page size alias. Use `pageSize`; when both are present, `pageSize` wins.
 </ParamField>
+
+## Which following endpoint?
+
+<CardGroup cols={2}>
+  <Card title="One user's following" icon="user-plus">
+    Use `GET /x/users/{id}/following` for the accounts one profile follows.
+  </Card>
+  <Card title="One user's followers" icon="users-round">
+    Use [`GET /x/users/{id}/followers`](/api-reference/x/followers) for the
+    accounts that follow that profile.
+  </Card>
+  <Card title="Verified followers" icon="badge-check">
+    Use [`GET /x/users/{id}/verified-followers`](/api-reference/x/verified-followers)
+    when you only need verified followers of the profile.
+  </Card>
+  <Card title="Saved exports" icon="file-spreadsheet">
+    Use [`following_explorer`](/api-reference/extractions/create) for a saved
+    following extraction with CSV, JSON, or XLSX download handoff.
+  </Card>
+</CardGroup>
 
 ## Headers
 
@@ -221,5 +255,5 @@ Direct following calls cost 1 credit per user returned. Low credit balances can 
 </Tabs>
 
 <Note>
-  **Related:** [Followers](/api-reference/x/followers) · [Verified Followers](/api-reference/x/verified-followers) · [Followers You Know](/api-reference/x/followers-you-know)
+  **Related:** [Get followers](/api-reference/x/followers) · [Get verified followers](/api-reference/x/verified-followers) · [Get followers you know](/api-reference/x/followers-you-know)
 </Note>
