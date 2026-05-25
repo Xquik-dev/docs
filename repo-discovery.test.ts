@@ -2122,6 +2122,22 @@ const REQUIRED_BILLING_CARRYOVER_SNIPPETS = [
   'Yes. Subscription credits and top-up credits stay in the shared balance until you spend them.',
 ] as const;
 
+const REQUIRED_BILLING_MPP_SNIPPETS = [
+  '## Pay-per-use (MPP)',
+  '31 X-API read-only endpoints accept [Machine Payments Protocol](/mpp/overview) payments.',
+  'Use [MPP overview](/mpp/overview#eligible-endpoints) for the full 31-endpoint route list.',
+  'This guide keeps price bands here so mobile readers can estimate before opening the full table.',
+  '<Card title="USD 0.00015 units" icon="coins">',
+  'Most reads cost USD 0.00015 per call, tweet, user, or community.',
+  'Examples: `GET /x/tweets/{id}`, `GET /x/tweets/search`, `GET /x/users/{id}`, `GET /x/users/{id}/followers`, timelines, replies, quotes, communities, and lists.',
+  '<Card title="USD 0.00105 calls" icon="badge-dollar-sign">',
+  'Higher-cost flat charge intent calls: `GET /x/followers/check` and `GET /x/articles/{tweetId}`.',
+  '<Card title="USD 0.00045 trends" icon="trending-up">',
+  'Trend lookups use flat charge intent pricing: `GET /trends` and `GET /x/trends`.',
+  '<Card title="Charge vs session" icon="receipt">',
+  'Session intent endpoints deposit funds, then deduct by returned tweet, user, or community.',
+] as const;
+
 const FORBIDDEN_BILLING_CARRYOVER_SNIPPETS = [
   'Every subscription includes a monthly credit allowance that resets each billing period.',
   'Unused credits **do not carry over**',
@@ -2136,6 +2152,8 @@ const FORBIDDEN_BILLING_CARRYOVER_SNIPPETS = [
   '| 5 | 105 credits/hour | 2,500 credits/day | 22 |',
   '| Credit cost | Extraction types |',
   '| 1 per result | Tweets, replies, quotes, mentions, posts, likes, media, search |',
+  '| Endpoint | Price | Intent |',
+  '| `GET /x/users/{id}/verified-followers` | USD 0.00015 per user | session |',
 ] as const;
 
 const REQUIRED_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS = [
@@ -11024,9 +11042,11 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps billing recovery steps concrete for 402 failures', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const billing = readFileSync('guides/billing.mdx', 'utf8');
+
+    expect(billing.length).toBeLessThanOrEqual(18_950);
 
     expect(
       [
@@ -11044,6 +11064,11 @@ describe('repository discovery', (): void => {
           billing,
           'Billing guide',
           REQUIRED_BILLING_CARRYOVER_SNIPPETS,
+        ),
+        ...collectSnippetFindings(
+          billing,
+          'Billing guide',
+          REQUIRED_BILLING_MPP_SNIPPETS,
         ),
         ...FORBIDDEN_BILLING_CARRYOVER_SNIPPETS.flatMap(
           (snippet): readonly DiscoveryFinding[] =>
