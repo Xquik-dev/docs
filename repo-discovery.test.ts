@@ -4500,6 +4500,22 @@ const REQUIRED_LIST_TWEETS_API_HANDOFF_SNIPPETS = [
   '"profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"',
   'Use `sinceTime` & `untilTime` for bounded backfills',
   '`includeReplies=true`',
+  '<Card title="List tweet rows" icon="message-square-text">',
+  '<Card title="Next page" icon="arrow-right">',
+  '<Card title="Default page" icon="rows-3">',
+  '<Card title="Time window" icon="calendar-range">',
+  '<Card title="Reply filter" icon="message-square-reply">',
+  '<Card title="Saved export" icon="file-spreadsheet">',
+  '`tweets.length` as the row count returned for this page.',
+  'Use `list_post_extractor` when the workflow needs a saved job',
+  '## Which list endpoint?',
+  '<Card title="List tweets" icon="message-square-text">',
+  '<Card title="List members" icon="users">',
+  '[`GET /x/lists/{id}/members`](/api-reference/x/list-members)',
+  '<Card title="List followers" icon="user-plus">',
+  '[`GET /x/lists/{id}/followers`](/api-reference/x/list-followers)',
+  '<Card title="Bulk list jobs" icon="file-spreadsheet">',
+  '`list_post_extractor`, `list_member_extractor`, or `list_follower_explorer`',
 ] as const;
 
 const FORBIDDEN_LIST_TWEETS_API_RAW_OUTPUT_SNIPPETS = [
