@@ -2452,6 +2452,13 @@ const REQUIRED_DRAFT_TYPES_GUIDE_SNIPPETS = [
   'Use `nextCursor` with the `afterCursor` query parameter to fetch subsequent pages.',
 ] as const;
 
+const FORBIDDEN_TYPES_GUIDE_COMPLETENESS_OVERCLAIMS = [
+  'TypeScript type definitions for all API request and response objects',
+  'Copy-pasteable TypeScript types for every Xquik API object.',
+  'Use these in your client code for full type safety.',
+  'These types match the response shapes from the [API Reference](/api-reference/overview).',
+] as const;
+
 const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   'description: Recover from Xquik API error codes and rate limits',
   'Every error includes an `error` code.',
@@ -12772,6 +12779,25 @@ describe('repository discovery', (): void => {
         source,
         'Types guide draft object',
         REQUIRED_DRAFT_TYPES_GUIDE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the types guide from claiming complete schema coverage', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/types.mdx', 'utf8');
+
+    expect(
+      FORBIDDEN_TYPES_GUIDE_COMPLETENESS_OVERCLAIMS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Types guide overclaims schema coverage with "${snippet}".`,
+                },
+              ]
+            : [],
       ),
     ).toStrictEqual([]);
   });
