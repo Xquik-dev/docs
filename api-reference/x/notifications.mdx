@@ -1,8 +1,8 @@
 ---
 title: "Get notifications"
-description: "Retrieve notifications from the authenticated X account with optional type filter"
+description: "Retrieve authenticated X account notifications, store triage rows, and route mentions, verified activity, and older pages with next_cursor"
 api: "GET /x/notifications"
-keywords: ["notifications", "mentions", "verified", "x api"]
+keywords: ["get notifications", "X notifications API", "Twitter notifications API", "mentions notifications", "verified notifications", "notification triage", "next_cursor", "agent inbox"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -21,8 +21,15 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   Requires a connected X account. Uses user-authenticated access.
 </Note>
 
+<Info>
+  Get notifications reads the connected account inbox. Use `type=Mentions` for
+  mention triage, `type=Verified` for verified-account activity, or omit `type`
+  for all notification rows. Store `next_cursor` only when `has_next_page` is
+  true.
+</Info>
+
 <CodeGroup>
-  ```bash cURL
+  ```bash Mentions
   curl -G https://xquik.com/api/v1/x/notifications \
     --data-urlencode "type=Mentions" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
@@ -35,44 +42,127 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 
   ```javascript Node.js
-  const params = new URLSearchParams({ type: "Mentions" });
-  const response = await fetch(`https://xquik.com/api/v1/x/notifications?${params}`, {
+  function notificationsUrl({ cursor, type = "Mentions" }) {
+    const params = new URLSearchParams({ type });
+    if (cursor) params.set("cursor", cursor);
+    return `https://xquik.com/api/v1/x/notifications?${params}`;
+  }
+
+  function toNotificationRows(page, { inboxType }) {
+    return page.notifications.map((notification) => ({
+      record_type: "notification",
+      inbox_type: inboxType,
+      notification_id: notification.id,
+      notification_type: notification.type ?? null,
+      message_preview: notification.message ?? null,
+      created_at: notification.timestamp ?? null,
+      source_endpoint: "GET /api/v1/x/notifications",
+      page_next_cursor: page.has_next_page ? page.next_cursor : null,
+    }));
+  }
+
+  async function saveNotificationRows(rows) {
+    // Replace this with a private support inbox, CRM, queue, or agent memory write.
+    return rows.length;
+  }
+
+  const inboxType = "Mentions";
+  const response = await fetch(notificationsUrl({ type: inboxType }), {
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data.notifications);
+  const rows = toNotificationRows(data, { inboxType });
+  await saveNotificationRows(rows);
 
   // Paginate
   if (data.has_next_page) {
-    const next = await fetch(
-      `https://xquik.com/api/v1/x/notifications?type=Mentions&cursor=${data.next_cursor}`,
-      { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
-    );
-    console.log((await next.json()).notifications);
+    const next = await fetch(notificationsUrl({ type: inboxType, cursor: data.next_cursor }), {
+      headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+    });
+    const nextRows = toNotificationRows(await next.json(), { inboxType });
+    await saveNotificationRows(nextRows);
   }
   ```
 
   ```python Python
   import requests
 
+  def to_notification_rows(page, inbox_type):
+      return [
+          {
+              "record_type": "notification",
+              "inbox_type": inbox_type,
+              "notification_id": notification["id"],
+              "notification_type": notification.get("type"),
+              "message_preview": notification.get("message"),
+              "created_at": notification.get("timestamp"),
+              "source_endpoint": "GET /api/v1/x/notifications",
+              "page_next_cursor": page["next_cursor"] if page["has_next_page"] else None,
+          }
+          for notification in page["notifications"]
+      ]
+
+  def save_notification_rows(rows):
+      # Replace this with a private support inbox, CRM, queue, or agent memory write.
+      return len(rows)
+
+  inbox_type = "Mentions"
   response = requests.get(
       "https://xquik.com/api/v1/x/notifications",
-      params={"type": "Mentions"},
+      params={"type": inbox_type},
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data["notifications"])
+  save_notification_rows(to_notification_rows(data, inbox_type))
 
   # Paginate
   while data["has_next_page"]:
       data = requests.get(
           "https://xquik.com/api/v1/x/notifications",
-          params={"type": "Mentions", "cursor": data["next_cursor"]},
+          params={"type": inbox_type, "cursor": data["next_cursor"]},
           headers={"x-api-key": "xq_YOUR_KEY_HERE"},
       ).json()
-      print(data["notifications"])
+      save_notification_rows(to_notification_rows(data, inbox_type))
   ```
 </CodeGroup>
+
+The Node.js and Python snippets normalize each page into notification triage
+rows. Keep full message text in private systems. Use `notification_id`,
+`notification_type`, `created_at`, `inbox_type`, and `page_next_cursor` for
+shared dashboards, queues, and agent handoffs.
+
+## Notification triage handoff
+
+Use `GET /api/v1/x/notifications` when a support inbox, CRM workflow, or agent
+queue needs account-level activity for a connected X account. The endpoint
+returns compact notification rows, not full tweet or DM objects.
+
+<CardGroup cols={2}>
+  <Card title="Mention queue" icon="at-sign">
+    Use `type=Mentions` for replies and mentions that need a support or brand
+    review queue.
+  </Card>
+  <Card title="Verified activity" icon="badge-check">
+    Use `type=Verified` when verified-account activity should be routed ahead
+    of the general inbox.
+  </Card>
+  <Card title="All inbox" icon="inbox">
+    Omit `type` or pass `All` when the workflow needs every notification row
+    visible to the connected account.
+  </Card>
+  <Card title="Stable upserts" icon="key-round">
+    Store `notifications[].id` as `notification_id` for dedupe and replay-safe
+    imports.
+  </Card>
+  <Card title="Private text" icon="lock-keyhole">
+    Keep `notifications[].message` in private support, CRM, or agent memory
+    systems.
+  </Card>
+  <Card title="Next page" icon="arrow-right">
+    Store `has_next_page` and `next_cursor`; pass `next_cursor` back as `cursor`
+    only when `has_next_page` is true.
+  </Card>
+</CardGroup>
 
 ## Query parameters
 
@@ -83,6 +173,35 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <ParamField query="cursor" type="string">
   Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
 </ParamField>
+
+## Which inbox endpoint?
+
+<CardGroup cols={2}>
+  <Card title="Account notifications" icon="bell">
+    Use `GET /x/notifications` for connected-account notification rows with
+    `All`, `Verified`, or `Mentions` filters.
+  </Card>
+  <Card title="Home timeline" icon="home">
+    Use [`GET /x/timeline`](/api-reference/x/timeline) for the connected
+    account's home timeline tweets.
+  </Card>
+  <Card title="Participant DMs" icon="message-square">
+    Use [`GET /x/dm/{userId}/history`](/api-reference/x/dm-history) when the
+    workflow needs private direct-message conversation rows.
+  </Card>
+  <Card title="Public mentions" icon="message-square-reply">
+    Use [`GET /x/users/{id}/mentions`](/api-reference/x/user-mentions) when you
+    need public mention timeline rows for a user.
+  </Card>
+  <Card title="Account monitor events" icon="radio">
+    Use [`List events`](/api-reference/events/list) after account or keyword
+    monitors have captured replayable webhook events.
+  </Card>
+  <Card title="Webhook delivery" icon="webhook">
+    Use [`Webhooks`](/webhooks/overview) when notification-like activity should
+    push to your system instead of being polled.
+  </Card>
+</CardGroup>
 
 ## Headers
 
@@ -162,5 +281,5 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 </Tabs>
 
 <Note>
-  **Related:** [Timeline](/api-reference/x/timeline) · [DM History](/api-reference/x/dm-history)
+  **Related:** [Timeline](/api-reference/x/timeline), [DM History](/api-reference/x/dm-history), [User Mentions](/api-reference/x/user-mentions), and [Webhooks](/webhooks/overview).
 </Note>

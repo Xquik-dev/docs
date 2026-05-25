@@ -3579,6 +3579,51 @@ const FORBIDDEN_GET_USER_API_RAW_OUTPUT_SNIPPETS = [
   'fmt.Println(string(body))',
 ] as const;
 
+const REQUIRED_NOTIFICATIONS_API_HANDOFF_SNIPPETS = [
+  'description: "Retrieve authenticated X account notifications, store triage rows, and route mentions, verified activity, and older pages with next_cursor"',
+  'Get notifications reads the connected account inbox.',
+  'Use `type=Mentions` for',
+  'mention triage, `type=Verified` for verified-account activity',
+  'Store `next_cursor` only when `has_next_page` is',
+  '```bash Mentions',
+  'function notificationsUrl({ cursor, type = "Mentions" })',
+  'function toNotificationRows(page, { inboxType })',
+  'record_type: "notification"',
+  'inbox_type: inboxType',
+  'notification_id: notification.id',
+  'notification_type: notification.type ?? null',
+  'message_preview: notification.message ?? null',
+  'created_at: notification.timestamp ?? null',
+  'source_endpoint: "GET /api/v1/x/notifications"',
+  'page_next_cursor: page.has_next_page ? page.next_cursor : null',
+  'async function saveNotificationRows(rows)',
+  'const inboxType = "Mentions";',
+  'def to_notification_rows(page, inbox_type):',
+  '"record_type": "notification"',
+  '"inbox_type": inbox_type',
+  '"notification_id": notification["id"]',
+  '"notification_type": notification.get("type")',
+  '"message_preview": notification.get("message")',
+  '"source_endpoint": "GET /api/v1/x/notifications"',
+  '## Notification triage handoff',
+  '<Card title="Mention queue" icon="at-sign">',
+  '<Card title="Verified activity" icon="badge-check">',
+  '<Card title="All inbox" icon="inbox">',
+  '<Card title="Private text" icon="lock-keyhole">',
+  '## Which inbox endpoint?',
+  '[`GET /x/timeline`](/api-reference/x/timeline)',
+  '[`GET /x/dm/{userId}/history`](/api-reference/x/dm-history)',
+  '[`GET /x/users/{id}/mentions`](/api-reference/x/user-mentions)',
+  '[`List events`](/api-reference/events/list)',
+  '[`Webhooks`](/webhooks/overview)',
+] as const;
+
+const FORBIDDEN_NOTIFICATIONS_API_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data.notifications);',
+  'console.log((await next.json()).notifications);',
+  'print(data["notifications"])',
+] as const;
+
 const REQUIRED_X_TRENDS_API_HANDOFF_SNIPPETS = [
   '`GET /x/trends`',
   'const trendRows = data.trends.map((trend) => ({',
@@ -11539,6 +11584,30 @@ describe('repository discovery', (): void => {
             : [],
       ),
     ).toStrictEqual([]);
+  });
+
+  it('keeps the notifications API handoff concrete', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/notifications.mdx', 'utf8');
+
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Notifications endpoint page',
+        REQUIRED_NOTIFICATIONS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_NOTIFICATIONS_API_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Notifications API page prints raw notification data with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the X trends API handoff concrete', (): void => {
