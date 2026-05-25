@@ -10729,9 +10729,11 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Kotlin SDK page useful for tweet search handoffs', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('sdks/kotlin.mdx', 'utf8');
+
+    expect(source.length).toBeLessThanOrEqual(25_800);
 
     expect(
       [

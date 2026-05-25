@@ -344,24 +344,9 @@ Use this workflow when a Kotlin worker needs every reply to a campaign, support 
 
 `client.extractions().estimateCost` maps to `POST /extractions/estimate`, `client.extractions().run` maps to `POST /extractions`, `client.extractions().retrieve` maps to `GET /extractions/{id}`, and `client.extractions().exportResults` maps to `GET /extractions/{id}/export`.
 
-```kotlin
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.x_twitter_scraper.api.client.XTwitterScraperClient
-import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient
-import com.x_twitter_scraper.api.models.extractions.ExtractionEstimateCostParams
-import com.x_twitter_scraper.api.models.extractions.ExtractionEstimateCostResponse
-import com.x_twitter_scraper.api.models.extractions.ExtractionExportResultsParams
-import com.x_twitter_scraper.api.models.extractions.ExtractionRetrieveParams
-import com.x_twitter_scraper.api.models.extractions.ExtractionRetrieveResponse
-import com.x_twitter_scraper.api.models.extractions.ExtractionRunParams
-import com.x_twitter_scraper.api.models.extractions.ExtractionRunResponse
-import java.nio.charset.StandardCharsets
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
+Reuse the follower export loop above. Change only the required target, tool type, and output names:
 
-val client: XTwitterScraperClient = XTwitterScraperOkHttpClient.fromEnv()
-val objectMapper = ObjectMapper()
+```kotlin
 val targetTweetId = "1893704267862470862"
 
 val estimate: ExtractionEstimateCostResponse = client.extractions().estimateCost(
@@ -371,10 +356,6 @@ val estimate: ExtractionEstimateCostResponse = client.extractions().estimateCost
         .build()
 )
 
-if (!estimate.allowed()) {
-    error("Reply export requires ${estimate.creditsRequired()} credits.")
-}
-
 val job: ExtractionRunResponse = client.extractions().run(
     ExtractionRunParams.builder()
         .toolType(ExtractionRunParams.ToolType.REPLY_EXTRACTOR)
@@ -382,49 +363,24 @@ val job: ExtractionRunResponse = client.extractions().run(
         .build()
 )
 
-var completed = false
-var attempts = 0
-while (!completed && attempts < 120) {
-    val statusPage = client.extractions().retrieve(job.id())
-    val status = statusPage.job()._additionalProperties()["status"]?.asString() ?: "unknown"
+val pageParams = ExtractionRetrieveParams.builder()
+    .id(job.id())
+    .limit(1000L)
 
-    if (status == "completed") {
-        completed = true
-    } else if (status == "failed") {
-        error("Reply export failed.")
-    } else {
-        Thread.sleep(10_000L)
-    }
-
-    attempts += 1
+if (!after.isNullOrEmpty()) {
+    pageParams.after(after)
 }
 
-if (!completed) {
-    error("Reply export did not complete before timeout.")
-}
+val page: ExtractionRetrieveResponse = client.extractions().retrieve(pageParams.build())
+```
 
-var after: String? = null
-Files.newBufferedWriter(Paths.get("xquik-replies.jsonl"), StandardCharsets.UTF_8).use { writer ->
-    do {
-        val pageParams = ExtractionRetrieveParams.builder()
-            .id(job.id())
-            .limit(1000L)
+Persist `job.id()` before polling so a queue retry can resume with `client.extractions().retrieve(job.id())` and repeat `client.extractions().exportResults(...)` after completion. Stream `page.results()` to `Paths.get("xquik-replies.jsonl")`. Keep `page.nextCursor()` as the checkpoint when you stream replies to JSON Lines. Pass it back as `after` on the next `ExtractionRetrieveParams.builder()` call.
 
-        if (!after.isNullOrEmpty()) {
-            pageParams.after(after)
-        }
+Keep the same `estimate.allowed()` credit branch from the follower export workflow before calling `run`.
 
-        val page: ExtractionRetrieveResponse = client.extractions().retrieve(pageParams.build())
+Export the completed job with the same helper used above:
 
-        for (row in page.results()) {
-            writer.write(objectMapper.writeValueAsString(row._additionalProperties()))
-            writer.newLine()
-        }
-
-        after = if (page.hasMore()) page.nextCursor() else null
-    } while (!after.isNullOrEmpty())
-}
-
+```kotlin
 client.extractions().exportResults(
     ExtractionExportResultsParams.builder()
         .id(job.id())
@@ -433,27 +389,9 @@ client.extractions().exportResults(
 ).use { export ->
     Files.copy(export.body(), Paths.get("xquik-replies.csv"), StandardCopyOption.REPLACE_EXISTING)
 }
-
-client.extractions().exportResults(
-    ExtractionExportResultsParams.builder()
-        .id(job.id())
-        .format(ExtractionExportResultsParams.Format.JSON)
-        .build()
-).use { export ->
-    Files.copy(export.body(), Paths.get("xquik-replies.json"), StandardCopyOption.REPLACE_EXISTING)
-}
-
-client.extractions().exportResults(
-    ExtractionExportResultsParams.builder()
-        .id(job.id())
-        .format(ExtractionExportResultsParams.Format.XLSX)
-        .build()
-).use { export ->
-    Files.copy(export.body(), Paths.get("xquik-replies.xlsx"), StandardCopyOption.REPLACE_EXISTING)
-}
 ```
 
-Persist `job.id()` before polling so a queue retry can resume with `client.extractions().retrieve(job.id())` and repeat `client.extractions().exportResults(...)` after completion. Keep `page.nextCursor()` as the checkpoint when you stream replies to JSON Lines. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. Cost: 1 credit per reply extracted or returned.
+Repeat the export with `ExtractionExportResultsParams.Format.JSON` to write `Paths.get("xquik-replies.json")` and `ExtractionExportResultsParams.Format.XLSX` to write `Paths.get("xquik-replies.xlsx")`. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. Cost: 1 credit per reply extracted or returned.
 
 ## Workflow: Post Media Tweets and DM Attachments
 
