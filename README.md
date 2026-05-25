@@ -13,6 +13,10 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 - [Quickstart](https://docs.xquik.com/quickstart) - make the first authenticated API call.
 - [API Reference](https://docs.xquik.com/api-reference) - browse 120 OpenAPI-backed operations.
 - [SDKs](https://docs.xquik.com/sdks) - use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
+- [Tweet search export](https://docs.xquik.com/guides/tweet-search-export) - scrape tweets by keyword to CSV, JSON, or XLSX.
+- [Tweet replies export](https://docs.xquik.com/guides/tweet-replies-export) - scrape replies to CSV, JSON, or XLSX.
+- [Follower export](https://docs.xquik.com/guides/follower-export-crm) - export X followers to CRM or warehouse.
+- [Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow) - send DMs and store returned message IDs.
 - [Prefect](https://docs.xquik.com/guides/prefect) - schedule tweet, user, timeline, and trend reads in Prefect flows.
 - [MCP Server](https://docs.xquik.com/mcp) - connect Claude, ChatGPT, Cursor, and other AI agents.
 - [Webhooks](https://docs.xquik.com/webhooks/overview) - verify HMAC signatures and receive real-time X events.
