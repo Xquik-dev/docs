@@ -297,18 +297,9 @@ Use this workflow when a PHP worker needs every reply on a public tweet in a dur
 
 `$client->extractions->estimateCost()` and `$client->extractions->run()` map to the extraction workflow. For tweet replies, use `ToolType::REPLY_EXTRACTOR`; `reply_extractor` requires `targetTweetID`. `$client->extractions->retrieve()` returns `results`, `hasMore`, and `nextCursor` for pagination. `$client->extractions->exportResults()` returns the completed job as a string and supports `CSV`, `JSON`, and `XLSX` export formats.
 
+Reuse the polling, JSON Lines pagination, and export structure from the follower workflow. Only the tool type, target field, and filenames change:
+
 ```php
-<?php
-
-use XTwitterScraper\Client;
-use XTwitterScraper\Extractions\ExtractionEstimateCostParams\ToolType as EstimateToolType;
-use XTwitterScraper\Extractions\ExtractionExportResultsParams\Format as ExportFormat;
-use XTwitterScraper\Extractions\ExtractionRunParams\ToolType as RunToolType;
-
-$client = new Client(
-  apiKey: getenv('X_TWITTER_SCRAPER_API_KEY') ?: ''
-);
-
 $targetTweetID = '1893704267862470862';
 $estimate = $client->extractions->estimateCost(
   toolType: EstimateToolType::REPLY_EXTRACTOR,
@@ -324,44 +315,8 @@ $job = $client->extractions->run(
   targetTweetID: $targetTweetID,
 );
 
-while (true) {
-  $statusPage = $client->extractions->retrieve($job->id, limit: 1);
-  $status = $statusPage->job['status'] ?? null;
-
-  if ('completed' === $status) {
-    break;
-  }
-
-  if ('failed' === $status) {
-    throw new RuntimeException('Reply extraction failed.');
-  }
-
-  sleep(3);
-}
-
-$after = null;
-$handle = fopen('xquik-replies.jsonl', 'wb');
-
-if (false === $handle) {
-  throw new RuntimeException('Could not open xquik-replies.jsonl');
-}
-
-try {
-  do {
-    $page = $client->extractions->retrieve($job->id, after: $after, limit: 1000);
-
-    foreach ($page->results as $reply) {
-      fwrite(
-        $handle,
-        json_encode($reply, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . PHP_EOL
-      );
-    }
-
-    $after = $page->hasMore ? $page->nextCursor : null;
-  } while (null !== $after && '' !== $after);
-} finally {
-  fclose($handle);
-}
+// Run the same polling loop and JSONL pagination loop from the follower workflow.
+// Set the JSON Lines destination to fopen('xquik-replies.jsonl', 'wb').
 
 file_put_contents(
   'xquik-replies.csv',
@@ -377,7 +332,7 @@ file_put_contents(
 );
 ```
 
-Cost: 1 credit per reply extracted or returned. Store `$job->id` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `$client->extractions->retrieve()`. Keep `$page->nextCursor` as the checkpoint when you stream replies to JSON Lines. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff.
+Cost: 1 credit per reply extracted or returned. Store `$job->id` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `$client->extractions->retrieve()`. Keep `$page->nextCursor` as the checkpoint and pass it back as `after` when you stream replies to JSON Lines. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff.
 
 ## Workflow: Post Media Tweets and DM Attachments
 

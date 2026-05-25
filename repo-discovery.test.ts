@@ -10685,9 +10685,11 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the PHP SDK page useful for tweet search handoffs', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('sdks/php.mdx', 'utf8');
+
+    expect(source.length).toBeLessThanOrEqual(20_150);
 
     expect(
       [
