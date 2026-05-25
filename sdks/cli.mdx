@@ -226,7 +226,7 @@ jq -e '.status == "running" and .toolType == "follower_explorer"' follower-run.j
 job_id="$(jq -r '.id' follower-run.json)"
 ```
 
-The run command calls `POST /extractions` and returns the queued `202 Accepted` receipt: `id`, `toolType`, and `status: "running"`. Persist `follower-run.json`, `job_id`, the source username, and the estimate before polling so a shell restart, queue retry, or CI rerun can resume the same follower export. Credit reservation happens after the job starts. If available credits changed since the estimate, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
+The run command calls `POST /extractions` and returns the queued `202 Accepted` receipt: `id`, `toolType`, and `status: "running"`. Persist `follower-run.json`, `job_id`, the source username, and the estimate before polling. Credit reservation happens after the job starts. If available credits changed since the estimate, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
 
 ```bash
 while :; do
@@ -279,29 +279,16 @@ x-twitter-scraper extractions export-results \
   --id "$job_id" \
   --format csv \
   --output xquik-followers.csv
-
-x-twitter-scraper extractions export-results \
-  --id "$job_id" \
-  --format json \
-  --output xquik-followers.json
-
-x-twitter-scraper extractions export-results \
-  --id "$job_id" \
-  --format xlsx \
-  --output xquik-followers.xlsx
 ```
 
-Map `User ID` or result `xUserId` as the CRM unique key. Keep
-`xquik-followers.jsonl` for queue replay or warehouse loads, use
-`xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import,
-and `xquik-followers.xlsx` for analyst handoff.
+Use `--format json --output xquik-followers.json` for app ingestion or `--format xlsx --output xquik-followers.xlsx` for XLSX handoff. Map `User ID` or result `xUserId` as the CRM unique key. Keep `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff.
 
 Cost: 1 credit per follower extracted or returned. Exports are free after the
 extraction job exists.
 
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
-Use this workflow when a moderation, support, giveaway, research, or AI review job needs every reply under one tweet as a file handoff. The CLI calls the extraction endpoints: estimate first, run `reply_extractor`, poll the stored job, then export CSV, JSON, or XLSX.
+Use this workflow when moderation, support, giveaway, research, or AI review needs every reply under one tweet as CSV, JSON, XLSX, or JSONL. Estimate, run `reply_extractor`, poll the stored job, then export the file.
 
 `reply_extractor` requires `targetTweetId`. The CLI flag is `--target-tweet-id`.
 
@@ -312,7 +299,7 @@ x-twitter-scraper extractions estimate-cost \
   --format json > reply-estimate.json
 ```
 
-The estimate calls `POST /extractions/estimate` and returns `allowed`, `estimatedResults`, `creditsRequired`, `creditsAvailable`, and `source`. For reply scraping, `source` is usually `replyCount`.
+The estimate calls `POST /extractions/estimate` and returns `allowed`, `estimatedResults`, `creditsRequired`, `creditsAvailable`, and `source`. For replies, `source` is usually `replyCount`.
 
 ```bash
 jq -e '.allowed == true' reply-estimate.json >/dev/null
@@ -324,25 +311,14 @@ job_id="$(x-twitter-scraper extractions run \
   --raw-output)"
 ```
 
-The run command calls `POST /extractions`. Persist `job_id` before polling so a shell restart, queue retry, or CI rerun can resume the same extraction.
+The run command calls `POST /extractions`. Persist `job_id` before polling so a shell restart, queue retry, or CI rerun can resume the same extraction. Reuse the follower export polling loop above with reply filenames:
 
 ```bash
-while :; do
-  x-twitter-scraper extractions retrieve \
-    --id "$job_id" \
-    --limit 100 \
-    --format json > replies-page.json
+x-twitter-scraper extractions retrieve \
+  --id "$job_id" \
+  --limit 100 \
+  --format json > replies-page.json
 
-  status="$(jq -r '.job.status' replies-page.json)"
-  [ "$status" = "completed" ] && break
-  [ "$status" = "failed" ] && exit 1
-  sleep 10
-done
-```
-
-The retrieve command calls `GET /extractions/{id}`. The JSON response includes `.job`, `.results`, `.hasMore`, and `.nextCursor`. When `.hasMore` is true, save the cursor and call `extractions retrieve` again:
-
-```bash
 next_cursor="$(jq -r '.nextCursor // empty' replies-page.json)"
 
 x-twitter-scraper extractions retrieve \
@@ -352,26 +328,16 @@ x-twitter-scraper extractions retrieve \
   --format json > replies-next-page.json
 ```
 
-Append `.results[]` to your queue, CRM import, or warehouse load.
+The retrieve command calls `GET /extractions/{id}` and returns `.job`, `.results`, `.hasMore`, and `.nextCursor`. Append `.results[]` to your queue, CRM import, or warehouse load. While `.hasMore` is true, pass `.nextCursor` back as `--after "$next_cursor"`.
 
 ```bash
 x-twitter-scraper extractions export-results \
   --id "$job_id" \
   --format csv \
   --output xquik-tweet-replies.csv
-
-x-twitter-scraper extractions export-results \
-  --id "$job_id" \
-  --format json \
-  --output xquik-tweet-replies.json
-
-x-twitter-scraper extractions export-results \
-  --id "$job_id" \
-  --format xlsx \
-  --output xquik-tweet-replies.xlsx
 ```
 
-The export command calls `GET /extractions/{id}/export` and writes the response bytes to `--output`. Use `--format csv` for analyst spreadsheets, `--format json` for pipelines, and `--format xlsx` for account-management workbooks. Cost: 1 credit per reply extracted or returned. Exports are free after the extraction job exists.
+The export command calls `GET /extractions/{id}/export` and writes bytes to `--output`. Use `--format csv`, `--format json` with `--output xquik-tweet-replies.json`, or `--format xlsx` with `--output xquik-tweet-replies.xlsx`. Cost: 1 credit per reply extracted or returned. Exports are free after the extraction job exists.
 
 ## Workflow: Post Media Tweets, Replies, and DM Attachments
 

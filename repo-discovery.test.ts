@@ -10642,9 +10642,11 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the CLI SDK page useful for tweet search, follower export, and replies handoffs', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('sdks/cli.mdx', 'utf8');
+
+    expect(source.length).toBeLessThanOrEqual(18_950);
 
     expect(
       [
