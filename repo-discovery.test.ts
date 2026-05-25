@@ -404,11 +404,11 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
   'Exports are free after the extraction job exists.',
   '`reply_extractor` requires `TargetTweetID`.',
   '`client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`',
-  'os.Create("xquik-replies.jsonl")',
-  'writeReplyExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatCsv, "xquik-replies.csv")',
-  'writeReplyExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatJson, "xquik-replies.json")',
-  'writeReplyExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatXlsx, "xquik-replies.xlsx")',
-  'func writeReplyExport(',
+  'writeRows(ctx, client, job.ID, "xquik-replies.jsonl")',
+  'writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatCsv, "xquik-replies.csv")',
+  'writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatJson, "xquik-replies.json")',
+  'writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatXlsx, "xquik-replies.xlsx")',
+  'the shared `writeRows` helper passes `NextCursor` back as `After`',
   '`xquik-replies.jsonl` for queue replay or warehouse loads',
   '`xquik-replies.json` for app ingestion',
   '`xquik-replies.csv` for CRM import',
@@ -10547,9 +10547,11 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Go SDK page useful for tweet search handoffs', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('sdks/go.mdx', 'utf8');
+
+    expect(source.length).toBeLessThanOrEqual(20_100);
 
     expect(
       [

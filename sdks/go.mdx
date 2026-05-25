@@ -322,132 +322,38 @@ func writeExport(
 
 Use this workflow when a Go worker, queue consumer, or agent service needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV/JSON/XLSX file export. It calls `POST /extractions/estimate` through `client.Extractions.EstimateCost`, creates the job with `client.Extractions.Run`, reads rows with `client.Extractions.Get`, and downloads files with `client.Extractions.ExportResults`.
 
+Reuse the polling, `writeRows`, and `writeExport` helpers from the follower workflow. Only the tool type, target field, and output filenames change:
+
 ```go
-package main
+targetTweetID := "1893704267862470862"
 
-import (
-	"context"
-	"encoding/json"
-	"io"
-	"os"
-	"time"
-
-	"github.com/Xquik-dev/x-twitter-scraper-go"
-	"github.com/Xquik-dev/x-twitter-scraper-go/option"
-)
-
-func main() {
-	ctx := context.Background()
-	client := xtwitterscraper.NewClient(
-		option.WithAPIKey(os.Getenv("X_TWITTER_SCRAPER_API_KEY")),
-	)
-	targetTweetID := "1893704267862470862"
-
-	estimate, err := client.Extractions.EstimateCost(ctx, xtwitterscraper.ExtractionEstimateCostParams{
-		ToolType:      xtwitterscraper.ExtractionEstimateCostParamsToolTypeReplyExtractor,
-		TargetTweetID: xtwitterscraper.String(targetTweetID),
-	})
-	if err != nil {
-		panic(err)
-	}
-	if !estimate.Allowed {
-		panic("insufficient credits for reply extraction")
-	}
-
-	job, err := client.Extractions.Run(ctx, xtwitterscraper.ExtractionRunParams{
-		ToolType:      xtwitterscraper.ExtractionRunParamsToolTypeReplyExtractor,
-		TargetTweetID: xtwitterscraper.String(targetTweetID),
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	for {
-		statusPage, err := client.Extractions.Get(ctx, job.ID, xtwitterscraper.ExtractionGetParams{
-			Limit: xtwitterscraper.Int(1),
-		})
-		if err != nil {
-			panic(err)
-		}
-
-		status, _ := statusPage.Job["status"].(string)
-		if status == "completed" {
-			break
-		}
-		if status == "failed" {
-			panic("reply extraction failed")
-		}
-
-		time.Sleep(3 * time.Second)
-	}
-
-	jsonlFile, err := os.Create("xquik-replies.jsonl")
-	if err != nil {
-		panic(err)
-	}
-	defer jsonlFile.Close()
-
-	encoder := json.NewEncoder(jsonlFile)
-	cursor := ""
-
-	for {
-		params := xtwitterscraper.ExtractionGetParams{
-			Limit: xtwitterscraper.Int(1000),
-		}
-		if cursor != "" {
-			params.After = xtwitterscraper.String(cursor)
-		}
-
-		page, err := client.Extractions.Get(ctx, job.ID, params)
-		if err != nil {
-			panic(err)
-		}
-
-		for _, row := range page.Results {
-			if err := encoder.Encode(row); err != nil {
-				panic(err)
-			}
-		}
-
-		if !page.HasMore || page.NextCursor == "" {
-			break
-		}
-		cursor = page.NextCursor
-	}
-
-	writeReplyExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatCsv, "xquik-replies.csv")
-	writeReplyExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatJson, "xquik-replies.json")
-	writeReplyExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatXlsx, "xquik-replies.xlsx")
+estimate, err := client.Extractions.EstimateCost(ctx, xtwitterscraper.ExtractionEstimateCostParams{
+	ToolType:      xtwitterscraper.ExtractionEstimateCostParamsToolTypeReplyExtractor,
+	TargetTweetID: xtwitterscraper.String(targetTweetID),
+})
+if err != nil {
+	panic(err)
+}
+if !estimate.Allowed {
+	panic("insufficient credits for reply extraction")
 }
 
-func writeReplyExport(
-	ctx context.Context,
-	client xtwitterscraper.Client,
-	jobID string,
-	format xtwitterscraper.ExtractionExportResultsParamsFormat,
-	filename string,
-) {
-	response, err := client.Extractions.ExportResults(ctx, jobID, xtwitterscraper.ExtractionExportResultsParams{
-		Format: format,
-	})
-	if err != nil {
-		panic(err)
-	}
-	defer response.Body.Close()
-
-	out, err := os.Create(filename)
-	if err != nil {
-		panic(err)
-	}
-	defer out.Close()
-
-	if _, err := io.Copy(out, response.Body); err != nil {
-		panic(err)
-	}
+job, err := client.Extractions.Run(ctx, xtwitterscraper.ExtractionRunParams{
+	ToolType:      xtwitterscraper.ExtractionRunParamsToolTypeReplyExtractor,
+	TargetTweetID: xtwitterscraper.String(targetTweetID),
+})
+if err != nil {
+	panic(err)
 }
+
+// Run the same polling loop from the follower workflow before exporting rows.
+writeRows(ctx, client, job.ID, "xquik-replies.jsonl")
+writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatCsv, "xquik-replies.csv")
+writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatJson, "xquik-replies.json")
+writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatXlsx, "xquik-replies.xlsx")
 ```
 
-`reply_extractor` requires `TargetTweetID`. `client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`; store those values when you need resumable JSON pagination. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.Extractions.ExportResults` supports CSV, JSON, and XLSX for file handoff. Cost: 1 credit per reply extracted or returned.
+`reply_extractor` requires `TargetTweetID`. `client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`; the shared `writeRows` helper passes `NextCursor` back as `After` until all stored rows are written. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.Extractions.ExportResults` supports CSV, JSON, and XLSX for file handoff. Cost: 1 credit per reply extracted or returned.
 
 ## Workflow: Post Media Tweets and DM Attachments
 
