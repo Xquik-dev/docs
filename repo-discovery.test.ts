@@ -11250,10 +11250,11 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps write confirmation recovery current in error handling', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
+    const errorHandlingSource = readFileSync('guides/error-handling.mdx', 'utf8');
     const source = [
-      readFileSync('guides/error-handling.mdx', 'utf8'),
+      errorHandlingSource,
       readFileSync('guides/troubleshooting.mdx', 'utf8'),
     ].join('\n');
 
@@ -11321,6 +11322,7 @@ describe('repository discovery', (): void => {
         ),
       ],
     ).toStrictEqual([]);
+    expect(errorHandlingSource.length).toBeLessThanOrEqual(23_000);
   });
 
   it('keeps follower export CRM handoff steps concrete', (): void => {
