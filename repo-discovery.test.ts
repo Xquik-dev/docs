@@ -4373,6 +4373,19 @@ const REQUIRED_LIST_MEMBERS_API_HANDOFF_SNIPPETS = [
   '`list_id`, `member_id`, `username`,',
   '`has_next_page`, and `next_cursor`',
   '`pageSize` from 20 to 200',
+  '<Card title="Member roster" icon="users">',
+  '<Card title="Next page" icon="arrow-right">',
+  '<Card title="Page size" icon="rows-3">',
+  '<Card title="Saved export" icon="file-spreadsheet">',
+  'Treat the returned `users.length` as the row',
+  '## Which list endpoint?',
+  '<Card title="List members" icon="users">',
+  '<Card title="List followers" icon="user-plus">',
+  '[`GET /x/lists/{id}/followers`](/api-reference/x/list-followers)',
+  '<Card title="List tweets" icon="message-square-text">',
+  '[`GET /x/lists/{id}/tweets`](/api-reference/x/list-tweets)',
+  '<Card title="Bulk list jobs" icon="file-spreadsheet">',
+  '`list_follower_explorer`, or `list_post_extractor`',
 ] as const;
 
 const FORBIDDEN_LIST_MEMBERS_API_RAW_OUTPUT_SNIPPETS = [
