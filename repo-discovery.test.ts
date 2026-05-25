@@ -10520,9 +10520,11 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the TypeScript SDK page useful for tweet search handoffs', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('sdks/typescript.mdx', 'utf8');
+
+    expect(source.length).toBeLessThanOrEqual(19_050);
 
     expect(
       [

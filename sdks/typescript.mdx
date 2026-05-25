@@ -239,16 +239,12 @@ await writeFile("xquik-followers.xlsx", Buffer.from(await xlsx.arrayBuffer()));
 
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
-Use this workflow when a TypeScript worker needs every reply under one tweet as a saved extraction, paginated JSON handoff, or file export for moderation, support, research, CRM, or agent review. It calls `POST /extractions/estimate` through `client.extractions.estimateCost`, creates the job with `client.extractions.run`, reads rows with `client.extractions.retrieve`, and downloads files with `client.extractions.exportResults`.
+Use this workflow when a TypeScript worker needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV/JSON/XLSX export. It uses `client.extractions.estimateCost`, `run`, `retrieve`, and `exportResults`.
+
+Reuse the polling, JSON Lines pagination, and export structure from the follower workflow. Only the tool type, target field, and filenames change:
 
 ```ts
-import { open, writeFile } from "node:fs/promises";
-import XTwitterScraper from "x-twitter-scraper";
-
-const client = new XTwitterScraper();
 const targetTweetId = "1893704267862470862";
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
 
 const estimate = await client.extractions.estimateCost({
   toolType: "reply_extractor",
@@ -264,44 +260,8 @@ const job = await client.extractions.run({
   targetTweetId,
 });
 
-while (true) {
-  const statusPage = await client.extractions.retrieve(job.id, { limit: 1 });
-  const status = statusPage.job["status"];
-
-  if (status === "completed") {
-    break;
-  }
-
-  if (status === "failed") {
-    throw new Error("Reply extraction failed.");
-  }
-
-  await sleep(3000);
-}
-
-let after: string | undefined;
-const jsonl = await open("xquik-replies.jsonl", "w");
-
-try {
-  while (true) {
-    const page = await client.extractions.retrieve(job.id, {
-      limit: 1000,
-      after,
-    });
-
-    for (const row of page.results) {
-      await jsonl.write(`${JSON.stringify(row)}\n`);
-    }
-
-    if (!page.hasMore || !page.nextCursor) {
-      break;
-    }
-
-    after = page.nextCursor;
-  }
-} finally {
-  await jsonl.close();
-}
+// Run the same polling and JSONL pagination loops from the follower workflow.
+// Set the JSON Lines destination to await open("xquik-replies.jsonl", "w").
 
 const csv = await client.extractions.exportResults(job.id, { format: "csv" });
 await writeFile("xquik-replies.csv", Buffer.from(await csv.arrayBuffer()));
@@ -313,7 +273,7 @@ const xlsx = await client.extractions.exportResults(job.id, { format: "xlsx" });
 await writeFile("xquik-replies.xlsx", Buffer.from(await xlsx.arrayBuffer()));
 ```
 
-`reply_extractor` requires `targetTweetId`. `client.extractions.retrieve` returns `results`, `hasMore`, and `nextCursor`; store those values when you need resumable JSON pagination. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.extractions.exportResults` supports `csv`, `json`, and `xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
+`reply_extractor` requires `targetTweetId`. `client.extractions.retrieve` returns `results`, `hasMore`, and `nextCursor`; the shared pagination loop passes `nextCursor` back as `after`. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.extractions.exportResults` supports `csv`, `json`, and `xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
 
 ## Workflow: Post Media Tweets and DM Attachments
 
