@@ -308,17 +308,9 @@ Use this workflow when a .NET worker needs every reply on a public tweet in a du
 
 `client.Extractions.EstimateCost` and `client.Extractions.Run` map to the extraction workflow. For tweet replies, use `ExtractionEstimateCostParamsToolType.ReplyExtractor` and `ExtractionRunParamsToolType.ReplyExtractor`; `reply_extractor` requires `TargetTweetID`. `client.Extractions.Retrieve` returns `Results`, `HasMore`, and `NextCursor` for pagination. `client.Extractions.ExportResults` returns an `HttpResponse`; read CSV and JSON as strings, and copy XLSX from the response stream.
 
+Reuse the follower export loop above. Change only the required target, tool type, and output names:
+
 ```csharp
-using System;
-using System.IO;
-using System.Text.Json;
-using System.Threading.Tasks;
-using XTwitterScraper;
-using XTwitterScraper.Core;
-using XTwitterScraper.Models.Extractions;
-
-XTwitterScraperClient client = new();
-
 string targetTweetID = "1893704267862470862";
 ExtractionEstimateCostResponse estimate = await client.Extractions.EstimateCost(
     new ExtractionEstimateCostParams
@@ -328,11 +320,6 @@ ExtractionEstimateCostResponse estimate = await client.Extractions.EstimateCost(
     }
 );
 
-if (!estimate.Allowed)
-{
-    throw new InvalidOperationException("Insufficient credits for reply extraction.");
-}
-
 ExtractionRunResponse job = await client.Extractions.Run(
     new ExtractionRunParams
     {
@@ -341,70 +328,27 @@ ExtractionRunResponse job = await client.Extractions.Run(
     }
 );
 
-while (true)
-{
-    ExtractionRetrieveResponse statusPage = await client.Extractions.Retrieve(
-        job.ID,
-        new ExtractionRetrieveParams { Limit = 1 }
-    );
-
-    string? status = statusPage.Job.TryGetValue("status", out JsonElement statusValue)
-        ? statusValue.GetString()
-        : null;
-
-    if (status == "completed")
-    {
-        break;
-    }
-
-    if (status == "failed")
-    {
-        throw new InvalidOperationException("Reply extraction failed.");
-    }
-
-    await Task.Delay(TimeSpan.FromSeconds(3));
-}
-
-string? after = null;
 using StreamWriter writer = File.CreateText("xquik-replies.jsonl");
+ExtractionRetrieveResponse page = await client.Extractions.Retrieve(
+    job.ID,
+    new ExtractionRetrieveParams { After = after, Limit = 1000 }
+);
 
-do
+foreach (var reply in page.Results)
 {
-    ExtractionRetrieveResponse page = await client.Extractions.Retrieve(
-        job.ID,
-        new ExtractionRetrieveParams { After = after, Limit = 1000 }
-    );
-
-    foreach (var reply in page.Results)
-    {
-        await writer.WriteLineAsync(JsonSerializer.Serialize(reply));
-    }
-
-    after = page.HasMore ? page.NextCursor : null;
-} while (!string.IsNullOrEmpty(after));
+    await writer.WriteLineAsync(JsonSerializer.Serialize(reply));
+}
 
 using HttpResponse csvResponse = await client.Extractions.ExportResults(
     job.ID,
     new ExtractionExportResultsParams { Format = Format.Csv }
 );
 await File.WriteAllTextAsync("xquik-replies.csv", await csvResponse.ReadAsString());
-
-using HttpResponse jsonResponse = await client.Extractions.ExportResults(
-    job.ID,
-    new ExtractionExportResultsParams { Format = Format.Json }
-);
-await File.WriteAllTextAsync("xquik-replies.json", await jsonResponse.ReadAsString());
-
-using HttpResponse xlsxResponse = await client.Extractions.ExportResults(
-    job.ID,
-    new ExtractionExportResultsParams { Format = Format.Xlsx }
-);
-using Stream xlsxStream = await xlsxResponse.ReadAsStream();
-using FileStream xlsxFile = File.Create("xquik-replies.xlsx");
-await xlsxStream.CopyToAsync(xlsxFile);
 ```
 
-Cost: 1 credit per reply extracted or returned. Store `job.ID` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `client.Extractions.Retrieve`. Keep `page.NextCursor` as the checkpoint when you stream replies to JSON Lines. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff.
+Keep the same `estimate.Allowed` credit branch from the follower export workflow before calling `Run`. Store `job.ID` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `client.Extractions.Retrieve`. Keep `page.NextCursor` as the checkpoint when you stream replies to JSON Lines. Pass it back as `After` on the next `ExtractionRetrieveParams` call.
+
+Repeat the export with `new ExtractionExportResultsParams { Format = Format.Json }` and `File.WriteAllTextAsync("xquik-replies.json", await jsonResponse.ReadAsString())`. For XLSX, use `new ExtractionExportResultsParams { Format = Format.Xlsx }`, `File.Create("xquik-replies.xlsx")`, and stream-copy the response body. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. Cost: 1 credit per reply extracted or returned.
 
 ## Workflow: Post Media Tweets and DM Attachments
 

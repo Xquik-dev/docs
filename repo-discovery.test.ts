@@ -10653,9 +10653,11 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the C# SDK page useful for tweet search handoffs', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('sdks/csharp.mdx', 'utf8');
+
+    expect(source.length).toBeLessThanOrEqual(23_100);
 
     expect(
       [
