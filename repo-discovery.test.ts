@@ -4239,6 +4239,45 @@ const FORBIDDEN_CHECK_FOLLOWER_RENDER_RISK_SNIPPETS = [
   'print(json.dumps(relationship_row))',
 ] as const;
 
+const REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS = [
+  'description: "Verify whether one X user follows another for campaign proof, giveaway eligibility, CRM flags, and audit workflows"',
+  'Check follower verifies one known relationship without exporting a follower',
+  '`isFollowing` for source-to-target proof and `isFollowedBy` for',
+  'async function buildFollowCheckAudit()',
+  'const campaignId = "spring-launch-2026";',
+  'const participantHandle = "participant_handle";',
+  'const requiredFollowHandle = "brand_handle";',
+  'campaign_id: campaignId',
+  'participant_handle: data.sourceUsername',
+  'required_follow_handle: data.targetUsername',
+  'proof_endpoint: "GET /api/v1/x/followers/check"',
+  'participant_follows_required_account: data.isFollowing',
+  'required_account_follows_participant: data.isFollowedBy',
+  'verification_state: data.isFollowing ? "matched" : "not_matched"',
+  'def build_follow_check_audit():',
+  '"participant_follows_required_account": data["isFollowing"]',
+  '"required_account_follows_participant": data["isFollowedBy"]',
+  '## Campaign follow-check handoff',
+  'Use `GET /api/v1/x/followers/check` when a workflow already has both usernames',
+  '<Card title="Single proof" icon="user-check">',
+  '<Card title="Both directions" icon="repeat-2">',
+  '<Card title="Audit row" icon="clipboard-check">',
+  '<Card title="Stopped audit" icon="coins">',
+  '## Which verification endpoint?',
+  '<Card title="Follow task" icon="user-check">',
+  '[`GET /x/tweets/{id}/retweeters`](/api-reference/x/retweeters)',
+  '[`GET /x/tweets/{id}/replies`](/api-reference/x/tweet-replies)',
+  '[`GET /x/tweets/{id}/quotes`](/api-reference/x/tweet-quotes)',
+  '[`POST /draws`](/api-reference/draws/create)',
+  '[Campaign verification workflow](/guides/campaign-verification-workflow)',
+] as const;
+
+const FORBIDDEN_CHECK_FOLLOWER_RAW_OUTPUT_SNIPPETS = [
+  'console.log(data);',
+  'print(data)',
+  'fmt.Println(string(body))',
+] as const;
+
 const REQUIRED_LIST_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '## Direct list follower handoff',
   '`GET /x/lists/{id}/followers`',
@@ -11865,6 +11904,37 @@ describe('repository discovery', (): void => {
                     `Check Follower API page reintroduces the reverted relationship-row snippet "${snippet}".`,
                     'Keep it raw until a render-safe pattern is proven.',
                   ].join(' '),
+                },
+              ]
+            : [],
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Check Follower page campaign-audit focused', (): void => {
+    expect.assertions(2);
+
+    const source = readFileSync('api-reference/x/check-follower.mdx', 'utf8');
+
+    expect(
+      REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? []
+            : [
+                {
+                  issue: `Check Follower API page is missing campaign-audit snippet "${snippet}".`,
+                },
+              ],
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_CHECK_FOLLOWER_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Check Follower API page prints raw follow-check data with "${snippet}".`,
                 },
               ]
             : [],

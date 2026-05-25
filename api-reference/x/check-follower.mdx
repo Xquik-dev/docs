@@ -1,8 +1,8 @@
 ---
 title: "Check follower"
-description: "Check the follow relationship between two X users to verify if one follows the other"
+description: "Verify whether one X user follows another for campaign proof, giveaway eligibility, CRM flags, and audit workflows"
 api: "GET /x/followers/check"
-keywords: ["follower", "check", "relationship", "follow", "x api"]
+keywords: ["check follower", "follow check API", "Twitter follow check", "X follow check", "campaign verification", "giveaway verification", "relationship API", "MPP"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -13,82 +13,168 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **5 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 </Callout>
 
+<Info>
+  Check follower verifies one known relationship without exporting a follower
+  list. Pass the participant as `source` and the required brand, creator, or
+  partner account as `target`. The response returns both directions:
+  `isFollowing` for source-to-target proof and `isFollowedBy` for
+  target-to-source context.
+</Info>
+
 <CodeGroup>
-  ```bash cURL
+  ```bash Follow task
   curl -G https://xquik.com/api/v1/x/followers/check \
-    -d "source=xquikcom" \
-    -d "target=elonmusk" \
+    --data-urlencode "source=participant_handle" \
+    --data-urlencode "target=brand_handle" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
   ```javascript Node.js
-  const params = new URLSearchParams({ source: "xquikcom", target: "elonmusk" });
-  const response = await fetch(`https://xquik.com/api/v1/x/followers/check?${params}`, {
-    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
-  });
-  const data = await response.json();
-  console.log(data);
+  async function buildFollowCheckAudit() {
+    const campaignId = "spring-launch-2026";
+    const participantHandle = "participant_handle";
+    const requiredFollowHandle = "brand_handle";
+    const params = new URLSearchParams({
+      source: participantHandle,
+      target: requiredFollowHandle,
+    });
+
+    const response = await fetch(`https://xquik.com/api/v1/x/followers/check?${params}`, {
+      headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Follow check failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    return {
+      campaign_id: campaignId,
+      participant_handle: data.sourceUsername,
+      required_follow_handle: data.targetUsername,
+      proof_endpoint: "GET /api/v1/x/followers/check",
+      participant_follows_required_account: data.isFollowing,
+      required_account_follows_participant: data.isFollowedBy,
+      verification_state: data.isFollowing ? "matched" : "not_matched",
+    };
+  }
+
+  const auditEvent = await buildFollowCheckAudit();
+  // Replace this with your DB, queue, or warehouse write.
+  await saveAuditEvent(auditEvent);
   ```
 
   ```python Python
   import requests
 
-  response = requests.get(
-      "https://xquik.com/api/v1/x/followers/check",
-      params={"source": "xquikcom", "target": "elonmusk"},
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-  )
-  data = response.json()
-  print(data)
-  ```
+  def build_follow_check_audit():
+      campaign_id = "spring-launch-2026"
+      participant_handle = "participant_handle"
+      required_follow_handle = "brand_handle"
+      response = requests.get(
+          "https://xquik.com/api/v1/x/followers/check",
+          params={
+              "source": participant_handle,
+              "target": required_follow_handle,
+          },
+          headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      )
+      response.raise_for_status()
+      data = response.json()
+      return {
+          "campaign_id": campaign_id,
+          "participant_handle": data["sourceUsername"],
+          "required_follow_handle": data["targetUsername"],
+          "proof_endpoint": "GET /api/v1/x/followers/check",
+          "participant_follows_required_account": data["isFollowing"],
+          "required_account_follows_participant": data["isFollowedBy"],
+          "verification_state": "matched" if data["isFollowing"] else "not_matched",
+      }
 
-  ```go Go
-  package main
-
-  import (
-  	"fmt"
-  	"io"
-  	"log"
-  	"net/http"
-  	"net/url"
-  )
-
-  func main() {
-  	baseURL := "https://xquik.com/api/v1/x/followers/check"
-  	params := url.Values{}
-  	params.Set("source", "xquikcom")
-  	params.Set("target", "elonmusk")
-
-  	req, err := http.NewRequest("GET", baseURL+"?"+params.Encode(), nil)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-
-  	resp, err := http.DefaultClient.Do(req)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	defer resp.Body.Close()
-
-  	body, err := io.ReadAll(resp.Body)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	fmt.Println(string(body))
-  }
+  audit_event = build_follow_check_audit()
+  # Replace this with your DB, queue, or warehouse write.
+  save_audit_event(audit_event)
   ```
 </CodeGroup>
+
+The Node.js and Python snippets build a campaign audit event instead of printing
+the raw response page. Store the event with your campaign, entrant, or CRM row
+so reviewers can see the proof endpoint, the two handles checked, and the
+matched or not-matched state.
+
+## Campaign follow-check handoff
+
+Use `GET /api/v1/x/followers/check` when a workflow already has both usernames
+and needs a single proof for a follow task. It is best for campaign entry
+validation, giveaway eligibility, creator partnerships, CRM qualification, and
+agent review queues where the participant handle is known before the check.
+
+<CardGroup cols={2}>
+  <Card title="Single proof" icon="user-check">
+    Store one audit event per participant and required account pair.
+  </Card>
+  <Card title="Both directions" icon="repeat-2">
+    Store `isFollowing` as the required proof and `isFollowedBy` as reciprocal
+    context.
+  </Card>
+  <Card title="Username inputs" icon="at-sign">
+    Pass usernames without `@`. Use [Get user](/api-reference/x/get-user) first
+    when you only have a display name, profile URL, or numeric ID.
+  </Card>
+  <Card title="Audit row" icon="clipboard-check">
+    Persist the campaign ID, participant handle, required follow handle,
+    endpoint, result booleans, and verification state.
+  </Card>
+  <Card title="Draw handoff" icon="trophy">
+    Use [Create draw](/api-reference/draws/create) when winner selection also
+    needs reply, repost, keyword, or unique-author filters.
+  </Card>
+  <Card title="Stopped audit" icon="coins">
+    Treat `402 insufficient_credits` as a stopped audit and resume after
+    credits are available.
+  </Card>
+</CardGroup>
 
 ## Query parameters
 
 <ParamField query="source" type="string" required>
-  Source username. The user whose follow action is being checked.
+  Source username without `@`. In campaign verification, this is usually the
+  participant or entrant whose follow action is being checked.
 </ParamField>
 
 <ParamField query="target" type="string" required>
-  Target username. The user who may be followed by the source.
+  Target username without `@`. In campaign verification, this is usually the
+  brand, creator, partner, or required account that may be followed by the
+  source.
 </ParamField>
+
+## Which verification endpoint?
+
+<CardGroup cols={2}>
+  <Card title="Follow task" icon="user-check">
+    Use `GET /x/followers/check` for one participant-account follow proof.
+  </Card>
+  <Card title="Retweet task" icon="repeat-2">
+    Use [`GET /x/tweets/{id}/retweeters`](/api-reference/x/retweeters) to page
+    accounts that reposted one source tweet.
+  </Card>
+  <Card title="Reply task" icon="message-square-reply">
+    Use [`GET /x/tweets/{id}/replies`](/api-reference/x/tweet-replies) to check
+    public replies under the source tweet.
+  </Card>
+  <Card title="Quote task" icon="quote">
+    Use [`GET /x/tweets/{id}/quotes`](/api-reference/x/tweet-quotes) to inspect
+    quote-tweet entries.
+  </Card>
+  <Card title="Follower export" icon="users">
+    Use [`GET /x/users/{id}/followers`](/api-reference/x/followers) or a saved
+    follower export when you need many followers for one profile.
+  </Card>
+  <Card title="Giveaway draw" icon="trophy">
+    Use [`POST /draws`](/api-reference/draws/create) when Xquik should apply
+    follow, repost, reply, keyword, and winner rules together.
+  </Card>
+</CardGroup>
 
 ## Headers
 
@@ -107,8 +193,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
     ```json
     {
-      "sourceUsername": "xquikcom",
-      "targetUsername": "elonmusk",
+      "sourceUsername": "participant_handle",
+      "targetUsername": "brand_handle",
       "isFollowing": true,
       "isFollowedBy": false
     }
@@ -154,5 +240,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 </Tabs>
 
 <Note>
-  **Next steps:** [Get User](/api-reference/x/get-user) to look up full profile details for either user, or [Get Account](/api-reference/account/get) to check remaining credits.
+  **Next steps:** [Campaign verification workflow](/guides/campaign-verification-workflow)
+  for audit rows and draw handoffs, [Get User](/api-reference/x/get-user) to
+  resolve profile details before checking, or [Get Account](/api-reference/account/get)
+  to check remaining credits.
 </Note>
