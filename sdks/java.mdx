@@ -386,27 +386,9 @@ Use this workflow when a Java worker needs every reply to a campaign, support th
 
 `client.extractions().estimateCost` maps to `POST /extractions/estimate`, `client.extractions().run` maps to `POST /extractions`, `client.extractions().retrieve` maps to `GET /extractions/{id}`, and `client.extractions().exportResults` maps to `GET /extractions/{id}/export`.
 
-```java
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.x_twitter_scraper.api.client.XTwitterScraperClient;
-import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient;
-import com.x_twitter_scraper.api.core.JsonValue;
-import com.x_twitter_scraper.api.core.http.HttpResponse;
-import com.x_twitter_scraper.api.models.extractions.ExtractionEstimateCostParams;
-import com.x_twitter_scraper.api.models.extractions.ExtractionEstimateCostResponse;
-import com.x_twitter_scraper.api.models.extractions.ExtractionExportResultsParams;
-import com.x_twitter_scraper.api.models.extractions.ExtractionRetrieveParams;
-import com.x_twitter_scraper.api.models.extractions.ExtractionRetrieveResponse;
-import com.x_twitter_scraper.api.models.extractions.ExtractionRunParams;
-import com.x_twitter_scraper.api.models.extractions.ExtractionRunResponse;
-import java.io.BufferedWriter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+Reuse the follower export loop above. Change only the required target, tool type, and output names:
 
-XTwitterScraperClient client = XTwitterScraperOkHttpClient.fromEnv();
-ObjectMapper objectMapper = new ObjectMapper();
+```java
 String targetTweetId = "1893704267862470862";
 
 ExtractionEstimateCostResponse estimate = client.extractions().estimateCost(
@@ -416,12 +398,6 @@ ExtractionEstimateCostResponse estimate = client.extractions().estimateCost(
         .build()
 );
 
-if (!estimate.allowed()) {
-    throw new IllegalStateException(
-        "Reply export requires " + estimate.creditsRequired() + " credits."
-    );
-}
-
 ExtractionRunResponse job = client.extractions().run(
     ExtractionRunParams.builder()
         .toolType(ExtractionRunParams.ToolType.REPLY_EXTRACTOR)
@@ -429,53 +405,24 @@ ExtractionRunResponse job = client.extractions().run(
         .build()
 );
 
-boolean completed = false;
-for (int attempt = 0; attempt < 120; attempt++) {
-    ExtractionRetrieveResponse statusPage = client.extractions().retrieve(job.id());
-    JsonValue statusValue = statusPage.job()._additionalProperties().get("status");
-    String status = statusValue == null ? "unknown" : statusValue.asString().orElse("unknown");
+ExtractionRetrieveParams.Builder pageParams = ExtractionRetrieveParams.builder()
+    .id(job.id())
+    .limit(1000L);
 
-    if ("completed".equals(status)) {
-        completed = true;
-        break;
-    }
-
-    if ("failed".equals(status)) {
-        throw new IllegalStateException("Reply export failed.");
-    }
-
-    Thread.sleep(10_000L);
+if (after != null && !after.isEmpty()) {
+    pageParams.after(after);
 }
 
-if (!completed) {
-    throw new IllegalStateException("Reply export did not complete before timeout.");
-}
+ExtractionRetrieveResponse page = client.extractions().retrieve(pageParams.build());
+```
 
-String after = null;
-try (BufferedWriter writer = Files.newBufferedWriter(
-    Paths.get("xquik-replies.jsonl"),
-    StandardCharsets.UTF_8
-)) {
-    do {
-        ExtractionRetrieveParams.Builder pageParams = ExtractionRetrieveParams.builder()
-            .id(job.id())
-            .limit(1000L);
+Persist `job.id()` before polling so a queue retry can resume with `client.extractions().retrieve(job.id())` and repeat `client.extractions().exportResults(...)` after completion. Stream `page.results()` to `Paths.get("xquik-replies.jsonl")`. Keep `page.nextCursor()` as the checkpoint when you stream replies to JSON Lines. Pass it back as `after` on the next `ExtractionRetrieveParams.Builder pageParams`.
 
-        if (after != null && !after.isEmpty()) {
-            pageParams.after(after);
-        }
+Keep the same `estimate.allowed()` credit branch from the follower export workflow before calling `run`.
 
-        ExtractionRetrieveResponse page = client.extractions().retrieve(pageParams.build());
+Export the completed job with the same helper used above:
 
-        for (ExtractionRetrieveResponse.Result row : page.results()) {
-            writer.write(objectMapper.writeValueAsString(row._additionalProperties()));
-            writer.newLine();
-        }
-
-        after = page.hasMore() ? page.nextCursor().orElse(null) : null;
-    } while (after != null && !after.isEmpty());
-}
-
+```java
 try (HttpResponse export = client.extractions().exportResults(
     ExtractionExportResultsParams.builder()
         .id(job.id())
@@ -488,35 +435,9 @@ try (HttpResponse export = client.extractions().exportResults(
         StandardCopyOption.REPLACE_EXISTING
     );
 }
-
-try (HttpResponse export = client.extractions().exportResults(
-    ExtractionExportResultsParams.builder()
-        .id(job.id())
-        .format(ExtractionExportResultsParams.Format.JSON)
-        .build()
-)) {
-    Files.copy(
-        export.body(),
-        Paths.get("xquik-replies.json"),
-        StandardCopyOption.REPLACE_EXISTING
-    );
-}
-
-try (HttpResponse export = client.extractions().exportResults(
-    ExtractionExportResultsParams.builder()
-        .id(job.id())
-        .format(ExtractionExportResultsParams.Format.XLSX)
-        .build()
-)) {
-    Files.copy(
-        export.body(),
-        Paths.get("xquik-replies.xlsx"),
-        StandardCopyOption.REPLACE_EXISTING
-    );
-}
 ```
 
-Persist `job.id()` before polling so a queue retry can resume with `client.extractions().retrieve(job.id())` and repeat `client.extractions().exportResults(...)` after completion. Keep `page.nextCursor()` as the checkpoint when you stream replies to JSON Lines. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff.
+Repeat the export with `ExtractionExportResultsParams.Format.JSON` to write `Paths.get("xquik-replies.json")` and `ExtractionExportResultsParams.Format.XLSX` to write `Paths.get("xquik-replies.xlsx")`. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff.
 
 ## Workflow: Post Media Tweets and DM Attachments
 
