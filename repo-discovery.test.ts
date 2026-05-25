@@ -10575,9 +10575,11 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Python SDK page useful for tweet search handoffs', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('sdks/python.mdx', 'utf8');
+
+    expect(source.length).toBeLessThanOrEqual(20_400);
 
     expect(
       [

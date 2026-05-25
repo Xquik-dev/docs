@@ -286,18 +286,12 @@ client.extractions.export_results(job.id, format="xlsx").write_to_file(
 
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
-Use this workflow when a Python script, notebook, worker, or agent tool needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV/JSON/XLSX file export. It calls `POST /extractions/estimate` through `client.extractions.estimate_cost`, creates the job with `client.extractions.run`, reads rows with `client.extractions.retrieve`, and downloads files with `client.extractions.export_results`.
+Use this workflow when a Python script, notebook, worker, or agent tool needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV/JSON/XLSX file export. It uses `client.extractions.estimate_cost`, `run`, `retrieve`, and `export_results`.
+
+Reuse the polling, row pagination, and export structure from the follower workflow. Only the tool type, target field, and output filenames change:
 
 ```python
-import json
-import time
-from pathlib import Path
-
-from x_twitter_scraper import XTwitterScraper
-
-client = XTwitterScraper()
 target_tweet_id = "1893704267862470862"
-
 estimate = client.extractions.estimate_cost(
     tool_type="reply_extractor",
     target_tweet_id=target_tweet_id,
@@ -311,31 +305,8 @@ job = client.extractions.run(
     target_tweet_id=target_tweet_id,
 )
 
-while True:
-    status_page = client.extractions.retrieve(job.id, limit=1)
-    status = status_page.job.get("status")
-
-    if status == "completed":
-        break
-
-    if status == "failed":
-        raise RuntimeError("Reply extraction failed.")
-
-    time.sleep(3)
-
-after = None
-
-with Path("xquik-replies.jsonl").open("w", encoding="utf-8") as jsonl_file:
-    while True:
-        page = client.extractions.retrieve(job.id, limit=1000, after=after)
-
-        for row in page.results:
-            jsonl_file.write(json.dumps(row, ensure_ascii=False) + "\n")
-
-        if not page.has_more or not page.next_cursor:
-            break
-
-        after = page.next_cursor
+# Run the same polling and JSONL pagination loops from the follower workflow.
+# Set the JSON Lines destination to Path("xquik-replies.jsonl").
 
 client.extractions.export_results(job.id, format="csv").write_to_file(
     Path("xquik-replies.csv"),
@@ -348,7 +319,7 @@ client.extractions.export_results(job.id, format="xlsx").write_to_file(
 )
 ```
 
-`reply_extractor` requires `target_tweet_id`. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; store those values when you need resumable JSON pagination. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.extractions.export_results` supports `csv`, `json`, and `xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
+`reply_extractor` requires `target_tweet_id`. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; the shared pagination loop passes `next_cursor` back as `after`. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.extractions.export_results` supports `csv`, `json`, and `xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
 
 ## Workflow: Post Media Tweets and DM Attachments
 
