@@ -5117,6 +5117,20 @@ const REQUIRED_BOOKMARKS_API_HANDOFF_SNIPPETS = [
   '<ResponseField name="profilePicture" type="string">Profile picture URL.',
   '"followers": 150000000',
   '"profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"',
+  '<Card title="All saved tweets" icon="bookmark">',
+  '<Card title="Folder export" icon="folder">',
+  '[Bookmark Folders](/api-reference/x/bookmark-folders)',
+  '<Card title="Cursor checkpoint" icon="arrow-right">',
+  '<Card title="Account-scoped queue" icon="lock-keyhole">',
+  'Keep saved-tweet rows in account-scoped research, CRM, or agent memory',
+  '## Which saved-feed endpoint?',
+  '<Card title="Saved tweets" icon="bookmark">',
+  '<Card title="Bookmark folders" icon="folder">',
+  '[`GET /x/bookmarks/folders`](/api-reference/x/bookmark-folders)',
+  '<Card title="Home timeline" icon="home">',
+  '[`GET /x/timeline`](/api-reference/x/timeline)',
+  '<Card title="Notifications" icon="bell">',
+  '[`GET /x/notifications`](/api-reference/x/notifications)',
 ] as const;
 
 const FORBIDDEN_BOOKMARKS_API_RAW_SNIPPETS = [
