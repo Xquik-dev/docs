@@ -4100,6 +4100,22 @@ const REQUIRED_COMMUNITY_TWEET_SEARCH_API_HANDOFF_SNIPPETS = [
   '<ResponseField name="profilePicture" type="string">',
   'Set `queryType=Latest` for recent queues or backfills',
   'Set `queryType=Top` for',
+  '<Card title="Search row checkpoint" icon="search">',
+  '<Card title="Sort mode" icon="arrow-down-up">',
+  '<Card title="Default page" icon="rows-3">',
+  '<Card title="Saved export" icon="file-spreadsheet">',
+  '`tweets.length` as the row count returned for this page.',
+  'Use `community_search` with `searchQuery`',
+  '## Which community search route?',
+  '<Card title="Cross-community search" icon="search">',
+  '<Card title="Community search route" icon="list-filter">',
+  '[`GET /x/communities/search`](/api-reference/x/community-search)',
+  'same `q`,',
+  '`queryType`, and `cursor` shape.',
+  '<Card title="Known community posts" icon="message-square-text">',
+  '[`GET /x/communities/{id}/tweets`](/api-reference/x/community-tweets)',
+  '<Card title="Bulk community jobs" icon="file-spreadsheet">',
+  '`community_search` or `community_post_extractor`',
 ] as const;
 
 const FORBIDDEN_COMMUNITY_TWEET_SEARCH_API_RAW_OUTPUT_SNIPPETS = [
