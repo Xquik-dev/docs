@@ -105,86 +105,26 @@ Store one checkpoint per extraction run so another worker can resume without rer
 
 ## Step 1: Check credits
 
-Before running an extraction, verify your subscription status and credit balance.
+Before running an extraction, call [`GET /account`](/api-reference/account/get)
+and store a small planning checkpoint:
 
-<CodeGroup>
 ```bash cURL
 curl -s https://xquik.com/api/v1/account \
   -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 ```
 
-```javascript Node.js
-const response = await fetch("https://xquik.com/api/v1/account", {
-  headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
-});
-const account = await response.json();
-
-if (account.plan !== "active") {
-  throw new Error("Subscription required");
-}
-
-console.log(`Credits remaining: ${account.creditInfo?.balance}`);
-```
-
-```python Python
-import requests
-
-response = requests.get(
-    "https://xquik.com/api/v1/account",
-    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-)
-account = response.json()
-
-if account["plan"] != "active":
-    raise Exception("Subscription required")
-
-print(f"Credits remaining: {account.get('creditInfo', {}).get('balance')}")
-```
-
-```go Go
-req, _ := http.NewRequest("GET", "https://xquik.com/api/v1/account", nil)
-req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-
-resp, err := http.DefaultClient.Do(req)
-if err != nil {
-    log.Fatal(err)
-}
-defer resp.Body.Close()
-
-var account map[string]interface{}
-json.NewDecoder(resp.Body).Decode(&account)
-fmt.Printf("Plan: %s\n", account["plan"])
-```
-</CodeGroup>
-
-The response includes your subscription status and credit balance:
-
-<Expandable title="Example response">
 ```json
 {
+  "checkpoint_type": "credit_check",
   "plan": "active",
-  "monitorsAllowed": 9007199254740991,
-  "monitorsUsed": 1,
-  "monitorBilling": {
-    "activeDailyEstimate": "500",
-    "activeHourlyBurn": "21",
-    "creditsPerActiveMonitorDay": "500",
-    "creditsPerActiveMonitorHour": "21",
-    "eventsIncluded": true,
-    "instantCheckIntervalSeconds": 1,
-    "unlimitedSlots": true
-  },
-  "creditInfo": {
-    "balance": "77000",
-    "lifetimePurchased": "140000",
-    "lifetimeUsed": "63000",
-    "autoTopupEnabled": false
-  }
+  "credit_balance": "77000",
+  "next_action": "estimate_extraction"
 }
 ```
-</Expandable>
 
-If `creditInfo.balance` is low, consider topping up or running a smaller extraction.
+Use `plan` to confirm the subscription is active, and use
+`creditInfo.balance` to decide whether to continue, top up, or lower
+`resultsLimit` before estimating the extraction.
 
 ## Step 2: Estimate cost
 
@@ -237,23 +177,6 @@ if not estimate["allowed"]:
 print(f"Estimated results: {estimate['estimatedResults']}")
 ```
 
-```go Go
-body, _ := json.Marshal(map[string]interface{}{
-    "toolType":      "reply_extractor",
-    "targetTweetId": "1893704267862470862",
-})
-
-req, _ := http.NewRequest("POST", "https://xquik.com/api/v1/extractions/estimate", bytes.NewReader(body))
-req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-req.Header.Set("Content-Type", "application/json")
-
-resp, _ := http.DefaultClient.Do(req)
-defer resp.Body.Close()
-
-var estimate map[string]interface{}
-json.NewDecoder(resp.Body).Decode(&estimate)
-fmt.Printf("Allowed: %v, Estimated: %v\n", estimate["allowed"], estimate["estimatedResults"])
-```
 </CodeGroup>
 
 **Response:**
@@ -342,23 +265,6 @@ extraction = requests.post(
 print(f"Job {extraction['id']}: {extraction['status']}")
 ```
 
-```go Go
-body, _ := json.Marshal(map[string]interface{}{
-    "toolType":      "reply_extractor",
-    "targetTweetId": "1893704267862470862",
-})
-
-req, _ := http.NewRequest("POST", "https://xquik.com/api/v1/extractions", bytes.NewReader(body))
-req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-req.Header.Set("Content-Type", "application/json")
-
-resp, _ := http.DefaultClient.Do(req)
-defer resp.Body.Close()
-
-var extraction map[string]interface{}
-json.NewDecoder(resp.Body).Decode(&extraction)
-fmt.Printf("Job %s: %s\n", extraction["id"], extraction["status"])
-```
 </CodeGroup>
 
 **Response:**

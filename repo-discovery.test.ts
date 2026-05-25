@@ -12277,7 +12277,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the extraction workflow concrete for credits, JSON, and file handoffs', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('guides/extraction-workflow.mdx', 'utf8');
 
@@ -12300,6 +12300,7 @@ describe('repository discovery', (): void => {
         ),
       ],
     ).toStrictEqual([]);
+    expect(source.length).toBeLessThanOrEqual(27_500);
   });
 
   it('keeps response formats and exports source-backed', (): void => {
