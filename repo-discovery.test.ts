@@ -4001,6 +4001,7 @@ const FORBIDDEN_COMMUNITY_MODERATORS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_COMMUNITY_TWEETS_API_HANDOFF_SNIPPETS = [
+  '## Direct community tweet handoff',
   '`GET /x/communities/{id}/tweets`',
   'const nextCursor = data.has_next_page ? data.next_cursor : null;',
   'const tweetRows = data.tweets.map((tweet) => ({',
@@ -4032,6 +4033,20 @@ const REQUIRED_COMMUNITY_TWEETS_API_HANDOFF_SNIPPETS = [
   '`author_profile_picture`,',
   '<ResponseField name="profilePicture" type="string">Profile picture URL.',
   '"profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"',
+  '<Card title="Community tweet rows" icon="message-square-text">',
+  '<Card title="Next page" icon="arrow-right">',
+  '<Card title="Default page" icon="rows-3">',
+  '<Card title="Saved export" icon="file-spreadsheet">',
+  '`tweets.length` as the row count returned for this page.',
+  '## Which community endpoint?',
+  '<Card title="Community tweets" icon="message-square-text">',
+  '<Card title="Community tweet search" icon="search">',
+  '[`GET /x/communities/tweets`](/api-reference/x/search-community-tweets)',
+  '<Card title="Community members" icon="users">',
+  '[`GET /x/communities/{id}/members`](/api-reference/x/community-members)',
+  '<Card title="Bulk community jobs" icon="file-spreadsheet">',
+  '`community_post_extractor`, `community_extractor`, or',
+  '`community_moderator_explorer` when the workflow needs a saved export.',
 ] as const;
 
 const FORBIDDEN_COMMUNITY_TWEETS_API_RAW_OUTPUT_SNIPPETS = [
