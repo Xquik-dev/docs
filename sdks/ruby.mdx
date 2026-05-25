@@ -259,15 +259,11 @@ File.binwrite("xquik-followers.xlsx", xlsx_response.read)
 
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
-Use this workflow when a Ruby app, Rails job, Sidekiq worker, or agent tool needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV/JSON/XLSX file export. It calls `POST /extractions/estimate` through `client.extractions.estimate_cost`, creates the job with `client.extractions.run`, reads rows with `client.extractions.retrieve`, and downloads files with `client.extractions.export_results`.
+Use this workflow when a Ruby app, Rails job, Sidekiq worker, or agent tool needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV/JSON/XLSX file export.
+
+Reuse the polling, JSON Lines pagination, and export structure from the follower workflow. Only the tool type, target field, and filenames change:
 
 ```ruby
-require "json"
-require "x_twitter_scraper"
-
-client = XTwitterScraper::Client.new(
-  api_key: ENV["X_TWITTER_SCRAPER_API_KEY"]
-)
 target_tweet_id = "1893704267862470862"
 
 estimate = client.extractions.estimate_cost(
@@ -282,32 +278,8 @@ job = client.extractions.run(
   target_tweet_id: target_tweet_id
 )
 
-loop do
-  status_page = client.extractions.retrieve(job.id, limit: 1)
-  status = status_page.job[:status] || status_page.job["status"]
-
-  break if status == "completed"
-
-  raise "Reply extraction failed." if status == "failed"
-
-  sleep 3
-end
-
-after = nil
-
-File.open("xquik-replies.jsonl", "w") do |jsonl|
-  loop do
-    page = client.extractions.retrieve(job.id, limit: 1000, after: after)
-
-    page.results.each do |row|
-      jsonl.puts(JSON.generate(row))
-    end
-
-    break unless page.has_more && page.next_cursor.to_s != ""
-
-    after = page.next_cursor
-  end
-end
+# Run the same polling and JSONL pagination loops from the follower workflow.
+# Set the JSON Lines destination to File.open("xquik-replies.jsonl", "w").
 
 csv_response = client.extractions.export_results(job.id, format_: :csv)
 csv_response.rewind
@@ -322,7 +294,7 @@ xlsx_response.rewind
 File.binwrite("xquik-replies.xlsx", xlsx_response.read)
 ```
 
-`reply_extractor` requires `target_tweet_id`. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; store those values when you need resumable JSON pagination. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.extractions.export_results` supports `:csv`, `:json`, and `:xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
+`reply_extractor` requires `target_tweet_id`. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; the shared pagination loop passes `next_cursor` back as `after`. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.extractions.export_results` supports `:csv`, `:json`, and `:xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
 
 ## Workflow: Post Media Tweets and DM Attachments
 

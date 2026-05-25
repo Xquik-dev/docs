@@ -10613,9 +10613,11 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Ruby SDK page useful for tweet search handoffs', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('sdks/ruby.mdx', 'utf8');
+
+    expect(source.length).toBeLessThanOrEqual(17_950);
 
     expect(
       [
