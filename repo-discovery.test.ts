@@ -4817,25 +4817,6 @@ const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   'page_index: pageIndex',
   'page_cursor: pageCursor',
   'process.stdout.write(`${JSON.stringify(row)}\\n`);',
-  'base_params = {"q": "giveaway", "fromUser": "xquikcom", "mediaType": "media"}',
-  '"tweet_id": tweet["id"]',
-  '"author_username": tweet.get("author", {}).get("username")',
-  '"author_name": (tweet.get("author") or {}).get("name")',
-  '"author_followers": (tweet.get("author") or {}).get("followers")',
-  '"author_verified": (tweet.get("author") or {}).get("verified")',
-  '"author_profile_picture": (tweet.get("author") or {}).get("profilePicture")',
-  '"media_urls": [',
-  '"page_index": page_index',
-  'print(json.dumps(search_row, separators=(",", ":")))',
-  'type SearchPage struct {',
-  'json.NewEncoder(os.Stdout)',
-  '"tweet_id":               tweet.ID',
-  '"author_username":        authorUsername',
-  '"author_name":            authorName',
-  '"author_followers":       authorFollowers',
-  '"author_verified":        authorVerified',
-  '"author_profile_picture": authorProfilePicture',
-  '"media_urls":             mediaURLs(tweet.Media)',
   'For CSV or XLSX output,',
   'project the returned `tweets[]` rows locally',
   '`tweet_search_extractor`',
@@ -12085,7 +12066,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the search tweets API handoff concrete', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const source = readFileSync('api-reference/x/search-tweets.mdx', 'utf8');
 
@@ -12108,6 +12089,7 @@ describe('repository discovery', (): void => {
         ),
       ],
     ).toStrictEqual([]);
+    expect(source.length).toBeLessThanOrEqual(19_000);
   });
 
   it('keeps tweet-list API result filters visible', (): void => {
