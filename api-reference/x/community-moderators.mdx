@@ -39,6 +39,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     follower_count: user.followers ?? null,
     verified: user.verified ?? false,
     profile_image_url: user.profilePicture ?? null,
+    page_size: data.users.length,
+    has_next_page: data.has_next_page,
     next_cursor: nextCursor,
   }));
 
@@ -66,6 +68,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           "follower_count": user.get("followers"),
           "verified": user.get("verified", False),
           "profile_image_url": user.get("profilePicture"),
+          "page_size": len(data["users"]),
+          "has_next_page": data["has_next_page"],
           "next_cursor": next_cursor,
       }
       for user in data["users"]
@@ -79,7 +83,33 @@ Use `GET /x/communities/{id}/moderators` for moderator audits, governance
 review, trust and safety queues, or CRM enrichment. It creates one row per
 community moderator. Store `community_id`, `moderator_id`, `username`,
 `display_name`, `bio`, `follower_count`, `verified`, `profile_image_url`, and
-`next_cursor`.
+`next_cursor`. Store `page_size` and `has_next_page` with the checkpoint when
+you paginate moderator audits or saved review queues.
+
+## Direct moderator handoff
+
+Use the first page with no `cursor`, then pass `next_cursor` back as `cursor`
+while `has_next_page` is true. Requested result counts are upper bounds, so use
+`page_size` to record how many moderators were returned on the current page.
+
+<CardGroup cols={2}>
+  <Card title="Moderator rows" icon="shield-check">
+    Store one row per moderator with community ID, user ID, username, profile
+    fields, verification, and follower count.
+  </Card>
+  <Card title="Next page" icon="arrow-right">
+    Store `has_next_page` and `next_cursor` before requesting the following
+    page.
+  </Card>
+  <Card title="Default page" icon="rows-3">
+    Expect up to the default page size per call, reduced when the caller cannot
+    cover every paid result.
+  </Card>
+  <Card title="Saved export" icon="file-spreadsheet">
+    Use `community_moderator_explorer` when the workflow needs an extraction
+    job or CSV, JSON, or XLSX output.
+  </Card>
+</CardGroup>
 
 ## Path parameters
 
@@ -92,6 +122,36 @@ community moderator. Store `community_id`, `moderator_id`, `username`,
 <ParamField query="cursor" type="string">
   Pagination cursor from a previous response. Omit for the first page.
 </ParamField>
+
+## Which community endpoint?
+
+<CardGroup cols={2}>
+  <Card title="Community moderators" icon="shield-check">
+    Use `GET /x/communities/{id}/moderators` for governance audits, moderator
+    review queues, and profile enrichment.
+  </Card>
+  <Card title="Community members" icon="users">
+    Use [`GET /x/communities/{id}/members`](/api-reference/x/community-members)
+    for the broader member list.
+  </Card>
+  <Card title="Community info" icon="badge-info">
+    Use [`GET /x/communities/{id}/info`](/api-reference/x/community-info) for
+    member count, moderator count, rules, and join policy.
+  </Card>
+  <Card title="Community tweets" icon="message-square-text">
+    Use [`GET /x/communities/{id}/tweets`](/api-reference/x/community-tweets)
+    for posts inside one community.
+  </Card>
+  <Card title="Community search" icon="search">
+    Use [`GET /x/communities/tweets`](/api-reference/x/search-community-tweets)
+    for keyword search across community tweets.
+  </Card>
+  <Card title="Saved exports" icon="file-spreadsheet">
+    Use [`Create extraction`](/api-reference/extractions/create) with
+    `community_moderator_explorer`, `community_extractor`, or
+    `community_post_extractor` for queued file exports.
+  </Card>
+</CardGroup>
 
 ## Headers
 
