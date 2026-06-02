@@ -5765,6 +5765,12 @@ const FORBIDDEN_TRENDS_REGION_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
+  '<ParamField body="queryType" type="string">',
+  'Search sort for `tweet_search_extractor` and `community_search`.',
+  'Defaults to `Latest` for tweet search exports and `Top` for community search jobs.',
+  '<ParamField body="includeReplies" type="boolean">',
+  'Include reply tweets for `post_extractor`.',
+  'Omit or set to `false` to extract profile posts without replies.',
   'Each extraction job needs one target field based on `toolType`.',
   '`resultsLimit`',
   '<Card title="Tweet target" icon="message-circle">',
