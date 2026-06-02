@@ -1,6 +1,6 @@
 ---
 title: "Search tweets"
-description: "Search tweets by keyword, hashtag, or X query operator and return paginated JSON tweet data for CRM, agents, or export handoff"
+description: "Search tweets by keyword, hashtag, X query operator, Tweet ID, or X status URL and return paginated JSON tweet data for CRM, agents, or export handoff"
 api: "GET /x/tweets/search"
 keywords: ["search tweets", "tweet scraper", "scrape tweets", "Twitter API search", "X API search", "CSV export", "JSON export", "XLSX export", "agent handoff"]
 ---
@@ -22,6 +22,8 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
 
 <Info>
   Use Search Tweets for keyword, hashtag, operator, and filtered discovery. For
+  exact lookup from a queue or pasted link, send a plain Tweet ID or X status
+  URL in `q` and omit `sinceTime` and `untilTime`. For
   plain account timelines, call [Get user timeline](/api-reference/x/user-tweets)
   (`GET /x/users/{id}/tweets`). When `limit` is present, a bare
   `q=from:username` with no `sinceTime` or `untilTime` is handled as a user
@@ -123,6 +125,9 @@ downloads after completion.
     Call `GET /x/tweets/search` with `q`, filters, `queryType`, `limit`, and
     `cursor` for low-latency JSON rows.
   </Card>
+  <Card title="Exact tweet lookup" icon="hash">
+    Send a plain Tweet ID or X status URL in `q` when the source queue stores links.
+  </Card>
   <Card title="Saved export job" icon="archive">
     Run `tweet_search_extractor` for estimates, job status, stored pages, and
     downloadable files.
@@ -139,6 +144,10 @@ For bounded `limit` requests, `q=from:username` with no `sinceTime` or
 `has_next_page: false`. Add another search term, use the `fromUser` structured
 filter with a keyword, or include `sinceTime` or `untilTime` when you need
 search pagination for that user.
+
+For exact lookups, a plain Tweet ID or X status URL in `q` returns that tweet
+when available. Send no cursor on the first lookup; cursor requests return an
+empty final page for exact IDs.
 
 For CSV or XLSX output, project the returned `tweets[]` rows locally or use
 [`tweet_search_extractor`](/guides/tweet-search-export) for saved CSV, JSON, or
@@ -186,7 +195,7 @@ Tweet search costs 1 credit per tweet returned. Low credit balances can return f
 ## Query parameters
 
 <ParamField query="q" type="string" required>
-  Search query. Supports X search operators such as `from:username`, `to:username`, `#hashtag`, and boolean operators.
+  Search query. Supports X search operators such as `from:username`, `to:username`, `#hashtag`, and boolean operators. A plain Tweet ID or X status URL returns the exact tweet when available.
 </ParamField>
 
 <ParamField query="queryType" type="string">

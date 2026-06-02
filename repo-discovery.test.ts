@@ -2826,6 +2826,30 @@ const REQUIRED_X_ACCOUNTS_GET_STATE_SNIPPETS = [
   '`health: "locked"` or `health: "suspended"` means writes stay blocked until the account is fixed on X.',
 ] as const;
 
+const X_ACCOUNT_PUBLIC_CONTRACT_FILES = [
+  'api-reference/x-accounts/connect.mdx',
+  'api-reference/x-accounts/get.mdx',
+  'api-reference/x-accounts/list.mdx',
+  'api-reference/x-accounts/reauth.mdx',
+  'api-reference/x-accounts/submit-challenge.mdx',
+  'guides/rate-limits.mdx',
+  'openapi.yaml',
+] as const;
+
+const FORBIDDEN_X_ACCOUNT_PUBLIC_CONTRACT_SNIPPETS = [
+  '`proxy_country`',
+  'body="proxy_country"',
+  '`proxyCountry`',
+  'name="proxyCountry"',
+  'accounts[].proxyCountry',
+  '`loginCountry`',
+  'name="loginCountry"',
+  'selected `proxy_country`',
+  '3 attempts per 15 minutes',
+  '3 per 15 minutes',
+  'Too many connection attempts. Try again in 15 minutes.',
+] as const;
+
 const REQUIRED_X_ACCOUNTS_DISCONNECT_SNIPPETS = [
   'description: "Delete the stored Xquik connection only; the X account stays unchanged, old IDs return 404, and reconnecting creates a new ID"',
   'It deletes only the stored Xquik connection for that account ID.',
@@ -5025,6 +5049,9 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
 const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   'return paginated JSON tweet data for CRM, agents, or export handoff',
   'Use Search Tweets for keyword, hashtag, operator, and filtered discovery.',
+  'exact lookup from a queue or pasted link',
+  'send a plain Tweet ID or X status',
+  'omit `sinceTime` and `untilTime`',
   '[Get user timeline](/api-reference/x/user-tweets)',
   '`GET /x/users/{id}/tweets`',
   'When `limit` is present, a bare',
@@ -5044,6 +5071,8 @@ const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   '<Card title="Live search page" icon="search">',
   'Call `GET /x/tweets/search` with `q`, filters, `queryType`, `limit`, and',
   '`cursor` for low-latency JSON rows.',
+  '<Card title="Exact tweet lookup" icon="hash">',
+  'source queue stores links.',
   '<Card title="Saved export job" icon="archive">',
   'Run `tweet_search_extractor` for estimates, job status, stored pages, and',
   'downloadable files.',
@@ -5079,6 +5108,8 @@ const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   '`has_next_page: false`',
   'use the `fromUser` structured',
   'search pagination for that user',
+  'For exact lookups, a plain Tweet ID or X status URL in `q` returns that tweet',
+  'empty final page for exact IDs.',
   'For bounded',
   '`limit` batches, keep the same query, filters, `queryType`, and `limit`',
   '`has_next_page: true`, continue',
@@ -5097,6 +5128,7 @@ const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   '[Tweet Search Export Workflow](/guides/tweet-search-export)',
   'saved CSV, JSON, or XLSX files',
   '1 credit per tweet returned',
+  'A plain Tweet ID or X status URL returns the exact tweet when available.',
   '`402 insufficient_credits`',
   '`Retry-After`',
 ] as const;
@@ -10427,6 +10459,25 @@ function collectPublicDmReplyFieldExampleFindings(): readonly DiscoveryFinding[]
   return findings;
 }
 
+function collectStaleXAccountPublicContractFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const file of X_ACCOUNT_PUBLIC_CONTRACT_FILES) {
+    const source = readFileSync(file, 'utf8');
+
+    for (const snippet of FORBIDDEN_X_ACCOUNT_PUBLIC_CONTRACT_SNIPPETS) {
+      if (source.includes(snippet)) {
+        findings.push({
+          file,
+          issue: `X account public docs contain stale connection contract snippet "${snippet}".`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
 function collectSnippetFindings(
   source: string,
   label: string,
@@ -13564,6 +13615,12 @@ describe('repository discovery', (): void => {
         REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS,
       ),
     ).toStrictEqual([]);
+  });
+
+  it('keeps X account public docs aligned with the current connection contract', (): void => {
+    expect.assertions(1);
+
+    expect(collectStaleXAccountPublicContractFindings()).toStrictEqual([]);
   });
 
   it('keeps the connect X account API page clear about TOTP setup', (): void => {
