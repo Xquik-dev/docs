@@ -5802,6 +5802,10 @@ const REQUIRED_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
   '<Card title="Space target" icon="radio">',
   'Use `targetSpaceId` for Space jobs:',
   '`space_explorer` extracts participants of a Space.',
+  'Store `targetSpaceId` beside the returned extraction `id`.',
+  '[Get Extraction](/api-reference/extractions/get)',
+  '[Export Extraction](/api-reference/extractions/export)',
+  'read participant user rows.',
 ] as const;
 
 const FORBIDDEN_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
