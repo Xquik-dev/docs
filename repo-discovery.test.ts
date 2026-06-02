@@ -3692,16 +3692,21 @@ const FORBIDDEN_NOTIFICATIONS_API_RAW_OUTPUT_SNIPPETS = [
 const REQUIRED_X_TRENDS_API_HANDOFF_SNIPPETS = [
   '`GET /x/trends`',
   'const trendRows = data.trends.map((trend) => ({',
+  'const detectedAt = new Date().toISOString();',
   'trend_name: trend.name',
   'search_query: trend.query ?? trend.name',
   'region_woeid: data.woeid',
   'returned_count: data.count',
+  'detected_at: detectedAt',
+  'detected_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")',
   '"trend_name": trend["name"]',
   '"search_query": trend.get("query", trend["name"])',
   '"region_woeid": data["woeid"]',
   '"returned_count": data["count"]',
+  '"detected_at": detected_at',
   'one JSON line per trend',
   '`trend_name`, `rank`, `description`,',
+  '`detected_at`',
 ] as const;
 
 const FORBIDDEN_X_TRENDS_API_RAW_OUTPUT_SNIPPETS = [

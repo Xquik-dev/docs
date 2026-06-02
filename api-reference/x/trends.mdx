@@ -27,6 +27,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
+  const detectedAt = new Date().toISOString();
   const trendRows = data.trends.map((trend) => ({
     trend_name: trend.name,
     rank: trend.rank ?? null,
@@ -34,6 +35,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     search_query: trend.query ?? trend.name,
     region_woeid: data.woeid,
     returned_count: data.count,
+    detected_at: detectedAt,
   }));
 
   for (const row of trendRows) {
@@ -42,6 +44,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 
   ```python Python
+  from datetime import datetime, timezone
   import json
   import requests
 
@@ -51,6 +54,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
+  detected_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
   trend_rows = [
       {
           "trend_name": trend["name"],
@@ -59,6 +63,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           "search_query": trend.get("query", trend["name"]),
           "region_woeid": data["woeid"],
           "returned_count": data["count"],
+          "detected_at": detected_at,
       }
       for trend in data["trends"]
   ]
@@ -70,7 +75,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 Use `GET /x/trends` when a workflow needs ranked regional topics for content
 planning, monitor seeding, search jobs, or alert routing. The examples write
 one JSON line per trend. Store `trend_name`, `rank`, `description`,
-`search_query`, `region_woeid`, and `returned_count`, then pass
+`search_query`, `region_woeid`, `returned_count`, and your own `detected_at`
+timestamp, then pass
 `search_query` to [Search Tweets](/api-reference/x/search-tweets) when a job
 needs matching tweets.
 
