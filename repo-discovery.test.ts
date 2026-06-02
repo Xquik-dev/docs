@@ -2238,6 +2238,7 @@ const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
   '<Card title="Pagination" icon="list">',
   '`after` with `nextCursor`',
   '`cursor` with `next_cursor`',
+  '/api/v1/x/tweets/search?q=xquik&cursor=',
   '<Card title="Billing" icon="credit-card">',
   '`402 no_credits`',
   '`402 insufficient_credits`',
@@ -2272,6 +2273,7 @@ const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
 
 const FORBIDDEN_API_OVERVIEW_SNIPPETS = [
   'best-practice response contract',
+  '/api/v1/x/tweets/search?query=xquik',
   '| 502 | `x_api_unavailable` | X data source temporarily unavailable - retry |',
   '"message": "X data source temporarily unavailable. Retry shortly."',
 ] as const;
