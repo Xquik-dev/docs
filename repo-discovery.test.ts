@@ -5950,7 +5950,7 @@ const REQUIRED_DRAW_EXPORT_RESPONSE_SNIPPETS = [
 
 const REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS = [
   'File format changes serialization only. The selected columns depend on the',
-  'extraction tool type. Default exports include 28 columns; `article_extractor`',
+  'extraction tool type. Default exports include 29 columns; `article_extractor`',
   'exports 10 article-focused columns.',
   'All extraction tools except `article_extractor` use the default result column set.',
   'Some enrichment columns may be empty when the result does not include that data.',
@@ -5961,7 +5961,8 @@ const REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS = [
   '<Card title="Profile context" icon="file-text">',
   '`Description`, `Location`, and `Cover Picture`.',
   '<Card title="Tweet content" icon="message-square">',
-  '`Tweet ID`, `Tweet Text`, and `Tweet Created At`.',
+  '`Tweet ID`, `Tweet URL`, `Tweet Text`, and `Tweet Created At`.',
+  '`Tweet URL` falls back to the status URL when the username is unavailable.',
   '<Card title="Tweet engagement" icon="activity">',
   '`Likes`, `Reposts`, `Replies`, `Quotes`, `Views`, and `Bookmarks`.',
   '<Card title="Tweet metadata" icon="braces">',
