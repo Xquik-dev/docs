@@ -2281,6 +2281,10 @@ const FORBIDDEN_API_OVERVIEW_SNIPPETS = [
   '"message": "X data source temporarily unavailable. Retry shortly."',
 ] as const;
 
+const FORBIDDEN_SEARCH_TWEETS_QUERY_PARAM_SNIPPETS = [
+  '/x/tweets/search?query=',
+] as const;
+
 const REQUIRED_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
   'Respect `Retry-After`; otherwise start at 1 second, add jitter, and stop after 3 retries.',
   'Requests sent before the fixed window resets keep returning `429` until `Retry-After` elapses.',
@@ -10386,6 +10390,25 @@ function collectPublicConfidentialityWordingFindings(): readonly DiscoveryFindin
   return findings;
 }
 
+function collectStaleSearchTweetsQueryParamFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const file of [...listPublicMarkdownFiles(), 'openapi.yaml']) {
+    const source = readFileSync(file, 'utf8');
+
+    for (const snippet of FORBIDDEN_SEARCH_TWEETS_QUERY_PARAM_SNIPPETS) {
+      if (source.includes(snippet)) {
+        findings.push({
+          file,
+          issue: `Public docs use stale Search Tweets query parameter "${snippet}". Use q for GET /x/tweets/search.`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
 function getOpenApiOperationCount(): number {
   const openApi = readFileSync('openapi.yaml', 'utf8');
   return openApi.match(/^\s+operationId:/gmu)?.length ?? 0;
@@ -11558,6 +11581,12 @@ describe('repository discovery', (): void => {
         ),
       ],
     ).toStrictEqual([]);
+  });
+
+  it('keeps public Search Tweets links on the q query parameter', (): void => {
+    expect.assertions(1);
+
+    expect(collectStaleSearchTweetsQueryParamFindings()).toStrictEqual([]);
   });
 
   it('keeps rate-limit troubleshooting aligned with fixed-window behavior', (): void => {
