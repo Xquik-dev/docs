@@ -2314,6 +2314,7 @@ const REQUIRED_TROUBLESHOOTING_RECOVERY_SNIPPETS = [
   'GET /api/v1/events/{id}',
   'streamEventId',
   'GET /api/v1/events?monitorId={id}&limit=50',
+  'GET /api/v1/events?keywordMonitorId={id}&limit=50',
   'If `hasMore` is `true`, store `nextCursor` and pass it as `after`',
   '202 x_write_unconfirmed',
   'Store `writeActionId`, `status`, `charged`, and `chargedCredits`',
