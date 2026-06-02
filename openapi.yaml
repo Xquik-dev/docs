@@ -5139,7 +5139,6 @@ paths:
                         xUsername: 'elonmusk'
                         status: 'active'
                         health: 'healthy'
-                        proxyCountry: 'US'
                         createdAt: '2025-01-15T12:00:00Z'
                         updatedAt: '2025-03-10T08:30:00Z'
               example:
@@ -5149,7 +5148,6 @@ paths:
                     xUsername: 'elonmusk'
                     status: 'active'
                     health: 'healthy'
-                    proxyCountry: 'US'
                     createdAt: '2025-01-15T12:00:00Z'
                     updatedAt: '2025-03-10T08:30:00Z'
         '401':
@@ -5166,8 +5164,7 @@ paths:
       requestBody:
         required: true
         description:
-          X credentials (username, email, password) and optional 2FA secret and
-          usual login country.
+          X credentials (username, email, password) and optional 2FA secret.
         content:
           application/json:
             schema:
@@ -5190,12 +5187,6 @@ paths:
                   type: string
                   description: TOTP secret for 2FA
                   example: 'JBSWY3DPEHPK3PXP'
-                proxy_country:
-                  type: string
-                  description:
-                    Two-letter country code where the X account is usually used
-                    for login
-                  example: 'US'
             example:
               username: 'elonmusk'
               email: 'user@example.com'
@@ -5364,11 +5355,6 @@ paths:
                   type: string
                   description: Email for the X account (updates stored email)
                   example: 'user@example.com'
-                proxy_country:
-                  type: string
-                  description:
-                    Two-letter country code used for this reauthentication login
-                  example: 'US'
             example:
               password: 'password_value'
               totp_secret: 'totp_secret_value'
@@ -8305,11 +8291,11 @@ components:
             message: 'Login is temporarily paused'
     ConnectRateLimitExceeded:
       description: >
-        Too many requests. Either the connection rate limit was exceeded
-        (`rate_limit_exceeded` - 3 attempts per 15 minutes, `retryAfter`
-        seconds, `Retry-After: 900` header) or a prior login attempt triggered a
-        cooldown (`login_cooldown`, `reason`, `retryAfterMs`, `Retry-After`
-        header in seconds).
+        Too many requests. Either the generous connection safety limit was
+        exceeded (`rate_limit_exceeded`, `retryAfter` seconds, `Retry-After:
+        900` header) or a prior login attempt triggered a cooldown
+        (`login_cooldown`, `reason`, `retryAfterMs`, `Retry-After` header in
+        seconds).
       content:
         application/json:
           schema:
@@ -9515,17 +9501,7 @@ components:
         Linked X account summary with connection status, health, and timestamp
         metadata.
       type: object
-      required:
-        [
-          id,
-          xUserId,
-          xUsername,
-          status,
-          health,
-          proxyCountry,
-          createdAt,
-          updatedAt,
-        ]
+      required: [id, xUserId, xUsername, status, health, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -9565,9 +9541,6 @@ components:
           type: string
           format: date-time
           example: '2025-03-10T08:30:00Z'
-        proxyCountry:
-          type: string
-          example: 'US'
         cookiesObtainedAt:
           type: string
           format: date-time
@@ -9604,7 +9577,7 @@ components:
 
     XAccountDetail:
       description:
-        Full X account details including proxy, cookies, and update timestamp.
+        Full X account details with status, cookies, and update timestamp.
       type: object
       required: [id, xUserId, xUsername, status, health, createdAt]
       properties:
@@ -9640,20 +9613,13 @@ components:
           type: string
           format: date-time
           example: '2025-03-10T08:30:00Z'
-        proxyCountry:
-          type: string
-          example: 'US'
         cookiesObtainedAt:
           type: string
           format: date-time
           example: '2025-03-10T08:30:00Z'
 
     SanitizedXAccount:
-      description: >
-        Sanitized X account summary returned by connect and reauth. Includes an
-        optional `loginCountry` field surfaced only when the login session
-        country differs from the selected `proxy_country`; the field is omitted
-        when both countries match.
+      description: Sanitized X account summary returned by connect and reauth.
       type: object
       required: [id, xUserId, xUsername, status, health, createdAt]
       properties:
@@ -9685,14 +9651,6 @@ components:
           type: string
           format: date-time
           example: '2025-01-15T12:00:00Z'
-        loginCountry:
-          type: string
-          description: >
-            ISO-3166-1 alpha-2 country code used for this login. Present only
-            when the login session country differs from the declared
-            `proxy_country`. Omitted otherwise.
-          example: 'US'
-
     XAccountBody:
       description: Request body identifying an X account by username or ID.
       type: object

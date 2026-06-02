@@ -2824,9 +2824,6 @@ const REQUIRED_X_ACCOUNTS_GET_STATE_SNIPPETS = [
   '`health: "recovering"` means Xquik will retry automatically on the next account use.',
   '<Card title="X restriction" icon="shield-alert">',
   '`health: "locked"` or `health: "suspended"` means writes stay blocked until the account is fixed on X.',
-  '<Card title="Region fields" icon="globe">',
-  '`proxyCountry` is the selected login region stored on the account.',
-  'The separate `loginCountry` field appears only in connect or re-authenticate responses',
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_DISCONNECT_SNIPPETS = [
