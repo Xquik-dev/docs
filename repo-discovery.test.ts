@@ -2344,6 +2344,7 @@ const REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EVENT_LIST_API_HANDOFF_SNIPPETS = [
+  'description: "Query stored account and keyword monitor events with filters and cursor pagination"',
   "jq '. as $page | .events[] | {",
   'event_id: .id',
   'monitor_type: .monitorType',
