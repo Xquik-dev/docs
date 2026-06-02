@@ -2230,6 +2230,14 @@ const REQUIRED_ACCOUNT_API_SNIPPETS = [
   '`monitorsUsed`, `monitorBilling.activeHourlyBurn`, and `monitorBilling.activeDailyEstimate` include active account monitors and active keyword monitors.',
 ] as const;
 
+const REQUIRED_AUTHENTICATION_ACCOUNT_SNIPPETS = [
+  '`GET /account` accepts `x-api-key`. Use it to check plan, credit balance, and monitor billing from server-side integrations.',
+] as const;
+
+const FORBIDDEN_AUTHENTICATION_ACCOUNT_SNIPPETS = [
+  'monitor quota',
+] as const;
+
 const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
   '## Integration readiness checklist',
   '<Card title="Authentication" icon="key">',
@@ -11493,6 +11501,32 @@ describe('repository discovery', (): void => {
 
     expect(
       collectSnippetFindings(source, 'Account API docs', REQUIRED_ACCOUNT_API_SNIPPETS),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps authentication account checks aligned with monitor billing behavior', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/authentication.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'Authentication account check docs',
+          REQUIRED_AUTHENTICATION_ACCOUNT_SNIPPETS,
+        ),
+        ...FORBIDDEN_AUTHENTICATION_ACCOUNT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Authentication docs contain stale wording "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
