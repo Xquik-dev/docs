@@ -3771,6 +3771,7 @@ const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
   'const author = data.author ?? {};',
   'const bodyBlocks = contentBlocks.filter((block) => block.text);',
   'const mediaBlocks = contentBlocks.filter((block) => block.url);',
+  'const formattedBlocks = contentBlocks',
   'author_id: author.id ?? null',
   'author_username: author.username ?? null',
   'author_name: author.name ?? null',
@@ -3778,6 +3779,8 @@ const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
   'cover_image_url: data.article.coverImageUrl ?? null',
   'body_text: bodyBlocks.map((block) => block.text).join("\\n\\n")',
   'block_count: contentBlocks.length',
+  'block_types: contentBlocks.map((block) => block.type ?? "unknown")',
+  'formatted_blocks: formattedBlocks',
   'media_urls: mediaBlocks.map((block) => block.url)',
   '## Find candidate articles',
   'Use this endpoint after you have the numeric wrapper tweet ID for an X Article.',
@@ -3793,6 +3796,7 @@ const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
   '"fallback_route": "GET /api/v1/x/tweets/{id}"',
   'body_blocks = [block for block in content_blocks if block.get("text")]',
   'media_blocks = [block for block in content_blocks if block.get("url")]',
+  'formatted_blocks = [',
   '"tweet_id": tweet_id',
   '"article_title": data["article"].get("title")',
   '"preview_text": data["article"].get("previewText")',
@@ -3804,6 +3808,8 @@ const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
   '"cover_image_url": data["article"].get("coverImageUrl")',
   '"body_text": "\\n\\n".join(block["text"] for block in body_blocks)',
   '"block_count": len(content_blocks)',
+  '"block_types": [block.get("type") for block in content_blocks]',
+  '"formatted_blocks": formatted_blocks',
   '"media_urls": [block["url"] for block in media_blocks]',
   'shape durable article handoff rows',
   '## Direct article handoff',
@@ -3820,6 +3826,7 @@ const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
   '`article_title`, `preview_text`, `author_id`, `author_username`,',
   '`author_username`, `author_name`,',
   '`author_profile_picture`, `created_at`, `cover_image_url`,',
+  '`block_count`, `block_types`, `formatted_blocks`,',
 ] as const;
 
 const FORBIDDEN_GET_ARTICLE_API_RAW_OUTPUT_SNIPPETS = [
