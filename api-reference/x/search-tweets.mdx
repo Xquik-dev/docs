@@ -22,12 +22,12 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
 
 <Info>
   Use Search Tweets for keyword, hashtag, operator, and filtered discovery. For
-  exact lookup from a queue or pasted link, send a plain Tweet ID or X status
-  URL in `q` and omit `sinceTime` and `untilTime`. For
-  plain account timelines, call [Get user timeline](/api-reference/x/user-tweets)
-  (`GET /x/users/{id}/tweets`). When `limit` is present, a bare
-  `q=from:username` with no `sinceTime` or `untilTime` is handled as a user
-  timeline pull and returns one bounded page.
+  exact lookup, send a Tweet ID or X status URL in `q` with no time params. For
+  plain account timelines, call
+  [Get user timeline](/api-reference/x/user-tweets)
+  (`GET /x/users/{id}/tweets`). A strict account date window such as
+  `q=from:username&sinceTime=2026-05-01&untilTime=2026-05-02` is optimized for
+  timeline completeness. Add keywords when ranked search semantics matter more.
 </Info>
 
 <Callout icon="coins" color="#5c3327">
@@ -139,11 +139,14 @@ response returns fewer tweets than `limit` and `has_next_page` is `true`, store
 `next_cursor` and continue with the same `q`, structured filters, `queryType`,
 and `limit` plus `cursor`.
 
-For bounded `limit` requests, `q=from:username` with no `sinceTime` or
-`untilTime` is treated as a user timeline pull and returns a single page with
-`has_next_page: false`. Add another search term, use the `fromUser` structured
-filter with a keyword, or include `sinceTime` or `untilTime` when you need
-search pagination for that user.
+For account date windows, `q=from:username` with `sinceTime` or
+`untilTime` favors account timeline completeness. Raw tokens such as
+`from:username since:2026-05-01 until:2026-05-02` use the same behavior. Use
+`queryType=Latest` for chronological backfills. Add keywords for ranked search.
+
+For bounded `limit`, bare `q=from:username` with no time params is a user
+timeline pull and returns one page with `has_next_page: false`. Add a search
+term or use `fromUser` with a keyword for search pagination.
 
 For exact lookups, a plain Tweet ID or X status URL in `q` returns that tweet
 when available. Send no cursor on the first lookup; cursor requests return an
