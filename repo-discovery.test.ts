@@ -1493,6 +1493,12 @@ const FORBIDDEN_TWEET_SEARCH_CURSOR_LIMIT_SNIPPETS = [
   '.limit(100L)\n            .queryType(QueryType.LATEST)',
 ] as const;
 
+const FORBIDDEN_TWEET_SEARCH_DATE_WINDOW_SNIPPETS = [
+  'Strict `from:` date windows favor timeline completeness.',
+  'Plain from:user date windows are optimized for timeline completeness.',
+  'timeline completeness. Add keywords when ranked search semantics matter more.',
+] as const;
+
 const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
   '## Workflow: Monitor Tweets to Signed Webhooks',
   '`x-twitter-scraper_monitor`',
@@ -1557,6 +1563,7 @@ const REQUIRED_LLMS_SNIPPETS = [
   '`GET /x/write-actions/{id}`',
   'opt in to the normalized v1 response contract',
   '**Tweet Search Filters** (`tweet_search_extractor` and `GET /x/tweets/search`)',
+  'Use `since:` and `until:` with `from:` for account date windows.',
   '`minQuotes`',
   '`anyWords`',
   '`quotesOfTweetId`',
@@ -11227,6 +11234,28 @@ describe('repository discovery', (): void => {
                 {
                   file,
                   issue: `Public Markdown contains stale tweet search pagination wording "${snippet}". Keep simple cursor loops separate from bounded limit resumes.`,
+                },
+              ]
+            : [],
+      );
+    });
+
+    expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps authored tweet search date-window docs aligned with route behavior', (): void => {
+    expect.assertions(1);
+
+    const findings = listPublicMarkdownFiles().flatMap((file): readonly DiscoveryFinding[] => {
+      const source = readFileSync(file, 'utf8');
+
+      return FORBIDDEN_TWEET_SEARCH_DATE_WINDOW_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  file,
+                  issue: `Public Markdown contains stale tweet search date-window wording "${snippet}". Date params stay on search as operators until product OpenAPI says otherwise.`,
                 },
               ]
             : [],
