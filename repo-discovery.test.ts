@@ -87,6 +87,8 @@ const REQUIRED_README_SNIPPETS = [
 
 const REQUIRED_INTRODUCTION_SNIPPETS = [
   'search tweets',
+  'since:YYYY-MM-DD',
+  'until:YYYY-MM-DD',
   'scrape follower lists',
   'post tweets',
   'upload media',
