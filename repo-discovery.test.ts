@@ -10062,6 +10062,11 @@ const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
   'https://api.apify.com/v2/store?username=xquik&limit=20&responseFormat=agent',
   'Store badges, ranking positions, user counts, and run totals change.',
   'Verify the current Xquik Apify profile or Store API before citing marketplace placement.',
+  'account date window',
+  '### Date-window tweet scraping on Apify',
+  '`from:xquikcom since:2026-05-01 until:2026-05-02`',
+  '`from`, `since`, `until`, `since_time`, and `until_time`',
+  '`maxItems` still caps the run or each `searchTerms` entry.',
 ] as const;
 
 const REQUIRED_X_API_ALTERNATIVE_SNIPPETS = [
