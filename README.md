@@ -107,3 +107,4 @@ To report a vulnerability in the docs site or in any documented endpoint behavio
 ## License
 
 The docs source is published under the MIT License. See [LICENSE](LICENSE) if present, or treat the repository contents as MIT-licensed for the purpose of citing or quoting documentation in third-party material. The Xquik product, brand, and platform are not covered by this license.
+
