@@ -28,6 +28,8 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 - [Context7 library](https://context7.com/xquik-dev/xquik-docs) - load indexed Xquik docs in supported coding agents.
 - [llms.txt](https://docs.xquik.com/llms.txt) - discover every public docs page before reading deeper.
 - [MCP Server](https://docs.xquik.com/mcp) - connect Xquik tools to Claude, ChatGPT, Cursor, and agent runtimes.
+- [Agent index](https://xquik.com/.well-known/agent-index.json) - discover the API MCP endpoint, manifest, OAuth metadata, and auth.md.
+- [auth.md](https://xquik.com/auth.md) - read the agent OAuth registration path for MCP access.
 - [OpenAPI spec](https://docs.xquik.com/openapi.yaml) - generate clients or inspect request and response shapes.
 
 ## Common jobs

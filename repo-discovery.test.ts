@@ -82,6 +82,8 @@ const REQUIRED_README_SNIPPETS = [
   '[llms.txt](https://docs.xquik.com/llms.txt)',
   '## Use With AI Coding Agents',
   '[Context7 library](https://context7.com/xquik-dev/xquik-docs)',
+  '[Agent index](https://xquik.com/.well-known/agent-index.json)',
+  '[auth.md](https://xquik.com/auth.md)',
   '[OpenAPI spec](https://docs.xquik.com/openapi.yaml)',
 ] as const;
 
