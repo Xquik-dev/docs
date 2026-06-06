@@ -1729,6 +1729,11 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   '`https://dashboard.xquik.com/en/account`',
   'direct client examples',
   'with `x-api-key` when the client supports',
+  'Agent discovery metadata is also available at',
+  '`https://xquik.com/.well-known/agent-index.json`',
+  '`com.xquik/mcp`',
+  '`https://xquik.com/auth.md`',
+  'the supported anonymous OAuth client registration path',
   'Unauthenticated requests to `https://xquik.com/mcp` return `401` with a',
   '`WWW-Authenticate: Bearer` challenge.',
   'resource_metadata="https://xquik.com/.well-known/oauth-protected-resource/mcp"',
@@ -1878,6 +1883,21 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   '25 operations across `x-accounts` and `x-write`: connect accounts, retry connection issues, post tweets, like, retweet, follow, remove followers, send DMs, upload media, update profiles, and manage community membership.',
   '<Card title="Monitor billing" icon="radio">',
   'Active instant monitors cost 21 credits per active monitor-hour. Creating monitors requires a subscription and available credits.',
+] as const;
+
+const REQUIRED_OAUTH_AGENT_DISCOVERY_SNIPPETS = [
+  '"agent_auth": {',
+  '"register_uri": "https://xquik.com/api/oauth/register"',
+  '"claim_uri": "https://xquik.com/api/oauth/authorize"',
+  '"revocation_uri": "https://xquik.com/api/oauth/revoke"',
+  '"identity_types_supported": ["anonymous", "oauth_client"]',
+  '"credential_types_supported": ["oauth_access_token"]',
+  '"scopes_supported": ["mcp:tools"]',
+  '"skill": "https://xquik.com/auth.md"',
+  '"registration_endpoint": "https://xquik.com/api/oauth/register"',
+  '"response_types_supported": ["code"]',
+  '"grant_types_supported": ["authorization_code", "refresh_token"]',
+  '"token_endpoint_auth_methods_supported": ["none", "client_secret_post"]',
 ] as const;
 
 const REQUIRED_MCP_EXAMPLE_PROMPT_SNIPPETS = [
@@ -11343,6 +11363,20 @@ describe('repository discovery', (): void => {
     }
 
     expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps OAuth agent discovery docs aligned with product metadata', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('oauth/overview.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'OAuth agent discovery docs',
+        REQUIRED_OAUTH_AGENT_DISCOVERY_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps MCP example prompts scan-friendly and stable for hydration', (): void => {
