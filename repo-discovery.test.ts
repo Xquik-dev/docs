@@ -76,6 +76,7 @@ const REQUIRED_README_SNIPPETS = [
   '[Apify Actors](https://docs.xquik.com/alternatives/apify)',
   '[X Tweet Scraper](https://apify.com/xquik/x-tweet-scraper)',
   '[X Follower Scraper](https://apify.com/xquik/x-follower-scraper)',
+  'Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.',
   'X tweet scraper',
   'follower scraper',
   '[llms.txt](https://docs.xquik.com/llms.txt)',

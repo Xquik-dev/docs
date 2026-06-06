@@ -32,7 +32,8 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 
 ## Common jobs
 
-- Search tweets, fetch tweet threads, read quotes, and inspect replies.
+- Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
+- Fetch tweet threads, read quotes, and inspect replies.
 - Look up users, export followers, list following, and check relationships.
 - Upload media, create tweets, send DMs with returned message IDs, and update profiles.
 - Track new tweets with 1-second monitors and signed webhook delivery.
