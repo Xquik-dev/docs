@@ -1,7 +1,7 @@
 ---
 title: Workflows
 description: X API workflow finder for tweet lookup, search, monitoring, webhooks, MCP, exports, DMs.
-keywords: ["X API workflows", "Twitter API workflows", "endpoint finder", "tweet lookup", "tweet search", "tweet monitoring", "signed webhooks", "follower exports", "post tweets", "post tweet replies", "media upload", "MCP agents"]
+keywords: ["X API workflows", "Twitter API workflows", "endpoint finder", "tweet lookup", "tweet search", "tweet monitoring", "signed webhooks", "follower exports", "following exports", "post tweets", "post tweet replies", "media upload", "MCP agents"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -68,7 +68,8 @@ job, then open the API page for params, responses, and examples.
 - **Profile timeline:** `GET /x/users/{id}/tweets`. Handoff: `cursor`, `includeReplies`, and `includeParentTweet`.
 - **Article body:** `GET /x/articles/{tweetId}`. Handoff: body blocks, cover image, author, and not-found handling.
 - **Replies, quotes, or threads:** `GET /x/tweets/{id}/replies`. Handoff: Conversation rows from replies, quotes, or threads.
-- **Follower export:** `POST /extractions/estimate`. Handoff: `follower_explorer` estimate, job, JSON, CSV, JSON, or XLSX.
+- **Follower or following page:** `GET /x/users/{id}/followers` or `GET /x/users/{id}/following`. Handoff: `users`, `has_next_page`, and `next_cursor`.
+- **Follower or following export:** `POST /extractions/estimate`. Handoff: `follower_explorer` or `following_explorer` estimate, job, CSV, JSON, or XLSX.
 - **Campaign verification:** `GET /x/followers/check`, retweeters, replies, quotes, or draws. Handoff: proof exports.
 - **Post tweet or reply:** `POST /x/tweets`. Handoff: `tweetId`, write status, credits, and public media URLs.
 - **Direct messages:** `GET /x/dm/{userId}/history`. Handoff: history, cursor state, outbound `messageId`, and success.
@@ -78,7 +79,7 @@ job, then open the API page for params, responses, and examples.
 
 ## Integration Handoff Matrix
 
-Use this matrix before choosing code, webhooks, MCP, or exports. Each row maps setup, first call, returned data, handoff, and billing check.
+Use this matrix before choosing code, webhooks, MCP, or exports.
 
 <AccordionGroup>
   <Accordion title="Competitor or brand monitoring">
@@ -102,8 +103,8 @@ Use this matrix before choosing code, webhooks, MCP, or exports. Each row maps s
     Handoff: MCP tool result with normalized pagination.
     Cost check: X data calls use endpoint credit costs.
   </Accordion>
-  <Accordion title="Follower export handoff">
-    Setup: target username and optional `resultsLimit`.
+  <Accordion title="Audience export handoff">
+    Setup: target username, `follower_explorer` or `following_explorer`, and optional `resultsLimit`.
     First call: `POST /extractions/estimate`, then `POST /extractions`.
     Returned data: job status, rows, and export links.
     Handoff: CSV, JSON, XLSX, or paginated JSON.
@@ -134,26 +135,26 @@ Use this matrix before choosing code, webhooks, MCP, or exports. Each row maps s
 
 ## High-Value Workflows First
 
-Start with jobs that create reusable handoffs: rows for analysts, IDs for systems of record, events for queues, and published action IDs for audit trails.
+Prioritize rows for analysts, IDs for systems of record, events for queues, and published action IDs for audit trails.
 
 <CardGroup cols={2}>
   <Card title="1. Scrape tweets to CSV, JSON, or XLSX" icon="search">
-    Turns search intent into rows for research, lead lists, support triage, and AI retrieval.
+    Turns search intent into research, lead, support, and AI retrieval rows.
     First endpoint: `POST /extractions/estimate` with `tweet_search_extractor`.
     Handoff: export file, paginated JSON, or direct `GET /x/tweets/search` page.
     Cost model: 1 credit per tweet returned or extracted.
   </Card>
   <Card title="2. Scrape tweet replies to CSV, JSON, or XLSX" icon="messages-square">
-    Turns a post's conversation into moderation, support, giveaway, research, or AI review rows.
+    Turns a post's conversation into moderation, support, giveaway, research, or AI rows.
     First endpoint: `POST /extractions/estimate` with `reply_extractor` and `targetTweetId`.
     Handoff: export file, paginated JSON, JSONL rows, or direct `GET /x/tweets/{id}/replies` page.
     Cost model: 1 credit per reply returned or extracted.
   </Card>
-  <Card title="3. Export followers to CRM or warehouse" icon="users">
-    Builds owned audience tables with stable X user IDs for import and upsert.
-    First endpoint: `POST /extractions/estimate` with `follower_explorer`.
+  <Card title="3. Export followers or following to CRM" icon="users">
+    Builds audience and interest tables with stable X user IDs for import and upsert.
+    First endpoint: `POST /extractions/estimate` with `follower_explorer` or `following_explorer`.
     Handoff: CSV, JSON, XLSX, or CRM field map keyed by `x_user_id`.
-    Cost model: 1 credit per follower returned.
+    Cost model: 1 credit per user returned.
   </Card>
   <Card title="4. Monitor tweets to signed webhooks" icon="radio">
     Delivers new posts, replies, quotes, and retweets to queues without polling.
@@ -162,13 +163,13 @@ Start with jobs that create reusable handoffs: rows for analysts, IDs for system
     Cost model: 21 credits per active monitor-hour; webhook delivery is included.
   </Card>
   <Card title="5. Post media tweets or replies" icon="image">
-    Publishes media-backed tweets or replies from public image URLs or 1 public MP4 video URL up to 100 MB without a separate upload step.
+    Publishes media tweets or replies from public image URLs or 1 public MP4 URL up to 100 MB.
     First endpoint: `POST /x/tweets` with `media`.
     Handoff: `tweetId`, `success`, `chargedCredits`, original `media` URLs, and optional `reply_to_tweet_id`.
     Cost model: 10 credits text-only, plus 2 credits per started MB across attached media.
   </Card>
   <Card title="6. Send direct messages with returned IDs" icon="send">
-    Lets support, sales, and agent systems read a conversation and store the outbound message ID.
+    Lets support, sales, and agents store the outbound message ID.
     First endpoint: `GET /x/users/{id}` if needed; use `GET /x/dm/{userId}/history?account=...`, then `POST /x/dm/{userId}`.
     Handoff: `account`, `messages`, `has_next_page`, `next_cursor`, `messageId`, and `success`.
     Cost model: 1 credit per user lookup or history message; 10 credits per DM send.
@@ -177,7 +178,7 @@ Start with jobs that create reusable handoffs: rows for analysts, IDs for system
 
 ### 1. Scrape tweets to CSV, JSON, or XLSX
 
-Use this when a user asks to scrape tweets, search tweets, build a tweet scraper, export hashtag results, or hand matching posts to an analyst. Estimate first, create the extraction job, poll it, then export the file format your downstream system expects. For reply-specific exports, use the next workflow.
+Use this to scrape tweets, search tweets, export hashtag results, or hand matching posts to analysts. Estimate first, create the job, poll it, then export the format your system expects. For reply-specific exports, use the next workflow.
 
 ```bash
 curl -X POST https://xquik.com/api/v1/extractions/estimate \
@@ -195,7 +196,7 @@ The extraction returns a job ID. `GET /extractions/{id}` returns `job`, `results
 
 ### 2. Scrape tweet replies to CSV, JSON, or XLSX
 
-Use this when a moderation, support, giveaway, research, or AI review system needs every reply under a specific post as rows. Estimate first with `reply_extractor` and `targetTweetId`, create the extraction job with the same fields, poll it, then export `format=csv`, `format=json`, or `format=xlsx`.
+Use this when a moderation, support, giveaway, research, or AI review system needs every reply under a post as rows. Estimate with `reply_extractor` and `targetTweetId`, create the job, poll it, then export `format=csv`, `format=json`, or `format=xlsx`.
 
 ```bash
 curl -X POST https://xquik.com/api/v1/extractions/estimate \
@@ -210,9 +211,9 @@ curl -X POST https://xquik.com/api/v1/extractions/estimate \
 
 `GET /extractions/{id}` returns reply rows, `hasMore`, and `nextCursor`; pass `nextCursor` as `after` for more stored results. For live pagination without a stored job, call `GET /x/tweets/{id}/replies`, pass `next_cursor` back as `cursor`, and store `tweets`, `has_next_page`, and `next_cursor`.
 
-### 3. Export followers to CRM or warehouse
+### 3. Export followers or following to CRM
 
-Use this when the real job is follower export, audience ownership, CRM import, or warehouse sync. Keep `resultsLimit` on both estimate and create calls so the first run has a predictable credit cap.
+Use this for follower export, following export, audience ownership, CRM import, or warehouse sync. Keep `resultsLimit` on estimate and create calls for a predictable credit cap.
 
 ```bash
 curl -X POST https://xquik.com/api/v1/extractions \
@@ -225,7 +226,7 @@ curl -X POST https://xquik.com/api/v1/extractions \
   }' | jq
 ```
 
-After `status` becomes `completed`, export `format=csv` for CRM import, `format=xlsx` for analyst review, or `format=json` for a pipeline. Map stable `User ID` values to a CRM field such as `x_user_id`; do not key imports by display name.
+Use `following_explorer` with the same `targetUsername` shape when the job needs accounts the user follows. After `status` becomes `completed`, export `format=csv`, `format=xlsx`, or `format=json`. Map stable `User ID` values to `x_user_id`; do not key imports by display name.
 
 ### 4. Monitor tweets to signed webhooks
 
