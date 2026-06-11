@@ -7649,7 +7649,7 @@ const REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS = [
   '"eventTypes": ["tweet.new", "tweet.reply", "profile.bio.changed"]',
   'Store the returned `id`, `username`, `xUserId`, `eventTypes`, `isActive`,',
   '## Create a Keyword Monitor',
-  'Keep the query under 160 characters',
+  'Keep the query under 512 characters',
   '"query": "\\"Xquik\\" OR @xquikcom"',
   '## Deliver Events to a Webhook',
   'Store the returned `secret` once',
