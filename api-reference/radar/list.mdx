@@ -1,8 +1,8 @@
 ---
 title: "List radar items"
-description: "Fetch free trending topics from 7 Radar sources with filters and cursor pagination"
+description: "Fetch free Radar trends with filters and cursor pagination"
 api: "GET /radar"
-keywords: ["radar", "trending", "Google Trends", "Hacker News", "GitHub Trending", "Reddit", "Wikipedia", "TrustMRR", "Polymarket"]
+keywords: ["radar", "trending", "news", "topics", "signals"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -13,7 +13,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **Free** - does not consume credits
 </Callout>
 
-Get trending topics and news aggregated from 7 sources: Google Trends, Hacker News, Polymarket, TrustMRR, Wikipedia, GitHub Trending, and Reddit. Filter by source, category, region, and time window.
+Get trending topics and news from Xquik's own infrastructure. Filter by source identifier, category, region, and time window.
 
 Radar is authenticated but free. It does not require an active subscription and does not consume credits.
 
@@ -26,7 +26,7 @@ Radar is authenticated but free. It does not require an active subscription and 
 ## Query parameters
 
 <ParamField query="source" type="string">
-  Filter by source. One of: `google_trends`, `hacker_news`, `polymarket`, `trustmrr`, `wikipedia`, `github`, `reddit`. Omit to return items from all 7 sources combined. Use this to focus on a single data stream (e.g. `github` for developer-focused trends).
+  Filter by Radar source identifier. Omit to return all available streams. Use the `source` value returned on radar items when you need to poll one stream.
 </ParamField>
 
 <ParamField query="category" type="string">
@@ -42,7 +42,7 @@ Radar is authenticated but free. It does not require an active subscription and 
 </ParamField>
 
 <ParamField query="region" type="string" default="global">
-  Region filter. Values: `US`, `GB`, `TR`, `ES`, `DE`, `FR`, `JP`, `IN`, `BR`, `CA`, `MX`, `global`. Default `global` returns items from all regions. Region filtering is most useful with `google_trends` and `reddit` sources.
+  Region filter. Values: `US`, `GB`, `TR`, `ES`, `DE`, `FR`, `JP`, `IN`, `BR`, `CA`, `MX`, `global`. Default `global` returns items from all regions.
 </ParamField>
 
 <ParamField query="after" type="string">
@@ -86,7 +86,7 @@ Radar is authenticated but free. It does not require an active subscription and 
 </ResponseField>
 
 <ResponseField name="source" type="string" required>
-  One of: `google_trends`, `hacker_news`, `polymarket`, `trustmrr`, `wikipedia`, `github`, `reddit`.
+  Radar source identifier. Pass this value as the `source` query parameter to filter future pages to the same stream.
 </ResponseField>
 
 <ResponseField name="sourceId" type="string" required>
@@ -110,7 +110,7 @@ Radar is authenticated but free. It does not require an active subscription and 
 </ResponseField>
 
 <ResponseField name="metadata" type="object" required>
-  Source-specific data. Fields vary by source (see below).
+  Stream-specific data. Fields vary by item.
 </ResponseField>
 
 <ResponseField name="publishedAt" type="string" required>
@@ -121,32 +121,34 @@ Radar is authenticated but free. It does not require an active subscription and 
   ISO 8601 timestamp of when the item was indexed.
 </ResponseField>
 
-## Source-Specific Metadata
+## Metadata
 
-Each source includes different fields in the `metadata` object:
+The `metadata` object contains stream-specific fields. Common fields include:
 
-| Source | Metadata Fields |
-|--------|----------------|
-| `github` | `starsToday` (number), `language` (string, programming language) |
-| `hacker_news` | `points` (number), `numberComments` (number), `author` (string) |
-| `reddit` | `subreddit` (string), `author` (string) |
-| `google_trends` | `approxTraffic` (number, approximate search volume) |
-| `wikipedia` | `views` (number, page views) |
-| `polymarket` | `volume24hr` (number, 24-hour trading volume), `liquidity` (number), `outcomes` (array of outcome objects) |
-| `trustmrr` | **Always present**: `mrr` (number, monthly recurring revenue in USD), `growthPercent` (number, 30-day growth clamped to -99..999), `last30Days` (number, USD revenue over trailing 30 days), `total` (number, aggregate USD revenue since tracking began), `customers` (number), `activeSubscriptions` (number), `onSale` (boolean). **Optional**: `xHandle` (string), `category` (string), `askingPrice` (number, USD, only when `onSale` is true), `country` (string, ISO-3166-1 alpha-2), `growthMrrPercent` (number, 30-day MRR growth clamped to -99..999), `multiple` (number, revenue multiple up to 2 decimals), `paymentProvider` (string), `rank` (integer, rank within TrustMRR dashboard). |
+| Field | Description |
+|-------|-------------|
+| `author` | Source author or publisher handle when available |
+| `category` | Additional stream category when available |
+| `language` | Language or programming language when available |
+| `numberComments` | Comment count when available |
+| `points` | Stream score or point count when available |
+| `starsToday` | Daily star count when available |
+| `subreddit` | Community identifier when available |
+| `views` | View count when available |
+| `volume24hr` | 24-hour volume when available |
 
 ## Examples
 
 <CodeGroup>
 
 ```bash cURL
-curl "https://xquik.com/api/v1/radar?source=hacker_news&hours=12&limit=10" \
+curl "https://xquik.com/api/v1/radar?category=tech&hours=12&limit=10" \
   -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 ```
 
 ```javascript Node.js
 const response = await fetch(
-  "https://xquik.com/api/v1/radar?source=hacker_news&hours=12&limit=10",
+  "https://xquik.com/api/v1/radar?category=tech&hours=12&limit=10",
   { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
 );
 const { items, hasMore, nextCursor } = await response.json();
@@ -162,7 +164,7 @@ import requests
 response = requests.get(
     "https://xquik.com/api/v1/radar",
     headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-    params={"source": "hacker_news", "hours": 12, "limit": 10},
+    params={"category": "tech", "hours": 12, "limit": 10},
 )
 data = response.json()
 
@@ -171,7 +173,7 @@ for item in data["items"]:
 ```
 
 ```go Go
-req, _ := http.NewRequest("GET", "https://xquik.com/api/v1/radar?source=hacker_news&hours=12&limit=10", nil)
+req, _ := http.NewRequest("GET", "https://xquik.com/api/v1/radar?category=tech&hours=12&limit=10", nil)
 req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 
 resp, err := http.DefaultClient.Do(req)
@@ -203,57 +205,21 @@ for _, item := range data.Items {
       "items": [
         {
           "id": "12345",
-          "title": "Show HN: Open-source alternative to Vercel",
-          "description": "A self-hosted deployment platform with preview environments and edge functions.",
-          "url": "https://news.ycombinator.com/item?id=12345",
-          "source": "hacker_news",
-          "sourceId": "hn_12345",
+          "title": "Open-source deployment platform launches preview environments",
+          "description": "A self-hosted platform adds preview environments and edge functions.",
+          "url": "https://example.com/radar/items/12345",
+          "source": "dev",
+          "sourceId": "dev_12345",
           "category": "tech",
           "region": "global",
           "language": "en",
           "score": 450,
           "metadata": {
-            "points": 450,
-            "numberComments": 132,
-            "author": "pgdev"
+            "starsToday": 450,
+            "language": "TypeScript"
           },
           "publishedAt": "2026-03-04T08:30:00.000Z",
           "createdAt": "2026-03-04T08:35:00.000Z"
-        },
-        {
-          "id": "67890",
-          "title": "typescript-go",
-          "description": "TypeScript compiler rewritten in Go for 10x faster builds.",
-          "url": "https://github.com/nicolo-ribaudo/typescript-go",
-          "source": "github",
-          "sourceId": "gh_67890",
-          "category": "dev",
-          "region": "global",
-          "language": "en",
-          "score": 1200,
-          "metadata": {
-            "starsToday": 1200,
-            "language": "Go"
-          },
-          "publishedAt": "2026-03-04T06:00:00.000Z",
-          "createdAt": "2026-03-04T06:05:00.000Z"
-        },
-        {
-          "id": "24680",
-          "title": "AI regulation bill passes Senate committee",
-          "url": "https://www.reddit.com/r/technology/comments/abc123",
-          "source": "reddit",
-          "sourceId": "reddit_24680",
-          "category": "politics",
-          "region": "US",
-          "language": "en",
-          "score": 320,
-          "metadata": {
-            "subreddit": "technology",
-            "author": "policy_watcher"
-          },
-          "publishedAt": "2026-03-04T10:15:00.000Z",
-          "createdAt": "2026-03-04T10:20:00.000Z"
         }
       ],
       "hasMore": true,
