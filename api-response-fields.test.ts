@@ -502,12 +502,46 @@ function objectLiteralPropertyFields(source: string): readonly string[] {
   );
 }
 
+function assignDefinedPropertyFields(source: string): readonly string[] {
+  return uniqueSorted(
+    [
+      ...source.matchAll(
+        /assignDefined\(\s*response\s*,\s*'(?<field>[^']+)'\s*,/gu,
+      ),
+    ]
+      .map((match): string => match.groups?.['field'] ?? '')
+      .filter((field): boolean => field.length > 0 && field !== 'bodyText'),
+  );
+}
+
+function returnedResponseFields(body: string): readonly string[] {
+  const literalStart = body.indexOf('const response:');
+  if (literalStart < 0 || !body.includes('return response;')) return [];
+  const objectStart = body.indexOf('{', literalStart);
+  const objectEnd = body.indexOf('};', objectStart);
+  if (objectStart < 0 || objectEnd < 0) return [];
+  const literalFields = objectLiteralPropertyFields(
+    body.slice(objectStart, objectEnd + 1),
+  );
+  if (literalFields.length > 0) {
+    return uniqueSorted([
+      ...literalFields,
+      ...assignDefinedPropertyFields(body).filter(
+        (field): boolean => field === 'profilePicture',
+      ),
+    ]);
+  }
+  return assignDefinedPropertyFields(body);
+}
+
 function productReturnFieldsFromPath(
   path: string,
   functionName: string,
 ): readonly string[] {
   const source = readFileSync(path, 'utf8');
   const body = mapFunctionBody(source, functionName);
+  const responseFields = returnedResponseFields(body);
+  if (responseFields.length > 0) return responseFields;
   const start = body.indexOf('return {');
   const end = body.indexOf('};', start);
   if (start < 0 || end < 0) {
