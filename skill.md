@@ -54,7 +54,7 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 - **Account and Billing**: Account info, credits, API keys, drafts, styles, and subscriptions.
 - **Compose**: Algorithm-optimized tweet composition.
 - **Styles**: Analyze tweet styles, compare accounts, and track performance.
-- **Radar**: Trending topics and news from 7 sources.
+- **Radar**: Trending topics and news from Xquik's own infrastructure.
 
 ### Extraction tool types (23 total)
 
