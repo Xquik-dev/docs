@@ -1,25 +1,22 @@
-# Xquik Docs - X API, Tweet Scraper & Automation Reference
-
-[![Ask DeepWiki](https://deepwiki.com/badge.svg?url=https%3A%2F%2Fgithub.com%2FXquik-dev%2Fxquik-docs)](https://deepwiki.com/Xquik-dev/xquik-docs)
-[![Skills.sh x-twitter-scraper Skill](https://skills.sh/b/xquik-dev/x-twitter-scraper)](https://skills.sh/xquik-dev/x-twitter-scraper)
+# Xquik Docs - X API, Real-Time X Data & Automation Reference
 
 Public documentation for [Xquik](https://xquik.com), the X (Twitter) real-time data and automation platform. Built on [Mintlify](https://mintlify.com), deployed at **[docs.xquik.com](https://docs.xquik.com)**.
 
-This repository powers the developer reference for the Xquik REST API, webhooks, MCP server, OAuth 2.1, SDKs, glossary, comparison guides, and how-to guides. Use it to find implementation details for tweet search, user lookup, follower exports, media uploads, direct messages, 1-second tweet monitors, signed webhooks, SDK clients, and X automation tasks.
+This repository powers the developer reference for the Xquik REST API, webhooks, MCP server, OAuth 2.1, SDKs, glossary, comparison guides, and how-to guides. Use it to find request and response details for tweet search, user lookup, follower exports, media uploads, direct messages, 1-second tweet monitors, signed webhooks, SDK clients, and X automation tasks.
 
 ## Start here
 
 - [Quickstart](https://docs.xquik.com/quickstart) - make the first authenticated API call.
 - [API Reference](https://docs.xquik.com/api-reference) - browse 120 OpenAPI-backed operations.
 - [SDKs](https://docs.xquik.com/sdks) - use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
-- [Tweet search export](https://docs.xquik.com/guides/tweet-search-export) - scrape tweets by keyword to CSV, JSON, or XLSX.
-- [Tweet replies export](https://docs.xquik.com/guides/tweet-replies-export) - scrape replies to CSV, JSON, or XLSX.
+- [Tweet search export](https://docs.xquik.com/guides/tweet-search-export) - export tweets by keyword to CSV, JSON, or XLSX.
+- [Tweet replies export](https://docs.xquik.com/guides/tweet-replies-export) - export replies to CSV, JSON, or XLSX.
 - [Follower export](https://docs.xquik.com/guides/follower-export-crm) - export X followers to CRM or warehouse.
 - [Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow) - send DMs and store returned message IDs.
 - [Prefect](https://docs.xquik.com/guides/prefect) - schedule tweet, user, timeline, and trend reads in Prefect flows.
 - [MCP Server](https://docs.xquik.com/mcp) - connect Claude, ChatGPT, Cursor, and other AI agents.
 - [Webhooks](https://docs.xquik.com/webhooks/overview) - verify HMAC signatures and receive real-time X events.
-- [Apify Actors](https://docs.xquik.com/alternatives/apify) - run X tweet scraper and follower scraper jobs on Apify.
+- [Apify Actors](https://docs.xquik.com/alternatives/apify) - run X tweet and follower export jobs on Apify.
 - [llms.txt](https://docs.xquik.com/llms.txt) - give AI coding agents the docs index.
 
 ## Use With AI Coding Agents
@@ -39,7 +36,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 - Upload media, create tweets, send DMs with returned message IDs, and update profiles.
 - Track new tweets with 1-second monitors and signed webhook delivery.
 - Export results as JSON, CSV, XLSX, or Markdown.
-- Run [X Tweet Scraper](https://apify.com/xquik/x-tweet-scraper) and [X Follower Scraper](https://apify.com/xquik/x-follower-scraper) Actors on Apify.
+- Run [X Tweet Scraper](https://apify.com/xquik/x-tweet-scraper) and [X Follower Scraper](https://apify.com/xquik/x-follower-scraper) Actors for Apify dataset workflows.
 - Compare Xquik with X API, social schedulers, data tools, and automation platforms.
 
 ## What's covered
@@ -51,7 +48,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 - **Guides** - Workflows, error handling, rate limits, billing, trends, extraction workflow, architecture, troubleshooting, types, webhook testing, and framework integrations.
 - **SDKs** - 10 generated client libraries (TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI as Go binary, Terraform provider) with auto-pagination, retry, and typed responses.
 - **Comparisons** - Factual alternatives and migration guides for X API, creator tools, social suites, data tools, and workflow platforms.
-- **Apify Actors** - Public X tweet scraper and follower scraper Actors for teams that use Apify datasets before moving deeper workflows to REST, webhooks, SDKs, or MCP.
+- **Apify Actors** - Public Apify Actors for tweet and follower dataset workflows before moving deeper workflows to REST, webhooks, SDKs, or MCP.
 - **OpenAPI 3.1** - Machine-readable spec at `openapi.yaml`, used by Mintlify for endpoint pages and by Stainless for SDK generation.
 
 ## Repository layout

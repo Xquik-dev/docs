@@ -42,7 +42,7 @@ const REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_README_SNIPPETS = [
-  '# Xquik Docs - X API, Tweet Scraper & Automation Reference',
+  '# Xquik Docs - X API, Real-Time X Data & Automation Reference',
   'tweet search',
   'user lookup',
   'follower exports',
@@ -59,9 +59,9 @@ const REQUIRED_README_SNIPPETS = [
   '**REST API** - 120 operations',
   '[SDKs](https://docs.xquik.com/sdks)',
   '[Tweet search export](https://docs.xquik.com/guides/tweet-search-export)',
-  'scrape tweets by keyword to CSV, JSON, or XLSX',
+  'export tweets by keyword to CSV, JSON, or XLSX',
   '[Tweet replies export](https://docs.xquik.com/guides/tweet-replies-export)',
-  'scrape replies to CSV, JSON, or XLSX',
+  'export replies to CSV, JSON, or XLSX',
   '[Follower export](https://docs.xquik.com/guides/follower-export-crm)',
   'export X followers to CRM or warehouse',
   '[Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow)',
@@ -74,14 +74,19 @@ const REQUIRED_README_SNIPPETS = [
   '[X Tweet Scraper](https://apify.com/xquik/x-tweet-scraper)',
   '[X Follower Scraper](https://apify.com/xquik/x-follower-scraper)',
   'Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.',
-  'X tweet scraper',
-  'follower scraper',
+  'tweet and follower export jobs on Apify',
+  'Apify dataset workflows',
   '[llms.txt](https://docs.xquik.com/llms.txt)',
   '## Use With AI Coding Agents',
   '[Context7 library](https://context7.com/xquik-dev/xquik-docs)',
   '[Agent index](https://xquik.com/.well-known/agent-index.json)',
   '[auth.md](https://xquik.com/auth.md)',
   '[OpenAPI spec](https://docs.xquik.com/openapi.yaml)',
+] as const;
+
+const FORBIDDEN_README_SNIPPETS = [
+  'deepwiki.com/badge.svg',
+  'skills.sh/b/xquik-dev/x-twitter-scraper',
 ] as const;
 
 const REQUIRED_INTRODUCTION_SNIPPETS = [
@@ -10414,6 +10419,12 @@ function collectReadmeDiscoveryFindings(): readonly DiscoveryFinding[] {
       findings.push({
         issue: `README contains vague positioning phrase "${phrase}".`,
       });
+    }
+  }
+
+  for (const snippet of FORBIDDEN_README_SNIPPETS) {
+    if (source.includes(snippet)) {
+      findings.push({ issue: `README contains retired badge snippet "${snippet}".` });
     }
   }
 
