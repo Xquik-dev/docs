@@ -9042,9 +9042,9 @@ const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
 const REQUIRED_TWEETCLAW_GUIDE_SNIPPETS = [
   'TweetClaw is the official OpenClaw plugin for using Xquik from an OpenClaw agent.',
   'openclaw plugins install @xquik/tweetclaw',
-  'openclaw plugins install @xquik/tweetclaw@1.6.32 --pin',
+  'openclaw plugins install @xquik/tweetclaw@1.6.31 --pin',
   '`@xquik/tweetclaw` is the official package. The plugin id is `tweetclaw`.',
-  'The current source-truth version is `1.6.32`.',
+  'The current published npm version is `1.6.31`, and the current source-truth version is `1.6.32`.',
   'MPP lets TweetClaw call 31 read-only X API endpoints without an Xquik account or API key.',
   '<Card title="explore" icon="search">',
   'Search the bundled Xquik endpoint catalog and inspect parameters.',
