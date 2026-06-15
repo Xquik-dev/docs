@@ -10235,6 +10235,12 @@ const FORBIDDEN_STALE_CREDIT_COST_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
+  ['GitHub', 'Trending'].join(' '),
+  ['Google', 'Trends'].join(' '),
+  ['Hacker', 'News'].join(' '),
+  ['Trending', 'topics', 'and', 'news', 'aggregated', 'from', '7', 'sources'].join(' '),
+  ['Trending', 'topics', 'and', 'news', 'from', '7', 'sources'].join(' '),
+  'TrustMRR',
   [['browser', 'service'].join('-'), 'capacity'].join(' '),
   ['declared', 'proxy', 'region', 'was', 'unavailable'].join(' '),
   ['login', 'fell', 'back', 'to', 'a', 'single', 'US', 'consumer', 'device'].join(' '),
