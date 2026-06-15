@@ -89,7 +89,7 @@ Edit any `.mdx` file and the preview reloads automatically.
 
 ## Deployment
 
-`main` auto-deploys to [docs.xquik.com](https://docs.xquik.com) via Mintlify. Deployment status is visible in commit check runs. There is no separate build or test pipeline; broken-link and OpenAPI checks should be run locally before pushing.
+`main` auto-deploys to [docs.xquik.com](https://docs.xquik.com) via Mintlify. Deployment status is visible in commit check runs. GitHub Actions also runs the Agent-Friendly Docs test suite and refreshes the Context7 library after docs changes. Run broken-link, OpenAPI, and agent-docs checks locally before pushing.
 
 ## Contributing
 
