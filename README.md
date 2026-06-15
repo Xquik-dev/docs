@@ -98,7 +98,7 @@ To report a vulnerability in the docs site or in any documented endpoint behavio
 
 ## Related repositories
 
-- **[Xquik-dev/xquik](https://github.com/Xquik-dev/xquik)** - Main app (closed-source).
+- **[Xquik](https://xquik.com)** - Main app and dashboard.
 - **[Xquik-dev/x-twitter-scraper-python](https://github.com/Xquik-dev/x-twitter-scraper-python)** - Python SDK.
 - **[Xquik-dev/x-twitter-scraper-typescript](https://github.com/Xquik-dev/x-twitter-scraper-typescript)** - TypeScript SDK.
 - Other generated SDKs are listed under the [Xquik-dev](https://github.com/Xquik-dev) org.
