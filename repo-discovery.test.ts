@@ -2161,9 +2161,9 @@ const REQUIRED_BILLING_CARRYOVER_SNIPPETS = [
 
 const REQUIRED_BILLING_MPP_SNIPPETS = [
   '## Pay-per-use (MPP)',
-  '31 X-API read-only endpoints accept [Machine Payments Protocol](/mpp/overview) payments.',
-  'Use [MPP overview](/mpp/overview#eligible-endpoints) for the full 31-endpoint route list.',
-  'This guide keeps price bands here so mobile readers can estimate before opening the full table.',
+  '32 X-API read-only endpoints accept [MPP](/mpp/overview) payments.',
+  'Use [MPP overview](/mpp/overview#eligible-endpoints) for the full 32-endpoint route list.',
+  'This mobile summary keeps price bands close to billing examples.',
   '<Card title="USD 0.00015 units" icon="coins">',
   'Most reads cost USD 0.00015 per call, tweet, user, or community.',
   'Examples: `GET /x/tweets/{id}`, `GET /x/tweets/search`, `GET /x/users/{id}`, `GET /x/users/{id}/followers`, timelines, replies, quotes, communities, and lists.',
@@ -10297,7 +10297,7 @@ const FORBIDDEN_PUBLIC_CARD_ICON_SNIPPETS = [
   },
 ] as const;
 
-const EXPECTED_OPENAPI_OPERATION_COUNT = 120;
+const EXPECTED_OPENAPI_OPERATION_COUNT = 121;
 
 const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
   ['100+', 'REST', 'API', 'endpoints'].join(' '),

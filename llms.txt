@@ -35,19 +35,20 @@ Two methods:
 
 ## Machine Payments Protocol (MPP)
 
-31 X-API endpoints accept anonymous MPP payments via Tempo (USDC). No account or API key required.
+32 X-API endpoints accept anonymous MPP payments via Tempo (USDC). No account or API key required.
 
 Protocol flow: request endpoint, receive 402 `WWW-Authenticate: Payment`, pay via Tempo, retry with `Authorization: Payment`, then read `Payment-Receipt` on 2xx success. Error responses keep their status and body without a receipt header.
 
 Payment intents:
 - `charge`: Fixed cost per call (tweet lookup, user lookup, follower check, article, trends, community info)
-- `session`: Pay per result returned (tweet search, user tweets, quotes, replies, retweeters, favoriters, thread, user likes, user media, community members/moderators/tweets/search, list followers/members/tweets, user batch/search/followers/following/mentions/verified-followers/followers-you-know)
+- `session`: Pay per result returned for search, timelines, replies, engagements, users, lists, and communities.
 
 Eligible endpoints and pricing:
 - `GET /api/v1/x/tweets/{id}` - $0.00015/call (charge)
 - `GET /api/v1/x/tweets/search` - $0.00015/tweet (session)
 - `GET /api/v1/x/users/{id}` - $0.00015/call (charge)
 - `GET /api/v1/x/users/{id}/tweets` - $0.00015/tweet (session)
+- `GET /api/v1/x/users/{id}/replies` - $0.00015/tweet (session)
 - `GET /api/v1/x/followers/check` - $0.00105/call (charge)
 - `GET /api/v1/x/articles/{tweetId}` - $0.00105/call (charge)
 - `GET /api/v1/x/tweets/{id}/quotes` - $0.00015/tweet (session)
@@ -251,7 +252,7 @@ All extraction tools accept an optional `resultsLimit` parameter to cap the numb
 
 **Tweet Search Filters** (`tweet_search_extractor` and `GET /x/tweets/search`): `fromUser`, `toUser`, `mentioning`, `language`, `sinceDate`, `untilDate`, `mediaType` (`images`/`videos`/`gifs`/`media`/`links`/`none`), `minFaves`, `minRetweets`, `minReplies`, `minQuotes`, `verifiedOnly`, `replies`/`retweets`/`quotes` (`include`/`exclude`/`only`), `exactPhrase`, `excludeWords`, `anyWords`, `hashtags`, `cashtags`, `url`, `conversationId`, `inReplyToTweetId`, `quotesOfTweetId`, `retweetsOfTweetId`, and `advancedQuery`. Search converts supported fields to X operators and filters returned tweet rows when response fields are available.
 
-**Tweet result filters**: `GET /x/users/{id}/tweets`, `/likes`, `/media`, `/mentions`, `GET /x/tweets/{id}/replies`, and `GET /x/tweets/{id}/quotes` accept result filters for returned `tweets[]` rows. They preserve the route target and filter rows after each page.
+**Tweet result filters**: `GET /x/users/{id}/tweets`, `/replies`, `/likes`, `/media`, `/mentions`, `GET /x/tweets/{id}/replies`, and `GET /x/tweets/{id}/quotes` accept result filters for returned `tweets[]` rows. They preserve the route target and filter rows after each page.
 
 Always call `POST /api/v1/extractions/estimate` before `POST /api/v1/extractions` to check cost and feasibility. Requires active subscription.
 
@@ -401,6 +402,7 @@ Subscription required, metered.
 - [Check Follower](https://docs.xquik.com/api-reference/x/check-follower): Check follow relationship between two X users. Metered.
 - [Download Media](https://docs.xquik.com/api-reference/x/download-media): Download media from 1 tweet or up to 50 tweets. Returns a gallery URL. Metered on first download.
 - [Get user timeline](https://docs.xquik.com/api-reference/x/user-tweets): Retrieve one user's X profile timeline by username or numeric user ID with cursor pagination, optional replies, parent tweet context, and media handoff. Also called user tweets, profile timeline, or X user timeline. Metered.
+- [Get user replies timeline](https://docs.xquik.com/api-reference/x/user-replies): Retrieve one user's With Replies timeline with cursor pagination, parent context, filters, and media. Metered.
 - [Get user likes](https://docs.xquik.com/api-reference/x/user-likes): Retrieve tweets liked by an X user. Metered.
 - [Get user media](https://docs.xquik.com/api-reference/x/user-media): Retrieve tweets with media posted by an X user. Metered.
 - [Get followers you know](https://docs.xquik.com/api-reference/x/followers-you-know): Retrieve mutual X followers between the authenticated context and one target user. Also called mutual followers API, followers you know API, X mutual followers API, or Twitter mutual followers API. Metered.

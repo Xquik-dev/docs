@@ -210,6 +210,7 @@ const PAGINATED_TWEET_PAGES = [
   'api-reference/x/batch-tweets.mdx',
   'api-reference/x/search-tweets.mdx',
   'api-reference/x/user-tweets.mdx',
+  'api-reference/x/user-replies.mdx',
   'api-reference/x/user-likes.mdx',
   'api-reference/x/user-media.mdx',
   'api-reference/x/bookmarks.mdx',
