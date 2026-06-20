@@ -67,6 +67,35 @@ Use Xquik's Apify Actors when your team already receives data through Apify data
 | Scrape tweets by keyword, hashtag, account date window, URL, or batch tweet ID | Run `xquik/x-tweet-scraper` | Tweet rows with text, IDs, engagement metrics, author profiles, and media; export JSON, CSV, or XLSX | You need `GET /x/tweets/search`, `tweet_search_extractor`, pagination, 1-second monitors, signed webhooks, SDKs, or MCP |
 | Scrape followers, following, verified followers, or list members | Run `xquik/x-follower-scraper` | User rows with profile fields and filter-ready metadata; export JSON, CSV, or XLSX | You need follower exports from the API, CRM handoff, repeat syncs, or downstream workflow ownership |
 
+### Actor output contract to compare
+
+When testing Xquik on Apify, inspect dataset rows before comparing cost or
+migrating the same job to REST.
+
+<CardGroup cols={2}>
+  <Card title="Tweet actor rows" icon="table">
+    `xquik/x-tweet-scraper` can write tweet rows, engagement user rows,
+    article rows, and diagnostic rows. Keep `resultType`, `sourceTweetId`,
+    `engagementMode`, author profile fields, media URLs, and article fields
+    when loading the dataset into a warehouse.
+  </Card>
+  <Card title="Follower actor rows" icon="users">
+    `xquik/x-follower-scraper` writes compact user rows by default. Use full or
+    raw output modes when you need optional profile metadata, raw profile
+    objects, source targets, source relations, source URLs, or overlap fields.
+  </Card>
+  <Card title="Spend caps" icon="coins">
+    Use Apify's max cost per run or API `maxTotalChargeUsd` as the hard spend
+    cap. Use `maxItems` only when you want a smaller row cap than the budget
+    allows.
+  </Card>
+  <Card title="Empty or filtered runs" icon="circle-alert">
+    Empty, invalid, filtered, or zero-output runs can write one diagnostic row
+    with `resultType: "diagnostic"` and a status such as `no-input`,
+    `invalid-input`, or `zero-output`.
+  </Card>
+</CardGroup>
+
 ### Date-window tweet scraping on Apify
 
 For account backfills, pass a Search Terms value such as `from:xquikcom since:2026-05-01 until:2026-05-02`, or use the structured Actor fields `from`, `since`, `until`, `since_time`, and `until_time`. The X Tweet Scraper Actor applies the account and time bounds before writing dataset rows, and `maxItems` still caps the run or each `searchTerms` entry.
