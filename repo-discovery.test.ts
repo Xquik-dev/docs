@@ -2929,13 +2929,14 @@ const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
   '<Card title="x_api_rate_limited" icon="timer-reset">',
   'Read service rate limited. Retry in a few minutes.',
   '<Card title="x_api_unavailable" icon="cloud-off">',
-  'Read service temporarily unavailable. Retry with backoff.',
+  'Read service temporarily unavailable or busy. Respect `Retry-After`',
+  'when present, otherwise retry with backoff.',
   '<Card title="x_write_ambiguous" icon="activity">',
   'Verify the result',
   'manually before sending anything again.',
   '<Card title="x_transient_error" icon="rotate-ccw">',
   'Write service timeout or temporary failure. Retry with backoff.',
-  'The read service is temporarily unavailable. This is usually transient.',
+  'The read service is temporarily unavailable or busy. This is usually transient.',
   'the read service may be experiencing an outage',
 ] as const;
 
