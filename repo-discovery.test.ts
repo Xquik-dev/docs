@@ -2970,8 +2970,6 @@ const REQUIRED_VALIDATION_ERROR_GUIDE_SNIPPETS = [
   'checks require both source and target.',
   '<Card title="too_many_ids" icon="list">',
   'groups of 100',
-  '<Card title="webhook_inactive" icon="radio">',
-  '[Update Webhook](/api-reference/webhooks/update)',
   '<Card title="unsupported_field" icon="circle-x">',
   'send public media URLs in `media`, not uploaded media IDs.',
 ] as const;
@@ -6527,13 +6525,19 @@ const REQUIRED_WEBHOOK_LIST_API_SNIPPETS = [
   '## Inventory handoff',
   "jq '.webhooks[] | {",
   'webhook_id: .id',
+  'delivery_status: .deliveryStatus',
+  'consecutive_failures: .consecutiveFailures',
+  'failure_hard_cap: .failureHardCap',
   'update_endpoint: ("/api/v1/webhooks/" + .id)',
   'delete_endpoint: ("/api/v1/webhooks/" + .id)',
   'test_endpoint: ("/api/v1/webhooks/" + .id + "/test")',
+  'resume_endpoint: ("/api/v1/webhooks/" + .id + "/resume")',
   'deliveries_endpoint: ("/api/v1/webhooks/" + .id + "/deliveries")',
   'const webhookRows = data.webhooks.map((webhook) => ({',
   'webhook_id: webhook.id',
   'event_types: webhook.eventTypes',
+  'delivery_status: webhook.deliveryStatus',
+  'resume_endpoint: `/api/v1/webhooks/${webhook.id}/resume`',
   'update_endpoint: `/api/v1/webhooks/${webhook.id}`',
   'delete_endpoint: `/api/v1/webhooks/${webhook.id}`',
   'test_endpoint: `/api/v1/webhooks/${webhook.id}/test`',
@@ -6542,6 +6546,8 @@ const REQUIRED_WEBHOOK_LIST_API_SNIPPETS = [
   'webhook_rows = [',
   '"webhook_id": webhook["id"]',
   '"event_types": webhook["eventTypes"]',
+  '"delivery_status": webhook["deliveryStatus"]',
+  '"resume_endpoint": f"/api/v1/webhooks/{webhook[\'id\']}/resume"',
   '"update_endpoint": f"/api/v1/webhooks/{webhook[\'id\']}"',
   '"delete_endpoint": f"/api/v1/webhooks/{webhook[\'id\']}"',
   '"test_endpoint": f"/api/v1/webhooks/{webhook[\'id\']}/test"',
@@ -6550,17 +6556,21 @@ const REQUIRED_WEBHOOK_LIST_API_SNIPPETS = [
   'type WebhookRow struct',
   'UpdateEndpoint         string   `json:"update_endpoint"`',
   'DeleteEndpoint         string   `json:"delete_endpoint"`',
+  'ResumeEndpoint         string   `json:"resume_endpoint"`',
   'SigningSecretAvailable bool     `json:"signing_secret_available"`',
   'encoder.Encode(row)',
   'one inventory row per webhook',
-  'Split the rows by `is_active`',
-  'store update, delete, test,',
+  'Split the rows by `is_active` and `delivery_status`',
+  'update, delete, test, resume, and delivery-log endpoints',
   'List responses never include the',
   'Store `webhooks[].id` for updates, deletes, test deliveries, and delivery',
   'Store `webhooks[].url` so configuration reviews can detect stale receiver',
   'Store `webhooks[].eventTypes` and compare it with monitor event types',
   'expecting `tweet.new`, `tweet.quote`, `tweet.reply`, or `tweet.retweet`.',
   'Store `webhooks[].isActive`; inactive webhooks do not receive monitor',
+  'Store `webhooks[].deliveryStatus`',
+  '[Resume Webhook](/api-reference/webhooks/resume)',
+  'Store `webhooks[].consecutiveFailures` and `webhooks[].failureHardCap`',
   '<Card title="Change Links" icon="route">',
   '[Update Webhook](/api-reference/webhooks/update)',
   '[Test Webhook](/api-reference/webhooks/test)',
@@ -6604,13 +6614,11 @@ const REQUIRED_WEBHOOK_TEST_API_SNIPPETS = [
   '"accepted": result["success"] is True',
   'type TestOutcome struct',
   'Store `accepted`,',
-  '`webhook_inactive` means no test was sent.',
-  '[Update Webhook](/api-reference/webhooks/update)',
+  'You can test active, paused, or needs-attention webhooks.',
+  '`isActive`, `deliveryStatus`, or `consecutiveFailures`',
+  '[Resume Webhook](/api-reference/webhooks/resume)',
   '`X-Xquik-Signature`, `X-Xquik-Timestamp`, and',
   '`X-Xquik-Nonce` on the raw request body',
-  'The webhook must be active.',
-  'Xquik returns',
-  '`webhook_inactive` and sends no test request.',
   'The test endpoint does not return or rotate the signing secret.',
   '[Create Webhook](/api-reference/webhooks/create)',
   'keep raw request bodies, raw signatures, and full',
@@ -6626,6 +6634,8 @@ const REQUIRED_WEBHOOK_TEST_API_SNIPPETS = [
   '[Get Event](/api-reference/events/get)',
   'Store the event',
   '`monitorId`, `monitorType`, `type`, `occurredAt`, and `data`',
+  '<Card title="Paused or Needs Attention" icon="toggle-left">',
+  'Tests are still sent to paused and needs-attention webhooks.',
 ] as const;
 
 const FORBIDDEN_WEBHOOK_TEST_RAW_OUTPUT_SNIPPETS = [
@@ -6634,18 +6644,60 @@ const FORBIDDEN_WEBHOOK_TEST_RAW_OUTPUT_SNIPPETS = [
   'fmt.Println(string(body))',
 ] as const;
 
+const REQUIRED_WEBHOOK_RESUME_API_SNIPPETS = [
+  'api: "POST /webhooks/{id}/resume"',
+  'webhook_id: .webhook.id',
+  'resumed: (.success == true)',
+  'delivery_status: .webhook.deliveryStatus',
+  'consecutive_failures: .webhook.consecutiveFailures',
+  'failure_hard_cap: .webhook.failureHardCap',
+  'const resumeHandoff = {',
+  'resume_handoff = {',
+  'type ResumeHandoff struct',
+  'These snippets shape a recovery row.',
+  '## What happens',
+  'signed `webhook.test` request',
+  'resets `consecutiveFailures` to `0`',
+  'If the signed test fails',
+  'The webhook is not reactivated.',
+  'This endpoint does not rotate or return the signing secret.',
+  '## Recovery handoff',
+  '<Card title="Needs Attention" icon="triangle-alert">',
+  '`deliveryStatus: "needs_attention"`',
+  '<Card title="Signed Test Gate" icon="flask-conical">',
+  '<Card title="Failure Counter" icon="rotate-ccw">',
+  'Store `consecutiveFailures` and `failureHardCap`',
+  '[List Deliveries](/api-reference/webhooks/deliveries)',
+  '[Get Event](/api-reference/events/get)',
+] as const;
+
+const FORBIDDEN_WEBHOOK_RESUME_RAW_OUTPUT_SNIPPETS = [
+  'console.log(result);',
+  'print(result)',
+  'fmt.Println(string(body))',
+] as const;
+
 const REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS = [
   'webhook_id: .id',
+  'delivery_status: .deliveryStatus',
+  'consecutive_failures: .consecutiveFailures',
+  'failure_hard_cap: .failureHardCap',
   'test_endpoint: ("/api/v1/webhooks/" + .id + "/test")',
+  'resume_endpoint: ("/api/v1/webhooks/" + .id + "/resume")',
   'deliveries_endpoint: ("/api/v1/webhooks/" + .id + "/deliveries")',
   'const updateHandoff = {',
+  'delivery_status: webhook.deliveryStatus',
   'test_endpoint: `/api/v1/webhooks/${webhook.id}/test`',
+  'resume_endpoint: `/api/v1/webhooks/${webhook.id}/resume`',
   'deliveries_endpoint: `/api/v1/webhooks/${webhook.id}/deliveries`',
   'update_handoff = {',
+  '"delivery_status": webhook["deliveryStatus"]',
   '"test_endpoint": f"/api/v1/webhooks/{webhook[\'id\']}/test"',
+  '"resume_endpoint": f"/api/v1/webhooks/{webhook[\'id\']}/resume"',
   '"deliveries_endpoint": f"/api/v1/webhooks/{webhook[\'id\']}/deliveries"',
   'type UpdateHandoff struct',
   'DeliveriesEndpoint string   `json:"deliveries_endpoint"`',
+  'ResumeEndpoint     string   `json:"resume_endpoint"`',
   'TestEndpoint       string   `json:"test_endpoint"`',
   'These snippets shape a reconfiguration row.',
   'Store the current webhook',
@@ -6662,11 +6714,12 @@ const REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS = [
   'repost activity should keep triggering deliveries.',
   '`webhook.test` is generated only by the [Test Webhook](/api-reference/webhooks/test) endpoint.',
   '## Reconfiguration handoff',
-  'Store returned `id`, `url`, `eventTypes`, `isActive`, and `createdAt`',
+  'Store returned `id`, `url`, `eventTypes`, `isActive`, `deliveryStatus`,',
   'After changing `url`, run [Test Webhook](/api-reference/webhooks/test)',
   '`eventTypes` replaces the previous list.',
   '`isActive: false` stops future deliveries.',
   '`isActive: true` resumes delivery for matching future monitor events.',
+  '[Resume Webhook](/api-reference/webhooks/resume)',
   'This endpoint does not rotate or return `secret`.',
   '<Card title="Delivery check" icon="activity">',
   '[List Deliveries](/api-reference/webhooks/deliveries)',
@@ -6939,7 +6992,7 @@ const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
   '"source_filter": "monitorId for account monitors, keywordMonitorId for keyword monitors"',
   '"join_key": "delivery.streamEventId == event.id"',
   '"stop_when": "hasMore is false"',
-  '"handoff_state": "receiver_fixed_page_events_join_deliveries"',
+  '"handoff_state": "receiver_fixed_resume_webhook_page_events_join_deliveries"',
   'Store `nextCursor` after every event page.',
   'Reprocess events whose `id` matches',
   'failed or exhausted delivery `streamEventId` values',
@@ -6967,7 +7020,7 @@ const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
   '"event_id_source": "streamEventId"',
   '"test_payload_has_ids": false',
   '"production_payload_ids": ["deliveryId", "streamEventId"]',
-  '"handoff_state": "verify_signature_check_delivery_join_event"',
+  '"handoff_state": "verify_signature_resume_if_needed_check_delivery_join_event"',
   '<Card title="Signed receiver test" icon="flask-conical">',
   '<Card title="Signature and IDs" icon="shield-check">',
   '<Card title="Delivery triage" icon="activity">',
@@ -10297,7 +10350,7 @@ const FORBIDDEN_PUBLIC_CARD_ICON_SNIPPETS = [
   },
 ] as const;
 
-const EXPECTED_OPENAPI_OPERATION_COUNT = 121;
+const EXPECTED_OPENAPI_OPERATION_COUNT = 122;
 
 const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
   ['100+', 'REST', 'API', 'endpoints'].join(' '),
@@ -13491,6 +13544,10 @@ describe('repository discovery', (): void => {
       'api-reference/webhooks/test.mdx',
       'utf8',
     );
+    const resumeWebhookApi = readFileSync(
+      'api-reference/webhooks/resume.mdx',
+      'utf8',
+    );
     const deliveriesApi = readFileSync(
       'api-reference/webhooks/deliveries.mdx',
       'utf8',
@@ -13569,6 +13626,21 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Test webhook API docs print raw test responses with "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+        ...collectSnippetFindings(
+          resumeWebhookApi,
+          'Resume webhook API docs',
+          REQUIRED_WEBHOOK_RESUME_API_SNIPPETS,
+        ),
+        ...FORBIDDEN_WEBHOOK_RESUME_RAW_OUTPUT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            resumeWebhookApi.includes(snippet)
+              ? [
+                  {
+                    issue: `Resume webhook API docs print raw resume responses with "${snippet}".`,
                   },
                 ]
               : [],

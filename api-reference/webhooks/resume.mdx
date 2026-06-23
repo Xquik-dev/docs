@@ -1,0 +1,313 @@
+---
+title: "Resume webhook"
+description: "Test and resume a webhook endpoint after delivery failures"
+api: "POST /webhooks/{id}/resume"
+keywords: ["webhook", "resume", "delivery failure", "needs attention", "test webhook"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+<Callout icon="circle-check" color="#16a34a">
+  **Free** - does not consume credits
+</Callout>
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://xquik.com/api/v1/webhooks/15/resume \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    | jq '{
+      webhook_id: .webhook.id,
+      resumed: (.success == true),
+      status_code: .statusCode,
+      delivery_status: .webhook.deliveryStatus,
+      consecutive_failures: .webhook.consecutiveFailures,
+      failure_hard_cap: .webhook.failureHardCap,
+      test_endpoint: ("/api/v1/webhooks/" + .webhook.id + "/test"),
+      deliveries_endpoint: ("/api/v1/webhooks/" + .webhook.id + "/deliveries")
+    }'
+  ```
+
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/webhooks/15/resume", {
+    method: "POST",
+    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+  });
+  const result = await response.json();
+  const resumeHandoff = {
+    webhook_id: result.webhook.id,
+    resumed: result.success === true,
+    status_code: result.statusCode,
+    delivery_status: result.webhook.deliveryStatus,
+    consecutive_failures: result.webhook.consecutiveFailures,
+    failure_hard_cap: result.webhook.failureHardCap,
+    test_endpoint: `/api/v1/webhooks/${result.webhook.id}/test`,
+    deliveries_endpoint: `/api/v1/webhooks/${result.webhook.id}/deliveries`,
+  };
+  ```
+
+  ```python Python
+  import requests
+
+  response = requests.post(
+      "https://xquik.com/api/v1/webhooks/15/resume",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+  )
+  result = response.json()
+  webhook = result["webhook"]
+  resume_handoff = {
+      "webhook_id": webhook["id"],
+      "resumed": result["success"] is True,
+      "status_code": result["statusCode"],
+      "delivery_status": webhook["deliveryStatus"],
+      "consecutive_failures": webhook["consecutiveFailures"],
+      "failure_hard_cap": webhook["failureHardCap"],
+      "test_endpoint": f"/api/v1/webhooks/{webhook['id']}/test",
+      "deliveries_endpoint": f"/api/v1/webhooks/{webhook['id']}/deliveries",
+  }
+  ```
+
+  ```go Go
+  package main
+
+  import (
+    "encoding/json"
+    "log"
+    "net/http"
+  )
+
+  type Webhook struct {
+    ConsecutiveFailures int      `json:"consecutiveFailures"`
+    CreatedAt           string   `json:"createdAt"`
+    DeliveryStatus      string   `json:"deliveryStatus"`
+    EventTypes          []string `json:"eventTypes"`
+    FailureHardCap      int      `json:"failureHardCap"`
+    ID                  string   `json:"id"`
+    IsActive            bool     `json:"isActive"`
+    URL                 string   `json:"url"`
+  }
+
+  type ResumeResponse struct {
+    StatusCode int     `json:"statusCode"`
+    Success    bool    `json:"success"`
+    Webhook    Webhook `json:"webhook"`
+  }
+
+  type ResumeHandoff struct {
+    ConsecutiveFailures int    `json:"consecutive_failures"`
+    DeliveriesEndpoint  string `json:"deliveries_endpoint"`
+    DeliveryStatus      string `json:"delivery_status"`
+    FailureHardCap      int    `json:"failure_hard_cap"`
+    Resumed             bool   `json:"resumed"`
+    StatusCode          int    `json:"status_code"`
+    TestEndpoint        string `json:"test_endpoint"`
+    WebhookID           string `json:"webhook_id"`
+  }
+
+  func main() {
+    req, err := http.NewRequest("POST", "https://xquik.com/api/v1/webhooks/15/resume", nil)
+    if err != nil {
+      log.Fatal(err)
+    }
+    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+      log.Fatal(err)
+    }
+    defer resp.Body.Close()
+
+    var result ResumeResponse
+    if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+      log.Fatal(err)
+    }
+    handoff := ResumeHandoff{
+      ConsecutiveFailures: result.Webhook.ConsecutiveFailures,
+      DeliveriesEndpoint:  "/api/v1/webhooks/" + result.Webhook.ID + "/deliveries",
+      DeliveryStatus:      result.Webhook.DeliveryStatus,
+      FailureHardCap:      result.Webhook.FailureHardCap,
+      Resumed:             result.Success,
+      StatusCode:          result.StatusCode,
+      TestEndpoint:        "/api/v1/webhooks/" + result.Webhook.ID + "/test",
+      WebhookID:           result.Webhook.ID,
+    }
+    _ = handoff
+  }
+  ```
+</CodeGroup>
+
+These snippets shape a recovery row. Store `delivery_status`,
+`consecutive_failures`, `failure_hard_cap`, `status_code`, and the delivery-log
+endpoint beside the webhook ID.
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+  The webhook ID to test and resume.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. This endpoint also accepts session cookie authentication.
+</ParamField>
+
+## What happens
+
+Xquik sends a signed `webhook.test` request to the webhook URL. If your receiver
+returns a `2xx` status, Xquik reactivates the webhook, resets `consecutiveFailures` to `0`, and returns the updated webhook object.
+
+If the signed test fails, Xquik returns `400` with `success: false`,
+`statusCode`, and `error`. The webhook is not reactivated.
+
+This endpoint does not rotate or return the signing secret. Keep using the
+one-time secret from [Create Webhook](/api-reference/webhooks/create).
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="success" type="boolean">
+      `true` when the signed test request succeeded and the webhook was resumed.
+    </ResponseField>
+    <ResponseField name="statusCode" type="number">
+      HTTP status code returned by your receiver during the signed test.
+    </ResponseField>
+    <ResponseField name="webhook" type="object">
+      Updated webhook configuration.
+      <Expandable title="webhook object">
+        <ResponseField name="id" type="string">
+          Unique webhook identifier.
+        </ResponseField>
+        <ResponseField name="url" type="string">
+          Delivery endpoint URL.
+        </ResponseField>
+        <ResponseField name="eventTypes" type="string[]">
+          Event types this webhook is subscribed to.
+        </ResponseField>
+        <ResponseField name="isActive" type="boolean">
+          `true` after a successful resume.
+        </ResponseField>
+        <ResponseField name="consecutiveFailures" type="number">
+          Consecutive receiver failures. Resets to `0` after a successful resume.
+        </ResponseField>
+        <ResponseField name="deliveryStatus" type="string">
+          `active`, `paused`, or `needs_attention`.
+        </ResponseField>
+        <ResponseField name="failureHardCap" type="number">
+          Failure count where the webhook needs attention before resuming.
+        </ResponseField>
+        <ResponseField name="createdAt" type="string">
+          ISO 8601 creation timestamp.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    ```json
+    {
+      "success": true,
+      "statusCode": 200,
+      "webhook": {
+        "id": "15",
+        "url": "https://your-server.com/webhook",
+        "eventTypes": ["tweet.new", "tweet.reply"],
+        "isActive": true,
+        "consecutiveFailures": 0,
+        "deliveryStatus": "active",
+        "failureHardCap": 200,
+        "createdAt": "2026-02-24T10:30:00.000Z"
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="400 Test Failed">
+    <ResponseField name="success" type="boolean">
+      `false` when the signed test did not receive a `2xx` response.
+    </ResponseField>
+    <ResponseField name="statusCode" type="number">
+      HTTP status code from the receiver, or `0` if it was unreachable.
+    </ResponseField>
+    <ResponseField name="error" type="string">
+      Delivery failure reason.
+    </ResponseField>
+
+    ```json
+    {
+      "success": false,
+      "statusCode": 500,
+      "error": "HTTP 500"
+    }
+    ```
+
+    Fix the receiver, then retry this endpoint.
+  </Tab>
+  <Tab title="400 Invalid Request">
+    ```json
+    { "error": "invalid_id", "message": "Invalid webhook ID format" }
+    ```
+    The provided webhook ID is not a valid format.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated", "message": "Missing or invalid API key" }
+    ```
+    Missing or invalid API key / session cookie.
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "not_found", "message": "Webhook not found" }
+    ```
+    No webhook exists with this ID, or it belongs to a different account.
+  </Tab>
+  <Tab title="429 Rate Limited">
+    ```json
+    { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
+    ```
+    Too many requests. Wait for the `Retry-After` header before retrying.
+  </Tab>
+</Tabs>
+
+## Recovery handoff
+
+Use this endpoint after fixing a receiver that returned repeated non-`2xx`
+responses, became unreachable, or reached `deliveryStatus: "needs_attention"`.
+
+<CardGroup cols={2}>
+  <Card title="Needs Attention" icon="triangle-alert">
+    `deliveryStatus: "needs_attention"` means the receiver has reached the
+    failure cap. Fix the receiver before resuming.
+  </Card>
+
+  <Card title="Signed Test Gate" icon="flask-conical">
+    Resume only succeeds after a signed `webhook.test` request receives a `2xx`
+    response from your receiver.
+  </Card>
+
+  <Card title="Failure Counter" icon="rotate-ccw">
+    Store `consecutiveFailures` and `failureHardCap` for alerting and recovery
+    dashboards.
+  </Card>
+
+  <Card title="No Secret Rotation" icon="shield-check">
+    Resume does not return or rotate `secret`. Keep verifying delivery
+    signatures with the secret returned at creation time.
+  </Card>
+
+  <Card title="Delivery Log" icon="activity">
+    After resuming, check
+    [List Deliveries](/api-reference/webhooks/deliveries) for recent `status`,
+    `attempts`, `lastStatusCode`, and `lastError` rows.
+  </Card>
+
+  <Card title="Event Replay" icon="link">
+    Use delivery `streamEventId` with [Get Event](/api-reference/events/get) or
+    event list pages to backfill missed downstream work.
+  </Card>
+</CardGroup>
+
+<Note>
+  This endpoint supports **dual authentication**: API key (`x-api-key` header) or session cookie from the dashboard.
+
+  **Related:** [List Webhooks](/api-reference/webhooks/list) &middot; [Update Webhook](/api-reference/webhooks/update) &middot; [Test Webhook](/api-reference/webhooks/test) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [Webhook Verification](/webhooks/verification)
+</Note>

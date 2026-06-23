@@ -101,13 +101,14 @@ The same applies to draws and X data lookup endpoints (`/api/v1/x/*`).
 
 Webhooks can fail silently. Walk through this checklist:
 
-1. **Webhook is active:** Verify `isActive: true` via `GET /api/v1/webhooks`. Inactive webhooks don't receive deliveries.
+1. **Webhook is active:** Verify `isActive: true` and `deliveryStatus: "active"` via `GET /api/v1/webhooks`. Paused webhooks do not receive deliveries.
 2. **HTTPS required:** HTTP endpoints are rejected. Your URL must start with `https://`.
 3. **Response time:** We recommend responding with `2xx` within 10 seconds. Slow responses may be treated as failures.
 4. **Check deliveries:** Call `GET /api/v1/webhooks/{id}/deliveries` to see delivery status, attempt count, and error messages.
 5. **Correlate source events:** Call `GET /api/v1/events/{id}` with the stored `streamEventId`.
 6. **Local testing:** If using ngrok or a tunnel, verify it's running and the URL is current. Ngrok URLs change on restart (free plan).
-7. **Event type mismatch:** Your webhook must subscribe to the event types your monitors produce. A webhook listening for `tweet.new` won't receive `tweet.reply` events.
+7. **Needs attention:** If `deliveryStatus` is `needs_attention`, fix the receiver and call `POST /api/v1/webhooks/{id}/resume`. The receiver must pass a signed test before delivery resumes.
+8. **Event type mismatch:** Your webhook must subscribe to the event types your monitors produce. A webhook listening for `tweet.new` won't receive `tweet.reply` events.
 
 > **Tip:** See the [Webhook Testing](/guides/webhook-testing) guide for a step-by-step local setup with ngrok.
 

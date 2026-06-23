@@ -27,7 +27,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       url,
       event_types: .eventTypes,
       is_active: .isActive,
+      delivery_status: .deliveryStatus,
+      consecutive_failures: .consecutiveFailures,
+      failure_hard_cap: .failureHardCap,
       test_endpoint: ("/api/v1/webhooks/" + .id + "/test"),
+      resume_endpoint: ("/api/v1/webhooks/" + .id + "/resume"),
       deliveries_endpoint: ("/api/v1/webhooks/" + .id + "/deliveries")
     }'
   ```
@@ -51,7 +55,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     url: webhook.url,
     event_types: webhook.eventTypes,
     is_active: webhook.isActive,
+    delivery_status: webhook.deliveryStatus,
+    consecutive_failures: webhook.consecutiveFailures,
+    failure_hard_cap: webhook.failureHardCap,
     test_endpoint: `/api/v1/webhooks/${webhook.id}/test`,
+    resume_endpoint: `/api/v1/webhooks/${webhook.id}/resume`,
     deliveries_endpoint: `/api/v1/webhooks/${webhook.id}/deliveries`,
   };
   ```
@@ -74,7 +82,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "url": webhook["url"],
       "event_types": webhook["eventTypes"],
       "is_active": webhook["isActive"],
+      "delivery_status": webhook["deliveryStatus"],
+      "consecutive_failures": webhook["consecutiveFailures"],
+      "failure_hard_cap": webhook["failureHardCap"],
       "test_endpoint": f"/api/v1/webhooks/{webhook['id']}/test",
+      "resume_endpoint": f"/api/v1/webhooks/{webhook['id']}/resume",
       "deliveries_endpoint": f"/api/v1/webhooks/{webhook['id']}/deliveries",
   }
   ```
@@ -90,16 +102,23 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   )
 
   type Webhook struct {
-    EventTypes []string `json:"eventTypes"`
-    ID         string   `json:"id"`
-    IsActive   bool     `json:"isActive"`
-    URL        string   `json:"url"`
+    ConsecutiveFailures int      `json:"consecutiveFailures"`
+    DeliveryStatus      string   `json:"deliveryStatus"`
+    EventTypes          []string `json:"eventTypes"`
+    FailureHardCap      int      `json:"failureHardCap"`
+    ID                  string   `json:"id"`
+    IsActive            bool     `json:"isActive"`
+    URL                 string   `json:"url"`
   }
 
   type UpdateHandoff struct {
+    ConsecutiveFailures int      `json:"consecutive_failures"`
     DeliveriesEndpoint string   `json:"deliveries_endpoint"`
+    DeliveryStatus     string   `json:"delivery_status"`
     EventTypes         []string `json:"event_types"`
+    FailureHardCap     int      `json:"failure_hard_cap"`
     IsActive           bool     `json:"is_active"`
+    ResumeEndpoint     string   `json:"resume_endpoint"`
     TestEndpoint       string   `json:"test_endpoint"`
     URL                string   `json:"url"`
     WebhookID          string   `json:"webhook_id"`
@@ -134,9 +153,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       log.Fatal(err)
     }
     handoff := UpdateHandoff{
+      ConsecutiveFailures: webhook.ConsecutiveFailures,
       DeliveriesEndpoint: "/api/v1/webhooks/" + webhook.ID + "/deliveries",
+      DeliveryStatus:     webhook.DeliveryStatus,
       EventTypes:         webhook.EventTypes,
+      FailureHardCap:     webhook.FailureHardCap,
       IsActive:           webhook.IsActive,
+      ResumeEndpoint:     "/api/v1/webhooks/" + webhook.ID + "/resume",
       TestEndpoint:       "/api/v1/webhooks/" + webhook.ID + "/test",
       URL:                webhook.URL,
       WebhookID:          webhook.ID,
@@ -215,7 +238,10 @@ Valid types: `tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`,
 </Note>
 
 <ParamField body="isActive" type="boolean">
-  Set to `false` to pause deliveries or `true` to resume.
+  Set to `false` to pause deliveries. Set to `true` to reactivate a paused
+  webhook and reset `consecutiveFailures`. When `deliveryStatus` is
+  `needs_attention`, use [Resume Webhook](/api-reference/webhooks/resume) so the
+  receiver must pass a signed test first.
 </ParamField>
 
 ## Response
@@ -234,6 +260,15 @@ Valid types: `tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`,
     <ResponseField name="isActive" type="boolean">
       Whether the webhook is currently active.
     </ResponseField>
+    <ResponseField name="consecutiveFailures" type="number">
+      Consecutive delivery failures recorded for this webhook.
+    </ResponseField>
+    <ResponseField name="deliveryStatus" type="string">
+      `active`, `paused`, or `needs_attention`.
+    </ResponseField>
+    <ResponseField name="failureHardCap" type="number">
+      Failure count where the webhook needs attention before resuming.
+    </ResponseField>
     <ResponseField name="createdAt" type="string">
       ISO 8601 creation timestamp.
     </ResponseField>
@@ -244,6 +279,9 @@ Valid types: `tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`,
       "url": "https://new-server.com/webhook",
       "eventTypes": ["tweet.new"],
       "isActive": false,
+      "consecutiveFailures": 0,
+      "deliveryStatus": "paused",
+      "failureHardCap": 200,
       "createdAt": "2026-02-24T10:30:00.000Z"
     }
     ```
@@ -287,8 +325,9 @@ endpoint.
 
 <CardGroup cols={2}>
   <Card title="Updated Inventory" icon="clipboard-check">
-    Store returned `id`, `url`, `eventTypes`, `isActive`, and `createdAt` as the
-    current webhook configuration.
+    Store returned `id`, `url`, `eventTypes`, `isActive`, `deliveryStatus`,
+    `consecutiveFailures`, `failureHardCap`, and `createdAt` as the current
+    webhook configuration.
   </Card>
 
   <Card title="URL Change" icon="link">
@@ -308,7 +347,9 @@ endpoint.
 
   <Card title="Resume Delivery" icon="toggle-right">
     `isActive: true` resumes delivery for matching future monitor events. Test
-    the receiver after resuming.
+    the receiver after resuming. Use
+    [Resume Webhook](/api-reference/webhooks/resume) when the receiver needs a
+    signed test gate first.
   </Card>
 
   <Card title="Signing Secret" icon="shield-check">
@@ -333,5 +374,5 @@ endpoint.
 <Note>
   This endpoint supports **dual authentication**: API key (`x-api-key` header) or session cookie from the dashboard.
 
-  **Related:** [List Webhooks](/api-reference/webhooks/list) &middot; [Test Webhook](/api-reference/webhooks/test) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [Get Event](/api-reference/events/get) &middot; [Delete Webhook](/api-reference/webhooks/delete)
+  **Related:** [List Webhooks](/api-reference/webhooks/list) &middot; [Test Webhook](/api-reference/webhooks/test) &middot; [Resume Webhook](/api-reference/webhooks/resume) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [Get Event](/api-reference/events/get) &middot; [Delete Webhook](/api-reference/webhooks/delete)
 </Note>

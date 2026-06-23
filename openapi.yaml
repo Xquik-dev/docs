@@ -2957,6 +2957,9 @@ paths:
                 url: 'https://example.com/webhook'
                 eventTypes: [tweet.new]
                 isActive: true
+                consecutiveFailures: 0
+                deliveryStatus: active
+                failureHardCap: 200
                 createdAt: '2025-01-15T12:00:00Z'
         '400':
           $ref: '#/components/responses/InvalidInput'
@@ -3054,13 +3057,69 @@ paths:
                 success: true
                 statusCode: 200
         '400':
-          description: Invalid webhook ID or inactive webhook
+          description: Invalid webhook ID or test delivery failed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: 'webhook_inactive'
+                error: 'webhook_test_failed'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /webhooks/{id}/resume:
+    post:
+      operationId: resumeWebhook
+      summary: Test and resume webhook endpoint
+      tags: [Webhooks]
+      security:
+        - apiKey: []
+        - oauthBearer: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Webhook resumed after a successful test delivery
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, statusCode, webhook]
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  statusCode:
+                    type: integer
+                    example: 200
+                  webhook:
+                    $ref: '#/components/schemas/Webhook'
+              example:
+                success: true
+                statusCode: 200
+                webhook:
+                  id: '42'
+                  url: 'https://example.com/webhook'
+                  eventTypes: [tweet.new]
+                  isActive: true
+                  consecutiveFailures: 0
+                  deliveryStatus: active
+                  failureHardCap: 200
+                  createdAt: '2025-01-15T12:00:00Z'
+        '400':
+          description: Webhook test failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'Connection timed out'
+                statusCode: 0
+                success: false
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -8540,7 +8599,6 @@ components:
                 - unauthenticated
                 - unsupported_field
                 - user_not_found
-                - webhook_inactive
                 - x_account_feature_required
                 - x_account_protected
                 - x_account_suspended
@@ -8630,7 +8688,6 @@ components:
                     - unauthenticated
                     - unsupported_field
                     - user_not_found
-                    - webhook_inactive
                     - x_account_feature_required
                     - x_account_protected
                     - x_account_suspended
@@ -9001,7 +9058,15 @@ components:
     Webhook:
       description: Webhook endpoint registered to receive event deliveries.
       type: object
-      required: [id, url, eventTypes, isActive, createdAt]
+      required:
+        - id
+        - url
+        - eventTypes
+        - isActive
+        - consecutiveFailures
+        - deliveryStatus
+        - failureHardCap
+        - createdAt
       properties:
         id:
           type: string
@@ -9016,6 +9081,22 @@ components:
         isActive:
           type: boolean
           example: true
+        consecutiveFailures:
+          type: integer
+          description:
+            Consecutive failed delivery attempts since the last success.
+          example: 0
+        deliveryStatus:
+          type: string
+          enum: [active, paused, needs_attention]
+          description:
+            Endpoint delivery state. needs_attention means delivery stopped
+            after repeated failures.
+          example: active
+        failureHardCap:
+          type: integer
+          description: Consecutive delivery failures that pause the endpoint.
+          example: 200
         createdAt:
           type: string
           format: date-time

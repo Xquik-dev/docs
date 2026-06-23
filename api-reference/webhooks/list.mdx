@@ -22,10 +22,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       url,
       event_types: .eventTypes,
       is_active: .isActive,
+      delivery_status: .deliveryStatus,
+      consecutive_failures: .consecutiveFailures,
+      failure_hard_cap: .failureHardCap,
       created_at: .createdAt,
       update_endpoint: ("/api/v1/webhooks/" + .id),
       delete_endpoint: ("/api/v1/webhooks/" + .id),
       test_endpoint: ("/api/v1/webhooks/" + .id + "/test"),
+      resume_endpoint: ("/api/v1/webhooks/" + .id + "/resume"),
       deliveries_endpoint: ("/api/v1/webhooks/" + .id + "/deliveries"),
       signing_secret_available: false
     }'
@@ -41,10 +45,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     url: webhook.url,
     event_types: webhook.eventTypes,
     is_active: webhook.isActive,
+    delivery_status: webhook.deliveryStatus,
+    consecutive_failures: webhook.consecutiveFailures,
+    failure_hard_cap: webhook.failureHardCap,
     created_at: webhook.createdAt,
     update_endpoint: `/api/v1/webhooks/${webhook.id}`,
     delete_endpoint: `/api/v1/webhooks/${webhook.id}`,
     test_endpoint: `/api/v1/webhooks/${webhook.id}/test`,
+    resume_endpoint: `/api/v1/webhooks/${webhook.id}/resume`,
     deliveries_endpoint: `/api/v1/webhooks/${webhook.id}/deliveries`,
     signing_secret_available: false,
   }));
@@ -69,10 +77,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           "url": webhook["url"],
           "event_types": webhook["eventTypes"],
           "is_active": webhook["isActive"],
+          "delivery_status": webhook["deliveryStatus"],
+          "consecutive_failures": webhook["consecutiveFailures"],
+          "failure_hard_cap": webhook["failureHardCap"],
           "created_at": webhook["createdAt"],
           "update_endpoint": f"/api/v1/webhooks/{webhook['id']}",
           "delete_endpoint": f"/api/v1/webhooks/{webhook['id']}",
           "test_endpoint": f"/api/v1/webhooks/{webhook['id']}/test",
+          "resume_endpoint": f"/api/v1/webhooks/{webhook['id']}/resume",
           "deliveries_endpoint": f"/api/v1/webhooks/{webhook['id']}/deliveries",
           "signing_secret_available": False,
       }
@@ -93,11 +105,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   )
 
   type Webhook struct {
-    ID         string   `json:"id"`
-    URL        string   `json:"url"`
-    EventTypes []string `json:"eventTypes"`
-    IsActive   bool     `json:"isActive"`
-    CreatedAt  string   `json:"createdAt"`
+    ConsecutiveFailures int      `json:"consecutiveFailures"`
+    CreatedAt           string   `json:"createdAt"`
+    DeliveryStatus      string   `json:"deliveryStatus"`
+    EventTypes          []string `json:"eventTypes"`
+    FailureHardCap      int      `json:"failureHardCap"`
+    ID                  string   `json:"id"`
+    IsActive            bool     `json:"isActive"`
+    URL                 string   `json:"url"`
   }
 
   type WebhookResponse struct {
@@ -109,10 +124,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     URL                    string   `json:"url"`
     EventTypes             []string `json:"event_types"`
     IsActive               bool     `json:"is_active"`
+    DeliveryStatus         string   `json:"delivery_status"`
+    ConsecutiveFailures    int      `json:"consecutive_failures"`
+    FailureHardCap         int      `json:"failure_hard_cap"`
     CreatedAt              string   `json:"created_at"`
     UpdateEndpoint         string   `json:"update_endpoint"`
     DeleteEndpoint         string   `json:"delete_endpoint"`
     TestEndpoint           string   `json:"test_endpoint"`
+    ResumeEndpoint         string   `json:"resume_endpoint"`
     DeliveriesEndpoint     string   `json:"deliveries_endpoint"`
     SigningSecretAvailable bool     `json:"signing_secret_available"`
   }
@@ -142,10 +161,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
         URL:                    webhook.URL,
         EventTypes:             webhook.EventTypes,
         IsActive:               webhook.IsActive,
+        DeliveryStatus:         webhook.DeliveryStatus,
+        ConsecutiveFailures:    webhook.ConsecutiveFailures,
+        FailureHardCap:         webhook.FailureHardCap,
         CreatedAt:              webhook.CreatedAt,
         UpdateEndpoint:         "/api/v1/webhooks/" + webhook.ID,
         DeleteEndpoint:         "/api/v1/webhooks/" + webhook.ID,
         TestEndpoint:           "/api/v1/webhooks/" + webhook.ID + "/test",
+        ResumeEndpoint:         "/api/v1/webhooks/" + webhook.ID + "/resume",
         DeliveriesEndpoint:     "/api/v1/webhooks/" + webhook.ID + "/deliveries",
         SigningSecretAvailable: false,
       }
@@ -158,9 +181,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 </CodeGroup>
 
 These examples shape one inventory row per webhook instead of printing the full
-response page. Split the rows by `is_active`, then store update, delete, test,
-and delivery-log endpoints with each receiver. List responses never include the
-signing secret; keep the one-time `secret` from
+response page. Split the rows by `is_active` and `delivery_status`, then store
+update, delete, test, resume, and delivery-log endpoints with each receiver.
+List responses never include the signing secret; keep the one-time `secret` from
 [Create Webhook](/api-reference/webhooks/create) in your secret manager.
 
 ## Headers
@@ -188,6 +211,15 @@ signing secret; keep the one-time `secret` from
         <ResponseField name="isActive" type="boolean">
           Whether the webhook is currently active.
         </ResponseField>
+        <ResponseField name="consecutiveFailures" type="number">
+          Consecutive delivery failures recorded for this webhook.
+        </ResponseField>
+        <ResponseField name="deliveryStatus" type="string">
+          `active`, `paused`, or `needs_attention`.
+        </ResponseField>
+        <ResponseField name="failureHardCap" type="number">
+          Failure count where the webhook needs attention before resuming.
+        </ResponseField>
         <ResponseField name="createdAt" type="string">
           ISO 8601 creation timestamp.
         </ResponseField>
@@ -202,6 +234,9 @@ signing secret; keep the one-time `secret` from
           "url": "https://your-server.com/webhook",
           "eventTypes": ["tweet.new", "tweet.reply"],
           "isActive": true,
+          "consecutiveFailures": 0,
+          "deliveryStatus": "active",
+          "failureHardCap": 200,
           "createdAt": "2026-02-24T10:30:00.000Z"
         },
         {
@@ -209,6 +244,9 @@ signing secret; keep the one-time `secret` from
           "url": "https://backup.example.com/xquik",
           "eventTypes": ["tweet.new"],
           "isActive": false,
+          "consecutiveFailures": 200,
+          "deliveryStatus": "needs_attention",
+          "failureHardCap": 200,
           "createdAt": "2026-02-20T08:15:00.000Z"
         }
       ]
@@ -254,14 +292,26 @@ to reconcile which signed webhook endpoints are configured for the account.
 
   <Card title="Active State" icon="toggle-right">
     Store `webhooks[].isActive`; inactive webhooks do not receive monitor
-    events and must be reactivated before testing.
+    events. Use `deliveryStatus` to distinguish paused from needs-attention
+    receivers.
+  </Card>
+
+  <Card title="Delivery Status" icon="radio">
+    Store `webhooks[].deliveryStatus`. Route `needs_attention` rows to
+    [Resume Webhook](/api-reference/webhooks/resume) after the receiver is fixed.
+  </Card>
+
+  <Card title="Failure Counter" icon="activity">
+    Store `webhooks[].consecutiveFailures` and `webhooks[].failureHardCap` for
+    alerting before the receiver reaches the recovery gate.
   </Card>
 
   <Card title="Change Links" icon="route">
     For each row, link active receivers to
     [Update Webhook](/api-reference/webhooks/update), [Test Webhook](/api-reference/webhooks/test),
-    and [List Deliveries](/api-reference/webhooks/deliveries). Link stale
-    receivers to [Delete Webhook](/api-reference/webhooks/delete).
+    [Resume Webhook](/api-reference/webhooks/resume), and
+    [List Deliveries](/api-reference/webhooks/deliveries). Link stale receivers
+    to [Delete Webhook](/api-reference/webhooks/delete).
   </Card>
 
   <Card title="Inactive Review" icon="toggle-left">
@@ -295,5 +345,5 @@ to reconcile which signed webhook endpoints are configured for the account.
 <Note>
   This endpoint supports **dual authentication**: API key (`x-api-key` header) or session cookie from the dashboard.
 
-  **Next steps:** [Create Webhook](/api-reference/webhooks/create) &middot; [Update Webhook](/api-reference/webhooks/update) &middot; [Test Webhook](/api-reference/webhooks/test) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [Get Event](/api-reference/events/get) &middot; [Delete Webhook](/api-reference/webhooks/delete)
+  **Next steps:** [Create Webhook](/api-reference/webhooks/create) &middot; [Update Webhook](/api-reference/webhooks/update) &middot; [Test Webhook](/api-reference/webhooks/test) &middot; [Resume Webhook](/api-reference/webhooks/resume) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [Get Event](/api-reference/events/get) &middot; [Delete Webhook](/api-reference/webhooks/delete)
 </Note>

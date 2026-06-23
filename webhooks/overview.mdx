@@ -408,6 +408,13 @@ Failed deliveries are retried with exponential backoff (base 1 second, multiplie
 
 After the 10th failed attempt, the delivery is marked as `exhausted`. A `410 Gone` response exhausts the delivery immediately. Check delivery status via the [deliveries endpoint](/api-reference/webhooks/deliveries).
 
+Webhook configuration also tracks receiver health. `GET /webhooks` returns
+`deliveryStatus`, `consecutiveFailures`, and `failureHardCap`. When repeated
+receiver failures reach the hard cap, `deliveryStatus` becomes
+`needs_attention`. Fix the receiver, then call
+[Resume Webhook](/api-reference/webhooks/resume) to require a signed test before
+delivery resumes.
+
 <Note>
   Retries are processed in batches, so actual delay may be slightly longer than shown.
 </Note>
@@ -428,6 +435,7 @@ work. Do not use `410 Gone` for temporary throttling; it exhausts that delivery.
   "record_type": "webhook_receiver_backfill",
   "webhook_id": "15",
   "delivery_log": "GET /api/v1/webhooks/15/deliveries",
+  "resume_endpoint": "POST /api/v1/webhooks/15/resume",
   "event_backfill_endpoint": "GET /api/v1/events?limit=100&after={nextCursor}",
   "source_filter": "monitorId for account monitors, keywordMonitorId for keyword monitors",
   "join_key": "delivery.streamEventId == event.id",
@@ -438,10 +446,13 @@ work. Do not use `410 Gone` for temporary throttling; it exhausts that delivery.
     "attempts",
     "lastStatusCode",
     "lastError",
+    "deliveryStatus",
+    "consecutiveFailures",
+    "failureHardCap",
     "nextCursor"
   ],
   "stop_when": "hasMore is false",
-  "handoff_state": "receiver_fixed_page_events_join_deliveries"
+  "handoff_state": "receiver_fixed_resume_webhook_page_events_join_deliveries"
 }
 ```
 
@@ -461,10 +472,14 @@ Use this handoff when a receiver fails tests, repeats failures, or reaches an
   "record_type": "webhook_delivery_troubleshooting",
   "webhook_id": "15",
   "signed_test": "POST /api/v1/webhooks/15/test",
+  "resume_endpoint": "POST /api/v1/webhooks/15/resume",
   "delivery_log": "GET /api/v1/webhooks/15/deliveries",
   "event_join": "GET /api/v1/events/{id}",
   "event_id_source": "streamEventId",
   "route_on": [
+    "deliveryStatus",
+    "consecutiveFailures",
+    "failureHardCap",
     "status",
     "attempts",
     "lastStatusCode",
@@ -474,7 +489,7 @@ Use this handoff when a receiver fails tests, repeats failures, or reaches an
   ],
   "test_payload_has_ids": false,
   "production_payload_ids": ["deliveryId", "streamEventId"],
-  "handoff_state": "verify_signature_check_delivery_join_event"
+  "handoff_state": "verify_signature_resume_if_needed_check_delivery_join_event"
 }
 ```
 
@@ -498,6 +513,12 @@ Use this handoff when a receiver fails tests, repeats failures, or reaches an
     `delivered`.
   </Card>
 
+  <Card title="Resume gate" icon="rotate-ccw">
+    If `deliveryStatus` is `needs_attention`, fix the receiver, then call
+    [Resume Webhook](/api-reference/webhooks/resume). Delivery resumes only
+    after the signed test succeeds.
+  </Card>
+
   <Card title="Event context" icon="link">
     Join `streamEventId` to [Get Event](/api-reference/events/get) when the
     receiver owner needs the original monitor event, tweet fields, username, or
@@ -515,7 +536,7 @@ Use this handoff when a receiver fails tests, repeats failures, or reaches an
 
 <CardGroup cols={2}>
   <Card title="Webhook API reference" icon="book-open" href="/api-reference/webhooks/create">
-    Create, list, update, deactivate, test, and inspect webhook deliveries.
+    Create, list, update, deactivate, test, resume, and inspect webhook deliveries.
   </Card>
 
   <Card title="Signature Verification" icon="shield-check" href="/webhooks/verification">

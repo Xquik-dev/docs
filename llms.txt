@@ -119,7 +119,7 @@ Some errors include additional context:
 
 HTTP status codes: `400` (validation), `401` (unauthenticated), `402` (no subscription / insufficient credits), `403` (limit reached), `404` (not found), `409` (conflict), `429` (rate limited), `500` (server error), `502` (temporarily unavailable).
 
-Common error codes: `invalid_input`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`, `invalid_username`, `invalid_tool_type`, `invalid_format`, `invalid_params`, `missing_query`, `missing_params`, `webhook_inactive`, `api_key_limit_reached`, `unauthenticated`, `no_subscription`, `subscription_inactive`, `no_credits`, `insufficient_credits`, `no_addon`, `monitor_limit_reached`, `not_found`, `user_not_found`, `tweet_not_found`, `monitor_already_exists`, `x_api_rate_limited`, `x_daily_limit`, `x_write_unconfirmed`, `internal_error`, `x_api_unavailable`, `x_api_unauthorized`.
+Common error codes: `invalid_input`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`, `invalid_username`, `invalid_tool_type`, `invalid_format`, `invalid_params`, `missing_query`, `missing_params`, `api_key_limit_reached`, `unauthenticated`, `no_subscription`, `subscription_inactive`, `no_credits`, `insufficient_credits`, `no_addon`, `monitor_limit_reached`, `not_found`, `user_not_found`, `tweet_not_found`, `monitor_already_exists`, `x_api_rate_limited`, `x_daily_limit`, `x_write_unconfirmed`, `internal_error`, `x_api_unavailable`, `x_api_unauthorized`.
 
 Write-specific error codes: `x_daily_limit` (429) - X account reached daily posting limit, wait 24 hours, not retryable. `x_write_unconfirmed` (202) - action was dispatched but confirmation is pending; store `writeActionId`, call `GET /x/write-actions/{id}`, and do not retry-send while status is `pending_confirmation`.
 
@@ -177,15 +177,17 @@ Use `since:` and `until:` with `from:` for account date windows. Add keywords fo
 
 ## Export
 
-Draws and extractions support export via `GET /api/v1/draws/{id}/export` and `GET /api/v1/extractions/{id}/export`. Formats: `csv`, `json`, `md`, `md-document`, `pdf`, `txt`, `xlsx`. Query parameter: `format`. Extraction exports have a 100,000 row limit.
+Draws and extractions export via `GET /api/v1/draws/{id}/export` and `GET /api/v1/extractions/{id}/export`. Formats: `csv`, `json`, `md`, `md-document`, `pdf`, `txt`, `xlsx`. Extraction exports cap at 100,000 rows.
 
 ## Webhook Delivery
 
-- Signature: HMAC-SHA256. Header: `X-Xquik-Signature: sha256=HMAC_HEX_DIGEST`. Secret returned once at webhook creation - store securely.
+- Signature: HMAC-SHA256. `X-Xquik-Signature: sha256=HMAC_HEX_DIGEST`. Secret is returned once at creation.
 - Headers: `Content-Type: application/json`, `X-Xquik-Signature`
-- Requirements: HTTPS endpoint, must respond promptly with `2xx`
-- Retry: Exponential backoff (1s, 2s, 4s, 8s, 16s). 5 attempts max. After all fail: status `exhausted`.
-- Delivery statuses: `pending`, `delivered`, `failed`, `exhausted`
+- Requirements: HTTPS endpoint, prompt `2xx`
+- Retry: 1s, 2s, 4s, 8s, 16s. 5 attempts max, then `exhausted`.
+- Delivery rows: `pending`, `delivered`, `failed`, `exhausted`
+- Endpoint status: `deliveryStatus` is `active`, `paused`, or `needs_attention`; `consecutiveFailures` counts failures; `failureHardCap` is 200.
+- Recovery: `POST /api/v1/webhooks/{id}/resume` sends signed `webhook.test`, reactivates, and resets failures only after receiver `2xx`.
 
 Webhook payload structure:
 
@@ -359,17 +361,18 @@ Subscription required, metered.
 
 ## API Reference - Events
 
-- [List Events](https://docs.xquik.com/api-reference/events/list): Query stored events from monitored accounts with filtering and cursor-based pagination. Reading stored events is free; event capture is included in active monitor billing.
+- [List Events](https://docs.xquik.com/api-reference/events/list): Query stored monitor events with filters and cursor pagination. Reading stored events is free.
 - [Get Event](https://docs.xquik.com/api-reference/events/get): Retrieve a single event by ID with full details.
 
 ## API Reference - Webhooks
 
-- [Create Webhook](https://docs.xquik.com/api-reference/webhooks/create): Register an HTTPS endpoint to receive real-time event notifications. Free, no usage cost.
-- [List Webhooks](https://docs.xquik.com/api-reference/webhooks/list): Retrieve all webhook endpoints registered to your account.
-- [Update Webhook](https://docs.xquik.com/api-reference/webhooks/update): Update the URL, event types, or active state of an existing webhook.
-- [Delete Webhook](https://docs.xquik.com/api-reference/webhooks/delete): Deactivate a webhook endpoint and stop all future deliveries.
-- [Test Webhook](https://docs.xquik.com/api-reference/webhooks/test): Send a test payload to verify a webhook endpoint. Free, no usage cost.
-- [List Deliveries](https://docs.xquik.com/api-reference/webhooks/deliveries): View delivery attempts and their statuses for a specific webhook.
+- [Create Webhook](https://docs.xquik.com/api-reference/webhooks/create): Register an HTTPS endpoint for real-time events. Free.
+- [List Webhooks](https://docs.xquik.com/api-reference/webhooks/list): Retrieve webhook endpoints for your account.
+- [Update Webhook](https://docs.xquik.com/api-reference/webhooks/update): Update URL, event types, or active state.
+- [Delete Webhook](https://docs.xquik.com/api-reference/webhooks/delete): Deactivate a webhook and stop future deliveries.
+- [Test Webhook](https://docs.xquik.com/api-reference/webhooks/test): Send a signed test payload. Free.
+- [Resume Webhook](https://docs.xquik.com/api-reference/webhooks/resume): Test and resume after delivery failures.
+- [List Deliveries](https://docs.xquik.com/api-reference/webhooks/deliveries): View delivery attempts for a webhook.
 
 ## API Reference - Draws
 
