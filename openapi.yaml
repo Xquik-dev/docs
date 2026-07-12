@@ -5945,13 +5945,19 @@ paths:
               dollars: 10
       responses:
         '200':
-          description: Top-up checkout URL
+          description: Top-up payment links
           content:
             application/json:
               schema:
                 type: object
-                required: [url]
+                required: [url, redirect_url]
                 properties:
+                  redirect_url:
+                    type: string
+                    format: uri
+                    description:
+                      Stable Xquik redirect URL for user-facing messages.
+                    example: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=cs_test_123'
                   url:
                     type: string
                     format: uri
@@ -5959,6 +5965,7 @@ paths:
                       Checkout URL where the user completes the top-up payment.
                     example: 'https://xquik.com/billing/checkout/session'
               example:
+                redirect_url: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=cs_test_123'
                 url: 'https://xquik.com/billing/checkout/session'
         '400':
           $ref: '#/components/responses/InvalidInput'
@@ -5966,6 +5973,46 @@ paths:
           $ref: '#/components/responses/Unauthenticated'
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
+  /credits/topup/redirect:
+    get:
+      operationId: redirectCreditTopupCheckout
+      summary: Redirect to an active top-up payment page
+      tags:
+        - Subscribe
+      security: []
+      parameters:
+        - name: session_id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Billing session ID returned by the top-up billing flow.
+      responses:
+        '303':
+          description: Redirects to the active payment page.
+          headers:
+            Location:
+              description: Payment page URL.
+              schema:
+                type: string
+                format: uri
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          description: Top-up payment session is no longer active.
+        '502':
+          description: Payment page lookup failed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error]
+                properties:
+                  error:
+                    type: string
+                    example: missing_url
   /credits/topup/status:
     get:
       operationId: getCreditTopupStatus
