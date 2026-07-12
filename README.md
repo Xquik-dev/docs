@@ -1,5 +1,8 @@
 # Xquik Docs - X API, Real-Time X Data & Automation Reference
 
+> **Xquik is an independent third-party service.** Not affiliated with X Corp.
+> "Twitter" and "X" are trademarks of X Corp.
+
 Public documentation for [Xquik](https://xquik.com), the X (Twitter) real-time data and automation platform. Built on [Mintlify](https://mintlify.com), deployed at **[docs.xquik.com](https://docs.xquik.com)**.
 
 This repository powers the developer reference for the Xquik REST API, webhooks, MCP server, OAuth 2.1, SDKs, glossary, comparison guides, and how-to guides. Use it to find request and response details for tweet search, user lookup, follower exports, media uploads, direct messages, 1-second tweet monitors, signed webhooks, SDK clients, and X automation tasks.

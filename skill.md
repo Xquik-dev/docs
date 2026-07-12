@@ -8,6 +8,9 @@ metadata:
 
 # Xquik Skill
 
+> **Xquik is an independent third-party service.** Not affiliated with X Corp.
+> "Twitter" and "X" are trademarks of X Corp.
+
 ## Product summary
 
 Xquik is a real-time X (Twitter) data platform with 120 documented REST API operations, webhooks, a Docs MCP server for read-only docs search and page retrieval, and an API MCP server for authenticated AI agent integration. Use it to extract followers, replies, retweets, and other X data; monitor accounts and keywords for real-time events; run transparent giveaway draws; compose algorithm-optimized tweets; and build X integrations. The REST API base URL is `https://xquik.com/api/v1`. Authenticate with the `x-api-key` header. Primary docs: https://docs.xquik.com
