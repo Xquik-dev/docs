@@ -7630,7 +7630,7 @@ const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
   'Pass `next_cursor` back',
   'as `cursor`',
   '## Giveaway Draw',
-  '"tweetUrl": "https://x.com/xquikcom/status/1893704267862470862"',
+  '"tweetUrl": "https://x.com/example_user/status/1893704267862470862"',
   '"winnerCount": 3',
   '"uniqueAuthorsOnly": true',
   '"mustRetweet": true',
