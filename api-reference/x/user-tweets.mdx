@@ -56,6 +56,7 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
   if (!response.ok) throw new Error(JSON.stringify(page));
 
   let pageCursor = "";
+  const seenCursors = new Set();
   for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
     const timelineRows = page.tweets.map((tweet) => ({
       source_user_id_or_username: userIdOrUsername,
@@ -84,7 +85,11 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
     for (const row of timelineRows) process.stdout.write(`${JSON.stringify(row)}\n`);
 
     if (!page.has_next_page || page.next_cursor === "") break;
+    if (page.next_cursor === pageCursor || seenCursors.has(page.next_cursor)) {
+      throw new Error("pagination cursor repeated");
+    }
 
+    seenCursors.add(page.next_cursor);
     pageCursor = page.next_cursor;
     const nextResponse = await fetch(
       `https://xquik.com/api/v1/x/users/${userIdOrUsername}/tweets?${new URLSearchParams({ cursor: pageCursor })}`,
@@ -101,6 +106,7 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 
   user_id_or_username = "44196397"
   page_cursor = ""
+  seen_cursors = set()
 
   for page_index in range(3):
       params = {"cursor": page_cursor} if page_cursor else {}
@@ -144,6 +150,9 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 
       if not page["has_next_page"] or not page["next_cursor"]:
           break
+      if page["next_cursor"] == page_cursor or page["next_cursor"] in seen_cursors:
+          raise RuntimeError("pagination cursor repeated")
+      seen_cursors.add(page["next_cursor"])
       page_cursor = page["next_cursor"]
   ```
 </CodeGroup>
@@ -157,6 +166,8 @@ The examples above write JSON Lines rows with the source profile, tweet ID,
 text, author ID, username, display name, follower count, verified state, profile
 image URL, reply context, engagement counts, media URLs, and cursor fields so a
 worker can resume from the last saved `next_cursor`.
+
+For high-volume timeline pulls, de-duplicate tweets by `id`, continue through empty filtered pages when the cursor advances, and stop with a partial-result status when `next_cursor` is missing or repeats.
 
 ## Build a profile timeline job
 

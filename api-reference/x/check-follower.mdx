@@ -16,7 +16,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <Info>
   Check follower verifies one known relationship without exporting a follower
   list. Pass the participant as `source` and the required brand, creator, or
-  partner account as `target`. The response returns both directions:
+  partner account as `target`. Each input accepts a username, `@username`, or
+  supported X or Twitter profile URL. Xquik resolves profile URLs and converts
+  both usernames to lowercase before lookup. The response returns both directions:
   `isFollowing` for source-to-target proof and `isFollowedBy` for
   target-to-source context.
 </Info>
@@ -104,10 +106,10 @@ matched or not-matched state.
 
 ## Campaign follow-check handoff
 
-Use `GET /api/v1/x/followers/check` when a workflow already has both usernames
-and needs a single proof for a follow task. It is best for campaign entry
-validation, giveaway eligibility, creator partnerships, CRM qualification, and
-agent review queues where the participant handle is known before the check.
+Use `GET /api/v1/x/followers/check` when a workflow already has both usernames,
+`@usernames`, or supported profile URLs and needs one proof for a follow task.
+Use it for campaign entry validation, giveaway eligibility, creator
+partnerships, CRM qualification, and agent review queues.
 
 <CardGroup cols={2}>
   <Card title="Single proof" icon="user-check">
@@ -117,9 +119,10 @@ agent review queues where the participant handle is known before the check.
     Store `isFollowing` as the required proof and `isFollowedBy` as reciprocal
     context.
   </Card>
-  <Card title="Username inputs" icon="at-sign">
-    Pass usernames without `@`. Use [Get user](/api-reference/x/get-user) first
-    when you only have a display name, profile URL, or numeric ID.
+  <Card title="Accepted inputs" icon="at-sign">
+    Pass a username, `@username`, or supported X or Twitter profile URL.
+    Numeric user IDs are not accepted. Use [Get user](/api-reference/x/get-user)
+    first when you only have a numeric ID.
   </Card>
   <Card title="Audit row" icon="clipboard-check">
     Persist the campaign ID, participant handle, required follow handle,
@@ -138,14 +141,15 @@ agent review queues where the participant handle is known before the check.
 ## Query parameters
 
 <ParamField query="source" type="string" required>
-  Source username without `@`. In campaign verification, this is usually the
-  participant or entrant whose follow action is being checked.
+  Source username, `@username`, or supported X or Twitter profile URL. Xquik
+  resolves profile URLs and converts the username to lowercase. In campaign
+  verification, this is usually the participant or entrant.
 </ParamField>
 
 <ParamField query="target" type="string" required>
-  Target username without `@`. In campaign verification, this is usually the
-  brand, creator, partner, or required account that may be followed by the
-  source.
+  Target username, `@username`, or supported X or Twitter profile URL. Xquik
+  resolves profile URLs and converts the username to lowercase. In campaign
+  verification, this is usually the required brand, creator, or partner account.
 </ParamField>
 
 ## Which verification endpoint?
@@ -186,8 +190,8 @@ agent review queues where the participant handle is known before the check.
 
 <Tabs>
   <Tab title="200 OK">
-    <ResponseField name="sourceUsername" type="string">The source username from the request.</ResponseField>
-    <ResponseField name="targetUsername" type="string">The target username from the request.</ResponseField>
+    <ResponseField name="sourceUsername" type="string">Canonical lowercase username resolved from `source`.</ResponseField>
+    <ResponseField name="targetUsername" type="string">Canonical lowercase username resolved from `target`.</ResponseField>
     <ResponseField name="isFollowing" type="boolean">`true` if the source user follows the target user.</ResponseField>
     <ResponseField name="isFollowedBy" type="boolean">`true` if the target user follows the source user.</ResponseField>
 
@@ -200,11 +204,25 @@ agent review queues where the participant handle is known before the check.
     }
     ```
   </Tab>
-  <Tab title="400 Missing params">
+  <Tab title="400 Invalid params">
     ```json
-    { "error": "missing_params", "required": ["source", "target"] }
+    {
+      "error": "missing_params",
+      "message": "Both source and target usernames are required.",
+      "required": ["source", "target"]
+    }
     ```
     One or both query parameters are missing. Provide both `source` and `target`.
+
+    ```json
+    {
+      "error": "invalid_username",
+      "message": "Invalid source username. Use username, @username, or an X or Twitter profile URL.",
+      "parameter": "source"
+    }
+    ```
+
+    The named parameter is invalid. Use a username, `@username`, or supported X or Twitter profile URL. Numeric IDs, foreign hosts, profile status URLs, credentials, and custom ports are rejected.
   </Tab>
   <Tab title="401 Unauthenticated">
     ```json

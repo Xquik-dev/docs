@@ -67,6 +67,7 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
 
   let page = firstPage;
   let pageCursor = "";
+  const seenCursors = new Set();
   for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
     const searchRows = page.tweets.map((tweet) => ({
       tweet_id: tweet.id,
@@ -93,7 +94,11 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
     for (const row of searchRows) process.stdout.write(`${JSON.stringify(row)}\n`);
 
     if (!page.has_next_page || page.next_cursor === "") break;
+    if (page.next_cursor === pageCursor || seenCursors.has(page.next_cursor)) {
+      throw new Error("pagination cursor repeated");
+    }
 
+    seenCursors.add(page.next_cursor);
     pageCursor = page.next_cursor;
     const nextParams = new URLSearchParams(params);
     nextParams.set("cursor", pageCursor);
@@ -137,7 +142,8 @@ downloads after completion.
 For explicit `limit` pulls, treat `limit` as a batch-size upper bound. If the
 response returns fewer tweets than `limit` and `has_next_page` is `true`, store
 `next_cursor` and continue with the same `q`, structured filters, `queryType`,
-and `limit` plus `cursor`.
+and `limit` plus `cursor`. De-duplicate stable IDs and reject repeated cursors.
+Return a partial-result checkpoint if pagination stalls.
 
 For account date windows, `sinceTime` and `untilTime` append `since:` and
 `until:` operators to `q`, so
@@ -187,12 +193,6 @@ XLSX files.
     Use `tweet_search_extractor` when the output must be saved CSV, JSON, or XLSX.
   </Card>
 </CardGroup>
-
-`limit` is an upper bound from 1 to 200 for a bounded request. Omit it for a
-simple cursor-driven page loop. When a bounded request returns
-`has_next_page: true`, continue by sending the same `q`, filters, `queryType`,
-and `limit` with `cursor` set to `next_cursor`. This can happen when the route
-returns a partial batch before reaching `limit`.
 
 Tweet search costs 1 credit per tweet returned. Low credit balances can return fewer tweets than `limit`; zero affordable results return `402 insufficient_credits`. Retry `429` with the `Retry-After` header, and retry `424` or `502` after a short backoff.
 

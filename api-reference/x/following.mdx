@@ -41,6 +41,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```javascript Node.js
   const userIdOrUsername = "44196397";
   let pageCursor = "";
+  const seenCursors = new Set();
 
   for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
     const params = new URLSearchParams({ pageSize: "200" });
@@ -71,6 +72,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     for (const row of audienceRows) process.stdout.write(`${JSON.stringify(row)}\n`);
 
     if (!page.has_next_page || page.next_cursor === "") break;
+    if (page.next_cursor === pageCursor || seenCursors.has(page.next_cursor)) {
+      throw new Error("pagination cursor repeated");
+    }
+    seenCursors.add(page.next_cursor);
     pageCursor = page.next_cursor;
   }
   ```
@@ -81,6 +86,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
   user_id_or_username = "44196397"
   page_cursor = ""
+  seen_cursors = set()
 
   for page_index in range(3):
       params = {"pageSize": "200"}
@@ -116,6 +122,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
       if not page["has_next_page"] or not page["next_cursor"]:
           break
+      if page["next_cursor"] == page_cursor or page["next_cursor"] in seen_cursors:
+          raise RuntimeError("pagination cursor repeated")
+      seen_cursors.add(page["next_cursor"])
       page_cursor = page["next_cursor"]
   ```
 </CodeGroup>
@@ -123,6 +132,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 The Node.js and Python snippets write JSON Lines audience rows instead of raw
 following pages. Persist each mapped row and the latest `next_cursor` in your
 sync job so it can resume from the last completed page.
+
+For high-volume following pulls, de-duplicate profiles by `id`, continue through empty pages when the cursor advances, and stop with a partial-result status when `next_cursor` is missing or repeats.
 
 ## Direct following handoff
 

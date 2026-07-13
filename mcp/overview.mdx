@@ -1,7 +1,7 @@
 ---
 title: Connect AI Agents via MCP
 sidebarTitle: MCP Server
-description: Connect AI agents to Xquik via the Model Context Protocol
+description: Connect AI agents to Xquik API MCP v2.5.1 via Streamable HTTP
 keywords: ["MCP", "model context protocol", "AI agents", "Claude", "ChatGPT", "server setup"]
 ---
 
@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik exposes 118 of its 123 REST operations through 2 [Model Context Protocol](https://modelcontextprotocol.io) tools. Agents search a compact catalog with `explore`, then run authenticated requests with `xquik`.
+Xquik API MCP v2.5.1 exposes 118 of 123 REST operations through 2 [Model Context Protocol](https://modelcontextprotocol.io) tools. Agents search a compact catalog with `explore`, then run authenticated requests with `xquik`.
 
 <Note>
   This page covers the API MCP server at `https://xquik.com/mcp` for
@@ -19,12 +19,15 @@ Xquik exposes 118 of its 123 REST operations through 2 [Model Context Protocol](
 
 ## Connection
 
-<CardGroup cols={3}>
+<CardGroup cols={2}>
   <Card title="Protocol" icon="route">
-    HTTP with StreamableHTTP transport for MCP clients.
+    Model Context Protocol over Streamable HTTP.
   </Card>
   <Card title="Endpoint" icon="plug">
     Connect clients to `https://xquik.com/mcp`.
+  </Card>
+  <Card title="Server version" icon="badge-check">
+    Current API MCP server version: `2.5.1`.
   </Card>
   <Card title="Authentication" icon="key-round">
     Use an API key in `x-api-key` or OAuth 2.1 Bearer tokens.
@@ -88,6 +91,13 @@ The MCP server uses a **code-execution sandbox model** with 2 tools:
 
 The AI agent writes async JavaScript arrow functions that run in a sandboxed environment. Auth is injected automatically.
 
+The code-mode design keeps the endpoint catalog outside the client context. Both tools publish titles and Model Context Protocol safety annotations so clients can distinguish read-only discovery from authenticated execution.
+
+| Tool | Title | Safety annotations |
+| --- | --- | --- |
+| `explore` | Explore Xquik API | Read-only, idempotent, closed-world, non-destructive |
+| `xquik` | Run Xquik API Calls | May mutate data, may access live services, not idempotent |
+
 ### `explore` tool
 
 Searches the compact 118-operation endpoint catalog. Free means no usage credits; the call still requires MCP authentication through an API key or OAuth Bearer token. The sandbox provides:
@@ -123,6 +133,8 @@ declare const spec: { endpoints: EndpointInfo[] };
 
 The agent writes code like `async () => xquik.request('/api/v1/radar')` and the server executes it with auth injected.
 
+`xquik.request()` automatically uses the normalized v1 contract. Responses use snake_case fields, date-time fields as Unix seconds, structured error objects, `has_more`, and `next_cursor`. A default REST `createdAt` field becomes `created`, not `created_at`, in MCP results.
+
 ### MCP operation boundary
 
 MCP exposes 118 operations from the 123-operation REST contract. The 5 browser or session-bound operations stay outside the MCP catalog:
@@ -131,7 +143,7 @@ MCP exposes 118 operations from the 123-operation REST contract. The 5 browser o
 - Charge a saved payment method through quick top-up
 - Open the session-based top-up redirect route
 
-Create and manage API keys in the dashboard. Use `POST /api/v1/credits/topup` when an MCP workflow needs a checkout URL. Never ask an agent to send saved-payment details or manage the credential authenticating its own MCP session.
+Create and manage API keys in the dashboard. Call `POST /api/v1/credits/topup` only after the user explicitly requests a checkout URL. Never ask an agent to send saved-payment details or manage the credential authenticating its own MCP session.
 
 ## MCP vs REST API
 
@@ -342,7 +354,7 @@ Once connected, you can ask your AI agent things like:
 - Show fastest-growing startup trends.
 - Get technology topics from the last 12 hours.
 - Show popular knowledge topics right now.
-- Show regional trends for Turkey.
+- Show regional trends for a selected region.
 - Find trending tech news and draft a tweet about one item.
 
 **Extractions**

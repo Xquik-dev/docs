@@ -17,12 +17,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use this page when an AI agent needs to choose the right Xquik surface, call
-live X data, hand results to a backend, or recover missed webhook work. Keep
-the agent's live calls narrow, persist cursor state, and move long-running jobs
-to REST, SDKs, or webhooks.
+Use this page when an AI agent needs to choose the right Xquik surface, call live X data, hand results to a backend, or recover missed webhook work. Keep live calls narrow, aggregate high-volume pages inside the sandbox, persist cursor state, and move durable jobs to REST, SDKs, or webhooks.
 
-## Pick the Agent Surface
+## Pick the agent surface
 
 <CardGroup cols={2}>
   <Card title="Docs MCP" icon="book-open">
@@ -32,9 +29,10 @@ to REST, SDKs, or webhooks.
   </Card>
 
   <Card title="API MCP" icon="terminal">
-    Use `https://xquik.com/mcp` when the agent needs account actions, live X
-    reads, extraction jobs, monitors, webhooks, or writes. It exposes 118 of
-    123 REST operations and requires `x-api-key` or OAuth 2.1.
+    Use API MCP v2.5.1 at `https://xquik.com/mcp` when the agent needs account
+    actions, live X reads, extraction jobs, monitors, webhooks, or writes.
+    Streamable HTTP exposes 118 of 123 REST operations and requires `x-api-key`
+    or OAuth 2.1.
   </Card>
 
   <Card title="REST or SDK" icon="code">
@@ -48,18 +46,18 @@ to REST, SDKs, or webhooks.
   </Card>
 </CardGroup>
 
-## Default Agent Route
+## Use the default agent route
 
 1. Search public docs or `llms.txt` for the workflow before calling live data.
 2. Use `explore` before `xquik.request(...)` to confirm the endpoint path,
    required parameters, costs, and response shape.
 3. Call `xquik.request(path, { method?, body?, query? })` with the smallest
    useful page size.
-4. Return normalized rows, IDs, `has_more`, and `next_cursor` instead of full
-   raw pages.
-5. Hand long-running or replayable work to REST, SDKs, webhooks, or exports.
+4. Continue while `has_more` is true and `next_cursor` advances.
+5. Return normalized rows, IDs, counts, samples, and cursors instead of full raw pages.
+6. Hand long-running or replayable work to REST, SDKs, webhooks, or exports.
 
-API-key lifecycle operations and direct saved-payment mutations are not in the MCP catalog. Manage keys in the dashboard. Use `POST /api/v1/credits/topup` for a checkout URL instead of calling quick top-up from an agent.
+API-key lifecycle operations and direct saved-payment mutations are not in the MCP catalog. Manage keys in the dashboard. Call `POST /api/v1/credits/topup` only after the user explicitly requests a checkout URL. Never call quick top-up from an agent.
 
 ```javascript
 async () => {
@@ -78,10 +76,9 @@ async () => {
 }
 ```
 
-## Call With Stored Rows
+## Return stored rows
 
-MCP returns normalized snake_case fields. Keep agents on `has_more` and
-`next_cursor` even when REST or SDK pages show camelCase response fields.
+MCP returns normalized snake_case fields, structured errors, and date-time fields as Unix seconds. Keep agents on `has_more` and `next_cursor` even when REST or SDK pages show camelCase response fields. Read a REST `createdAt` field as `created` in MCP results.
 
 ```javascript
 async () => {
@@ -108,18 +105,27 @@ async () => {
 }
 ```
 
-## Cursor Rules
+## Follow cursor rules
 
 | Source | Next request |
 | --- | --- |
 | MCP X data pages | Pass `next_cursor` back as `cursor` when `has_more` is true. |
 | MCP `/api/v1/draws`, `/api/v1/extractions`, `/api/v1/events`, and `/api/v1/radar` | Pass `next_cursor` back as `after`. |
+| MCP `/api/v1/drafts` | Pass `next_cursor` back as `afterCursor`. |
 | REST and generated SDKs | Follow the response fields documented on that endpoint page. |
 
 Check `GET /api/v1/credits` before large reads. Low credit balances can return
 smaller pages, and zero affordable rows can return `402 insufficient_credits`.
 
-## Persist Handoff State
+For high-volume MCP reads:
+
+- De-duplicate tweet or user rows by stable `id`
+- Continue through empty pages when `has_more` is true
+- Stop at the requested total, page cap, or `has_more: false`
+- Stop with `cursor_stalled` when `next_cursor` is missing or repeats
+- Return counts, aggregates, or a bounded sample within the 24,000-character tool limit
+
+## Persist handoff state
 
 Store the values a later agent, service, or workflow needs to resume without
 reading chat history.
@@ -146,7 +152,7 @@ Keep API keys, webhook secrets, raw request bodies, raw signatures, and full
 headers out of chat transcripts, shared agent memory, spreadsheets, CRM rows,
 and queue payloads.
 
-## When to Leave MCP
+## Know when to leave MCP
 
 <CardGroup cols={2}>
   <Card title="File Exports" icon="file-json" href="/guides/response-formats-exports">
@@ -166,7 +172,7 @@ and queue payloads.
   </Card>
 </CardGroup>
 
-## Next Steps
+## Continue with focused references
 
 <CardGroup cols={2}>
   <Card title="MCP Tools Reference" icon="terminal" href="/mcp/tools">

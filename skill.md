@@ -138,7 +138,9 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 3. Authenticate API MCP with an `x-api-key` header or OAuth Bearer token.
 4. Use `explore` to search 118 MCP operations and `xquik` to run authenticated requests.
 
-API-key lifecycle, direct saved-payment quick top-up, and the session top-up redirect are unavailable through MCP. Manage keys in the dashboard. Use `POST /api/v1/credits/topup` for a checkout URL.
+API MCP v2.5.1 uses Streamable HTTP. It returns normalized snake_case fields, date-time fields as Unix seconds, structured errors, `has_more`, and `next_cursor`. Continue through empty pages while the cursor advances. Stop and report partial progress when a cursor is missing or repeats.
+
+API-key lifecycle, direct saved-payment quick top-up, and the session top-up redirect are unavailable through MCP. Manage keys in the dashboard. Call `POST /api/v1/credits/topup` only after the user explicitly requests a checkout URL.
 
 ## Common gotchas
 

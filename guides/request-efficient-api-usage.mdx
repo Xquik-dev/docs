@@ -109,7 +109,31 @@ Store the route, query, cursor, and returned page state together. Treat every cu
 }
 ```
 
-For X data pages, pass `next_cursor` back as `cursor`. For stored extraction JSON pages, pass `nextCursor` as `after`. Do not decode or construct cursors manually.
+For X data pages, pass `next_cursor` back as `cursor`. For stored extraction JSON pages, pass `nextCursor` as `after`. Do not decode or construct cursors manually. The normalized REST contract and API MCP use `has_more` and `next_cursor`, but each endpoint keeps its request cursor name. Use `cursor` for most X reads, `after` for events, draws, extractions, and radar, and `afterCursor` for drafts.
+
+## Guard high-volume page loops
+
+High-volume clients must bound work and detect stalled pagination. A page-size parameter is an upper bound, not a completion guarantee.
+
+<Steps>
+  <Step title="Bound the run">
+    Set a maximum row count, page count, and elapsed time before the first request.
+  </Step>
+  <Step title="De-duplicate rows">
+    Store each tweet or user by stable `id`. Count unique rows, not array length across pages.
+  </Step>
+  <Step title="Follow advancing cursors">
+    Continue while the response says more data exists, even when a filtered page is empty.
+  </Step>
+  <Step title="Stop stalled pagination">
+    Stop with a clear partial-result status if the next cursor is empty, unchanged, or already seen.
+  </Step>
+  <Step title="Persist after each page">
+    Save the request cursor, next cursor, unique row count, and last stable ID before continuing.
+  </Step>
+</Steps>
+
+For agent calls, return counts, aggregates, or a bounded field projection. API MCP tool output is limited to 24,000 characters. Use REST, generated SDKs, or extraction exports when downstream systems need every full row.
 
 ## Avoid unnecessary media work
 
@@ -121,6 +145,8 @@ Use `POST /api/v1/x/media` when you need an uploaded `mediaId` for the one-item 
 
 - Batch known tweet or user IDs before looping over single lookups.
 - Store returned IDs, row counts, `has_next_page`, `next_cursor`, and export paths.
+- Stop when a cursor is missing or repeats while the response still reports more data.
+- Continue through empty filtered pages when the cursor advances.
 - Use `resultsLimit` on extraction estimates and create requests for bounded jobs.
 - Use monitors and signed webhooks when recurring checks should push events instead of polling every page.
 - Keep public tweet media URLs and uploaded DM media IDs in separate handoffs.
