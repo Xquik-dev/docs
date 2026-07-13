@@ -10,7 +10,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <LlmsDirective />
 
 <Callout icon="coins" color="#5c3327">
-  **5 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Accepts [MPP](/mpp/overview)
+  **5 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Direct [MPP](/mpp/overview): USD 0.00075 per call
 </Callout>
 
 <Info>
@@ -23,13 +23,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <CodeGroup>
   ```bash Article tweet ID
   curl https://xquik.com/api/v1/x/articles/2033891852621840387 \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+    -H "x-api-key: xq_your_api_key_here" | jq
   ```
 
   ```javascript Node.js
   const tweetId = "2033891852621840387";
   const response = await fetch(`https://xquik.com/api/v1/x/articles/${tweetId}`, {
-    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+    headers: { "x-api-key": "xq_your_api_key_here" },
   });
   const data = await response.json();
   const contentBlocks = data.article.contents ?? [];
@@ -69,7 +69,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   tweet_id = "2033891852621840387"
   response = requests.get(
       f"https://xquik.com/api/v1/x/articles/{tweet_id}",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      headers={"x-api-key": "xq_your_api_key_here"},
   )
   data = response.json()
   content_blocks = data["article"].get("contents", [])
@@ -188,7 +188,7 @@ an X Article URL. A normal tweet ID can be valid and still return
 </CardGroup>
 
 Direct article reads cost 5 credits per successful call. For MPP callers, this
-endpoint is billed as a fixed charge at USD 0.00105 per call.
+endpoint is billed as a fixed charge at USD 0.00075 per call.
 
 ## Path parameters
 
@@ -229,8 +229,12 @@ endpoint is billed as a fixed charge at USD 0.00105 per call.
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported.
+<ParamField header="x-api-key" type="string">
+  Full account key. Sessions and OAuth also work.
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  `Bearer xq_your_guest_key_here` authenticates `paid_reads` guest keys. Direct MPP uses the `Payment ...` credential. Get it from the `WWW-Authenticate: Payment` challenge.
 </ParamField>
 
 ## Response
@@ -356,12 +360,10 @@ endpoint is billed as a fixed charge at USD 0.00105 per call.
     ```
     Missing or invalid API key. Check the `x-api-key` header value.
   </Tab>
-  <Tab title="402 Subscription required">
-    ```json
-    { "error": "no_subscription" }
-    ```
-    No active subscription or insufficient credits. Possible error values: `no_subscription`, `subscription_inactive`, `no_credits`, `insufficient_credits`.
-    For [MPP](/mpp/overview) requests without a valid payment credential, 402 returns a `WWW-Authenticate: Payment` challenge header instead.
+  <Tab title="402 Payment required">
+    Account keys get account options; guest keys get guest top-up only.
+    Anonymous calls receive a direct MPP `WWW-Authenticate: Payment` challenge plus a guest wallet creation action.
+    No checkout starts automatically. Confirm any payment action.
   </Tab>
   <Tab title="404 Article not found">
     ```json

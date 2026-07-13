@@ -8,7 +8,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Call Xquik endpoints without an account or subscription. Pay per request with Tempo (USDC) using the `mppx` SDK.
+Call 7 fixed-price Xquik operations without an account or subscription. Pay per request with Tempo (USDC) using the `mppx` SDK.
 
 ## Step 1: Install the SDK
 
@@ -47,7 +47,7 @@ Look up a single tweet. The SDK intercepts 402 responses, pays via Tempo, and re
 import { Mppx, tempo } from "mppx/client";
 import { privateKeyToAccount } from "viem/accounts";
 
-// Configure the MPP client - this patches global fetch
+// Configure the MPP client. This patches global fetch
 // to automatically handle 402 Payment Required challenges
 Mppx.create({
   methods: [
@@ -65,25 +65,9 @@ const data = await response.json();
 console.log(data.tweet.text);
 ```
 
-`Mppx.create()` patches the global `fetch` function. When a request returns 402 with a `WWW-Authenticate: Payment` header, the SDK pays the requested amount (USD 0.00015) and retransmits the request with an `Authorization: Payment` credential. The response includes a `Payment-Receipt` header confirming settlement.
+`Mppx.create()` patches the global `fetch` function. When a direct MPP request returns 402 with a `WWW-Authenticate: Payment` header, the SDK pays the requested amount and retransmits the request with an `Authorization: Payment` credential. Every response after accepted payment includes a `Payment-Receipt` header confirming settlement.
 
-## Step 4: Make a session request
-
-Search tweets with per-result pricing. You pay USD 0.00015 per tweet returned.
-
-```typescript
-// Global fetch is already patched by Mppx.create() above
-const response = await fetch(
-  "https://xquik.com/api/v1/x/tweets/search?q=TypeScript&limit=20"
-);
-const data = await response.json();
-console.log(`Found ${data.tweets.length} tweets`);
-// Cost: USD 0.00015 times number of tweets returned
-```
-
-Session payments deposit funds upfront and deduct per result. The SDK manages the deposit and voucher exchange automatically. Your maximum cost = price times limit parameter (e.g., searching with `limit=20` at USD 0.00015 per tweet costs at most USD 0.003).
-
-## Step 5: Raw HTTP flow (without SDK)
+## Step 4: Raw HTTP flow without the SDK
 
 If you are not using the `mppx` SDK, you can implement the protocol manually.
 
@@ -101,6 +85,8 @@ WWW-Authenticate: Payment id="abc...", realm="xquik.com", method="tempo", intent
 ```
 
 The `request` parameter is a base64url-encoded JSON object containing the amount, currency, and recipient address.
+
+The `application/problem+json` body also includes an optional `payment_options.guest_wallet.create_checkout` action. It does not replace the MPP header, and the failed request creates no checkout. Ignore it when completing MPP. Use it only after a user explicitly chooses and confirms a $10-$250 USD guest wallet.
 
 **Step 3: Pay and retry**
 
@@ -123,10 +109,11 @@ Content-Type: application/json
 {"tweet": {"id": "1893456789012345678", "text": "..."}}
 ```
 
-The `Payment-Receipt` header confirms the payment was settled.
+The `Payment-Receipt` header confirms settlement. Check the HTTP status and response body separately because accepted payments also include a receipt on non-2xx responses.
 
 ## Next steps
 
-- [MPP overview](/mpp/overview): Eligible endpoints, pricing, and protocol details.
+- [MPP overview](/mpp/overview): 7 direct MPP operations, pricing, and protocol details.
+- [Guest wallets](/guides/guest-wallets): Prepay 33 eligible reads with an accountless API key.
 - [Get tweet](/api-reference/x/get-tweet): Full endpoint reference for tweet lookups.
-- [Search tweets](/api-reference/x/search-tweets): Full endpoint reference for tweet search.
+- [Get user](/api-reference/x/get-user): Full endpoint reference for user lookups.

@@ -24,23 +24,25 @@ The API key is missing, invalid, or revoked. Check the following:
 ```bash
 # Correct
 curl https://xquik.com/api/v1/account \
-  -H "x-api-key: xq_YOUR_KEY_HERE"
+  -H "x-api-key: xq_your_api_key_here"
 
 # Wrong - missing header
 curl https://xquik.com/api/v1/account
 ```
 
-### 402 No Subscription / Insufficient Credits
+### 401 authentication or 402 payment required
 
-No active subscription or insufficient credits. Possible error codes: `no_subscription`, `subscription_inactive`, `no_credits`, `insufficient_credits`. This affects metered endpoints (draws, extractions, tweet lookups, user lookups, follower checks).
+Anonymous non-MPP paid reads return `401` with a Bearer challenge and guest wallet action. Direct MPP reads return `402` with a Payment challenge and the same action. Account or guest credit failures also return `402`. The failed request creates no checkout.
 
 Solutions:
 
-- Check your remaining balance via `GET /api/v1/account` (`creditInfo.balance` field)
-- [Top up credits](/api-reference/credits/topup) from the dashboard
+- For account keys, check `GET /api/v1/account` and use only the advertised account payment action
+- For guest keys, check [guest wallet status](/api-reference/guest-wallets/status) and use only the advertised guest top-up action
+- For the 7 direct MPP operations, complete the MPP challenge or ask the user to confirm a guest wallet amount
+- For the other 26 guest-eligible reads, authenticate or ask the user to confirm a guest wallet amount
 - Use [Estimate Extraction](/api-reference/extractions/estimate) before running extractions to avoid surprises
 
-Management endpoints (stored monitors, events, webhooks, API keys, account) are not affected and continue to work normally.
+Ask the user to choose an option and amount before creating checkout. Never trigger checkout, top-up, or subscription automatically after `401` or `402`.
 
 ### Monitor Credits
 
@@ -163,12 +165,13 @@ See [Billing & Usage](/guides/billing) for credit costs and billing.
 
 ### Can I use the API without a subscription?
 
-Partially. Non-metered endpoints work without an active subscription:
+Yes, for eligible reads. Choose the access boundary:
 
-- **Work without subscription:** Reading, updating, and deleting stored monitors, events, webhooks, API keys, and account management
-- **Require subscription:** Creating active monitors, draws, extractions, and X API lookups (tweets, users, follower checks) return `402` with `no_subscription`
+- **Guest wallet:** Prepay 33 eligible GET routes through a confirmed $10-$250 USD Stripe-hosted Payment Link.
+- **MPP:** Pay 7 fixed-price GET operations per request without an account or API key.
+- **Full account:** Use a subscription for writes, monitors, webhooks, extractions, draws, connected-account reads, and account management.
 
-Subscribe from the [dashboard](https://xquik.com) billing page to unlock metered endpoints. Access activates immediately after payment.
+Subscribe from the [dashboard](https://xquik.com) billing page to unlock full account metered endpoints. Full account access activates after payment.
 
 ### How do I connect an AI agent?
 
@@ -179,15 +182,17 @@ Xquik has 2 MCP servers. Choose based on what the agent needs to do.
     Connect `https://docs.xquik.com/mcp`. It is read-only and requires no auth.
   </Card>
   <Card title="Run API actions" icon="terminal">
-    Connect `https://xquik.com/mcp`. It requires `x-api-key` or OAuth 2.1 and exposes `explore` plus `xquik`.
+    Connect `https://xquik.com/mcp`. Full credentials expose 118 operations. Guest `paid_reads` keys expose 33 eligible GET routes.
   </Card>
 </CardGroup>
 
 Setup:
 
 1. For docs search, add `https://docs.xquik.com/mcp`.
-2. For account actions, get your API key from the dashboard.
-3. Configure `https://xquik.com/mcp` with an `x-api-key` header or OAuth login.
+2. For account actions, use a full API key or OAuth login.
+3. For guest reads, activate a guest key through direct REST, then authenticate MCP with that key.
+
+Guest wallet creation, status, and top-up are never executable through MCP.
 
 Supported clients:
 

@@ -8,14 +8,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Every error includes an `error` code. Use it to choose recovery.
+Use each `error` code to choose recovery.
 
 <CardGroup cols={3}>
   <Card title="Getting 400?" icon="circle-x">
     Fix your request body. See [validation errors](#error-codes-detailed).
   </Card>
-  <Card title="Getting 402?" icon="credit-card">
-    Check your balance or subscription. See [billing errors](#error-codes-detailed) or [billing guide](/guides/billing).
+  <Card title="Getting 401 or 402?" icon="credit-card">
+    Read the challenge and payment options. Never start checkout automatically. See [error details](#error-codes-detailed).
   </Card>
   <Card title="Getting 429?" icon="gauge">
     Implement backoff. See [retry strategy](#retry-with-exponential-backoff) or [rate limits](/guides/rate-limits).
@@ -24,8 +24,7 @@ Every error includes an `error` code. Use it to choose recovery.
 
 ## Quick reference
 
-Start with the HTTP family, then apply the recovery rule. Retry only when a
-card says the error is retryable.
+Start with the HTTP family. Retry only when a card says so.
 
 <CardGroup cols={2}>
   <Card title="400 request validation" icon="circle-alert">
@@ -40,7 +39,7 @@ card says the error is retryable.
     the connected X account. Covers `unauthenticated` and `x_auth_failure`.
   </Card>
   <Card title="402 billing and credits" icon="credit-card">
-    Retry: no. Subscribe, reactivate billing, update payment, or top up credits.
+    Retry: no. Read `payment_options`, then get explicit user confirmation.
     Covers `no_subscription`, `subscription_inactive`, `no_addon`,
     `payment_failed`, `no_credits`, and `insufficient_credits`.
   </Card>
@@ -182,8 +181,12 @@ Some errors include additional context fields (e.g. `limit`, `retryAfter`).
     </CardGroup>
   </Accordion>
 
+  <Accordion title="Anonymous paid-read authentication (401)">
+    Non-MPP paid reads return `401` with `WWW-Authenticate: Bearer` and a guest wallet action. This is not a Payment challenge. Authenticate or get confirmation before calling the action.
+  </Accordion>
+
   <Accordion title="Billing & subscription errors (402)">
-    Subscription or payment issue. See [Billing & Usage](/guides/billing) for plan details.
+    A `402` creates no checkout. Account and OAuth responses advertise account billing actions. Guest responses advertise only `POST /api/v1/guest-wallets/topups`. Direct MPP responses include a Payment challenge and guest option. Get confirmation before calling any action.
 
     <CardGroup cols={2}>
       <Card title="no_subscription" icon="badge-x">
@@ -205,12 +208,14 @@ Some errors include additional context fields (e.g. `limit`, `retryAfter`).
       </Card>
       <Card title="no_credits" icon="coins">
         No credit balance is available. Check balance with
-        [Get Account](/api-reference/account/get), then top up or subscribe.
+        [Get Account](/api-reference/account/get), then use
+        [Top Up Credits](/api-reference/credits/topup) after confirmation.
       </Card>
       <Card title="insufficient_credits" icon="wallet-cards">
-        Balance is below the required operation cost. Check
-        [Get Account](/api-reference/account/get), then
-        [Top Up Credits](/api-reference/credits/topup).
+        Balance is below the required operation cost. Account callers can check
+        [Get Account](/api-reference/account/get). Guest callers can check
+        [Guest Wallet Status](/api-reference/guest-wallets/status). Use only the
+        payment action advertised for that credential.
       </Card>
     </CardGroup>
   </Accordion>

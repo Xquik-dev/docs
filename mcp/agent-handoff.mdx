@@ -29,10 +29,9 @@ Use this page when an AI agent needs to choose the right Xquik surface, call liv
   </Card>
 
   <Card title="API MCP" icon="terminal">
-    Use API MCP v2.5.1 at `https://xquik.com/mcp` when the agent needs account
-    actions, live X reads, extraction jobs, monitors, webhooks, or writes.
-    Streamable HTTP exposes 118 of 123 REST operations and requires `x-api-key`
-    or OAuth 2.1.
+    Use API MCP v2.5.2 at `https://xquik.com/mcp` for live calls. Full account
+    keys and OAuth tokens expose 118 operations. Guest `paid_reads` keys
+    expose exactly 33 eligible GET routes.
   </Card>
 
   <Card title="REST or SDK" icon="code">
@@ -57,7 +56,9 @@ Use this page when an AI agent needs to choose the right Xquik surface, call liv
 5. Return normalized rows, IDs, counts, samples, and cursors instead of full raw pages.
 6. Hand long-running or replayable work to REST, SDKs, webhooks, or exports.
 
-API-key lifecycle operations and direct saved-payment mutations are not in the MCP catalog. Manage keys in the dashboard. Call `POST /api/v1/credits/topup` only after the user explicitly requests a checkout URL. Never call quick top-up from an agent.
+Credential lifecycle operations and direct saved-payment mutations are not in the MCP catalog. Guest wallet creation, status, and top-up also remain direct REST only.
+
+A `402` creates no checkout. Report its payment choices, ask the user to choose an amount and option, then wait for explicit confirmation. A full account session may execute only an advertised account checkout action in its catalog. Never execute guest wallet routes through MCP.
 
 ```javascript
 async () => {
@@ -75,6 +76,22 @@ async () => {
   }));
 }
 ```
+
+## Route guest paid reads
+
+An active guest key gives `explore` and `xquik` a 33-operation read-only catalog. Every route appears in the [guest paid-read inventory](/guides/guest-wallets#eligible-paid-read-routes). Batch `GET /api/v1/x/tweets` accepts up to 100 tweet IDs.
+
+The sandbox cannot execute writes, account actions, automations, billing, credential management, or noneligible reads. OAuth and full account behavior remain unchanged.
+
+If the guest key needs creation, activation status, or more credits, leave MCP and follow the [accountless guest wallet flow](/guides/guest-wallets) through direct REST:
+
+- [`POST /api/v1/guest-wallets`](/api-reference/guest-wallets/create)
+- [`GET /api/v1/guest-wallets/status`](/api-reference/guest-wallets/status)
+- [`POST /api/v1/guest-wallets/topups`](/api-reference/guest-wallets/topup)
+
+Creation and top-up require explicit user confirmation. Status polling does not create payment.
+
+Never place the guest key or its creation `Idempotency-Key` in tool code, chat output, or shared agent state.
 
 ## Return stored rows
 
@@ -114,7 +131,9 @@ async () => {
 | MCP `/api/v1/drafts` | Pass `next_cursor` back as `afterCursor`. |
 | REST and generated SDKs | Follow the response fields documented on that endpoint page. |
 
-Check `GET /api/v1/credits` before large reads. Low credit balances can return
+Full account sessions can check `GET /api/v1/credits` before large reads.
+Guest sessions receive balance and top-up context in `402`, while the direct
+REST guest status route reports the current balance. Low balances can return
 smaller pages, and zero affordable rows can return `402 insufficient_credits`.
 
 For high-volume MCP reads:

@@ -22,7 +22,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   curl -G https://xquik.com/api/v1/x/communities/search \
     --data-urlencode "communityId=1234567890" \
     --data-urlencode "q=web development" \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+    -H "x-api-key: xq_your_api_key_here" | jq
   ```
 
   ```javascript Node.js
@@ -32,7 +32,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   const pageSize = "100";
   const params = new URLSearchParams({ communityId, q: searchQuery, queryType, pageSize });
   const response = await fetch(`https://xquik.com/api/v1/x/communities/search?${params}`, {
-    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+    headers: { "x-api-key": "xq_your_api_key_here" },
   });
   const data = await response.json();
   const tweetRows = data.tweets.map((tweet) => {
@@ -90,7 +90,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           "queryType": query_type,
           "pageSize": page_size,
       },
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      headers={"x-api-key": "xq_your_api_key_here"},
   )
   data = response.json()
   tweet_rows = []
@@ -223,8 +223,12 @@ relevance-ranked review.
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported.
+<ParamField header="x-api-key" type="string">
+  Full account key. Sessions and OAuth also work.
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  `Bearer xq_your_guest_key_here` for `paid_reads`.
 </ParamField>
 
 ## Response
@@ -318,17 +322,15 @@ relevance-ranked review.
     The `q` query parameter is empty or missing.
   </Tab>
   <Tab title="401 Unauthenticated">
+    Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
     ```json
     { "error": "unauthenticated" }
     ```
     Missing or invalid API key.
   </Tab>
-  <Tab title="402 Subscription required">
-    ```json
-    { "error": "no_subscription" }
-    ```
-    No active subscription or insufficient credits. Possible error values: `no_subscription`, `subscription_inactive`, `no_credits`, `insufficient_credits`.
-    For [MPP](/mpp/overview) requests without a valid payment credential, 402 returns a `WWW-Authenticate: Payment` challenge header instead.
+  <Tab title="402 Payment required">
+    Account keys get account options; guest keys get guest top-up only.
+    No checkout starts automatically. Confirm any payment action.
   </Tab>
   <Tab title="502 X API unavailable">
     ```json

@@ -1,41 +1,41 @@
 ---
 title: Authentication
-description: API key authentication, key format, and dual auth endpoints
-keywords: ["api key", "authentication", "x-api-key", "session cookie", "security"]
+description: Account keys, guest paid-read keys, OAuth 2.1, sessions, and anonymous MPP authentication
+keywords: ["api key", "authentication", "guest wallet", "paid_reads", "OAuth 2.1", "MPP", "x-api-key", "session cookie"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik uses API key authentication for all developer-facing endpoints.
+Xquik supports account API keys, accountless guest keys, OAuth 2.1, and anonymous MPP payments. Choose the narrowest method that covers the route.
 
 ## API Key Format
 
-Keys follow this format:
+Account and guest keys follow this format:
 
 ```text
-xq_YOUR_KEY_HERE
+xq_your_api_key_here
 ```
 
 - **Prefix:** `xq_`
 - **Body:** 64 hexadecimal characters
-- **Storage:** Hashed in database (raw key never stored)
+- **Storage:** Keep the raw value in a secret manager. Never log or commit it.
 
 ## Using your API key
 
-Pass the key in the `x-api-key` header:
+Pass an account key in the `x-api-key` header:
 
 <CodeGroup>
 
 ```bash cURL
 curl https://xquik.com/api/v1/account \
-  -H "x-api-key: xq_YOUR_KEY_HERE"
+  -H "x-api-key: xq_your_api_key_here"
 ```
 
 ```javascript Node.js
 const response = await fetch("https://xquik.com/api/v1/account", {
-  headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+  headers: { "x-api-key": "xq_your_api_key_here" },
 });
 ```
 
@@ -44,7 +44,7 @@ import requests
 
 response = requests.get(
     "https://xquik.com/api/v1/account",
-    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    headers={"x-api-key": "xq_your_api_key_here"},
 )
 ```
 
@@ -59,7 +59,7 @@ import (
 
 func main() {
 	req, _ := http.NewRequest("GET", "https://xquik.com/api/v1/account", nil)
-	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+	req.Header.Set("x-api-key", "xq_your_api_key_here")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -73,6 +73,14 @@ func main() {
 ```
 
 </CodeGroup>
+
+Xquik API keys can also use Bearer authentication:
+
+```text
+Authorization: Bearer xq_your_api_key_here
+```
+
+Use Bearer authentication for guest keys. Values beginning with `xq_` remain Xquik API keys. OAuth Bearer tokens use the same header without the `xq_` prefix.
 
 ## Auth methods by endpoint
 
@@ -97,6 +105,9 @@ Most endpoints support **dual authentication**: either an API key or a session c
   <Card title="Content tools and support" icon="sparkles">
     `GET /trends`, `GET /radar`, `* /styles/*`, `* /drafts/*`, `POST /compose`, and `* /support/*` accept either auth method.
   </Card>
+  <Card title="Guest paid reads" icon="wallet-cards">
+    A guest key has scope `paid_reads`. It authenticates only the 33 prepaid GET routes plus guest status and top-up. It never grants account, write, automation, account credential, or OAuth access.
+  </Card>
 </CardGroup>
 
 <Info>
@@ -107,14 +118,26 @@ Most endpoints support **dual authentication**: either an API key or a session c
   The MCP server also supports OAuth 2.1 with PKCE for browser-based clients (Claude.ai, ChatGPT Developer Mode). See [OAuth 2.1](/oauth/overview) for the complete flow.
 </Info>
 
+## Accountless guest keys
+
+Create a guest key with `POST /api/v1/guest-wallets` after the user confirms a $10-$250 USD amount. The response contains a one-use Stripe-hosted Payment Link, the guest key, and a status URL. Creating the Payment Link does not charge the user.
+
+The guest key remains inactive for paid reads until a verified Stripe webhook activates the wallet. It can authenticate `GET /api/v1/guest-wallets/status` while pending. Once active, it can call exactly the [33 eligible paid-read routes](/guides/guest-wallets#eligible-paid-read-routes).
+
+<Warning>
+  Never create a guest wallet or top-up automatically after a `401` or `402`. Ask the user to choose an amount and explicitly confirm. The user must open and complete the Stripe-hosted Payment Link.
+</Warning>
+
+Guest credential routes are direct REST only. The API MCP server never exposes wallet creation, status, or top-up as executable operations. See [Accountless guest wallets](/guides/guest-wallets) for the complete flow.
+
 ## Machine Payments Protocol
 
-32 X-API read-only endpoints also accept [MPP](/mpp/overview) payments instead of API key authentication. When you call an eligible endpoint without an API key or session cookie, the server returns a 402 payment challenge.
+Seven fixed-price read operations also accept direct [MPP](/mpp/overview) payments instead of API key authentication. When you call one without an API key or session cookie, the server returns a 402 payment challenge.
 
 ### Challenge header
 
 ```text
-WWW-Authenticate: Payment id="...", realm="xquik.com", method="tempo", intent="charge", request="..."
+WWW-Authenticate: Payment id="challenge_id_here", realm="xquik.com", method="tempo", intent="charge", request="payment_request_here"
 ```
 
 | Parameter | Description |
@@ -122,7 +145,7 @@ WWW-Authenticate: Payment id="...", realm="xquik.com", method="tempo", intent="c
 | `id` | Unique challenge identifier |
 | `realm` | Protection space (`xquik.com`) |
 | `method` | Payment method (`tempo`) |
-| `intent` | Payment intent (`charge` or `session`) |
+| `intent` | Payment intent (`charge`) |
 | `request` | Base64url-encoded JSON with amount, currency, and recipient |
 
 ### Credential header
@@ -143,14 +166,14 @@ Settled responses include a receipt:
 Payment-Receipt: <base64url-encoded JSON>
 ```
 
-The receipt confirms the payment was settled and includes a reference ID and timestamp. The header is attached only to successful 2xx responses for both charge and session intents. Error responses use the status code and response body without a receipt header.
+The receipt confirms settlement and includes a reference ID and timestamp. Every response after accepted payment includes this header, including non-2xx responses. Check the HTTP status and response body to determine application success.
 
 ### Eligible endpoints
 
-See the [MPP overview](/mpp/overview#eligible-endpoints) for the full list of 32 endpoints, pricing, and intent types.
+See the [MPP overview](/mpp/overview#eligible-endpoints) for all 7 direct MPP operations and fixed prices.
 
 <Info>
-  MPP only applies to eligible X-API read-only endpoints. Media downloads, private reads, write actions, and all other endpoints require an API key or session cookie.
+  The 26 non-MPP paid reads return `401` with `WWW-Authenticate: Bearer` and the optional guest wallet action. The 7 direct MPP operations return `402` with `WWW-Authenticate: Payment` and the same guest action. A failed read never creates checkout.
 </Info>
 
 ## Key management
@@ -161,7 +184,7 @@ Generate keys from the **API Keys** page in your dashboard or via the API (sessi
 
 ```bash Create API Key
 curl -X POST https://xquik.com/api/v1/api-keys \
-  -H "Cookie: session_token=YOUR_SESSION" \
+  -H "Cookie: session_token=your_session_token_here" \
   -H "Content-Type: application/json" \
   -d '{"name": "Production"}'
 ```
@@ -172,7 +195,7 @@ The full key (`fullKey`) is returned **once** in the creation response. Store it
 
 ```bash Revoke API Key
 curl -X DELETE https://xquik.com/api/v1/api-keys/123 \
-  -H "Cookie: session_token=YOUR_SESSION"
+  -H "Cookie: session_token=your_session_token_here"
 ```
 
 Revoked keys are deactivated immediately and cannot be reactivated.
@@ -196,7 +219,7 @@ Invalid or missing API key returns:
     Never hardcode API keys in your source code. Use environment variables to keep keys separate from your codebase:
 
     ```bash .env
-    XQUIK_API_KEY=xq_YOUR_KEY_HERE
+    XQUIK_API_KEY=xq_your_api_key_here
     ```
 
     Access the key in your application:

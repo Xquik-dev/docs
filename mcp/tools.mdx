@@ -1,6 +1,6 @@
 ---
 title: MCP tools reference
-description: API MCP v2.5.1 tools, sandbox contracts, pagination, and compact workflows
+description: API MCP v2.5.2 tools, scoped catalogs, sandbox contracts, pagination, and compact workflows
 keywords: ["MCP tools", "explore", "xquik", "sandbox", "code execution", "API spec"]
 ---
 
@@ -8,11 +8,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik API MCP v2.5.1 exposes 118 of 123 REST operations through 2 tools: `explore` searches a compact catalog, and `xquik` executes authenticated calls. Connect through Streamable HTTP at `https://xquik.com/mcp` with `x-api-key` or OAuth 2.1 Bearer auth.
+Xquik API MCP v2.5.2 exposes a credential-scoped catalog through 2 tools: `explore` searches, and `xquik` executes authenticated calls. Full account keys and OAuth tokens see 118 operations. Active guest `paid_reads` keys see exactly 33 eligible GET routes.
 
 ## explore
 
-Search the compact 118-operation API catalog. `explore` makes no network calls and consumes no credits. The call still requires MCP authentication through an API key or OAuth Bearer token. Use it to inspect paths, parameters, costs, and response shapes before execution.
+Search the authenticated API catalog. `explore` makes no network calls and consumes no credits. Full credentials search 118 operations. Guest keys search only the 33 eligible GET routes.
 
 **Input:**
 
@@ -78,7 +78,7 @@ async () => {
 
 ## xquik
 
-Execute API calls against your Xquik account. The agent writes code using `xquik.request()` with auth injected automatically.
+Execute API calls allowed by the authenticated credential. Full account keys and OAuth tokens keep their existing account capabilities. Guest keys can execute only the 33 eligible GET reads. Auth is injected automatically.
 
 **Input:**
 
@@ -120,15 +120,20 @@ Write and media responses also use the MCP-normalized snake_case contract. Read 
 
 Tool output is limited to 24,000 characters. If a result includes `[TRUNCATED]`, request fewer rows, project only needed fields, or aggregate inside the sandbox. Use REST, SDKs, or extraction exports when a workflow must persist every full row.
 
-### Operations unavailable through MCP
+### Scope and unavailable operations
 
-The REST contract documents 123 operations. MCP exposes 118 and omits 5 browser or session-bound operations:
+The REST contract documents 126 operations. A full account key or OAuth token exposes 118 and omits 8 credential or session-bound operations:
 
-- Create, list, or revoke API keys
+- Create, list, or revoke account API keys
 - Charge a saved payment method through quick top-up
-- Open the session-based top-up redirect route
+- Open the session-based account top-up redirect route
+- Create, poll, or top up a guest wallet
 
-Manage API keys in the dashboard. Call `POST /api/v1/credits/topup` only after the user explicitly requests checkout, then return its URL. Do not attempt `/api/v1/credits/quick-topup` or the redirect route through `xquik.request()`.
+The guest wallet routes are direct REST only. Never call `/api/v1/guest-wallets`, `/api/v1/guest-wallets/topups`, or `/api/v1/guest-wallets/status` through `xquik.request()`. Follow the [accountless guest wallet guide](/guides/guest-wallets) outside MCP.
+
+A guest `paid_reads` key receives a separate 33-operation catalog. Every entry is an [eligible paid-read GET route](/guides/guest-wallets#eligible-paid-read-routes). The sandbox cannot execute mutations or noneligible routes.
+
+A `402` creates no checkout. Report its `payment_options`, ask the user to choose an amount and option, then wait for explicit confirmation. Full account MCP sessions may call only an advertised account checkout action present in their catalog. Guest wallet creation and top-up remain direct REST after confirmation.
 
 **Workflow Examples:**
 
@@ -705,6 +710,25 @@ async () => {
 }
 ```
 
+> Look up known tweet IDs
+
+`GET /api/v1/x/tweets` is available in both the full and `paid_reads` catalogs. Send at most 100 tweet IDs.
+
+```javascript
+async () => {
+  const page = await xquik.request('/api/v1/x/tweets', {
+    query: { ids: '1893456789012345678,1893456789012345679' }
+  });
+  return {
+    tweets: page.tweets.map(tweet => ({
+      tweet_id: tweet.id,
+      text: tweet.text,
+      author_username: tweet.author?.username ?? null
+    }))
+  };
+}
+```
+
 > Subscribe (free, returns checkout or billing portal URL)
 
 Run this mutation only after the user explicitly asks to subscribe or open billing.
@@ -717,7 +741,7 @@ async () => {
 
 ## API endpoints
 
-The REST API documents 123 operations. The MCP catalog exposes 118 across 10 categories:
+The REST API documents 126 operations. The full MCP catalog exposes 118 across 10 categories:
 
 <CardGroup cols={2}>
   <Card title="Account, composition, and credits" icon="user">
@@ -733,7 +757,7 @@ The REST API documents 123 operations. The MCP catalog exposes 118 across 10 cat
     5 operations in `support`: create, list, read, reply to, and close support tickets.
   </Card>
   <Card title="X data reads" icon="search">
-    39 operations in `twitter`: tweet search, tweet and article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, followers, replies, communities, and lists.
+    38 operations in `twitter`: batch and single tweet lookup, tweet search, article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, followers, replies, communities, and lists.
   </Card>
   <Card title="X accounts and writes" icon="send">
     25 operations across `x-accounts` and `x-write`: connect accounts, retry connection issues, post tweets, like, retweet, follow, remove followers, send DMs, upload media, update profiles, and manage community membership.
@@ -741,6 +765,8 @@ The REST API documents 123 operations. The MCP catalog exposes 118 across 10 cat
 </CardGroup>
 
 Use `explore` to browse the 118-operation MCP catalog with parameters and response shapes.
+
+With a guest `paid_reads` key, `explore` and `xquik` expose exactly 33 `twitter` GET operations. Use the [guest paid-read route inventory](/guides/guest-wallets#eligible-paid-read-routes) as the public route list.
 
 ## Cost summary
 
@@ -771,10 +797,10 @@ Use `explore` to browse the 118-operation MCP catalog with parameters and respon
 
 ## Error handling
 
-- **402 / `no_subscription` / `subscription_inactive`**: Report the billing state. Call `POST /api/v1/subscribe` only after the user explicitly asks to continue, then return its URL.
-- **402 / `no_credits` / `insufficient_credits`**: Report the available context. Call `POST /api/v1/credits/topup` only after the user explicitly asks, then wait for payment before retrying. Direct saved-payment quick top-up is unavailable through MCP.
+- **402 / `no_subscription` / `subscription_inactive`**: Report the billing state and available account actions. Ask the user to choose and confirm before calling `POST /api/v1/subscribe`.
+- **402 / `no_credits` / `insufficient_credits`**: Report `payment_options`. Full account sessions may create account checkout after confirmation. Guest sessions may explain the direct REST top-up flow, but MCP cannot execute it.
 - **429 / `rate_limit_exceeded`**: Respect `error.retry_after`, then retry safe reads with backoff.
 - **424 dependency errors**: Report `error.code`, preserve partial aggregates, and retry only when `error.retryable` allows it.
 - **Validation errors**: Fix the path, query, or body before retrying.
 
-The MCP server never starts subscriptions, checkout, top-up, or other billing mutations in response to an API error.
+The MCP server never starts subscriptions, checkout, top-up, or other billing mutations in response to an API error. Guest credential routes are never executable through MCP.

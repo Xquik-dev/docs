@@ -1,6 +1,6 @@
 ---
 title: "Machine Payments Protocol"
-description: "Anonymous pay-per-use access to X data endpoints via HTTP 402 and Tempo (USDC)"
+description: "Anonymous fixed-price access to 7 Xquik operations through HTTP 402 and Tempo (USDC)"
 keywords: ["MPP", "Machine Payments Protocol", "pay-per-use", "HTTP 402", "Tempo", "USDC", "anonymous"]
 ---
 
@@ -8,11 +8,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-The [Machine Payments Protocol](https://mpp.dev) (MPP) is an open standard for machine-to-machine payments over HTTP. Xquik implements MPP on 32 X-API read-only endpoints, allowing you to pay per call without creating an account or subscribing.
+The [Machine Payments Protocol](https://mpp.dev) (MPP) is an open standard for machine-to-machine payments over HTTP. Xquik accepts direct MPP payments on 7 fixed-price read operations. You can call them without an account, API key, or subscription.
 
 ## How it works
 
-MPP uses HTTP 402 (Payment Required) as a payment challenge. When you call an eligible endpoint without a subscription or API key, the server returns a 402 with payment instructions. Your client pays via Tempo (USDC), then retries the request with a payment credential.
+MPP uses HTTP 402 (Payment Required) as a payment challenge. When you call a direct MPP operation without authentication, the server returns an `application/problem+json` response and a `WWW-Authenticate: Payment` header. Your client pays through Tempo (USDC), then retries the request with a payment credential.
 
 ```text
 Client                              Xquik
@@ -29,23 +29,25 @@ Client                              Xquik
   │           (off-band)              │
   │                                   │
   │  4. Retry with credential         │
-  │     Authorization: Payment ...    │
+  │  Authorization: Payment proof     │
   │──────────────────────────────────▶│
   │                                   │
-  │  5. 200 OK +                      │
+  │  5. HTTP response +               │
   │     Payment-Receipt               │
   │◀──────────────────────────────────│
 ```
 
 <Note>
-For both charge and session intents, the `Payment-Receipt` header is included only on successful 2xx responses after payment is accepted. Error responses use the status code and response body without a receipt header.
+  Every response after an accepted payment includes `Payment-Receipt`, including non-2xx responses. The receipt confirms settlement, not application success. Challenges and rejected payment credentials do not include a receipt.
 </Note>
 
-No account, no API key, no subscription. The payment itself is your authentication.
+The same `402` body also advertises an optional accountless guest wallet. The MPP challenge remains unchanged. A failed read creates no checkout. Create a guest Stripe Payment Link only after the user confirms an amount.
+
+No account, API key, or subscription is required. The payment credential authenticates the retried request.
 
 ## Payment method
 
-MPP payments on Xquik use **Tempo** with USDC (a dollar-pegged stablecoin). Tempo provides near-zero transaction fees, making micropayments practical for per-call pricing.
+MPP payments on Xquik use **Tempo** with USDC, a dollar-pegged stablecoin. Tempo provides the settlement method for these fixed charges.
 
 You need a funded Tempo USDC wallet. See the [MPP quickstart](/mpp/quickstart) for setup instructions.
 
@@ -59,72 +61,39 @@ https://xquik.com/.well-known/mpp.json
 
 The document points clients to the live OpenAPI spec and MPP overview page.
 
-## Payment intents
+## Payment intent
 
-Xquik uses 2 payment intents depending on the endpoint:
-
-| Intent | How it works | Used by |
-|--------|-------------|---------|
-| `charge` | Fixed cost per call. Single on-chain settlement. | Tweet lookup, user lookup, follower check, article extraction, trends, community info |
-| `session` | Pay per result returned. Client deposits funds, sends off-chain vouchers per item. | Tweet search, user tweets, user replies, quotes, replies, retweeters, favoriters, thread, likes, user media, community members/moderators/tweets/search, list followers/members/tweets, user batch/search/followers/following/mentions/verified-followers/followers-you-know |
-
-With `charge`, you pay a flat amount per request. With `session`, you pay proportional to the number of results returned.
+All direct MPP operations use the `charge` intent. Each accepted payment settles the fixed price for one request. Xquik does not advertise direct MPP session pricing for result-sized pages.
 
 ## Eligible endpoints
 
 | Endpoint | Method | Price | Intent |
-|----------|--------|-------|--------|
+| --- | --- | --- | --- |
 | `/api/v1/x/tweets/{id}` | GET | USD 0.00015 per call | charge |
-| `/api/v1/x/tweets/search` | GET | USD 0.00015 per tweet | session |
 | `/api/v1/x/users/{id}` | GET | USD 0.00015 per call | charge |
-| `/api/v1/x/followers/check` | GET | USD 0.00105 per call | charge |
-| `/api/v1/x/articles/{tweetId}` | GET | USD 0.00105 per call | charge |
-| `/api/v1/x/users/{id}/tweets` | GET | USD 0.00015 per tweet | session |
-| `/api/v1/x/users/{id}/replies` | GET | USD 0.00015 per tweet | session |
-| `/api/v1/x/tweets/{id}/quotes` | GET | USD 0.00015 per tweet | session |
-| `/api/v1/x/tweets/{id}/replies` | GET | USD 0.00015 per tweet | session |
-| `/api/v1/x/tweets/{id}/retweeters` | GET | USD 0.00015 per user | session |
-| `/api/v1/x/tweets/{id}/favoriters` | GET | USD 0.00015 per user | session |
-| `/api/v1/x/tweets/{id}/thread` | GET | USD 0.00015 per tweet | session |
-| `/api/v1/x/users/{id}/likes` | GET | USD 0.00015 per tweet | session |
-| `/api/v1/x/users/{id}/media` | GET | USD 0.00015 per tweet | session |
+| `/api/v1/x/followers/check` | GET | USD 0.00075 per call | charge |
+| `/api/v1/x/articles/{tweetId}` | GET | USD 0.00075 per call | charge |
 | `/api/v1/trends` | GET | USD 0.00045 per call | charge |
 | `/api/v1/x/trends` | GET | USD 0.00045 per call | charge |
 | `/api/v1/x/communities/{id}/info` | GET | USD 0.00015 per call | charge |
-| `/api/v1/x/communities/{id}/members` | GET | USD 0.00015 per user | session |
-| `/api/v1/x/communities/{id}/moderators` | GET | USD 0.00015 per user | session |
-| `/api/v1/x/communities/{id}/tweets` | GET | USD 0.00015 per tweet | session |
-| `/api/v1/x/communities/search` | GET | USD 0.00015 per community | session |
-| `/api/v1/x/communities/tweets` | GET | USD 0.00015 per tweet | session |
-| `/api/v1/x/lists/{id}/followers` | GET | USD 0.00015 per user | session |
-| `/api/v1/x/lists/{id}/members` | GET | USD 0.00015 per user | session |
-| `/api/v1/x/lists/{id}/tweets` | GET | USD 0.00015 per tweet | session |
-| `/api/v1/x/users/batch` | GET | USD 0.00015 per user | session |
-| `/api/v1/x/users/search` | GET | USD 0.00015 per user | session |
-| `/api/v1/x/users/{id}/followers` | GET | USD 0.00015 per user | session |
-| `/api/v1/x/users/{id}/followers-you-know` | GET | USD 0.00015 per user | session |
-| `/api/v1/x/users/{id}/following` | GET | USD 0.00015 per user | session |
-| `/api/v1/x/users/{id}/mentions` | GET | USD 0.00015 per tweet | session |
-| `/api/v1/x/users/{id}/verified-followers` | GET | USD 0.00015 per user | session |
 
-All other endpoints (monitors, webhooks, extractions, draws, write actions, etc.) require a [subscription](/guides/billing).
+An accountless guest wallet covers 33 prepaid GET routes, including these 7. See the [guest paid-read route inventory](/guides/guest-wallets#eligible-paid-read-routes). Direct MPP payment credentials and guest keys cannot access monitors, webhooks, extractions, draws, writes, account routes, or account credential routes. API MCP cannot execute guest wallet credential routes.
 
 ## MPP vs subscription
 
-| | MPP (pay-per-use) | Subscription (USD 20/month) |
-|---|---|---|
-| **Account required** | No | Yes |
-| **API key required** | No | Yes |
-| **Payment** | Per call via Tempo (USDC) | Monthly credit/debit card |
-| **Available endpoints** | 32 X-API read-only | All endpoints |
-| **Write actions** | Not available | Post tweets, like, retweet, follow, DM, profile updates |
-| **Monitors & webhooks** | Not available | Real-time account monitoring |
-| **Extractions & draws** | Not available | Bulk data extraction, giveaway draws |
-| **Best for** | AI agents, one-off lookups, low-volume reads | Full platform access, production integrations |
+| | MPP | Guest wallet | Account |
+|---|---|---|---|
+| **Account required** | No | No | Yes |
+| **Credential** | Per-request payment credential | `paid_reads` API key | Full API key or OAuth token |
+| **Payment** | Per request via Tempo (USDC) | $10-$250 USD Stripe-hosted Payment Link | Subscription and account credits |
+| **Available endpoints** | 7 fixed-price GET operations | 33 prepaid GET routes | Full account API |
+| **Write actions** | Not available | Not available | Available with a connected X account |
+| **Monitors, webhooks, extractions, and draws** | Not available | Not available | Available |
+| **Best for** | Machine-paid requests | Prepaid reads without an account | Full platform workflows |
 
 ## Next steps
 
-<CardGroup cols={3}>
+<CardGroup cols={2}>
   <Card title="MPP quickstart" icon="rocket" href="/mpp/quickstart">
     Make your first pay-per-use API call.
   </Card>
@@ -132,6 +101,9 @@ All other endpoints (monitors, webhooks, extractions, draws, write actions, etc.
     All authentication methods including MPP headers.
   </Card>
   <Card title="Billing & usage" icon="credit-card" href="/guides/billing">
-    Subscription pricing and MPP per-call costs.
+    Subscription, guest wallet, and direct MPP pricing.
+  </Card>
+  <Card title="Guest wallets" icon="wallet-cards" href="/guides/guest-wallets">
+    Prepay 33 accountless reads with one scoped API key.
   </Card>
 </CardGroup>

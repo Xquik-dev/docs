@@ -1,7 +1,7 @@
 ---
 title: Connect AI Agents via MCP
 sidebarTitle: MCP Server
-description: Connect AI agents to Xquik API MCP v2.5.1 via Streamable HTTP
+description: Connect AI agents to Xquik API MCP v2.5.2 via Streamable HTTP
 keywords: ["MCP", "model context protocol", "AI agents", "Claude", "ChatGPT", "server setup"]
 ---
 
@@ -9,11 +9,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik API MCP v2.5.1 exposes 118 of 123 REST operations through 2 [Model Context Protocol](https://modelcontextprotocol.io) tools. Agents search a compact catalog with `explore`, then run authenticated requests with `xquik`.
+Xquik API MCP v2.5.2 exposes a credential-scoped REST catalog through 2 [Model Context Protocol](https://modelcontextprotocol.io) tools. Full account keys and OAuth tokens see 118 operations. Guest `paid_reads` keys see exactly 33 eligible GET routes.
 
 <Note>
   This page covers the API MCP server at `https://xquik.com/mcp` for
-  authenticated account actions. For read-only documentation search, use the
+  authenticated account actions and guest paid reads. For public documentation
+  search, use the
   [Docs MCP server](/mcp/docs-mcp) at `https://docs.xquik.com/mcp`.
 </Note>
 
@@ -27,7 +28,7 @@ Xquik API MCP v2.5.1 exposes 118 of 123 REST operations through 2 [Model Context
     Connect clients to `https://xquik.com/mcp`.
   </Card>
   <Card title="Server version" icon="badge-check">
-    Current API MCP server version: `2.5.1`.
+    Current API MCP server version: `2.5.2`.
   </Card>
   <Card title="Authentication" icon="key-round">
     Use an API key in `x-api-key` or OAuth 2.1 Bearer tokens.
@@ -73,8 +74,10 @@ challenge to discover the authorization metadata. API-key clients should send
 
 The MCP server supports 2 authentication methods:
 
-- **API key** (`x-api-key` header): Used by Claude Code, Cursor, VS Code, Windsurf, Codex CLI, OpenCode, and Claude Desktop. Pass your key during the MCP handshake.
+- **API key** (`x-api-key` or `Authorization: Bearer xq_your_api_key_here`): Full account keys expose 118 operations. Active guest keys expose only 33 `paid_reads` GET routes.
 - **OAuth 2.1** (Bearer token): Used by Claude.ai (web) and ChatGPT Developer Mode. OAuth handles authentication automatically via browser login. No API key needed. See [OAuth 2.1 documentation](/oauth/overview) for the complete authorization flow, token lifetimes, and implementation details.
+
+OAuth and full account API key behavior remain unchanged. A pending guest key cannot execute paid reads until verified payment activates it.
 
 ## How it works
 
@@ -82,7 +85,7 @@ The MCP server uses a **code-execution sandbox model** with 2 tools:
 
 <CardGroup cols={2}>
   <Card title="explore" icon="search">
-    Search the compact 118-operation catalog. Read-only, no network calls, no credits. Requires MCP authentication.
+    Search the authenticated catalog. Full credentials see 118 operations. Guest keys see 33 eligible GET routes. Read-only, no network calls, no credits.
   </Card>
   <Card title="xquik" icon="terminal">
     Execute authenticated API calls. Cost follows the endpoint.
@@ -98,9 +101,13 @@ The code-mode design keeps the endpoint catalog outside the client context. Both
 | `explore` | Explore Xquik API | Read-only, idempotent, closed-world, non-destructive |
 | `xquik` | Run Xquik API Calls | May mutate data, may access live services, not idempotent |
 
+For a guest `paid_reads` session, `xquik` is read-only, idempotent, and limited to live calls across the 33 eligible GET routes.
+
 ### `explore` tool
 
-Searches the compact 118-operation endpoint catalog. Free means no usage credits; the call still requires MCP authentication through an API key or OAuth Bearer token. The sandbox provides:
+Searches the 118-operation full account catalog. Free means no usage credits; the call still requires MCP authentication through an API key or OAuth Bearer token. The sandbox provides:
+
+With a guest `paid_reads` key, `spec.endpoints` contains only the 33 eligible GET read routes.
 
 ```typescript
 interface EndpointInfo {
@@ -137,24 +144,29 @@ The agent writes code like `async () => xquik.request('/api/v1/radar')` and the 
 
 ### MCP operation boundary
 
-MCP exposes 118 operations from the 123-operation REST contract. The 5 browser or session-bound operations stay outside the MCP catalog:
+The REST contract documents 126 operations. A full account key or OAuth token exposes 118 through MCP. These 8 credential or session-bound operations stay outside the executable catalog:
 
-- Create, list, or revoke API keys
+- Create, list, or revoke account API keys
 - Charge a saved payment method through quick top-up
-- Open the session-based top-up redirect route
+- Open the session-based account top-up redirect route
+- Create, poll, or top up a guest wallet
 
-Create and manage API keys in the dashboard. Call `POST /api/v1/credits/topup` only after the user explicitly requests a checkout URL. Never ask an agent to send saved-payment details or manage the credential authenticating its own MCP session.
+Guest wallet credential routes remain direct REST only. MCP cannot execute `POST /api/v1/guest-wallets`, `POST /api/v1/guest-wallets/topups`, or `GET /api/v1/guest-wallets/status`. Follow the [accountless guest wallet guide](/guides/guest-wallets) for confirmation, checkout, polling, and top-up steps.
+
+A guest `paid_reads` MCP session exposes exactly the [33 eligible paid-read routes](/guides/guest-wallets#eligible-paid-read-routes). It cannot execute mutations or noneligible routes.
+
+Never start checkout, top-up, subscription, or billing actions because another call returned `402`. Report the choices, ask the user to select an amount and option, then wait for explicit confirmation. After confirmation, MCP may execute only an account checkout action present in the full catalog. Guest wallet actions remain direct REST.
 
 ## MCP vs REST API
 
-Both the MCP server and REST API connect to the same backend, use the same data, and share the same billing.
+MCP follows REST authentication, authorization, billing, and response contracts for every exposed operation.
 
 <CardGroup cols={2}>
   <Card title="MCP Server" icon="terminal">
-    Best for AI agents, IDE integrations, and natural language workflows. Connect to `https://xquik.com/mcp` with `x-api-key` or OAuth 2.1 Bearer auth. Agents use `explore` for compact catalog search and `xquik` for authenticated execution across 118 operations.
+    Best for AI agents, IDE integrations, and natural language workflows. Full account credentials expose 118 operations. Guest keys expose 33 eligible GET reads.
   </Card>
   <Card title="REST API" icon="route">
-    Best for backend services, automation scripts, and direct programmatic access. Call `https://xquik.com/api/v1/*` with an `x-api-key` header. The REST contract documents all 123 operations and file download responses.
+    Best for backend services, automation scripts, guest wallet credential routes, and direct programmatic access. The REST contract documents all 126 operations and file download responses.
   </Card>
 </CardGroup>
 
@@ -186,7 +198,7 @@ Both the MCP server and REST API connect to the same backend, use the same data,
             "mcp-remote@latest",
             "https://xquik.com/mcp",
             "--header",
-            "x-api-key:xq_YOUR_KEY_HERE"
+            "x-api-key:xq_your_api_key_here"
           ]
         }
       }
@@ -203,7 +215,7 @@ Both the MCP server and REST API connect to the same backend, use the same data,
           "type": "http",
           "url": "https://xquik.com/mcp",
           "headers": {
-            "x-api-key": "xq_YOUR_KEY_HERE"
+            "x-api-key": "xq_your_api_key_here"
           }
         }
       }
@@ -216,7 +228,7 @@ Both the MCP server and REST API connect to the same backend, use the same data,
     ```toml
     [mcp_servers.xquik]
     url = "https://xquik.com/mcp"
-    http_headers = { "x-api-key" = "xq_YOUR_KEY_HERE" }
+    http_headers = { "x-api-key" = "xq_your_api_key_here" }
     ```
   </Tab>
 </Tabs>
@@ -233,7 +245,7 @@ Both the MCP server and REST API connect to the same backend, use the same data,
         "xquik": {
           "url": "https://xquik.com/mcp",
           "headers": {
-            "x-api-key": "xq_YOUR_KEY_HERE"
+            "x-api-key": "xq_your_api_key_here"
           }
         }
       }
@@ -250,7 +262,7 @@ Both the MCP server and REST API connect to the same backend, use the same data,
           "type": "http",
           "url": "https://xquik.com/mcp",
           "headers": {
-            "x-api-key": "xq_YOUR_KEY_HERE"
+            "x-api-key": "xq_your_api_key_here"
           }
         }
       }
@@ -266,7 +278,7 @@ Both the MCP server and REST API connect to the same backend, use the same data,
         "xquik": {
           "serverUrl": "https://xquik.com/mcp",
           "headers": {
-            "x-api-key": "xq_YOUR_KEY_HERE"
+            "x-api-key": "xq_your_api_key_here"
           }
         }
       }
@@ -283,7 +295,7 @@ Both the MCP server and REST API connect to the same backend, use the same data,
           "type": "remote",
           "url": "https://xquik.com/mcp",
           "headers": {
-            "x-api-key": "xq_YOUR_KEY_HERE"
+            "x-api-key": "xq_your_api_key_here"
           }
         }
       }
@@ -309,7 +321,7 @@ from agents.mcp import MCPServerStreamableHttp
 
 async with MCPServerStreamableHttp(
     url="https://xquik.com/mcp",
-    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    headers={"x-api-key": "xq_your_api_key_here"},
     params={},
 ) as xquik:
     # use xquik as a tool provider
@@ -418,7 +430,7 @@ Build agents with Xquik's MCP tools in your preferred framework:
 
 The [Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper) gives AI coding agents deep knowledge of the Xquik API without requiring an MCP connection. Install it to let your agent write API integrations, set up webhooks, and configure MCP connections using Xquik best practices.
 
-Works with 40+ AI coding agents including Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code, Gemini CLI, and more. The skill covers MCP tools and 123 REST API operations.
+Works with 40+ AI coding agents including Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code, Gemini CLI, and more. The skill covers MCP tools and 126 REST API operations.
 
 ```bash
 npx skills add Xquik-dev/x-twitter-scraper

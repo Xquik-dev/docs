@@ -10,7 +10,9 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 ## Start here
 
 - [Quickstart](https://docs.xquik.com/quickstart) - make the first authenticated API call.
-- [API Reference](https://docs.xquik.com/api-reference) - browse 123 OpenAPI-backed operations.
+- [API Reference](https://docs.xquik.com/api-reference) - browse 126 OpenAPI-backed operations.
+- [Guest wallets](https://docs.xquik.com/guides/guest-wallets) - fund 33 accountless GET routes through a confirmed Stripe Payment Link.
+- [Direct MPP](https://docs.xquik.com/mpp/overview) - pay per request on 7 fixed-price GET operations.
 - [SDKs](https://docs.xquik.com/sdks) - use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
 - [Tweet search export](https://docs.xquik.com/guides/tweet-search-export) - export tweets by keyword to CSV, JSON, or XLSX.
 - [Tweet replies export](https://docs.xquik.com/guides/tweet-replies-export) - export replies to CSV, JSON, or XLSX.
@@ -44,9 +46,9 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 
 ## What's covered
 
-- **REST API** - 123 operations spanning account, api-keys, monitors, events, webhooks, draws, extractions, x, trends, radar, styles, drafts, compose, x-accounts, x-write, support, and integrations.
+- **REST API** - 126 operations spanning account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
 - **Webhooks** - HMAC SHA-256 signature verification, retry semantics, payload schemas.
-- **MCP server** - Model Context Protocol integration for Claude, ChatGPT, Cursor, and other AI agents. Tool reference + setup.
+- **MCP server** - 118 full-scope operations or 33 guest `paid_reads` GET routes through Claude, ChatGPT, Cursor, and other agents.
 - **OAuth 2.1** - Authorization Code + PKCE flow, scopes, token refresh.
 - **Guides** - Workflows, error handling, rate limits, billing, trends, extraction workflow, architecture, troubleshooting, types, webhook testing, and framework integrations.
 - **SDKs** - 10 generated client libraries (TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI as Go binary, Terraform provider) with auto-pagination, retry, and typed responses.
@@ -57,7 +59,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 ## Repository layout
 
 ```
-api-reference/      123 OpenAPI operations, grouped by resource
+api-reference/      126 OpenAPI operations, grouped by resource
 guides/             Workflow, operations, and framework guides
 webhooks/           Overview + signature verification
 mcp/                MCP server overview + tool reference

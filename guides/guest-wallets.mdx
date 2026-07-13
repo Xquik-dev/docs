@@ -1,0 +1,144 @@
+---
+title: Accountless guest wallets
+description: Create and use a Stripe-funded paid-read API key without an Xquik account
+keywords: ["guest wallet", "accountless API key", "Stripe Payment Link", "paid_reads", "HTTP 401", "HTTP 402"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Guest wallets provide prepaid access to 33 eligible X read routes without an account, email address, or dashboard. The user confirms a $10-$250 USD amount, opens a Stripe-hosted Payment Link, and receives access after a verified Stripe webhook.
+
+<Warning>
+  A `401` or `402` response never creates a checkout. Show the payment choices and amount first. Create a Payment Link only after the user explicitly confirms. Never submit payment for the user.
+</Warning>
+
+## Choose an access method
+
+| Access method | Account | Credential | Coverage | Payment |
+| --- | --- | --- | --- | --- |
+| Account API key | Required | Full-scope API key | Full authenticated API, subject to the account plan | Subscription and account credits |
+| OAuth 2.1 | Required | OAuth Bearer token | Same account capabilities granted by OAuth | Subscription and account credits |
+| Guest wallet | Not required | `paid_reads` API key | Exactly 33 prepaid GET routes | $10-$250 USD Stripe-hosted Payment Link |
+| MPP | Not required | Per-request payment credential | 7 fixed-price GET operations | Per-request payment |
+
+Guest wallets do not grant write actions, connected-account reads, monitors, webhooks, extractions, draws, account management, billing management, API-key management, or OAuth access. Full account keys and OAuth behavior remain unchanged.
+
+## Create and activate a wallet
+
+<Steps>
+  <Step title="Confirm the amount">
+    Ask the user to choose and explicitly confirm a USD amount from $10 through $250. Represent it in cents as `amount_minor`.
+  </Step>
+  <Step title="Create the Payment Link">
+    Call `POST /api/v1/guest-wallets` with `Content-Type: application/json`, a cryptographically random UUID v4 `Idempotency-Key`, and the confirmed amount.
+
+    ```bash
+    idempotency_key=$(uuidgen | tr '[:upper:]' '[:lower:]')
+    response=$(curl -sS -X POST https://xquik.com/api/v1/guest-wallets \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: $idempotency_key" \
+      -d '{"amount_minor": 1000, "currency": "usd"}')
+    api_key=$(jq -r '.api_key' <<<"$response")
+    checkout_url=$(jq -r '.checkout_url' <<<"$response")
+    # Store $api_key and $idempotency_key as secrets. Give only $checkout_url to the user.
+    ```
+
+    This request creates a one-use Stripe-hosted Payment Link. It does not charge the user.
+  </Step>
+  <Step title="Store the credentials">
+    Store the returned `api_key` and the original `Idempotency-Key` in a secret manager. The key appears only in the initial response and an exact idempotent replay. No email recovery is available.
+  </Step>
+  <Step title="Give the user the Stripe URL">
+    Give only `checkout_url` to the user. The user opens and completes Stripe checkout. Pending Payment Links expire after 60 minutes.
+  </Step>
+  <Step title="Poll for verified payment">
+    After payment, poll `GET /api/v1/guest-wallets/status` every `poll_after_seconds` with the guest key. Stop when `latest_purchase.status` is no longer `pending`.
+
+    ```bash
+    curl https://xquik.com/api/v1/guest-wallets/status \
+      -H "Authorization: Bearer xq_your_guest_key_here" | jq
+    ```
+
+    The key remains inactive for paid reads until the status response reports `usable: true`. Stripe checkout completion alone is not proof of activation. Xquik activates credits only after a verified Stripe webhook.
+  </Step>
+</Steps>
+
+## Call paid read routes
+
+Send an active guest key as a Bearer credential:
+
+```bash
+curl "https://xquik.com/api/v1/x/tweets?ids=1893456789012345678,1893456789012345679" \
+  -H "Authorization: Bearer xq_your_guest_key_here" | jq
+```
+
+The `paid_reads` scope permits exactly the 33 GET routes listed below. It includes batch `GET /api/v1/x/tweets`, which accepts up to 100 tweet IDs. Every other route is unavailable.
+
+## Eligible paid-read routes
+
+Guest wallets cover these 33 prepaid GET routes:
+
+- **Tweets:** `/api/v1/x/tweets`, `/api/v1/x/tweets/{id}`, `/api/v1/x/tweets/search`, `/api/v1/x/tweets/{id}/favoriters`, `/api/v1/x/tweets/{id}/quotes`, `/api/v1/x/tweets/{id}/replies`, `/api/v1/x/tweets/{id}/retweeters`, `/api/v1/x/tweets/{id}/thread`
+- **Users:** `/api/v1/x/users/batch`, `/api/v1/x/users/search`, `/api/v1/x/users/{id}`, `/api/v1/x/users/{id}/followers`, `/api/v1/x/users/{id}/followers-you-know`, `/api/v1/x/users/{id}/following`, `/api/v1/x/users/{id}/likes`, `/api/v1/x/users/{id}/media`, `/api/v1/x/users/{id}/mentions`, `/api/v1/x/users/{id}/replies`, `/api/v1/x/users/{id}/tweets`, `/api/v1/x/users/{id}/verified-followers`
+- **Communities:** `/api/v1/x/communities/{id}/info`, `/api/v1/x/communities/{id}/members`, `/api/v1/x/communities/{id}/moderators`, `/api/v1/x/communities/{id}/tweets`, `/api/v1/x/communities/search`, `/api/v1/x/communities/tweets`
+- **Lists:** `/api/v1/x/lists/{id}/followers`, `/api/v1/x/lists/{id}/members`, `/api/v1/x/lists/{id}/tweets`
+- **Trends:** `/api/v1/trends`, `/api/v1/x/trends`
+- **Relationships:** `/api/v1/x/followers/check`
+- **Articles:** `/api/v1/x/articles/{tweetId}`
+
+Seven routes also accept [direct MPP payment](/mpp/overview#eligible-endpoints). The other 26 routes require a guest or full account credential.
+
+## Top up an active wallet
+
+When a guest read returns `402 insufficient_credits`, its `payment_options` advertises only `POST /api/v1/guest-wallets/topups`. Ask the user to choose and confirm a $10-$250 USD amount. Then create a new one-use Stripe-hosted Payment Link with the existing guest key and a new UUID v4 `Idempotency-Key`.
+
+The top-up response keeps the same wallet and key. It never returns a new key. After payment, poll the same status URL every `poll_after_seconds` until `latest_purchase.status` is no longer `pending`.
+
+See [Top up guest wallet](/api-reference/guest-wallets/topup) for the request and response contract.
+
+## Handle anonymous 401 and 402 responses
+
+The 26 non-MPP paid reads return `401` with a Bearer authentication challenge and a guest wallet creation action:
+
+```text
+HTTP/2 401
+WWW-Authenticate: Bearer realm="xquik"
+Content-Type: application/json
+```
+
+The JSON body includes `payment_options.guest_wallet.create_checkout`. That action describes the guest wallet route, amount bounds, required UUID v4 header, and returned fields. The Bearer header requests authentication. It is not a Payment challenge.
+
+The 7 [direct MPP operations](/mpp/overview#eligible-endpoints) return `402 application/problem+json` with `WWW-Authenticate: Payment` and the same guest wallet action. Complete the MPP challenge or ask the user to confirm a guest wallet amount.
+
+Do not create a guest wallet because a request returned `401` or `402`. The guest wallet action is an offer, not authorization.
+
+## Use guest keys with MCP
+
+An active guest key can authenticate the API MCP server. Its `explore` and `xquik` tools expose only the 33 eligible GET read routes. Mutations and noneligible routes are unavailable.
+
+The 3 guest credential routes remain direct REST only:
+
+- `POST /api/v1/guest-wallets`
+- `POST /api/v1/guest-wallets/topups`
+- `GET /api/v1/guest-wallets/status`
+
+MCP cannot execute these routes. It may explain the direct REST flow, but the caller must wait for user confirmation before using it. See [MCP tools](/mcp/tools) for the scope-specific catalog.
+
+## Protect wallet access
+
+- Keep `api_key` and `Idempotency-Key` out of URLs, logs, prompts, and shared output.
+- Respect `Cache-Control: no-store, private` on create, top-up, and status responses.
+- Reuse an idempotency key only for the exact same request.
+- Use `usable` and the returned status instead of inferring access from checkout state.
+- Refunds and disputes reconcile only affected-purchase credits. Unrelated credits remain usable.
+- Access pauses only during unresolved settlement risk or unrecovered liability. It resumes after resolution.
+
+## Next steps
+
+- [Create guest wallet](/api-reference/guest-wallets/create)
+- [Get guest wallet status](/api-reference/guest-wallets/status)
+- [Top up guest wallet](/api-reference/guest-wallets/topup)
+- [MPP overview](/mpp/overview)
+- [Authentication](/api-reference/authentication)

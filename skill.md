@@ -1,6 +1,6 @@
 ---
 name: Xquik
-description: Use when building integrations with X (Twitter) data, monitoring accounts for real-time events, running extractions or giveaway draws, composing algorithm-optimized tweets, or connecting AI agents via REST API, webhooks, Docs MCP, or API MCP.
+description: Use when building X data integrations, accountless paid reads, monitors, extractions, giveaway draws, tweet composition, webhooks, Docs MCP, or API MCP.
 metadata:
   mintlify-proj: xquik
   version: "1.0"
@@ -13,7 +13,7 @@ metadata:
 
 ## Product summary
 
-Xquik is a real-time X (Twitter) data platform with 123 documented REST API operations, webhooks, a Docs MCP server for read-only docs search and page retrieval, and an API MCP server for authenticated AI agent integration. Use it to extract followers, replies, retweets, and other X data; monitor accounts and keywords for real-time events; run transparent giveaway draws; compose algorithm-optimized tweets; and build X integrations. The REST API base URL is `https://xquik.com/api/v1`. Authenticate with the `x-api-key` header. Primary docs: https://docs.xquik.com
+Xquik is an X data platform with 126 documented REST operations, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover 33 prepaid GET reads. Seven fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Primary docs: https://docs.xquik.com
 
 ## When to use
 
@@ -25,6 +25,7 @@ Reach for Xquik when:
 - **Running giveaway draws**: Execute transparent, auditable random draws on tweets with public result pages.
 - **Composing tweets**: Generate algorithm-optimized tweet drafts with scoring against X ranking factors.
 - **Connecting AI agents**: Use Docs MCP for no-auth docs search and page retrieval, and API MCP for authenticated account actions.
+- **Running accountless reads**: Use a Stripe-funded guest `paid_reads` key on 33 GET routes or direct MPP on 7 fixed-price operations.
 - **Analyzing styles**: Analyze tweet styles, compare accounts, track engagement performance, or save drafts.
 - **Writing to X**: Post tweets, like, retweet, follow, send DMs, upload media, or manage community membership from connected accounts.
 - **Trending data**: Access real-time trends across 12 regions plus radar topics from Xquik's own infrastructure.
@@ -33,11 +34,12 @@ Reach for Xquik when:
 
 ### Authentication
 
-- **Header**: `x-api-key: xq_YOUR_KEY_HERE`
+- **Full account key**: Send `x-api-key: xq_your_api_key_here` or `Authorization: Bearer xq_your_api_key_here`.
+- **Guest key**: Send `Authorization: Bearer xq_your_guest_key_here`. Scope is fixed to `paid_reads`.
 - **Key format**: `xq_` prefix plus 64 hex characters
 - **Generation**: Dashboard > API Keys > Create new key
 - **Revocation**: Dashboard or `DELETE /api/v1/api-keys/{id}`
-- **OAuth 2.1**: API MCP server also supports Bearer tokens for browser-based MCP clients.
+- **OAuth 2.1**: Browser-based MCP clients keep account access granted by OAuth scopes.
 
 ### Rate limits
 
@@ -47,7 +49,7 @@ Reach for Xquik when:
 
 Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Retry only on `429` and `5xx` responses.
 
-### API endpoints (123 documented operations)
+### API endpoints (126 documented operations)
 
 - **Monitors and Events**: Create account and keyword monitors, retrieve events, and manage webhooks.
 - **Extractions**: 23 tools for bulk data extraction.
@@ -91,6 +93,8 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 - **Use the REST API** for backend services, automation scripts, interval polling, file exports, and fine-grained pagination or request control.
 - **Use Docs MCP** for AI agents that need read-only docs search and page retrieval for API parameters, examples, error codes, billing rules, webhook setup, or SDK guidance.
 - **Use API MCP** for AI agents that need authenticated Xquik account actions in Claude, ChatGPT, Cursor, VS Code, Codex, and similar clients.
+- **Use a guest wallet** for prepaid GET reads without an account. Require explicit confirmation before creating a $10-$250 USD Stripe-hosted Payment Link.
+- **Use direct MPP** for anonymous per-request payment on 7 fixed-price reads.
 - **Use webhooks** when monitor events must reach an HTTPS endpoint in real time. Add them to REST or MCP workflows when pushed events are better than polling.
 
 ## Workflows
@@ -134,17 +138,30 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 ### Connect an AI agent through MCP
 
 1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only docs search and page retrieval.
-2. Configure API MCP at `https://xquik.com/mcp` for authenticated account actions.
-3. Authenticate API MCP with an `x-api-key` header or OAuth Bearer token.
-4. Use `explore` to search 118 MCP operations and `xquik` to run authenticated requests.
+2. Configure API MCP at `https://xquik.com/mcp` for live authenticated calls.
+3. Use a full account key or OAuth token for 118 operations. Use an active guest key for 33 eligible GET routes.
+4. Use `explore` to search the scoped catalog and `xquik` to run allowed requests.
 
-API MCP v2.5.1 uses Streamable HTTP. It returns normalized snake_case fields, date-time fields as Unix seconds, structured errors, `has_more`, and `next_cursor`. Continue through empty pages while the cursor advances. Stop and report partial progress when a cursor is missing or repeats.
+API MCP v2.5.2 uses Streamable HTTP. It returns normalized snake_case fields, date-time fields as Unix seconds, structured errors, `has_more`, and `next_cursor`. Continue through empty pages while the cursor advances. Stop and report partial progress when a cursor is missing or repeats.
 
-API-key lifecycle, direct saved-payment quick top-up, and the session top-up redirect are unavailable through MCP. Manage keys in the dashboard. Call `POST /api/v1/credits/topup` only after the user explicitly requests a checkout URL.
+API-key lifecycle, saved-payment quick top-up, the account top-up redirect, and all 3 guest wallet credential routes are unavailable through MCP. Never start checkout or top-up because a call returned `401` or `402`. Ask the user to choose an amount and option, then wait for explicit confirmation.
+
+### Create an accountless guest wallet
+
+1. Ask the user to choose and confirm $10-$250 USD.
+2. Call `POST /api/v1/guest-wallets` through direct REST with the confirmed amount and a random UUID v4 `Idempotency-Key`.
+3. Store `api_key` and the idempotency key before sharing `checkout_url`.
+4. The user completes payment on Stripe. Poll status every `poll_after_seconds` until `latest_purchase.status` is no longer `pending`.
+5. Use the key only when `usable` is `true`. It can call exactly the 33 eligible paid-read GET routes.
+
+The creation request does not charge the user. The key stays inactive until a verified Stripe webhook activates it. Use `POST /api/v1/guest-wallets/topups` only after another explicit confirmation. Never execute guest credential routes through MCP.
+
+Refunds and disputes reconcile affected-purchase credits only. Unrelated credits remain usable. Access pauses only during unresolved settlement risk or unrecovered liability, then resumes.
 
 ## Common gotchas
 
 - API keys are shown once. Store them securely immediately after creation.
+- Guest wallet `Idempotency-Key` values can recover the initial key. Store them as secrets.
 - Use the lowercase `x-api-key` header.
 - Webhook secrets are returned once. Save the secret before leaving the creation response.
 - Webhook endpoints must be HTTPS.
@@ -154,7 +171,7 @@ API-key lifecycle, direct saved-payment quick top-up, and the session top-up red
 - Retry only `429` and `5xx` responses. Fix other `4xx` responses before retrying.
 - Monitor events require an active monitor before webhook delivery can occur.
 - Write actions require connected X accounts.
-- The REST API and API MCP server connect to the same backend and share the same account state.
+- Full account REST and API MCP share account state. Guest keys remain limited to wallet-backed paid reads.
 
 ## Resources
 
@@ -164,6 +181,8 @@ API-key lifecycle, direct saved-payment quick top-up, and the session top-up red
 - Docs MCP server: https://docs.xquik.com/mcp
 - API MCP server: https://docs.xquik.com/mcp/overview
 - MCP tools reference: https://docs.xquik.com/mcp/tools
+- Guest wallets: https://docs.xquik.com/guides/guest-wallets
+- Direct MPP: https://docs.xquik.com/mpp/overview
 - Error handling: https://docs.xquik.com/guides/error-handling
 - Extraction workflow: https://docs.xquik.com/guides/extraction-workflow
 - Webhook verification: https://docs.xquik.com/webhooks/verification

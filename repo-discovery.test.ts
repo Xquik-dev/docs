@@ -55,8 +55,8 @@ const REQUIRED_README_SNIPPETS = [
   'X automation',
   '[Quickstart](https://docs.xquik.com/quickstart)',
   '[API Reference](https://docs.xquik.com/api-reference)',
-  'browse 123 OpenAPI-backed operations',
-  '**REST API** - 123 operations',
+  'browse 126 OpenAPI-backed operations',
+  '**REST API** - 126 operations',
   '[SDKs](https://docs.xquik.com/sdks)',
   '[Tweet search export](https://docs.xquik.com/guides/tweet-search-export)',
   'export tweets by keyword to CSV, JSON, or XLSX',
@@ -1683,13 +1683,14 @@ const FORBIDDEN_SKILL_DECISION_GUIDANCE_SNIPPETS = [
 
 const REQUIRED_SKILL_MCP_HANDOFF_SNIPPETS = [
   '- **Connecting AI agents**: Use Docs MCP for no-auth docs search and page retrieval, and API MCP for authenticated account actions.',
-  '- **OAuth 2.1**: API MCP server also supports Bearer tokens for browser-based MCP clients.',
+  '- **OAuth 2.1**: Browser-based MCP clients keep account access granted by OAuth scopes.',
   '### Connect an AI agent through MCP',
   '1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only docs search and page retrieval.',
-  '2. Configure API MCP at `https://xquik.com/mcp` for authenticated account actions.',
-  '3. Authenticate API MCP with an `x-api-key` header or OAuth Bearer token.',
-  '4. Use `explore` to search 118 MCP operations and `xquik` to run authenticated requests.',
-  '- The REST API and API MCP server connect to the same backend and share the same account state.',
+  '2. Configure API MCP at `https://xquik.com/mcp` for live authenticated calls.',
+  '3. Use a full account key or OAuth token for 118 operations. Use an active guest key for 33 eligible GET routes.',
+  '4. Use `explore` to search the scoped catalog and `xquik` to run allowed requests.',
+  '- Full account REST and API MCP share account state. Guest keys remain limited to wallet-backed paid reads.',
+  'Refunds and disputes reconcile affected-purchase credits only. Unrelated credits remain usable.',
   '- Docs MCP server: https://docs.xquik.com/mcp',
   '- API MCP server: https://docs.xquik.com/mcp/overview',
 ] as const;
@@ -1721,7 +1722,7 @@ const FORBIDDEN_SKILL_CONFIDENTIALITY_PATTERN =
 const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'MCP server discovery metadata is available at:',
   'This page covers the API MCP server at `https://xquik.com/mcp` for',
-  'authenticated account actions. For read-only documentation search, use the',
+  'authenticated account actions and guest paid reads. For public documentation',
   '[Docs MCP server](/mcp/docs-mcp) at `https://docs.xquik.com/mcp`.',
   'https://xquik.com/.well-known/mcp.json',
   '`GET` and `POST` requests to `/.well-known/mcp.json` return the MCP registry',
@@ -1748,13 +1749,13 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   '`{ "error": "Authentication required" }`',
   'API-key clients should send',
   '`x-api-key` on the first request.',
-  'Connect to `https://xquik.com/mcp` with `x-api-key` or OAuth 2.1 Bearer auth.',
+  'Full account keys and OAuth tokens see 118 operations. Guest `paid_reads` keys see exactly 33 eligible GET routes.',
   'Write and media responses also use the MCP-normalized snake_case contract.',
   'Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `xquik.request()` results.',
   'REST and generated SDK pages may show camelCase fields such as `tweetId`, `writeActionId`, `chargedCredits`, `mediaId`, and `messageId`; keep MCP agents on snake_case when reading tool results.',
-  'Search the compact 118-operation catalog. Read-only, no network calls, no credits. Requires MCP authentication.',
+  'Search the authenticated catalog. Full credentials see 118 operations. Guest keys see 33 eligible GET routes.',
   'Free means no usage credits; the call still requires MCP authentication through an API key or OAuth Bearer token.',
-  'Search the compact 118-operation API catalog. `explore` makes no network calls and consumes no credits.',
+  'Search the authenticated API catalog. `explore` makes no network calls and consumes no credits.',
   'has_more',
   'next_cursor',
   'Pass `next_cursor` back as the `cursor` query parameter',
@@ -1876,14 +1877,14 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'poll: `/api/v1/extractions/${job.id}`',
   'export_after_complete: `/api/v1/extractions/${job.id}/export?format=json`',
   '**402 / `no_subscription` / `subscription_inactive`**',
-  'Call `POST /api/v1/subscribe` only after the user explicitly asks to continue',
+  'Ask the user to choose and confirm before calling `POST /api/v1/subscribe`.',
   '**402 / `no_credits` / `insufficient_credits`**',
-  'Call `POST /api/v1/credits/topup` only after the user explicitly asks',
-  'Direct saved-payment quick top-up is unavailable through MCP.',
+  'Full account sessions may create account checkout after confirmation.',
+  'Guest wallet creation and top-up remain direct REST after confirmation.',
   'The MCP server never starts subscriptions, checkout, top-up, or other billing mutations in response to an API error.',
-  'The REST API documents 123 operations. The MCP catalog exposes 118 across 10 categories:',
+  'The REST API documents 126 operations. The full MCP catalog exposes 118 across 10 categories:',
   '<Card title="X data reads" icon="search">',
-  '39 operations in `twitter`: tweet search, tweet and article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, followers, replies, communities, and lists.',
+  '38 operations in `twitter`: batch and single tweet lookup, tweet search, article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, followers, replies, communities, and lists.',
   '<Card title="X accounts and writes" icon="send">',
   '25 operations across `x-accounts` and `x-write`: connect accounts, retry connection issues, post tweets, like, retweet, follow, remove followers, send DMs, upload media, update profiles, and manage community membership.',
   '<Card title="Monitor billing" icon="radio">',
@@ -1953,7 +1954,7 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   'Search docs and read indexed public pages at `https://docs.xquik.com/mcp`. No auth required. Free.',
   '<Card title="API MCP Server" icon="terminal">',
   'Interact with X data at `https://xquik.com/mcp`. Use an API key or OAuth 2.1.',
-  '`explore` searches 118 operations, and `xquik` executes authenticated calls; costs follow the endpoint.',
+  'Full credentials search 118 operations. Guest `paid_reads` keys search 33',
   '## Agent route checklist',
   '<Card title="Read docs first" icon="book-open">',
   'Use Docs MCP at `https://docs.xquik.com/mcp` for public docs, API',
@@ -1986,7 +1987,7 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   'A question about how draw filters work hits the docs server.',
   'A request to run a draw hits the API server.',
   '## What gets searched',
-  'API reference (123 documented operations)',
+  'API reference (126 documented operations)',
   'Webhook documentation (overview, signature verification)',
   'MCP server setup and tools reference',
   'OAuth 2.1 documentation',
@@ -2029,10 +2030,10 @@ const REQUIRED_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS = [
   '<Card title="Search docs" icon="book-open">',
   'Connect `https://docs.xquik.com/mcp`. It is read-only and requires no auth.',
   '<Card title="Run API actions" icon="terminal">',
-  'Connect `https://xquik.com/mcp`. It requires `x-api-key` or OAuth 2.1 and exposes `explore` plus `xquik`.',
+  'Connect `https://xquik.com/mcp`. Full credentials expose 118 operations. Guest `paid_reads` keys expose 33 eligible GET routes.',
   'For docs search, add `https://docs.xquik.com/mcp`.',
-  'For account actions, get your API key from the dashboard.',
-  'Configure `https://xquik.com/mcp` with an `x-api-key` header or OAuth login.',
+  'For account actions, use a full API key or OAuth login.',
+  'For guest reads, activate a guest key through direct REST, then authenticate MCP with that key.',
   '[Docs MCP server](/mcp/docs-mcp)',
   '[MCP Server overview](/mcp/overview)',
 ] as const;
@@ -2072,8 +2073,9 @@ const FORBIDDEN_MCP_CONTRACT_SNIPPETS = [
 
 const REQUIRED_BILLING_RECOVERY_SNIPPETS = [
   '### Recover from 402',
-  '402 no_credits',
+  'An account `402` creates no checkout.',
   '402 insufficient_credits',
+  'get explicit confirmation before billing',
   'https://xquik.com/api/v1/credits',
   'https://xquik.com/api/v1/credits/topup',
   'https://xquik.com/api/v1/credits/quick-topup',
@@ -2111,7 +2113,7 @@ const REQUIRED_BILLING_MONITOR_SNIPPETS = [
   'signed webhooks',
   'Cost: 21 credits per active monitor-hour, with a 500-credit daily estimate.',
   '<Card title="Recover from 402" icon="credit-card">',
-  'Checkout top-ups start at USD 10; quick top-up charges a saved payment method for USD 10-500',
+  'Inspect `payment_options`. Ask the user to choose and confirm.',
   '### Monitor pricing',
   '<Card title="Account monitor slots" icon="users">',
   'Account monitor slots are unlimited.',
@@ -2148,34 +2150,129 @@ const REQUIRED_BILLING_MONITOR_SNIPPETS = [
   '<Card title="Article results" icon="file-text">',
   '5 credits per result. Applies to article extractions.',
   'A USD 10 top-up adds 66,666 credits',
-  'Eligible MPP read endpoints can also be paid per request without a subscription.',
+  'Account, guest, and anonymous callers receive different payment choices.',
 ] as const;
 
 const REQUIRED_BILLING_CARRYOVER_SNIPPETS = [
   '## Monthly credits & carry-over',
-  'Unused subscription credits carry over in the same balance',
   'Every paid subscription invoice adds the monthly credit grant to your account balance.',
   'Subscription credits, top-up credits, and automatic top-up credits stay in that balance until you spend them.',
   'Unused subscription credits **carry over** to the next billing period',
   'When the shared balance reaches 0, metered calls return `402 Payment Required`',
-  'a monthly credit grant is added to your balance and unused credits carry over',
   'Yes. Subscription credits and top-up credits stay in the shared balance until you spend them.',
 ] as const;
 
 const REQUIRED_BILLING_MPP_SNIPPETS = [
   '## Pay-per-use (MPP)',
-  '32 X-API read-only endpoints accept [MPP](/mpp/overview) payments.',
-  'Use [MPP overview](/mpp/overview#eligible-endpoints) for the full 32-endpoint route list.',
-  'This mobile summary keeps price bands close to billing examples.',
+  'Seven fixed-price read operations accept direct [MPP](/mpp/overview) payments.',
+  'Use [MPP overview](/mpp/overview#eligible-endpoints) for the complete 7-operation list.',
+  'Direct MPP uses fixed `charge` pricing:',
   '<Card title="USD 0.00015 units" icon="coins">',
-  'Most reads cost USD 0.00015 per call, tweet, user, or community.',
-  'Examples: `GET /x/tweets/{id}`, `GET /x/tweets/search`, `GET /x/users/{id}`, `GET /x/users/{id}/followers`, timelines, replies, quotes, communities, and lists.',
-  '<Card title="USD 0.00105 calls" icon="badge-dollar-sign">',
-  'Higher-cost flat charge intent calls: `GET /x/followers/check` and `GET /x/articles/{tweetId}`.',
+  '`GET /x/tweets/{id}`, `GET /x/users/{id}`, and `GET /x/communities/{id}/info` cost USD 0.00015 per call.',
+  '<Card title="USD 0.00075 calls" icon="badge-dollar-sign">',
+  '`GET /x/followers/check` and `GET /x/articles/{tweetId}` cost USD 0.00075 per call.',
   '<Card title="USD 0.00045 trends" icon="trending-up">',
   'Trend lookups use flat charge intent pricing: `GET /trends` and `GET /x/trends`.',
-  '<Card title="Charge vs session" icon="receipt">',
-  'Session intent endpoints deposit funds, then deduct by returned tweet, user, or community.',
+  '<Card title="Fixed charge intent" icon="receipt">',
+  'Every direct MPP operation advertises one fixed `charge` offer per request.',
+  'Guest wallets prepay the 33 eligible GET routes without an account.',
+  '`POST /api/v1/guest-wallets` creates a one-use Stripe-hosted Payment Link and returns a `paid_reads` key.',
+  'The key stays inactive until a verified Stripe webhook.',
+  'A guest `402` offers only `POST /api/v1/guest-wallets/topups`.',
+  'Anonymous non-MPP paid reads return `401` with a Bearer challenge and guest wallet action.',
+  'The 7 direct MPP reads return `402` with a Payment challenge and the same action.',
+] as const;
+
+const REQUIRED_GUEST_WALLET_GUIDE_SNIPPETS = [
+  'Guest wallets provide prepaid access to 33 eligible X read routes without an account',
+  'A `401` or `402` response never creates a checkout.',
+  'Create a Payment Link only after the user explicitly confirms.',
+  'The `paid_reads` scope permits exactly the 33 GET routes',
+  '## Eligible paid-read routes',
+  'Seven routes also accept [direct MPP payment](/mpp/overview#eligible-endpoints).',
+  'The other 26 routes require a guest or full account credential.',
+  'The 3 guest credential routes remain direct REST only:',
+  'MCP cannot execute these routes.',
+  'Refunds and disputes reconcile only affected-purchase credits. Unrelated credits remain usable.',
+  'Access pauses only during unresolved settlement risk or unrecovered liability. It resumes after resolution.',
+] as const;
+
+const REQUIRED_GUEST_WALLET_CREATE_SECURITY_SNIPPETS = [
+  'api_key=$(jq -r \'.api_key\' <<<"$response")',
+  'Store $api_key and $idempotency_key in your secret manager. Do not print them.',
+  'const apiKey = wallet.api_key;',
+  'Store apiKey and idempotencyKey in your secret manager. Do not print them.',
+] as const;
+
+const FORBIDDEN_GUEST_WALLET_CREATE_LOG_SNIPPETS = [
+  '| jq',
+  'console.log(wallet)',
+  'process.stdout.write(String(wallet.api_key)',
+] as const;
+
+const PAID_READ_REFERENCE_PAGES = [
+  'api-reference/trends/list.mdx',
+  'api-reference/x/batch-tweets.mdx',
+  'api-reference/x/batch-users.mdx',
+  'api-reference/x/check-follower.mdx',
+  'api-reference/x/community-info.mdx',
+  'api-reference/x/community-members.mdx',
+  'api-reference/x/community-moderators.mdx',
+  'api-reference/x/community-search.mdx',
+  'api-reference/x/community-tweets.mdx',
+  'api-reference/x/favoriters.mdx',
+  'api-reference/x/followers-you-know.mdx',
+  'api-reference/x/followers.mdx',
+  'api-reference/x/following.mdx',
+  'api-reference/x/get-article.mdx',
+  'api-reference/x/get-tweet.mdx',
+  'api-reference/x/get-user.mdx',
+  'api-reference/x/list-followers.mdx',
+  'api-reference/x/list-members.mdx',
+  'api-reference/x/list-tweets.mdx',
+  'api-reference/x/retweeters.mdx',
+  'api-reference/x/search-community-tweets.mdx',
+  'api-reference/x/search-tweets.mdx',
+  'api-reference/x/search-users.mdx',
+  'api-reference/x/trends.mdx',
+  'api-reference/x/tweet-quotes.mdx',
+  'api-reference/x/tweet-replies.mdx',
+  'api-reference/x/tweet-thread.mdx',
+  'api-reference/x/user-likes.mdx',
+  'api-reference/x/user-media.mdx',
+  'api-reference/x/user-mentions.mdx',
+  'api-reference/x/user-replies.mdx',
+  'api-reference/x/user-tweets.mdx',
+  'api-reference/x/verified-followers.mdx',
+] as const;
+
+const DIRECT_MPP_REFERENCE_PAGES = new Set([
+  'api-reference/trends/list.mdx',
+  'api-reference/x/check-follower.mdx',
+  'api-reference/x/community-info.mdx',
+  'api-reference/x/get-article.mdx',
+  'api-reference/x/get-tweet.mdx',
+  'api-reference/x/get-user.mdx',
+  'api-reference/x/trends.mdx',
+]);
+
+const REQUIRED_PAID_READ_REFERENCE_SNIPPETS = [
+  '<ParamField header="Authorization" type="string">',
+  '`paid_reads`',
+  '<Tab title="402 Payment required">',
+  'guest wallet',
+  'checkout',
+] as const;
+
+const REQUIRED_DIRECT_MPP_REFERENCE_SNIPPETS = [
+  'Direct [MPP](/mpp/overview):',
+  '`Payment ...`',
+  '`WWW-Authenticate: Payment` challenge',
+] as const;
+
+const REQUIRED_GUEST_ONLY_REFERENCE_SNIPPETS = [
+  '`WWW-Authenticate: Bearer`',
+  'This is not a Payment challenge.',
 ] as const;
 
 const FORBIDDEN_BILLING_CARRYOVER_SNIPPETS = [
@@ -2535,10 +2632,9 @@ const FORBIDDEN_TYPES_GUIDE_COMPLETENESS_OVERCLAIMS = [
 
 const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   'description: Recover from Xquik API error codes and rate limits',
-  'Every error includes an `error` code.',
-  'Use it to choose recovery.',
+  'Use each `error` code to choose recovery.',
   'post tweet status',
-  'Start with the HTTP family, then apply the recovery rule.',
+  'Start with the HTTP family. Retry only when a card says so.',
   '<Card title="400 request validation" icon="circle-alert">',
   '`invalid_json`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`',
   '<Card title="402 billing and credits" icon="credit-card">',
@@ -4382,7 +4478,6 @@ const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   'Use `GET /api/v1/x/users/{id}/verified-followers` when you only need verified followers.',
   '1 credit per result returned',
   '`402 insufficient_credits`',
-  'USD 0.00015 per user returned',
 ] as const;
 
 const FORBIDDEN_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS = [
@@ -4447,7 +4542,6 @@ const REQUIRED_FOLLOWING_API_HANDOFF_SNIPPETS = [
   '<Card title="Saved exports"',
   '1 credit per user returned',
   '`402 insufficient_credits`',
-  'USD 0.00015 per user returned',
 ] as const;
 
 const FORBIDDEN_FOLLOWING_API_RAW_OUTPUT_SNIPPETS = [
@@ -4973,7 +5067,6 @@ const REQUIRED_VERIFIED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '<Card title="Saved exports"',
   '1 credit per user returned',
   '`402 insufficient_credits`',
-  'USD 0.00015 per user returned',
 ] as const;
 
 const FORBIDDEN_VERIFIED_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS = [
@@ -5036,7 +5129,6 @@ const REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS = [
   '<Card title="DM handoff"',
   '1 credit per user returned',
   '`402 insufficient_credits`',
-  'USD 0.00015 per user returned',
 ] as const;
 
 const FORBIDDEN_FOLLOWERS_YOU_KNOW_API_RAW_OUTPUT_SNIPPETS = [
@@ -7059,7 +7151,7 @@ const REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS = [
 
 const REQUIRED_ARCHITECTURE_COMPONENT_SNIPPETS = [
   '<Card title="REST API" icon="braces">',
-  '123 documented operations at `https://xquik.com/api/v1/*`',
+  '126 documented operations at `https://xquik.com/api/v1/*`',
   '<Card title="MCP server" icon="bot">',
   '2 tools, `explore` and `xquik`, at `https://xquik.com/mcp`',
   '<Card title="Dashboard" icon="layout-dashboard">',
@@ -9065,7 +9157,7 @@ const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
   'Hermes Tweet is the native Hermes Agent plugin for using Xquik as a structured X automation toolset.',
   'hermes plugins install Xquik-dev/hermes-tweet --enable',
   'uv pip install --python ~/.hermes/hermes-agent/venv/bin/python hermes-tweet',
-  'The current package version is `0.1.6`.',
+  'The current package version is `0.1.7`.',
   'The plugin name is `hermes-tweet`, and the Python entry point is `hermes-tweet = hermes_tweet`.',
   '<Card title="tweet_explore" icon="search">',
   'Search the bundled Xquik endpoint catalog without making an API call.',
@@ -9101,7 +9193,7 @@ const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
   'Return tweetId for confirmed posts, writeActionId for pending posts, and mediaId plus messageId for DMs.',
   'Keep full DM bodies out of shared outputs.',
   '`tweet_action` stays hidden or disabled unless `HERMES_TWEET_ENABLE_ACTIONS=true`.',
-  'Hermes Tweet includes 100 agent-callable Xquik endpoints generated from the OpenAPI contract, plus 31 MPP-tagged read endpoints in the bundled catalog.',
+  'Hermes Tweet includes 106 agent-callable Xquik endpoints generated from the OpenAPI contract. The catalog includes 7 MPP-tagged read endpoints at fixed prices.',
 ] as const;
 
 const REQUIRED_TWEETCLAW_GUIDE_SNIPPETS = [
@@ -9110,7 +9202,8 @@ const REQUIRED_TWEETCLAW_GUIDE_SNIPPETS = [
   'openclaw plugins install @xquik/tweetclaw@1.6.31 --pin',
   '`@xquik/tweetclaw` is the official package. The plugin id is `tweetclaw`.',
   'The current published npm version is `1.6.31`, and the current source-truth version is `1.6.32`.',
-  'MPP lets TweetClaw call 31 read-only X API endpoints without an Xquik account or API key.',
+  'MPP lets TweetClaw call 7 read-only X API endpoints at fixed prices without an Xquik account or API key.',
+  'Use a guest `paid_reads` key when the workflow needs the broader 33-route prepaid catalog.',
   '<Card title="explore" icon="search">',
   'Search the bundled Xquik endpoint catalog and inspect parameters.',
   '<Card title="tweetclaw" icon="terminal">',
@@ -10362,7 +10455,7 @@ const FORBIDDEN_PUBLIC_CARD_ICON_SNIPPETS = [
   },
 ] as const;
 
-const EXPECTED_OPENAPI_OPERATION_COUNT = 123;
+const EXPECTED_OPENAPI_OPERATION_COUNT = 126;
 
 const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
   ['100+', 'REST', 'API', 'endpoints'].join(' '),
@@ -10375,12 +10468,23 @@ const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
   ['118', 'documented', 'operations'].join(' '),
   ['118', 'documented', 'REST', 'API', 'operations'].join(' '),
   ['118', 'endpoint', 'pages'].join(' '),
+  ['123', 'REST', 'operations'].join(' '),
+  ['123', 'REST', 'API', 'operations'].join(' '),
+  ['123', 'REST', 'endpoints'].join(' '),
+  ['123', 'documented', 'operations'].join(' '),
+  ['123', 'documented', 'REST', 'operations'].join(' '),
   ['31', 'pay-per-use'].join(' '),
   ['31', 'read-only', 'endpoints'].join(' '),
   ['31', 'X-API', 'endpoints'].join(' '),
   ['31', 'MPP-eligible'].join(' '),
   ['31', 'pay-per-call'].join(' '),
   'full list of 31 endpoints',
+  ['32', 'pay-per-use'].join(' '),
+  ['32', 'read-only', 'endpoints'].join(' '),
+  ['32', 'X-API', 'endpoints'].join(' '),
+  ['32', 'MPP-eligible'].join(' '),
+  ['32', 'pay-per-call'].join(' '),
+  'full list of 32 endpoints',
 ] as const;
 
 const MAX_LLMS_TXT_CHARS = 48_000;
@@ -11675,6 +11779,71 @@ describe('repository discovery', (): void => {
               : [],
         ),
       ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the guest wallet boundary and settlement invariant explicit', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/guest-wallets.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Guest wallet guide',
+        REQUIRED_GUEST_WALLET_GUIDE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps guest wallet creation secrets out of example output', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/guest-wallets/create.mdx',
+      'utf8',
+    );
+
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Create guest wallet docs',
+        REQUIRED_GUEST_WALLET_CREATE_SECURITY_SNIPPETS,
+      ),
+      ...FORBIDDEN_GUEST_WALLET_CREATE_LOG_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Create guest wallet docs can print the guest key with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
+  });
+
+  it('keeps guest paid reads separate from direct MPP operations', (): void => {
+    expect.assertions(1);
+
+    expect(
+      PAID_READ_REFERENCE_PAGES.flatMap((file): readonly DiscoveryFinding[] => {
+        const source = readFileSync(file, 'utf8');
+        return [
+          ...collectSnippetFindings(
+            source,
+            file,
+            REQUIRED_PAID_READ_REFERENCE_SNIPPETS,
+          ),
+          ...collectSnippetFindings(
+            source,
+            file,
+            DIRECT_MPP_REFERENCE_PAGES.has(file)
+              ? REQUIRED_DIRECT_MPP_REFERENCE_SNIPPETS
+              : REQUIRED_GUEST_ONLY_REFERENCE_SNIPPETS,
+          ),
+        ];
+      }),
     ).toStrictEqual([]);
   });
 
@@ -14653,7 +14822,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Hermes Tweet guide aligned with the current plugin scope', (): void => {
-    expect.assertions(4);
+    expect.assertions(5);
 
     const source = readFileSync('guides/hermes-tweet.mdx', 'utf8');
 
@@ -14665,7 +14834,8 @@ describe('repository discovery', (): void => {
       ),
     ).toStrictEqual([]);
     expect(source).not.toContain('The current package version is `0.1.5`');
-    expect(source).not.toContain('Hermes Tweet includes 99');
+    expect(source).not.toContain('The current package version is `0.1.6`');
+    expect(source).not.toContain('Hermes Tweet includes 100');
     expect(source).not.toContain('tweet_action` stays enabled');
   });
 

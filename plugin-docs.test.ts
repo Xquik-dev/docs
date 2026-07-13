@@ -208,7 +208,7 @@ describe('Plugin docs', (): void => {
       '`plugins.entries.tweetclaw.config.apiKey`.',
       '<Card title="MPP Setup Fails" icon="wallet">',
       'Install `mppx` and `viem`, fund the MPP account, and call only',
-      'MPP-eligible read endpoints.',
+      'the 7 direct MPP operations.',
       '<Card title="Monitor Alerts Missing" icon="radio">',
       'Set `pollingEnabled` to `true` and keep `pollingInterval` at 60 seconds or',
       'higher.',

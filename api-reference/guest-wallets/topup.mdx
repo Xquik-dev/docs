@@ -1,0 +1,124 @@
+---
+title: "Top up guest wallet"
+description: "Create another $10-$250 USD Stripe-hosted Payment Link for a guest paid-read key"
+api: "POST /guest-wallets/topups"
+keywords: ["guest wallet", "top-up", "Stripe Payment Link", "paid_reads", "credits"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Add credits to an existing guest wallet. The wallet keeps the same `paid_reads` key. This endpoint creates a one-use Stripe-hosted Payment Link only after the user confirms the amount. It does not charge the user.
+
+<Warning>
+  Never call this endpoint automatically after a `402`. Show the available option and amount, then wait for explicit user confirmation.
+</Warning>
+
+<CodeGroup>
+  ```bash cURL
+  idempotency_key=$(uuidgen | tr '[:upper:]' '[:lower:]')
+  curl -X POST https://xquik.com/api/v1/guest-wallets/topups \
+    -H "Authorization: Bearer xq_your_guest_key_here" \
+    -H "Content-Type: application/json" \
+    -H "Idempotency-Key: $idempotency_key" \
+    -d '{"amount_minor": 2500, "currency": "usd"}' | jq
+  ```
+</CodeGroup>
+
+Keep the current guest key and store the new `Idempotency-Key` as a secret. Give only `checkout_url` to the user. After payment, poll `status_url` every `poll_after_seconds` with the same key. Stop when `latest_purchase.status` is no longer `pending`. Use `usable` to decide whether paid reads can run.
+
+## Headers
+
+<ParamField header="Authorization" type="string" required>
+  Send the guest key as `Bearer xq_your_guest_key_here`.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+<ParamField header="Idempotency-Key" type="string" required>
+  A new cryptographically random UUID v4. Reuse it only for an exact retry of this top-up request.
+</ParamField>
+
+## Body
+
+<ParamField body="amount_minor" type="integer" required>
+  Confirmed USD amount in cents. Minimum `1000` and maximum `25000`.
+</ParamField>
+
+<ParamField body="currency" type="string" required>
+  Must be `usd`.
+</ParamField>
+
+## Response
+
+<ResponseField name="account_required" type="boolean">Always `false`.</ResponseField>
+<ResponseField name="amount" type="object">Confirmed amount in minor units and `usd` currency.</ResponseField>
+<ResponseField name="checkout_url" type="string">One-use Stripe-hosted Payment Link for the user to open.</ResponseField>
+<ResponseField name="credits" type="string">Credits to grant after verified payment.</ResponseField>
+<ResponseField name="expires_at" type="string">Pending Payment Link expiry.</ResponseField>
+<ResponseField name="instructions" type="string">Required user interaction and polling guidance.</ResponseField>
+<ResponseField name="purchase_id" type="string">Guest purchase ID.</ResponseField>
+<ResponseField name="status_url" type="string">Guest wallet status URL.</ResponseField>
+<ResponseField name="poll_after_seconds" type="integer">Minimum polling delay. Always `2` while pending.</ResponseField>
+<ResponseField name="requires_user_interaction" type="boolean">Always `true`.</ResponseField>
+<ResponseField name="status" type="string">Initial top-up status. Normally `pending`.</ResponseField>
+<ResponseField name="wallet_id" type="string">Existing guest wallet ID.</ResponseField>
+
+<Tabs>
+  <Tab title="201 Created">
+    ```json
+    {
+      "account_required": false,
+      "amount": { "amount_minor": 2500, "currency": "usd" },
+      "checkout_url": "https://buy.stripe.com/example",
+      "credits": "166666",
+      "expires_at": "2026-07-13T13:00:00.000Z",
+      "instructions": "Give checkout_url to the user. They must complete payment on Stripe. Never submit payment for them. After payment, poll status_url every poll_after_seconds until latest_purchase.status is no longer pending.",
+      "poll_after_seconds": 2,
+      "purchase_id": "gp_example",
+      "requires_user_interaction": true,
+      "status": "pending",
+      "status_url": "https://xquik.com/api/v1/guest-wallets/status",
+      "wallet_id": "gw_example"
+    }
+    ```
+
+    This response never returns a new API key.
+  </Tab>
+  <Tab title="400 Invalid input">
+    Check the UUID v4 header, amount, currency, JSON, and request fields.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    The guest key is missing or invalid.
+  </Tab>
+  <Tab title="409 Idempotency conflict">
+    The same `Idempotency-Key` was used for a different request.
+  </Tab>
+  <Tab title="410 Checkout unavailable">
+    The checkout expired or can no longer be used.
+  </Tab>
+  <Tab title="413 Request too large">
+    Reduce the request body, then retry with the same `Idempotency-Key`.
+  </Tab>
+  <Tab title="415 Unsupported media type">
+    Send `Content-Type: application/json`.
+  </Tab>
+  <Tab title="423 Wallet unavailable">
+    The wallet is unavailable. Check guest wallet status before taking another action.
+  </Tab>
+  <Tab title="429 Rate limited">
+    Wait for `Retry-After` before retrying the same request.
+  </Tab>
+  <Tab title="503 Checkout unavailable">
+    Checkout is temporarily unavailable. Retry with the same `Idempotency-Key`.
+  </Tab>
+</Tabs>
+
+The response sends `Cache-Control: no-store, private`. An exact replay also sends `Idempotent-Replayed: true`.
+
+<Note>
+  **Related:** [Guest wallet guide](/guides/guest-wallets) · [Create guest wallet](/api-reference/guest-wallets/create) · [Get guest wallet status](/api-reference/guest-wallets/status)
+</Note>

@@ -1,0 +1,145 @@
+---
+title: "Create guest wallet"
+description: "Create a $10-$250 USD Stripe-hosted Payment Link and accountless paid-read key"
+api: "POST /guest-wallets"
+keywords: ["guest wallet", "accountless", "Stripe Payment Link", "paid_reads", "API key"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Create a prepaid read wallet without an account, email address, or dashboard. This endpoint creates a one-use Stripe-hosted Payment Link after the user confirms a USD amount. It does not charge the user.
+
+<Warning>
+  Ask the user to confirm the amount before calling this endpoint. Give the returned `checkout_url` to the user. Never open, submit, or complete the payment for them.
+</Warning>
+
+<CodeGroup>
+  ```bash cURL
+  idempotency_key=$(uuidgen | tr '[:upper:]' '[:lower:]')
+  response=$(curl -sS -X POST https://xquik.com/api/v1/guest-wallets \
+    -H "Content-Type: application/json" \
+    -H "Idempotency-Key: $idempotency_key" \
+    -d '{"amount_minor": 1000, "currency": "usd"}')
+  api_key=$(jq -r '.api_key' <<<"$response")
+  checkout_url=$(jq -r '.checkout_url' <<<"$response")
+  wallet_id=$(jq -r '.wallet_id' <<<"$response")
+  # Store $api_key and $idempotency_key in your secret manager. Do not print them.
+  printf 'Created guest wallet %s. Open %s\n' "$wallet_id" "$checkout_url"
+  ```
+
+  ```javascript Node.js
+  import { randomUUID } from "node:crypto";
+
+  const idempotencyKey = randomUUID();
+  const response = await fetch("https://xquik.com/api/v1/guest-wallets", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
+    },
+    body: JSON.stringify({ amount_minor: 1000, currency: "usd" }),
+  });
+  const wallet = await response.json();
+  const apiKey = wallet.api_key;
+  // Store apiKey and idempotencyKey in your secret manager. Do not print them.
+  process.stdout.write(String(wallet.checkout_url) + "\n");
+  ```
+</CodeGroup>
+
+Store both `api_key` and the original `Idempotency-Key` as secrets. An exact replay can return the same response, including the key. No email recovery is available.
+
+Give only `checkout_url` to the user. After payment, poll `status_url` every `poll_after_seconds` with the guest key. Stop when `latest_purchase.status` is no longer `pending`. Do not call paid reads until `usable` is `true`.
+
+## Headers
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+<ParamField header="Idempotency-Key" type="string" required>
+  A cryptographically random UUID v4. Reuse it only for an exact retry of the same amount. Store it as a secret because it can recover the initial key.
+</ParamField>
+
+## Body
+
+<ParamField body="amount_minor" type="integer" required>
+  Confirmed USD amount in cents. Minimum `1000` and maximum `25000`.
+</ParamField>
+
+<ParamField body="currency" type="string" required>
+  Must be `usd`.
+</ParamField>
+
+## Response
+
+<ResponseField name="account_required" type="boolean">Always `false`.</ResponseField>
+<ResponseField name="amount" type="object">Confirmed amount in minor units and `usd` currency.</ResponseField>
+<ResponseField name="checkout_url" type="string">One-use Stripe-hosted Payment Link for the user to open.</ResponseField>
+<ResponseField name="api_key" type="string">Guest key returned on initial creation and exact idempotent replay. Store it as a secret.</ResponseField>
+<ResponseField name="authorization" type="object">Required Bearer header and scheme.</ResponseField>
+<ResponseField name="credential_notice" type="string">One-time credential storage guidance.</ResponseField>
+<ResponseField name="status_url" type="string">API URL to poll with the guest key.</ResponseField>
+<ResponseField name="poll_after_seconds" type="integer">Minimum polling delay. Always `2` for a pending purchase.</ResponseField>
+<ResponseField name="requires_user_interaction" type="boolean">Always `true`.</ResponseField>
+<ResponseField name="instructions" type="string">Required user interaction and polling guidance.</ResponseField>
+<ResponseField name="purchase_id" type="string">Guest purchase ID.</ResponseField>
+<ResponseField name="status" type="string">Initial purchase status. Normally `pending`.</ResponseField>
+<ResponseField name="expires_at" type="string">Pending Payment Link expiry. New links expire after 60 minutes.</ResponseField>
+<ResponseField name="credits" type="string">Credits to grant after verified payment.</ResponseField>
+<ResponseField name="wallet_id" type="string">Guest wallet ID.</ResponseField>
+
+<Tabs>
+  <Tab title="201 Created">
+    ```json
+    {
+      "account_required": false,
+      "amount": { "amount_minor": 1000, "currency": "usd" },
+      "api_key": "xq_example_returned_once",
+      "authorization": { "header": "Authorization", "scheme": "Bearer" },
+      "checkout_url": "https://buy.stripe.com/example",
+      "credential_notice": "Store api_key and the Idempotency-Key securely before sharing checkout_url. No email recovery is available.",
+      "credits": "66666",
+      "expires_at": "2026-07-13T13:00:00.000Z",
+      "instructions": "Give checkout_url to the user. They must complete payment on Stripe. Never submit payment for them. After payment, poll status_url every poll_after_seconds until latest_purchase.status is no longer pending.",
+      "poll_after_seconds": 2,
+      "purchase_id": "gp_example",
+      "requires_user_interaction": true,
+      "status": "pending",
+      "status_url": "https://xquik.com/api/v1/guest-wallets/status",
+      "wallet_id": "gw_example"
+    }
+    ```
+  </Tab>
+  <Tab title="400 Invalid input">
+    Check the UUID v4 header, amount, currency, JSON, and request fields.
+  </Tab>
+  <Tab title="409 Idempotency conflict">
+    The same `Idempotency-Key` was used with a different amount or request. Generate a new UUID v4 after the user confirms the new request.
+  </Tab>
+  <Tab title="410 Checkout unavailable">
+    The pending checkout expired or can no longer be used. Ask the user to confirm before creating a new wallet.
+  </Tab>
+  <Tab title="413 Request too large">
+    Reduce the request body, then retry with the same `Idempotency-Key`.
+  </Tab>
+  <Tab title="415 Unsupported media type">
+    Send `Content-Type: application/json`.
+  </Tab>
+  <Tab title="423 Wallet unavailable">
+    The wallet is unavailable. Do not retry payment automatically.
+  </Tab>
+  <Tab title="429 Rate limited">
+    Wait for `Retry-After` before retrying the same request.
+  </Tab>
+  <Tab title="503 Checkout unavailable">
+    Checkout is temporarily unavailable. Retry with the same `Idempotency-Key`.
+  </Tab>
+</Tabs>
+
+The response sends `Cache-Control: no-store, private`. An exact replay also sends `Idempotent-Replayed: true`.
+
+<Note>
+  **Related:** [Guest wallet guide](/guides/guest-wallets) · [Get guest wallet status](/api-reference/guest-wallets/status) · [Top up guest wallet](/api-reference/guest-wallets/topup)
+</Note>

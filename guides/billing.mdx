@@ -1,14 +1,14 @@
 ---
 title: X API pricing, credits & billing
-description: Subscription tiers, credit carry-over, per-operation costs, monitor tweets pricing, credit top-ups, and MPP pay-per-use for the Xquik API
-keywords: ["X API pricing", "Twitter API pricing", "subscription", "credits", "unused credits carry over", "monitor tweets pricing", "real-time tweet monitor cost", "tweet alerts cost", "tweet search cost", "follower export cost", "top-up", "MPP pay-per-use"]
+description: Subscription tiers, guest wallets, credit carry-over, per-operation costs, top-ups, and MPP pay-per-use for the Xquik API
+keywords: ["X API pricing", "Twitter API pricing", "subscription", "guest wallet", "credits", "unused credits carry over", "monitor tweets pricing", "real-time tweet monitor cost", "tweet alerts cost", "tweet search cost", "follower export cost", "top-up", "MPP pay-per-use"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik uses a flat subscription model with a monthly credit grant for authenticated API usage. Unused subscription credits carry over in the same balance, and metered reads, writes, extractions, draws, media uploads, and active instant monitors spend from that balance. Some account, webhook, stored monitor, stored event, and credit-management endpoints are free. Eligible MPP read endpoints can also be paid per request without a subscription.
+Account workflows use a subscription and shared credit balance. Accountless guest wallets prepay 33 eligible GET routes through Stripe. Anonymous MPP callers can pay per request on 7 fixed-price operations.
 
 ## Subscription
 
@@ -31,7 +31,7 @@ Higher tiers give you more credits at a lower per-credit cost. PAYG credits cost
 
 All tiers support unlimited monitor slots. Active instant monitors cost 21 credits per hour and check every 1 second. Event and webhook deliveries are included in active monitor billing.
 
-Subscribe from the [dashboard](https://xquik.com). Your subscription activates immediately and renews monthly. An active subscription is required for authenticated metered API access. MPP read endpoints are the separate pay-per-use path.
+Subscribe from the [dashboard](https://xquik.com). Your subscription activates immediately and renews monthly. An active subscription is required for full authenticated metered API access. Guest wallets and MPP are separate accountless read paths.
 
 ### Pick a billing path by job
 
@@ -54,7 +54,7 @@ Use these cards when you need to estimate a real X API task before you run it:
     Use [account and keyword monitors](/api-reference/monitors/create) for tweet alerts and signed webhooks. Cost: 21 credits per active monitor-hour, with a 500-credit daily estimate.
   </Card>
   <Card title="Recover from 402" icon="credit-card">
-    Use [`GET /credits`](/api-reference/credits/get), [checkout top-up](/api-reference/credits/topup), or [quick top-up](/api-reference/credits/quick-topup). Checkout top-ups start at USD 10; quick top-up charges a saved payment method for USD 10-500.
+    Inspect `payment_options`. Ask the user to choose and confirm. Account, guest, and anonymous callers receive different payment choices.
   </Card>
 </CardGroup>
 
@@ -189,9 +189,9 @@ The following do not consume credits: reading and managing stored monitor record
 
 ## Credit top-ups
 
-If you need more credits beyond your current balance, purchase additional credits from the dashboard:
+Ask the user to confirm before creating account checkout or charging a saved payment method.
 
-- Use the [top-up endpoint](/api-reference/credits/topup) to redirect to checkout
+- Use the [top-up endpoint](/api-reference/credits/topup) to create a checkout redirect after confirmation
 - Use the [top-up status endpoint](/api-reference/credits/topup-status) to poll checkout completion
 - Use the [quick top-up endpoint](/api-reference/credits/quick-topup) to instantly charge your saved payment method
 - Configure automatic top-up from the dashboard. `GET /credits` and `GET /account` return the enabled status, dollar amount, and trigger threshold.
@@ -202,13 +202,13 @@ If you need more credits beyond your current balance, purchase additional credit
 
 ### Recover from 402
 
-When a metered call returns `402 no_credits` or `402 insufficient_credits`, keep the failed request body, top up, then retry the same metered call.
+An account `402` creates no checkout. Keep the failed request, inspect `payment_options`, and get explicit confirmation before billing.
 
 1. Check the current balance:
 
 ```bash
 curl -s https://xquik.com/api/v1/credits \
-  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+  -H "x-api-key: xq_your_api_key_here" | jq
 ```
 
 ```json
@@ -222,26 +222,27 @@ curl -s https://xquik.com/api/v1/credits \
 }
 ```
 
-2. Create a checkout top-up when no saved payment method is available:
+2. After confirmation, create a checkout top-up when no saved payment method is available:
 
 ```bash
 curl -s -X POST https://xquik.com/api/v1/credits/topup \
-  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "x-api-key: xq_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{"dollars": 10}' | jq
 ```
 
 ```json
 {
-  "url": "https://xquik.com/billing/checkout/session"
+  "url": "https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_session_id",
+  "redirect_url": "https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_session_id"
 }
 ```
 
-3. Use quick top-up only when the account already has a saved payment method:
+3. After confirmation, use quick top-up only when the account already has a saved payment method:
 
 ```bash
 curl -s -X POST https://xquik.com/api/v1/credits/quick-topup \
-  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "x-api-key: xq_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{"dollars": 25}' | jq
 ```
@@ -258,35 +259,32 @@ A USD 25 quick top-up adds 166,666 credits at USD 0.00015 per credit, rounded do
 
 Only the `charged` quick top-up outcome grants credits. If quick top-up returns `no_payment_method`, create a checkout top-up instead. If it returns `requires_action`, complete the payment confirmation flow before retrying the metered API call.
 
+## Accountless guest wallets
+
+Guest wallets prepay the 33 eligible GET routes without an account. After the user confirms $10-$250 USD, `POST /api/v1/guest-wallets` creates a one-use Stripe-hosted Payment Link and returns a `paid_reads` key. Creation does not charge. The key stays inactive until a verified Stripe webhook. A guest `402` offers only `POST /api/v1/guest-wallets/topups`. See the [guest wallet guide](/guides/guest-wallets).
+
 ## Pay-per-use (MPP)
 
-32 X-API read-only endpoints accept [MPP](/mpp/overview) payments. No subscription required. Media downloads require API key or session-cookie auth because they create account-tied gallery links.
+Seven fixed-price read operations accept direct [MPP](/mpp/overview) payments. No subscription is required. Media downloads require full account authentication because they create account-tied gallery links.
 
 ### MPP per-call pricing
 
-Use [MPP overview](/mpp/overview#eligible-endpoints) for the full 32-endpoint route list. This mobile summary keeps price bands close to billing examples.
+Use [MPP overview](/mpp/overview#eligible-endpoints) for the complete 7-operation list. Direct MPP uses fixed `charge` pricing:
 
 <CardGroup cols={2}>
   <Card title="USD 0.00015 units" icon="coins">
-    Most reads cost USD 0.00015 per call, tweet, user, or community. Examples: `GET /x/tweets/{id}`, `GET /x/tweets/search`, `GET /x/users/{id}`, `GET /x/users/{id}/followers`, timelines, replies, quotes, communities, and lists.
+    `GET /x/tweets/{id}`, `GET /x/users/{id}`, and `GET /x/communities/{id}/info` cost USD 0.00015 per call.
   </Card>
-  <Card title="USD 0.00105 calls" icon="badge-dollar-sign">
-    Higher-cost flat charge intent calls: `GET /x/followers/check` and `GET /x/articles/{tweetId}`.
+  <Card title="USD 0.00075 calls" icon="badge-dollar-sign">
+    `GET /x/followers/check` and `GET /x/articles/{tweetId}` cost USD 0.00075 per call.
   </Card>
   <Card title="USD 0.00045 trends" icon="trending-up">
     Trend lookups use flat charge intent pricing: `GET /trends` and `GET /x/trends`.
   </Card>
-  <Card title="Charge vs session" icon="receipt">
-    Charge intent endpoints bill once per call. Session intent endpoints deposit funds, then deduct by returned tweet, user, or community.
+  <Card title="Fixed charge intent" icon="receipt">
+    Every direct MPP operation advertises one fixed `charge` offer per request.
   </Card>
 </CardGroup>
-
-> **Note:** With a subscription, a monthly credit grant is added to your balance and unused credits carry over. With MPP, every call is billed individually with no monthly commitment.
-
-Related MPP pages:
-
-- [MPP overview](/mpp/overview): Protocol details, eligible endpoints, and comparison with subscriptions.
-- [MPP quickstart](/mpp/quickstart): Make your first pay-per-use API call.
 
 ## Checking usage
 
@@ -294,7 +292,7 @@ Call `GET /api/v1/account` to see your credit balance, lifetime usage, and monit
 
 ```bash
 curl -s https://xquik.com/api/v1/account \
- -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+ -H "x-api-key: xq_your_api_key_here" | jq
 ```
 
 **Response:**
@@ -332,7 +330,7 @@ The `creditInfo.balance` field shows how many credits remain. The automatic top-
 
 ### What happens when I run out of credits?
 
-Metered calls return `402 Payment Required`. Reading stored monitor events, webhooks, and account endpoints continue working. Active monitors may pause when hourly billing cannot be charged. [Top up credits](/api-reference/credits/topup) from the dashboard to continue.
+Account and guest credit failures return `402` with credential-specific payment choices. Anonymous non-MPP paid reads return `401` with a Bearer challenge and guest wallet action. The 7 direct MPP reads return `402` with a Payment challenge and the same action. No error creates checkout or charges a payment method.
 
 ### Do unused credits carry over?
 
@@ -348,7 +346,7 @@ Yes. Changes take effect at the end of the current billing period.
 
 ### Can I top up credits without a checkout redirect?
 
-Yes. Use the [quick top-up endpoint](/api-reference/credits/quick-topup) to instantly charge your saved payment method. If no card is on file, use the standard [top-up endpoint](/api-reference/credits/topup), which redirects to checkout.
+Account users can explicitly confirm a [quick top-up](/api-reference/credits/quick-topup) that charges a saved payment method. Guest wallets always use a Stripe-hosted Payment Link through [guest top-up](/api-reference/guest-wallets/topup).
 
 ## Next steps
 
