@@ -13,7 +13,7 @@ metadata:
 
 ## Product summary
 
-Xquik is a real-time X (Twitter) data platform with 120 documented REST API operations, webhooks, a Docs MCP server for read-only docs search and page retrieval, and an API MCP server for authenticated AI agent integration. Use it to extract followers, replies, retweets, and other X data; monitor accounts and keywords for real-time events; run transparent giveaway draws; compose algorithm-optimized tweets; and build X integrations. The REST API base URL is `https://xquik.com/api/v1`. Authenticate with the `x-api-key` header. Primary docs: https://docs.xquik.com
+Xquik is a real-time X (Twitter) data platform with 123 documented REST API operations, webhooks, a Docs MCP server for read-only docs search and page retrieval, and an API MCP server for authenticated AI agent integration. Use it to extract followers, replies, retweets, and other X data; monitor accounts and keywords for real-time events; run transparent giveaway draws; compose algorithm-optimized tweets; and build X integrations. The REST API base URL is `https://xquik.com/api/v1`. Authenticate with the `x-api-key` header. Primary docs: https://docs.xquik.com
 
 ## When to use
 
@@ -47,7 +47,7 @@ Reach for Xquik when:
 
 Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Retry only on `429` and `5xx` responses.
 
-### API endpoints (120 documented operations)
+### API endpoints (123 documented operations)
 
 - **Monitors and Events**: Create account and keyword monitors, retrieve events, and manage webhooks.
 - **Extractions**: 23 tools for bulk data extraction.
@@ -65,7 +65,9 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 
 **User-based**: `follower_explorer`, `following_explorer`, `verified_follower_explorer`, `mention_extractor`, `post_extractor`, `user_likes`, `user_media`
 
-**Community**: `community_extractor`, `community_moderator_explorer`, `community_post_extractor`, `community_search`
+**Community target** (`targetCommunityId`): `community_extractor`, `community_moderator_explorer`, `community_post_extractor`, `community_search`
+
+`community_search` also requires `searchQuery`. It searches matching posts within the selected community.
 
 **List**: `list_member_extractor`, `list_post_extractor`, `list_follower_explorer`
 
@@ -134,7 +136,9 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only docs search and page retrieval.
 2. Configure API MCP at `https://xquik.com/mcp` for authenticated account actions.
 3. Authenticate API MCP with an `x-api-key` header or OAuth Bearer token.
-4. Use `explore` to search the in-memory API catalog and `xquik` to run authenticated requests.
+4. Use `explore` to search 118 MCP operations and `xquik` to run authenticated requests.
+
+API-key lifecycle, direct saved-payment quick top-up, and the session top-up redirect are unavailable through MCP. Manage keys in the dashboard. Use `POST /api/v1/credits/topup` for a checkout URL.
 
 ## Common gotchas
 

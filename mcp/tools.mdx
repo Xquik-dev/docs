@@ -1,5 +1,4 @@
 ---
-
 title: MCP tools reference
 description: MCP tools (explore + xquik) with sandbox API, workflows, and cost breakdown
 keywords: ["MCP tools", "explore", "xquik", "sandbox", "code execution", "API spec"]
@@ -9,13 +8,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-The Xquik MCP server exposes 2 tools: `explore` (search the API spec) and `xquik` (execute API calls). Connect to `https://xquik.com/mcp` with `x-api-key` or OAuth 2.1 Bearer auth. API keys fit terminal clients; OAuth fits browser MCP clients.
-
----
+The Xquik MCP server exposes 118 of 123 REST operations through 2 tools: `explore` searches a compact catalog, and `xquik` executes authenticated calls. Connect to `https://xquik.com/mcp` with `x-api-key` or OAuth 2.1 Bearer auth. API keys fit terminal clients; OAuth fits browser MCP clients.
 
 ## explore
 
-Search the API endpoint catalog. Read-only, no network calls, and no credits required. The call still requires MCP authentication through an API key or OAuth Bearer token. Use this to discover available endpoints, check parameters, and find the right API path before executing calls.
+Search the compact 118-operation API catalog. `explore` makes no network calls and consumes no credits. The call still requires MCP authentication through an API key or OAuth Bearer token. Use it to inspect paths, parameters, costs, and response shapes before execution.
 
 **Input:**
 
@@ -79,8 +76,6 @@ async () => {
 }
 ```
 
----
-
 ## xquik
 
 Execute API calls against your Xquik account. The agent writes code using `xquik.request()` with auth injected automatically.
@@ -116,6 +111,16 @@ declare const spec: { endpoints: EndpointInfo[] };
 `xquik.request()` uses the normalized v1 contract automatically. List and search responses use `has_more` and `next_cursor`, even when the REST API page shows the default `has_next_page` field. Pass `next_cursor` back as the `cursor` query parameter for most X data pages. Use `after` instead for `/api/v1/draws`, `/api/v1/extractions`, `/api/v1/events`, and `/api/v1/radar`.
 
 Write and media responses also use the MCP-normalized snake_case contract. Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `xquik.request()` results. REST and generated SDK pages may show camelCase fields such as `tweetId`, `writeActionId`, `chargedCredits`, `mediaId`, and `messageId`; keep MCP agents on snake_case when reading tool results.
+
+### Operations unavailable through MCP
+
+The REST contract documents 123 operations. MCP exposes 118 and omits 5 browser or session-bound operations:
+
+- Create, list, or revoke API keys
+- Charge a saved payment method through quick top-up
+- Open the session-based top-up redirect route
+
+Manage API keys in the dashboard. For MCP billing handoff, call `POST /api/v1/credits/topup` and return its checkout URL. Do not attempt `/api/v1/credits/quick-topup` or the redirect route through `xquik.request()`.
 
 **Workflow Examples:**
 
@@ -197,7 +202,7 @@ status URL when the agent receives a single stored link.
 
 ```javascript
 async () => {
-  const query = 'from:xquikcom giveaway';
+  const query = 'from:username giveaway';
   const rows = [];
   let cursor;
   let hasMore = false;
@@ -245,7 +250,7 @@ async () => {
 
 ```javascript
 async () => {
-  const sourceUser = 'xquikcom';
+  const sourceUser = 'username';
   const rows = [];
   let cursor;
   let hasMore = false;
@@ -635,13 +640,13 @@ Do not upload media before posting tweets or replies when the media is already p
 ```javascript
 async () => {
   const page = await xquik.request('/api/v1/x/tweets/search', {
-    query: { q: 'from:xquikcom giveaway', limit: '50' }
+    query: { q: 'from:username giveaway', limit: '50' }
   });
 
   return {
     source: 'xquik_mcp',
     job: 'tweet_search',
-    query: 'from:xquikcom giveaway',
+    query: 'from:username giveaway',
     rows: page.tweets.map(tweet => ({
       tweet_id: tweet.id,
       text: tweet.text,
@@ -663,36 +668,32 @@ async () => {
 }
 ```
 
----
-
 ## API endpoints
 
-The server covers 120 operations across 10 categories:
+The REST API documents 123 operations. The MCP catalog exposes 118 across 10 categories:
 
 <CardGroup cols={2}>
   <Card title="Account, composition, and credits" icon="user">
-    24 operations across `account`, `composition`, and `credits`: account info, API keys, subscribe, X identity, compose, styles, drafts, radar, balance checks, top-ups, checkout status, and quick top-up.
+    20 MCP operations across `account`, `composition`, and `credits`: account info, subscribe, X identity, compose, styles, drafts, radar, balance checks, checkout creation, and checkout status.
   </Card>
   <Card title="Extractions and media" icon="download">
     10 operations across `extraction` and `media`: giveaway draws, extraction jobs, estimates, exports, and media download.
   </Card>
   <Card title="Monitoring and webhooks" icon="radio">
-    18 operations in `monitoring`: account monitors, keyword monitors, stored events, webhooks, deliveries, and test delivery.
+    19 operations in `monitoring`: account monitors, keyword monitors, stored events, webhooks, deliveries, and test delivery.
   </Card>
   <Card title="Support" icon="message-circle">
     5 operations in `support`: create, list, read, reply to, and close support tickets.
   </Card>
   <Card title="X data reads" icon="search">
-    38 operations in `twitter`: tweet search, tweet and article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, followers, replies, communities, and lists.
+    39 operations in `twitter`: tweet search, tweet and article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, followers, replies, communities, and lists.
   </Card>
   <Card title="X accounts and writes" icon="send">
     25 operations across `x-accounts` and `x-write`: connect accounts, retry connection issues, post tweets, like, retweet, follow, remove followers, send DMs, upload media, update profiles, and manage community membership.
   </Card>
 </CardGroup>
 
-Use `explore` to browse the full catalog with parameters and response shapes.
-
----
+Use `explore` to browse the 118-operation MCP catalog with parameters and response shapes.
 
 ## Cost summary
 
@@ -701,7 +702,7 @@ Use `explore` to browse the full catalog with parameters and response shapes.
     `explore` is free. Use it to find endpoints, parameters, and response shapes before making API calls.
   </Card>
   <Card title="Free account and stored records" icon="circle-check">
-    Compose, cached styles, drafts, radar, subscribe, account, API keys, support, credits, X account management, webhooks, stored monitors, stored events, and existing extraction or draw reads are free.
+    Compose, cached styles, drafts, radar, subscribe, account, support, credits, X account management, webhooks, stored monitors, stored events, and existing extraction or draw reads are free.
   </Card>
   <Card title="Metered reads and jobs" icon="gauge">
     Tweet search, user lookup, follow checks, media download, trends, extraction creation, and draw creation are metered.
@@ -721,13 +722,9 @@ Use `explore` to browse the full catalog with parameters and response shapes.
   Never combine free and paid endpoints in a single `Promise.all`. A 402 error on one call kills all results. Call free endpoints first, then paid ones separately.
 </Warning>
 
----
-
 ## Error handling
 
 - **402 / `no_subscription` / `subscription_inactive`**: The sandbox attempts `POST /api/v1/subscribe`; when it returns a URL, the error includes it. Present that URL to the user.
-- **402 / `no_credits` / `insufficient_credits`**: Free data already fetched is preserved. Call `POST /api/v1/credits/topup` or `POST /api/v1/credits/quick-topup`, then retry the failed metered call.
+- **402 / `no_credits` / `insufficient_credits`**: Free data already fetched is preserved. Call `POST /api/v1/credits/topup`, return its checkout URL, then retry after payment completes. Direct saved-payment quick top-up is unavailable through MCP.
 - **429**: Rate limited. Retry with exponential backoff.
 - **API errors**: Include status code and message in the response.
-
----

@@ -428,8 +428,7 @@ paths:
       summary: List API keys
       tags: [API Keys]
       security:
-        - apiKey: []
-        - oauthBearer: []
+        - cookieSession: []
       responses:
         '200':
           description: API key list
@@ -455,8 +454,7 @@ paths:
       summary: Create API key
       tags: [API Keys]
       security:
-        - apiKey: []
-        - oauthBearer: []
+        - cookieSession: []
       requestBody:
         required: true
         description: Optional display name for the new API key.
@@ -534,8 +532,7 @@ paths:
       summary: Revoke API key
       tags: [API Keys]
       security:
-        - apiKey: []
-        - oauthBearer: []
+        - cookieSession: []
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -1911,12 +1908,18 @@ paths:
                   example: elonmusk
                 targetCommunityId:
                   type: string
+                  description:
+                    Required for community_post_extractor & community_search.
                   example: '1500000000000000000'
                 targetListId:
                   type: string
+                  description:
+                    Required for list_follower_explorer, list_member_extractor &
+                    list_post_extractor.
                   example: '1234567890'
                 targetSpaceId:
                   type: string
+                  description: Required for space_explorer.
                   example: '1vOGwMdBqpwGB'
                 resultsLimit:
                   type: integer
@@ -1926,6 +1929,8 @@ paths:
                   example: 1000
                 searchQuery:
                   type: string
+                  description:
+                    Required for tweet_search_extractor & community_search.
                   example: 'AI trends 2025'
                 fromUser:
                   type: string
@@ -2157,12 +2162,18 @@ paths:
                   example: elonmusk
                 targetCommunityId:
                   type: string
+                  description:
+                    Required for community_post_extractor & community_search.
                   example: '1500000000000000000'
                 targetListId:
                   type: string
+                  description:
+                    Required for list_follower_explorer, list_member_extractor &
+                    list_post_extractor.
                   example: '1234567890'
                 targetSpaceId:
                   type: string
+                  description: Required for space_explorer.
                   example: '1vOGwMdBqpwGB'
                 resultsLimit:
                   type: integer
@@ -2172,6 +2183,8 @@ paths:
                   example: 1000
                 searchQuery:
                   type: string
+                  description:
+                    Required for tweet_search_extractor & community_search.
                   example: 'AI trends 2025'
                 fromUser:
                   type: string
@@ -3755,6 +3768,10 @@ paths:
                       coverImageUrl:
                         type: string
                         example: 'https://pbs.twimg.com/media/example.jpg'
+                      bodyText:
+                        type: string
+                        description: Plain text joined from all article blocks
+                        example: 'This is the first paragraph of the article.'
                       contents:
                         type: array
                         items:
@@ -3818,21 +3835,7 @@ paths:
                         type: integer
                         example: 5000
                   author:
-                    type: object
-                    required: [id, name, username]
-                    properties:
-                      id:
-                        type: string
-                        example: '9876543210'
-                      name:
-                        type: string
-                        example: 'Elon Musk'
-                      username:
-                        type: string
-                        example: 'elonmusk'
-                      profilePicture:
-                        type: string
-                        example: 'https://pbs.twimg.com/profile_images/example.jpg'
+                    $ref: '#/components/schemas/ArticleAuthor'
               example:
                 article:
                   title: 'The Future of AI'
@@ -3894,7 +3897,7 @@ paths:
           required: true
           schema:
             type: string
-          description: Tweet ID
+          description: Numeric tweet ID, 15-20 digits
       responses:
         '200':
           description: Tweet with author
@@ -4175,14 +4178,17 @@ paths:
           required: true
           schema:
             type: string
-          description: Comma-separated user IDs (max 100)
+          description:
+            Comma-separated numeric user IDs (1-100 values). Duplicate IDs are
+            ignored while preserving first-seen order.
       responses:
         '200':
-          description: List of users
+          description:
+            Matched users plus reconciliation metadata for unavailable IDs.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedUsers'
+                $ref: '#/components/schemas/BatchUsers'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -6072,8 +6078,7 @@ paths:
       tags:
         - Subscribe
       security:
-        - apiKey: []
-        - oauthBearer: []
+        - cookieSession: []
       requestBody:
         required: true
         description: Dollar amount to charge the saved payment method.
@@ -6179,6 +6184,7 @@ paths:
           schema:
             type: string
           description: Pagination cursor for favoriters
+        - $ref: '#/components/parameters/FollowerPageSize'
       responses:
         '200':
           description: List of users who liked the tweet
@@ -6226,6 +6232,7 @@ paths:
           schema:
             type: string
           description: Pagination cursor for user tweets
+        - $ref: '#/components/parameters/ResultPageSize'
         - name: includeReplies
           in: query
           schema:
@@ -6313,6 +6320,7 @@ paths:
           schema:
             type: string
           description: Pagination cursor for user replies
+        - $ref: '#/components/parameters/ResultPageSize'
         - name: includeParentTweet
           in: query
           schema:
@@ -6387,12 +6395,13 @@ paths:
           required: true
           schema:
             type: string
-          description: User ID
+          description: User ID or username
         - name: cursor
           in: query
           schema:
             type: string
           description: Pagination cursor for liked tweets
+        - $ref: '#/components/parameters/ResultPageSize'
         - $ref: '#/components/parameters/TweetFilterFromUser'
         - $ref: '#/components/parameters/TweetFilterToUser'
         - $ref: '#/components/parameters/TweetFilterMentioning'
@@ -6461,12 +6470,13 @@ paths:
           required: true
           schema:
             type: string
-          description: User ID for media lookup
+          description: User ID or username for media lookup
         - name: cursor
           in: query
           schema:
             type: string
           description: Pagination cursor for media tweets
+        - $ref: '#/components/parameters/ResultPageSize'
         - $ref: '#/components/parameters/TweetFilterFromUser'
         - $ref: '#/components/parameters/TweetFilterToUser'
         - $ref: '#/components/parameters/TweetFilterMentioning'
@@ -6541,6 +6551,7 @@ paths:
           schema:
             type: string
           description: Pagination cursor for followers-you-know
+        - $ref: '#/components/parameters/FollowerPageSize'
       responses:
         '200':
           description: List of mutual followers
@@ -6998,6 +7009,31 @@ paths:
                       join_policy:
                         type: string
                         description: Join policy (open or restricted)
+                      invites_policy:
+                        type: string
+                        description: Invitation policy
+                      is_member:
+                        type: boolean
+                        description:
+                          Whether the authenticated viewer is a member
+                      is_nsfw:
+                        type: boolean
+                        description: Whether the community is marked sensitive
+                      role:
+                        type: string
+                        description: Authenticated viewer's community role
+                      creator:
+                        type: object
+                        required: [id, username, verified]
+                        properties:
+                          id:
+                            type: string
+                          username:
+                            type: string
+                          verified:
+                            type: boolean
+                          name:
+                            type: string
                       member_count:
                         type: integer
                         description: Total member count
@@ -7081,6 +7117,9 @@ paths:
           in: query
           schema:
             type: integer
+            minimum: 20
+            maximum: 200
+            default: 20
           description: >
             Items per page (20-200, default 20). This is an upper bound for paid
             authenticated calls: remaining credits can reduce the returned page
@@ -7183,6 +7222,7 @@ paths:
           schema:
             type: string
           description: Pagination cursor for community tweets
+        - $ref: '#/components/parameters/ResultPageSize'
       responses:
         '200':
           description: List of community tweets
@@ -7208,7 +7248,9 @@ paths:
   /x/communities/search:
     get:
       operationId: searchCommunities
-      summary: Search for communities by keyword
+      summary: Search tweets within an X Community by keyword
+      description:
+        Returns tweets, not community records. Requires a Community ID.
       tags:
         - Communities
       security:
@@ -7221,6 +7263,13 @@ paths:
         intent: session
         method: tempo
       parameters:
+        - name: communityId
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^\d+$'
+          description: Numeric ID of the community whose posts to search
         - name: q
           in: query
           required: true
@@ -7231,15 +7280,18 @@ paths:
           in: query
           schema:
             type: string
+            enum: [Latest, Top]
+            default: Latest
           description: Sort order (Latest or Top)
         - name: cursor
           in: query
           schema:
             type: string
           description: Pagination cursor for community search
+        - $ref: '#/components/parameters/ResultPageSize'
       responses:
         '200':
-          description: Community search results
+          description: Tweet search results from the selected X Community
           content:
             application/json:
               schema:
@@ -7260,7 +7312,8 @@ paths:
   /x/communities/tweets:
     get:
       operationId: getAllCommunityTweets
-      summary: List tweets across all communities
+      summary: Search tweets within an X Community
+      description: Requires a Community ID and keyword query.
       tags:
         - Communities
       security:
@@ -7273,25 +7326,35 @@ paths:
         intent: session
         method: tempo
       parameters:
+        - name: communityId
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^\d+$'
+          description: Numeric ID of the community to search
         - name: q
           in: query
           required: true
           schema:
             type: string
-          description: Search query for cross-community tweets
+          description: Keyword query within the selected community
         - name: queryType
           in: query
           schema:
             type: string
-          description: Sort order for cross-community results (Latest or Top)
+            enum: [Latest, Top]
+            default: Latest
+          description: Sort order for community results (Latest or Top)
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor for cross-community results
+          description: Pagination cursor for community results
+        - $ref: '#/components/parameters/ResultPageSize'
       responses:
         '200':
-          description: Paginated list of tweets from all communities
+          description: Paginated matching tweets from the selected community
           content:
             application/json:
               schema:
@@ -7336,6 +7399,7 @@ paths:
           schema:
             type: string
           description: Pagination cursor for list followers
+        - $ref: '#/components/parameters/FollowerPageSize'
       responses:
         '200':
           description: List of followers
@@ -7389,6 +7453,9 @@ paths:
           in: query
           schema:
             type: integer
+            minimum: 20
+            maximum: 200
+            default: 20
           description: Members per page (20-200, default 20)
       responses:
         '200':
@@ -7439,6 +7506,7 @@ paths:
           schema:
             type: string
           description: Pagination cursor for list tweets
+        - $ref: '#/components/parameters/ResultPageSize'
         - name: sinceTime
           in: query
           schema:
@@ -7497,12 +7565,13 @@ paths:
           required: true
           schema:
             type: string
-          description: Tweet ID to get quotes
+          description: Numeric tweet ID to get quotes, 15-20 digits
         - name: cursor
           in: query
           schema:
             type: string
           description: Pagination cursor for quote tweets
+        - $ref: '#/components/parameters/ResultPageSize'
         - name: sinceTime
           in: query
           schema:
@@ -7590,6 +7659,7 @@ paths:
           schema:
             type: string
           description: Pagination cursor for tweet replies
+        - $ref: '#/components/parameters/ResultPageSize'
         - name: sinceTime
           in: query
           schema:
@@ -7672,6 +7742,7 @@ paths:
           schema:
             type: string
           description: Pagination cursor for retweeters
+        - $ref: '#/components/parameters/FollowerPageSize'
       responses:
         '200':
           description: List of retweeters
@@ -7719,6 +7790,7 @@ paths:
           schema:
             type: string
           description: Pagination cursor for thread tweets
+        - $ref: '#/components/parameters/ResultPageSize'
       responses:
         '200':
           description: Thread tweets
@@ -7771,16 +7843,8 @@ paths:
           deprecated: true
           schema:
             type: string
-          description: Legacy cursor alias for following lists. Prefer cursor.
-        - name: pageSize
-          in: query
-          schema:
-            type: integer
-          description: >
-            Items per page (20-200, default 200). This is an upper bound for
-            paid authenticated calls: remaining credits can reduce the returned
-            page size, and zero affordable results returns 402
-            insufficient_credits.
+          description: Legacy cursor alias. Prefer cursor.
+        - $ref: '#/components/parameters/FollowerPageSize'
         - name: limit
           in: query
           deprecated: true
@@ -7843,15 +7907,7 @@ paths:
           schema:
             type: string
           description: Legacy cursor alias. Prefer cursor.
-        - name: pageSize
-          in: query
-          schema:
-            type: integer
-          description: >
-            Results per page (20-200, default 200). This is an upper bound for
-            paid authenticated calls: remaining credits can reduce the returned
-            page size, and zero affordable results returns 402
-            insufficient_credits.
+        - $ref: '#/components/parameters/FollowerPageSize'
         - name: limit
           in: query
           deprecated: true
@@ -7907,6 +7963,7 @@ paths:
           schema:
             type: string
           description: Pagination cursor for mentions
+        - $ref: '#/components/parameters/ResultPageSize'
         - name: sinceTime
           in: query
           schema:
@@ -7991,6 +8048,7 @@ paths:
           schema:
             type: string
           description: Pagination cursor for verified followers
+        - $ref: '#/components/parameters/FollowerPageSize'
       responses:
         '200':
           description: List of verified followers
@@ -8026,6 +8084,11 @@ components:
       type: http
       scheme: bearer
       description: OAuth 2.1 access token
+    cookieSession:
+      type: apiKey
+      in: cookie
+      name: __Host-xquik_session
+      description: Secure Xquik browser session cookie.
 
   parameters:
     ResourceId:
@@ -8056,6 +8119,34 @@ components:
         minimum: 1
         maximum: 100
         default: 50
+    ResultPageSize:
+      name: pageSize
+      in: query
+      description: >
+        Maximum items requested from this page (1-100, default 20). The response
+        can contain fewer items because the source returned fewer, filters
+        removed items, or remaining credits cover fewer results. Keep requesting
+        next_cursor while has_next_page is true, even when a page is empty. The
+        deprecated limit and count aliases remain accepted.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    FollowerPageSize:
+      name: pageSize
+      in: query
+      description: >
+        Maximum user profiles requested from this page (20-200, default 200).
+        The response can contain fewer profiles because the source returned
+        fewer or remaining credits cover fewer results. Keep requesting
+        next_cursor while has_next_page is true. The deprecated limit and count
+        aliases remain accepted.
+      schema:
+        type: integer
+        minimum: 20
+        maximum: 200
+        default: 200
     After:
       name: cursor
       in: query
@@ -8550,10 +8641,11 @@ components:
   schemas:
     PaginatedTweets:
       description: >
-        Paginated list of tweets with cursor-based navigation. For paid
-        authenticated calls, requested page size is an upper bound: remaining
-        credits can reduce the returned item count, and zero affordable results
-        returns 402 insufficient_credits.
+        Paginated tweet results. The item count can be lower than pageSize when
+        the source returns fewer tweets, filters remove tweets, or remaining
+        credits cover fewer results. Follow next_cursor while has_next_page is
+        true. An empty page can still have has_next_page true after filtering.
+        Zero affordable results returns 402 insufficient_credits.
       type: object
       required: [tweets, has_next_page, next_cursor]
       properties:
@@ -8564,6 +8656,12 @@ components:
           example:
             - id: '1234567890'
               text: 'Just launched our new feature!'
+              retweetCount: 5
+              replyCount: 3
+              likeCount: 42
+              quoteCount: 1
+              viewCount: 1500
+              bookmarkCount: 2
         has_next_page:
           type: boolean
           example: true
@@ -8572,10 +8670,11 @@ components:
           example: 'DAACCgACGRElMJcAAA'
     PaginatedUsers:
       description: >
-        Paginated list of user profiles with cursor-based navigation. For paid
-        authenticated calls, requested page size is an upper bound: remaining
-        credits can reduce the returned item count, and zero affordable results
-        returns 402 insufficient_credits.
+        Paginated user profiles. The item count can be lower than pageSize when
+        the source returns fewer profiles or remaining credits cover fewer
+        results. Follow next_cursor while has_next_page is true. A relationship
+        can naturally contain fewer profiles than requested. Zero affordable
+        results returns 402 insufficient_credits.
       type: object
       required: [users, has_next_page, next_cursor]
       properties:
@@ -8593,6 +8692,67 @@ components:
         next_cursor:
           type: string
           example: 'DAACCgACGRElMJcAAA'
+    BatchUsers:
+      description: >
+        Batch user lookup results. Duplicate requested IDs are ignored while
+        preserving first-seen order. unavailable_ids identifies processed IDs
+        with no returned profile. unprocessed_ids identifies IDs skipped when
+        available credits limit processing.
+      type: object
+      required:
+        [
+          users,
+          has_next_page,
+          next_cursor,
+          requested_count,
+          processed_count,
+          returned_count,
+          unavailable_ids,
+          unprocessed_ids,
+        ]
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserProfile'
+        has_next_page:
+          type: boolean
+          const: false
+          description: Batch lookups never paginate.
+        next_cursor:
+          type: string
+          const: ''
+          description: Empty because batch lookups never paginate.
+        requested_count:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Number of unique IDs requested.
+        processed_count:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Number of requested IDs included in the lookup.
+        returned_count:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Number of user profiles returned and charged.
+        unavailable_ids:
+          type: array
+          description:
+            Processed IDs with no returned profile, in first-seen request order.
+          items:
+            type: string
+            pattern: '^\d+$'
+        unprocessed_ids:
+          type: array
+          description:
+            Requested IDs skipped because available credits limited processing.
+            Retry these IDs after adding credits.
+          items:
+            type: string
+            pattern: '^\d+$'
     Error:
       description: >
         Error response. Default v1 returns a legacy string error code. Send
@@ -8624,6 +8784,7 @@ components:
                 - invalid_tweet_id
                 - invalid_tweet_url
                 - invalid_user_id
+                - invalid_user_ids
                 - invalid_username
                 - invalid_json
                 - insufficient_credits
@@ -8713,6 +8874,7 @@ components:
                     - invalid_tweet_id
                     - invalid_tweet_url
                     - invalid_user_id
+                    - invalid_user_ids
                     - invalid_username
                     - invalid_json
                     - insufficient_credits
@@ -9173,6 +9335,157 @@ components:
         lastError:
           type: string
 
+    ArticleAuthor:
+      description: X Article author profile fields returned when available.
+      type: object
+      required: [id, name, username]
+      properties:
+        id:
+          type: string
+          example: '9876543210'
+        name:
+          type: string
+          example: 'Elon Musk'
+        username:
+          type: string
+          example: elonmusk
+        description:
+          type: string
+        location:
+          type: string
+        url:
+          type: string
+        createdAt:
+          type: string
+        followersCount:
+          type: integer
+        followingCount:
+          type: integer
+        statusesCount:
+          type: integer
+        mediaCount:
+          type: integer
+        favouritesCount:
+          type: integer
+        profilePicture:
+          type: string
+        profileBannerUrl:
+          type: string
+        isBlueVerified:
+          type: boolean
+        isVerified:
+          type: boolean
+        isTranslator:
+          type: boolean
+        protected:
+          type: boolean
+        canDm:
+          type: boolean
+
+    TweetMedia:
+      description: Normalized media attached to a tweet.
+      type: object
+      required: [mediaUrl, type, url]
+      properties:
+        mediaUrl:
+          type: string
+          description: Media preview URL
+        type:
+          type: string
+          enum: [photo, video, animated_gif]
+        url:
+          type: string
+          description: X media link from the tweet
+        videoVariants:
+          type: array
+          description: Available video encodings, ordered as returned
+          items:
+            type: object
+            required: [contentType, url]
+            properties:
+              bitrate:
+                type: integer
+              contentType:
+                type: string
+              url:
+                type: string
+
+    EmbeddedTweet:
+      description: >
+        Quoted or retweeted tweet context. Every object includes id, text, and
+        engagement metrics. A zero metric can mean X did not report the count.
+        Author, media, and conversation fields appear when available.
+      type: object
+      required:
+        [
+          id,
+          text,
+          retweetCount,
+          replyCount,
+          likeCount,
+          quoteCount,
+          viewCount,
+          bookmarkCount,
+        ]
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        type:
+          type: string
+        createdAt:
+          type: string
+        url:
+          type: string
+        lang:
+          type: string
+        retweetCount:
+          type: integer
+        replyCount:
+          type: integer
+        likeCount:
+          type: integer
+        quoteCount:
+          type: integer
+        viewCount:
+          type: integer
+        bookmarkCount:
+          type: integer
+        isReply:
+          type: boolean
+        isLimitedReply:
+          type: boolean
+        isNoteTweet:
+          type: boolean
+        isQuoteStatus:
+          type: boolean
+        inReplyToId:
+          type: string
+        inReplyToUserId:
+          type: string
+        inReplyToUsername:
+          type: string
+        conversationId:
+          type: string
+        source:
+          type: string
+        displayTextRange:
+          type: array
+          items:
+            type: integer
+        contentDisclosure:
+          $ref: '#/components/schemas/ContentDisclosure'
+        entities:
+          type: object
+          additionalProperties: true
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/TweetMedia'
+        author:
+          $ref: '#/components/schemas/UserProfile'
+
     ContentDisclosure:
       description:
         Content disclosure metadata shown by X when a tweet is labeled as paid
@@ -9206,7 +9519,8 @@ components:
 
     TweetDetail:
       description:
-        Full tweet with text, engagement metrics, media, and metadata.
+        Full tweet with text, engagement metrics, media, and metadata. A zero
+        metric can mean X did not report the count.
       type: object
       required:
         [
@@ -9239,6 +9553,10 @@ components:
           type: boolean
           description: Whether this tweet is a reply to another tweet
           example: false
+        isLimitedReply:
+          type: boolean
+          description: Whether replies are limited for this tweet
+          example: false
         isQuoteStatus:
           type: boolean
           description: Whether this tweet quotes another tweet
@@ -9251,6 +9569,36 @@ components:
           type: string
           description: Client application used to post this tweet
           example: 'Twitter Web App'
+        type:
+          type: string
+          description: Tweet result type
+          example: tweet
+        url:
+          type: string
+          description: Tweet permalink URL
+          example: 'https://x.com/example_user/status/1234567890'
+        lang:
+          type: string
+          description: Tweet language code
+          example: en
+        inReplyToId:
+          type: string
+          description: Tweet ID being replied to
+          example: '1234567890'
+        inReplyToUserId:
+          type: string
+          description: User ID being replied to
+          example: '9876543210'
+        inReplyToUsername:
+          type: string
+          description: Username being replied to
+          example: example_user
+        displayTextRange:
+          type: array
+          items:
+            type: integer
+          description: Start and end offsets for rendered tweet text
+          example: [0, 31]
         contentDisclosure:
           $ref: '#/components/schemas/ContentDisclosure'
         entities:
@@ -9260,25 +9608,15 @@ components:
             Parsed entities from the tweet text (URLs, mentions, hashtags,
             media)
         quoted_tweet:
-          type: object
-          additionalProperties: true
-          description:
-            The quoted tweet object, present when isQuoteStatus is true
+          $ref: '#/components/schemas/EmbeddedTweet'
+        retweeted_tweet:
+          $ref: '#/components/schemas/EmbeddedTweet'
+        author:
+          $ref: '#/components/schemas/TweetAuthor'
         media:
           type: array
           items:
-            type: object
-            properties:
-              mediaUrl:
-                type: string
-                example: 'https://pbs.twimg.com/media/example.jpg'
-              type:
-                type: string
-                enum: [photo, video, animated_gif]
-                example: 'photo'
-              url:
-                type: string
-                example: 'https://t.co/abc123'
+            $ref: '#/components/schemas/TweetMedia'
           description: Attached media items, omitted when the tweet has no media
         retweetCount:
           type: integer
@@ -9301,30 +9639,29 @@ components:
 
     TweetAuthor:
       description:
-        Author of a tweet with follower count and verification status.
-      type: object
-      required: [id, username, followers, verified]
-      properties:
-        id:
-          type: string
-          example: '9876543210'
-        username:
-          type: string
-          example: 'elonmusk'
-        followers:
-          type: integer
-          example: 150000000
-        verified:
-          type: boolean
-          example: true
-        profilePicture:
-          type: string
-          example: 'https://pbs.twimg.com/profile_images/example.jpg'
+        Tweet author profile. The lookup route always includes follower count
+        and verification state. Other profile fields appear when available.
+      allOf:
+        - $ref: '#/components/schemas/UserProfile'
+        - type: object
+          required: [followers, verified]
 
     SearchTweet:
-      description: Tweet returned from search results with inline author info.
+      description:
+        Tweet returned from search results with inline author info. A zero
+        metric can mean X did not report the count.
       type: object
-      required: [id, text]
+      required:
+        [
+          id,
+          text,
+          retweetCount,
+          replyCount,
+          likeCount,
+          quoteCount,
+          viewCount,
+          bookmarkCount,
+        ]
       properties:
         id:
           type: string
@@ -9390,28 +9727,13 @@ components:
             Parsed search-result entities including URLs, mentions, hashtags,
             and media markers
         quoted_tweet:
-          type: object
-          additionalProperties: true
-          description: Embedded quoted tweet, omitted when not a quote tweet
+          $ref: '#/components/schemas/EmbeddedTweet'
         retweeted_tweet:
-          type: object
-          additionalProperties: true
-          description: Original retweeted tweet, omitted when not a retweet
+          $ref: '#/components/schemas/EmbeddedTweet'
         media:
           type: array
           items:
-            type: object
-            properties:
-              mediaUrl:
-                type: string
-                example: 'https://pbs.twimg.com/media/example.jpg'
-              type:
-                type: string
-                enum: [photo, video, animated_gif]
-                example: 'photo'
-              url:
-                type: string
-                example: 'https://t.co/abc123'
+            $ref: '#/components/schemas/TweetMedia'
           description:
             Search-result media attachments, omitted when no media is present
         url:
@@ -9470,11 +9792,23 @@ components:
         verified:
           type: boolean
           example: true
+        isBlueVerified:
+          type: boolean
+          description: Whether X shows a blue verification badge
+          example: true
+        isVerified:
+          type: boolean
+          description: Whether X marks the profile as verified
+          example: true
         profilePicture:
           type: string
           example: 'https://pbs.twimg.com/profile_images/example.jpg'
         coverPicture:
           type: string
+          example: 'https://pbs.twimg.com/profile_banners/example.jpg'
+        profileBannerUrl:
+          type: string
+          description: Original X profile banner field when available
           example: 'https://pbs.twimg.com/profile_banners/example.jpg'
         location:
           type: string
@@ -9490,6 +9824,10 @@ components:
           example: 1200
         canDm:
           type: boolean
+          example: false
+        protected:
+          type: boolean
+          description: Whether the profile protects its posts
           example: false
         url:
           type: string
@@ -9531,6 +9869,18 @@ components:
         verifiedType:
           type: string
           example: 'Business'
+        communityRole:
+          type: string
+          description: Community role when returned by community member reads
+          example: Member
+        viewerFollowedBy:
+          type: boolean
+          description: Whether this profile follows the authenticated viewer
+          example: false
+        viewerFollowing:
+          type: boolean
+          description: Whether the authenticated viewer follows this profile
+          example: true
         profile_bio:
           type: object
           additionalProperties: true

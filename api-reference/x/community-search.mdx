@@ -1,6 +1,6 @@
 ---
-title: "Search community tweets"
-description: "Search for tweets across X communities by keyword with optional sort order"
+title: "Search tweets in a community"
+description: "Search tweets within one X community by numeric community ID and keyword"
 api: "GET /x/communities/search"
 keywords: ["community", "search", "tweets", "x api"]
 ---
@@ -20,14 +20,17 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <CodeGroup>
   ```bash cURL
   curl -G https://xquik.com/api/v1/x/communities/search \
+    --data-urlencode "communityId=1234567890" \
     --data-urlencode "q=web development" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
   ```javascript Node.js
+  const communityId = "1234567890";
   const searchQuery = "web development";
   const queryType = "Latest";
-  const params = new URLSearchParams({ q: searchQuery, queryType });
+  const pageSize = "100";
+  const params = new URLSearchParams({ communityId, q: searchQuery, queryType, pageSize });
   const response = await fetch(`https://xquik.com/api/v1/x/communities/search?${params}`, {
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
@@ -36,6 +39,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     const author = tweet.author ?? {};
 
     return {
+      community_id: communityId,
       search_query: searchQuery,
       query_type: queryType,
       tweet_id: tweet.id,
@@ -60,8 +64,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   }
   if (nextCursor !== null) {
     const checkpoint = {
+      community_id: communityId,
       search_query: searchQuery,
       query_type: queryType,
+      page_size: Number(pageSize),
       next_cursor: nextCursor,
     };
     process.stdout.write(`${JSON.stringify(checkpoint)}\n`);
@@ -72,11 +78,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   import json
   import requests
 
+  community_id = "1234567890"
   search_query = "web development"
   query_type = "Latest"
+  page_size = 100
   response = requests.get(
       "https://xquik.com/api/v1/x/communities/search",
-      params={"q": search_query, "queryType": query_type},
+      params={
+          "communityId": community_id,
+          "q": search_query,
+          "queryType": query_type,
+          "pageSize": page_size,
+      },
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
@@ -85,6 +98,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       author = tweet.get("author") or {}
       tweet_rows.append(
           {
+              "community_id": community_id,
               "search_query": search_query,
               "query_type": query_type,
               "tweet_id": tweet["id"],
@@ -113,8 +127,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       print(json.dumps(row))
   if next_cursor is not None:
       print(json.dumps({
+          "community_id": community_id,
           "search_query": search_query,
           "query_type": query_type,
+          "page_size": page_size,
           "next_cursor": next_cursor,
       }))
   ```
@@ -123,44 +139,48 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 The Node.js & Python snippets shape one durable row per matching community
 tweet instead of printing the full response page. Persist the final
 `next_cursor` row when `has_next_page` is true, then pass it back as `cursor`
-with the same `q` & `queryType`.
+with the same `communityId`, `q`, `queryType`, and `pageSize`.
 
 ## Direct community search handoff
 
 Use `GET /x/communities/search` when a monitoring job, research queue,
-moderation review, social listening workflow, or agent needs tweets across X
-communities by keyword.
+moderation review, social listening workflow, or agent needs matching tweets
+from one known X community.
 
-Store `search_query`, `query_type`, `tweet_id`, `text`, `author_id`,
+Store `community_id`, `search_query`, `query_type`, `tweet_id`, `text`, `author_id`,
 `author_username`, `author_name`, `author_followers`, `author_verified`,
 `author_profile_picture`, `created_at`, engagement counts, & `media_urls` for
 each row. Keep
 `has_next_page` & `next_cursor` with the export checkpoint so the next run can
-continue the same community search without duplicating earlier rows.
+continue the same scoped search without duplicating earlier rows.
 
 Set `queryType=Latest` for recent queues or backfills. Set `queryType=Top` for
 relevance-ranked review.
 
 <CardGroup cols={2}>
   <Card title="Search row checkpoint" icon="search">
-    Store `search_query`, `query_type`, `has_next_page`, and `next_cursor` with
-    the tweet rows so the next run resumes the same search.
+    Store `community_id`, `search_query`, `query_type`, `page_size`,
+    `has_next_page`, and `next_cursor` with the tweet rows.
   </Card>
   <Card title="Sort mode" icon="arrow-down-up">
     Use `Latest` for recent collection and `Top` for relevance-ranked review.
     Keep the same `queryType` when you pass a cursor.
   </Card>
   <Card title="Default page" icon="rows-3">
-    Direct calls use the default paid tweet page size. Treat the returned
-    `tweets.length` as the row count returned for this page.
+    Request 1 to 100 tweets with `pageSize`. The default is 20. Treat the value
+    as an upper bound because filters, source results, or credits can return fewer.
   </Card>
   <Card title="Saved export" icon="file-spreadsheet">
-    Use `community_search` with `searchQuery` when the workflow needs a saved
-    job with CSV/JSON/XLSX output.
+    Use `community_search` with `targetCommunityId` and `searchQuery` when the
+    workflow needs a saved job with CSV/JSON/XLSX output.
   </Card>
 </CardGroup>
 
 ## Query parameters
+
+<ParamField query="communityId" type="string" required>
+  Numeric ID of the community whose tweets you want to search.
+</ParamField>
 
 <ParamField query="q" type="string" required>
   Search query for community tweets.
@@ -174,15 +194,20 @@ relevance-ranked review.
   Pagination cursor from a previous response. Omit for the first page.
 </ParamField>
 
+<ParamField query="pageSize" type="number">
+  Upper bound for tweets per page. Range: 1-100. Default: `20`.
+</ParamField>
+
 ## Which community search route?
 
 <CardGroup cols={2}>
   <Card title="Community search route" icon="list-filter">
-    Use `GET /x/communities/search` for keyword searches across communities.
+    Use `GET /x/communities/search` with `communityId` and `q` for scoped search.
   </Card>
-  <Card title="Cross-community tweets" icon="search">
+  <Card title="Equivalent scoped route" icon="search">
     Use [`GET /x/communities/tweets`](/api-reference/x/search-community-tweets)
-    when your integration already uses that route name. It accepts the same `q`, `queryType`, and `cursor` shape.
+    when your integration already uses that route name. It accepts the same
+    `communityId`, `q`, `queryType`, `cursor`, and `pageSize` shape.
   </Card>
   <Card title="Known community posts" icon="message-square-text">
     Use [`GET /x/communities/{id}/tweets`](/api-reference/x/community-tweets)
@@ -190,8 +215,9 @@ relevance-ranked review.
   </Card>
   <Card title="Bulk community jobs" icon="file-spreadsheet">
     Use [`Create extraction`](/api-reference/extractions/create) with
-    `community_search` or `community_post_extractor` when the workflow needs a
-    saved export.
+    `community_search` with `targetCommunityId` and `searchQuery` when the
+    workflow needs a saved filtered export. Use `community_post_extractor` for
+    all posts from a known community.
   </Card>
 </CardGroup>
 
@@ -247,6 +273,7 @@ relevance-ranked review.
           Media attachments. Omitted when the tweet has no media.
           <Expandable title="Media object fields">
             <ResponseField name="mediaUrl" type="string">Direct media URL.</ResponseField>
+            <ResponseField name="videoVariants" type="object[]">Available video renditions with bitrate, content type, and URL. Omitted for images.</ResponseField>
             <ResponseField name="type" type="string">Media type.</ResponseField>
             <ResponseField name="url" type="string">Shortened URL from the tweet text.</ResponseField>
           </Expandable>

@@ -458,7 +458,9 @@ function mapFunctionBody(source: string, functionName: string): string {
 
 function productMapperFields(functionName: string): readonly string[] {
   const source = readFileSync(PRODUCT_ROUTE_HELPERS_PATH, 'utf8');
-  const body = mapFunctionBody(source, functionName);
+  const mapperName =
+    functionName === 'mapTweet' ? 'mapTweetAtDepth' : functionName;
+  const body = mapFunctionBody(source, mapperName);
   const directFields = [...body.matchAll(/^\s{4}(?<field>[A-Za-z_]\w*):/gmu)]
     .map((match): string => match.groups?.['field'] ?? '')
     .filter((field): boolean => field.length > 0);
@@ -487,12 +489,21 @@ function productMapperFields(functionName: string): readonly string[] {
   ]
     .map((match): string => match.groups?.['field'] ?? '')
     .filter((field): boolean => field.length > 0);
-  return uniqueSorted([
+  const fields = uniqueSorted([
     ...directFields,
     ...optionalFields,
     ...appendDirectFields,
     ...appendOptionalFields,
   ]);
+  return functionName === 'mapUser'
+    ? uniqueSorted([
+        ...fields,
+        ...productInterfaceFieldsFromPath(
+          PRODUCT_ROUTE_HELPERS_PATH,
+          'TwitterApiUserExtras',
+        ),
+      ])
+    : fields;
 }
 
 function objectLiteralPropertyFields(source: string): readonly string[] {
@@ -511,7 +522,7 @@ function assignDefinedPropertyFields(source: string): readonly string[] {
       ),
     ]
       .map((match): string => match.groups?.['field'] ?? '')
-      .filter((field): boolean => field.length > 0 && field !== 'bodyText'),
+      .filter((field): boolean => field.length > 0),
   );
 }
 
@@ -527,9 +538,7 @@ function returnedResponseFields(body: string): readonly string[] {
   if (literalFields.length > 0) {
     return uniqueSorted([
       ...literalFields,
-      ...assignDefinedPropertyFields(body).filter(
-        (field): boolean => field === 'profilePicture',
-      ),
+      ...assignDefinedPropertyFields(body),
     ]);
   }
   return assignDefinedPropertyFields(body);
@@ -601,7 +610,9 @@ function productInterfaceFieldsFromPath(
   interfaceName: string,
 ): readonly string[] {
   const source = readFileSync(path, 'utf8');
-  const start = source.indexOf(`interface ${interfaceName} {`);
+  const start = source.search(
+    new RegExp(`interface ${interfaceName}(?: extends [^{]+)? \\{`, 'u'),
+  );
   if (start < 0) {
     throw new Error(`Missing product interface: ${interfaceName}`);
   }
@@ -615,6 +626,24 @@ function productInterfaceFieldsFromPath(
       (match): string => match.groups?.['field'] ?? '',
     ),
   );
+}
+
+function productArticleContentFields(): readonly string[] {
+  const source = readFileSync(PRODUCT_X_API_TYPES_PATH, 'utf8');
+  const aliasStart = source.indexOf(
+    'type TwitterApiArticleContentTextFields = Partial<',
+  );
+  const aliasEnd = source.indexOf('>;', aliasStart);
+  if (aliasStart < 0 || aliasEnd < 0) {
+    throw new Error('Missing TwitterApiArticleContentTextFields.');
+  }
+  const inheritedFields = [
+    ...source.slice(aliasStart, aliasEnd).matchAll(/'(?<field>[^']+)'/gu),
+  ].map((match): string => match.groups?.['field'] ?? '');
+  return uniqueSorted([
+    ...productInterfaceFields('TwitterApiArticleContent'),
+    ...inheritedFields,
+  ]);
 }
 
 function productInterfaceFields(interfaceName: string): readonly string[] {
@@ -785,18 +814,19 @@ function productCreditsFields(): readonly string[] {
 }
 
 function productCreditsTopupFields(): readonly string[] {
-  const source = readFileSync(PRODUCT_CREDITS_TOPUP_ROUTE_PATH, 'utf8');
-  const responseStart = source.indexOf(
-    'return NextResponse.json({ url: result.url });',
-  );
+  const routeSource = readFileSync(PRODUCT_CREDITS_TOPUP_ROUTE_PATH, 'utf8');
   if (
-    responseStart < 0 ||
-    !source.includes('const result = await handlePostTopup(')
+    !routeSource.includes('creditsRoute.handlePostTopup(') ||
+    !routeSource.includes(
+      'creditsRoute.buildTopupResponseLinks(result.sessionId)',
+    )
   ) {
     throw new Error('Could not locate credits top-up success response.');
   }
-  const responseEnd = source.indexOf(');', responseStart);
-  return objectLiteralFields(source.slice(responseStart, responseEnd));
+  return productInterfaceFieldsFromPath(
+    PRODUCT_CREDITS_ROUTE_HELPER_PATH,
+    'TopupResponseLinks',
+  );
 }
 
 function productCreditsTopupStatusFields(): readonly string[] {
@@ -814,8 +844,8 @@ function productCreditsQuickTopupFields(): readonly string[] {
   const source = readFileSync(PRODUCT_CREDITS_QUICK_TOPUP_ROUTE_PATH, 'utf8');
   const responseStarts = [
     source.indexOf("return NextResponse.json({ outcome: 'no_payment_method' });"),
-    source.indexOf('return NextResponse.json({\n            clientSecret:'),
-    source.indexOf('return NextResponse.json({\n          balance:'),
+    source.indexOf('return NextResponse.json({\n              clientSecret:'),
+    source.indexOf('return NextResponse.json({\n            balance:'),
   ];
   if (
     responseStarts.some((start): boolean => start < 0) ||
@@ -855,9 +885,9 @@ function productApiKeyListFields(): readonly string[] {
 
 function productApiKeyCreateFields(): readonly string[] {
   const source = readFileSync(PRODUCT_API_KEYS_ROUTE_PATH, 'utf8');
-  const responseStart = source.indexOf('return NextResponse.json(\n      {');
+  const responseStart = source.indexOf('return NextResponse.json(\n        {');
   const responseEnd = source.indexOf(
-    '\n      },\n      { status: 201 }',
+    '\n        },\n        { status: 201 }',
     responseStart,
   );
   if (responseStart < 0 || responseEnd < 0) {
@@ -2569,10 +2599,10 @@ describe('API response field docs', (): void => {
       ).map((field): string => `Article is missing ${field}.`),
       ...setDifference(
         openApiArticleContentFields,
-        productInterfaceFields('TwitterApiArticleContent'),
+        productArticleContentFields(),
       ).map((field): string => `Article content has no product field ${field}.`),
       ...setDifference(
-        productInterfaceFields('TwitterApiArticleContent'),
+        productArticleContentFields(),
         openApiArticleContentFields,
       ).map((field): string => `Article content is missing ${field}.`),
       ...setDifference(
