@@ -5246,23 +5246,24 @@ paths:
                 username:
                   type: string
                   description: X username
-                  example: 'elonmusk'
+                  example: 'your_x_username'
                 email:
                   type: string
                   description: Account email
-                  example: 'user@example.com'
+                  example: 'account@example.invalid'
                 password:
                   type: string
                   description: Account password
-                  example: 's3cur3Pa$$w0rd'
+                  example: '<ACCOUNT_PASSWORD>'
                 totp_secret:
                   type: string
                   description: TOTP secret for 2FA
-                  example: 'JBSWY3DPEHPK3PXP'
+                  example: '<TOTP_SECRET>'
             example:
-              username: 'elonmusk'
-              email: 'user@example.com'
-              password: 's3cur3Pa$$w0rd'
+              username: 'your_x_username'
+              email: 'account@example.invalid'
+              password: '<ACCOUNT_PASSWORD>'
+              totp_secret: '<TOTP_SECRET>'
       responses:
         '201':
           description: X account connected after verification
@@ -5313,9 +5314,9 @@ paths:
                 email_code:
                   type: string
                   description: Code sent to the account email.
-                  example: '123456'
+                  example: '<EMAIL_VERIFICATION_CODE>'
             example:
-              email_code: '123456'
+              email_code: '<EMAIL_VERIFICATION_CODE>'
       responses:
         '201':
           description: X account connected
@@ -5418,18 +5419,19 @@ paths:
                 password:
                   type: string
                   description: Updated account password
-                  example: 's3cur3Pa$$w0rd'
+                  example: '<ACCOUNT_PASSWORD>'
                 totp_secret:
                   type: string
                   description: TOTP secret for 2FA re-authentication
-                  example: 'JBSWY3DPEHPK3PXP'
+                  example: '<TOTP_SECRET>'
                 email:
                   type: string
                   description: Email for the X account (updates stored email)
-                  example: 'user@example.com'
+                  example: 'account@example.invalid'
             example:
-              password: 'password_value'
-              totp_secret: 'totp_secret_value'
+              password: '<ACCOUNT_PASSWORD>'
+              totp_secret: '<TOTP_SECRET>'
+              email: 'account@example.invalid'
       responses:
         '200':
           description: Re-authenticated
@@ -9154,10 +9156,12 @@ components:
           properties:
             header:
               type: string
-              const: Authorization
+              enum: [Authorization]
+              example: Authorization
             scheme:
               type: string
-              const: Bearer
+              enum: [Bearer]
+              example: Bearer
         checkout_url:
           type: string
           format: uri
@@ -9785,6 +9789,11 @@ components:
       required: [error]
       properties:
         error:
+          x-stainless-naming:
+            python:
+              type_name: ErrorValue
+            java:
+              type_name: ErrorValue
           example: invalid_input
           oneOf:
             - type: string
@@ -10502,6 +10511,8 @@ components:
         entities:
           type: object
           additionalProperties: true
+          x-stainless-any: true
+          x-stainless-terraform-type: string
         media:
           type: array
           items:
@@ -10627,6 +10638,8 @@ components:
         entities:
           type: object
           additionalProperties: true
+          x-stainless-any: true
+          x-stainless-terraform-type: string
           description:
             Parsed entities from the tweet text (URLs, mentions, hashtags,
             media)
@@ -10666,15 +10679,9 @@ components:
         and verification state. Other profile fields appear when available.
       allOf:
         - $ref: '#/components/schemas/UserProfile'
-        - type: object
+        - title: TweetAuthorRequirements
+          type: object
           required: [followers, verified]
-          properties:
-            followers:
-              type: integer
-              example: 150000000
-            verified:
-              type: boolean
-              example: true
 
     SearchTweet:
       description:
@@ -10914,6 +10921,8 @@ components:
         profile_bio:
           type: object
           additionalProperties: true
+          x-stainless-any: true
+          x-stainless-terraform-type: string
           description: Structured profile bio with entity annotations
           example:
             description: CEO of Tesla, SpaceX, and X
@@ -11146,11 +11155,11 @@ components:
         health:
           type: string
           description: >
-            Derived login/cookie health. `healthy` = cookies valid.
-            `needsReauth` = user must submit fresh credentials. `locked` = X
-            locked the account; unlock on x.com first. `suspended` = X banned
-            the account. `recovering` = past cooldown, will auto-retry on next
-            use. `temporaryIssue` = transient backend problem; retry shortly.
+            Derived connection health. `healthy` = session active. `needsReauth`
+            = user must submit fresh credentials. `locked` = X locked the
+            account; unlock on x.com first. `suspended` = X banned the account.
+            `recovering` = past cooldown, will auto-retry on next use.
+            `temporaryIssue` = temporary connection problem; retry shortly.
           enum:
             [
               healthy,
@@ -11205,7 +11214,7 @@ components:
 
     XAccountDetail:
       description:
-        Full X account details with status, cookies, and update timestamp.
+        Connected X account details with health and timestamp metadata.
       type: object
       required: [id, xUserId, xUsername, status, health, createdAt]
       properties:
