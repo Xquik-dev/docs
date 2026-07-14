@@ -28,6 +28,9 @@ interface DocsConfig {
     };
     readonly mdx?: ApiMdxConfig;
   };
+  readonly banner?: {
+    readonly content?: string;
+  };
   readonly navigation: NavigationNode;
 }
 
@@ -76,6 +79,17 @@ function findGroup(parent: NavigationNode, groupName: string): NavigationNode {
 }
 
 describe('navigation default state', (): void => {
+  it('keeps the sticky affiliation banner concise', (): void => {
+    expect.assertions(2);
+
+    const bannerContent = docsConfig().banner?.content;
+
+    expect(bannerContent).toBe(
+      '**Xquik is not affiliated with or endorsed by X Corp.**',
+    );
+    expect(bannerContent).not.toContain('trademarks of X Corp.');
+  });
+
   it('keeps X API endpoint sections expanded in the sidebar', (): void => {
     expect.assertions(2);
 
