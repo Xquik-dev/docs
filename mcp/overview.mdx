@@ -1,7 +1,7 @@
 ---
 title: Connect AI Agents via MCP
 sidebarTitle: MCP Server
-description: Connect AI agents to Xquik API MCP v2.5.2 via Streamable HTTP
+description: Connect AI agents to Xquik API MCP v2.5.3 with OAuth 2.1 over Streamable HTTP
 keywords: ["MCP", "model context protocol", "AI agents", "Claude", "ChatGPT", "server setup"]
 ---
 
@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik API MCP v2.5.2 exposes a credential-scoped REST catalog through 2 [Model Context Protocol](https://modelcontextprotocol.io) tools. Full account keys and OAuth tokens see 118 operations. Guest `paid_reads` keys see exactly 33 eligible GET routes.
+Xquik API MCP v2.5.3 exposes a credential-scoped REST catalog through 2 [Model Context Protocol](https://modelcontextprotocol.io) tools. Full account keys and OAuth tokens see 118 operations. Guest `paid_reads` keys see exactly 33 eligible GET routes.
 
 <Note>
   This page covers the API MCP server at `https://xquik.com/mcp` for
@@ -28,10 +28,11 @@ Xquik API MCP v2.5.2 exposes a credential-scoped REST catalog through 2 [Model C
     Connect clients to `https://xquik.com/mcp`.
   </Card>
   <Card title="Server version" icon="badge-check">
-    Current API MCP server version: `2.5.2`.
+    Current API MCP server version: `2.5.3`.
   </Card>
   <Card title="Authentication" icon="key-round">
-    Use an API key in `x-api-key` or OAuth 2.1 Bearer tokens.
+    Prefer OAuth 2.1. API keys remain available for clients with secure header
+    storage.
   </Card>
 </CardGroup>
 
@@ -44,38 +45,49 @@ https://xquik.com/.well-known/mcp.json
 `GET` and `POST` requests to `/.well-known/mcp.json` return the MCP registry
 server card JSON directly. `GET /.well-known/mcp/server-card.json` returns the
 same card for clients that read the nested server-card path. OAuth-aware clients
-can also read `GET /.well-known/oauth-protected-resource/.well-known/mcp.json`
-for protected-resource metadata for `https://xquik.com/mcp`.
+read `GET /.well-known/oauth-protected-resource/mcp` for protected-resource
+metadata for `https://xquik.com/mcp`. Compatibility clients can also read `GET /.well-known/oauth-protected-resource/.well-known/mcp.json`, which redirects to the canonical metadata URL.
 
 Registry-card clients receive a `streamable-http` remote for
-`https://xquik.com/mcp` with `Authorization: Bearer {XQUIK_API_KEY}`. Create
-the key from `https://dashboard.xquik.com/en/account`; direct client examples
-below can still send the same key with `x-api-key` when the client supports
-custom headers.
+`https://xquik.com/mcp`. OAuth-capable clients discover authentication from the
+endpoint. Clients without OAuth may send an API key as
+`Authorization: Bearer {XQUIK_API_KEY}` or `x-api-key: {XQUIK_API_KEY}`.
+Create API keys at `https://dashboard.xquik.com/en/dashboard/account`. The direct client examples below use OAuth. Use the API-key fallback with `x-api-key` when the client supports secure request headers.
 
 Agent discovery metadata is also available at
 `https://xquik.com/.well-known/agent-index.json`. That index lists
 `com.xquik/mcp`, `https://xquik.com/mcp`, `https://xquik.com/.well-known/mcp.json`,
 the OAuth authorization metadata, the protected-resource metadata, and
-`https://xquik.com/auth.md`. The `auth.md` file is Markdown for agents that need
-the supported anonymous OAuth client registration path before requesting
-`mcp:tools`.
+`https://xquik.com/auth.md`. The `auth.md` file explains Client ID Metadata
+Documents (CIMD), Dynamic Client Registration (DCR), PKCE, and the `mcp:tools`
+scope.
+
+DCR at `https://xquik.com/api/oauth/register` is the supported anonymous OAuth client registration path when a client cannot use CIMD.
+
+Agent Skills discovery is available at
+`https://xquik.com/.well-known/agent-skills/index.json`. It publishes a
+SHA-256 digest for Xquik's hosted `SKILL.md` so compatible agents can verify the
+downloaded instructions.
 
 Unauthenticated requests to `https://xquik.com/mcp` return `401` with a
 `WWW-Authenticate: Bearer` challenge. The challenge includes
 `resource_metadata="https://xquik.com/.well-known/oauth-protected-resource/mcp"`,
-`scope="mcp:tools"`, `error="invalid_token"`, and
-`error_description="Missing or invalid access token"`. The JSON body is
-`{ "error": "Authentication required" }`. OAuth-capable clients use that
+`scope="mcp:tools"`, and the OAuth realm. The JSON body is
+`{ "error": "Authentication required" }`. OAuth-capable clients use the
 challenge to discover the authorization metadata. API-key clients should send
-`x-api-key` on the first request.
+`x-api-key` on the first request. A supplied invalid bearer token adds
+`error="invalid_token"` and `error_description="Invalid access token"` to the
+challenge.
 
 ## Authentication
 
 The MCP server supports 2 authentication methods:
 
-- **API key** (`x-api-key` or `Authorization: Bearer xq_your_api_key_here`): Full account keys expose 118 operations. Active guest keys expose only 33 `paid_reads` GET routes.
-- **OAuth 2.1** (Bearer token): Used by Claude.ai (web) and ChatGPT Developer Mode. OAuth handles authentication automatically via browser login. No API key needed. See [OAuth 2.1 documentation](/oauth/overview) for the complete authorization flow, token lifetimes, and implementation details.
+- **OAuth 2.1** (recommended): Compatible clients discover Xquik, open the browser login and consent flow, then store and refresh Bearer tokens. Xquik supports CIMD and DCR. No manual client ID, client secret, or API key is required for normal client setup.
+- **API key** (`x-api-key` or `Authorization: Bearer xq_your_api_key_here`): Use this fallback only when the client supports secure header storage but not OAuth. Full account keys expose 118 operations. Active guest keys expose only 33 `paid_reads` GET routes.
+
+See [OAuth 2.1 authorization](/oauth/overview) for discovery URLs, token
+lifetimes, client registration, and implementation details.
 
 OAuth and full account API key behavior remain unchanged. A pending guest key cannot execute paid reads until verified payment activates it.
 
@@ -184,52 +196,69 @@ MCP follows REST authentication, authorization, billing, and response contracts 
 
 <Tabs>
   <Tab title="Claude.ai (Web)">
-    Claude.ai supports MCP connectors natively via OAuth. Add Xquik as a connector from **Settings > Feature Preview > Integrations > Add More > Xquik**. The OAuth 2.1 flow handles authentication automatically. No API key needed.
+    1. Open **Customize > Connectors**.
+    2. Select **+**, then **Add custom connector**.
+    3. Enter `https://xquik.com/mcp`.
+    4. Select **Connect** and approve Xquik access in the browser.
+
+    Leave the advanced client ID and client secret fields empty. Xquik supports
+    Claude's CIMD client and DCR fallback.
   </Tab>
   <Tab title="Claude Desktop">
-    Claude Desktop only supports stdio transport. Use the `mcp-remote` npm package as a bridge (requires [Node.js](https://nodejs.org)). Add to your `claude_desktop_config.json`:
-
-    ```json
-    {
-      "mcpServers": {
-        "xquik": {
-          "command": "npx",
-          "args": [
-            "mcp-remote@latest",
-            "https://xquik.com/mcp",
-            "--header",
-            "x-api-key:xq_your_api_key_here"
-          ]
-        }
-      }
-    }
-    ```
+    Claude Desktop uses the same remote custom connectors as Claude.ai. Open
+    **Customize > Connectors**, add `https://xquik.com/mcp`, then complete the
+    browser authorization flow.
   </Tab>
   <Tab title="Claude Code">
-    Add to your `.mcp.json`:
+    Add the remote server:
 
-    ```json
-    {
-      "mcpServers": {
-        "xquik": {
-          "type": "http",
-          "url": "https://xquik.com/mcp",
-          "headers": {
-            "x-api-key": "xq_your_api_key_here"
-          }
-        }
-      }
-    }
+    ```bash
+    claude mcp add --transport http xquik https://xquik.com/mcp
     ```
+
+    Run `/mcp` inside Claude Code, select `xquik`, then authenticate.
   </Tab>
+  <Tab title="ChatGPT">
+    1. Open **Settings > Security and login** and enable **Developer mode**.
+    2. Open **Settings > Plugins** or `https://chatgpt.com/plugins`.
+    3. Select **+** and create a developer-mode app.
+    4. Enter `https://xquik.com/mcp` as the MCP server URL.
+    5. Complete the Xquik authorization flow.
+
+    ChatGPT uses Xquik OAuth. Do not paste an API key into the app definition.
+  </Tab>
+</Tabs>
+
+### OpenAI
+
+<Tabs>
   <Tab title="Codex CLI">
-    Add to `~/.codex/config.toml`:
+    Add Xquik and complete OAuth:
+
+    ```bash
+    codex mcp add xquik --url https://xquik.com/mcp
+    codex mcp login xquik
+    codex mcp list
+    ```
+
+    Codex CLI, the IDE extension, and the ChatGPT desktop app share the same
+    `config.toml` MCP configuration.
+  </Tab>
+  <Tab title="Codex Desktop">
+    1. Open **Settings > MCP servers**.
+    2. Select **Add server**.
+    3. Choose **Streamable HTTP** and enter `https://xquik.com/mcp`.
+    4. Save, select **Authenticate**, then restart.
+  </Tab>
+  <Tab title="Codex Config">
+    Add to `~/.codex/config.toml` or a trusted project's `.codex/config.toml`:
 
     ```toml
     [mcp_servers.xquik]
     url = "https://xquik.com/mcp"
-    http_headers = { "x-api-key" = "xq_your_api_key_here" }
     ```
+
+    Then run `codex mcp login xquik`.
   </Tab>
 </Tabs>
 
@@ -243,14 +272,14 @@ MCP follows REST authentication, authorization, billing, and response contracts 
     {
       "mcpServers": {
         "xquik": {
-          "url": "https://xquik.com/mcp",
-          "headers": {
-            "x-api-key": "xq_your_api_key_here"
-          }
+          "url": "https://xquik.com/mcp"
         }
       }
     }
     ```
+
+    Cursor starts OAuth when the server first returns `401`. You can also run
+    `cursor-agent mcp login xquik`.
   </Tab>
   <Tab title="VS Code">
     Add to `.vscode/mcp.json` (project) or use **MCP: Open User Configuration** (global):
@@ -260,14 +289,14 @@ MCP follows REST authentication, authorization, billing, and response contracts 
       "servers": {
         "xquik": {
           "type": "http",
-          "url": "https://xquik.com/mcp",
-          "headers": {
-            "x-api-key": "xq_your_api_key_here"
-          }
+          "url": "https://xquik.com/mcp"
         }
       }
     }
     ```
+
+    Start the server from the MCP view and follow the OAuth prompt. VS Code
+    stores the resulting authentication state.
   </Tab>
   <Tab title="Windsurf">
     Add to `~/.codeium/windsurf/mcp_config.json`:
@@ -276,14 +305,14 @@ MCP follows REST authentication, authorization, billing, and response contracts 
     {
       "mcpServers": {
         "xquik": {
-          "serverUrl": "https://xquik.com/mcp",
-          "headers": {
-            "x-api-key": "xq_your_api_key_here"
-          }
+          "serverUrl": "https://xquik.com/mcp"
         }
       }
     }
     ```
+
+    Enable the server in **Windsurf Settings > Cascade > MCP Servers**, then
+    complete OAuth.
   </Tab>
   <Tab title="OpenCode">
     Add to `opencode.json`:
@@ -293,44 +322,61 @@ MCP follows REST authentication, authorization, billing, and response contracts 
       "mcp": {
         "xquik": {
           "type": "remote",
-          "url": "https://xquik.com/mcp",
-          "headers": {
-            "x-api-key": "xq_your_api_key_here"
-          }
+          "url": "https://xquik.com/mcp"
         }
       }
     }
     ```
+
+    Then run:
+
+    ```bash
+    opencode mcp auth xquik
+    opencode mcp list
+    ```
   </Tab>
 </Tabs>
 
-### ChatGPT
+### Other terminal clients
 
-3 ways to connect ChatGPT to Xquik:
+<Tabs>
+  <Tab title="Gemini CLI">
+    Add to Gemini CLI settings:
 
-**Option 1: Custom GPT (Recommended)**
+    ```json
+    {
+      "mcpServers": {
+        "xquik": {
+          "httpUrl": "https://xquik.com/mcp"
+        }
+      }
+    }
+    ```
 
-Create a Custom GPT and add Xquik as an Action using the OpenAPI schema at `https://xquik.com/openapi.json`. Set the API key under Authentication > API Key > Header `x-api-key`.
+    Run `/mcp auth xquik` to complete OAuth.
+  </Tab>
+</Tabs>
 
-**Option 2: Agents SDK**
+### API-key fallback
 
-Use the [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/mcp/) for programmatic access:
+Use an API key only when the client cannot complete OAuth and can store secrets
+securely. Prefer an environment-backed header over a literal secret:
 
-```python
-from agents.mcp import MCPServerStreamableHttp
-
-async with MCPServerStreamableHttp(
-    url="https://xquik.com/mcp",
-    headers={"x-api-key": "xq_your_api_key_here"},
-    params={},
-) as xquik:
-    # use xquik as a tool provider
-    pass
+```json
+{
+  "mcpServers": {
+    "xquik": {
+      "url": "https://xquik.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${XQUIK_API_KEY}"
+      }
+    }
+  }
+}
 ```
 
-**Option 3: Developer Mode**
-
-ChatGPT Developer Mode supports MCP connectors via OAuth. Add Xquik from **Settings > Developer Mode > MCP Tools > Add**. Enter `https://xquik.com/mcp` as the endpoint. OAuth handles authentication automatically.
+Never commit API keys. Use the client's secure secret store when it does not
+support environment interpolation.
 
 ## Example prompts
 

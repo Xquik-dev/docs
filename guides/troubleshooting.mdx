@@ -14,11 +14,14 @@ Common issues, error codes, and solutions. If your problem isn't covered here, c
 
 ### 401 Unauthenticated
 
-The API key is missing, invalid, or revoked. Check the following:
+The API key or OAuth token is missing, invalid, expired, or revoked. Check the
+following:
 
-- **Header name:** Must be `x-api-key` (lowercase). `Authorization` or `X-Api-Key` won't work.
+- **API key header:** Send `x-api-key: xq_...` or `Authorization: Bearer xq_...`.
+- **OAuth header:** Send `Authorization: Bearer <access_token>`. OAuth clients normally manage this automatically.
 - **Key format:** Must start with `xq_`. If it doesn't, you're using the wrong value.
 - **Key revoked:** Revoked keys return 401 immediately. Generate a new key from the dashboard.
+- **OAuth token expired:** Let the MCP client refresh the token. Reconnect Xquik if refresh fails.
 - **API key management auth:** Use a dashboard session cookie to create the first key. Existing API keys or OAuth bearer tokens can list, create, and revoke keys for the same account.
 
 ```bash
@@ -189,16 +192,37 @@ Xquik has 2 MCP servers. Choose based on what the agent needs to do.
 Setup:
 
 1. For docs search, add `https://docs.xquik.com/mcp`.
-2. For account actions, use a full API key or OAuth login.
+2. For account actions, use a full API key or OAuth login. Prefer OAuth when the client supports browser authorization.
 3. For guest reads, activate a guest key through direct REST, then authenticate MCP with that key.
 
 Guest wallet creation, status, and top-up are never executable through MCP.
 
-Supported clients:
+Supported OAuth clients include:
 
-- Claude Desktop, Claude Code, ChatGPT (via Agents SDK), Codex CLI, Cursor, VS Code, Windsurf, OpenCode
+- Claude.ai, Claude Desktop, Claude Code, ChatGPT, Codex, Cursor, VS Code, Windsurf, OpenCode, and Gemini CLI
 
 See [Docs MCP server](/mcp/docs-mcp) for docs search, [MCP Server overview](/mcp/overview) for account actions, and the [MCP Tools](/mcp/tools) reference for tool details.
+
+### MCP OAuth does not open or shows an unknown application
+
+Use this checklist:
+
+1. Enter the exact server URL: `https://xquik.com/mcp`.
+2. Remove any manually entered client ID or client secret unless your client requires preregistration.
+3. Remove and re-add the connector to restart OAuth discovery.
+4. Start login from the MCP client. Do not open `/api/auth/google` directly.
+5. Allow the browser to return to the client's exact callback URL.
+
+Xquik publishes all required discovery documents:
+
+- Protected resource metadata: `https://xquik.com/.well-known/oauth-protected-resource/mcp`
+- Authorization server metadata: `https://xquik.com/.well-known/oauth-authorization-server`
+- Agent-readable auth guide: `https://xquik.com/auth.md`
+
+Modern clients should use CIMD. DCR remains available as a fallback. If a
+URL-form `client_id` still fails, the client metadata URL must return public
+HTTPS JSON, repeat its exact URL in `client_id`, and list the exact callback in
+`redirect_uris`.
 
 ### How do I export extraction results?
 

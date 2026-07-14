@@ -34,12 +34,13 @@ Reach for Xquik when:
 
 ### Authentication
 
+- **OAuth 2.1**: Browser-based MCP clients keep account access granted by OAuth scopes. Add `https://xquik.com/mcp` and complete the client-opened login and consent flow. CIMD is preferred; DCR remains available.
 - **Full account key**: Send `x-api-key: xq_your_api_key_here` or `Authorization: Bearer xq_your_api_key_here`.
 - **Guest key**: Send `Authorization: Bearer xq_your_guest_key_here`. Scope is fixed to `paid_reads`.
 - **Key format**: `xq_` prefix plus 64 hex characters
 - **Generation**: Dashboard > API Keys > Create new key
 - **Revocation**: Dashboard or `DELETE /api/v1/api-keys/{id}`
-- **OAuth 2.1**: Browser-based MCP clients keep account access granted by OAuth scopes.
+- **OAuth discovery**: Read protected-resource metadata, authorization-server metadata, or `https://xquik.com/auth.md`.
 
 ### Rate limits
 
@@ -142,7 +143,7 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 3. Use a full account key or OAuth token for 118 operations. Use an active guest key for 33 eligible GET routes.
 4. Use `explore` to search the scoped catalog and `xquik` to run allowed requests.
 
-API MCP v2.5.2 uses Streamable HTTP. It returns normalized snake_case fields, date-time fields as Unix seconds, structured errors, `has_more`, and `next_cursor`. Continue through empty pages while the cursor advances. Stop and report partial progress when a cursor is missing or repeats.
+API MCP v2.5.3 uses Streamable HTTP. It returns normalized snake_case fields, date-time fields as Unix seconds, structured errors, `has_more`, and `next_cursor`. Continue through empty pages while the cursor advances. Stop and report partial progress when a cursor is missing or repeats.
 
 API-key lifecycle, saved-payment quick top-up, the account top-up redirect, and all 3 guest wallet credential routes are unavailable through MCP. Never start checkout or top-up because a call returned `401` or `402`. Ask the user to choose an amount and option, then wait for explicit confirmation.
 
@@ -181,6 +182,9 @@ Refunds and disputes reconcile affected-purchase credits only. Unrelated credits
 - Docs MCP server: https://docs.xquik.com/mcp
 - API MCP server: https://docs.xquik.com/mcp/overview
 - MCP tools reference: https://docs.xquik.com/mcp/tools
+- Agent Skills index: https://xquik.com/.well-known/agent-skills/index.json
+- Agent index: https://xquik.com/.well-known/agent-index.json
+- OAuth instructions: https://xquik.com/auth.md
 - Guest wallets: https://docs.xquik.com/guides/guest-wallets
 - Direct MPP: https://docs.xquik.com/mpp/overview
 - Error handling: https://docs.xquik.com/guides/error-handling

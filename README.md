@@ -19,7 +19,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 - [Follower export](https://docs.xquik.com/guides/follower-export-crm) - export X followers to CRM or warehouse.
 - [Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow) - send DMs and store returned message IDs.
 - [Prefect](https://docs.xquik.com/guides/prefect) - schedule tweet, user, timeline, and trend reads in Prefect flows.
-- [MCP Server](https://docs.xquik.com/mcp) - connect Claude, ChatGPT, Cursor, and other AI agents.
+- [MCP Server](https://docs.xquik.com/mcp) - connect Claude, ChatGPT, Codex, Cursor, and other AI agents through OAuth 2.1.
 - [Webhooks](https://docs.xquik.com/webhooks/overview) - verify HMAC signatures and receive real-time X events.
 - [Apify Actors](https://docs.xquik.com/alternatives/apify) - run X tweet and follower export jobs on Apify.
 - [llms.txt](https://docs.xquik.com/llms.txt) - give AI coding agents the docs index.
@@ -28,9 +28,10 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 
 - [Context7 library](https://context7.com/xquik-dev/xquik-docs) - load indexed Xquik docs in supported coding agents.
 - [llms.txt](https://docs.xquik.com/llms.txt) - discover every public docs page before reading deeper.
-- [MCP Server](https://docs.xquik.com/mcp) - connect Xquik tools to Claude, ChatGPT, Cursor, and agent runtimes.
+- [MCP Server](https://docs.xquik.com/mcp) - connect Xquik tools through OAuth-first Streamable HTTP.
 - [Agent index](https://xquik.com/.well-known/agent-index.json) - discover the API MCP endpoint, manifest, OAuth metadata, and auth.md.
-- [auth.md](https://xquik.com/auth.md) - read the agent OAuth registration path for MCP access.
+- [Agent Skills index](https://xquik.com/.well-known/agent-skills/index.json) - discover and verify Xquik's hosted `SKILL.md`.
+- [auth.md](https://xquik.com/auth.md) - read CIMD, DCR, PKCE, and MCP authorization instructions.
 - [OpenAPI spec](https://docs.xquik.com/openapi.yaml) - generate clients or inspect request and response shapes.
 
 ## Common jobs
@@ -48,8 +49,8 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 
 - **REST API** - 126 operations spanning account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
 - **Webhooks** - HMAC SHA-256 signature verification, retry semantics, payload schemas.
-- **MCP server** - 118 full-scope operations or 33 guest `paid_reads` GET routes through Claude, ChatGPT, Cursor, and other agents.
-- **OAuth 2.1** - Authorization Code + PKCE flow, scopes, token refresh.
+- **MCP server** - 118 full-scope operations or 33 guest `paid_reads` GET routes through 2 code-mode tools.
+- **OAuth 2.1** - Automatic discovery, CIMD, DCR fallback, Authorization Code + PKCE, and token refresh.
 - **Guides** - Workflows, error handling, rate limits, billing, trends, extraction workflow, architecture, troubleshooting, types, webhook testing, and framework integrations.
 - **SDKs** - 10 generated client libraries (TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI as Go binary, Terraform provider) with auto-pagination, retry, and typed responses.
 - **Comparisons** - Factual alternatives and migration guides for X API, creator tools, social suites, data tools, and workflow platforms.

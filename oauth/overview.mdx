@@ -1,19 +1,30 @@
 ---
 title: OAuth 2.1 Authorization
 sidebarTitle: OAuth 2.1
-description: OAuth 2.1 Authorization Code flow with PKCE for MCP server authentication
-keywords: ["OAuth", "OAuth 2.1", "PKCE", "MCP", "authorization", "token", "refresh token", "dynamic client registration"]
+description: OAuth 2.1, PKCE, CIMD, and DCR for Xquik MCP authentication
+keywords: ["OAuth", "OAuth 2.1", "PKCE", "MCP", "authorization", "token", "refresh token", "CIMD", "dynamic client registration"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik supports [OAuth 2.1](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1) with PKCE for MCP server authentication. This is used by browser-based MCP clients that cannot store static API keys, currently **Claude.ai** (web) and **ChatGPT Developer Mode**.
+Xquik supports [OAuth 2.1](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1) Authorization Code with S256 PKCE for remote MCP authentication. Modern clients discover the flow automatically from `https://xquik.com/mcp`, open Xquik login and consent in a browser, then store and refresh Bearer tokens.
 
 <Info>
-  Most MCP clients (Claude Code, Cursor, VS Code, Windsurf, Codex CLI, OpenCode, Claude Desktop) use [API key authentication](/api-reference/authentication) instead. OAuth is only needed for clients that initiate auth through a browser login flow.
+  Prefer OAuth for Claude, ChatGPT, Codex, Cursor, VS Code, Windsurf,
+  OpenCode, Gemini CLI, and other compatible remote MCP clients. Xquik also
+  accepts [API keys](/api-reference/authentication) when a client cannot run
+  OAuth but can store headers securely.
 </Info>
+
+Xquik supports both MCP client registration paths:
+
+- **Client ID Metadata Documents (CIMD)**: Recommended for modern clients. The client's HTTPS metadata URL becomes its `client_id`. No registration request or client secret is required.
+- **Dynamic Client Registration (DCR)**: Compatibility fallback for clients that do not publish CIMD. The client registers itself once at `/api/oauth/register`.
+
+Normal users do not create either configuration manually. Enter
+`https://xquik.com/mcp` in the client and follow its authentication prompt.
 
 ## How it works
 
@@ -22,27 +33,27 @@ OAuth 2.1 Authorization Code with PKCE follows this sequence:
 ```text
 MCP Client                         Xquik
     │                                 │
-    │  1. Register client             │
+    │  1. Discover auth metadata      │
     │────────────────────────────────▶│
     │◀────────────────────────────────│
-    │         client_id               │
+    │  2. Use CIMD or register by DCR │
     │                                 │
-    │  2. Generate code_verifier      │
+    │  3. Generate code_verifier      │
     │     + code_challenge            │
     │                                 │
-    │  3. Redirect to /authorize      │
+    │  4. Redirect to /authorize      │
     │────────────────────────────────▶│
     │                                 │  User logs in
     │                                 │  + approves access
-    │  4. Redirect back with code     │
+    │  5. Redirect back with code     │
     │◀────────────────────────────────│
     │                                 │
-    │  5. Exchange code + verifier    │
+    │  6. Exchange code + verifier    │
     │────────────────────────────────▶│
     │◀────────────────────────────────│
     │    access_token + refresh_token │
     │                                 │
-    │  6. Call MCP with Bearer token  │
+    │  7. Call MCP with Bearer token  │
     │────────────────────────────────▶│
 ```
 
@@ -68,7 +79,9 @@ curl https://xquik.com/.well-known/oauth-authorization-server
   "code_challenge_methods_supported": ["S256"],
   "token_endpoint_auth_methods_supported": ["none", "client_secret_post"],
   "revocation_endpoint": "https://xquik.com/api/oauth/revoke",
-  "client_id_metadata_document_supported": false,
+  "authorization_response_iss_parameter_supported": true,
+  "response_modes_supported": ["query"],
+  "client_id_metadata_document_supported": true,
   "agent_auth": {
     "register_uri": "https://xquik.com/api/oauth/register",
     "claim_uri": "https://xquik.com/api/oauth/authorize",
@@ -77,6 +90,11 @@ curl https://xquik.com/.well-known/oauth-authorization-server
     "credential_types_supported": ["oauth_access_token"],
     "scopes_supported": ["mcp:tools"],
     "skill": "https://xquik.com/auth.md",
+    "anonymous": {
+      "claim_uri": "https://xquik.com/api/oauth/authorize",
+      "credential_types_supported": ["oauth_access_token"],
+      "scopes_supported": ["mcp:tools"]
+    },
     "oauth_client": {
       "registration_endpoint": "https://xquik.com/api/oauth/register",
       "response_types_supported": ["code"],
@@ -92,23 +110,62 @@ curl https://xquik.com/.well-known/oauth-authorization-server
 ### Protected resource metadata
 
 ```bash
-curl https://xquik.com/.well-known/oauth-protected-resource
+curl https://xquik.com/.well-known/oauth-protected-resource/mcp
 ```
 
 ```json Response
 {
   "resource": "https://xquik.com/mcp",
+  "resource_name": "Xquik MCP Server",
   "authorization_servers": ["https://xquik.com"],
   "bearer_methods_supported": ["header"],
   "scopes_supported": ["mcp:tools"]
 }
 ```
 
-## Complete flow
+The MCP endpoint also returns this metadata URL in its unauthenticated
+`WWW-Authenticate` challenge:
+
+```text
+Bearer realm="OAuth", resource_metadata="https://xquik.com/.well-known/oauth-protected-resource/mcp", scope="mcp:tools"
+```
+
+## Client registration choices
+
+### Client ID Metadata Document
+
+Publish a JSON document at a stable HTTPS URL and use that exact URL as the
+`client_id`:
+
+```json
+{
+  "client_id": "https://client.example/oauth/client.json",
+  "client_name": "Example MCP Client",
+  "redirect_uris": ["https://client.example/oauth/callback"],
+  "grant_types": ["authorization_code", "refresh_token"],
+  "response_types": ["code"],
+  "token_endpoint_auth_method": "none"
+}
+```
+
+The document must use `application/json`, remain at or below 5 KiB, repeat the
+exact client ID URL, and list every allowed redirect URI. Xquik fetches CIMD
+without redirects and accepts public clients with token authentication method
+`none`.
+
+### Dynamic Client Registration
+
+Clients without CIMD may register at `POST /api/oauth/register`. DCR supports
+public clients with `none` and confidential clients with
+`client_secret_post`. The manual flow below uses a DCR-issued UUID so each step
+can show a concrete `client_id`.
+
+## Manual implementation
 
 <Steps>
-  <Step title="Register a client">
-    Register your MCP client to get a `client_id`. This is a one-time setup.
+  <Step title="Register a DCR client">
+    Skip this step when the client uses CIMD. For DCR, register once to get a
+    UUID `client_id`.
 
     ```bash
     curl -X POST https://xquik.com/api/oauth/register \
@@ -125,6 +182,7 @@ curl https://xquik.com/.well-known/oauth-protected-resource
       "client_name": "My MCP Client",
       "redirect_uris": ["https://myapp.example.com/callback"],
       "grant_types": ["authorization_code", "refresh_token"],
+      "response_types": ["code"],
       "token_endpoint_auth_method": "none"
     }
     ```
@@ -209,6 +267,7 @@ curl https://xquik.com/.well-known/oauth-protected-resource
       &code_challenge_method=S256
       &scope=mcp:tools
       &state=random_csrf_token
+      &resource=https://xquik.com/mcp
     ```
 
     **Required parameters:**
@@ -220,6 +279,7 @@ curl https://xquik.com/.well-known/oauth-protected-resource
     | `redirect_uri` | Must match a registered URI exactly |
     | `code_challenge` | Base64url-encoded SHA256 digest of the `code_verifier` |
     | `code_challenge_method` | `S256` |
+    | `resource` | `https://xquik.com/mcp` |
 
     **Optional parameters:**
 
@@ -227,11 +287,9 @@ curl https://xquik.com/.well-known/oauth-protected-resource
     |-----------|---------|-------------|
     | `scope` | `mcp:tools` | Only `mcp:tools` is supported |
     | `state` | | Opaque value for CSRF protection |
-    | `resource` | `https://xquik.com/mcp` | Target resource identifier |
 
-    <Note>
-      The `scope` and `resource` parameters default to the only supported values (`mcp:tools` and `https://xquik.com/mcp`). You can omit them.
-    </Note>
+    Xquik defaults `resource` to `https://xquik.com/mcp` for compatibility, but
+    MCP clients must send it in authorization and token requests.
 
     The user sees a login page (Google OAuth or email magic link) followed by a consent screen. After approval, Xquik redirects back to your `redirect_uri`.
   </Step>
@@ -256,7 +314,8 @@ curl https://xquik.com/.well-known/oauth-protected-resource
     &code=AUTH_CODE_HERE\
     &code_verifier=YOUR_CODE_VERIFIER\
     &client_id=550e8400-e29b-41d4-a716-446655440000\
-    &redirect_uri=https://myapp.example.com/callback"
+    &redirect_uri=https://myapp.example.com/callback\
+    &resource=https://xquik.com/mcp"
     ```
 
     ```json Response
@@ -297,7 +356,8 @@ curl -X POST https://xquik.com/api/oauth/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=refresh_token\
 &refresh_token=f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1\
-&client_id=550e8400-e29b-41d4-a716-446655440000"
+&client_id=550e8400-e29b-41d4-a716-446655440000\
+&resource=https://xquik.com/mcp"
 ```
 
 ```json Response
@@ -365,6 +425,7 @@ Content-Type: application/json
 | `redirect_uris` | string[] | Yes | Allowed redirect URIs (1 or more) |
 | `token_endpoint_auth_method` | string | No | `none` (default) or `client_secret_post` |
 | `grant_types` | string[] | No | Defaults to `["authorization_code", "refresh_token"]` |
+| `response_types` | string[] | No | Defaults to `["code"]` |
 
 ### Response
 
@@ -374,6 +435,7 @@ Content-Type: application/json
 | `client_name` | string | Echoed from request |
 | `redirect_uris` | string[] | Echoed from request |
 | `grant_types` | string[] | Resolved grant types |
+| `response_types` | string[] | Resolved response types |
 | `token_endpoint_auth_method` | string | Resolved auth method |
 | `client_secret` | string | Only present for confidential clients (`client_secret_post`) |
 | `client_id_issued_at` | number | Unix timestamp when the client ID was issued |
@@ -450,6 +512,7 @@ authUrl.searchParams.set("code_challenge", codeChallenge);
 authUrl.searchParams.set("code_challenge_method", "S256");
 authUrl.searchParams.set("scope", "mcp:tools");
 authUrl.searchParams.set("state", state);
+authUrl.searchParams.set("resource", "https://xquik.com/mcp");
 
 console.log("Open this URL in your browser:");
 console.log(authUrl.toString());
@@ -484,6 +547,7 @@ const server = http.createServer(async (req, res) => {
       code_verifier: codeVerifier,
       client_id: CLIENT_ID,
       redirect_uri: REDIRECT_URI,
+      resource: "https://xquik.com/mcp",
     }),
   });
 

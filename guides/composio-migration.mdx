@@ -16,9 +16,9 @@ Composio's MCP endpoint (`mcp.composio.dev`) was decommissioned in March 2026, a
 | | Composio | Xquik |
 |---|---|---|
 | **Accounts needed** | 3 (X Developer, Composio, AI tool) | 1 |
-| **Credentials** | 6 (API Key, API Secret, Bearer Token, OAuth Client ID, OAuth Client Secret, Composio API Key) | 1 (API key) |
-| **Setup steps** | 14 | 3 |
-| **OAuth dance** | Yes (browser redirect on first use) | No |
+| **Credentials** | 6 (API Key, API Secret, Bearer Token, OAuth Client ID, OAuth Client Secret, Composio API Key) | 0 manual credentials with MCP OAuth; 1 API key as a fallback |
+| **Setup steps** | 14 | 2 |
+| **OAuth flow** | Browser redirect plus manually configured X credentials | Automatic Xquik login and consent |
 | **X Developer Portal** | Required (create app, configure callbacks) | Not required |
 | **Dashboard config** | Required (create auth config, toggle custom creds) | Not required |
 | **Setup code** | ~20 lines + CLI commands | 0 lines (just config) |
@@ -71,32 +71,27 @@ Composio's MCP endpoint (`mcp.composio.dev`) was decommissioned in March 2026, a
   </Step>
 </Steps>
 
-## After: Xquik Setup (3 Steps)
+## After: Xquik Setup (2 Steps)
 
 <Steps>
-  <Step title="Get an API key">
-    Sign up at [xquik.com](https://xquik.com), subscribe, and generate an API key from the dashboard.
-  </Step>
-  <Step title="Add MCP config">
-    Add this to your MCP configuration:
+  <Step title="Add the MCP server">
+    Add `https://xquik.com/mcp` to your MCP client:
 
     <CodeGroup>
 
     ```bash Claude Code
-    claude mcp add xquik \
-      --transport http \
-      "https://xquik.com/mcp" \
-      --header "x-api-key: xq_your_api_key_here"
+    claude mcp add --transport http xquik https://xquik.com/mcp
     ```
 
-    ```json Cursor / VS Code
+    ```bash Codex
+    codex mcp add xquik --url https://xquik.com/mcp
+    ```
+
+    ```json Cursor
     {
       "mcpServers": {
         "xquik": {
-          "url": "https://xquik.com/mcp",
-          "headers": {
-            "x-api-key": "xq_your_api_key_here"
-          }
+          "url": "https://xquik.com/mcp"
         }
       }
     }
@@ -104,10 +99,15 @@ Composio's MCP endpoint (`mcp.composio.dev`) was decommissioned in March 2026, a
 
     </CodeGroup>
   </Step>
-  <Step title="Use it">
-    Start using X tools immediately. No OAuth flow, no browser redirect.
+  <Step title="Authorize Xquik">
+    Start authentication from the client. Use `/mcp` in Claude Code or run
+    `codex mcp login xquik` in Codex. Complete Xquik login and consent in the
+    browser. CIMD or DCR handles client registration automatically.
   </Step>
 </Steps>
+
+Use an API key only for programmatic clients that cannot complete OAuth. Store
+the key in a secret manager and send it as a Bearer header.
 
 ## Code Migration
 
@@ -135,16 +135,18 @@ COMPOSIO_MCP_URL = composio_session.mcp.url
 ```
 
 ```python After (Xquik)
+import os
+
 from pydantic_ai import Agent
 from pydantic_ai.mcp import MCPServerStreamableHTTP
 
 server = MCPServerStreamableHTTP(
     "https://xquik.com/mcp",
-    headers={"x-api-key": "xq_your_api_key_here"},
+    headers={"Authorization": f"Bearer {os.environ['XQUIK_API_KEY']}"},
 )
 
 agent = Agent("anthropic:claude-sonnet-4-20250514", toolsets=[server])
-# Ready to use immediately
+# API-key fallback for noninteractive runtimes
 ```
 
 </CodeGroup>
@@ -175,12 +177,12 @@ const mcp = new MCPClient({
     xquik: {
       url: new URL("https://xquik.com/mcp"),
       requestInit: {
-        headers: { "x-api-key": process.env.XQUIK_API_KEY! },
+        headers: { Authorization: `Bearer ${process.env.XQUIK_API_KEY}` },
       },
     },
   },
 });
-// Ready to use immediately
+// API-key fallback for noninteractive runtimes
 ```
 
 </CodeGroup>
