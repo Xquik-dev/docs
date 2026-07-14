@@ -117,8 +117,8 @@ describe('Plugin docs', (): void => {
     const expected = [
       `OpenClaw \`${packageJson.openclaw?.compat?.minGatewayVersion}\` or newer`,
       `Node.js \`${packageJson.engines?.node?.replace('>=', '')}\` or newer`,
-      'openclaw plugins install @xquik/tweetclaw@1.6.31 --pin',
-      `The current published npm version is \`1.6.31\`, and the current source-truth version is \`${packageJson.version}\``,
+      `openclaw plugins install @xquik/tweetclaw@${packageJson.version} --pin`,
+      `The current published npm version and source-truth version are both \`${packageJson.version}\`.`,
       `${mppEndpointCount} read-only X API endpoints`,
       `${endpointCount} agent-callable endpoints`,
       '`explore`',
