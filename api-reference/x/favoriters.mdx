@@ -1,6 +1,6 @@
 ---
 title: "Get tweet favoriters"
-description: "Retrieve users who liked a specific tweet with profile rows, cursor checkpoints, and engagement handoffs"
+description: "Retrieve visible users who liked a specific post with profile rows, cursor checkpoints, and engagement handoffs"
 api: "GET /x/tweets/{id}/favoriters"
 keywords: ["get tweet favoriters", "tweet likers API", "tweet likes API", "users who liked a tweet", "Twitter tweet likers API", "X tweet likers API", "CRM enrichment", "giveaway verification"]
 ---
@@ -18,11 +18,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 </Callout>
 
 <Info>
-  Get tweet favoriters returns user profiles for accounts that liked one tweet.
-  It is also useful as a tweet likers API, tweet likes API, X tweet likers API,
+  Get tweet favoriters returns user profiles when X exposes who liked a post. It
+  is also useful as a tweet likers API, tweet likes API, X tweet likers API,
   Twitter tweet likers API, or users who liked a tweet endpoint. The canonical
   endpoint remains `GET /api/v1/x/tweets/{id}/favoriters`.
 </Info>
+
+<Warning>
+  X does not expose liker identities for every post. When a post reports likes
+  but no liker identities are available, the endpoint returns `424
+  favoriters_unavailable`. Do not interpret this error as zero likes or proof
+  that a specific user did not participate.
+</Warning>
 
 <CodeGroup>
   ```bash First page
@@ -42,6 +49,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_your_api_key_here" },
   });
   const data = await response.json();
+  if (!response.ok) throw new Error(JSON.stringify(data));
   const nextCursor = data.has_next_page ? data.next_cursor : null;
   const likerRows = data.users.map((user) => ({
     source_tweet_id: tweetId,
@@ -73,6 +81,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_your_api_key_here"},
   )
   data = response.json()
+  response.raise_for_status()
   next_cursor = data["next_cursor"] if data["has_next_page"] else None
   liker_rows = [
       {
@@ -104,15 +113,15 @@ from the last completed page without duplicate rows.
 ## Direct tweet liker handoff
 
 Use `GET /api/v1/x/tweets/{id}/favoriters` when a workflow needs one row per
-account that liked a tweet for giveaway checks, CRM enrichment, audience
+visible account that liked a post for giveaway checks, CRM enrichment, audience
 analysis, or follow-up jobs. Store `source_tweet_id`, `liker_id`, `username`,
 `display_name`, `can_dm`, `follower_count`, `following_count`, `verified`,
 `verified_type`, `profile_image_url`, and a separate `next_cursor` checkpoint.
 
 <CardGroup cols={2}>
   <Card title="Liker rows" icon="rows-3">
-    Store `users[]` as the profile rows for accounts that liked the source
-    tweet.
+    Store `users[]` as the visible profile rows for accounts that liked the
+    source post.
   </Card>
   <Card title="Stable upserts" icon="key-round">
     Store `users[].id` as `liker_id` with `source_tweet_id` for idempotent
@@ -206,7 +215,7 @@ can return fewer users than a full page; zero affordable results return
 <Tabs>
   <Tab title="200 OK">
     <ResponseField name="users" type="object[]">
-      Array of users who liked the tweet.
+      Array of visible users who liked the post.
       <Expandable title="User object fields">
         <ResponseField name="id" type="string">X user ID.</ResponseField>
         <ResponseField name="username" type="string">X username.</ResponseField>
@@ -296,11 +305,16 @@ can return fewer users than a full page; zero affordable results return
     ```
     Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
   </Tab>
-  <Tab title="424 Dependency Failed">
+  <Tab title="424 Liker Identities Unavailable">
     ```json
-    { "error": "x_api_unavailable" }
+    {
+      "error": "favoriters_unavailable",
+      "message": "Users who liked this post are unavailable. Use retweeters or replies instead."
+    }
     ```
-    The normalized v1 response contract can return 424 when the read service is unavailable.
+    The post reports likes, but X does not expose the corresponding user
+    identities. Use retweeters or replies when the workflow needs a visible
+    participant list.
   </Tab>
 </Tabs>
 

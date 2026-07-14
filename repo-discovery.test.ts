@@ -5925,7 +5925,7 @@ const REQUIRED_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
   '<Card title="Tweet target" icon="message-circle">',
   'Use `targetTweetId` for tweet-centered jobs:',
   '`article_extractor` extracts article content from a tweet.',
-  '`favoriters` extracts users who liked a tweet.',
+  '`favoriters` extracts visible users who liked a post.',
   '`quote_extractor` extracts users who quote-tweeted a tweet.',
   '`reply_extractor` extracts users who replied to a tweet.',
   '`repost_extractor` extracts users who retweeted a tweet.',

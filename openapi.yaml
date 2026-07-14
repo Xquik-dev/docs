@@ -6425,7 +6425,12 @@ paths:
   /x/tweets/{id}/favoriters:
     get:
       operationId: getTweetFavoriters
-      summary: List users who liked a tweet
+      summary: List visible users who liked a tweet
+      description: >
+        Returns liker profiles that X makes visible for the post. X can withhold
+        liker identities even when the post reports likes. In that case this
+        endpoint returns 424 `favoriters_unavailable` instead of a misleading
+        empty success.
       tags:
         - Tweets
       security:
@@ -6447,7 +6452,7 @@ paths:
         - $ref: '#/components/parameters/FollowerPageSize'
       responses:
         '200':
-          description: List of users who liked the tweet
+          description: Visible users who liked the tweet
           content:
             application/json:
               schema:
@@ -6463,7 +6468,7 @@ paths:
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
         '424':
-          $ref: '#/components/responses/XApiError'
+          $ref: '#/components/responses/FavoritersUnavailable'
 
   /x/users/{id}/tweets:
     get:
@@ -7827,6 +7832,12 @@ paths:
     get:
       operationId: getTweetReplies
       summary: List replies to a tweet
+      description: >
+        Returns visible replies. For an unfiltered first page, Xquik compares a
+        terminal page with the post's reported reply count. If the page is
+        visibly incomplete, the endpoint returns 424 `replies_incomplete`
+        instead of presenting partial coverage as complete. Use tweet search
+        with a `conversation_id:{id}` query as the broader fallback.
       tags:
         - Tweets
       security:
@@ -7899,7 +7910,7 @@ paths:
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
         '424':
-          $ref: '#/components/responses/XApiError'
+          $ref: '#/components/responses/RepliesIncomplete'
 
   /x/tweets/{id}/retweeters:
     get:
@@ -8856,6 +8867,33 @@ components:
           example:
             error: 'x_api_unavailable'
             message: 'X data source temporarily unavailable. Try again later.'
+    FavoritersUnavailable:
+      description: >
+        X reports likes for the post but does not expose the corresponding user
+        identities. Returns error code `favoriters_unavailable`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: 'favoriters_unavailable'
+            message:
+              'Users who liked this post are unavailable. Use retweeters or
+              replies instead.'
+    RepliesIncomplete:
+      description: >
+        The direct replies page ended before the post's reported reply count.
+        Returns error code `replies_incomplete` so verification workflows do not
+        treat partial coverage as exhaustive.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: 'replies_incomplete'
+            message:
+              'Replies are incomplete. Use tweet search with a conversation_id
+              filter.'
     ConnectAlreadyConnected:
       description: >
         The specified X account is already connected to this Xquik account.
