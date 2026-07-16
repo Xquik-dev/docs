@@ -19,7 +19,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 - [Follower export](https://docs.xquik.com/guides/follower-export-crm) - export X followers to CRM or warehouse.
 - [Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow) - send DMs and store returned message IDs.
 - [Prefect](https://docs.xquik.com/guides/prefect) - schedule tweet, user, timeline, and trend reads in Prefect flows.
-- [MCP Server](https://docs.xquik.com/mcp) - connect Claude, ChatGPT, Codex, Cursor, and other AI agents through OAuth 2.1.
+- [MCP Server](https://docs.xquik.com/mcp) - connect AI clients through their current OAuth or secure API-key path.
 - [Webhooks](https://docs.xquik.com/webhooks/overview) - verify HMAC signatures and receive real-time X events.
 - [Apify Actors](https://docs.xquik.com/alternatives/apify) - run X tweet and follower export jobs on Apify.
 - [llms.txt](https://docs.xquik.com/llms.txt) - give AI coding agents the docs index.
@@ -29,6 +29,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 - [Context7 library](https://context7.com/xquik-dev/xquik-docs) - load indexed Xquik docs in supported coding agents.
 - [llms.txt](https://docs.xquik.com/llms.txt) - discover every public docs page before reading deeper.
 - [MCP Server](https://docs.xquik.com/mcp) - connect Xquik tools through OAuth-first Streamable HTTP.
+- [Codex OAuth troubleshooting](https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error) - if Codex reports `Authorization server response missing required issuer: expected https://xquik.com`, use `bearer_token_env_var = "XQUIK_API_KEY"` until the [upstream Codex issue](https://github.com/openai/codex/issues/31573) identifies a fixed release. Xquik already returns the required RFC 9207 `iss` value.
 - [Agent index](https://xquik.com/.well-known/agent-index.json) - discover the API MCP endpoint, manifest, OAuth metadata, and auth.md.
 - [Agent Skills index](https://xquik.com/.well-known/agent-skills/index.json) - discover and verify Xquik's hosted `SKILL.md`.
 - [auth.md](https://xquik.com/auth.md) - read CIMD, DCR, PKCE, and MCP authorization instructions.

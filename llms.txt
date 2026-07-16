@@ -65,7 +65,7 @@ Refunds and disputes reconcile affected-purchase credits only. Unrelated credits
 
 - REST API: `https://xquik.com/api/v1`
 - OpenAPI Spec: `https://xquik.com/openapi.json` (OpenAPI 3.1, RFC 9727 discovery)
-- MCP Server: `https://xquik.com/mcp` (v2.5.3, Streamable HTTP, OAuth 2.1 or API-key Bearer fallback)
+- MCP Server: `https://xquik.com/mcp` (v2.5.3, Streamable HTTP, OAuth 2.1 or client-specific API-key Bearer fallback; ChatGPT requires OAuth)
 
 ## Rate Limits
 
@@ -182,7 +182,9 @@ Goals: `engagement`, `followers`, `authority`, `conversation`.
 
 ## MCP Server
 
-API MCP v2.5.3 uses Streamable HTTP at `https://xquik.com/mcp`. Prefer OAuth 2.1; clients without OAuth can use an API-key Bearer fallback. Full credentials expose 118 operations. Guest `paid_reads` keys expose exactly 33 eligible GET routes. Guest credential routes are direct REST only. Never start billing after a 402 without explicit confirmation. Follow advancing cursors, bound results, and keep output within 24,000 characters.
+API MCP v2.5.3 uses Streamable HTTP at `https://xquik.com/mcp`. Prefer OAuth 2.1. API-key fallback depends on the client and requires documented secure header storage; ChatGPT custom apps require OAuth. Full credentials expose 118 operations. Guest `paid_reads` keys expose exactly 33 eligible GET routes. Guest credential routes are direct REST only. Never start billing after a 402 without explicit confirmation. Follow advancing cursors, bound results, and keep output within 24,000 characters.
+
+Codex OAuth compatibility: affected Codex releases discard the RFC 9207 `iss` value before token exchange even though Xquik returns it. If Codex reports `Authorization server response missing required issuer: expected https://xquik.com`, set `XQUIK_API_KEY` and configure `bearer_token_env_var = "XQUIK_API_KEY"` until https://github.com/openai/codex/issues/31573 identifies a fixed release. Docs MCP needs no authentication and can retrieve https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error while API MCP OAuth is blocked.
 
 ## Radar
 
@@ -310,7 +312,7 @@ Subscription required, metered.
 - [Set X Identity](https://docs.xquik.com/api-reference/account/x-identity): Link your X username to your Xquik account for own-account detection.
 - [Create API Key](https://docs.xquik.com/api-reference/api-keys/create): Generate a new API key for programmatic access (session auth only).
 - [List API Keys](https://docs.xquik.com/api-reference/api-keys/list): Retrieve all API keys with status and usage timestamps (session auth only).
-- [Revoke API Key](https://docs.xquik.com/api-reference/api-keys/revoke): Permanently deactivate an API key. Immediate and irreversible.
+- [Revoke API Key](https://docs.xquik.com/api-reference/api-keys/revoke): Permanently deactivate an API key with same-origin session auth. Immediate and irreversible.
 - [Subscribe](https://docs.xquik.com/api-reference/account/subscribe): Get a checkout URL (new subscribers) or billing portal URL (existing subscribers). Free.
 
 ## API Reference - Monitors
@@ -496,6 +498,7 @@ Subscription required, metered.
 - [MCP Tools Reference](https://docs.xquik.com/mcp/tools): `explore` and `xquik` sandbox tools, examples, schemas.
 - [Agent MCP Handoff](https://docs.xquik.com/mcp/agent-handoff): Route agents across docs, API MCP, REST, webhooks, replay, and exports.
 - [Docs MCP Server](https://docs.xquik.com/mcp/docs-mcp): Search and read indexed public docs at `https://docs.xquik.com/mcp`.
+- [Codex OAuth troubleshooting](https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error): Recover from affected Codex releases with an environment-backed API key.
 
 ## OAuth
 
@@ -552,7 +555,7 @@ Framework guides for agents, RAG, and workflow tools:
 - [Make](https://docs.xquik.com/guides/make): Custom app blueprint, instant triggers, polling.
 - [Pipedream](https://docs.xquik.com/guides/pipedream): Pipedream package blueprint with auth, REST actions, webhook sources, and extraction polling.
 - [Prefect](https://docs.xquik.com/guides/prefect): Prefect collection with an Xquik credentials block, 6 async read tasks, retries, and raw JSON handoffs.
-- [Composio Migration](https://docs.xquik.com/guides/composio-migration): Replace Composio's deprecated Twitter MCP
+- [Composio Migration](https://docs.xquik.com/guides/composio-migration): Move a Composio Twitter MCP workflow to Xquik's fixed endpoint and managed authorization.
 
 ## Resources
 

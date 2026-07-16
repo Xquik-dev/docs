@@ -19,42 +19,47 @@ Build a Microsoft Agent Framework agent that can search tweets, hand off IDs and
 ## Install
 
 ```bash
-pip install agent-framework mcp
+pip install agent-framework
 ```
 
-The `agent-framework` meta-package installs all core and provider sub-packages. The `mcp` package enables `MCPStreamableHTTPTool` support.
+The `agent-framework` meta-package installs the core framework, providers, and
+MCP support.
 
 ## Full Example
 
 ```python
 import asyncio
+import os
 from pathlib import Path
-from agent_framework import ChatAgent, MCPStreamableHTTPTool
+from agent_framework import Agent, MCPStreamableHTTPTool
 from agent_framework.openai import OpenAIChatClient
 
 
 async def main():
-    mcp_tool = MCPStreamableHTTPTool(
-        name="xquik",
-        url="https://xquik.com/mcp",
-        headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-        description="X (Twitter) data platform with 118 MCP operations",
-    )
-
-    async with mcp_tool:
-        agent = ChatAgent(
-            chat_client=OpenAIChatClient(model_id="gpt-4o"),
-            name="xquik_agent",
-            instructions="You help users interact with X (Twitter) via the Xquik API.",
-            tools=[mcp_tool],
-        )
-
+    async with Agent(
+        client=OpenAIChatClient(model="gpt-4o"),
+        name="xquik_agent",
+        instructions="You help users interact with X through the Xquik API.",
+        tools=MCPStreamableHTTPTool(
+            name="xquik",
+            url="https://xquik.com/mcp",
+            description="X data platform with 118 MCP operations",
+            header_provider=lambda kwargs: {
+                "x-api-key": kwargs["xquik_api_key"],
+            },
+        ),
+    ) as agent:
         handoff_prompt = (
             "Search for tweets about AI agents. Return compact JSON with "
             "query, route_used, tweets[{tweet_id,text,author_username,created_at}], "
             "has_more, next_cursor."
         )
-        response = await agent.run(handoff_prompt)
+        response = await agent.run(
+            handoff_prompt,
+            function_invocation_kwargs={
+                "xquik_api_key": os.environ["XQUIK_API_KEY"],
+            },
+        )
         Path("xquik-agent-handoff.json").write_text(response.text, encoding="utf-8")
 
 
@@ -94,76 +99,65 @@ The agent discovers `explore` and `xquik`, then can call 118 MCP operations. The
 
 ## Streaming Responses
 
-Use `run_stream` for real-time token streaming:
+Pass `stream=True` to `run` for real-time token streaming:
 
 ```python
-async with mcp_tool:
-    agent = ChatAgent(
-        chat_client=OpenAIChatClient(model_id="gpt-4o"),
-        name="xquik_agent",
-        instructions="You help users interact with X (Twitter) via the Xquik API.",
-        tools=[mcp_tool],
-    )
-
-    async for update in agent.run_stream("What are the trending topics on X right now?"):
+async with agent:
+    async for update in agent.run(
+        "What are the trending topics on X right now?",
+        stream=True,
+        function_invocation_kwargs={"xquik_api_key": xquik_api_key},
+    ):
         if update.text:
             print(update.text, end="")
 ```
 
-## Multi-Agent Orchestration
+## Multi-Agent Handoff
 
-Use `GroupChatBuilder` to coordinate specialized agents sharing the same MCP tools:
+Keep data access in one agent, then pass its compact result to a separate
+analysis agent. This makes the MCP credential boundary explicit.
 
 ```python
 import asyncio
+import os
 from pathlib import Path
-from agent_framework import ChatAgent, MCPStreamableHTTPTool, GroupChatBuilder
+from agent_framework import Agent, MCPStreamableHTTPTool
 from agent_framework.openai import OpenAIChatClient
 
 
 async def main():
-    client = OpenAIChatClient(model_id="gpt-4o")
-
-    mcp_tool = MCPStreamableHTTPTool(
-        name="xquik",
-        url="https://xquik.com/mcp",
-        headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-        description="X (Twitter) data platform",
+    client = OpenAIChatClient(model="gpt-4o")
+    researcher = Agent(
+        client=client,
+        name="researcher",
+        instructions=(
+            "Search X. Return compact JSON with "
+            "tweet_id, author_username, text, created_at, has_more, next_cursor, "
+            "and route_used."
+        ),
+        tools=MCPStreamableHTTPTool(
+            name="xquik",
+            url="https://xquik.com/mcp",
+            header_provider=lambda kwargs: {
+                "x-api-key": kwargs["xquik_api_key"],
+            },
+        ),
+    )
+    analyst = Agent(
+        client=client,
+        name="analyst",
+        instructions="Analyze supplied X data. Do not fetch additional data.",
     )
 
-    async with mcp_tool:
-        researcher = ChatAgent(
-            chat_client=client,
-            name="researcher",
-            instructions=(
-                "Search X for tweets and user profiles. Return compact JSON with "
-                "tweet_id, author_username, text, created_at, has_more, next_cursor, "
-                "and route_used."
-            ),
-            tools=[mcp_tool],
+    async with researcher, analyst:
+        research = await researcher.run(
+            "Find the top 10 most engaged tweets about AI agents.",
+            function_invocation_kwargs={
+                "xquik_api_key": os.environ["XQUIK_API_KEY"],
+            },
         )
-
-        analyst = ChatAgent(
-            chat_client=client,
-            name="analyst",
-            instructions="Analyze tweet data and identify trends, sentiment, and key influencers.",
-        )
-
-        workflow = (
-            GroupChatBuilder()
-            .with_orchestrator(
-                ChatAgent(
-                    chat_client=client,
-                    name="coordinator",
-                    instructions="Coordinate research tasks. Delegate data collection to the researcher and analysis to the analyst.",
-                )
-            )
-            .participants([researcher, analyst])
-            .build()
-        )
-
-        result = await workflow.run(
-            "Find the top 10 most engaged tweets about AI agents and analyze the sentiment."
+        result = await analyst.run(
+            "Analyze sentiment and key themes in this JSON:\n" + research.text
         )
         Path("xquik-agent-workflow-handoff.json").write_text(
             result.text,
@@ -176,49 +170,56 @@ asyncio.run(main())
 
 ## Per-Run Headers
 
-Pass API keys dynamically via `tool_resources` for multi-tenant apps where each user has their own Xquik API key:
+Pass API keys through `header_provider` and `function_invocation_kwargs` for
+multi-tenant apps. The key remains scoped to the current run.
 
 ```python
 mcp_tool = MCPStreamableHTTPTool(
     name="xquik",
     url="https://xquik.com/mcp",
-    description="X (Twitter) data platform",
+    description="X data platform",
+    header_provider=lambda kwargs: {
+        "x-api-key": kwargs["xquik_api_key"],
+    },
 )
 
-async with mcp_tool:
-    agent = ChatAgent(
-        chat_client=OpenAIChatClient(model_id="gpt-4o"),
-        name="xquik_agent",
-        instructions="You help users interact with X (Twitter) via the Xquik API.",
-        tools=[mcp_tool],
-    )
-
+async with Agent(
+    client=OpenAIChatClient(model="gpt-4o"),
+    name="xquik_agent",
+    instructions="You help users interact with X through the Xquik API.",
+    tools=mcp_tool,
+) as agent:
     response = await agent.run(
         "Search for tweets about AI agents",
-        tool_resources={"xquik": {"headers": {"x-api-key": user_api_key}}},
+        function_invocation_kwargs={"xquik_api_key": user_api_key},
     )
 ```
 
-Headers passed via `tool_resources` are available only for the current run and are not persisted.
+Do not close over a shared user's key in `header_provider`. Resolve it from the
+current call's `function_invocation_kwargs`.
 
 ## Azure OpenAI
 
-Swap `OpenAIChatClient` for `AzureOpenAIChatClient` to use Azure-hosted models:
+Use the same `OpenAIChatClient` with explicit Azure routing inputs:
 
 ```python
-from agent_framework.azure import AzureOpenAIChatClient
+import os
 
-client = AzureOpenAIChatClient(
-    endpoint="https://your-resource.openai.azure.com",
-    deployment_name="gpt-4o",
-    api_key="your-azure-key",
+from agent_framework import Agent
+from agent_framework.openai import OpenAIChatClient
+
+client = OpenAIChatClient(
+    model=os.environ["AZURE_OPENAI_CHAT_MODEL"],
+    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+    api_version=os.environ["AZURE_OPENAI_API_VERSION"],
+    api_key=os.environ["AZURE_OPENAI_API_KEY"],
 )
 
-agent = ChatAgent(
-    chat_client=client,
+agent = Agent(
+    client=client,
     name="xquik_agent",
-    instructions="You help users interact with X (Twitter) via the Xquik API.",
-    tools=[mcp_tool],
+    instructions="You help users interact with X through the Xquik API.",
+    tools=mcp_tool,
 )
 ```
 
@@ -234,15 +235,23 @@ OPENAI_API_KEY=sk-...
 ```python
 import os
 from dotenv import load_dotenv
-from agent_framework import MCPStreamableHTTPTool
+from agent_framework import Agent, MCPStreamableHTTPTool
+from agent_framework.openai import OpenAIChatClient
 
 load_dotenv()
 
 mcp_tool = MCPStreamableHTTPTool(
     name="xquik",
     url="https://xquik.com/mcp",
-    headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
-    description="X (Twitter) data platform",
+    header_provider=lambda kwargs: {
+        "x-api-key": kwargs["xquik_api_key"],
+    },
+    description="X data platform",
+)
+
+agent = Agent(
+    client=OpenAIChatClient(model="gpt-4o"),
+    tools=mcp_tool,
 )
 ```
 
@@ -250,6 +259,5 @@ mcp_tool = MCPStreamableHTTPTool(
 
 | Package | Version |
 |---------|---------|
-| `agent-framework` | 1.0.0+ |
-| `agent-framework-core` | 1.0.0+ |
-| `mcp` | 1.9.2+ |
+| `agent-framework` | 1.11.0+ |
+| `mcp` | 1.24.0+ |

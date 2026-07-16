@@ -1,7 +1,7 @@
 ---
 title: Migrate from Composio
 sidebarTitle: Composio Migration
-description: Replace Composio's deprecated Twitter MCP with Xquik - from 14 steps to 3
+description: Move a Composio Twitter MCP workflow to Xquik's fixed endpoint and managed authorization
 keywords: ["composio", "migration", "twitter", "mcp", "alternative", "oauth"]
 ---
 
@@ -9,65 +9,46 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Composio's MCP endpoint (`mcp.composio.dev`) was decommissioned in March 2026, and managed Twitter credentials were removed in February 2026. This guide shows how to replace Composio's Twitter MCP integration with Xquik.
+Composio offers session-based MCP URLs and a 79-tool Twitter toolkit.
+This guide is for teams that prefer Xquik's fixed MCP endpoint, Xquik-managed
+authorization, and broader Xquik operation catalog.
 
 ## Why Migrate
 
 | | Composio | Xquik |
 |---|---|---|
-| **Accounts needed** | 3 (X Developer, Composio, AI tool) | 1 |
-| **Credentials** | 6 (API Key, API Secret, Bearer Token, OAuth Client ID, OAuth Client Secret, Composio API Key) | 0 manual credentials with MCP OAuth; 1 API key as a fallback |
-| **Setup steps** | 14 | 2 |
-| **OAuth flow** | Browser redirect plus manually configured X credentials | Automatic Xquik login and consent |
-| **X Developer Portal** | Required (create app, configure callbacks) | Not required |
-| **Dashboard config** | Required (create auth config, toggle custom creds) | Not required |
-| **Setup code** | ~20 lines + CLI commands | 0 lines (just config) |
-| **Twitter tools** | 79 | 126 documented operations + 23 extraction tools |
+| **MCP endpoint** | Generated for a reusable session and user | Fixed at `https://xquik.com/mcp` |
+| **MCP authorization** | Session URL plus the selected Composio connection flow | OAuth 2.1 login, or a client-specific API-key fallback |
+| **Twitter connection** | Uses a Composio auth configuration | Uses the Xquik login and consent flow |
+| **Developer credentials** | Depends on the selected Composio auth configuration | No X developer credentials required |
+| **Published toolkit** | 79 Twitter tools | 118 MCP operations through 2 tools |
+| **Agent setup** | Create a session, read `session.mcp.url`, then configure the client | Add the fixed endpoint, then authorize |
 
-## Before: Composio Setup (14 Steps)
+## Before: Current Composio Session MCP Setup
 
 <Steps>
-  <Step title="Create X Developer account">
-    Go to `developer.x.com`, create a developer account, wait for approval.
+  <Step title="Install the current SDK">
+    Install `composio` for Python or `@composio/core` for TypeScript.
   </Step>
-  <Step title="Create X app">
-    Navigate to Apps, create a new app, fill out the application form.
+  <Step title="Create a Twitter auth configuration">
+    Select managed or custom authorization according to the current Composio
+    toolkit options available to your organization.
   </Step>
-  <Step title="Copy X credentials">
-    Copy Bearer Token, API Key, and API Secret.
+  <Step title="Create a reusable MCP session">
+    Call `composio.create(...)` with the user ID, Twitter toolkit, auth config,
+    and `mcp=True` or `mcp: true`.
   </Step>
-  <Step title="Configure OAuth callback">
-    Set OAuth 2.0 callback URL to `https://backend.composio.dev/api/v1/auth-apps/add`.
+  <Step title="Read the session URL">
+    Use `session.mcp.url` as the user's MCP endpoint. Reuse the session instead
+    of creating one for every request.
   </Step>
-  <Step title="Copy OAuth credentials">
-    Copy OAuth 2.0 Client ID and Client Secret.
+  <Step title="Configure the MCP client">
+    Add `session.mcp.url` and follow the current Composio session authentication
+    instructions.
   </Step>
-  <Step title="Get Composio API key">
-    Sign up at Composio, get an API key from the dashboard.
-  </Step>
-  <Step title="Create .env file">
-    Add `COMPOSIO_API_KEY` and `USER_ID` to `.env`.
-  </Step>
-  <Step title="Install Composio SDK">
-    `pip install composio-core python-dotenv`
-  </Step>
-  <Step title="Configure custom auth in Composio dashboard">
-    Navigate to dashboard, create auth config for Twitter, toggle custom credentials, enter all 5 X credentials.
-  </Step>
-  <Step title="Write MCP URL generation script">
-    Write ~20 lines of Python to create a Composio session and extract the MCP URL.
-  </Step>
-  <Step title="Run the script">
-    `python generate_mcp_url.py`
-  </Step>
-  <Step title="Register MCP server">
-    Run the CLI command from the script output.
-  </Step>
-  <Step title="Restart your AI tool">
-    Exit and relaunch Claude Code, Cursor, etc.
-  </Step>
-  <Step title="Complete OAuth flow">
-    On first tool use, click the browser link and authorize.
+  <Step title="Connect the Twitter account">
+    Complete the authorization flow required by the selected auth
+    configuration.
   </Step>
 </Steps>
 
@@ -102,12 +83,17 @@ Composio's MCP endpoint (`mcp.composio.dev`) was decommissioned in March 2026, a
   <Step title="Authorize Xquik">
     Start authentication from the client. Use `/mcp` in Claude Code or run
     `codex mcp login xquik` in Codex. Complete Xquik login and consent in the
-    browser. CIMD or DCR handles client registration automatically.
+    browser. Let the client use its documented CIMD or DCR registration flow.
   </Step>
 </Steps>
 
-Use an API key only for programmatic clients that cannot complete OAuth. Store
-the key in a secret manager and send it as a Bearer header.
+<Warning>
+  Affected Codex releases discard the RFC 9207 `iss` value before token exchange. Xquik already returns it. If Codex reports `Authorization server response missing required issuer: expected https://xquik.com`, set `XQUIK_API_KEY` and use `bearer_token_env_var = "XQUIK_API_KEY"` as described in [Codex OAuth issuer validation error](/guides/troubleshooting#codex-oauth-issuer-validation-error). Track the [upstream Codex issue](https://github.com/openai/codex/issues/31573) for the fixed release.
+</Warning>
+
+Use an API key only for programmatic clients that cannot complete OAuth and
+document secure header storage. ChatGPT custom apps require OAuth and cannot
+present custom API keys.
 
 ## Code Migration
 
@@ -123,29 +109,29 @@ from dotenv import load_dotenv
 load_dotenv()
 
 composio_client = Composio(api_key=os.getenv("COMPOSIO_API_KEY"))
-composio_session = composio_client.create(
-    user_id=os.getenv("USER_ID"),
+session = composio_client.create(
+    user_id=os.environ["USER_ID"],
     toolkits=["twitter"],
+    auth_configs={
+        "twitter": os.environ["COMPOSIO_TWITTER_AUTH_CONFIG_ID"],
+    },
+    mcp=True,
 )
-
-COMPOSIO_MCP_URL = composio_session.mcp.url
-
-# Then configure your agent with COMPOSIO_MCP_URL...
-# First use triggers OAuth browser flow
+COMPOSIO_MCP_URL = session.mcp.url
 ```
 
 ```python After (Xquik)
 import os
 
 from pydantic_ai import Agent
-from pydantic_ai.mcp import MCPServerStreamableHTTP
+from pydantic_ai.mcp import MCPToolset
 
-server = MCPServerStreamableHTTP(
+toolset = MCPToolset(
     "https://xquik.com/mcp",
-    headers={"Authorization": f"Bearer {os.environ['XQUIK_API_KEY']}"},
+    headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
 )
 
-agent = Agent("anthropic:claude-sonnet-4-20250514", toolsets=[server])
+agent = Agent("anthropic:claude-sonnet-4-6", toolsets=[toolset])
 # API-key fallback for noninteractive runtimes
 ```
 
@@ -159,14 +145,14 @@ agent = Agent("anthropic:claude-sonnet-4-20250514", toolsets=[server])
 import { Composio } from "@composio/core";
 
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
-const session = await composio.create({
-  userId: process.env.USER_ID,
+const session = await composio.create(process.env.USER_ID!, {
   toolkits: ["twitter"],
+  authConfigs: {
+    twitter: process.env.COMPOSIO_TWITTER_AUTH_CONFIG_ID!,
+  },
+  mcp: true,
 });
-
 const mcpUrl = session.mcp.url;
-// Then configure MCP client with mcpUrl...
-// First use triggers OAuth browser flow
 ```
 
 ```typescript After (Xquik)

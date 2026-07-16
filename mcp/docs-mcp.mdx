@@ -12,6 +12,14 @@ Xquik documentation is available as an MCP server at `https://docs.xquik.com/mcp
 
 This is separate from the [Xquik API MCP server](/mcp/overview) at `xquik.com/mcp`, which interacts with your Xquik account (monitors, extractions, draws, X data lookups). The docs MCP server is read-only and requires no authentication.
 
+<Note>
+  Codex and Goose can connect to this authentication-free Docs MCP server even
+  when API MCP OAuth stops with `Authorization server response missing required issuer: expected https://xquik.com`.
+  Retrieve [Codex and Goose OAuth issuer validation](/guides/troubleshooting#codex-oauth-issuer-validation-error),
+  then configure the API-key fallback for the authenticated API MCP server.
+  Codex users can track the [upstream issuer issue](https://github.com/openai/codex/issues/31573).
+</Note>
+
 <CardGroup cols={2}>
   <Card title="Docs MCP Server" icon="book-open">
     Search docs and read indexed public pages at `https://docs.xquik.com/mcp`. No auth required. Free.
@@ -62,16 +70,32 @@ Use the contextual menu at the top of any docs page to connect instantly:
 
 ## Setup
 
+### Web clients
+
 <Tabs>
   <Tab title="Claude.ai (Web)">
-    1. Go to [Settings > Connectors](https://claude.ai/settings/connectors) in Claude.
+    1. Open [Claude Connectors](https://claude.ai/settings/connectors) or **Customize > Connectors**.
     2. Select **Add custom connector**.
     3. Enter:
        - Name: `Xquik Docs`
        - URL: `https://docs.xquik.com/mcp`
     4. Select **Add**.
-    5. In any chat, click the attachments button (plus icon) and select **Xquik Docs**.
+    5. In a chat, select **+ > Connectors** and enable **Xquik Docs**.
   </Tab>
+  <Tab title="ChatGPT">
+    1. In ChatGPT on the web, open **Settings > Apps > Advanced settings** and enable **Developer mode**.
+    2. Open **Settings > Apps > Create**. Workspace administrators may instead use **Workspace settings > Apps > Create**.
+    3. Enter `https://docs.xquik.com/mcp`, choose **No authentication**, then select **Scan tools**.
+    4. Select **Create**, then enable Xquik Docs in a new chat.
+
+    The Docs MCP server uses only read and fetch operations, so it fits
+    ChatGPT Pro's current custom-app permission limit. Custom apps are web-only.
+  </Tab>
+</Tabs>
+
+### Coding agents
+
+<Tabs>
   <Tab title="Claude Code">
     ```bash
     claude mcp add --transport http xquik-docs https://docs.xquik.com/mcp
@@ -89,6 +113,66 @@ Use the contextual menu at the top of any docs page to connect instantly:
     codex mcp list
     ```
   </Tab>
+  <Tab title="GitHub Copilot CLI">
+    ```bash
+    copilot mcp add --transport http xquik-docs https://docs.xquik.com/mcp
+    ```
+
+    If your installed build does not expose these flags, start Copilot CLI and
+    run `/mcp add`. Choose **HTTP**, enter the server name and URL, keep `*` for
+    tools, then press **Ctrl+S**. Verify it with `/mcp show xquik-docs`.
+  </Tab>
+  <Tab title="Gemini CLI">
+    ```bash
+    gemini mcp add --transport http xquik-docs https://docs.xquik.com/mcp
+    ```
+
+    Or add this entry under `mcpServers` in `~/.gemini/settings.json` or
+    `.gemini/settings.json`:
+
+    ```json
+    {
+      "xquik-docs": {
+        "type": "http",
+        "url": "https://docs.xquik.com/mcp"
+      }
+    }
+    ```
+
+    Older Gemini CLI builds also accept the legacy `httpUrl` field.
+  </Tab>
+</Tabs>
+
+### Additional coding agents
+
+<Tabs>
+  <Tab title="Qwen Code">
+    ```bash
+    qwen mcp add --transport http xquik-docs https://docs.xquik.com/mcp
+    ```
+
+    Manual Qwen Code configuration still uses
+    `httpUrl: "https://docs.xquik.com/mcp"` under `mcpServers`.
+  </Tab>
+  <Tab title="Goose">
+    Start a session with the Docs MCP extension:
+
+    ```bash
+    goose session --with-streamable-http-extension https://docs.xquik.com/mcp
+    ```
+
+    Docs MCP needs no OAuth or API-key header, so affected Goose issuer
+    callback defect does not affect this connection.
+  </Tab>
+  <Tab title="Pi">
+    Pi has no native MCP client. Install and audit a community MCP adapter before
+    adding `https://docs.xquik.com/mcp`. Xquik does not claim native Pi support.
+  </Tab>
+</Tabs>
+
+### Editor clients
+
+<Tabs>
   <Tab title="Cursor">
     Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project):
 
@@ -143,14 +227,29 @@ Use the contextual menu at the top of any docs page to connect instantly:
     }
     ```
   </Tab>
-  <Tab title="Gemini CLI">
-    Add to Gemini CLI settings:
+</Tabs>
+
+### Additional editors
+
+<Tabs>
+  <Tab title="Cline">
+    Run `cline mcp`, add a Streamable HTTP server, and enter
+    `https://docs.xquik.com/mcp`. In the IDE, use the **MCP Remote Servers** UI.
+    Cline stores global MCP settings at
+    `~/.cline/data/settings/cline_mcp_settings.json`; project settings use
+    `.cline/mcp.json`.
+  </Tab>
+  <Tab title="Roo Code">
+    Roo Code is archived. Its final release can still connect to this
+    authentication-free server. Add to project `.roo/mcp.json` or global
+    `mcp_settings.json`:
 
     ```json
     {
       "mcpServers": {
         "xquik-docs": {
-          "httpUrl": "https://docs.xquik.com/mcp"
+          "type": "streamable-http",
+          "url": "https://docs.xquik.com/mcp"
         }
       }
     }
@@ -184,6 +283,8 @@ API MCP results use the normalized v1 contract: snake_case fields, date-time fie
     codex mcp add xquik --url https://xquik.com/mcp
     codex mcp login xquik
     ```
+
+    Docs MCP needs no login. If API MCP reports `Authorization server response missing required issuer: expected https://xquik.com`, keep Docs MCP connected and follow [Codex and Goose OAuth issuer validation](/guides/troubleshooting#codex-oauth-issuer-validation-error).
   </Tab>
   <Tab title="Cursor">
     ```json

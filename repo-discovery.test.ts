@@ -20,6 +20,29 @@ const API_KEYS_CREATE_PAGE = 'api-reference/api-keys/create.mdx';
 const PRODUCT_APP_ICON_FILE = '/Users/burak/Developer/xquik/app/icon.svg';
 const DOCS_X_ONLY_ICON_SHA256 =
   '7002c1dd82b5b903d69777fa212f39b0e0410cb156e7bcb1b4426fcec3a7cdc5';
+const CODEX_OAUTH_ISSUER_ERROR =
+  'Authorization server response missing required issuer: expected https://xquik.com';
+const CODEX_OAUTH_UPSTREAM_ISSUE =
+  'https://github.com/openai/codex/issues/31573';
+const CODEX_OAUTH_TROUBLESHOOTING_ANCHOR =
+  'guides/troubleshooting#codex-oauth-issuer-validation-error';
+const CODEX_OAUTH_GUIDANCE_FILES = [
+  'mcp/overview.mdx',
+  'guides/troubleshooting.mdx',
+  'oauth/overview.mdx',
+  'mcp/docs-mcp.mdx',
+  'guides/composio-migration.mdx',
+  'skill.md',
+  'llms.txt',
+  'README.md',
+  'context7.json',
+] as const;
+const GOOSE_OAUTH_GUIDANCE_FILES = [
+  'mcp/overview.mdx',
+  'guides/troubleshooting.mdx',
+  'mcp/docs-mcp.mdx',
+  'context7.json',
+] as const;
 
 const REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS = [
   '/* Keep mobile guide content inside the viewport. */',
@@ -1720,20 +1743,22 @@ const FORBIDDEN_SKILL_CONFIDENTIALITY_PATTERN =
   /radar topics from (?!Xquik's own infrastructure\.)[^\n.]+(?:,| and )[^\n.]+/u;
 
 const REQUIRED_MCP_CONTRACT_SNIPPETS = [
-  'MCP server discovery metadata is available at:',
+  'Xquik compatibility discovery metadata is available at:',
   'This page covers the API MCP server at `https://xquik.com/mcp` for',
   'authenticated account actions and guest paid reads. For public documentation',
   '[Docs MCP server](/mcp/docs-mcp) at `https://docs.xquik.com/mcp`.',
   'https://xquik.com/.well-known/mcp.json',
-  '`GET` and `POST` requests to `/.well-known/mcp.json` return the MCP registry',
-  'server card JSON directly.',
-  '`GET /.well-known/mcp/server-card.json` returns the',
-  'same card for clients that read the nested server-card path.',
+  '`GET` and `POST` requests to `/.well-known/mcp.json` return an Xquik',
+  'compatibility discovery document based on the official MCP Registry',
+  '`GET /server.json` and',
+  '`GET /.well-known/mcp/server-card.json` return the same compatibility document.',
+  'they are not MCP Registry or experimental MCP Server Card fields.',
   'can also read `GET /.well-known/oauth-protected-resource/.well-known/mcp.json`',
   '`Authorization: Bearer {XQUIK_API_KEY}`',
-  '`https://dashboard.xquik.com/en/dashboard/account`',
+  '`https://dashboard.xquik.com/en/account?tab=api-keys`',
   'direct client examples',
-  'with `x-api-key` when the client supports',
+  'only when the client documents secure request headers',
+  'This is an Xquik-specific, non-OAuth fallback, not an OAuth access token.',
   'Agent discovery metadata is also available at',
   '`https://xquik.com/.well-known/agent-index.json`',
   '`com.xquik/mcp`',
@@ -1892,6 +1917,9 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_OAUTH_AGENT_DISCOVERY_SNIPPETS = [
+  '"protected_resources": ["https://xquik.com/mcp"]',
+  '"service_documentation": "https://docs.xquik.com/oauth/overview"',
+  '"resource_documentation": "https://docs.xquik.com/mcp/overview"',
   '"agent_auth": {',
   '"register_uri": "https://xquik.com/api/oauth/register"',
   '"claim_uri": "https://xquik.com/api/oauth/authorize"',
@@ -1904,6 +1932,20 @@ const REQUIRED_OAUTH_AGENT_DISCOVERY_SNIPPETS = [
   '"response_types_supported": ["code"]',
   '"grant_types_supported": ["authorization_code", "refresh_token"]',
   '"token_endpoint_auth_methods_supported": ["none", "client_secret_post"]',
+  '"revocation_endpoint_auth_methods_supported": ["none", "client_secret_post"]',
+  'callback?code=AUTH_CODE_HERE&state=random_csrf_token&iss=https%3A%2F%2Fxquik.com',
+  '"expires_in": 3600',
+  '| Access token | 1 hour |',
+  '`invalid_redirect_uri`',
+  'Defaults to `MCP Client`',
+  '`agent_auth` is a Xquik discovery extension, not an RFC 8414 or MCP core field.',
+] as const;
+
+const FORBIDDEN_OAUTH_AGENT_DISCOVERY_SNIPPETS = [
+  '"expires_in": 86400',
+  '| Access token | 24 hours |',
+  '| `client_name` | string | Yes |',
+  '| `Invalid request body` |',
 ] as const;
 
 const REQUIRED_MCP_EXAMPLE_PROMPT_SNIPPETS = [
@@ -1944,6 +1986,50 @@ const REQUIRED_MCP_SETUP_TAB_SNIPPETS = [
   '<Tab title="OpenCode">',
 ] as const;
 
+const REQUIRED_CURRENT_MCP_CLIENT_SETUP_SNIPPETS = [
+  '## Client compatibility',
+  '[Claude Code](https://docs.anthropic.com/en/docs/claude-code/mcp)',
+  '[OpenCode](https://opencode.ai/docs/mcp-servers/)',
+  '[Gemini CLI](https://geminicli.com/docs/tools/mcp-server/)',
+  '[Cursor](https://docs.cursor.com/context/model-context-protocol)',
+  '[GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers)',
+  '[Cline](https://docs.cline.bot/cli/cli-reference)',
+  '[Qwen Code](https://github.com/QwenLM/qwen-code)',
+  '[Codex](https://learn.chatgpt.com/docs/extend/mcp)',
+  '[Goose](https://goose-docs.ai/docs/getting-started/using-extensions/)',
+  '[Roo Code](https://github.com/RooCodeInc/Roo-Code)',
+  '[Pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent)',
+  "Roo Code's archived final release has Streamable HTTP but no MCP OAuth provider",
+  'Pi requires a separately installed and tested MCP adapter',
+  '**Settings > Apps > Advanced settings**',
+  '**Settings > Apps > Create**',
+  'ChatGPT uses Xquik OAuth and cannot present a custom API key.',
+  '**Organization settings',
+  '**+ > Connectors**',
+  'copilot mcp add --transport http xquik https://xquik.com/mcp',
+  'run `/mcp add`',
+  'gemini mcp add --transport http xquik https://xquik.com/mcp',
+  '"type": "http"',
+  '"url": "https://xquik.com/mcp"',
+  'Run `cline mcp`',
+  'QWEN_CODE_FORCE_ENCRYPTED_FILE_STORAGE=true',
+  'qwen mcp add --transport http xquik https://xquik.com/mcp',
+  '`httpUrl` for manual Streamable HTTP configuration',
+  '`~/.config/goose/config.yaml`',
+  'Authorization: "Bearer ${XQUIK_API_KEY}"',
+  '"Authorization": "Bearer ${env:XQUIK_API_KEY}"',
+  "Pi's coding agent has no native MCP client.",
+  'API-key fallback is client-specific.',
+] as const;
+
+const FORBIDDEN_CURRENT_MCP_CLIENT_SETUP_SNIPPETS = [
+  '**Settings > Security and login**',
+  '**Settings > Plugins**',
+  'https://chatgpt.com/plugins',
+  '"Authorization": "Bearer ${XQUIK_API_KEY}"',
+  'Claude\'s CIMD client',
+] as const;
+
 const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   'title: Docs MCP server',
   'Xquik documentation is available as an MCP server at `https://docs.xquik.com/mcp`.',
@@ -1980,6 +2066,19 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   '<Tab title="VS Code">',
   '<Tab title="Windsurf">',
   '<Tab title="OpenCode">',
+  '<Tab title="ChatGPT">',
+  '<Tab title="GitHub Copilot CLI">',
+  '<Tab title="Cline">',
+  '<Tab title="Qwen Code">',
+  '<Tab title="Goose">',
+  '<Tab title="Roo Code">',
+  '<Tab title="Pi">',
+  'copilot mcp add --transport http xquik-docs https://docs.xquik.com/mcp',
+  'gemini mcp add --transport http xquik-docs https://docs.xquik.com/mcp',
+  'qwen mcp add --transport http xquik-docs https://docs.xquik.com/mcp',
+  'goose session --with-streamable-http-extension https://docs.xquik.com/mcp',
+  'Roo Code is archived.',
+  'Pi has no native MCP client.',
   '## Using both MCP servers',
   '**Docs MCP** (`docs.xquik.com/mcp`)',
   '**API MCP** (`xquik.com/mcp`)',
@@ -9134,6 +9233,11 @@ const REQUIRED_HAYSTACK_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_COMPOSIO_MIGRATION_SNIPPETS = [
+  'Composio offers session-based MCP URLs and a 79-tool Twitter toolkit.',
+  'session = composio_client.create(',
+  'COMPOSIO_MCP_URL = session.mcp.url',
+  'const session = await composio.create(process.env.USER_ID!',
+  'const mcpUrl = session.mcp.url;',
   '## Result Handoff',
   'When you replace Composio agent steps, map raw tool responses into stable rows before sending them to Slack, Sheets, queues, databases, or dashboards.',
   '<Card title="Tweet Search Page" icon="search">',
@@ -9289,6 +9393,9 @@ const REQUIRED_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS = [
 
 const REQUIRED_GOOGLE_ADK_GUIDE_SNIPPETS = [
   'Build a Google ADK agent that can search tweets, hand off IDs and cursors, post tweets, replay stored monitor events, and run extraction jobs',
+  'pip install "google-adk[mcp]"',
+  '## Discovery-Only Tool Filtering',
+  'MCP tool-name filtering cannot make it read-only.',
   'from pathlib import Path',
   'query, route_used, tweets[{tweet_id,text,author_username,created_at}]',
   'response_parts = []',
@@ -9320,6 +9427,8 @@ const REQUIRED_GOOGLE_ADK_GUIDE_SNIPPETS = [
 
 const REQUIRED_CREWAI_GUIDE_SNIPPETS = [
   'Build a CrewAI crew that can search tweets, hand off IDs and cursors, monitor accounts, replay stored monitor events, and run extraction jobs',
+  '## Discovery-Only Tool Filtering',
+  'MCP tool-name filtering cannot make it read-only.',
   'from pathlib import Path',
   'query, route_used, tweets[{tweet_id,text,author_username,created_at}]',
   'Path("xquik-crewai-handoff.json").write_text(str(result), encoding="utf-8")',
@@ -9351,10 +9460,11 @@ const REQUIRED_CREWAI_GUIDE_SNIPPETS = [
 
 const REQUIRED_PYDANTIC_AI_GUIDE_SNIPPETS = [
   'Build a Pydantic AI agent that can search tweets, hand off IDs and cursors, post tweets, replay stored monitor events, and run extraction jobs',
+  'pip install "pydantic-ai-slim[anthropic,mcp]"',
   'from pathlib import Path',
   'query, route_used, tweets[{tweet_id,text,author_username,created_at}]',
   'Path("xquik-pydantic-ai-handoff.json").write_text(',
-  'Pydantic AI registers `MCPServerStreamableHTTP` as an agent `toolsets` entry.',
+  'Pydantic AI registers `MCPToolset` as an agent `toolsets` entry.',
   'The MCP runtime returns normalized snake_case fields through `xquik.request()`',
   '## Handoff Checklist',
   '<Card title="Tweet search rows" icon="search">',
@@ -9380,8 +9490,18 @@ const REQUIRED_PYDANTIC_AI_GUIDE_SNIPPETS = [
   '"mcpServers": {',
 ] as const;
 
+const FORBIDDEN_PYDANTIC_AI_GUIDE_SNIPPETS = [
+  'pydantic-ai[mcp]',
+  'MCPServerStreamableHTTP',
+  'load_mcp_servers',
+  'tool_prefix=',
+  '"transport": "streamable-http"',
+] as const;
+
 const REQUIRED_LANGCHAIN_GUIDE_SNIPPETS = [
   'Build a LangChain agent that can search tweets, hand off IDs and cursors, post tweets, replay stored monitor events, and run extraction jobs',
+  '"transport": "http"',
+  'anthropic:claude-sonnet-4-6',
   'from pathlib import Path',
   'query, route_used, tweets[{tweet_id,text,author_username,created_at}]',
   'Path("xquik-langchain-handoff.json").write_text(',
@@ -9413,6 +9533,7 @@ const REQUIRED_LANGCHAIN_GUIDE_SNIPPETS = [
 
 const REQUIRED_MASTRA_GUIDE_SNIPPETS = [
   'Build a Mastra agent in TypeScript that can search tweets, hand off IDs and cursors, post tweets, replay stored monitor events, and run extraction jobs',
+  'Node.js 22.13+',
   'import { writeFile } from "node:fs/promises";',
   'query, route_used, tweets[{tweet_id,text,author_username,created_at}]',
   'await writeFile("xquik-mastra-handoff.json", result.text, "utf8");',
@@ -9464,6 +9585,11 @@ const REQUIRED_N8N_GUIDE_SNIPPETS = [
   'Set the header name to `x-api-key`.',
   '<Card title="Header value" icon="shield-check">',
   'Paste your Xquik API key as the credential value.',
+  'Set Server Transport to `HTTP Streamable`.',
+  'Set MCP Endpoint URL to `https://xquik.com/mcp`.',
+  'Set Authentication to `Header Auth`.',
+  'Set Name to `x-api-key` and Value to your Xquik API key.',
+  'The MCP Client Tool also supports `MCP OAuth2`.',
   'Use that credential in every HTTP Request node that calls `https://xquik.com/api/v1`.',
   'If you package Xquik as a community node, keep the first release narrow and reliable.',
   '<Card title="Credential" icon="key-round">',
@@ -11577,14 +11703,92 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     const source = readFileSync('oauth/overview.mdx', 'utf8');
+    const findings = collectSnippetFindings(
+      source,
+      'OAuth agent discovery docs',
+      REQUIRED_OAUTH_AGENT_DISCOVERY_SNIPPETS,
+    );
 
-    expect(
-      collectSnippetFindings(
-        source,
-        'OAuth agent discovery docs',
-        REQUIRED_OAUTH_AGENT_DISCOVERY_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
+    for (const snippet of FORBIDDEN_OAUTH_AGENT_DISCOVERY_SNIPPETS) {
+      if (source.includes(snippet)) {
+        findings.push({
+          issue: `OAuth agent discovery docs contain stale wording "${snippet}".`,
+        });
+      }
+    }
+
+    expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps MCP client setup aligned with current vendor flows', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('mcp/overview.mdx', 'utf8');
+    const findings = collectSnippetFindings(
+      source,
+      'MCP client setup',
+      REQUIRED_CURRENT_MCP_CLIENT_SETUP_SNIPPETS,
+    );
+    const geminiStart = source.indexOf('<Tab title="Gemini CLI">');
+    const geminiEnd = source.indexOf('<Tab title="Cline">', geminiStart);
+    const geminiSource = source.slice(geminiStart, geminiEnd);
+
+    if (geminiStart < 0 || geminiEnd < 0) {
+      findings.push({ issue: 'MCP client setup is missing the Gemini CLI tab.' });
+    } else if (
+      !geminiSource.includes('"type": "http"') ||
+      !geminiSource.includes('"url": "https://xquik.com/mcp"') ||
+      geminiSource.includes('"httpUrl": "https://xquik.com/mcp"')
+    ) {
+      findings.push({
+        issue: 'Gemini CLI setup must use url with type http.',
+      });
+    }
+
+    for (const snippet of FORBIDDEN_CURRENT_MCP_CLIENT_SETUP_SNIPPETS) {
+      if (source.includes(snippet)) {
+        findings.push({
+          issue: `MCP client setup contains stale or nonportable wording "${snippet}".`,
+        });
+      }
+    }
+
+    expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps the Codex and Goose OAuth issuer regressions discoverable before API MCP authentication', (): void => {
+    expect.assertions(1);
+
+    const findings = CODEX_OAUTH_GUIDANCE_FILES.flatMap(
+      (file): readonly DiscoveryFinding[] => {
+        const source = readFileSync(file, 'utf8');
+        const required: string[] = [
+          CODEX_OAUTH_ISSUER_ERROR,
+          CODEX_OAUTH_UPSTREAM_ISSUE,
+        ];
+
+        if (file !== 'guides/troubleshooting.mdx') {
+          required.push(CODEX_OAUTH_TROUBLESHOOTING_ANCHOR);
+        }
+
+        return collectSnippetFindings(source, file, required);
+      },
+    );
+
+    for (const file of GOOSE_OAUTH_GUIDANCE_FILES) {
+      const source = readFileSync(file, 'utf8');
+      const required = ['Goose', CODEX_OAUTH_ISSUER_ERROR];
+
+      if (file !== 'guides/troubleshooting.mdx') {
+        required.push(CODEX_OAUTH_TROUBLESHOOTING_ANCHOR);
+      }
+
+      findings.push(
+        ...collectSnippetFindings(source, file, required),
+      );
+    }
+
+    expect(findings).toStrictEqual([]);
   });
 
   it('keeps MCP example prompts scan-friendly and stable for hydration', (): void => {
@@ -14806,7 +15010,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Composio migration guide handoff concrete', (): void => {
-    expect.assertions(3);
+    expect.assertions(5);
 
     const source = readFileSync('guides/composio-migration.mdx', 'utf8');
 
@@ -14819,6 +15023,8 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(source).not.toContain('Pass the raw response to');
     expect(source).not.toContain('Store the entire MCP result');
+    expect(source).not.toContain("Composio's deprecated Twitter MCP");
+    expect(source).not.toContain('was decommissioned');
   });
 
   it('keeps the Hermes Tweet guide aligned with the current plugin scope', (): void => {
@@ -14859,7 +15065,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Microsoft Agent Framework guide handoff concrete', (): void => {
-    expect.assertions(4);
+    expect.assertions(5);
 
     const source = readFileSync('guides/microsoft-agent-framework.mdx', 'utf8');
 
@@ -14873,6 +15079,9 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('Return raw data.');
     expect(source).not.toContain('print(response)');
     expect(source).not.toContain('print(result)');
+    expect(source).not.toMatch(
+      /\bChatAgent\b|model_id=|chat_client=|run_stream\(|tool_resources=|AzureOpenAIChatClient/u,
+    );
   });
 
   it('keeps the Google ADK guide handoff concrete', (): void => {
@@ -14905,7 +15114,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Pydantic AI guide handoff concrete', (): void => {
-    expect.assertions(4);
+    expect.assertions(5);
 
     const source = readFileSync('guides/pydantic-ai.mdx', 'utf8');
 
@@ -14919,6 +15128,11 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('print(result.output)');
     expect(source).not.toContain('print(result1.output)');
     expect(source).not.toContain('print(result2.output)');
+    expect(
+      FORBIDDEN_PYDANTIC_AI_GUIDE_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps the LangChain guide handoff concrete', (): void => {

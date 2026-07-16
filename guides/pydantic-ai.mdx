@@ -19,7 +19,7 @@ Build a Pydantic AI agent that can search tweets, hand off IDs and cursors, post
 ## Install
 
 ```bash
-pip install "pydantic-ai[mcp]"
+pip install "pydantic-ai-slim[anthropic,mcp]"
 ```
 
 ## Full Example
@@ -28,17 +28,17 @@ pip install "pydantic-ai[mcp]"
 import asyncio
 from pathlib import Path
 from pydantic_ai import Agent
-from pydantic_ai.mcp import MCPServerStreamableHTTP
+from pydantic_ai.mcp import MCPToolset
 
-server = MCPServerStreamableHTTP(
+toolset = MCPToolset(
     "https://xquik.com/mcp",
     headers={"x-api-key": "xq_YOUR_KEY_HERE"},
 )
 
 agent = Agent(
-    "anthropic:claude-sonnet-4-20250514",
-    toolsets=[server],
-    system_prompt="You help users interact with X (Twitter) via the Xquik API.",
+    "anthropic:claude-sonnet-4-6",
+    toolsets=[toolset],
+    instructions="You help users interact with X (Twitter) via the Xquik API.",
 )
 
 
@@ -60,7 +60,7 @@ asyncio.run(main())
 
 The agent discovers both Xquik tools and can call 118 MCP operations.
 
-Pydantic AI registers `MCPServerStreamableHTTP` as an agent `toolsets` entry. The MCP runtime returns normalized snake_case fields through `xquik.request()`, so keep prompts aligned with `tweet_id`, `has_more`, `next_cursor`, and returned job IDs.
+Pydantic AI registers `MCPToolset` as an agent `toolsets` entry. A URL that does not end in `/sse` uses Streamable HTTP automatically. The MCP runtime returns normalized snake_case fields through `xquik.request()`. Keep prompts aligned with `tweet_id`, `has_more`, `next_cursor`, and returned job IDs.
 
 ## Handoff Checklist
 
@@ -123,16 +123,16 @@ For large tool sets, use `DeferredLoadingToolset` to hide tools from the model u
 
 ```python
 from pydantic_ai import Agent
-from pydantic_ai.mcp import MCPServerStreamableHTTP
+from pydantic_ai.mcp import MCPToolset
 
-server = MCPServerStreamableHTTP(
+toolset = MCPToolset(
     "https://xquik.com/mcp",
     headers={"x-api-key": "xq_YOUR_KEY_HERE"},
 )
 
 agent = Agent(
-    "anthropic:claude-sonnet-4-20250514",
-    toolsets=[server.defer_loading()],
+    "anthropic:claude-sonnet-4-6",
+    toolsets=[toolset.defer_loading()],
 )
 ```
 
@@ -144,7 +144,6 @@ If you manage MCP servers via a config file:
 {
   "mcpServers": {
     "xquik": {
-      "transport": "streamable-http",
       "url": "https://xquik.com/mcp",
       "headers": {
         "x-api-key": "xq_YOUR_KEY_HERE"
@@ -156,10 +155,10 @@ If you manage MCP servers via a config file:
 
 ```python
 from pydantic_ai import Agent
-from pydantic_ai.mcp import load_mcp_servers
+from pydantic_ai.mcp import load_mcp_toolsets
 
-servers = load_mcp_servers("mcp_config.json")
-agent = Agent("anthropic:claude-sonnet-4-20250514", toolsets=servers)
+toolsets = load_mcp_toolsets("mcp_config.json")
+agent = Agent("anthropic:claude-sonnet-4-6", toolsets=toolsets)
 ```
 
 ## Tool Prefixes
@@ -167,13 +166,12 @@ agent = Agent("anthropic:claude-sonnet-4-20250514", toolsets=servers)
 Avoid naming conflicts when connecting multiple MCP servers:
 
 ```python
-from pydantic_ai.mcp import MCPServerStreamableHTTP
+from pydantic_ai.mcp import MCPToolset
 
-xquik = MCPServerStreamableHTTP(
+xquik = MCPToolset(
     "https://xquik.com/mcp",
     headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-    tool_prefix="xquik",
-)
+).prefixed("xquik")
 # Tools become: xquik_explore, xquik_xquik, etc.
 ```
 
@@ -186,17 +184,17 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 ```python
 import os
-from pydantic_ai.mcp import MCPServerStreamableHTTP
+from pydantic_ai.mcp import MCPToolset
 
-server = MCPServerStreamableHTTP(
+toolset = MCPToolset(
     "https://xquik.com/mcp",
     headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
 )
 ```
 
-## Package Versions
+## Verified Package Versions
 
 | Package | Version |
 |---------|---------|
-| `pydantic-ai` | 1.78.0+ |
-| `mcp` | 1.25.0+ |
+| `pydantic-ai-slim` | 2.11.0 |
+| `fastmcp-slim` | 3.4.4 |

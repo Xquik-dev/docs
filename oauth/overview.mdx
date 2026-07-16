@@ -12,11 +12,16 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 Xquik supports [OAuth 2.1](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1) Authorization Code with S256 PKCE for remote MCP authentication. Modern clients discover the flow automatically from `https://xquik.com/mcp`, open Xquik login and consent in a browser, then store and refresh Bearer tokens.
 
 <Info>
-  Prefer OAuth for Claude, ChatGPT, Codex, Cursor, VS Code, Windsurf,
-  OpenCode, Gemini CLI, and other compatible remote MCP clients. Xquik also
-  accepts [API keys](/api-reference/authentication) when a client cannot run
-  OAuth but can store headers securely.
+  Prefer OAuth for Claude, ChatGPT, Cursor, VS Code, Windsurf, OpenCode, Gemini
+  CLI, GitHub Copilot CLI, Cline, Qwen Code, and other compatible remote MCP
+  clients. Use the [client compatibility matrix](/mcp/overview#client-compatibility)
+  for Codex, Goose, Roo Code, and Pi. Xquik accepts [API keys](/api-reference/authentication)
+  only when the client documents secure header storage.
 </Info>
+
+<Warning>
+  Affected Codex releases discard the RFC 9207 `iss` value before token exchange. Xquik already returns that value. If Codex reports `Authorization server response missing required issuer: expected https://xquik.com`, use the [Codex API-key fallback](/guides/troubleshooting#codex-oauth-issuer-validation-error) while the [upstream issue](https://github.com/openai/codex/issues/31573) remains open.
+</Warning>
 
 Xquik supports both MCP client registration paths:
 
@@ -79,6 +84,9 @@ curl https://xquik.com/.well-known/oauth-authorization-server
   "code_challenge_methods_supported": ["S256"],
   "token_endpoint_auth_methods_supported": ["none", "client_secret_post"],
   "revocation_endpoint": "https://xquik.com/api/oauth/revoke",
+  "revocation_endpoint_auth_methods_supported": ["none", "client_secret_post"],
+  "protected_resources": ["https://xquik.com/mcp"],
+  "service_documentation": "https://docs.xquik.com/oauth/overview",
   "authorization_response_iss_parameter_supported": true,
   "response_modes_supported": ["query"],
   "client_id_metadata_document_supported": true,
@@ -107,6 +115,9 @@ curl https://xquik.com/.well-known/oauth-authorization-server
 }
 ```
 
+`agent_auth` is a Xquik discovery extension, not an RFC 8414 or MCP core field.
+Generic OAuth clients may ignore it.
+
 ### Protected resource metadata
 
 ```bash
@@ -119,6 +130,7 @@ curl https://xquik.com/.well-known/oauth-protected-resource/mcp
   "resource_name": "Xquik MCP Server",
   "authorization_servers": ["https://xquik.com"],
   "bearer_methods_supported": ["header"],
+  "resource_documentation": "https://docs.xquik.com/mcp/overview",
   "scopes_supported": ["mcp:tools"]
 }
 ```
@@ -134,8 +146,8 @@ Bearer realm="OAuth", resource_metadata="https://xquik.com/.well-known/oauth-pro
 
 ### Client ID Metadata Document
 
-Publish a JSON document at a stable HTTPS URL and use that exact URL as the
-`client_id`:
+Publish a JSON document at a stable HTTPS URL with a non-root path and use that
+exact URL as the `client_id`:
 
 ```json
 {
@@ -148,10 +160,11 @@ Publish a JSON document at a stable HTTPS URL and use that exact URL as the
 }
 ```
 
-The document must use `application/json`, remain at or below 5 KiB, repeat the
-exact client ID URL, and list every allowed redirect URI. Xquik fetches CIMD
-without redirects and accepts public clients with token authentication method
-`none`.
+The HTTPS `client_id` URL must have a non-root path and no user information,
+query, fragment, or dot path segments. Xquik requires a direct `200` JSON
+response without redirects. The document must remain at or below 5 KiB, repeat
+the exact `client_id`, and include `client_name`, `redirect_uris`, and
+`token_endpoint_auth_method: "none"`. List every allowed redirect URI.
 
 ### Dynamic Client Registration
 
@@ -188,9 +201,11 @@ can show a concrete `client_id`.
     ```
 
     **Redirect URI requirements:**
-    - Production: HTTPS only
-    - Development: `http://localhost` and `http://127.0.0.1` are allowed
-    - Exact match required. No wildcards or subpath matching
+    - Production web callbacks: HTTPS only
+    - Development: HTTP loopback callbacks may use `localhost`, `127.0.0.1`, or `::1`
+    - HTTPS and supported native callbacks require exact matching
+    - HTTP loopback callbacks may change only the ephemeral port. Scheme, host, path, and query must match
+    - Wildcards and subpath matching are not supported
 
     **Client types:**
     - **Public** (`token_endpoint_auth_method: "none"`): Default. No client secret. Used by browser apps and MCP clients.
@@ -298,10 +313,12 @@ can show a concrete `client_id`.
     After the user approves, Xquik redirects to your `redirect_uri` with a `code` parameter:
 
     ```text
-    https://myapp.example.com/callback?code=AUTH_CODE_HERE&state=random_csrf_token
+    https://myapp.example.com/callback?code=AUTH_CODE_HERE&state=random_csrf_token&iss=https%3A%2F%2Fxquik.com
     ```
 
-    Verify the `state` parameter matches the value you sent in step 3 to prevent CSRF attacks. The authorization code expires in **60 seconds** and is single-use.
+    Verify `state` against the value sent in step 3. Verify `iss` exactly equals
+    the discovered issuer, `https://xquik.com`, before exchanging the code. The
+    authorization code expires in **60 seconds** and is single-use.
   </Step>
 
   <Step title="Exchange code for tokens">
@@ -322,7 +339,7 @@ can show a concrete `client_id`.
     {
       "access_token": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
       "token_type": "Bearer",
-      "expires_in": 86400,
+      "expires_in": 3600,
       "refresh_token": "f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1",
       "scope": "mcp:tools"
     }
@@ -343,13 +360,13 @@ can show a concrete `client_id`.
 
 | Token | Lifetime | Notes |
 |-------|----------|-------|
-| Access token | 24 hours | Use the refresh token to get a new one |
+| Access token | 1 hour | Use the refresh token to get a new one |
 | Refresh token | 30 days | Single-use. Each refresh issues a new pair |
 | Authorization code | 60 seconds | Single-use. Exchange immediately |
 
 ## Refresh tokens
 
-Access tokens expire after 24 hours. Use the refresh token to get a new access token without requiring the user to log in again.
+Access tokens expire after 1 hour. Use the refresh token to get a new access token without requiring the user to log in again.
 
 ```bash
 curl -X POST https://xquik.com/api/oauth/token \
@@ -364,7 +381,7 @@ curl -X POST https://xquik.com/api/oauth/token \
 {
   "access_token": "NEW_ACCESS_TOKEN",
   "token_type": "Bearer",
-  "expires_in": 86400,
+  "expires_in": 3600,
   "refresh_token": "NEW_REFRESH_TOKEN",
   "scope": "mcp:tools"
 }
@@ -421,7 +438,7 @@ Content-Type: application/json
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `client_name` | string | Yes | Display name shown on the consent screen |
+| `client_name` | string | No | Display name shown on the consent screen. Defaults to `MCP Client` |
 | `redirect_uris` | string[] | Yes | Allowed redirect URIs (1 or more) |
 | `token_endpoint_auth_method` | string | No | `none` (default) or `client_secret_post` |
 | `grant_types` | string[] | No | Defaults to `["authorization_code", "refresh_token"]` |
@@ -432,7 +449,7 @@ Content-Type: application/json
 | Field | Type | Description |
 |-------|------|-------------|
 | `client_id` | string | UUID. Use this in all subsequent OAuth requests |
-| `client_name` | string | Echoed from request |
+| `client_name` | string | Resolved display name. Defaults to `MCP Client` |
 | `redirect_uris` | string[] | Echoed from request |
 | `grant_types` | string[] | Resolved grant types |
 | `response_types` | string[] | Resolved response types |
@@ -443,7 +460,8 @@ Content-Type: application/json
 
 ## Error responses
 
-All errors follow the standard OAuth 2.0 error format:
+Token, registration, and revocation endpoint errors use the standard OAuth JSON
+format:
 
 ```json
 {
@@ -452,12 +470,17 @@ All errors follow the standard OAuth 2.0 error format:
 }
 ```
 
+Authorization errors use 2 transports. Xquik returns an HTML error page when it
+cannot safely trust the client or redirect URI. After validating both, Xquik
+redirects errors to the registered callback with `error`, `error_description`,
+optional `state`, and `iss=https://xquik.com` query parameters.
+
 ### Authorization errors
 
 | Error | When |
 |-------|------|
 | `unsupported_response_type` | `response_type` is not `code` |
-| `invalid_request` | Missing `client_id`, `code_challenge`, unknown `client_id`, or mismatched `redirect_uri` |
+| `invalid_request` | Missing or repeated parameters, or missing S256 PKCE data |
 | `invalid_scope` | Scope is not `mcp:tools` |
 | `invalid_target` | Resource is not `https://xquik.com/mcp` |
 | `access_denied` | User denied the authorization request |
@@ -473,17 +496,14 @@ All errors follow the standard OAuth 2.0 error format:
 
 ### Registration errors
 
-| Error | Description | When |
-|-------|-------------|------|
-| `Invalid request body` | - | Request body is not valid JSON or not an object |
-| `client_name is required` | - | Missing or empty `client_name` |
-| `invalid_client_metadata` | `client_name exceeds maximum length` | `client_name` exceeds 256 characters |
-| `redirect_uris must be a non-empty array of strings` | - | Missing, empty, or malformed `redirect_uris` |
-| `invalid_client_metadata` | `Too many redirect URIs` | Exceeds the 10 redirect URI limit |
-| `Invalid redirect URI: {uri}. Must be HTTPS or localhost.` | - | URI is not HTTPS or localhost |
-| `Invalid token_endpoint_auth_method. Must be one of: none, client_secret_post` | - | Value is not `none` or `client_secret_post` |
-| `grant_types must be an array of strings` | - | Malformed `grant_types` |
-| `invalid_client_metadata` | `Unsupported grant type` | Grant type is not `authorization_code` or `refresh_token` |
+| Error | When |
+|-------|------|
+| `invalid_client_metadata` | The JSON body, client name, token authentication method, grant types, or response types are malformed or unsupported |
+| `invalid_redirect_uri` | `redirect_uris` is missing, malformed, duplicated, too long, unsupported, or exceeds the 10 URI limit |
+| `temporarily_unavailable` | Registration is rate limited. Honor `Retry-After` before retrying |
+
+Read `error_description` for the specific validation failure. Missing or blank
+`client_name` values default to `MCP Client`.
 
 ## Full example
 
@@ -528,12 +548,27 @@ const server = http.createServer(async (req, res) => {
   }
 
   const code = url.searchParams.get("code");
+  const authorizationError = url.searchParams.get("error");
+  const returnedIssuer = url.searchParams.get("iss");
   const returnedState = url.searchParams.get("state");
 
   // Verify state to prevent CSRF
   if (returnedState !== state) {
     res.writeHead(400);
     res.end("State mismatch");
+    return;
+  }
+
+  // Verify the authorization server that issued the response
+  if (returnedIssuer !== "https://xquik.com") {
+    res.writeHead(400);
+    res.end("Issuer mismatch");
+    return;
+  }
+
+  if (authorizationError !== null || code === null) {
+    res.writeHead(400);
+    res.end("Authorization failed");
     return;
   }
 
@@ -551,10 +586,15 @@ const server = http.createServer(async (req, res) => {
     }),
   });
 
+  if (!tokenResponse.ok) {
+    res.writeHead(502);
+    res.end("Token exchange failed");
+    return;
+  }
+
   const tokens = await tokenResponse.json();
-  console.log("Access token:", tokens.access_token);
-  console.log("Refresh token:", tokens.refresh_token);
-  console.log("Expires in:", tokens.expires_in, "seconds");
+  // Store tokens in a secret store. Never print them or include them in logs.
+  void tokens;
 
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("Authorization complete. You can close this tab.");

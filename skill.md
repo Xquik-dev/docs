@@ -34,12 +34,12 @@ Reach for Xquik when:
 
 ### Authentication
 
-- **OAuth 2.1**: Browser-based MCP clients keep account access granted by OAuth scopes. Add `https://xquik.com/mcp` and complete the client-opened login and consent flow. CIMD is preferred; DCR remains available.
+- **OAuth 2.1**: Browser-based MCP clients keep account access granted by OAuth scopes. Add `https://xquik.com/mcp` and complete the client-opened login and consent flow. Xquik supports CIMD and DCR; let the client use its documented registration flow.
 - **Full account key**: Send `x-api-key: xq_your_api_key_here` or `Authorization: Bearer xq_your_api_key_here`.
 - **Guest key**: Send `Authorization: Bearer xq_your_guest_key_here`. Scope is fixed to `paid_reads`.
 - **Key format**: `xq_` prefix plus 64 hex characters
 - **Generation**: Dashboard > API Keys > Create new key
-- **Revocation**: Dashboard or `DELETE /api/v1/api-keys/{id}`
+- **Revocation**: Dashboard. The API route requires a same-origin dashboard session
 - **OAuth discovery**: Read protected-resource metadata, authorization-server metadata, or `https://xquik.com/auth.md`.
 
 ### Rate limits
@@ -147,6 +147,26 @@ API MCP v2.5.3 uses Streamable HTTP. It returns normalized snake_case fields, da
 
 API-key lifecycle, saved-payment quick top-up, the account top-up redirect, and all 3 guest wallet credential routes are unavailable through MCP. Never start checkout or top-up because a call returned `401` or `402`. Ask the user to choose an amount and option, then wait for explicit confirmation.
 
+### Recover from the Codex OAuth issuer error
+
+If Codex reports `Authorization server response missing required issuer: expected https://xquik.com`, do not retry the same OAuth flow. Affected Codex releases discard the RFC 9207 `iss` value before token exchange. Xquik already returns that value. Track https://github.com/openai/codex/issues/31573 for the fixed release.
+
+Set the API key in the environment:
+
+```bash
+export XQUIK_API_KEY="xq_your_api_key_here"
+```
+
+Configure Codex without placing the key value in `config.toml`:
+
+```toml
+[mcp_servers.xquik]
+url = "https://xquik.com/mcp"
+bearer_token_env_var = "XQUIK_API_KEY"
+```
+
+Restart Codex and run `codex mcp list`. Do not run `codex mcp login xquik` while the fallback is active. Docs MCP at `https://docs.xquik.com/mcp` needs no authentication, so it can retrieve the full troubleshooting guide at https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error while API MCP OAuth is blocked.
+
 ### Create an accountless guest wallet
 
 1. Ask the user to choose and confirm $10-$250 USD.
@@ -185,6 +205,7 @@ Refunds and disputes reconcile affected-purchase credits only. Unrelated credits
 - Agent Skills index: https://xquik.com/.well-known/agent-skills/index.json
 - Agent index: https://xquik.com/.well-known/agent-index.json
 - OAuth instructions: https://xquik.com/auth.md
+- Codex OAuth troubleshooting: https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error
 - Guest wallets: https://docs.xquik.com/guides/guest-wallets
 - Direct MPP: https://docs.xquik.com/mpp/overview
 - Error handling: https://docs.xquik.com/guides/error-handling
