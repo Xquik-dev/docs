@@ -14,7 +14,7 @@ Run bulk data extractions from X in 5 stages: check credits, estimate costs, run
 
 <CardGroup cols={2}>
   <Card title="1. Check credits" icon="credit-card" href="/api-reference/account/get">
-    Call `GET /account` to confirm subscription status and available credits.
+    Call `GET /account` to confirm available credits and plan status.
   </Card>
   <Card title="2. Estimate cost" icon="calculator" href="/api-reference/extractions/estimate">
     Call `POST /extractions/estimate` with the same target you plan to run.
@@ -36,7 +36,7 @@ Run bulk data extractions from X in 5 stages: check credits, estimate costs, run
 
 <Steps>
   <Step title="Check credits">
-    Verify your subscription is active and your credit balance can cover the job.
+    Verify that your available credit balance can cover the job.
   </Step>
   <Step title="Estimate cost">
     Preview the extraction cost before committing. Check whether it fits within your remaining budget.
@@ -122,9 +122,8 @@ curl -s https://xquik.com/api/v1/account \
 }
 ```
 
-Use `plan` to confirm the subscription is active, and use
-`creditInfo.balance` to decide whether to continue, top up, or lower
-`resultsLimit` before estimating the extraction.
+Store `plan` for billing context. Use `creditInfo.balance` to decide whether to
+continue, top up, or lower `resultsLimit` before estimating the extraction.
 
 ## Step 2: Estimate cost
 
@@ -730,7 +729,7 @@ The same workflow works through the MCP server using the `xquik` sandbox tool:
 <CardGroup cols={2}>
   <Card title="Check account" icon="user-check">
     REST route: `GET /account`. MCP call:
-    `xquik.request('/api/v1/account')` to confirm subscription, credits, and
+    `xquik.request('/api/v1/account')` to confirm account state, credits, and
     usage before a run.
   </Card>
   <Card title="Estimate extraction" icon="calculator">
@@ -763,9 +762,10 @@ The same workflow works through the MCP server using the `xquik` sandbox tool:
 ## Error handling
 
 <CardGroup cols={2}>
-  <Card title="Subscribe" icon="credit-card">
-    `402 no_subscription` means the account has no active subscription. Subscribe
-    from the [dashboard](https://xquik.com), then retry the extraction.
+  <Card title="Resolve billing access" icon="credit-card">
+    A `402` means the account cannot fund this extraction. Check the available
+    balance and `payment_options`. An active plan is not required when enough
+    credits remain.
   </Card>
   <Card title="Top up credits" icon="coins">
     `402 insufficient_credits` means the account cannot cover the requested

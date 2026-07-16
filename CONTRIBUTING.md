@@ -35,7 +35,7 @@ These are non-negotiable for merged PRs.
 - Active voice, imperative mood, no hedging. Under 15 words per sentence where possible.
 - Numerals over words ("3 retries", not "three retries"). Use `&` over "and" only inside titles or short labels; prose uses "and".
 - Title Case for page titles (Chicago style). Sentence case for section headings inside a page.
-- Errors should describe the problem and the fix in one breath: "Subscription required. Subscribe to call this endpoint."
+- Errors should describe the problem and fix: "Insufficient credits. Top up or subscribe to continue."
 
 ### Punctuation
 

@@ -8,7 +8,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Account workflows use a subscription and shared credit balance. Accountless guest wallets prepay 33 eligible GET routes through Stripe. Anonymous MPP callers can pay per request on 7 fixed-price operations.
+Account workflows spend shared credits. Plans grant monthly credits that carry over. Guest wallets prepay 33 GET routes. MPP pays per request on 7 operations.
 
 ## Subscription
 
@@ -31,7 +31,7 @@ Higher tiers give you more credits at a lower per-credit cost. PAYG credits cost
 
 All tiers support unlimited monitor slots. Active instant monitors cost 21 credits per hour and check every 1 second. Event and webhook deliveries are included in active monitor billing.
 
-Subscribe from the [dashboard](https://xquik.com). Your subscription activates immediately and renews monthly. An active subscription is required for full authenticated metered API access. Guest wallets and MPP are separate accountless read paths.
+Subscribe from the [dashboard billing page](https://dashboard.xquik.com/en/account?tab=subscription). Plans activate immediately, renew monthly, and grant credits. Metered calls need enough available credits, not an active plan. Guest wallets and MPP provide accountless reads.
 
 ### Pick a billing path by job
 
@@ -112,14 +112,14 @@ Every paid subscription invoice adds the monthly credit grant to your account ba
 - No separate buckets per operation type
 - Unused subscription credits **carry over** to the next billing period
 - API calls are also subject to [rate limits](/guides/rate-limits) (separate from credit usage)
-- When the shared balance reaches 0, metered calls return `402 Payment Required` (see [error handling](/guides/error-handling#billing--subscription-errors-402) for recovery patterns)
+- When the shared balance reaches 0, metered calls return `402 Payment Required` (see [error handling](/guides/error-handling#billing--credit-errors-402) for recovery patterns)
 - Reading and managing stored monitor records, stored events, webhooks, and account endpoints are free. Active instant monitors are billed hourly while enabled.
 
 ```json 402 response body
-{ "error": "no_subscription", "message": "Subscribe to access this endpoint" }
+{ "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }
 ```
 
-> **Warning:** Metered calls are rejected once credits are consumed. [Top up credits](/api-reference/credits/topup) from the dashboard to continue.
+> **Warning:** Metered calls are rejected when available credits cannot cover the operation. [Top up credits](/api-reference/credits/topup) or subscribe to continue.
 
 ## Per-operation costs
 
@@ -326,6 +326,14 @@ The `creditInfo.balance` field shows how many credits remain. The automatic top-
 
 > **Tip:** Poll the account endpoint periodically to track usage. Build alerts when `creditInfo.balance` drops below 20% of your plan's monthly credit grant to avoid hitting the limit unexpectedly.
 
+## Cancel renewal & request a refund
+
+Open [subscription settings](https://dashboard.xquik.com/en/account?tab=subscription), select **Manage Plan**, and cancel in Stripe's portal.
+
+Cancellation stops future renewals. Access continues through the paid period. Unused credits remain usable after the plan ends.
+
+Cancellation does not issue a refund. Charges are non-refundable unless law or Xquik states otherwise. Review the [Terms](https://xquik.com/en/terms) or contact [support](mailto:support@xquik.com).
+
 ## FAQ
 
 ### What happens when I run out of credits?
@@ -339,14 +347,6 @@ Yes. Subscription credits and top-up credits stay in the shared balance until yo
 ### How do I check my credit balance?
 
 Call `GET /api/v1/account` - the `creditInfo.balance` field shows remaining credits.
-
-### Can I downgrade or cancel anytime?
-
-Yes. Changes take effect at the end of the current billing period.
-
-### Can I top up credits without a checkout redirect?
-
-Account users can explicitly confirm a [quick top-up](/api-reference/credits/quick-topup) that charges a saved payment method. Guest wallets always use a Stripe-hosted Payment Link through [guest top-up](/api-reference/guest-wallets/topup).
 
 ## Next steps
 
