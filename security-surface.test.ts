@@ -29,7 +29,7 @@ function docsConfig(): DocsConfig {
 
 describe('public security surface', (): void => {
   it('keeps owner verification and security contacts discoverable', (): void => {
-    expect.assertions(6);
+    expect.assertions(7);
 
     const config = docsConfig();
     const trustLinks = config.footer?.links?.find(
@@ -40,6 +40,10 @@ describe('public security surface', (): void => {
     expect(config.redirects).toContainEqual({
       source: '/.well-known/security.txt',
       destination: '/security.txt',
+    });
+    expect(config.redirects).toContainEqual({
+      source: '/',
+      destination: 'https://docs.xquik.com/api-reference/overview',
     });
     expect(trustLinks).toStrictEqual([
       { label: 'Security', href: '/security' },
