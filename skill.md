@@ -13,7 +13,7 @@ metadata:
 
 ## Product summary
 
-Xquik is an X data platform with 126 documented REST operations, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover 33 prepaid GET reads. Seven fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Primary docs: https://docs.xquik.com
+Xquik is an X data platform with 127 documented REST operations, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover 33 prepaid GET reads. Seven fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Primary docs: https://docs.xquik.com
 
 ## When to use
 
@@ -50,7 +50,7 @@ Reach for Xquik when:
 
 Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Retry only on `429` and `5xx` responses.
 
-### API endpoints (126 documented operations)
+### API endpoints (127 documented operations)
 
 - **Monitors and Events**: Create account and keyword monitors, retrieve events, and manage webhooks.
 - **Extractions**: 23 tools for bulk data extraction.

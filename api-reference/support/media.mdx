@@ -1,0 +1,128 @@
+---
+title: "Support media"
+description: "Upload and download private support ticket images and videos"
+api: "GET /support/attachments/{id}"
+keywords: ["support", "attachment", "image", "video", "agent"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Support attachments stay private. Every download requires authentication and access to the parent ticket.
+
+<CodeGroup>
+  ```bash cURL
+  curl https://xquik.com/api/v1/support/attachments/att_a1b2c3d4e5f6a1b2c3d4e5f6 \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    --output attachment.bin
+  ```
+
+  ```javascript Node.js
+  const attachmentId = "att_a1b2c3d4e5f6a1b2c3d4e5f6";
+  const response = await fetch(
+    `https://xquik.com/api/v1/support/attachments/${attachmentId}`,
+    { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
+  );
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  ```
+
+  ```python Python
+  import requests
+
+  attachment_id = "att_a1b2c3d4e5f6a1b2c3d4e5f6"
+  response = requests.get(
+      f"https://xquik.com/api/v1/support/attachments/{attachment_id}",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+  )
+  response.raise_for_status()
+  media_bytes = response.content
+  ```
+</CodeGroup>
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+  Attachment public ID from a ticket message or upload receipt.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported.
+</ParamField>
+
+<ParamField header="Range" type="string">
+  One standard byte range for video seeking or resumable downloads. Example: `bytes=0-1048575`.
+</ParamField>
+
+## Supported media
+
+| Kind | Formats | Per-file limit |
+| --- | --- | ---: |
+| Image | JPEG, PNG, GIF, WebP | 10 MB |
+| Video | MP4, MOV, WebM | 25 MB |
+
+Each message accepts up to 4 files and 30 MB combined. Additional per-account upload limits protect service availability. A `429` response includes `Retry-After`.
+
+Xquik validates file signatures instead of trusting the declared content type. Rename-only format changes fail validation.
+
+## Agent workflow
+
+1. Send multipart fields named `attachments`.
+2. Read each returned receipt.
+3. Treat `ready` as downloadable.
+4. Treat `failed` as unavailable and ask the user to retry.
+5. Fetch the ticket before downloading media.
+6. Use the returned authenticated `url` unchanged.
+
+Never convert the relative `url` into a public link. It requires the same account authentication as the ticket.
+
+## Range example
+
+Video downloads support one standard byte range. Use ranges for seeking or resumable playback.
+
+```bash
+curl https://xquik.com/api/v1/support/attachments/att_a1b2c3d4e5f6a1b2c3d4e5f6 \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Range: bytes=0-1048575" \
+  --output video-part.bin
+```
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    Returns the complete image or video body with its validated content type.
+  </Tab>
+  <Tab title="206 Partial Content">
+    Returns the requested byte range with `Content-Range` and `Accept-Ranges: bytes`.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    Refresh authentication before retrying.
+  </Tab>
+  <Tab title="404 Not Found">
+    The media is missing, unavailable, or outside the authenticated account.
+  </Tab>
+  <Tab title="416 Range Not Satisfiable">
+    Correct the `Range` header before retrying.
+  </Tab>
+  <Tab title="429 Rate Limited">
+    Wait for the `Retry-After` value.
+  </Tab>
+</Tabs>
+
+## Agent status map
+
+| Status | Meaning | Agent action |
+| --- | --- | --- |
+| `200` | Complete media | Read or save the body. |
+| `206` | Requested byte range | Continue range requests when needed. |
+| `401` | Authentication failed | Refresh authentication. |
+| `404` | Missing or unauthorized | Do not reveal which condition applied. |
+| `416` | Invalid range | Correct the `Range` header. |
+| `429` | Download limit reached | Wait for `Retry-After`. |
+
+<Note>
+  Create media with [Create Ticket](/api-reference/support/create) or [Reply to Ticket](/api-reference/support/reply). Read attachment metadata with [Get Ticket](/api-reference/support/get).
+</Note>

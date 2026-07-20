@@ -3236,6 +3236,9 @@ paths:
                   example: '1234567890'
                 attachment_url:
                   type: string
+                  description:
+                    Temporarily unavailable. Requests containing this field
+                    return an uncharged 400 response and create no tweet.
                   example: 'https://x.com/elonmusk/status/1234567890'
                 community_id:
                   type: string
@@ -5576,6 +5579,60 @@ paths:
           $ref: '#/components/responses/XApiError'
 
   # ── Support Tickets ─────────────────────────────────────
+  /support/attachments/{id}:
+    get:
+      operationId: downloadSupportAttachment
+      summary: Download support ticket media
+      description: >
+        Streams an authenticated user's support image or video. Video requests
+        support one standard byte range for seeking and resumable playback.
+      tags: [Support]
+      security:
+        - apiKey: []
+        - oauthBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Support attachment public ID
+          example: 'att_a1b2c3d4e5f6a1b2c3d4e5f6'
+        - name: Range
+          in: header
+          required: false
+          schema:
+            type: string
+            pattern: '^bytes=(?:[0-9]+-[0-9]*|-[0-9]+)$'
+          description: Optional single byte range
+          example: 'bytes=0-1048575'
+      responses:
+        '200':
+          description: Complete image or video bytes
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '206':
+          description: Requested partial video bytes
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '416':
+          description: Invalid or unsatisfiable byte range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
   /support/tickets:
     post:
       operationId: createTicket
@@ -5605,6 +5662,26 @@ paths:
             example:
               subject: 'Cannot connect X account'
               body: 'I am unable to connect my X account. Please help.'
+          multipart/form-data:
+            schema:
+              type: object
+              required: [subject]
+              anyOf:
+                - required: [body]
+                - required: [attachments]
+              properties:
+                subject:
+                  type: string
+                  maxLength: 500
+                body:
+                  type: string
+                  maxLength: 10000
+                attachments:
+                  type: array
+                  maxItems: 4
+                  items:
+                    type: string
+                    format: binary
       responses:
         '201':
           description: Ticket created
@@ -5616,8 +5693,13 @@ paths:
                   publicId:
                     type: string
                     example: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
+                  attachments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SupportAttachmentReceipt'
               example:
                 publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
+                attachments: []
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -5736,10 +5818,15 @@ paths:
                           type: string
                           format: date-time
                           example: '2025-01-15T12:00:00Z'
+                        attachments:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/SupportAttachment'
                     example:
                       - body: 'I am unable to connect my X account.'
                         sender: 'user'
                         createdAt: '2025-01-15T12:00:00Z'
+                        attachments: []
               example:
                 publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
                 subject: 'Cannot connect X account'
@@ -5748,6 +5835,7 @@ paths:
                   - body: 'I am unable to connect my X account.'
                     sender: 'user'
                     createdAt: '2025-01-15T12:00:00Z'
+                    attachments: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -5839,6 +5927,22 @@ paths:
                   example: 'Thank you for the update.'
             example:
               body: 'Thank you for the update.'
+          multipart/form-data:
+            schema:
+              type: object
+              anyOf:
+                - required: [body]
+                - required: [attachments]
+              properties:
+                body:
+                  type: string
+                  maxLength: 10000
+                attachments:
+                  type: array
+                  maxItems: 4
+                  items:
+                    type: string
+                    format: binary
       responses:
         '201':
           description: Message added
@@ -5850,8 +5954,13 @@ paths:
                   publicId:
                     type: string
                     example: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
+                  attachments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SupportAttachmentReceipt'
               example:
                 publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
+                attachments: []
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -8997,6 +9106,51 @@ components:
             message: 'X account not found.'
 
   schemas:
+    SupportAttachment:
+      type: object
+      required: [publicId, filename, contentType, kind, sizeBytes, status, url]
+      properties:
+        publicId:
+          type: string
+          example: 'att_a1b2c3d4e5f6a1b2c3d4e5f6'
+        filename:
+          type: string
+          example: 'screen.png'
+        contentType:
+          type: string
+          enum:
+            [
+              image/jpeg,
+              image/png,
+              image/gif,
+              image/webp,
+              video/mp4,
+              video/quicktime,
+              video/webm,
+            ]
+        kind:
+          type: string
+          enum: [image, video]
+        sizeBytes:
+          type: integer
+          format: int64
+          example: 204800
+        status:
+          type: string
+          enum: [pending, ready, failed]
+        url:
+          type: string
+          example: '/api/v1/support/attachments/att_a1b2c3d4e5f6a1b2c3d4e5f6'
+    SupportAttachmentReceipt:
+      type: object
+      required: [publicId, status]
+      properties:
+        publicId:
+          type: string
+          example: 'att_a1b2c3d4e5f6a1b2c3d4e5f6'
+        status:
+          type: string
+          enum: [pending, ready, failed]
     PaginatedTweets:
       description: >
         Paginated tweet results. The item count can be lower than pageSize when

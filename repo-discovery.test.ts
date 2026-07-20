@@ -78,8 +78,8 @@ const REQUIRED_README_SNIPPETS = [
   'X automation',
   '[Quickstart](https://docs.xquik.com/quickstart)',
   '[API Reference](https://docs.xquik.com/api-reference)',
-  'browse 126 OpenAPI-backed operations',
-  '**REST API** - 126 operations',
+  'browse 127 OpenAPI-backed operations',
+  '**REST API** - 127 operations',
   '[SDKs](https://docs.xquik.com/sdks)',
   '[Tweet search export](https://docs.xquik.com/guides/tweet-search-export)',
   'export tweets by keyword to CSV, JSON, or XLSX',
@@ -1909,7 +1909,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'Full account sessions may create account checkout after confirmation.',
   'Guest wallet creation and top-up remain direct REST after confirmation.',
   'The MCP server never starts subscriptions, checkout, top-up, or other billing mutations in response to an API error.',
-  'The REST API documents 126 operations. The full MCP catalog exposes 118 across 10 categories:',
+  'The REST API documents 127 operations. The full MCP catalog exposes 118 across 10 categories:',
   '<Card title="X data reads" icon="search">',
   '38 operations in `twitter`: batch and single tweet lookup, tweet search, article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, followers, replies, communities, and lists.',
   '<Card title="X accounts and writes" icon="send">',
@@ -2088,7 +2088,7 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   'A question about how draw filters work hits the docs server.',
   'A request to run a draw hits the API server.',
   '## What gets searched',
-  'API reference (126 documented operations)',
+  'API reference (127 documented operations)',
   'Webhook documentation (overview, signature verification)',
   'MCP server setup and tools reference',
   'OAuth 2.1 documentation',
@@ -7260,7 +7260,7 @@ const REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS = [
 
 const REQUIRED_ARCHITECTURE_COMPONENT_SNIPPETS = [
   '<Card title="REST API" icon="braces">',
-  '126 documented operations at `https://xquik.com/api/v1/*`',
+  '127 documented operations at `https://xquik.com/api/v1/*`',
   '<Card title="MCP server" icon="bot">',
   '2 tools, `explore` and `xquik`, at `https://xquik.com/mcp`',
   '<Card title="Dashboard" icon="layout-dashboard">',
@@ -10591,7 +10591,7 @@ const FORBIDDEN_PUBLIC_CARD_ICON_SNIPPETS = [
   },
 ] as const;
 
-const EXPECTED_OPENAPI_OPERATION_COUNT = 126;
+const EXPECTED_OPENAPI_OPERATION_COUNT = 127;
 
 const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
   ['100+', 'REST', 'API', 'endpoints'].join(' '),

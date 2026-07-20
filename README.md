@@ -10,7 +10,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 ## Start here
 
 - [Quickstart](https://docs.xquik.com/quickstart) - make the first authenticated API call.
-- [API Reference](https://docs.xquik.com/api-reference) - browse 126 OpenAPI-backed operations.
+- [API Reference](https://docs.xquik.com/api-reference) - browse 127 OpenAPI-backed operations.
 - [Guest wallets](https://docs.xquik.com/guides/guest-wallets) - fund 33 accountless GET routes through a confirmed Stripe Payment Link.
 - [Direct MPP](https://docs.xquik.com/mpp/overview) - pay per request on 7 fixed-price GET operations.
 - [SDKs](https://docs.xquik.com/sdks) - use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
@@ -48,7 +48,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 
 ## What's covered
 
-- **REST API** - 126 operations spanning account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
+- **REST API** - 127 operations spanning account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
 - **Webhooks** - HMAC SHA-256 signature verification, retry semantics, payload schemas.
 - **MCP server** - 118 full-scope operations or 33 guest `paid_reads` GET routes through 2 code-mode tools.
 - **OAuth 2.1** - Automatic discovery, CIMD, DCR fallback, Authorization Code + PKCE, and token refresh.
@@ -61,7 +61,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 ## Repository layout
 
 ```
-api-reference/      126 OpenAPI operations, grouped by resource
+api-reference/      127 OpenAPI operations, grouped by resource
 guides/             Workflow, operations, and framework guides
 webhooks/           Overview + signature verification
 mcp/                MCP server overview + tool reference
