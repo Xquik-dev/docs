@@ -22,6 +22,7 @@ Use JSON for text-only replies. Use `multipart/form-data` when attaching media.
   ```bash cURL
   curl -X POST https://xquik.com/api/v1/support/tickets/tkt_a1b2c3d4e5f6a1b2c3d4e5f6/messages \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Idempotency-Key: replace-with-one-random-value" \
     -H "Content-Type: application/json" \
     -d '{
       "body": "That worked, thank you!"
@@ -34,6 +35,7 @@ Use JSON for text-only replies. Use `multipart/form-data` when attaching media.
     method: "POST",
     headers: {
       "x-api-key": "xq_YOUR_KEY_HERE",
+      "Idempotency-Key": crypto.randomUUID(),
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -49,7 +51,10 @@ Use JSON for text-only replies. Use `multipart/form-data` when attaching media.
   ticket_id = "tkt_a1b2c3d4e5f6a1b2c3d4e5f6"
   response = requests.post(
       f"https://xquik.com/api/v1/support/tickets/{ticket_id}/messages",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      headers={
+          "x-api-key": "xq_YOUR_KEY_HERE",
+          "Idempotency-Key": "replace-with-one-random-value",
+      },
       json={"body": "That worked, thank you!"},
   )
   data = response.json()
@@ -76,6 +81,7 @@ Use JSON for text-only replies. Use `multipart/form-data` when attaching media.
           panic(err)
       }
       req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Idempotency-Key", "replace-with-one-random-value")
       req.Header.Set("Content-Type", "application/json")
 
       resp, err := http.DefaultClient.Do(req)
@@ -109,6 +115,10 @@ Use JSON for text-only replies. Use `multipart/form-data` when attaching media.
   Use `application/json` for text only. Use `multipart/form-data` for media.
 </ParamField>
 
+<ParamField header="Idempotency-Key" type="string">
+  Generate one random value for this reply. Reuse it only when retrying identical text and attachments. A replay returns the original message with `Idempotency-Replayed: true`.
+</ParamField>
+
 ## Body
 
 <ParamField body="body" type="string" required>
@@ -124,6 +134,7 @@ For a media-only reply, omit `body` and include at least 1 attachment.
 ```bash cURL With Media
 curl -X POST https://xquik.com/api/v1/support/tickets/tkt_a1b2c3d4e5f6a1b2c3d4e5f6/messages \
   -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Idempotency-Key: replace-with-one-random-value" \
   -F "body=This recording shows the current behavior." \
   -F "attachments=@recording.mp4" | jq
 ```
@@ -144,6 +155,9 @@ curl -X POST https://xquik.com/api/v1/support/tickets/tkt_a1b2c3d4e5f6a1b2c3d4e5
     }
     ```
   </Tab>
+  <Tab title="200 Replayed">
+    Returns the original response after a safe retry. The `Idempotency-Replayed` response header is `true`.
+  </Tab>
   <Tab title="400 Invalid Input">
     ```json
     { "error": "invalid_input", "message": "Invalid input. Check the request body." }
@@ -161,6 +175,9 @@ curl -X POST https://xquik.com/api/v1/support/tickets/tkt_a1b2c3d4e5f6a1b2c3d4e5
     { "error": "not_found", "message": "Resource not found." }
     ```
     No ticket exists with this ID, or it belongs to a different account.
+  </Tab>
+  <Tab title="409 Conflict">
+    The `Idempotency-Key` already belongs to different text or attachments. Generate a new key for the changed reply.
   </Tab>
   <Tab title="429 Rate Limited">
     ```json
