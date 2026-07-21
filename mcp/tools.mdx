@@ -409,30 +409,21 @@ async () => {
     body
   });
 
-  if (result.error === 'x_write_unconfirmed') {
-    return {
-      source: 'xquik_mcp',
-      job: 'tweet_write',
-      status: result.status,
-      write_action_id: result.write_action_id,
-      charged: result.charged,
-      retryable: result.retryable,
-      poll: `/api/v1/x/write-actions/${result.write_action_id}`,
-      account: body.account,
-      reply_to_tweet_id: body.reply_to_tweet_id,
-      media: body.media
-    };
-  }
-
   return {
     source: 'xquik_mcp',
     job: 'tweet_write',
-    status: 'posted',
-    tweet_id: result.tweet_id,
+    status: result.status,
+    terminal: result.terminal,
+    safe_to_retry: result.safe_to_retry,
+    write_action_id: result.id,
+    request_hash: result.request.hash,
+    tweet_id: result.result?.id ?? result.tweet_id ?? null,
+    poll: result.terminal ? null : result.status_url,
     account: body.account,
     reply_to_tweet_id: body.reply_to_tweet_id,
     media: body.media,
-    charged: true
+    charged: result.billing.charged,
+    charged_credits: result.billing.charged_credits
   };
 }
 ```

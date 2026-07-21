@@ -51,8 +51,6 @@ Eligible endpoints and pricing:
 
 Guest wallets separately cover 33 prepaid GET routes. See `https://docs.xquik.com/guides/guest-wallets#eligible-paid-read-routes`. Outside those reads and the guest credential routes, operations require full account authentication.
 
-TypeScript setup: install `mppx viem`, fund a local Tempo account, keep its private key secret, let `mppx` handle 402, then verify `Payment-Receipt` and the HTTP status.
-
 ## Guest Wallets
 
 After confirmation, `POST /api/v1/guest-wallets` creates a $10-$250 USD Stripe-hosted Payment Link and inactive `paid_reads` key without charging. A verified webhook activates reads. Poll `GET /api/v1/guest-wallets/status`. Reconfirm before top-ups. Store the API and UUID v4 idempotency keys as secrets.
@@ -82,17 +80,17 @@ All errors return JSON:
 { "error": "error_code", "message": "Human-readable description" }
 ```
 
-Some errors include additional context:
+Write errors include durable lifecycle context. Poll `GET /x/write-actions/{id}`:
 
 ```json
-{ "error": "x_write_unconfirmed", "status": "pending_confirmation", "writeActionId": "42", "charged": false, "retryable": false }
+{ "error": "x_write_ambiguous", "status": "pending_confirmation", "writeActionId": "42", "terminal": false, "charged": false, "retryable": false, "safeToRetry": false, "statusUrl": "/api/v1/x/write-actions/42", "nextAction": { "type": "poll", "url": "/api/v1/x/write-actions/42", "afterMs": 2000 } }
 ```
 
 HTTP status codes: `400` (validation), `401` (unauthenticated), `402` (payment required), `403` (limit reached), `404` (not found), `409` (conflict), `429` (rate limited), `500` (server error), `502` (temporarily unavailable). Anonymous non-MPP paid reads use `401` with a Bearer challenge and guest action. Direct MPP, account credit, and guest credit flows use `402`. Never start payment without user confirmation.
 
-Common error codes: `invalid_input`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`, `invalid_username`, `invalid_tool_type`, `invalid_format`, `invalid_params`, `missing_query`, `missing_params`, `api_key_limit_reached`, `unauthenticated`, `no_subscription`, `subscription_inactive`, `no_credits`, `insufficient_credits`, `no_addon`, `monitor_limit_reached`, `not_found`, `user_not_found`, `tweet_not_found`, `monitor_already_exists`, `x_api_rate_limited`, `x_daily_limit`, `x_write_unconfirmed`, `internal_error`, `x_api_unavailable`, `x_api_unauthorized`.
+Common error codes: `invalid_input`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`, `invalid_username`, `invalid_tool_type`, `invalid_format`, `invalid_params`, `missing_query`, `missing_params`, `api_key_limit_reached`, `unauthenticated`, `no_subscription`, `subscription_inactive`, `no_credits`, `insufficient_credits`, `no_addon`, `monitor_limit_reached`, `not_found`, `user_not_found`, `tweet_not_found`, `monitor_already_exists`, `x_api_rate_limited`, `x_daily_limit`, `x_write_ambiguous`, `internal_error`, `x_api_unavailable`, `x_api_unauthorized`.
 
-Write-specific error codes: `x_daily_limit` (429) - X account reached daily posting limit, wait 24 hours, not retryable. `x_write_unconfirmed` (202) - action was dispatched but confirmation is pending; store `writeActionId`, call `GET /x/write-actions/{id}`, and do not retry-send while status is `pending_confirmation`.
+Write-specific error codes: `x_daily_limit` (429) - X account reached daily posting limit, wait 24 hours, not retryable. `x_write_ambiguous` (202) - dispatch occurred but confirmation is pending; store `writeActionId`, poll `statusUrl`, and do not retry while `terminal` is false or `safeToRetry` is false.
 
 Retry strategy: retry only on `429` and `5xx`. Formula: `delay = baseDelay * 2^attempt + random(0, jitter)`. Max 3 retries. Respect `Retry-After` header.
 
@@ -456,7 +454,7 @@ Available credits required; metered.
 ## API Reference - X Write API
 
 - [Create Tweet](https://docs.xquik.com/api-reference/x-write/create-tweet): Post text, media, replies, community posts, and note tweets from a connected X account. Metered.
-- [Get Write Action Status](https://docs.xquik.com/api-reference/x-write/get-write-action-status): Poll `202 x_write_unconfirmed` actions by `writeActionId` before retrying. Free.
+- [Get Write Action Status](https://docs.xquik.com/api-reference/x-write/get-write-action-status): Poll every nonterminal write by `writeActionId` before retrying. Free.
 - [Delete Tweet](https://docs.xquik.com/api-reference/x-write/delete-tweet): Delete a tweet by ID. Metered.
 - [Like Tweet](https://docs.xquik.com/api-reference/x-write/like): Like a tweet. Metered.
 - [Unlike Tweet](https://docs.xquik.com/api-reference/x-write/unlike): Remove a like from a tweet. Metered.

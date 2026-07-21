@@ -468,26 +468,20 @@ static Map<String, Object> createTweetHandoff(
     Map<String, Object> base
 ) {
     Map<String, Object> handoff = new LinkedHashMap<>();
+    Map<String, Object> billing = (Map<String, Object>) payload.get("billing");
+    Map<String, Object> request = (Map<String, Object>) payload.get("request");
+    Map<String, Object> result = (Map<String, Object>) payload.get("result");
+    boolean terminal = Boolean.TRUE.equals(payload.get("terminal"));
 
-    if (
-        "x_write_unconfirmed".equals(payload.get("error")) &&
-        "pending_confirmation".equals(payload.get("status"))
-    ) {
-        handoff.put("status", "pending_confirmation");
-        handoff.put("write_action_id", payload.get("writeActionId"));
-        handoff.put("charged", payload.get("charged"));
-        handoff.put("charged_credits", payload.get("chargedCredits"));
-        handoff.put("retryable", payload.get("retryable"));
-        handoff.put("poll", "GET /x/write-actions/{id}");
-    } else {
-        handoff.put("status", "posted");
-        handoff.put("tweet_id", payload.get("tweetId"));
-        handoff.put("charged", payload.get("charged"));
-        handoff.put("charged_credits", payload.get("chargedCredits"));
-        if (payload.containsKey("writeActionId")) {
-            handoff.put("write_action_id", payload.get("writeActionId"));
-        }
-    }
+    handoff.put("status", payload.get("status"));
+    handoff.put("terminal", terminal);
+    handoff.put("safe_to_retry", payload.get("safeToRetry"));
+    handoff.put("write_action_id", payload.get("id"));
+    handoff.put("request_hash", request.get("hash"));
+    handoff.put("tweet_id", result == null ? payload.get("tweetId") : result.get("id"));
+    handoff.put("charged", billing.get("charged"));
+    handoff.put("charged_credits", billing.get("chargedCredits"));
+    handoff.put("poll", terminal ? null : payload.get("statusUrl"));
 
     handoff.putAll(base);
     return handoff;
@@ -561,7 +555,11 @@ System.out.println(objectMapper.writeValueAsString(replyHandoff));
 System.out.println(objectMapper.writeValueAsString(dmHandoff));
 ```
 
-The generated Java response model covers confirmed `tweetId` responses. Use `client.x().tweets().withRawResponse().create(...)` when a write worker must branch on the REST `202 x_write_unconfirmed` response, store `writeActionId` and `chargedCredits`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write. Store `tweetHandoff`, `replyHandoff`, and `dmHandoff` on the CMS, support ticket, queue job, CRM note, or agent state before scheduling follow-up work. Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies. Leave the generated `replyToMessageId` field unset even if SDK builders expose it; the REST endpoint rejects DM reply threading. Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.mediaId()` values to `client.x().tweets().create`; that method uses public media URLs through `media`.
+Use `client.x().tweets().withRawResponse().create(...)` to capture the durable write action. Send a unique `Idempotency-Key`, store `id`, `request.hash`, `billing`, `result`, and `statusUrl`, then poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+
+Keep DM body text in private systems. Shared logs and handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and lifecycle status. Leave `replyToMessageId` unset because the REST endpoint rejects DM reply threading.
+
+Use public media URLs with `client.x().tweets().create`. Do not pass uploaded `media.mediaId()` values to tweet creation.
 
 ## Error Handling
 

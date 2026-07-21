@@ -366,31 +366,24 @@ x-twitter-scraper x:tweets create \
   --format-error json > posted-reply.json
 ```
 
-The response returns `tweetId`, `success`, `charged`, and `chargedCredits`. If the API returns `202 x_write_unconfirmed`, store `writeActionId`, `chargedCredits`, and poll `GET /x/write-actions/{id}` before sending another write. Keep one JSON Lines handoff shape for both outcomes:
+Send a unique `Idempotency-Key`. Store the durable action's `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key. Keep one JSON Lines handoff shape for every lifecycle state:
 
 ```bash
 write_handoff() {
   input_file="$1"
 
   jq -c '
-    if .error == "x_write_unconfirmed" then
-      {
-        status,
-        write_action_id: .writeActionId,
-        charged,
-        charged_credits: .chargedCredits,
-        retryable,
-        poll: "GET /x/write-actions/{id}"
-      }
-    else
-      {
-        status: "posted",
-        tweet_id: .tweetId,
-        charged,
-        charged_credits: .chargedCredits,
-        write_action_id: .writeActionId
-      }
-    end
+    {
+      status,
+      terminal,
+      safe_to_retry: .safeToRetry,
+      write_action_id: .id,
+      request_hash: .request.hash,
+      tweet_id: (.result.id // .tweetId // null),
+      charged: .billing.charged,
+      charged_credits: .billing.chargedCredits,
+      poll: (if .terminal then null else .statusUrl end)
+    }
   ' "$input_file"
 }
 

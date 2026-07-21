@@ -5,6 +5,11 @@ import { describe, expect, it } from 'vitest';
 
 const PROJECT_ROOT = process.cwd();
 const API_REFERENCE_DIR = join(PROJECT_ROOT, 'api-reference');
+const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
+  PROJECT_ROOT,
+  'snippets/write-action-lifecycle-response.mdx',
+);
+const WRITE_ACTION_DIR = join(PROJECT_ROOT, 'api-reference/x-write');
 const FRONTMATTER_API_PATTERN = /^api:\s*"([A-Z]+) ([^"]+)"/mu;
 const RESPONSE_TAB_PATTERN = /<Tab title="(\d{3})\b/gu;
 const STATUS_CODE_PATTERN = /^\d{3}$/u;
@@ -181,8 +186,11 @@ function listApiReferenceFiles(dir: string): readonly string[] {
 
 function readApiDocs(): readonly ApiDoc[] {
   return listApiReferenceFiles(API_REFERENCE_DIR).flatMap((file) => {
-    const source = readFileSync(join(PROJECT_ROOT, file), 'utf8');
-    const match = FRONTMATTER_API_PATTERN.exec(source);
+    const pageSource = readFileSync(join(PROJECT_ROOT, file), 'utf8');
+    const source = pageSource.includes('<WriteActionLifecycleResponse />')
+      ? `${pageSource}\n${readFileSync(WRITE_ACTION_LIFECYCLE_SNIPPET_PATH, 'utf8')}`
+      : pageSource;
+    const match = FRONTMATTER_API_PATTERN.exec(pageSource);
     if (match?.[1] === undefined || match[2] === undefined) {
       return [];
     }
@@ -334,5 +342,35 @@ describe('API success response status documentation', (): void => {
 
     const spec = parseYaml(readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'));
     expect(collectAuditedResponseStatusFindings(spec)).toStrictEqual([]);
+  });
+
+  it('keeps every write page idempotent and lifecycle-aware', (): void => {
+    expect.assertions(2);
+
+    const pages = readdirSync(WRITE_ACTION_DIR)
+      .filter(
+        (file): boolean =>
+          file.endsWith('.mdx') && file !== 'get-write-action-status.mdx',
+      )
+      .sort();
+    const findings = pages.flatMap((file): readonly string[] => {
+      const source = readFileSync(join(WRITE_ACTION_DIR, file), 'utf8');
+      const required = [
+        '-H "Idempotency-Key:',
+        '<ParamField header="Idempotency-Key" type="string" required>',
+        '<WriteActionLifecycleResponse />',
+      ] as const;
+      return [
+        ...required
+          .filter((snippet): boolean => !source.includes(snippet))
+          .map((snippet): string => `${file}: missing ${snippet}`),
+        ...(source.includes('Safe to retry with exponential backoff.')
+          ? [`${file}: unsafe retry guidance`]
+          : []),
+      ];
+    });
+
+    expect(pages).toHaveLength(18);
+    expect(findings).toStrictEqual([]);
   });
 });

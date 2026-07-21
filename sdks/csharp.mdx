@@ -450,40 +450,34 @@ static async Task<Dictionary<string, object?>> CreateTweetHandoff(
     using JsonDocument document = JsonDocument.Parse(body);
     JsonElement payload = document.RootElement;
 
-    if (
-        response.StatusCode == HttpStatusCode.Accepted &&
-        payload.TryGetProperty("error", out JsonElement error) &&
-        error.GetString() == "x_write_unconfirmed" &&
-        payload.TryGetProperty("status", out JsonElement status) &&
-        status.GetString() == "pending_confirmation"
-    )
-    {
-        row["status"] = "pending_confirmation";
-        row["write_action_id"] = payload.GetProperty("writeActionId").GetString();
-        row["charged"] = payload.GetProperty("charged").GetBoolean();
-        row["charged_credits"] = payload.GetProperty("chargedCredits").GetString();
-        row["retryable"] = payload.GetProperty("retryable").GetBoolean();
-        row["poll"] = "GET /x/write-actions/{id}";
-        return row;
-    }
+    JsonElement billing = payload.GetProperty("billing");
+    JsonElement result = payload.GetProperty("result");
+    bool terminal = payload.GetProperty("terminal").GetBoolean();
 
-    TweetCreateResponse tweet =
-        JsonSerializer.Deserialize<TweetCreateResponse>(body)
-        ?? throw new InvalidOperationException("Tweet response body was empty.");
-
-    row["status"] = "sent";
-    row["tweet_id"] = tweet.TweetID;
-    row["charged"] = payload.GetProperty("charged").GetBoolean();
-    row["charged_credits"] = payload.GetProperty("chargedCredits").GetString();
-    if (payload.TryGetProperty("writeActionId", out JsonElement writeActionId))
+    row["status"] = payload.GetProperty("status").GetString();
+    row["terminal"] = terminal;
+    row["safe_to_retry"] = payload.GetProperty("safeToRetry").GetBoolean();
+    row["write_action_id"] = payload.GetProperty("id").GetString();
+    row["request_hash"] = payload.GetProperty("request").GetProperty("hash").GetString();
+    row["tweet_id"] = result.ValueKind == JsonValueKind.Object
+        ? result.GetProperty("id").GetString()
+        : null;
+    row["charged"] = billing.GetProperty("charged").GetBoolean();
+    row["charged_credits"] = billing.GetProperty("chargedCredits").GetString();
+    row["poll"] = terminal ? null : payload.GetProperty("statusUrl").GetString();
+    if (row["tweet_id"] is null && payload.TryGetProperty("tweetId", out JsonElement tweetId))
     {
-        row["write_action_id"] = writeActionId.GetString();
+        row["tweet_id"] = tweetId.GetString();
     }
     return row;
 }
 ```
 
-Use `client.X.Tweets.WithRawResponse.Create` when a write worker must branch on the REST `202 x_write_unconfirmed` response. Store `chargedCredits` as `charged_credits` for both confirmed and pending responses. If the API returns pending confirmation, store `writeActionId` as `write_action_id` and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before scheduling follow-up work. Do not retry-send the same write while status is pending. Store confirmed `tweet_id` values on the CMS, queue job, or agent state, and store `dm.MessageID` plus `media.MediaID` on the support ticket or CRM note. Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies. Leave the generated `ReplyToMessageID` property unset even if SDK params expose it; the REST endpoint rejects DM reply threading. Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.MediaID` values to `client.X.Tweets.Create`; that method uses `Media` with public media URLs.
+Use `client.X.Tweets.WithRawResponse.Create` to capture the durable write action. Send a unique `Idempotency-Key`, store `id`, `request.hash`, `billing`, `result`, and `statusUrl`, then poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+
+Keep DM body text in private systems. Shared logs and handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and lifecycle status. Leave `ReplyToMessageID` unset because the REST endpoint rejects DM reply threading.
+
+Use public media URLs with `client.X.Tweets.Create`. Do not pass uploaded `media.MediaID` values to tweet creation.
 
 ## Error Handling
 

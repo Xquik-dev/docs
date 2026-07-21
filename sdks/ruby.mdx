@@ -302,7 +302,7 @@ Use this workflow when a Ruby app, Rails job, Sidekiq worker, or agent service n
 
 Tweet and reply media posts use public media URLs directly on `POST /x/tweets`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. Do not upload first when the media URL is already public.
 
-Use `client.request` when a write worker must branch on the REST `202 x_write_unconfirmed` response. The generated `client.x.tweets.create` helper is still useful when your flow only continues after a confirmed `tweet.tweet_id`.
+Use `client.request` to capture the durable write action. Send a unique `Idempotency-Key`, store `id`, `request.hash`, `billing`, `result`, and `statusUrl`, then poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
 
 ```ruby
 def create_tweet_handoff(client, payload)
@@ -312,25 +312,18 @@ def create_tweet_handoff(client, payload)
     body: payload
   )
 
-  if response.fetch(:error, nil) == "x_write_unconfirmed"
-    return {
-      "status" => response.fetch(:status),
-      "write_action_id" => response.fetch(:writeActionId),
-      "charged" => response.fetch(:charged),
-      "charged_credits" => response.fetch(:chargedCredits),
-      "retryable" => response.fetch(:retryable),
-      "poll" => "GET /x/write-actions/{id}"
-    }
-  end
-
-  handoff = {
-    "status" => "success",
-    "tweet_id" => response.fetch(:tweetId),
-    "charged" => response.fetch(:charged),
-    "charged_credits" => response.fetch(:chargedCredits)
+  result = response.fetch(:result, {}) || {}
+  {
+    "status" => response.fetch(:status),
+    "terminal" => response.fetch(:terminal),
+    "safe_to_retry" => response.fetch(:safeToRetry),
+    "write_action_id" => response.fetch(:id),
+    "request_hash" => response.dig(:request, :hash),
+    "tweet_id" => result[:id] || response[:tweetId],
+    "charged" => response.dig(:billing, :charged),
+    "charged_credits" => response.dig(:billing, :chargedCredits),
+    "poll" => response.fetch(:terminal) ? nil : response.fetch(:statusUrl)
   }
-  handoff["write_action_id"] = response.fetch(:writeActionId) if response.key?(:writeActionId)
-  handoff
 end
 
 tweet_handoff = create_tweet_handoff(

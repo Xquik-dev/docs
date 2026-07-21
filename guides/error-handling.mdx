@@ -1,7 +1,7 @@
 ---
 title: Error handling
 description: Recover from Xquik API error codes and rate limits
-keywords: ["error codes", "retry", "exponential backoff", "rate limit", "error recovery", "x_write_unconfirmed", "writeActionId", "post tweet status", "pending confirmation"]
+keywords: ["error codes", "retry", "exponential backoff", "rate limit", "error recovery", "write action", "safeToRetry", "pending confirmation"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -67,11 +67,9 @@ Start with the HTTP family. Retry only when a card says so.
     `x_dm_not_allowed`, `x_target_not_found`, `x_content_too_long`,
     `x_rejected`, and `media_download_failed`.
   </Card>
-  <Card title="202 pending confirmation" icon="clock">
-    Retry: no. Store `writeActionId`, poll
-    [Get Write Action Status](/api-reference/x-write/get-write-action-status),
-    and do not retry-send while status is `pending_confirmation`. Covers
-    `x_write_unconfirmed`.
+  <Card title="202 active write" icon="clock">
+    Retry: no. Store the action and poll `statusUrl` while `terminal` is
+    `false`. Follow `Retry-After`, `pollAfterMs`, and `nextAction`.
   </Card>
   <Card title="429 rate limit or cooldown" icon="timer">
     Retry: mixed. Retry `rate_limit_exceeded` and `x_rate_limited` after
@@ -81,9 +79,8 @@ Start with the HTTP family. Retry only when a card says so.
   </Card>
   <Card title="500, 502, and 503 transient failures" icon="rotate-ccw">
     Retry: yes for `internal_error`, `x_api_rate_limited`,
-    `x_api_unavailable`, `x_api_unauthorized`, `x_write_failed`, and
-    `x_transient_error`. Stop after 3 attempts. For `x_write_ambiguous`, verify
-    the result manually before sending anything again.
+    `x_api_unavailable` and `x_api_unauthorized`. For writes, retry only when
+    `safeToRetry` is `true`, using a new `Idempotency-Key`.
   </Card>
 </CardGroup>
 
@@ -347,17 +344,19 @@ Some errors include additional context fields (e.g. `limit`, `retryAfter`).
     </CardGroup>
   </Accordion>
 
-  <Accordion title="Unconfirmed write (202)">
-    The write action was dispatched, but final confirmation is still pending.
+  <Accordion title="Active write lifecycle (202)">
+    The durable write remains active. Its status is `accepted`, `dispatching`,
+    or `pending_confirmation`.
 
     <CardGroup cols={2}>
-      <Card title="x_write_unconfirmed" icon="clock">
-        Action may have completed but could not be confirmed. The response
-        includes `status: "pending_confirmation"`, `writeActionId`,
-        `charged: false`, and `retryable: false`.
+      <Card title="Poll" icon="clock">
+        Store `id`, `request.hash`, `account`, `target`, and `billing`. Poll
+        `statusUrl` after `Retry-After` or `pollAfterMs`.
       </Card>
       <Card title="Recovery" icon="circle-check">
-        Store `writeActionId`, call [Get Write Action Status](/api-reference/x-write/get-write-action-status), and do not retry-send while status is `pending_confirmation`.
+        Stop when `terminal` is `true`. Retry only when `safeToRetry` is `true`,
+        using a new key. Verify the result when `nextAction.type` is
+        `verify_result`.
       </Card>
     </CardGroup>
   </Accordion>
@@ -405,45 +404,48 @@ Some errors include additional context fields (e.g. `limit`, `retryAfter`).
         [contact support](mailto:support@xquik.com) if it persists.
       </Card>
       <Card title="x_write_failed" icon="circle-x">
-        Write action failed unexpectedly. Retry the request and
-        [contact support](mailto:support@xquik.com) if it persists.
+        Write action failed unexpectedly. Follow `safeToRetry` and
+        `nextAction`. Contact support if the action remains unsafe to retry.
       </Card>
       <Card title="x_write_ambiguous" icon="activity">
-        Write action completion could not be confirmed. Verify the result
-        manually before sending anything again.
+        Completion could not be confirmed. Poll the durable action, then verify
+        the result before sending anything again.
       </Card>
       <Card title="x_transient_error" icon="rotate-ccw">
-        Write service timeout or temporary failure. Retry with backoff.
+        Temporary write failure. Retry only when `safeToRetry` is `true`.
       </Card>
     </CardGroup>
   </Accordion>
 </AccordionGroup>
 
-## Write confirmation recovery
+## Write lifecycle recovery
 
-Because `202` is a successful HTTP status, check `response.status` before
-generic `response.ok` handling. This keeps pending tweet and reply writes out of
-your normal success path.
+Every write can return a durable action. Inspect the JSON lifecycle fields
+before generic success or error handling.
 
 <Steps>
-  <Step title="Branch on the pending write response">
-    If `response.status === 202` and `error === "x_write_unconfirmed"`, store `writeActionId`, `status`, `charged`, `chargedCredits`, and `retryable`.
+  <Step title="Store the action">
+    Store `id`, `status`, `request.hash`, `account`, `target`, `billing`, and
+    `statusUrl`.
   </Step>
   <Step title="Poll the write action">
-    Poll `GET /api/v1/x/write-actions/{id}` until `status` is `success` or `failed`.
+    Poll `statusUrl` while `terminal` is `false`. Respect `Retry-After` and
+    `pollAfterMs`.
   </Step>
-  <Step title="Persist the final ID">
-    Only persist `tweetId` or `messageId` after the status endpoint confirms success.
+  <Step title="Persist the outcome">
+    Store `result` and settled `billing` after `terminal` becomes `true`.
   </Step>
-  <Step title="Avoid duplicate writes">
-    Do not retry-send while the write action status is `pending_confirmation`.
+  <Step title="Follow retry safety">
+    Retry only when `safeToRetry` is `true`, using a new `Idempotency-Key`.
+    Verify the result when `nextAction.type` is `verify_result`.
   </Step>
 </Steps>
 
 ## Retry with exponential backoff
 
-Retry only on `429` and `5xx` responses. Use the `Retry-After` header first,
-then exponential backoff with jitter. Stop after 3 attempts.
+For reads, retry only on `429` and `5xx` responses. Use `Retry-After`, then
+exponential backoff with jitter. For writes, follow the durable action's
+`safeToRetry` and `nextAction` fields instead.
 
 **Formula:** `delay = baseDelay * 2^attempt + random(0, jitter)`
 

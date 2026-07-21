@@ -7,6 +7,10 @@ const PROJECT_ROOT = process.cwd();
 const PRODUCT_ROOT =
   process.env['XQUIK_PRODUCT_ROOT'] ?? join(PROJECT_ROOT, '..', 'xquik');
 const DOCS_OPENAPI_PATH = join(PROJECT_ROOT, 'openapi.yaml');
+const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
+  PROJECT_ROOT,
+  'snippets/write-action-lifecycle-response.mdx',
+);
 const PRODUCT_ROUTE_HELPERS_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/route-helpers.ts',
@@ -145,6 +149,10 @@ const PRODUCT_FOLLOW_CHECK_ROUTE_PATH = join(
 const PRODUCT_WRITE_ACTION_HANDLER_PATH = join(
   PRODUCT_ROOT,
   'lib/x-accounts/write-action-handler.ts',
+);
+const PRODUCT_WRITE_ACTION_PUBLIC_PATH = join(
+  PRODUCT_ROOT,
+  'lib/x-accounts/write-action-public.ts',
 );
 const PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH = join(
   PRODUCT_ROOT,
@@ -428,7 +436,10 @@ function uniqueSorted(fields: readonly string[]): readonly string[] {
 }
 
 function responseFields(page: string): readonly string[] {
-  const source = readFileSync(join(PROJECT_ROOT, page), 'utf8');
+  const pageSource = readFileSync(join(PROJECT_ROOT, page), 'utf8');
+  const source = pageSource.includes('<WriteActionLifecycleResponse />')
+    ? `${pageSource}\n${readFileSync(WRITE_ACTION_LIFECYCLE_SNIPPET_PATH, 'utf8')}`
+    : pageSource;
   return uniqueSorted(
     [...source.matchAll(/<ResponseField\s+name="(?<field>[^"]+)"/gu)].map(
       (match): string => match.groups?.['field'] ?? '',
@@ -917,6 +928,32 @@ function productDmHistoryFields(): readonly string[] {
   ]);
 }
 
+function productWriteActionSource(): string {
+  return `${readFileSync(PRODUCT_WRITE_ACTION_HANDLER_PATH, 'utf8')}\n${readFileSync(PRODUCT_WRITE_ACTION_PUBLIC_PATH, 'utf8')}`;
+}
+
+function verifyProductWriteActionContract(): void {
+  const source = productWriteActionSource();
+  const requiredSnippets = [
+    'function buildPublicWriteAction(',
+    "object: 'x_write_action'",
+    'billing,',
+    'request:',
+    'target: buildTarget(input)',
+    'result: buildResult(input)',
+    'nextAction: buildNextAction(input)',
+    '...resultIdFields(input)',
+    '...input.responseFields',
+    "success: input.status === 'success'",
+  ];
+  const missing = requiredSnippets.filter(
+    (snippet): boolean => !source.includes(snippet),
+  );
+  if (missing.length > 0) {
+    throw new Error(`Missing canonical write response wiring: ${missing.join(', ')}`);
+  }
+}
+
 function productSendDmFields(): readonly string[] {
   const routeSource = readFileSync(PRODUCT_SEND_DM_ROUTE_PATH, 'utf8');
   if (
@@ -956,23 +993,10 @@ function productUploadMediaFields(): readonly string[] {
   const helperSource = readFileSync(PRODUCT_ROUTE_HELPERS_PATH, 'utf8');
   if (
     !helperSource.includes('return { mediaUrl: uploaded.url };') ||
-    !helperSource.includes(
-      'const responseFields = await buildPublicMediaResponseFields(',
-    ) ||
-    !helperSource.includes('withImageUploadResponseFields(')
+    !helperSource.includes('withImageUploadResponseFieldsFactory(') ||
+    !helperSource.includes('responseFieldsFactory: async () =>')
   ) {
     throw new Error('Could not verify upload media public URL response field.');
-  }
-  const writeActionSource = readFileSync(
-    PRODUCT_WRITE_ACTION_HANDLER_PATH,
-    'utf8',
-  );
-  if (
-    !writeActionSource.includes('success: true') ||
-    !writeActionSource.includes('mediaId: result.mediaId') ||
-    !writeActionSource.includes('...responseFields')
-  ) {
-    throw new Error('Could not verify upload media success response fields.');
   }
   const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, 'utf8');
   if (
@@ -997,17 +1021,6 @@ function productUpdateProfileFields(): readonly string[] {
     !routeSource.includes('parseUpdateProfileBody')
   ) {
     throw new Error('Could not verify update profile route wiring.');
-  }
-  const writeActionSource = readFileSync(
-    PRODUCT_WRITE_ACTION_HANDLER_PATH,
-    'utf8',
-  );
-  if (
-    !writeActionSource.includes('success: true') ||
-    !writeActionSource.includes('tweetId: result.tweetId') ||
-    writeActionSource.includes('userId: result.userId')
-  ) {
-    throw new Error('Could not verify update profile success response fields.');
   }
   const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, 'utf8');
   if (
@@ -1048,17 +1061,6 @@ function productProfileImageFields(
     !helperSource.includes("'image/png'")
   ) {
     throw new Error(`Could not verify ${actionType} upload helper wiring.`);
-  }
-  const writeActionSource = readFileSync(
-    PRODUCT_WRITE_ACTION_HANDLER_PATH,
-    'utf8',
-  );
-  if (
-    !writeActionSource.includes('success: true') ||
-    !writeActionSource.includes('tweetId: result.tweetId') ||
-    writeActionSource.includes('userId: result.userId')
-  ) {
-    throw new Error(`Could not verify ${actionType} success response fields.`);
   }
   const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, 'utf8');
   if (
@@ -1102,17 +1104,6 @@ function productCreateCommunityFields(): readonly string[] {
   ) {
     throw new Error('Could not verify create community route wiring.');
   }
-  const writeActionSource = readFileSync(
-    PRODUCT_WRITE_ACTION_HANDLER_PATH,
-    'utf8',
-  );
-  if (
-    !writeActionSource.includes('success: true') ||
-    !writeActionSource.includes('communityId: result.communityId') ||
-    !writeActionSource.includes('communityName: result.communityName')
-  ) {
-    throw new Error('Could not verify create community success response.');
-  }
   const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, 'utf8');
   if (
     !writeSource.includes(
@@ -1138,16 +1129,6 @@ function productDeleteCommunityFields(): readonly string[] {
   ) {
     throw new Error('Could not verify delete community route wiring.');
   }
-  const writeActionSource = readFileSync(
-    PRODUCT_WRITE_ACTION_HANDLER_PATH,
-    'utf8',
-  );
-  if (
-    !writeActionSource.includes('success: true') ||
-    !writeActionSource.includes('communityId: result.communityId')
-  ) {
-    throw new Error('Could not verify delete community success response.');
-  }
   const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, 'utf8');
   if (
     !writeSource.includes(
@@ -1170,18 +1151,6 @@ function productCreateTweetFields(): readonly string[] {
   ) {
     throw new Error('Could not verify create tweet route wiring.');
   }
-  const writeActionSource = readFileSync(
-    PRODUCT_WRITE_ACTION_HANDLER_PATH,
-    'utf8',
-  );
-  if (
-    !writeActionSource.includes('success: true') ||
-    !writeActionSource.includes('tweetId: result.tweetId') ||
-    !writeActionSource.includes('charged: chargeResult.charged') ||
-    !writeActionSource.includes('chargedCredits: chargeResult.chargedCredits')
-  ) {
-    throw new Error('Could not verify create tweet success response fields.');
-  }
   return ['charged', 'chargedCredits', 'success', 'tweetId', 'writeActionId'];
 }
 
@@ -1200,18 +1169,6 @@ function productSimpleWriteFields(
     !routeSource.includes(`${bodyKey}: id`)
   ) {
     throw new Error(`Could not verify ${actionType} route wiring.`);
-  }
-  const writeActionSource = readFileSync(
-    PRODUCT_WRITE_ACTION_HANDLER_PATH,
-    'utf8',
-  );
-  if (
-    !writeActionSource.includes('success: true') ||
-    !writeActionSource.includes(
-      'return buildSuccessResponse(result, context.responseFields, chargeResult);',
-    )
-  ) {
-    throw new Error(`Could not verify ${actionType} success response.`);
   }
   const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, 'utf8');
   if (
@@ -1994,6 +1951,7 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_X_USER_REMOVE_FOLLOWER_ROUTE_PATH) &&
       existsSync(PRODUCT_FOLLOW_CHECK_ROUTE_PATH) &&
       existsSync(PRODUCT_WRITE_ACTION_HANDLER_PATH) &&
+      existsSync(PRODUCT_WRITE_ACTION_PUBLIC_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_ID_ROUTE_PATH) &&
       existsSync(PRODUCT_X_ACCOUNTS_BULK_RETRY_ROUTE_PATH) &&
@@ -2061,80 +2019,98 @@ describe('API response field docs', (): void => {
       ...itemPropertyNamesFromProperty(spec, dmHistoryResponseSchema, 'messages'),
     ]);
     const productDmHistoryResponseFields = productDmHistoryFields();
+    const canonicalWriteActionFields = schemaPropertyNames(spec, 'XWriteAction');
+    verifyProductWriteActionContract();
     const sendDmFields = propertyNames(
       responseSchema(spec, '/x/dm/{userId}', 'post'),
     );
-    const productSendDmResponseFields = productSendDmFields();
+    productSendDmFields();
+    const productSendDmResponseFields = canonicalWriteActionFields;
     const uploadMediaFields = propertyNames(
       responseSchema(spec, '/x/media', 'post'),
     );
-    const productUploadMediaResponseFields = productUploadMediaFields();
+    productUploadMediaFields();
+    const productUploadMediaResponseFields = canonicalWriteActionFields;
     const updateProfileFields = propertyNames(
       responseSchema(spec, '/x/profile', 'patch'),
     );
-    const productUpdateProfileResponseFields = productUpdateProfileFields();
+    productUpdateProfileFields();
+    const productUpdateProfileResponseFields = canonicalWriteActionFields;
     const updateAvatarFields = propertyNames(
       responseSchema(spec, '/x/profile/avatar', 'patch'),
     );
-    const productUpdateAvatarResponseFields = productUpdateAvatarFields();
+    productUpdateAvatarFields();
+    const productUpdateAvatarResponseFields = canonicalWriteActionFields;
     const updateBannerFields = propertyNames(
       responseSchema(spec, '/x/profile/banner', 'patch'),
     );
-    const productUpdateBannerResponseFields = productUpdateBannerFields();
+    productUpdateBannerFields();
+    const productUpdateBannerResponseFields = canonicalWriteActionFields;
     const createCommunityFields = propertyNames(
       responseSchema(spec, '/x/communities', 'post'),
     );
-    const productCreateCommunityResponseFields =
-      productCreateCommunityFields();
+    productCreateCommunityFields();
+    const productCreateCommunityResponseFields = canonicalWriteActionFields;
     const deleteCommunityFields = propertyNames(
       responseSchema(spec, '/x/communities/{id}', 'delete'),
     );
-    const productDeleteCommunityResponseFields =
-      productDeleteCommunityFields();
+    productDeleteCommunityFields();
+    const productDeleteCommunityResponseFields = canonicalWriteActionFields;
     const joinCommunityFields = propertyNames(
       responseSchema(spec, '/x/communities/{id}/join', 'post'),
     );
-    const productJoinCommunityResponseFields = productJoinCommunityFields();
+    productJoinCommunityFields();
+    const productJoinCommunityResponseFields = canonicalWriteActionFields;
     const leaveCommunityFields = propertyNames(
       responseSchema(spec, '/x/communities/{id}/join', 'delete'),
     );
-    const productLeaveCommunityResponseFields = productLeaveCommunityFields();
+    productLeaveCommunityFields();
+    const productLeaveCommunityResponseFields = canonicalWriteActionFields;
     const createTweetFields = propertyNames(
       responseSchema(spec, '/x/tweets', 'post'),
     );
-    const productCreateTweetResponseFields = productCreateTweetFields();
+    productCreateTweetFields();
+    const productCreateTweetResponseFields = canonicalWriteActionFields;
     const deleteTweetFields = propertyNames(
       responseSchema(spec, '/x/tweets/{id}', 'delete'),
     );
-    const productDeleteTweetResponseFields = productDeleteTweetFields();
+    productDeleteTweetFields();
+    const productDeleteTweetResponseFields = canonicalWriteActionFields;
     const likeTweetFields = propertyNames(
       responseSchema(spec, '/x/tweets/{id}/like', 'post'),
     );
-    const productLikeTweetResponseFields = productLikeTweetFields();
+    productLikeTweetFields();
+    const productLikeTweetResponseFields = canonicalWriteActionFields;
     const unlikeTweetFields = propertyNames(
       responseSchema(spec, '/x/tweets/{id}/like', 'delete'),
     );
-    const productUnlikeTweetResponseFields = productUnlikeTweetFields();
+    productUnlikeTweetFields();
+    const productUnlikeTweetResponseFields = canonicalWriteActionFields;
     const retweetFields = propertyNames(
       responseSchema(spec, '/x/tweets/{id}/retweet', 'post'),
     );
-    const productRetweetResponseFields = productRetweetFields();
+    productRetweetFields();
+    const productRetweetResponseFields = canonicalWriteActionFields;
     const unretweetFields = propertyNames(
       responseSchema(spec, '/x/tweets/{id}/retweet', 'delete'),
     );
-    const productUnretweetResponseFields = productUnretweetFields();
+    productUnretweetFields();
+    const productUnretweetResponseFields = canonicalWriteActionFields;
     const followUserFields = propertyNames(
       responseSchema(spec, '/x/users/{id}/follow', 'post'),
     );
-    const productFollowUserResponseFields = productFollowUserFields();
+    productFollowUserFields();
+    const productFollowUserResponseFields = canonicalWriteActionFields;
     const unfollowUserFields = propertyNames(
       responseSchema(spec, '/x/users/{id}/follow', 'delete'),
     );
-    const productUnfollowUserResponseFields = productUnfollowUserFields();
+    productUnfollowUserFields();
+    const productUnfollowUserResponseFields = canonicalWriteActionFields;
     const removeFollowerFields = propertyNames(
       responseSchema(spec, '/x/users/{id}/remove-follower', 'post'),
     );
-    const productRemoveFollowerResponseFields = productRemoveFollowerFields();
+    productRemoveFollowerFields();
+    const productRemoveFollowerResponseFields = canonicalWriteActionFields;
     const productXAccountFields = productReturnFieldsFromPath(
       PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
       'formatAccount',

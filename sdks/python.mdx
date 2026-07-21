@@ -337,38 +337,25 @@ from x_twitter_scraper import XTwitterScraper
 client = XTwitterScraper()
 
 def create_tweet_handoff(
-    payload: dict[str, Any],
+    action: dict[str, Any],
     base: dict[str, Any],
 ) -> dict[str, Any]:
-    if (
-        payload.get("error") == "x_write_unconfirmed"
-        and payload.get("status") == "pending_confirmation"
-    ):
-        return {
-            "status": "pending_confirmation",
-            "write_action_id": payload["writeActionId"],
-            "charged": payload["charged"],
-            "charged_credits": payload["chargedCredits"],
-            "retryable": payload["retryable"],
-            "poll": "GET /x/write-actions/{id}",
-            **base,
-        }
-
+    result = action.get("result") or {}
     return {
-        "status": "posted",
-        "tweet_id": payload["tweetId"],
-        "charged": payload["charged"],
-        "charged_credits": payload["chargedCredits"],
-        **(
-            {"write_action_id": payload["writeActionId"]}
-            if "writeActionId" in payload
-            else {}
-        ),
+        "status": action["status"],
+        "terminal": action["terminal"],
+        "safe_to_retry": action["safeToRetry"],
+        "write_action_id": action["id"],
+        "request_hash": action["request"]["hash"],
+        "tweet_id": result.get("id") or action.get("tweetId"),
+        "charged": action["billing"]["charged"],
+        "charged_credits": action["billing"]["chargedCredits"],
+        "poll": None if action["terminal"] else action["statusUrl"],
         **base,
     }
 ```
 
-The generated Python model covers confirmed `tweet_id` responses. Use `with_raw_response.create` when a write worker must branch on the REST `202 x_write_unconfirmed` response, store `writeActionId` and `chargedCredits`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write.
+Use `with_raw_response.create` to capture the durable write action. Send a unique `Idempotency-Key`, store `id`, `request.hash`, `billing`, `result`, and `statusUrl`, then poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
 
 ```python
 response = client.x.tweets.with_raw_response.create(

@@ -3214,6 +3214,8 @@ paths:
       security:
         - apiKey: []
         - oauthBearer: []
+      parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
       requestBody:
         required: true
         description: Account and tweet content. Requires text, media, or both.
@@ -3234,12 +3236,6 @@ paths:
                 reply_to_tweet_id:
                   type: string
                   example: '1234567890'
-                attachment_url:
-                  type: string
-                  description:
-                    Temporarily unavailable. Requests containing this field
-                    return an uncharged 400 response and create no tweet.
-                  example: 'https://x.com/elonmusk/status/1234567890'
                 community_id:
                   type: string
                   example: '1500000000000000000'
@@ -3262,111 +3258,13 @@ paths:
               text: 'Just launched our new feature!'
       responses:
         '200':
-          description: Tweet created
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [tweetId, success, charged, chargedCredits]
-                properties:
-                  tweetId:
-                    type: string
-                    example: '1234567890'
-                  success:
-                    type: boolean
-                    const: true
-                    example: true
-                  charged:
-                    type: boolean
-                    example: true
-                  chargedCredits:
-                    type: string
-                    description:
-                      Credits charged for this tweet. Text-only tweets and
-                      replies cost 30 credits; attached media adds 2 credits per
-                      started MB.
-                    example: '32'
-                  writeActionId:
-                    type: string
-                    example: '42'
-              example:
-                tweetId: '1234567890'
-                success: true
-                charged: true
-                chargedCredits: '32'
+          $ref: '#/components/responses/WriteActionCompleted'
         '202':
-          description:
-            Write was dispatched but final confirmation is still pending. Do not
-            retry-send the same write. Poll the write action status instead.
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - error
-                  - status
-                  - writeActionId
-                  - charged
-                  - chargedCredits
-                  - retryable
-                properties:
-                  error:
-                    type: string
-                    const: x_write_unconfirmed
-                  status:
-                    type: string
-                    const: pending_confirmation
-                  writeActionId:
-                    type: string
-                    example: '42'
-                  charged:
-                    type: boolean
-                    const: false
-                  chargedCredits:
-                    type: string
-                    example: '0'
-                  retryable:
-                    type: boolean
-                    const: false
-                  message:
-                    type: string
-                    example:
-                      Action may have completed, but confirmation is still
-                      pending.
-              example:
-                error: x_write_unconfirmed
-                status: pending_confirmation
-                writeActionId: '42'
-                charged: false
-                chargedCredits: '0'
-                retryable: false
-                message:
-                  Action may have completed, but confirmation is still pending.
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          description: Invalid input or unsupported field
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              examples:
-                InvalidInput:
-                  summary: Invalid input
-                  value:
-                    error: invalid_input
-                    message: Either text or media is required
-                UnsupportedField:
-                  summary: Unsupported field on POST /x/tweets
-                  value:
-                    error: unsupported_field
-                    message:
-                      media_ids is not supported on POST /x/tweets. Pass media
-                      as an array of public image or MP4 video URLs.
-                    retryable: false
-                    details:
-                      action: create_tweet
-                      suggestion:
-                        Use the media field with public URLs instead of
-                        media_ids. Send up to 4 images or exactly 1 MP4 video.
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -3378,7 +3276,7 @@ paths:
         '429':
           $ref: '#/components/responses/WriteRateLimited'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
 
@@ -3399,112 +3297,9 @@ paths:
           description: Write action ID returned by a pending write response.
       responses:
         '200':
-          description: Write action status
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - writeActionId
-                  - action
-                  - status
-                  - charged
-                  - chargedCredits
-                  - media
-                  - sendDispatched
-                  - retryable
-                  - createdAt
-                properties:
-                  writeActionId:
-                    type: string
-                    example: '42'
-                  action:
-                    type: string
-                    example: create_tweet
-                  status:
-                    type: string
-                    enum: [success, failed, pending_confirmation]
-                    example: pending_confirmation
-                  tweetId:
-                    type: string
-                    example: '1234567890'
-                  messageId:
-                    type: string
-                    example: '1234567890'
-                  targetId:
-                    type: [string, 'null']
-                    example: '1234567890'
-                  charged:
-                    type: boolean
-                    example: false
-                  chargedCredits:
-                    type: string
-                    example: '32'
-                  media:
-                    type: object
-                    required: [count, credits, kind, totalBytes]
-                    properties:
-                      count:
-                        type: integer
-                        example: 1
-                      credits:
-                        type: string
-                        example: '2'
-                      kind:
-                        type: string
-                        enum: [none, image, video]
-                        example: video
-                      totalBytes:
-                        type: string
-                        example: '834921'
-                  sendDispatched:
-                    type: boolean
-                    example: true
-                  retryable:
-                    type: boolean
-                    const: false
-                    example: false
-                  confirmationAttempts:
-                    type: integer
-                    example: 2
-                  confirmationSource:
-                    type: [string, 'null']
-                    example: read_confirmation
-                  createdAt:
-                    type: string
-                    format: date-time
-                    example: '2026-05-08T20:00:00.000Z'
-                  sendDispatchedAt:
-                    type: string
-                    format: date-time
-                    example: '2026-05-08T20:00:01.000Z'
-                  confirmationCheckedAt:
-                    type: string
-                    format: date-time
-                    example: '2026-05-08T20:00:05.000Z'
-                  confirmedAt:
-                    type: string
-                    format: date-time
-                    example: '2026-05-08T20:00:06.000Z'
-                  message:
-                    type: string
-                    example: Confirmation is still pending.
-              example:
-                writeActionId: '42'
-                action: create_tweet
-                status: pending_confirmation
-                charged: false
-                chargedCredits: '0'
-                media:
-                  count: 0
-                  credits: '0'
-                  kind: none
-                  totalBytes: '0'
-                sendDispatched: true
-                retryable: false
-                confirmationAttempts: 2
-                confirmationSource: null
-                createdAt: '2026-05-08T20:00:00.000Z'
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -3970,6 +3765,7 @@ paths:
         - apiKey: []
         - oauthBearer: []
       parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
           in: path
           required: true
@@ -3987,9 +3783,13 @@ paths:
               account: '@elonmusk'
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4001,7 +3801,7 @@ paths:
         '429':
           $ref: '#/components/responses/RateLimitedByX'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
 
@@ -4014,6 +3814,7 @@ paths:
         - apiKey: []
         - oauthBearer: []
       parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
           in: path
           required: true
@@ -4031,9 +3832,13 @@ paths:
               account: '@elonmusk'
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4045,7 +3850,7 @@ paths:
         '429':
           $ref: '#/components/responses/RateLimitedByX'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
     delete:
@@ -4056,6 +3861,7 @@ paths:
         - apiKey: []
         - oauthBearer: []
       parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
           in: path
           required: true
@@ -4071,9 +3877,13 @@ paths:
               $ref: '#/components/schemas/XAccountBody'
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4085,7 +3895,7 @@ paths:
         '429':
           $ref: '#/components/responses/RateLimitedByX'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
 
@@ -4098,6 +3908,7 @@ paths:
         - apiKey: []
         - oauthBearer: []
       parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
           in: path
           required: true
@@ -4113,9 +3924,13 @@ paths:
               $ref: '#/components/schemas/XAccountBody'
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4127,7 +3942,7 @@ paths:
         '429':
           $ref: '#/components/responses/RateLimitedByX'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
     delete:
@@ -4138,6 +3953,7 @@ paths:
         - apiKey: []
         - oauthBearer: []
       parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
           in: path
           required: true
@@ -4153,9 +3969,13 @@ paths:
               $ref: '#/components/schemas/XAccountBody'
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4167,7 +3987,7 @@ paths:
         '429':
           $ref: '#/components/responses/RateLimitedByX'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
 
@@ -4322,6 +4142,7 @@ paths:
         - apiKey: []
         - oauthBearer: []
       parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
           in: path
           required: true
@@ -4337,9 +4158,13 @@ paths:
               $ref: '#/components/schemas/XAccountBody'
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4351,7 +4176,7 @@ paths:
         '429':
           $ref: '#/components/responses/WriteRateLimited'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
     delete:
@@ -4362,6 +4187,7 @@ paths:
         - apiKey: []
         - oauthBearer: []
       parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
           in: path
           required: true
@@ -4377,9 +4203,13 @@ paths:
               $ref: '#/components/schemas/XAccountBody'
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4391,7 +4221,7 @@ paths:
         '429':
           $ref: '#/components/responses/WriteRateLimited'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
 
@@ -4404,6 +4234,7 @@ paths:
         - apiKey: []
         - oauthBearer: []
       parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
           in: path
           required: true
@@ -4419,9 +4250,13 @@ paths:
               $ref: '#/components/schemas/XAccountBody'
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4433,7 +4268,7 @@ paths:
         '429':
           $ref: '#/components/responses/WriteRateLimited'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
 
@@ -4521,6 +4356,7 @@ paths:
         - apiKey: []
         - oauthBearer: []
       parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: userId
           in: path
           required: true
@@ -4558,21 +4394,13 @@ paths:
               media_ids: ['1234567890123456789']
       responses:
         '200':
-          description: DM sent
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [messageId, success]
-                properties:
-                  messageId:
-                    type: string
-                    example: '1234567890123456789'
-                  success:
-                    type: boolean
-                    const: true
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4584,7 +4412,7 @@ paths:
         '429':
           $ref: '#/components/responses/WriteRateLimited'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
 
@@ -4592,10 +4420,12 @@ paths:
     post:
       operationId: uploadMedia
       summary: Upload media
-      tags: [Media]
+      tags: [X Write]
       security:
         - apiKey: []
         - oauthBearer: []
+      parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
       requestBody:
         required: true
         description:
@@ -4646,26 +4476,13 @@ paths:
               url: 'https://example.com/image.png'
       responses:
         '200':
-          description: Media uploaded
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [mediaId, mediaUrl, success]
-                properties:
-                  mediaId:
-                    type: string
-                    example: '1234567890123456789'
-                  mediaUrl:
-                    type: string
-                    format: uri
-                    description: Public media URL for tweet `media` arrays.
-                    example: 'https://media.xquik.com/uploads/1234567890123456789.png'
-                  success:
-                    type: boolean
-                    const: true
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4679,7 +4496,7 @@ paths:
         '429':
           $ref: '#/components/responses/WriteRateLimited'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
 
@@ -4784,6 +4601,8 @@ paths:
       security:
         - apiKey: []
         - oauthBearer: []
+      parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
       requestBody:
         required: true
         description:
@@ -4821,9 +4640,13 @@ paths:
               url: 'https://xquik.com/example'
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4837,7 +4660,7 @@ paths:
         '429':
           $ref: '#/components/responses/WriteRateLimited'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
 
@@ -4849,6 +4672,8 @@ paths:
       security:
         - apiKey: []
         - oauthBearer: []
+      parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
       requestBody:
         required: true
         description:
@@ -4891,9 +4716,13 @@ paths:
               url: 'https://example.com/avatar.png'
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4907,7 +4736,7 @@ paths:
         '429':
           $ref: '#/components/responses/WriteRateLimited'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
 
@@ -4919,6 +4748,8 @@ paths:
       security:
         - apiKey: []
         - oauthBearer: []
+      parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
       requestBody:
         required: true
         description:
@@ -4961,9 +4792,13 @@ paths:
               url: 'https://example.com/banner.png'
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4977,7 +4812,7 @@ paths:
         '429':
           $ref: '#/components/responses/WriteRateLimited'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
 
@@ -4989,6 +4824,8 @@ paths:
       security:
         - apiKey: []
         - oauthBearer: []
+      parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
       requestBody:
         required: true
         description: Account, community name, and optional description.
@@ -5017,29 +4854,13 @@ paths:
               description: 'A community for Tesla enthusiasts'
       responses:
         '200':
-          description: Community created
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [communityId, success]
-                properties:
-                  communityId:
-                    type: string
-                    example: '1500000000000000000'
-                  communityName:
-                    type: string
-                    example: 'Tesla Fans'
-                  success:
-                    type: boolean
-                    const: true
-                    example: true
-              example:
-                communityId: '1500000000000000000'
-                communityName: 'Tesla Fans'
-                success: true
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -5053,7 +4874,7 @@ paths:
         '429':
           $ref: '#/components/responses/WriteRateLimited'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
 
@@ -5066,6 +4887,7 @@ paths:
         - apiKey: []
         - oauthBearer: []
       parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
@@ -5090,9 +4912,13 @@ paths:
               community_name: 'Tesla Fans'
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -5106,7 +4932,7 @@ paths:
         '429':
           $ref: '#/components/responses/WriteRateLimited'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
 
@@ -5119,6 +4945,7 @@ paths:
         - apiKey: []
         - oauthBearer: []
       parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
@@ -5129,9 +4956,13 @@ paths:
               $ref: '#/components/schemas/XAccountBody'
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -5145,7 +4976,7 @@ paths:
         '429':
           $ref: '#/components/responses/WriteRateLimited'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
     delete:
@@ -5156,6 +4987,7 @@ paths:
         - apiKey: []
         - oauthBearer: []
       parameters:
+        - $ref: '#/components/parameters/WriteIdempotencyKey'
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
@@ -5166,9 +4998,13 @@ paths:
               $ref: '#/components/schemas/XAccountBody'
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          $ref: '#/components/responses/WriteInvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -5182,7 +5018,7 @@ paths:
         '429':
           $ref: '#/components/responses/WriteRateLimited'
         '503':
-          $ref: '#/components/responses/TransientError'
+          $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
 
@@ -8423,6 +8259,20 @@ components:
       description: Secure Xquik browser session cookie.
 
   parameters:
+    WriteIdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: >
+        Generate one unique value for each intended write. Reuse it only when
+        retrying the exact same account, action, target, and payload. A reused
+        key returns the original action. Reusing it with different input returns
+        409. Replay protection remains active for at least 90 days.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 255
+        pattern: '^[!-~]{1,255}$'
     SupportIdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -8719,6 +8569,193 @@ components:
       description: Raw advanced search query appended as-is.
 
   responses:
+    WriteActionCompleted:
+      description: Write reached a terminal state.
+      headers:
+        X-Request-Id:
+          required: true
+          description: Correlation ID for support and observability.
+          schema:
+            type: string
+        Location:
+          description: Relative URL for the durable action record.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/XWriteAction'
+          example:
+            object: x_write_action
+            id: '12345'
+            writeActionId: '12345'
+            action: like
+            status: success
+            terminal: true
+            retryable: false
+            safeToRetry: false
+            statusUrl: /api/v1/x/write-actions/12345
+            pollAfterMs: null
+            charged: true
+            chargedCredits: '10'
+            billing:
+              status: charged
+              charged: true
+              plannedCredits: '10'
+              chargedCredits: '10'
+            request:
+              hash: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+              payload:
+                tweet_id: '9876543210'
+            account:
+              id: '42'
+              username: example
+            target:
+              type: tweet
+              id: '9876543210'
+            targetId: '9876543210'
+            result:
+              type: state_change
+              id: '9876543210'
+              state: liked
+            nextAction: null
+            sendDispatched: true
+            success: true
+    WriteActionAccepted:
+      description: >
+        Write was accepted or dispatched. Poll Location after Retry-After. Never
+        submit another write while this action remains nonterminal.
+      headers:
+        X-Request-Id:
+          required: true
+          description: Correlation ID for this accepted write response.
+          schema:
+            type: string
+        Location:
+          required: true
+          description: Relative URL for polling the durable action record.
+          schema:
+            type: string
+        Retry-After:
+          required: true
+          description: Recommended polling delay in seconds.
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/XWriteAction'
+          example:
+            object: x_write_action
+            id: '12346'
+            writeActionId: '12346'
+            action: create_tweet
+            status: dispatching
+            terminal: false
+            retryable: false
+            safeToRetry: false
+            statusUrl: /api/v1/x/write-actions/12346
+            pollAfterMs: 2000
+            charged: false
+            chargedCredits: '0'
+            billing:
+              status: pending
+              charged: false
+              plannedCredits: '10'
+              chargedCredits: '0'
+            request:
+              hash: abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789
+              payload:
+                text: 'Hello from Xquik'
+            account:
+              id: '42'
+              username: example
+            target: null
+            targetId: null
+            result: null
+            nextAction:
+              type: poll
+              url: /api/v1/x/write-actions/12346
+              afterMs: 2000
+            sendDispatched: true
+            success: false
+    WriteIdempotencyConflict:
+      description: The idempotency key belongs to a different write request.
+      headers:
+        X-Request-Id:
+          required: true
+          description: Correlation ID for this idempotency conflict.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/XWriteActionError'
+          example:
+            charged: false
+            chargedCredits: '0'
+            error: idempotency_conflict
+            message: Idempotency-Key was already used with a different request.
+            safeToRetry: true
+            retryable: false
+            success: false
+            nextAction:
+              type: retry
+              requiresNewIdempotencyKey: true
+    WriteInvalidInput:
+      description: The write request is invalid and no action was dispatched.
+      headers:
+        X-Request-Id:
+          required: true
+          description: Correlation ID for this invalid write request.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/XWriteActionError'
+          example:
+            error: invalid_input
+            message: Invalid input. Check request fields.
+            charged: false
+            chargedCredits: '0'
+            retryable: false
+            safeToRetry: true
+            success: false
+            nextAction:
+              type: fix_request
+    WriteTrackingUnavailable:
+      description: >
+        Durable tracking or the write service is temporarily unavailable.
+        Inspect safeToRetry before creating another action.
+      headers:
+        X-Request-Id:
+          required: true
+          description: Correlation ID for this tracking failure.
+          schema:
+            type: string
+        Retry-After:
+          description: Recommended retry delay in seconds.
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/XWriteActionError'
+              - $ref: '#/components/schemas/XWriteAction'
+          example:
+            error: write_tracking_unavailable
+            message: Write tracking unavailable. Try again.
+            charged: false
+            chargedCredits: '0'
+            retryable: true
+            safeToRetry: true
+            success: false
+            nextAction:
+              type: retry
     Success:
       description: Success
       content:
@@ -8848,6 +8885,7 @@ components:
         application/json:
           schema:
             oneOf:
+              - $ref: '#/components/schemas/XWritePaymentRequired'
               - $ref: '#/components/schemas/AuthenticatedPaymentRequired'
               - $ref: '#/components/schemas/GuestPaymentRequired'
               - allOf:
@@ -8949,10 +8987,8 @@ components:
     WriteError:
       description: >
         Write operation failed. Possible error codes include x_write_failed,
-        x_write_ambiguous, x_duplicate_action, x_daily_limit (429 - account
-        reached daily posting limit, wait 24 hours), and x_write_unconfirmed
-        (202 - action may have completed but could not be confirmed, verify
-        before retrying).
+        x_write_ambiguous, x_duplicate_action, and x_daily_limit. Inspect the
+        durable action, safeToRetry, and nextAction fields before retrying.
       content:
         application/json:
           schema:
@@ -9025,7 +9061,9 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            oneOf:
+              - $ref: '#/components/schemas/Error'
+              - $ref: '#/components/schemas/XWriteActionError'
           example:
             error: 'x_transient_error'
             message: 'X is temporarily unavailable. Retry after a short delay.'
@@ -9195,6 +9233,398 @@ components:
             message: 'X account not found.'
 
   schemas:
+    XWriteActionBilling:
+      type: object
+      additionalProperties: false
+      required: [status, charged, plannedCredits, chargedCredits]
+      properties:
+        status:
+          type: string
+          enum: [not_charged, pending, charged, charge_failed, refunded]
+          example: charged
+        charged:
+          type: boolean
+          example: true
+        plannedCredits:
+          type: string
+          pattern: '^\d+$'
+          example: '10'
+        chargedCredits:
+          type: string
+          pattern: '^\d+$'
+          example: '10'
+      description: >
+        plannedCredits is the approved maximum. chargedCredits comes from the
+        settled credit ledger. Pending or failed writes are not charged.
+      example:
+        status: charged
+        charged: true
+        plannedCredits: '10'
+        chargedCredits: '10'
+    XWriteActionAccount:
+      type: [object, 'null']
+      description: Connected account selected for the write.
+      additionalProperties: false
+      required: [id, username]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+      example:
+        id: '42'
+        username: example
+    XWriteActionTarget:
+      type: [object, 'null']
+      description: Existing X resource targeted by the write, when applicable.
+      additionalProperties: false
+      required: [type, id]
+      properties:
+        type:
+          type: string
+          enum: [tweet, user, community]
+        id:
+          type: string
+      example:
+        type: tweet
+        id: '9876543210'
+    XWriteActionRequest:
+      type: object
+      description: Stable fingerprint and sanitized payload for replay checks.
+      additionalProperties: false
+      required: [hash, payload]
+      properties:
+        hash:
+          type: [string, 'null']
+          pattern: '^[0-9a-f]{64}$'
+          description: Stable hash of account, action, target, and payload.
+        payload:
+          type: [object, 'null']
+          additionalProperties: true
+          description: Exact sanitized payload dispatched for this action.
+      example:
+        hash: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        payload:
+          tweet_id: '9876543210'
+    XWriteActionResult:
+      type: [object, 'null']
+      description: Confirmed result produced by the write, when available.
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          enum: [tweet, direct_message, media, community, state_change]
+        id:
+          type: string
+        state:
+          type: string
+      example:
+        type: state_change
+        id: '9876543210'
+        state: liked
+    XWriteActionNextAction:
+      type: [object, 'null']
+      description: Exact follow-up an API client or agent should perform.
+      additionalProperties: false
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [poll, retry, verify_result, fix_request]
+        url:
+          type: string
+        afterMs:
+          type: integer
+          minimum: 0
+        requiresNewIdempotencyKey:
+          type: boolean
+      example:
+        type: poll
+        url: /api/v1/x/write-actions/12345
+        afterMs: 2000
+    XWriteAction:
+      type: object
+      required:
+        - object
+        - id
+        - writeActionId
+        - action
+        - status
+        - terminal
+        - retryable
+        - safeToRetry
+        - statusUrl
+        - pollAfterMs
+        - charged
+        - chargedCredits
+        - billing
+        - request
+        - account
+        - target
+        - targetId
+        - result
+        - nextAction
+        - sendDispatched
+        - success
+      properties:
+        object:
+          type: string
+          const: x_write_action
+        id:
+          type: string
+          example: '12345'
+        writeActionId:
+          type: string
+          example: '12345'
+        action:
+          type: string
+          example: like
+          enum:
+            - create_tweet
+            - delete_tweet
+            - like
+            - unlike
+            - retweet
+            - unretweet
+            - follow
+            - unfollow
+            - remove_follower
+            - send_dm
+            - upload_media
+            - update_profile
+            - update_avatar
+            - update_banner
+            - create_community
+            - delete_community
+            - join_community
+            - leave_community
+        status:
+          type: string
+          example: success
+          enum:
+            - accepted
+            - dispatching
+            - pending_confirmation
+            - success
+            - failed
+            - expired
+        terminal:
+          type: boolean
+          example: true
+        retryable:
+          type: boolean
+          description: True only when a new attempt can reasonably succeed.
+          example: false
+        safeToRetry:
+          type: boolean
+          description: >
+            True only when no write was dispatched and a new idempotency key may
+            be used.
+          example: false
+        statusUrl:
+          type: string
+          example: /api/v1/x/write-actions/12345
+        pollAfterMs:
+          type: [integer, 'null']
+          minimum: 0
+          example: null
+        charged:
+          type: boolean
+          example: true
+        chargedCredits:
+          type: string
+          pattern: '^\d+$'
+          example: '10'
+        billing:
+          $ref: '#/components/schemas/XWriteActionBilling'
+        request:
+          $ref: '#/components/schemas/XWriteActionRequest'
+        account:
+          $ref: '#/components/schemas/XWriteActionAccount'
+        target:
+          $ref: '#/components/schemas/XWriteActionTarget'
+        targetId:
+          type: [string, 'null']
+          example: '9876543210'
+        result:
+          $ref: '#/components/schemas/XWriteActionResult'
+        nextAction:
+          $ref: '#/components/schemas/XWriteActionNextAction'
+        requestHash:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+          example: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        requestId:
+          type: string
+          example: 01JZ8R7QSC9QKT0V7JX4M2A6B8
+        idempotent:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: x_write_ambiguous
+        message:
+          type: string
+          example: Invalid input. Check request fields.
+        sendDispatched:
+          type: boolean
+          example: true
+        sendDispatchedAt:
+          type: string
+          format: date-time
+          description: Dispatch timestamp when the write reached execution.
+          example: '2026-07-21T05:00:00Z'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-07-21T05:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2026-07-21T05:00:02Z'
+        completedAt:
+          type: string
+          format: date-time
+          example: '2026-07-21T05:00:02Z'
+        expiresAt:
+          type: string
+          format: date-time
+          description: >
+            Deadline for resolving a non-terminal write. This is not the
+            Idempotency-Key retention deadline.
+          example: '2026-07-22T05:00:00Z'
+        confirmedAt:
+          type: string
+          format: date-time
+          example: '2026-07-21T05:00:02Z'
+        confirmationCheckedAt:
+          type: string
+          format: date-time
+          example: '2026-07-21T05:00:02Z'
+        confirmationAttempts:
+          type: integer
+          minimum: 0
+          example: 1
+        tweetId:
+          type: string
+          description: Compatibility field for a confirmed tweet result ID.
+          example: '9876543210'
+        messageId:
+          type: string
+          description: Compatibility field for a confirmed direct message ID.
+          example: '1234567890'
+        mediaId:
+          type: string
+          description: Compatibility field for a confirmed media upload ID.
+          example: '2345678901'
+        mediaUrl:
+          type: string
+          format: uri
+          description: Public media URL when the upload creates one.
+          example: https://media.xquik.com/example.jpg
+        communityId:
+          type: string
+          description: Compatibility field for a confirmed community ID.
+          example: '3456789012'
+        communityName:
+          type: string
+          description: Confirmed community name when available.
+          example: Builders
+        resultId:
+          type: string
+          description: Compatibility result ID for other write actions.
+          example: '9876543210'
+        media:
+          type: object
+          additionalProperties: true
+          description: Media count, kind, size, and billing details when used.
+          example:
+            count: 1
+            kind: image
+        details:
+          type: object
+          additionalProperties: true
+          description: Structured recovery context for a failed write.
+          example:
+            suggestion: Poll the action status URL.
+        success:
+          type: boolean
+          example: true
+      description: >
+        Durable write lifecycle record. Poll statusUrl until terminal is true.
+        Reusing the original Idempotency-Key returns this same record. Submit a
+        new write only when safeToRetry is true, using a new key.
+    XWriteActionError:
+      type: object
+      description: Canonical pre-dispatch error with safe recovery guidance.
+      additionalProperties: true
+      required:
+        - error
+        - message
+        - retryable
+        - safeToRetry
+        - charged
+        - chargedCredits
+        - success
+        - nextAction
+      properties:
+        error:
+          type: string
+          example: invalid_input
+        message:
+          type: string
+          example: Invalid input. Check request fields.
+        retryable:
+          type: boolean
+          example: false
+        safeToRetry:
+          type: boolean
+          example: true
+        charged:
+          type: boolean
+          const: false
+        chargedCredits:
+          type: string
+          const: '0'
+        success:
+          type: boolean
+          const: false
+        writeActionId:
+          type: string
+          example: '12345'
+        statusUrl:
+          type: string
+          example: /api/v1/x/write-actions/12345
+        nextAction:
+          $ref: '#/components/schemas/XWriteActionNextAction'
+        allowedFields:
+          type: array
+          example: [account, text]
+          items:
+            type: string
+        fieldErrors:
+          type: array
+          example:
+            - code: required
+              message: Account is required.
+              path: account
+          items:
+            type: object
+            required: [code, message, path]
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              path:
+                type: string
+    XWritePaymentRequired:
+      allOf:
+        - $ref: '#/components/schemas/XWriteAction'
+        - type: object
+          required: [error, message]
+      description: >
+        Durable failed write action with the applicable payment guidance.
     SupportAttachment:
       type: object
       required: [publicId, filename, contentType, kind, sizeBytes, status, url]
@@ -10146,7 +10576,6 @@ components:
                 - x_user_lookup_failed
                 - x_write_ambiguous
                 - x_write_failed
-                - x_write_unconfirmed
               example: invalid_input
             - type: object
               title: StructuredError
@@ -10236,7 +10665,6 @@ components:
                     - x_user_lookup_failed
                     - x_write_ambiguous
                     - x_write_failed
-                    - x_write_unconfirmed
                   example: invalid_input
         message:
           type: string

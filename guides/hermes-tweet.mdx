@@ -125,12 +125,12 @@ Use `tweet_explore` first, then choose `tweet_read` for public reads or
     shared workflow outputs.
   </Card>
   <Card title="Media Tweet or DM Action" icon="image">
-    Use public media URLs in `media` for tweet or reply actions. Store
-    `tweetId` when confirmed; if the response includes `writeActionId`, poll
-    `GET /api/v1/x/write-actions/{id}` with `tweet_read` before retrying. For
-    DM attachments, upload media first, pass one returned `mediaId` in
-    `media_ids`, then store `messageId`. Keep full DM bodies out of shared
-    outputs and leave `reply_to_message_id` unset.
+    Use public media URLs in `media` for tweet or reply actions. Store the
+    durable action `id`, `status`, `billing`, `result`, and `statusUrl`. Poll
+    with `tweet_read` while `terminal` is false. For DM attachments, upload
+    media first, pass one returned `mediaId` in `media_ids`, then store the DM
+    action. Keep full DM bodies out of shared outputs and leave
+    `reply_to_message_id` unset.
   </Card>
 </CardGroup>
 
@@ -159,9 +159,9 @@ Keep endpoint signing values, raw request body, raw signature, and full headers 
 ```text
 Use tweet_explore with include_actions true to find media write endpoints.
 For a tweet or reply, call tweet_action for POST /api/v1/x/tweets with media set to public HTTPS image or MP4 URLs. Do not send media_ids.
-If tweet_action for POST /api/v1/x/tweets returns writeActionId, store write_action_id, status, charged_credits, and poll GET /api/v1/x/write-actions/{id} with tweet_read before retrying.
+For tweet_action, send a unique Idempotency-Key. Store id, status, billing, result, and statusUrl. Poll with tweet_read while terminal is false. Retry only when safeToRetry is true, using a new key.
 For a DM attachment, call tweet_action for POST /api/v1/x/media first, then POST /api/v1/x/dm/{userId} with one media_ids value. Leave reply_to_message_id unset.
-Return tweetId for confirmed posts, writeActionId for pending posts, and mediaId plus messageId for DMs.
+Return the complete action record. Read the confirmed resource ID from result.id.
 Keep full DM bodies out of shared outputs.
 ```
 

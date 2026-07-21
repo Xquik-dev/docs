@@ -6,6 +6,7 @@ keywords: ["media upload", "upload media", "Twitter media upload", "X media uplo
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
+import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-response.mdx";
 
 <LlmsDirective />
 
@@ -19,6 +20,7 @@ Skip this endpoint when a tweet or reply already has public HTTPS image URLs or 
   ```bash cURL
   curl -X POST https://xquik.com/api/v1/x/media \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Idempotency-Key: media-upload-1895432178065391234" \
     -F "account=myxhandle" \
     -F "file=@/path/to/image.png" | jq
   ```
@@ -32,6 +34,7 @@ Skip this endpoint when a tweet or reply already has public HTTPS image URLs or 
     method: "POST",
     headers: {
       "x-api-key": "xq_YOUR_KEY_HERE",
+      "Idempotency-Key": "media-upload-1895432178065391234",
     },
     body: form,
   });
@@ -55,7 +58,10 @@ Skip this endpoint when a tweet or reply already has public HTTPS image URLs or 
   with open("/path/to/image.png", "rb") as media_file:
       response = requests.post(
           "https://xquik.com/api/v1/x/media",
-          headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+          headers={
+              "x-api-key": "xq_YOUR_KEY_HERE",
+              "Idempotency-Key": "media-upload-1895432178065391234",
+          },
           files={"file": media_file},
           data={"account": "myxhandle"},
       )
@@ -107,6 +113,7 @@ Skip this endpoint when a tweet or reply already has public HTTPS image URLs or 
           panic(err)
       }
       req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Idempotency-Key", "media-upload-1895432178065391234")
       req.Header.Set("Content-Type", writer.FormDataContentType())
 
       resp, err := http.DefaultClient.Do(req)
@@ -146,6 +153,7 @@ Skip this endpoint when a tweet or reply already has public HTTPS image URLs or 
   ```bash cURL
   curl -X POST https://xquik.com/api/v1/x/media \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Idempotency-Key: media-url-1895432178065391234" \
     -H "Content-Type: application/json" \
     -d '{"account": "myxhandle", "url": "https://example.com/image.png"}' | jq
   ```
@@ -155,6 +163,7 @@ Skip this endpoint when a tweet or reply already has public HTTPS image URLs or 
     method: "POST",
     headers: {
       "x-api-key": "xq_YOUR_KEY_HERE",
+      "Idempotency-Key": "media-url-1895432178065391234",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -183,6 +192,7 @@ Skip this endpoint when a tweet or reply already has public HTTPS image URLs or 
       "https://xquik.com/api/v1/x/media",
       headers={
           "x-api-key": "xq_YOUR_KEY_HERE",
+          "Idempotency-Key": "media-url-1895432178065391234",
           "Content-Type": "application/json",
       },
       json={
@@ -245,6 +255,10 @@ Upload media costs 10 credits per upload call. Posting a tweet or reply is a sep
   Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
+<ParamField header="Idempotency-Key" type="string" required>
+  Unique key for this intended write. Reuse it only for an exact network replay.
+</ParamField>
+
 <ParamField header="Content-Type" type="string" required>
   Use `multipart/form-data` when uploading a file. Use `application/json` when providing a URL.
 </ParamField>
@@ -270,95 +284,9 @@ Upload media costs 10 credits per upload call. Posting a tweet or reply is a sep
 ## Response
 
 <Tabs>
-  <Tab title="200 OK">
-    <ResponseField name="mediaId" type="string">The uploaded media ID. Supply it as the only item in the `media_ids` array on `POST /x/dm/{userId}` when sending a direct message with media.</ResponseField>
-    <ResponseField name="mediaUrl" type="string">A public media URL. Pass it in the `media` array on `POST /x/tweets` when creating a tweet with uploaded media.</ResponseField>
-    <ResponseField name="success" type="boolean">Always `true` on success.</ResponseField>
-
-    ```json
-    {
-      "mediaId": "1893726451023847424",
-      "mediaUrl": "https://media.xquik.com/uploads/1893726451023847424.png",
-      "success": true
-    }
-    ```
-  </Tab>
-  <Tab title="400 Invalid Input">
-    ```json
-    { "error": "invalid_input", "message": "Unsupported file format or missing required fields" }
-    ```
-    Missing `account`, or neither `file` nor `url` provided, or the media is not a supported format (AVIF, GIF, JPEG, PNG, WebP, MP4).
-  </Tab>
-  <Tab title="401 Unauthenticated">
-    ```json
-    { "error": "unauthenticated", "message": "Missing or invalid API key" }
-    ```
-    Missing or invalid API key.
-  </Tab>
-  <Tab title="402 Insufficient Credits">
-    ```json
-    { "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }
-    ```
-    The available balance cannot cover this operation. Top up or subscribe from the [dashboard billing page](https://dashboard.xquik.com/en/account?tab=subscription).
-  </Tab>
-  <Tab title="402 Insufficient Credits">
-    ```json
-    { "error": "insufficient_credits", "message": "Insufficient credits" }
-    ```
-    Insufficient credits for this operation. Top up your credit balance from the [dashboard](https://xquik.com/dashboard).
-  </Tab>
   <Tab title="404 Account Not Found">
-    ```json
-    { "error": "account_not_found", "message": "X account not found. Connect it first at /dashboard/account?tab=x-accounts." }
-    ```
-    The specified `account` is not connected to your Xquik account. Connect it from the [dashboard](https://xquik.com/dashboard).
-  </Tab>
-  <Tab title="403 Account Needs Reauth">
-    ```json
-    { "error": "account_needs_reauth" }
-    ```
-    The connected X account failed a recent login attempt and needs to be reconnected. Reconnect it from the [dashboard](https://xquik.com/dashboard).
-  </Tab>
-  <Tab title="403 Account Restricted">
-    ```json
-    { "error": "account_restricted" }
-    ```
-    The connected X account is locked, suspended, recovering, or temporarily restricted. Resolve the restriction on X before retrying.
-  </Tab>
-  <Tab title="422 Write Rejected">
-    ```json
-    { "error": "x_content_too_long", "message": "..." }
-    ```
-    X rejected the write or the media URL could not be downloaded. Possible codes: `x_content_too_long`, `x_duplicate_action`, `x_account_suspended`, `x_account_protected`, `x_target_not_found`, `x_account_feature_required`, `x_rejected`, `media_download_failed` (URL fetch path only - body.url not HTTPS, resolves to private IP, file too large, origin error, or timeout). See [error handling](/guides/error-handling) for details.
-  </Tab>
-  <Tab title="429 Rate Limited">
-    ```json
-    { "error": "rate_limit_exceeded", "retryAfter": 60 }
-    ```
-    The request hit an Xquik tier limit, or X throttled the upload. Possible codes: `rate_limit_exceeded`, `x_rate_limited`, or `x_daily_limit`. Respect the `Retry-After` header when present.
-  </Tab>
-  <Tab title="503 Transient Error">
-    ```json
-    { "error": "x_transient_error", "message": "..." }
-    ```
-    A transient write service issue occurred. Safe to retry with exponential backoff.
-  </Tab>
-  <Tab title="500 Upload Failed">
-    ```json
-    { "error": "x_write_failed", "message": "Write action failed unexpectedly. Contact support if this persists." }
-    ```
-    The upload could not be completed. Retry after a short delay, then contact support if the failure persists.
+    Connect the requested account, then submit a newly approved write.
   </Tab>
 </Tabs>
 
-<Callout icon="coins" color="#5c3327">
-  **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
-</Callout>
-
-<Tip>
-  Use `mediaUrl` when [creating tweets](/api-reference/x-write/create-tweet). Use `mediaId` as the only item in the `media_ids` array when [sending a direct message](/api-reference/x-write/send-dm).
-</Tip>
-
-<Note>
-  **Related endpoints:** [Create Tweet](/api-reference/x-write/create-tweet) to post with the returned `mediaUrl`, or [Send Direct Message](/api-reference/x-write/send-dm) to send a DM with one uploaded media item.
-</Note>
+<WriteActionLifecycleResponse />

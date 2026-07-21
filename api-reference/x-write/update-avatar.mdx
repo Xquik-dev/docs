@@ -6,6 +6,7 @@ keywords: ["avatar", "profile picture", "upload", "image", "write", "connected a
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
+import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-response.mdx";
 
 <LlmsDirective />
 
@@ -17,6 +18,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```bash cURL
   curl -X PATCH https://xquik.com/api/v1/x/profile/avatar \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Idempotency-Key: avatar-update-1895432178065391234" \
     -F "account=myxaccount" \
     -F "file=@avatar.png" | jq
   ```
@@ -33,6 +35,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     method: "PATCH",
     headers: {
       "x-api-key": "xq_YOUR_KEY_HERE",
+      "Idempotency-Key": "avatar-update-1895432178065391234",
     },
     body: form,
   });
@@ -45,7 +48,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   with open("avatar.png", "rb") as f:
       response = requests.patch(
           "https://xquik.com/api/v1/x/profile/avatar",
-          headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+          headers={
+              "x-api-key": "xq_YOUR_KEY_HERE",
+              "Idempotency-Key": "avatar-update-1895432178065391234",
+          },
           files={"file": ("avatar.png", f, "image/png")},
           data={"account": "myxaccount"},
       )
@@ -88,6 +94,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           panic(err)
       }
       req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Idempotency-Key", "avatar-update-1895432178065391234")
       req.Header.Set("Content-Type", writer.FormDataContentType())
 
       resp, err := http.DefaultClient.Do(req)
@@ -109,6 +116,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```bash URL Upload
   curl -X PATCH https://xquik.com/api/v1/x/profile/avatar \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Idempotency-Key: avatar-url-update-1895432178065391234" \
     -H "Content-Type: application/json" \
     -d '{
       "account": "myxaccount",
@@ -121,6 +129,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <ParamField header="x-api-key" type="string" required>
   Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Idempotency-Key" type="string" required>
+  Unique key for this intended write. Reuse it only for an exact network replay.
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
@@ -144,83 +156,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 ## Response
 
 <Tabs>
-  <Tab title="200 OK">
-    <ResponseField name="success" type="boolean">Always `true` on success.</ResponseField>
-
-    ```json
-    {
-      "success": true
-    }
-    ```
-  </Tab>
-  <Tab title="400 Invalid Input">
-    ```json
-    { "error": "invalid_input", "message": "Invalid file format or size exceeded" }
-    ```
-    The file is not a supported format (JPEG, PNG) or exceeds the 700 KB limit.
-  </Tab>
-  <Tab title="401 Unauthenticated">
-    ```json
-    { "error": "unauthenticated", "message": "Missing or invalid API key" }
-    ```
-    Missing or invalid API key.
-  </Tab>
-  <Tab title="402 Insufficient Credits">
-    ```json
-    { "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }
-    ```
-    The available balance cannot cover this operation. Top up or subscribe from the [dashboard billing page](https://dashboard.xquik.com/en/account?tab=subscription).
-  </Tab>
-  <Tab title="402 Insufficient Credits">
-    ```json
-    { "error": "insufficient_credits", "message": "Insufficient credits" }
-    ```
-    Insufficient credits for this operation. Top up your credit balance from the [dashboard](https://xquik.com/dashboard).
-  </Tab>
-  <Tab title="403 Account Needs Reauth">
-    ```json
-    { "error": "account_needs_reauth" }
-    ```
-    The connected X account failed a recent login attempt and needs to be reconnected. Reconnect it from the [dashboard](https://xquik.com/dashboard).
-  </Tab>
-  <Tab title="403 Account Restricted">
-    ```json
-    { "error": "account_restricted" }
-    ```
-    The connected X account is locked, suspended, recovering, or temporarily restricted. Resolve the restriction on X before retrying.
-  </Tab>
   <Tab title="404 Account Not Found">
-    ```json
-    { "error": "account_not_found", "message": "X account not found. Connect it first at /dashboard/account?tab=x-accounts." }
-    ```
-    The specified `account` is not connected to your Xquik account. Connect it from the [dashboard](https://xquik.com/dashboard).
-  </Tab>
-  <Tab title="422 Write Rejected">
-    ```json
-    { "error": "x_content_too_long", "message": "..." }
-    ```
-    X rejected the write or the media URL could not be downloaded. Possible codes: `x_content_too_long`, `x_duplicate_action`, `x_account_suspended`, `x_account_protected`, `x_target_not_found`, `x_account_feature_required`, `x_rejected`, `media_download_failed` (URL fetch path only - body.url not HTTPS, resolves to private IP, file too large, origin error, or timeout). See [error handling](/guides/error-handling) for details.
-  </Tab>
-  <Tab title="429 Rate Limited">
-    ```json
-    { "error": "rate_limit_exceeded", "retryAfter": 60 }
-    ```
-    The request hit an Xquik tier limit, or X throttled the avatar update. Possible codes: `rate_limit_exceeded`, `x_rate_limited`, or `x_daily_limit`. Respect the `Retry-After` header when present.
-  </Tab>
-  <Tab title="503 Transient Error">
-    ```json
-    { "error": "x_transient_error", "message": "..." }
-    ```
-    A transient write service issue occurred. Safe to retry with exponential backoff.
-  </Tab>
-  <Tab title="500 Write Failed">
-    ```json
-    { "error": "x_write_failed", "message": "Failed to complete the action" }
-    ```
-    The write action failed. Retry after a short delay.
+    Connect the requested account, then submit a newly approved write.
   </Tab>
 </Tabs>
 
-<Note>
-  **Related:** [Update Banner](/api-reference/x-write/update-banner) to change the profile banner, or [Update Profile](/api-reference/x-write/update-profile) to update name, bio, and other text fields.
-</Note>
+<WriteActionLifecycleResponse />

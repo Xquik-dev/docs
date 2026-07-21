@@ -6,6 +6,7 @@ keywords: ["tweet", "unretweet", "undo retweet", "remove retweet", "x account"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
+import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-response.mdx";
 
 <LlmsDirective />
 
@@ -17,6 +18,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```bash cURL
   curl -X DELETE https://xquik.com/api/v1/x/tweets/1895432178065391234/retweet \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Idempotency-Key: unretweet-1895432178065391234" \
     -H "Content-Type: application/json" \
     -d '{
       "account": "elonmusk"
@@ -29,6 +31,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     method: "DELETE",
     headers: {
       "x-api-key": "xq_YOUR_KEY_HERE",
+      "Idempotency-Key": "unretweet-1895432178065391234",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -44,7 +47,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   tweet_id = "1895432178065391234"
   response = requests.delete(
       f"https://xquik.com/api/v1/x/tweets/{tweet_id}/retweet",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      headers={
+          "x-api-key": "xq_YOUR_KEY_HERE",
+          "Idempotency-Key": "unretweet-1895432178065391234",
+      },
       json={
           "account": "elonmusk",
       },
@@ -73,6 +79,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           panic(err)
       }
       req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Idempotency-Key", "unretweet-1895432178065391234")
       req.Header.Set("Content-Type", "application/json")
 
       resp, err := http.DefaultClient.Do(req)
@@ -96,6 +103,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
+<ParamField header="Idempotency-Key" type="string" required>
+  Unique key for this intended write. Reuse it only for an exact network replay.
+</ParamField>
+
 <ParamField header="Content-Type" type="string" required>
   Must be `application/json`.
 </ParamField>
@@ -114,78 +125,4 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 ## Response
 
-<Tabs>
-  <Tab title="200 Success">
-    <ResponseField name="success" type="boolean">Always `true` on success.</ResponseField>
-
-    ```json
-    {
-      "success": true
-    }
-    ```
-  </Tab>
-  <Tab title="400 Invalid Input">
-    ```json
-    { "error": "invalid_input", "message": "Invalid tweet ID or account" }
-    ```
-    Invalid tweet ID format or missing `account` field.
-  </Tab>
-  <Tab title="401 Unauthenticated">
-    ```json
-    { "error": "unauthenticated", "message": "Missing or invalid API key" }
-    ```
-    Missing or invalid API key.
-  </Tab>
-  <Tab title="402 Insufficient Credits">
-    ```json
-    { "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }
-    ```
-    The available balance cannot cover this operation. Top up or subscribe from the [dashboard billing page](https://dashboard.xquik.com/en/account?tab=subscription).
-  </Tab>
-  <Tab title="402 Insufficient Credits">
-    ```json
-    { "error": "insufficient_credits", "message": "Insufficient credits" }
-    ```
-    Insufficient credits for this operation. Top up your credit balance from the [dashboard](https://xquik.com/dashboard).
-  </Tab>
-  <Tab title="403 Account Needs Reauth">
-    ```json
-    { "error": "account_needs_reauth" }
-    ```
-    The connected X account failed a recent login attempt and needs to be reconnected. Reconnect it from the [dashboard](https://xquik.com/dashboard).
-  </Tab>
-  <Tab title="403 Account Restricted">
-    ```json
-    { "error": "account_restricted" }
-    ```
-    The connected X account is locked, suspended, recovering, or temporarily restricted. Resolve the restriction on X before retrying.
-  </Tab>
-  <Tab title="422 Write Rejected">
-    ```json
-    { "error": "x_content_too_long", "message": "..." }
-    ```
-    X rejected the write. Possible codes: `x_content_too_long`, `x_duplicate_action`, `x_account_suspended`, `x_account_protected`, `x_target_not_found`, `x_account_feature_required`, `x_rejected`. See [error handling](/guides/error-handling) for details.
-  </Tab>
-  <Tab title="429 Rate Limited by X">
-    ```json
-    { "error": "x_rate_limited", "message": "..." }
-    ```
-    X throttled the write. Possible codes: `x_rate_limited` (short-term throttle) or `x_daily_limit` (daily cap hit). Back off and retry later. Distinct from Xquik tier-based 429.
-  </Tab>
-  <Tab title="503 Transient Error">
-    ```json
-    { "error": "x_transient_error", "message": "..." }
-    ```
-    A transient write service issue occurred. Safe to retry with exponential backoff.
-  </Tab>
-  <Tab title="500 Write Failed">
-    ```json
-    { "error": "x_write_failed", "message": "Failed to unretweet" }
-    ```
-    The unretweet could not be completed. The tweet may have been deleted, or the connected account may be rate-limited. Try again later.
-  </Tab>
-</Tabs>
-
-<Note>
-  **Related:** [Retweet](/api-reference/x-write/retweet) to retweet a tweet, [Like Tweet](/api-reference/x-write/like) to like a tweet, [Unlike Tweet](/api-reference/x-write/unlike) to remove a like, or [Create Tweet](/api-reference/x-write/create-tweet) to post an original tweet.
-</Note>
+<WriteActionLifecycleResponse />

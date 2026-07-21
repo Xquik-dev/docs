@@ -1,210 +1,96 @@
 ---
 title: "Get write action status"
-description: "Poll post tweet, tweet reply, and DM write actions after pending confirmation responses"
+description: "Poll the durable lifecycle, result, billing, and retry state of any X write action"
 api: "GET /x/write-actions/{id}"
-keywords: ["write action status", "pending confirmation", "post tweet status", "tweet reply status", "x_write_unconfirmed", "X write API"]
+keywords: ["write action status", "idempotency", "pending write", "safe retry", "billing status", "X write API"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use this endpoint after a write request returns `202 x_write_unconfirmed`. The original write may have been dispatched, so do not retry-send the same action until you inspect the status and verify the outcome. While status is `pending_confirmation`, keep `charged` as `false`, `chargedCredits` as `"0"`, and poll again. Store the final `tweetId` or `messageId` only after the status response returns it.
+Every X write returns a durable `x_write_action` record. Store its `id` or
+`writeActionId`, then poll `statusUrl` whenever `terminal` is `false`.
+
+<Note>
+  Trust `terminal`, `safeToRetry`, and `nextAction`. Never infer retry safety
+  from an HTTP status or error name alone.
+</Note>
+
+## Agent Algorithm
+
+1. Generate one unique `Idempotency-Key` for the intended write.
+2. Submit the write once.
+3. Store `id`, `request.hash`, `account`, `target`, `billing`, and `statusUrl`.
+4. When `terminal` is `false`, wait for `Retry-After` or `pollAfterMs`.
+5. Poll `statusUrl` until `terminal` is `true`.
+6. Record `result` and settled `billing`.
+7. Retry only when `safeToRetry` is `true`, using a new key.
+8. When `nextAction.type` is `verify_result`, verify the external state first.
+
+Reuse the original `Idempotency-Key` only to replay the exact same account,
+action, target, and payload. The replay returns the same durable action.
+
+## Lifecycle
+
+| Status | Terminal | Required behavior |
+| --- | --- | --- |
+| `accepted` | No | Poll. Dispatch has not completed. |
+| `dispatching` | No | Poll. Do not submit another write. |
+| `pending_confirmation` | No | Poll. The write may already exist. |
+| `success` | Yes | Store the result and settled billing. |
+| `failed` | Yes | Follow `safeToRetry` and `nextAction`. |
+| `expired` | Yes | Verify the result when dispatch may have occurred. |
+
+Active actions return `202`, `Location`, and `Retry-After`. Terminal actions
+return `200` from this endpoint.
+
+## Request
 
 <CodeGroup>
-  ```bash cURL
-  curl https://xquik.com/api/v1/x/write-actions/42 \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
-  ```
 
-  ```javascript Node.js
-  const writeActionId = "42";
-  const response = await fetch(
-    `https://xquik.com/api/v1/x/write-actions/${writeActionId}`,
-    {
-      headers: {
-        "x-api-key": "xq_YOUR_KEY_HERE",
-      },
-    },
+```bash
+curl https://xquik.com/api/v1/x/write-actions/42 \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```javascript Node.js
+const response = await fetch(
+  "https://xquik.com/api/v1/x/write-actions/42",
+  { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
+);
+const action = await response.json();
+
+if (!action.terminal) {
+  const delayMs = action.pollAfterMs ?? 2000;
+  process.stdout.write(
+    JSON.stringify({ delayMs, next: action.statusUrl }) + "\n",
   );
-  const status = await response.json();
+} else if (action.safeToRetry) {
+  process.stdout.write("Ask for approval, then retry with a new key.\n");
+} else {
+  process.stdout.write(JSON.stringify(action.result) + "\n");
+}
+```
 
-  const resultId =
-    status.tweetId ?? status.messageId ?? status.resultId ?? null;
+```python Python
+import requests
 
-  const queueState = {
-    write_action_id: status.writeActionId,
-    action: status.action,
-    status: status.status,
-    result_id: resultId,
-    target_id: status.targetId ?? null,
-    charged: status.charged,
-    charged_credits: status.chargedCredits,
-    media: status.media,
-    send_dispatched: status.sendDispatched,
-    confirmation_attempts: status.confirmationAttempts ?? 0,
-    confirmation_checked_at: status.confirmationCheckedAt ?? null,
-    retryable: status.retryable,
-    poll_endpoint:
-      status.status === "pending_confirmation"
-        ? `/api/v1/x/write-actions/${status.writeActionId}`
-        : null,
-  };
+response = requests.get(
+    "https://xquik.com/api/v1/x/write-actions/42",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+)
+action = response.json()
 
-  process.stdout.write(`${JSON.stringify(queueState)}\n`);
-  ```
+if not action["terminal"]:
+    print({"delay_ms": action["pollAfterMs"], "next": action["statusUrl"]})
+elif action["safeToRetry"]:
+    print("Ask for approval, then retry with a new key.")
+else:
+    print(action["result"])
+```
 
-  ```python Python
-  import json
-  import requests
-
-  write_action_id = "42"
-  response = requests.get(
-      f"https://xquik.com/api/v1/x/write-actions/{write_action_id}",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-  )
-  status = response.json()
-
-  result_id = (
-      status.get("tweetId")
-      or status.get("messageId")
-      or status.get("resultId")
-  )
-
-  queue_state = {
-      "write_action_id": status["writeActionId"],
-      "action": status["action"],
-      "status": status["status"],
-      "result_id": result_id,
-      "target_id": status.get("targetId"),
-      "charged": status["charged"],
-      "charged_credits": status["chargedCredits"],
-      "media": status["media"],
-      "send_dispatched": status["sendDispatched"],
-      "confirmation_attempts": status.get("confirmationAttempts", 0),
-      "confirmation_checked_at": status.get("confirmationCheckedAt"),
-      "retryable": status["retryable"],
-      "poll_endpoint": (
-          f"/api/v1/x/write-actions/{status['writeActionId']}"
-          if status["status"] == "pending_confirmation"
-          else None
-      ),
-  }
-
-  print(json.dumps(queue_state))
-  ```
-
-  ```go Go
-  package main
-
-  import (
-      "encoding/json"
-      "log"
-      "net/http"
-      "os"
-  )
-
-  type WriteActionStatus struct {
-      WriteActionID         string         `json:"writeActionId"`
-      Action                string         `json:"action"`
-      Status                string         `json:"status"`
-      TweetID               *string        `json:"tweetId"`
-      MessageID             *string        `json:"messageId"`
-      ResultID              *string        `json:"resultId"`
-      TargetID              *string        `json:"targetId"`
-      Charged               bool           `json:"charged"`
-      ChargedCredits        string         `json:"chargedCredits"`
-      Media                 map[string]any `json:"media"`
-      SendDispatched        bool           `json:"sendDispatched"`
-      ConfirmationAttempts  int            `json:"confirmationAttempts"`
-      ConfirmationCheckedAt *string        `json:"confirmationCheckedAt"`
-      Retryable             bool           `json:"retryable"`
-  }
-
-  type QueueState struct {
-      WriteActionID         string         `json:"write_action_id"`
-      Action                string         `json:"action"`
-      Status                string         `json:"status"`
-      ResultID              *string        `json:"result_id"`
-      TargetID              *string        `json:"target_id"`
-      Charged               bool           `json:"charged"`
-      ChargedCredits        string         `json:"charged_credits"`
-      Media                 map[string]any `json:"media"`
-      SendDispatched        bool           `json:"send_dispatched"`
-      ConfirmationAttempts  int            `json:"confirmation_attempts"`
-      ConfirmationCheckedAt *string        `json:"confirmation_checked_at"`
-      Retryable             bool           `json:"retryable"`
-      PollEndpoint          *string        `json:"poll_endpoint"`
-  }
-
-  func resultID(status WriteActionStatus) *string {
-      if status.TweetID != nil {
-          return status.TweetID
-      }
-      if status.MessageID != nil {
-          return status.MessageID
-      }
-      return status.ResultID
-  }
-
-  func pollEndpoint(status WriteActionStatus) *string {
-      if status.Status != "pending_confirmation" {
-          return nil
-      }
-      endpoint := "/api/v1/x/write-actions/" + status.WriteActionID
-      return &endpoint
-  }
-
-  func main() {
-      writeActionID := "42"
-      req, err := http.NewRequest(
-          "GET",
-          "https://xquik.com/api/v1/x/write-actions/"+writeActionID,
-          nil,
-      )
-      if err != nil {
-          log.Fatal(err)
-      }
-      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-
-      resp, err := http.DefaultClient.Do(req)
-      if err != nil {
-          log.Fatal(err)
-      }
-      defer resp.Body.Close()
-
-      var status WriteActionStatus
-      if err := json.NewDecoder(resp.Body).Decode(&status); err != nil {
-          log.Fatal(err)
-      }
-
-      queueState := QueueState{
-          WriteActionID:         status.WriteActionID,
-          Action:                status.Action,
-          Status:                status.Status,
-          ResultID:              resultID(status),
-          TargetID:              status.TargetID,
-          Charged:               status.Charged,
-          ChargedCredits:        status.ChargedCredits,
-          Media:                 status.Media,
-          SendDispatched:        status.SendDispatched,
-          ConfirmationAttempts:  status.ConfirmationAttempts,
-          ConfirmationCheckedAt: status.ConfirmationCheckedAt,
-          Retryable:             status.Retryable,
-          PollEndpoint:          pollEndpoint(status),
-      }
-
-      if err := json.NewEncoder(os.Stdout).Encode(queueState); err != nil {
-          log.Fatal(err)
-      }
-  }
-  ```
 </CodeGroup>
-
-The Node.js, Python, and Go examples convert the status response into one
-queue-state row. Store `write_action_id`, `status`, `result_id`, `target_id`,
-`charged_credits`, `media`, `send_dispatched`, `confirmation_attempts`, and
-`poll_endpoint`; keep polling only while `status` is `pending_confirmation`.
 
 ## Headers
 
@@ -212,118 +98,150 @@ queue-state row. Store `write_action_id`, `status`, `result_id`, `target_id`,
   Your API key. Session cookie authentication is also supported.
 </ParamField>
 
-## Path parameters
+## Path Parameters
 
 <ParamField path="id" type="string" required>
-  Write action ID returned by a pending write response.
+  Durable action ID returned by the original write.
 </ParamField>
 
 ## Response
 
 <Tabs>
-  <Tab title="200 Success">
-    <ResponseField name="writeActionId" type="string">Write action ID.</ResponseField>
-    <ResponseField name="action" type="string">Write action type, such as `create_tweet`.</ResponseField>
-    <ResponseField name="status" type="string">Current status: `success`, `failed`, or `pending_confirmation`.</ResponseField>
-    <ResponseField name="tweetId" type="string">Tweet ID when the action created or confirmed a tweet.</ResponseField>
-    <ResponseField name="messageId" type="string">Message ID when the action sent a DM.</ResponseField>
-    <ResponseField name="targetId" type="string | null">Target user, tweet, or resource ID when available.</ResponseField>
-    <ResponseField name="charged" type="boolean">Whether the original write action was charged.</ResponseField>
-    <ResponseField name="chargedCredits" type="string">Credits charged or reserved for the write action.</ResponseField>
-    <ResponseField name="media" type="object">Create-tweet media billing details. `count` is the attached media count, `credits` is the media credit total, `kind` is `none`, `image`, or `video`, and `totalBytes` is a stringified byte count.</ResponseField>
-    <ResponseField name="sendDispatched" type="boolean">Whether the write was dispatched.</ResponseField>
-    <ResponseField name="retryable" type="boolean">Always `false` for this status response.</ResponseField>
-    <ResponseField name="confirmationAttempts" type="number">Number of confirmation attempts.</ResponseField>
-    <ResponseField name="confirmationSource" type="string | null">Confirmation source when available.</ResponseField>
-    <ResponseField name="createdAt" type="string">ISO timestamp for write action creation.</ResponseField>
-    <ResponseField name="sendDispatchedAt" type="string">ISO timestamp for dispatch when available.</ResponseField>
-    <ResponseField name="confirmationCheckedAt" type="string">ISO timestamp for the last confirmation check when available.</ResponseField>
-    <ResponseField name="confirmedAt" type="string">ISO timestamp for confirmation when available.</ResponseField>
-    <ResponseField name="message" type="string">Status or error message when available.</ResponseField>
-
-    ```json
-    {
-      "writeActionId": "42",
-      "action": "create_tweet",
-      "status": "pending_confirmation",
-      "charged": false,
-      "chargedCredits": "0",
-      "media": {
-        "count": 0,
-        "credits": "0",
-        "kind": "none",
-        "totalBytes": "0"
-      },
-      "sendDispatched": true,
-      "retryable": false,
-      "confirmationAttempts": 2,
-      "confirmationSource": null,
-      "targetId": "1234567890",
-      "createdAt": "2026-05-08T20:00:00.000Z"
-    }
-    ```
+  <Tab title="200 Terminal">
+    Polling is complete. Store `result` and settled `billing`. Follow
+    `safeToRetry` and `nextAction` before any new attempt.
   </Tab>
-  <Tab title="401 Unauthenticated">
-    ```json
-    { "error": "unauthenticated", "message": "Missing or invalid API key" }
-    ```
-    Missing or invalid API key.
-  </Tab>
-  <Tab title="404 Not Found">
-    ```json
-    { "error": "not_found", "message": "Write action not found." }
-    ```
-    No write action with that ID belongs to the authenticated user.
-  </Tab>
-  <Tab title="429 Rate Limited">
-    ```json
-    { "error": "rate_limit_exceeded", "retryAfter": 1 }
-    ```
-    Too many requests. Respect the `Retry-After` header when present.
+  <Tab title="202 Active">
+    Poll `statusUrl` after `Retry-After` or `pollAfterMs`. Never submit another
+    write while `terminal` is `false`.
   </Tab>
 </Tabs>
 
-## Resolve the write queue
+<ResponseField name="object" type="string">
+  Always `x_write_action`.
+</ResponseField>
 
-Use `GET /x/write-actions/{id}` to close the queue record created after `202 x_write_unconfirmed` from tweet posts, tweet replies, DMs, or other write endpoints.
+<ResponseField name="id" type="string">
+  Durable action ID. `writeActionId` is an equivalent compatibility field.
+</ResponseField>
 
-<CardGroup cols={2}>
-  <Card title="success" icon="circle-check">
-    Store `writeActionId`, `action`, `charged`, `chargedCredits`, `media`, and
-    the returned `tweetId`, `messageId`, or `resultId`. Mark the original job
-    as complete.
-  </Card>
-  <Card title="pending_confirmation" icon="clock">
-    Store `writeActionId`, `sendDispatched`, `confirmationAttempts`,
-    `confirmationCheckedAt`, `targetId`, and `message` when present. Keep the
-    job pending, poll again with backoff, and do not retry-send the same body.
-  </Card>
-  <Card title="failed" icon="triangle-alert">
-    Store `writeActionId`, `action`, `sendDispatched`, `targetId`, `message`,
-    `charged`, `chargedCredits`, and `media`. Mark the job failed, then fix the
-    account, target, content, or billing state before sending a new request.
-  </Card>
-</CardGroup>
+<ResponseField name="action" type="string">
+  Exact write operation, such as `create_tweet`, `like`, or `send_dm`.
+</ResponseField>
 
-For tweet replies, `targetId` is the parent tweet ID when available. For DMs, `targetId` is the recipient user ID when available. `retryable` is always `false` on this status response because replay decisions belong in your queue logic, not in automatic HTTP retries.
+<ResponseField name="status" type="string">
+  Current lifecycle status.
+</ResponseField>
+
+<ResponseField name="terminal" type="boolean">
+  `true` only when polling can stop.
+</ResponseField>
+
+<ResponseField name="retryable" type="boolean">
+  Whether a later attempt could reasonably succeed.
+</ResponseField>
+
+<ResponseField name="safeToRetry" type="boolean">
+  Whether no write was dispatched and a new attempt is safe.
+</ResponseField>
+
+<ResponseField name="statusUrl" type="string">
+  Relative URL for polling this action.
+</ResponseField>
+
+<ResponseField name="pollAfterMs" type="number | null">
+  Recommended polling delay. Terminal actions return `null`.
+</ResponseField>
+
+<ResponseField name="request" type="object">
+  Contains the stable `hash` and exact sanitized `payload`.
+</ResponseField>
+
+<ResponseField name="account" type="object">
+  Exact connected account ID and username selected for the write.
+</ResponseField>
+
+<ResponseField name="target" type="object | null">
+  Exact target type and ID when the action has a target.
+</ResponseField>
+
+<ResponseField name="billing" type="object">
+  Contains `status`, `plannedCredits`, `chargedCredits`, and `charged`.
+</ResponseField>
+
+<ResponseField name="result" type="object | null">
+  Confirmed result type, ID, or desired state after success.
+</ResponseField>
+
+<ResponseField name="nextAction" type="object | null">
+  Machine-readable instruction: `poll`, `retry`, or `verify_result`.
+</ResponseField>
+
+<ResponseField name="sendDispatched" type="boolean">
+  Whether the write reached dispatch.
+</ResponseField>
+
+<ResponseField name="requestId" type="string">
+  Correlation ID. The response also echoes it in `X-Request-Id`.
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 creation timestamp.
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 timestamp for the latest lifecycle change.
+</ResponseField>
+
+<ResponseField name="completedAt" type="string">
+  ISO 8601 terminal timestamp when available.
+</ResponseField>
+
+<ResponseField name="expiresAt" type="string">
+  Resolution deadline for a nonterminal action. This is not the idempotency
+  retention deadline.
+</ResponseField>
 
 ```json
 {
-  "job_id": "reply-queue-184",
-  "write_action_id": "42",
-  "status": "success",
-  "published_tweet_id": "2052816150136832166",
-  "reply_to_tweet_id": "1893456789012345678",
-  "charged": true,
-  "charged_credits": "32",
-  "media": { "count": 1, "credits": "2", "kind": "image", "totalBytes": "834921" }
+  "object": "x_write_action",
+  "id": "42",
+  "writeActionId": "42",
+  "action": "create_tweet",
+  "status": "pending_confirmation",
+  "terminal": false,
+  "retryable": false,
+  "safeToRetry": false,
+  "statusUrl": "/api/v1/x/write-actions/42",
+  "pollAfterMs": 2000,
+  "billing": {
+    "status": "pending",
+    "charged": false,
+    "plannedCredits": "30",
+    "chargedCredits": "0"
+  },
+  "request": {
+    "hash": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+    "payload": { "text": "Hello" }
+  },
+  "account": { "id": "8", "username": "agent_account" },
+  "target": null,
+  "result": null,
+  "nextAction": {
+    "type": "poll",
+    "url": "/api/v1/x/write-actions/42",
+    "afterMs": 2000
+  },
+  "sendDispatched": true,
+  "success": false
 }
 ```
 
-<Note>
-  **Related:** [Create Tweet](/api-reference/x-write/create-tweet) returns
-  `writeActionId` when tweet confirmation is pending. [Send DM](/api-reference/x-write/send-dm)
-  returns `messageId` after a confirmed direct message send. [Direct Message Workflow](/guides/direct-message-workflow)
-  shows how to store DM `messageId` values. [Error handling](/guides/error-handling)
-  explains `x_write_unconfirmed`.
-</Note>
+## Retry Rules
+
+- `retryable: false`, `safeToRetry: false`: do not retry.
+- `retryable: true`, `safeToRetry: false`: verify the result first.
+- `safeToRetry: true`: request approval and retry using a new key.
+- `terminal: false`: poll, even when the original HTTP response was an error.
+
+Idempotency replay protection remains active for at least 90 days.

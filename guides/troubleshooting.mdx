@@ -136,13 +136,13 @@ process each event once. If `hasMore` is `true`, store `nextCursor` and pass it 
 
 ### Write action still pending?
 
-If a tweet or reply returns `202 x_write_unconfirmed`, the send was dispatched
-but final confirmation is pending.
+Inspect the durable action returned by the write.
 
-- Store `writeActionId`, `status`, `charged`, and `chargedCredits`
-- Do not retry-send the same post while status is `pending_confirmation`
-- Poll `GET /api/v1/x/write-actions/{id}` before scheduling follow-up work
-- Store `tweetId` only after the status response confirms success
+- Store `id`, `request.hash`, `account`, `target`, `billing`, and `statusUrl`
+- Poll `statusUrl` while `terminal` is `false`
+- Respect `Retry-After`, `pollAfterMs`, and `nextAction`
+- Retry only when `safeToRetry` is `true`, using a new `Idempotency-Key`
+- Verify the result before retrying when `nextAction.type` is `verify_result`
 
 ### How do I check my usage?
 

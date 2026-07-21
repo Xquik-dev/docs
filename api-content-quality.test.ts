@@ -5,6 +5,10 @@ import { describe, expect, it } from 'vitest';
 
 const PROJECT_ROOT = process.cwd();
 const API_REFERENCE_DIR = join(PROJECT_ROOT, 'api-reference');
+const WRITE_ACTION_LIFECYCLE_SNIPPET = readFileSync(
+  join(PROJECT_ROOT, 'snippets/write-action-lifecycle-response.mdx'),
+  'utf8',
+);
 const FRONTMATTER_API_PATTERN = /^api:\s*"([A-Z]+) ([^"]+)"/mu;
 const UNIX_TIMESTAMP_FILTER_ENDPOINTS: ReadonlySet<string> = new Set([
   'GET /x/lists/{id}/tweets',
@@ -61,7 +65,10 @@ function collectContentFindings(): readonly ContentFinding[] {
   const findings: ContentFinding[] = [];
 
   for (const file of listApiReferenceFiles(API_REFERENCE_DIR)) {
-    const source = readFileSync(join(PROJECT_ROOT, file), 'utf8');
+    const pageSource = readFileSync(join(PROJECT_ROOT, file), 'utf8');
+    const source = pageSource.includes('<WriteActionLifecycleResponse />')
+      ? `${pageSource}\n${WRITE_ACTION_LIFECYCLE_SNIPPET}`
+      : pageSource;
     if (!isApiEndpointPage(source)) {
       continue;
     }

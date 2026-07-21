@@ -6,6 +6,7 @@ keywords: ["post tweets", "post tweet replies", "tweet replies", "Twitter API", 
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
+import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-response.mdx";
 
 <LlmsDirective />
 
@@ -13,12 +14,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **30 credits text-only** · attached media adds 2 credits per started MB across all files
 </Callout>
 
-Create a tweet or reply from one connected X account. Put public HTTPS image URLs or one public MP4 URL in `media`; when `POST /x/media` hosts a local file, use the returned `mediaUrl` here, not `mediaId`. Do not send `media_ids` to this endpoint. Store `tweetId` on `200 Success`, or store `writeActionId` and poll when the response is `202 x_write_unconfirmed`.
+Create a tweet or reply from one connected X account. Put public HTTPS image URLs or one public MP4 URL in `media`; when `POST /x/media` hosts a local file, use the returned `mediaUrl` here, not `mediaId`. Do not send `media_ids` to this endpoint. Send a unique `Idempotency-Key`, store the durable action, and poll `statusUrl` while `terminal` is `false`.
 
 <CodeGroup>
   ```bash cURL
   curl -X POST https://xquik.com/api/v1/x/tweets \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Idempotency-Key: tweet-1895432178065391234" \
     -H "Content-Type: application/json" \
     -d '{
       "account": "elonmusk",
@@ -31,6 +33,7 @@ Create a tweet or reply from one connected X account. Put public HTTPS image URL
     method: "POST",
     headers: {
       "x-api-key": "xq_YOUR_KEY_HERE",
+      "Idempotency-Key": "tweet-1895432178065391234",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -42,24 +45,19 @@ Create a tweet or reply from one connected X account. Put public HTTPS image URL
   if (!response.ok) {
     throw new Error(JSON.stringify(result));
   }
-  const postRecord =
-    result.status === "pending_confirmation"
-      ? {
-          status: result.status,
-          write_action_id: result.writeActionId,
-          account: "elonmusk",
-          charged: result.charged,
-          charged_credits: result.chargedCredits,
-          retryable: result.retryable,
-          poll_path: `/api/v1/x/write-actions/${result.writeActionId}`,
-        }
-      : {
-          status: "posted",
-          tweet_id: result.tweetId,
-          account: "elonmusk",
-          charged: result.charged,
-          charged_credits: result.chargedCredits,
-        };
+  const postRecord = {
+    status: result.status,
+    terminal: result.terminal,
+    safe_to_retry: result.safeToRetry,
+    write_action_id: result.id,
+    request_hash: result.request.hash,
+    tweet_id: result.result?.id ?? result.tweetId ?? null,
+    account: result.account,
+    target: result.target,
+    charged: result.billing.charged,
+    charged_credits: result.billing.chargedCredits,
+    poll_path: result.terminal ? null : result.statusUrl,
+  };
   process.stdout.write(`${JSON.stringify(postRecord)}\n`);
   ```
 
@@ -69,7 +67,10 @@ Create a tweet or reply from one connected X account. Put public HTTPS image URL
 
   response = requests.post(
       "https://xquik.com/api/v1/x/tweets",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      headers={
+          "x-api-key": "xq_YOUR_KEY_HERE",
+          "Idempotency-Key": "tweet-1895432178065391234",
+      },
       json={
           "account": "elonmusk",
           "text": "Hello from Xquik!",
@@ -77,24 +78,19 @@ Create a tweet or reply from one connected X account. Put public HTTPS image URL
   )
   result = response.json()
   response.raise_for_status()
-  if result.get("status") == "pending_confirmation":
-      post_record = {
-          "status": result["status"],
-          "write_action_id": result["writeActionId"],
-          "account": "elonmusk",
-          "charged": result["charged"],
-          "charged_credits": result["chargedCredits"],
-          "retryable": result["retryable"],
-          "poll_path": f"/api/v1/x/write-actions/{result['writeActionId']}",
-      }
-  else:
-      post_record = {
-          "status": "posted",
-          "tweet_id": result["tweetId"],
-          "account": "elonmusk",
-          "charged": result["charged"],
-          "charged_credits": result["chargedCredits"],
-      }
+  post_record = {
+      "status": result["status"],
+      "terminal": result["terminal"],
+      "safe_to_retry": result["safeToRetry"],
+      "write_action_id": result["id"],
+      "request_hash": result["request"]["hash"],
+      "tweet_id": (result.get("result") or {}).get("id") or result.get("tweetId"),
+      "account": result["account"],
+      "target": result["target"],
+      "charged": result["billing"]["charged"],
+      "charged_credits": result["billing"]["chargedCredits"],
+      "poll_path": None if result["terminal"] else result["statusUrl"],
+  }
   print(json.dumps(post_record))
   ```
 
@@ -110,12 +106,18 @@ Create a tweet or reply from one connected X account. Put public HTTPS image URL
   )
 
   type CreateTweetResponse struct {
+      ID string `json:"id"`
       TweetID string `json:"tweetId"`
       Status string `json:"status"`
-      WriteActionID string `json:"writeActionId"`
-      Charged bool `json:"charged"`
-      ChargedCredits string `json:"chargedCredits"`
-      Retryable bool `json:"retryable"`
+      Terminal bool `json:"terminal"`
+      SafeToRetry bool `json:"safeToRetry"`
+      StatusURL string `json:"statusUrl"`
+      Request struct { Hash *string `json:"hash"` } `json:"request"`
+      Billing struct {
+          Charged bool `json:"charged"`
+          ChargedCredits string `json:"chargedCredits"`
+      } `json:"billing"`
+      Result *struct { ID string `json:"id"` } `json:"result"`
   }
 
   func main() {
@@ -129,6 +131,7 @@ Create a tweet or reply from one connected X account. Put public HTTPS image URL
           panic(err)
       }
       req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Idempotency-Key", "tweet-1895432178065391234")
       req.Header.Set("Content-Type", "application/json")
 
       resp, err := http.DefaultClient.Do(req)
@@ -145,24 +148,27 @@ Create a tweet or reply from one connected X account. Put public HTTPS image URL
       if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
           panic(err)
       }
-      status := "posted"
-      postRecord := map[string]any{
-          "status": status,
-          "tweet_id": result.TweetID,
-          "account": "elonmusk",
-          "charged": result.Charged,
-          "charged_credits": result.ChargedCredits,
+      var tweetID any
+      if result.Result != nil {
+          tweetID = result.Result.ID
+      } else if result.TweetID != "" {
+          tweetID = result.TweetID
       }
-      if result.Status == "pending_confirmation" {
-          postRecord = map[string]any{
-              "status": result.Status,
-              "write_action_id": result.WriteActionID,
-              "account": "elonmusk",
-              "charged": result.Charged,
-              "charged_credits": result.ChargedCredits,
-              "retryable": result.Retryable,
-              "poll_path": "/api/v1/x/write-actions/" + result.WriteActionID,
-          }
+      var pollPath any
+      if !result.Terminal {
+          pollPath = result.StatusURL
+      }
+      postRecord := map[string]any{
+          "status": result.Status,
+          "terminal": result.Terminal,
+          "safe_to_retry": result.SafeToRetry,
+          "write_action_id": result.ID,
+          "request_hash": result.Request.Hash,
+          "tweet_id": tweetID,
+          "account": "elonmusk",
+          "charged": result.Billing.Charged,
+          "charged_credits": result.Billing.ChargedCredits,
+          "poll_path": pollPath,
       }
       encoded, err := json.Marshal(postRecord)
       if err != nil {
@@ -181,6 +187,7 @@ Use `media` when your image or MP4 video is already a public HTTPS URL or when [
   ```bash Image tweet
   curl -X POST https://xquik.com/api/v1/x/tweets \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Idempotency-Key: image-tweet-1895432178065391234" \
     -H "Content-Type: application/json" \
     -d '{
       "account": "brand_account",
@@ -192,6 +199,7 @@ Use `media` when your image or MP4 video is already a public HTTPS URL or when [
   ```bash Image reply
   curl -X POST https://xquik.com/api/v1/x/tweets \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Idempotency-Key: image-reply-1895432178065391234" \
     -H "Content-Type: application/json" \
     -d '{
       "account": "brand_account",
@@ -204,6 +212,7 @@ Use `media` when your image or MP4 video is already a public HTTPS URL or when [
   ```bash MP4 video tweet
   curl -X POST https://xquik.com/api/v1/x/tweets \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Idempotency-Key: video-tweet-1895432178065391234" \
     -H "Content-Type: application/json" \
     -d '{
       "account": "brand_account",
@@ -213,12 +222,16 @@ Use `media` when your image or MP4 video is already a public HTTPS URL or when [
   ```
 </CodeGroup>
 
-Store `tweetId`, `charged`, and `chargedCredits` on a `200 Success` response. If the API returns `202 x_write_unconfirmed`, store `writeActionId`, poll [Get Write Action Status](/api-reference/x-write/get-write-action-status), and do not retry-send the same body. Keep `reply_to_tweet_id` and `media` in your downstream record.
+Store `id`, `request.hash`, `billing`, `result`, `reply_to_tweet_id`, and `media`. Poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) while `terminal` is `false`. Retry only when `safeToRetry` is `true`, using a new key.
 
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
   Your API key. Session cookie authentication is also supported.
+</ParamField>
+
+<ParamField header="Idempotency-Key" type="string" required>
+  Unique key for this intended write. Reuse it only for an exact network replay.
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
@@ -239,10 +252,6 @@ Store `tweetId`, `charged`, and `chargedCredits` on a `200 Success` response. If
   Tweet ID to reply to. When set, the new tweet is posted as a reply in that tweet's thread.
 </ParamField>
 
-<ParamField body="attachment_url" type="string">
-  URL to attach to the tweet as a card. Must be a valid HTTP or HTTPS URL.
-</ParamField>
-
 <ParamField body="community_id" type="string">
   X Community ID to post the tweet into. The connected account must be a member of the community.
 </ParamField>
@@ -257,154 +266,4 @@ Store `tweetId`, `charged`, and `chargedCredits` on a `200 Success` response. If
 
 ## Response
 
-<Tabs>
-  <Tab title="200 Success">
-    <ResponseField name="tweetId" type="string">ID of the newly created tweet.</ResponseField>
-    <ResponseField name="success" type="boolean">Always `true` on success.</ResponseField>
-    <ResponseField name="charged" type="boolean">Whether credits were charged for the confirmed write.</ResponseField>
-    <ResponseField name="chargedCredits" type="string">Credits charged for this tweet. Text-only tweets and replies cost 30 credits; attached media adds 2 credits per started MB.</ResponseField>
-    <ResponseField name="writeActionId" type="string">Write action ID when the write was logged for later reconciliation.</ResponseField>
-
-    ```json
-    {
-      "tweetId": "1895432178065391234",
-      "success": true,
-      "charged": true,
-      "chargedCredits": "32"
-    }
-    ```
-  </Tab>
-  <Tab title="202 Pending Confirmation">
-    ```json
-    {
-      "error": "x_write_unconfirmed",
-      "status": "pending_confirmation",
-      "writeActionId": "42",
-      "charged": false,
-      "chargedCredits": "0",
-      "retryable": false,
-      "message": "Action may have completed, but confirmation is still pending."
-    }
-    ```
-    The write was dispatched but final confirmation is still pending. `writeActionId` identifies the action to poll with [Get write action status](/api-reference/x-write/get-write-action-status). `charged` is `false` and `chargedCredits` is `"0"` while confirmation is pending, and `retryable` is `false`; do not retry-send the same tweet blindly.
-  </Tab>
-  <Tab title="400 Invalid Input">
-    ```json
-    { "error": "invalid_input", "message": "Either text or media is required" }
-    ```
-    Missing `text` and `media`, invalid `account` format, or other validation failure.
-  </Tab>
-  <Tab title="400 Unsupported Field">
-    ```json
-    {
-      "error": "unsupported_field",
-      "message": "media_ids is not supported on POST /x/tweets. Pass media as an array of public image or MP4 video URLs.",
-      "retryable": false,
-      "charged": false,
-      "chargedCredits": "0",
-      "details": {
-        "action": "create_tweet",
-        "suggestion": "Use the media field with public URLs instead of media_ids. Send up to 4 images or exactly 1 MP4 video up to 100 MB."
-      }
-    }
-    ```
-    The request body contains a field the endpoint does not accept (for example `media_ids`).
-  </Tab>
-  <Tab title="401 Unauthenticated">
-    ```json
-    { "error": "unauthenticated", "message": "Missing or invalid API key" }
-    ```
-    Missing or invalid API key.
-  </Tab>
-  <Tab title="402 Insufficient Credits">
-    ```json
-    { "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }
-    ```
-    The available balance cannot cover this operation. Top up or subscribe from the [dashboard billing page](https://dashboard.xquik.com/en/account?tab=subscription).
-  </Tab>
-  <Tab title="402 Insufficient Credits">
-    ```json
-    { "error": "insufficient_credits", "message": "Insufficient credits" }
-    ```
-    Insufficient credits for this operation. Top up your credit balance from the [dashboard](https://xquik.com/dashboard).
-  </Tab>
-  <Tab title="403 Account Needs Reauth">
-    ```json
-    { "error": "account_needs_reauth" }
-    ```
-    The connected X account failed a recent login attempt and needs to be reconnected. Reconnect it from the [dashboard](https://xquik.com/dashboard).
-  </Tab>
-  <Tab title="403 Account Restricted">
-    ```json
-    { "error": "account_restricted" }
-    ```
-    The connected X account is locked, suspended, recovering, or temporarily restricted. Resolve the restriction on X before retrying.
-  </Tab>
-  <Tab title="422 Write Rejected">
-    ```json
-    { "error": "x_content_too_long", "message": "..." }
-    ```
-    X rejected the write. Possible codes: `x_content_too_long`, `x_duplicate_action`, `x_account_suspended`, `x_account_protected`, `x_target_not_found`, `x_account_feature_required`, `x_rejected`. See [error handling](/guides/error-handling) for details.
-  </Tab>
-  <Tab title="429 Rate Limited">
-    ```json
-    { "error": "rate_limit_exceeded", "retryAfter": 60 }
-    ```
-    The request hit an Xquik tier limit, or X throttled the write. Possible codes: `rate_limit_exceeded`, `x_rate_limited`, or `x_daily_limit`. Respect the `Retry-After` header when present.
-  </Tab>
-  <Tab title="503 Transient Error">
-    ```json
-    { "error": "x_transient_error", "message": "..." }
-    ```
-    A transient write service issue occurred. Safe to retry with exponential backoff.
-  </Tab>
-  <Tab title="500 Write Failed">
-    ```json
-    { "error": "x_write_failed", "message": "Failed to post tweet" }
-    ```
-    The tweet could not be posted. The connected account may be suspended, rate-limited, or the content may violate platform policies. Try again later.
-  </Tab>
-</Tabs>
-
-## Store the post handoff
-
-Store a compact record after every tweet or reply so queues, CRMs, support tools, and agents can reconcile the write without scraping the timeline.
-
-<Tabs>
-  <Tab title="Posted">
-    ```json
-    {
-      "status": "posted",
-      "tweet_id": "1895432178065391234",
-      "account": "brand_account",
-      "reply_to_tweet_id": "1893456789012345678",
-      "media": ["https://cdn.example.com/release-card.png"],
-      "charged": true,
-      "charged_credits": "32",
-      "media_credits": "2"
-    }
-    ```
-
-    Copy `tweetId` from the response into `tweet_id`. Keep `reply_to_tweet_id` when the post is a reply, and store `chargedCredits` as `charged_credits`. Store the public media URLs you sent in `media`. If you uploaded first, store the returned `mediaUrl`, not the upload `mediaId`.
-  </Tab>
-  <Tab title="Pending Confirmation">
-    ```json
-    {
-      "status": "pending_confirmation",
-      "write_action_id": "42",
-      "account": "brand_account",
-      "reply_to_tweet_id": "1893456789012345678",
-      "charged": false,
-      "charged_credits": "0",
-      "retryable": false,
-      "poll": "GET /x/write-actions/{id}"
-    }
-    ```
-
-    Store `writeActionId` as `write_action_id`, poll [Get Write Action Status](/api-reference/x-write/get-write-action-status), and do not retry-send the same body while status is `pending_confirmation`. If polling later returns `status: "success"` with `tweetId`, update the same record to `posted`.
-  </Tab>
-</Tabs>
-
-<Note>
-  **Next steps:** [Upload Media](/api-reference/x-write/upload-media) to get a `mediaUrl` for a local file, [Get Write Action Status](/api-reference/x-write/get-write-action-status) to poll pending confirmations, [Delete Tweet](/api-reference/x-write/delete-tweet) to remove a posted tweet, [Like](/api-reference/x-write/like) or [Retweet](/api-reference/x-write/retweet) to engage with tweets.
-</Note>
+<WriteActionLifecycleResponse />

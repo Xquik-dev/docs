@@ -419,26 +419,20 @@ fun createTweetHandoff(
     base: Map<String, Any?>,
 ): Map<String, Any?> {
     val handoff = linkedMapOf<String, Any?>()
+    val billing = payload["billing"] as Map<*, *>
+    val request = payload["request"] as Map<*, *>
+    val result = payload["result"] as? Map<*, *>
+    val terminal = payload["terminal"] == true
 
-    if (
-        payload["error"] == "x_write_unconfirmed" &&
-        payload["status"] == "pending_confirmation"
-    ) {
-        handoff["status"] = "pending_confirmation"
-        handoff["write_action_id"] = payload["writeActionId"]
-        handoff["charged"] = payload["charged"]
-        handoff["charged_credits"] = payload["chargedCredits"]
-        handoff["retryable"] = payload["retryable"]
-        handoff["poll"] = "GET /x/write-actions/{id}"
-    } else {
-        handoff["status"] = "posted"
-        handoff["tweet_id"] = payload["tweetId"]
-        handoff["charged"] = payload["charged"]
-        handoff["charged_credits"] = payload["chargedCredits"]
-        if (payload.containsKey("writeActionId")) {
-            handoff["write_action_id"] = payload["writeActionId"]
-        }
-    }
+    handoff["status"] = payload["status"]
+    handoff["terminal"] = terminal
+    handoff["safe_to_retry"] = payload["safeToRetry"]
+    handoff["write_action_id"] = payload["id"]
+    handoff["request_hash"] = request["hash"]
+    handoff["tweet_id"] = result?.get("id") ?: payload["tweetId"]
+    handoff["charged"] = billing["charged"]
+    handoff["charged_credits"] = billing["chargedCredits"]
+    handoff["poll"] = if (terminal) null else payload["statusUrl"]
 
     handoff.putAll(base)
     return handoff
@@ -517,7 +511,11 @@ println(objectMapper.writeValueAsString(replyHandoff))
 println(objectMapper.writeValueAsString(dmHandoff))
 ```
 
-The generated Kotlin response model covers confirmed `tweetId` responses. Use `client.x().tweets().withRawResponse().create(...)` when a write worker must branch on the REST `202 x_write_unconfirmed` response, store `writeActionId` and `chargedCredits`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write. Store `tweetHandoff`, `replyHandoff`, and `dmHandoff` on the CMS, support ticket, queue job, CRM note, or agent state before scheduling follow-up work. Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies. Leave the generated `replyToMessageId` field unset even if SDK builders expose it; the REST endpoint rejects DM reply threading. Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.mediaId()` values to `client.x().tweets().create`; that method uses public media URLs through `media`.
+Use `client.x().tweets().withRawResponse().create(...)` to capture the durable write action. Send a unique `Idempotency-Key`, store `id`, `request.hash`, `billing`, `result`, and `statusUrl`, then poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+
+Keep DM body text in private systems. Shared logs and handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and lifecycle status. Leave `replyToMessageId` unset because the REST endpoint rejects DM reply threading.
+
+Use public media URLs with `client.x().tweets().create`. Do not pass uploaded `media.mediaId()` values to tweet creation.
 
 ## Error Handling
 

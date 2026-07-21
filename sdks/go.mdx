@@ -362,38 +362,52 @@ Use this workflow when a Go worker, queue consumer, or agent service needs to po
 Tweet and reply media posts use public media URLs directly on `client.X.Tweets.New`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. Do not upload first when the media URL is already public.
 
 ```go
-type tweetCreatePayload struct {
-	Success        bool   `json:"success"`
-	TweetID        string `json:"tweetId"`
-	Error          string `json:"error"`
-	Status         string `json:"status"`
-	WriteActionID  string `json:"writeActionId"`
+type writeActionBilling struct {
 	Charged        bool   `json:"charged"`
 	ChargedCredits string `json:"chargedCredits"`
-	Retryable      bool   `json:"retryable"`
 }
 
-func createTweetHandoff(payload tweetCreatePayload, base map[string]any) map[string]any {
+type writeActionRequest struct {
+	Hash *string `json:"hash"`
+}
+
+type writeActionResult struct {
+	ID string `json:"id"`
+}
+
+type tweetCreatePayload struct {
+	ID          string             `json:"id"`
+	Status      string             `json:"status"`
+	Terminal    bool               `json:"terminal"`
+	SafeToRetry bool               `json:"safeToRetry"`
+	StatusURL   string             `json:"statusUrl"`
+	Request     writeActionRequest `json:"request"`
+	Billing     writeActionBilling `json:"billing"`
+	Result      *writeActionResult `json:"result"`
+	TweetID     string             `json:"tweetId"`
+}
+
+func createTweetHandoff(action tweetCreatePayload, base map[string]any) map[string]any {
+	var resultID any
+	if action.Result != nil {
+		resultID = action.Result.ID
+	} else if action.TweetID != "" {
+		resultID = action.TweetID
+	}
+	poll := any(nil)
+	if !action.Terminal {
+		poll = action.StatusURL
+	}
 	handoff := map[string]any{
-		"status":          "posted",
-		"tweet_id":        payload.TweetID,
-		"charged":         payload.Charged,
-		"charged_credits": payload.ChargedCredits,
-	}
-
-	if payload.Error == "x_write_unconfirmed" && payload.Status == "pending_confirmation" {
-		handoff = map[string]any{
-			"status":          "pending_confirmation",
-			"write_action_id": payload.WriteActionID,
-			"charged":         payload.Charged,
-			"charged_credits": payload.ChargedCredits,
-			"retryable":       payload.Retryable,
-			"poll":            "GET /x/write-actions/{id}",
-		}
-	}
-
-	if payload.WriteActionID != "" {
-		handoff["write_action_id"] = payload.WriteActionID
+		"status":          action.Status,
+		"terminal":        action.Terminal,
+		"safe_to_retry":   action.SafeToRetry,
+		"write_action_id": action.ID,
+		"request_hash":    action.Request.Hash,
+		"tweet_id":        resultID,
+		"charged":         action.Billing.Charged,
+		"charged_credits": action.Billing.ChargedCredits,
+		"poll":            poll,
 	}
 
 	for key, value := range base {
@@ -404,7 +418,7 @@ func createTweetHandoff(payload tweetCreatePayload, base map[string]any) map[str
 }
 ```
 
-The generated Go response model covers confirmed `TweetID` responses. Use `option.WithResponseBodyInto` when a write worker must branch on the REST `202 x_write_unconfirmed` response, store `writeActionId` and `chargedCredits`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write.
+Use `option.WithResponseBodyInto` to capture the durable write action. Send a unique `Idempotency-Key`, store `id`, `request.hash`, `billing`, `result`, and `statusUrl`, then poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
 
 ```go
 ctx := context.Background()

@@ -6,6 +6,7 @@ keywords: ["community", "create", "x community", "group"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
+import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-response.mdx";
 
 <LlmsDirective />
 
@@ -17,6 +18,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```bash cURL
   curl -X POST https://xquik.com/api/v1/x/communities \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Idempotency-Key: community-create-1895432178065391234" \
     -H "Content-Type: application/json" \
     -d '{
       "account": "myxhandle",
@@ -30,6 +32,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     method: "POST",
     headers: {
       "x-api-key": "xq_YOUR_KEY_HERE",
+      "Idempotency-Key": "community-create-1895432178065391234",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -46,7 +49,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
   response = requests.post(
       "https://xquik.com/api/v1/x/communities",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      headers={
+          "x-api-key": "xq_YOUR_KEY_HERE",
+          "Idempotency-Key": "community-create-1895432178065391234",
+      },
       json={
           "account": "myxhandle",
           "name": "Crypto Traders Hub",
@@ -78,6 +84,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           panic(err)
       }
       req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Idempotency-Key", "community-create-1895432178065391234")
       req.Header.Set("Content-Type", "application/json")
 
       resp, err := http.DefaultClient.Do(req)
@@ -101,6 +108,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
+<ParamField header="Idempotency-Key" type="string" required>
+  Unique key for this intended write. Reuse it only for an exact network replay.
+</ParamField>
+
 <ParamField header="Content-Type" type="string" required>
   Must be `application/json`.
 </ParamField>
@@ -122,87 +133,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 ## Response
 
 <Tabs>
-  <Tab title="200 OK">
-    <ResponseField name="communityId" type="string">The unique ID of the newly created community.</ResponseField>
-    <ResponseField name="communityName" type="string">The name of the created community. Omitted if unavailable.</ResponseField>
-    <ResponseField name="success" type="boolean">Always `true` on success.</ResponseField>
-
-    ```json
-    {
-      "communityId": "1893726451023847424",
-      "communityName": "My Community",
-      "success": true
-    }
-    ```
-  </Tab>
-  <Tab title="400 Invalid Input">
-    ```json
-    { "error": "invalid_input", "message": "Missing or invalid community name or description" }
-    ```
-    Missing `account`, `name`, or `description`, or the values do not meet validation requirements.
-  </Tab>
-  <Tab title="401 Unauthenticated">
-    ```json
-    { "error": "unauthenticated", "message": "Missing or invalid API key" }
-    ```
-    Missing or invalid API key.
-  </Tab>
-  <Tab title="402 Insufficient Credits">
-    ```json
-    { "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }
-    ```
-    The available balance cannot cover this operation. Top up or subscribe from the [dashboard billing page](https://dashboard.xquik.com/en/account?tab=subscription).
-  </Tab>
-  <Tab title="402 Insufficient Credits">
-    ```json
-    { "error": "insufficient_credits", "message": "Insufficient credits" }
-    ```
-    Insufficient credits for this operation. Top up your credit balance from the [dashboard](https://xquik.com/dashboard).
-  </Tab>
   <Tab title="404 Account Not Found">
-    ```json
-    { "error": "account_not_found", "message": "X account not found. Connect it first at /dashboard/account?tab=x-accounts." }
-    ```
-    The specified `account` is not connected to your Xquik account. Connect it from the [dashboard](https://xquik.com/dashboard).
-  </Tab>
-  <Tab title="403 Account Needs Reauth">
-    ```json
-    { "error": "account_needs_reauth" }
-    ```
-    The connected X account failed a recent login attempt and needs to be reconnected. Reconnect it from the [dashboard](https://xquik.com/dashboard).
-  </Tab>
-  <Tab title="403 Account Restricted">
-    ```json
-    { "error": "account_restricted" }
-    ```
-    The connected X account is locked, suspended, recovering, or temporarily restricted. Resolve the restriction on X before retrying.
-  </Tab>
-  <Tab title="422 Write Rejected">
-    ```json
-    { "error": "x_content_too_long", "message": "..." }
-    ```
-    X rejected the write. Possible codes: `x_content_too_long`, `x_duplicate_action`, `x_account_suspended`, `x_account_protected`, `x_target_not_found`, `x_account_feature_required`, `x_rejected`. See [error handling](/guides/error-handling) for details.
-  </Tab>
-  <Tab title="429 Rate Limited">
-    ```json
-    { "error": "rate_limit_exceeded", "retryAfter": 60 }
-    ```
-    The request hit an Xquik tier limit, or X throttled the community creation. Possible codes: `rate_limit_exceeded`, `x_rate_limited`, or `x_daily_limit`. Respect the `Retry-After` header when present.
-  </Tab>
-  <Tab title="503 Transient Error">
-    ```json
-    { "error": "x_transient_error", "message": "..." }
-    ```
-    A transient write service issue occurred. Safe to retry with exponential backoff.
-  </Tab>
-  <Tab title="500 Write Failed">
-    ```json
-    { "error": "x_write_failed", "message": "Write failed. Try again later." }
-    ```
-    Xquik could not complete the write and did not receive a more specific error from X. Check the account and retry later.
+    Connect the requested account, then submit a newly approved write.
   </Tab>
 </Tabs>
 
-<Note>
-  **Related endpoints:** [Delete Community](/api-reference/x-write/delete-community) to remove a community, [Join Community](/api-reference/x-write/join-community) to join an existing community, [Leave Community](/api-reference/x-write/leave-community) to leave a community.
-</Note>
+<WriteActionLifecycleResponse />

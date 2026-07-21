@@ -1,0 +1,113 @@
+## Durable lifecycle responses
+
+<Warning>
+  Send one unique `Idempotency-Key` per intended write. Reuse it only for the
+  exact same account, target, payload, and media.
+</Warning>
+
+<Note>
+  Store the `X-Request-Id` response header with every action record.
+</Note>
+
+1. Store `id`, `request.hash`, `account`, `target`, and `billing`.
+2. Stop only when `terminal` is `true`.
+3. Poll `statusUrl` after `Retry-After` or `pollAfterMs`.
+4. Retry only when `safeToRetry` is `true`.
+5. Use a new key only for a newly approved write.
+
+<Tabs>
+  <Tab title="200 Terminal">
+    The action reached `success`, `failed`, or `expired`. Trust `terminal`,
+    `result`, `billing`, and `nextAction` over the HTTP class.
+
+    ```json
+    {
+      "object": "x_write_action",
+      "id": "xwa_01JY6V7F8M9N0P1Q2R3S4T5U6V",
+      "status": "success",
+      "terminal": true,
+      "safeToRetry": false,
+      "billing": { "status": "charged", "chargedCredits": "10" },
+      "result": { "confirmed": true },
+      "nextAction": null
+    }
+    ```
+  </Tab>
+  <Tab title="202 Active">
+    The action remains `accepted`, `dispatching`, or `pending_confirmation`.
+    Store it and poll `statusUrl` after `Retry-After` or `pollAfterMs`. Never
+    create another write while `terminal` is `false`.
+  </Tab>
+  <Tab title="400 Invalid Input">
+    Fix the named field. Generate a new key for the corrected write.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    Supply a valid API key or session. Do not retry unchanged.
+  </Tab>
+  <Tab title="402 Billing Required">
+    Follow `nextAction`. Do not create another write before funding completes.
+  </Tab>
+  <Tab title="403 Account Blocked">
+    Follow `nextAction` to reconnect or resolve the account restriction.
+  </Tab>
+  <Tab title="409 Idempotency conflict">
+    The `Idempotency-Key` belongs to different input. Keep the original action
+    unchanged. Use a new key only for a separately approved write.
+  </Tab>
+  <Tab title="422 Write Rejected">
+    Inspect `error`, `details`, and `nextAction`. Fix the request before retrying.
+  </Tab>
+  <Tab title="429 Rate Limited">
+    Wait for `Retry-After`. Preserve the same key for exact replay.
+  </Tab>
+  <Tab title="500 Write Failed">
+    Inspect the durable action. Retry only when `safeToRetry` is `true`.
+  </Tab>
+  <Tab title="503 Write Unavailable">
+    Inspect the durable action. Poll while `terminal` is `false`.
+  </Tab>
+</Tabs>
+
+<ResponseField name="object" type="string">Always `x_write_action`.</ResponseField>
+<ResponseField name="id" type="string">Durable action ID.</ResponseField>
+<ResponseField name="writeActionId" type="string">Compatibility alias for `id`.</ResponseField>
+<ResponseField name="action" type="string">Exact write operation.</ResponseField>
+<ResponseField name="status" type="string">Current lifecycle status.</ResponseField>
+<ResponseField name="terminal" type="boolean">Whether polling can stop.</ResponseField>
+<ResponseField name="retryable" type="boolean">Whether a later attempt could succeed.</ResponseField>
+<ResponseField name="safeToRetry" type="boolean">Whether a new attempt is safe.</ResponseField>
+<ResponseField name="statusUrl" type="string">Relative polling URL.</ResponseField>
+<ResponseField name="pollAfterMs" type="number | null">Recommended polling delay.</ResponseField>
+<ResponseField name="charged" type="boolean">Whether billing settled as charged.</ResponseField>
+<ResponseField name="chargedCredits" type="string">Settled credits charged.</ResponseField>
+<ResponseField name="billing" type="object">Planned and settled billing state.</ResponseField>
+<ResponseField name="request" type="object">Stable hash and exact sanitized payload.</ResponseField>
+<ResponseField name="account" type="object">Exact connected account selected.</ResponseField>
+<ResponseField name="target" type="object | null">Exact target type and ID.</ResponseField>
+<ResponseField name="targetId" type="string | null">Compatibility target ID.</ResponseField>
+<ResponseField name="result" type="object | null">Confirmed result or desired state.</ResponseField>
+<ResponseField name="nextAction" type="object | null">Required poll, retry, or verification step.</ResponseField>
+<ResponseField name="requestHash" type="string">Stable request fingerprint.</ResponseField>
+<ResponseField name="requestId" type="string">Correlation ID.</ResponseField>
+<ResponseField name="idempotent" type="boolean">Whether this response replayed an existing action.</ResponseField>
+<ResponseField name="error" type="string">Machine-readable error code.</ResponseField>
+<ResponseField name="message" type="string">Actionable status or error message.</ResponseField>
+<ResponseField name="sendDispatched" type="boolean">Whether dispatch occurred.</ResponseField>
+<ResponseField name="sendDispatchedAt" type="string">ISO 8601 dispatch time.</ResponseField>
+<ResponseField name="createdAt" type="string">ISO 8601 creation time.</ResponseField>
+<ResponseField name="updatedAt" type="string">ISO 8601 latest update time.</ResponseField>
+<ResponseField name="completedAt" type="string">ISO 8601 terminal time.</ResponseField>
+<ResponseField name="expiresAt" type="string">Nonterminal resolution deadline.</ResponseField>
+<ResponseField name="confirmedAt" type="string">ISO 8601 confirmation time.</ResponseField>
+<ResponseField name="confirmationCheckedAt" type="string">ISO 8601 latest confirmation check.</ResponseField>
+<ResponseField name="confirmationAttempts" type="number">Confirmation attempt count.</ResponseField>
+<ResponseField name="tweetId" type="string">Confirmed tweet ID when available.</ResponseField>
+<ResponseField name="messageId" type="string">Confirmed direct message ID when available.</ResponseField>
+<ResponseField name="mediaId" type="string">Confirmed media ID when available.</ResponseField>
+<ResponseField name="mediaUrl" type="string">Public media URL when available.</ResponseField>
+<ResponseField name="communityId" type="string">Confirmed community ID when available.</ResponseField>
+<ResponseField name="communityName" type="string">Confirmed community name when available.</ResponseField>
+<ResponseField name="resultId" type="string">Compatibility result ID.</ResponseField>
+<ResponseField name="media" type="object">Media details when used.</ResponseField>
+<ResponseField name="details" type="object">Structured recovery context.</ResponseField>
+<ResponseField name="success" type="boolean">Whether status is `success`.</ResponseField>

@@ -282,25 +282,20 @@ Use this workflow when a TypeScript worker, support queue, or agent service need
 Tweet and reply media posts use public media URLs directly on `client.x.tweets.create`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. Do not upload first when the media URL is already public.
 
 ```ts
-type TweetCreateResult =
-  | {
-      success: true;
-      tweetId: string;
-      charged: true;
-      chargedCredits: string;
-      writeActionId?: string;
-    }
-  | {
-      error: "x_write_unconfirmed";
-      status: "pending_confirmation";
-      writeActionId: string;
-      charged: false;
-      chargedCredits: "0";
-      retryable: false;
-    };
+interface TweetWriteAction {
+  id: string;
+  status: string;
+  terminal: boolean;
+  safeToRetry: boolean;
+  statusUrl: string;
+  request: { hash: string | null };
+  billing: { charged: boolean; chargedCredits: string };
+  result: { id?: string } | null;
+  tweetId?: string;
+}
 
 function createTweetHandoff(
-  result: TweetCreateResult,
+  action: TweetWriteAction,
   base: {
     account: string;
     media: string[];
@@ -311,43 +306,30 @@ function createTweetHandoff(
     ? { reply_to_tweet_id: base.reply_to_tweet_id }
     : {};
 
-  if ("writeActionId" in result) {
-    return {
-      status: "pending_confirmation",
-      write_action_id: result.writeActionId,
-      charged: result.charged,
-      charged_credits: result.chargedCredits,
-      retryable: result.retryable,
-      poll: "GET /x/write-actions/{id}",
-      ...base,
-      ...thread,
-    };
-  }
-
-  const writeAction = result.writeActionId
-    ? { write_action_id: result.writeActionId }
-    : {};
-
   return {
-    status: "posted",
-    tweet_id: result.tweetId,
-    charged: result.charged,
-    charged_credits: result.chargedCredits,
-    ...writeAction,
+    status: action.status,
+    terminal: action.terminal,
+    safe_to_retry: action.safeToRetry,
+    write_action_id: action.id,
+    request_hash: action.request.hash,
+    tweet_id: action.result?.id ?? action.tweetId ?? null,
+    charged: action.billing.charged,
+    charged_credits: action.billing.chargedCredits,
+    poll: action.terminal ? null : action.statusUrl,
     ...base,
     ...thread,
   };
 }
 ```
 
-The generated TypeScript SDK models confirmed `tweetId`, `charged`, and `chargedCredits` responses. The REST API can also return `202 x_write_unconfirmed`; treat that runtime value as pending, store `writeActionId` and `chargedCredits`, and poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before sending another write.
+Capture the durable write action from the raw response. Send a unique `Idempotency-Key`, store `id`, `request.hash`, `billing`, `result`, and `statusUrl`, then poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
 
 ```ts
 const tweet = (await client.x.tweets.create({
   account: "@username",
   text: "New demo video is live.",
   media: ["https://example.com/product-demo.mp4"],
-})) as TweetCreateResult;
+})) as TweetWriteAction;
 
 const tweetHandoff = createTweetHandoff(tweet, {
   account: "@username",
