@@ -9081,9 +9081,16 @@ components:
             message: 'This X account is already connected.'
     ConnectLoginFailed:
       description: >
-        Could not authenticate with X. The provided credentials (username,
-        password, or TOTP secret) were rejected. Returns error code
-        `login_failed`.
+        Login could not continue because credentials or account verification
+        require user action. When a cooldown applies, the response includes
+        `retryAfterMs` and a `Retry-After` header in seconds. Returns error code
+        `login_failed` or `passkey_required`.
+      headers:
+        Retry-After:
+          description: Cooldown duration in seconds, when retrying must wait.
+          schema:
+            type: integer
+            minimum: 1
       content:
         application/json:
           schema:
@@ -9091,11 +9098,19 @@ components:
           example:
             error: 'login_failed'
             message: 'Login failed. Check credentials and try again.'
+            retryAfterMs: 300000
     ConnectLoginCooldown:
       description: >
         A prior login attempt triggered a cooldown. Response includes `reason`,
         `retryAfterMs`, and a `Retry-After` header in seconds. Returns error
         code `login_cooldown`.
+      headers:
+        Retry-After:
+          description: Cooldown duration in seconds.
+          required: true
+          schema:
+            type: integer
+            minimum: 1
       content:
         application/json:
           schema:
@@ -9103,6 +9118,8 @@ components:
           example:
             error: 'login_cooldown'
             message: 'Login is temporarily paused'
+            reason: 'temporary_issue'
+            retryAfterMs: 60000
     ConnectRateLimitExceeded:
       description: >
         Too many requests. Either the generous connection safety limit was
@@ -9110,6 +9127,13 @@ components:
         900` header) or a prior login attempt triggered a cooldown
         (`login_cooldown`, `reason`, `retryAfterMs`, `Retry-After` header in
         seconds).
+      headers:
+        Retry-After:
+          description: Required wait in seconds.
+          required: true
+          schema:
+            type: integer
+            minimum: 1
       content:
         application/json:
           schema:
@@ -10214,6 +10238,20 @@ components:
                     - x_write_failed
                     - x_write_unconfirmed
                   example: invalid_input
+        message:
+          type: string
+          description: Human-readable error guidance.
+        reason:
+          type: string
+          description: Machine-readable reason for a login cooldown.
+        retryAfter:
+          type: integer
+          minimum: 1
+          description: Required wait in seconds.
+        retryAfterMs:
+          type: integer
+          minimum: 1
+          description: Required wait in milliseconds.
     EventType:
       description: Type of monitor event fired when account activity occurs.
       type: string

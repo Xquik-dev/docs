@@ -2539,7 +2539,7 @@ const REQUIRED_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
   'Respect `Retry-After`; otherwise start at 1 second, add jitter, and stop after 3 retries.',
   'Requests sent before the fixed window resets keep returning `429` until `Retry-After` elapses.',
   '<Card title="Retry-After header" icon="timer">',
-  'Standard read throttles return `Retry-After: 1`. Write and delete throttles return `Retry-After: 60`. Account connection cooldowns return `Retry-After: 900`.',
+  'Standard read throttles return `Retry-After: 1`. Write and delete throttles return `Retry-After: 60`. Account connection safety limits return `Retry-After: 900`; login cooldowns return their exact remaining wait.',
   '<Card title="JSON retry field" icon="file-json">',
   '`error: "rate_limit_exceeded"`',
   '<Card title="Node.js libraries" icon="package">',
@@ -2982,7 +2982,7 @@ const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
   '"error": "passkey_required"',
   'X asked for passkey verification.',
   'then connect with `totp_secret`.',
-  '{ "error": "login_failed", "message": "Login failed. Check credentials and try again." }',
+  '{ "error": "login_failed", "message": "Login failed. Check credentials and try again.", "retryAfterMs": 300000 }',
   'X rejected the submitted username, email, password, or TOTP secret.',
   'Retry with the current password and the saved Authenticator App secret key, not a 6-digit code.',
 ] as const;
