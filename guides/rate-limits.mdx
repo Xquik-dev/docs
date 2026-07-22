@@ -8,24 +8,24 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik enforces rate limits to ensure fair usage and platform stability. Limits are applied per user account using a fixed window counter.
+Xquik applies fixed-window limits per account.
 
 <Note>
-**Quick answer:** 60 GET/1s, 30 POST/60s, 15 DELETE/60s per account.
-Hit the limit? Respect the `Retry-After` header. Avoid 429s? Use the client-side rate limiter below.
+**Limits:** 300 GET/1s, 120 POST/60s, 60 DELETE/60s per account.
+After `429`, wait for `Retry-After`. Use the limiter below to prevent `429`.
 </Note>
 
 ## Rate limit tiers
 
 <CardGroup cols={3}>
   <Card title="Read" icon="database">
-    `GET`, `HEAD`, and `OPTIONS` share a limit of 60 requests per 1 second.
+    `GET`, `HEAD`, and `OPTIONS` share 300 requests per 1 second.
   </Card>
   <Card title="Write" icon="pen-line">
-    `POST`, `PUT`, and `PATCH` share a limit of 30 requests per 60 seconds.
+    `POST`, `PUT`, and `PATCH` share 120 requests per 60 seconds.
   </Card>
   <Card title="Delete" icon="circle-x">
-    `DELETE` requests are limited to 15 requests per 60 seconds.
+    `DELETE` requests allow 60 requests per 60 seconds.
   </Card>
 </CardGroup>
 
@@ -63,12 +63,12 @@ Xquik uses a **fixed window counter**:
 </Steps>
 
 ```text
-Read tier (60 per 1s):
+Read tier (300 per 1s):
 
-Time 0.0s: [0/60]   -> Send 40 GET requests -> [40/60]
-Time 0.5s: [40/60]  -> Send 20 GET requests -> [60/60] (limit reached)
-Time 0.8s: [60/60]  -> GET request -> 429 (rejected, window active)
-Time 1.0s: [0/60]   -> Window resets -> requests allowed again
+Time 0.0s: [0/300]    -> Send 200 GET requests -> [200/300]
+Time 0.5s: [200/300]  -> Send 100 GET requests -> [300/300]
+Time 0.8s: [300/300]  -> GET request -> 429
+Time 1.0s: [0/300]    -> Window resets
 ```
 
 ## Response headers
@@ -98,7 +98,7 @@ Always respect the `Retry-After` header. Requests sent before the fixed window r
 
 ## Client-side rate limiter
 
-Prevent hitting server-side limits by implementing a client-side rate limiter. This is more efficient than relying on 429 responses and backoff.
+Apply a client-side limiter before production traffic.
 
 <CodeGroup>
 
@@ -130,8 +130,8 @@ class WindowRateLimiter {
   }
 }
 
-// Read tier: 60 requests per 1s
-const readLimiter = new WindowRateLimiter(60, 1_000);
+// Read tier: 300 requests per 1s
+const readLimiter = new WindowRateLimiter(300, 1_000);
 
 async function apiRequest(url) {
   await readLimiter.acquire();
@@ -169,8 +169,8 @@ class WindowRateLimiter:
 
             self.count += 1
 
-# Read tier: 60 requests per 1s
-read_limiter = WindowRateLimiter(60, 1)
+# Read tier: 300 requests per 1s
+read_limiter = WindowRateLimiter(300, 1)
 
 def api_request(url: str) -> requests.Response:
     read_limiter.acquire()
@@ -226,8 +226,8 @@ func (r *WindowRateLimiter) Acquire() {
 	r.count++
 }
 
-// Read tier: 60 requests per 1s
-var readLimiter = NewWindowRateLimiter(60, time.Second)
+// Read tier: 300 requests per 1s
+var readLimiter = NewWindowRateLimiter(300, time.Second)
 
 func apiRequest(url string) (*http.Response, error) {
 	readLimiter.Acquire()
@@ -243,7 +243,7 @@ func apiRequest(url string) (*http.Response, error) {
 ```bash cURL
 #!/bin/bash
 # Replay stored events in 100-item pages.
-# Read tier: 60 per 1s = ~17ms between requests.
+# Read tier: 300 per 1s. A 4ms delay caps this loop at 250 requests/s.
 
 cursor=""
 
@@ -264,7 +264,7 @@ while :; do
     break
   fi
 
-  sleep 0.02  # 20ms stays under 60 requests per second
+  sleep 0.004
 done
 ```
 
@@ -290,8 +290,8 @@ Instead of building your own rate limiter, consider these battle-tested librarie
 import Bottleneck from "bottleneck";
 
 const limiter = new Bottleneck({
-  reservoir: 60,            // 60 requests per read window
-  reservoirRefreshAmount: 60,
+  reservoir: 300,           // 300 requests per read window
+  reservoirRefreshAmount: 300,
   reservoirRefreshInterval: 1_000, // 1 second
   maxConcurrent: 5,
 });

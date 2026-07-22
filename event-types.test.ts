@@ -54,6 +54,7 @@ const REQUIRED_SUBSCRIBABLE_EVENT_DOCS = [
   'api-reference/webhooks/create.mdx',
   'api-reference/webhooks/update.mdx',
   'guides/types.mdx',
+  'llms.txt',
   'webhooks/overview.mdx',
 ] as const;
 const REQUIRED_KEYWORD_EVENT_DOCS = [

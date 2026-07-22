@@ -36,18 +36,18 @@ Credentials:
 
 Seven fixed-price Xquik operations accept anonymous MPP payments through Tempo (USDC). No account or API key is required.
 
-Protocol flow: request an operation, receive 402 `WWW-Authenticate: Payment`, pay through Tempo, then retry with `Authorization: Payment`. Every response after accepted payment includes `Payment-Receipt`, including non-2xx responses. The receipt confirms settlement, so check the HTTP status and body for application success.
+Flow: request, receive `402 WWW-Authenticate: Payment`, pay through Tempo, then retry with `Authorization: Payment`. Accepted payments always return `Payment-Receipt`, even when the application fails. Check the status and body; the receipt confirms only settlement.
 
 All direct MPP operations use the fixed `charge` intent.
 
 Eligible endpoints and pricing:
-- `GET /api/v1/x/tweets/{id}` - $0.00015/call (charge)
-- `GET /api/v1/x/users/{id}` - $0.00015/call (charge)
-- `GET /api/v1/x/followers/check` - $0.00075/call (charge)
-- `GET /api/v1/x/articles/{tweetId}` - $0.00075/call (charge)
-- `GET /api/v1/trends` - $0.00045/call (charge)
-- `GET /api/v1/x/trends` - $0.00045/call (charge)
-- `GET /api/v1/x/communities/{id}/info` - $0.00015/call (charge)
+- `GET /api/v1/x/tweets/{id}` - $0.00015/call
+- `GET /api/v1/x/users/{id}` - $0.00015/call
+- `GET /api/v1/x/followers/check` - $0.00075/call
+- `GET /api/v1/x/articles/{tweetId}` - $0.00075/call
+- `GET /api/v1/trends` - $0.00045/call
+- `GET /api/v1/x/trends` - $0.00045/call
+- `GET /api/v1/x/communities/{id}/info` - $0.00015/call
 
 Guest wallets separately cover 33 prepaid GET routes. See `https://docs.xquik.com/guides/guest-wallets#eligible-paid-read-routes`. Outside those reads and the guest credential routes, operations require full account authentication.
 
@@ -63,18 +63,18 @@ Refunds and disputes reconcile affected-purchase credits only. Unrelated credits
 
 - REST API: `https://xquik.com/api/v1`
 - OpenAPI Spec: `https://xquik.com/openapi.json` (OpenAPI 3.1, RFC 9727 discovery)
-- MCP Server: `https://xquik.com/mcp` (v2.5.4, Streamable HTTP, OAuth 2.1 or client-specific API-key Bearer fallback; ChatGPT requires OAuth)
+- MCP Server: `https://xquik.com/mcp` (v2.5.5, Streamable HTTP, OAuth 2.1 or client-specific API-key Bearer fallback; ChatGPT requires OAuth)
 
 ## Rate Limits
 
-- Read endpoints: 60 requests per 1s (fixed window)
-- Write endpoints: 30 requests per 60s (fixed window)
-- Delete endpoints: 15 requests per 60s (fixed window)
+- Read endpoints: 300 requests per 1s (fixed window)
+- Write endpoints: 120 requests per 60s (fixed window)
+- Delete endpoints: 60 requests per 60s (fixed window)
 - Exceeding limits returns `429 Too Many Requests` with `Retry-After` header
 
 ## Error Format
 
-All errors return JSON:
+REST errors return JSON. Default responses always include `error`. `message` and context fields appear when available:
 
 ```json
 { "error": "error_code", "message": "Human-readable description" }
@@ -86,13 +86,13 @@ Write errors include durable lifecycle context. Poll `GET /x/write-actions/{id}`
 { "error": "x_write_ambiguous", "status": "pending_confirmation", "writeActionId": "42", "terminal": false, "charged": false, "retryable": false, "safeToRetry": false, "statusUrl": "/api/v1/x/write-actions/42", "nextAction": { "type": "poll", "url": "/api/v1/x/write-actions/42", "afterMs": 2000 } }
 ```
 
-HTTP status codes: `400` (validation), `401` (unauthenticated), `402` (payment required), `403` (limit reached), `404` (not found), `409` (conflict), `429` (rate limited), `500` (server error), `502` (temporarily unavailable). Anonymous non-MPP paid reads use `401` with a Bearer challenge and guest action. Direct MPP, account credit, and guest credit flows use `402`. Never start payment without user confirmation.
+Match each response against its OpenAPI response map. A `202` write can remain pending. A `424` needs the endpoint-specific fallback or retry. Anonymous non-MPP paid reads use `401` with a Bearer challenge. Direct MPP challenges and credit failures use `402`. Never start payment without user confirmation.
 
-Common error codes: `invalid_input`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`, `invalid_username`, `invalid_tool_type`, `invalid_format`, `invalid_params`, `missing_query`, `missing_params`, `api_key_limit_reached`, `unauthenticated`, `no_subscription`, `subscription_inactive`, `no_credits`, `insufficient_credits`, `no_addon`, `monitor_limit_reached`, `not_found`, `user_not_found`, `tweet_not_found`, `monitor_already_exists`, `x_api_rate_limited`, `x_daily_limit`, `x_write_ambiguous`, `internal_error`, `x_api_unavailable`, `x_api_unauthorized`.
+Read the machine code from `error` or normalized `error.code`. The OpenAPI `Error` schema lists every public code.
 
 Write-specific error codes: `x_daily_limit` (429) - X account reached daily posting limit, wait 24 hours, not retryable. `x_write_ambiguous` (202) - dispatch occurred but confirmation is pending; store `writeActionId`, poll `statusUrl`, and do not retry while `terminal` is false or `safeToRetry` is false.
 
-Retry strategy: retry only on `429` and `5xx`. Formula: `delay = baseDelay * 2^attempt + random(0, jitter)`. Max 3 retries. Respect `Retry-After` header.
+Retry reads only for `429`, documented transient `424`, and `5xx` responses. Respect `Retry-After`. Use capped exponential backoff with jitter. Never retry validation, authentication, or billing errors. Retry writes only when `safeToRetry` is `true`; use a new `Idempotency-Key`.
 
 ## Opt-in V1 Response Contract
 
@@ -106,12 +106,12 @@ Cursor pages return `hasMore` and opaque `nextCursor`. Send `nextCursor` as `aft
 
 With `xquik-api-contract: 2026-04-29`, paginated responses use `has_more` and `next_cursor`. Send `next_cursor` as `cursor` for X reads, `after` for events, draws, extractions, and radar, or `afterCursor` for drafts.
 
-## Monitor Event Types (4)
+## Monitor Event Types (21)
 
-- `tweet.new` - Original tweet posted
-- `tweet.quote` - Quote tweet posted
-- `tweet.reply` - Reply posted
-- `tweet.retweet` - Retweet posted
+Account monitors and webhooks accept all 21. Keyword monitors accept only the 10 tweet types.
+
+- Tweet: `tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`, `tweet.media`, `tweet.link`, `tweet.poll`, `tweet.mention`, `tweet.hashtag`, `tweet.longform`
+- Profile: `profile.avatar.changed`, `profile.banner.changed`, `profile.name.changed`, `profile.username.changed`, `profile.bio.changed`, `profile.location.changed`, `profile.url.changed`, `profile.verified.changed`, `profile.protected.changed`, `profile.pinned_tweet.changed`, `profile.unavailable.changed`
 
 ## Giveaway Draw Filters
 
@@ -153,7 +153,7 @@ Draws and extractions export via `GET /api/v1/draws/{id}/export` and `GET /api/v
 - Signature: HMAC-SHA256. `X-Xquik-Signature: sha256=HMAC_HEX_DIGEST`. Secret is returned once at creation.
 - Headers: `Content-Type: application/json`, `X-Xquik-Signature`
 - Requirements: HTTPS endpoint, prompt `2xx`
-- Retry: 1s, 2s, 4s, 8s, 16s. 5 attempts max, then `exhausted`.
+- Retry: up to 10 attempts. Backoff starts at 1s and caps at 60s. A `410 Gone` response exhausts immediately.
 - Delivery rows: `pending`, `delivered`, `failed`, `exhausted`
 - Endpoint status: `deliveryStatus` is `active`, `paused`, or `needs_attention`; `consecutiveFailures` counts failures; `failureHardCap` is 200.
 - Recovery: `POST /api/v1/webhooks/{id}/resume` sends signed `webhook.test`, reactivates, and resets failures only after receiver `2xx`.
@@ -180,7 +180,7 @@ Goals: `engagement`, `followers`, `authority`, `conversation`.
 
 ## MCP Server
 
-API MCP v2.5.4 uses Streamable HTTP at `https://xquik.com/mcp`. Prefer OAuth 2.1. API-key fallback depends on the client and requires documented secure header storage; ChatGPT custom apps require OAuth. Full credentials expose 118 operations. Guest `paid_reads` keys expose exactly 33 eligible GET routes. Guest credential routes are direct REST only. Never start billing after a 402 without explicit confirmation. Follow advancing cursors, bound results, and keep output within 24,000 characters.
+API MCP v2.5.5 uses Streamable HTTP at `https://xquik.com/mcp`. Prefer OAuth. API-key fallback requires secure headers. ChatGPT requires OAuth. Full credentials see 119 routes; 118 return JSON or text. Use REST for private support media. Guest keys see 33 GET routes. Guest credential routes use REST. Confirm billing after `402`. Follow new cursors. Limit output to 24,000 characters.
 
 Codex OAuth compatibility: affected Codex releases discard the RFC 9207 `iss` value before token exchange even though Xquik returns it. If Codex reports `Authorization server response missing required issuer: expected https://xquik.com`, set `XQUIK_API_KEY` and configure `bearer_token_env_var = "XQUIK_API_KEY"` until https://github.com/openai/codex/issues/31573 identifies a fixed release. Docs MCP needs no authentication and can retrieve https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error while API MCP OAuth is blocked.
 
@@ -218,7 +218,7 @@ By target type:
 
 All extraction tools accept an optional `resultsLimit` parameter to cap the number of results. When set, the extraction stops early instead of fetching all available data. The estimate endpoint also accepts `resultsLimit` to preview capped costs.
 
-**Tweet Search Filters** (`tweet_search_extractor` and `GET /x/tweets/search`): `fromUser`, `toUser`, `mentioning`, `language`, `sinceDate`, `untilDate`, `mediaType` (`images`/`videos`/`gifs`/`media`/`links`/`none`), `minFaves`, `minRetweets`, `minReplies`, `minQuotes`, `verifiedOnly`, `replies`/`retweets`/`quotes` (`include`/`exclude`/`only`), `exactPhrase`, `excludeWords`, `anyWords`, `hashtags`, `cashtags`, `url`, `conversationId`, `inReplyToTweetId`, `quotesOfTweetId`, `retweetsOfTweetId`, and `advancedQuery`. Search converts supported fields to X operators and filters returned tweet rows when response fields are available.
+**Tweet Search Filters** (`tweet_search_extractor` and `GET /x/tweets/search`): `fromUser`, `toUser`, `mentioning`, `language`, `sinceDate`, `untilDate`, `mediaType` (`images`/`videos`/`gifs`/`media`/`links`/`none`), `minFaves`, `minRetweets`, `minReplies`, `minQuotes`, `verifiedOnly`, `replies`/`retweets`/`quotes` (`include`/`exclude`/`only`), `exactPhrase`, `excludeWords`, `anyWords`, `hashtags`, `cashtags`, `url`, `conversationId`, `inReplyToTweetId`, `quotesOfTweetId`, `retweetsOfTweetId`, `listId`, `place`, `placeCountry`, `pointRadius`, `boundingBox`, and `advancedQuery`. Search converts supported fields to X operators and filters returned tweet rows when fields are available.
 
 **Tweet result filters**: `GET /x/users/{id}/tweets`, `/replies`, `/likes`, `/media`, `/mentions`, `GET /x/tweets/{id}/replies`, and `GET /x/tweets/{id}/quotes` accept result filters for returned `tweets[]` rows. They preserve the route target and filter rows after each page.
 

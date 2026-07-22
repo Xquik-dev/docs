@@ -20,15 +20,15 @@ Xquik is an X data platform with 127 documented REST operations, webhooks, Docs 
 Reach for Xquik when:
 
 - **Extracting X data**: Pull followers, replies, retweets, likes, community members, list data, or search results from public accounts, tweets, lists, communities, or Spaces.
-- **Monitoring accounts**: Track tweets, replies, quotes, and retweets from specific X accounts in real time.
-- **Setting up webhooks**: Receive real-time event notifications at your HTTPS endpoint with HMAC-signed payloads.
+- **Monitoring accounts**: Check specific X accounts every second for supported events.
+- **Setting up webhooks**: Receive monitor events through HMAC-signed HTTPS payloads.
 - **Running giveaway draws**: Execute transparent, auditable random draws on tweets with public result pages.
-- **Composing tweets**: Generate algorithm-optimized tweet drafts with scoring against X ranking factors.
+- **Composing posts**: Get editorial guidance and deterministic draft checks.
 - **Connecting AI agents**: Use Docs MCP for no-auth docs search and page retrieval, and API MCP for authenticated account actions.
 - **Running accountless reads**: Use a Stripe-funded guest `paid_reads` key on 33 GET routes or direct MPP on 7 fixed-price operations.
 - **Analyzing styles**: Analyze tweet styles, compare accounts, track engagement performance, or save drafts.
 - **Writing to X**: Post tweets, like, retweet, follow, send DMs, upload media, or manage community membership from connected accounts.
-- **Trending data**: Access real-time trends across 12 regions plus radar topics from Xquik's own infrastructure.
+- **Trending data**: Access current X trends across 12 regions plus Radar topics.
 
 ## Quick reference
 
@@ -44,9 +44,9 @@ Reach for Xquik when:
 
 ### Rate limits
 
-- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 60 per 1s user bucket.
-- **Write**: `POST`, `PUT`, and `PATCH` share a 30 per 60s user bucket.
-- **Delete**: `DELETE` requests use a 15 per 60s user bucket.
+- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 300 per 1s user bucket.
+- **Write**: `POST`, `PUT`, and `PATCH` share a 120 per 60s user bucket.
+- **Delete**: `DELETE` requests use a 60 per 60s user bucket.
 
 Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Retry only on `429` and `5xx` responses.
 
@@ -58,7 +58,7 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 - **X Data**: User lookups, tweet search, trends, media downloads, threads, replies, quotes, and relationships.
 - **X Write**: Post tweets, like, retweet, follow, DM, update profiles, upload media, and manage communities.
 - **Account and Billing**: Account info, credits, API keys, drafts, styles, and subscriptions.
-- **Compose**: Algorithm-optimized tweet composition.
+- **Compose**: Editorial guidance and deterministic draft checks.
 - **Styles**: Analyze tweet styles, compare accounts, and track performance.
 - **Radar**: Trending topics and news from Xquik's own infrastructure.
 
@@ -85,7 +85,8 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 
 ### Pagination
 
-- **Platform endpoints**: Events, draws, extractions, drafts, monitors, webhooks, and API keys use cursor pagination with `hasMore` and `nextCursor`.
+- **Platform pages**: Events, draws, and extractions use `after`. Drafts use `afterCursor`. Responses include `hasMore` and `nextCursor`.
+- **Unpaginated lists**: Monitors, webhooks, and API keys return up to 200 items.
 - **X endpoints**: X data endpoints use endpoint-specific cursor fields such as `has_next_page` and `next_cursor`.
 - Do not decode or construct cursors manually. Pass returned cursors back unchanged.
 
@@ -96,7 +97,7 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 - **Use API MCP** for AI agents that need authenticated Xquik account actions in Claude, ChatGPT, Cursor, VS Code, Codex, and similar clients.
 - **Use a guest wallet** for prepaid GET reads without an account. Require explicit confirmation before creating a $10-$250 USD Stripe-hosted Payment Link.
 - **Use direct MPP** for anonymous per-request payment on 7 fixed-price reads.
-- **Use webhooks** when monitor events must reach an HTTPS endpoint in real time. Add them to REST or MCP workflows when pushed events are better than polling.
+- **Use webhooks** when monitor events must reach an HTTPS endpoint. Add them when pushed events fit better than polling.
 
 ## Workflows
 
@@ -107,7 +108,7 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 3. Use `nextCursor` from the response to fetch additional pages.
 4. Process each event by checking the event type and data payload.
 
-### Real-time webhooks
+### Signed monitor webhooks
 
 1. Create a monitor before creating a webhook.
 2. Create a webhook with `POST /api/v1/webhooks` using an HTTPS URL and event types.
@@ -122,12 +123,12 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 3. Run the extraction with `POST /api/v1/extractions`.
 4. Retrieve results with `GET /api/v1/extractions/{id}` or export a file with `GET /api/v1/extractions/{id}/export?format=csv`.
 
-### Compose a tweet
+### Build a post draft
 
 1. Call `POST /api/v1/compose` with `step: "compose"`.
 2. Refine with `step: "refine"` and the selected goal, tone, topic, and media strategy.
 3. Score a draft with `step: "score"`.
-4. Iterate until the checklist passes.
+4. Revise only the failed editorial checks.
 
 ### Direct message handoff
 
@@ -140,12 +141,12 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 
 1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only docs search and page retrieval.
 2. Configure API MCP at `https://xquik.com/mcp` for live authenticated calls.
-3. Use a full account key or OAuth token for 118 operations. Use an active guest key for 33 eligible GET routes.
+3. Use full credentials for 119 catalog routes. Of these, 118 return JSON or text. Use REST for private support downloads. Guest keys expose 33 GET routes.
 4. Use `explore` to search the scoped catalog and `xquik` to run allowed requests.
 
-API MCP v2.5.4 uses Streamable HTTP. It returns normalized snake_case fields, date-time fields as Unix seconds, structured errors, `has_more`, and `next_cursor`. Continue through empty pages while the cursor advances. Stop and report partial progress when a cursor is missing or repeats.
+API MCP v2.5.5 uses Streamable HTTP. It returns normalized snake_case fields, Unix timestamps, structured errors, `has_more`, and `next_cursor`. Continue through empty pages while the cursor advances. Stop and report partial progress when a cursor is missing or repeats.
 
-API-key lifecycle, saved-payment quick top-up, the account top-up redirect, and all 3 guest wallet credential routes are unavailable through MCP. Never start checkout or top-up because a call returned `401` or `402`. Ask the user to choose an amount and option, then wait for explicit confirmation.
+API-key lifecycle, saved-payment quick top-up, the account top-up redirect, and all 3 guest wallet credential routes are unavailable through MCP. Private support downloads are discoverable, but their binary responses require REST. Never start checkout or top-up after `401` or `402`. Ask the user to choose an amount. Wait for confirmation.
 
 ### Recover from the Codex OAuth issuer error
 
@@ -196,7 +197,7 @@ Refunds and disputes reconcile affected-purchase credits only. Unrelated credits
 
 ## Resources
 
-- Comprehensive navigation: https://docs.xquik.com/llms.txt
+- Docs index: https://docs.xquik.com/llms.txt
 - Quickstart: https://docs.xquik.com/quickstart
 - API overview: https://docs.xquik.com/api-reference/overview
 - Docs MCP server: https://docs.xquik.com/mcp

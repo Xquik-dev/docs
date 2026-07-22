@@ -1,8 +1,8 @@
 ---
-title: "Compose tweet"
-description: "Compose, refine, and score tweets using X algorithm data. 3-step workflow, free"
+title: "Build a post draft"
+description: "Get editorial rules, refine a writing plan, and check a post draft. Free"
 api: "POST /compose"
-keywords: ["compose", "tweet", "algorithm", "score", "refine", "draft", "free"]
+keywords: ["compose", "post", "editorial checks", "refine", "draft", "free"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -10,266 +10,322 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <LlmsDirective />
 
 <Callout icon="circle-check" color="#16a34a">
-  **Free** - does not consume credits
+  **Free.** This endpoint does not consume credits.
 </Callout>
 
-<CodeGroup>
-  ```bash cURL
-  curl -X POST https://xquik.com/api/v1/compose \
-    -H "x-api-key: xq_YOUR_KEY_HERE" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "step": "compose",
-      "topic": "launching my new SaaS product",
-      "goal": "engagement"
-    }' | jq
-  ```
+Use 3 calls. The endpoint returns guidance and checks. It does not write or
+publish the final post.
 
-  ```javascript Node.js
-  const response = await fetch("https://xquik.com/api/v1/compose", {
-    method: "POST",
-    headers: {
-      "x-api-key": "xq_YOUR_KEY_HERE",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      step: "compose",
-      topic: "launching my new SaaS product",
-      goal: "engagement",
-    }),
-  });
-  const data = await response.json();
-  ```
+## Workflow
 
-  ```python Python
-  import requests
+1. Call `compose` with a topic.
+2. Call `refine` with the topic, goal, and tone.
+3. Write a draft. Call `score` with the full text.
 
-  response = requests.post(
-      "https://xquik.com/api/v1/compose",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-      json={
-          "step": "compose",
-          "topic": "launching my new SaaS product",
-          "goal": "engagement",
-      },
-  )
-  data = response.json()
-  ```
+The guidance uses Xquik editorial heuristics. It does not predict reach. X does
+not publish its production ranking weights.
 
-  ```go Go
-  package main
+## Requests
 
-  import (
-      "bytes"
-      "encoding/json"
-      "fmt"
-      "io"
-      "net/http"
-  )
+<Tabs>
+  <Tab title="1. Compose">
+    Returns 18 editorial rules and 4 follow-up questions.
 
-  func main() {
-      body, _ := json.Marshal(map[string]interface{}{
-          "step":  "compose",
-          "topic": "launching my new SaaS product",
-          "goal":  "engagement",
-      })
+    <CodeGroup>
+    ```bash
+    curl https://xquik.com/api/v1/compose \
+      -X POST \
+      -H "x-api-key: xq_YOUR_KEY_HERE" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "step": "compose",
+        "topic": "PostgreSQL query planning",
+        "goal": "authority"
+      }'
+    ```
+    </CodeGroup>
 
-      req, _ := http.NewRequest("POST", "https://xquik.com/api/v1/compose", bytes.NewReader(body))
-      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-      req.Header.Set("Content-Type", "application/json")
+    Required fields: `step`, `topic`.
 
-      resp, err := http.DefaultClient.Do(req)
-      if err != nil {
-          panic(err)
-      }
-      defer resp.Body.Close()
+    Optional fields:
 
-      respBody, _ := io.ReadAll(resp.Body)
-      fmt.Println(string(respBody))
-  }
-  ```
-</CodeGroup>
+    - `goal`: `engagement`, `followers`, `authority`, or `conversation`.
+      Defaults to `engagement`.
+    - `styleUsername`: Username from a saved style analysis.
+  </Tab>
+
+  <Tab title="2. Refine">
+    Returns goal, tone, media, and editorial guidance.
+
+    <CodeGroup>
+    ```bash
+    curl https://xquik.com/api/v1/compose \
+      -X POST \
+      -H "x-api-key: xq_YOUR_KEY_HERE" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "step": "refine",
+        "topic": "PostgreSQL query planning",
+        "goal": "authority",
+        "tone": "professional",
+        "mediaType": "none"
+      }'
+    ```
+    </CodeGroup>
+
+    Required fields: `step`, `topic`, `goal`, `tone`.
+
+    Optional fields:
+
+    - `mediaType`: `photo`, `video`, or `none`.
+    - `callToAction`: Specific action the draft should request.
+    - `additionalContext`: Audience, constraints, or source context.
+  </Tab>
+
+  <Tab title="3. Score">
+    Runs 9 deterministic text checks.
+
+    <CodeGroup>
+    ```bash
+    curl https://xquik.com/api/v1/compose \
+      -X POST \
+      -H "x-api-key: xq_YOUR_KEY_HERE" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "step": "score",
+        "draft": "PostgreSQL 18 reduced query latency by 30%. Test the JIT compiler on analytical workloads. Which result changed your rollout plan?",
+        "hasLink": false
+      }'
+    ```
+    </CodeGroup>
+
+    Required fields: `step`, `draft`.
+
+    `hasLink` means a separate link card is attached. The deprecated
+    `hasMedia` field remains accepted. Text checks ignore it.
+  </Tab>
+</Tabs>
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported.
+Send either an API key or an authenticated session cookie.
+
+<ParamField header="x-api-key" type="string">
+  Full account API key. An authenticated session cookie also works.
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
-  Must be `application/json`.
+  Use `application/json`.
 </ParamField>
 
 ## Body
 
 <ParamField body="step" type="string" required>
-  Workflow step. One of `compose`, `refine`, or `score`.
+  Use `compose`, `refine`, or `score`.
 </ParamField>
 
 <ParamField body="topic" type="string">
-  Tweet topic. Used in `compose` and `refine` steps.
+  Required for `compose` and `refine`.
 </ParamField>
 
 <ParamField body="goal" type="string">
-  Optimization goal: `engagement`, `followers`, `authority`, or `conversation`.
+  Required for `refine`. Optional for `compose`.
 </ParamField>
 
 <ParamField body="styleUsername" type="string">
-  Cached style username for voice matching. Used in `compose` step.
+  Saved style username for `compose`.
 </ParamField>
 
 <ParamField body="tone" type="string">
-  Desired tone for the tweet. Used in `refine` step.
-</ParamField>
-
-<ParamField body="additionalContext" type="string">
-  Extra context or URLs. Used in `refine` step.
-</ParamField>
-
-<ParamField body="callToAction" type="string">
-  Desired call to action. Used in `refine` step.
+  Required for `refine`.
 </ParamField>
 
 <ParamField body="mediaType" type="string">
-  Media type: `photo`, `video`, or `none`. Used in `refine` step.
+  Optional `photo`, `video`, or `none` value for `refine`.
+</ParamField>
+
+<ParamField body="callToAction" type="string">
+  Optional requested action for `refine`.
+</ParamField>
+
+<ParamField body="additionalContext" type="string">
+  Optional audience, constraint, or source context for `refine`.
 </ParamField>
 
 <ParamField body="draft" type="string">
-  Tweet text to evaluate. Used in `score` step.
+  Required full post text for `score`.
 </ParamField>
 
 <ParamField body="hasLink" type="boolean">
-  Whether a link is attached. Used in `score` step.
+  Set true when a separate link card is attached during `score`.
 </ParamField>
 
 <ParamField body="hasMedia" type="boolean">
-  Whether media is attached. Used in `score` step.
+  Deprecated compatibility field. Text checks ignore it.
 </ParamField>
-
-## Workflow
-
-The compose API follows a 3-step workflow:
-
-1. **`compose`**: Returns algorithm weights, content rules, penalties, and follow-up questions
-2. **`refine`**: Returns composition guidance, example patterns, media strategy, and CTA advice
-3. **`score`**: Evaluates a draft against algorithm checks with pass/fail results
 
 ## Response
 
 <Tabs>
-  <Tab title="200 OK (compose)">
-    <ResponseField name="contentRules" type="object[]">Algorithm content rules. Each item has a `rule` string.</ResponseField>
-    <ResponseField name="scorerWeights" type="object[]">Algorithm scorer weights. Each item has `context`, `signal`, and `weight` fields.</ResponseField>
-    <ResponseField name="followUpQuestions" type="string[]">Follow-up questions to refine the composition.</ResponseField>
-    <ResponseField name="engagementMultipliers" type="object[]">Engagement multipliers. Each item has `action` and `multiplier` fields.</ResponseField>
-    <ResponseField name="engagementVelocity" type="string">Engagement velocity description.</ResponseField>
-    <ResponseField name="intentUrl" type="string">X intent URL for posting the tweet.</ResponseField>
-    <ResponseField name="nextStep" type="string">Instructions for the next API call in the workflow.</ResponseField>
-    <ResponseField name="savedStyles" type="object[]">Saved style profiles. Present when you omit `styleUsername` and cached styles exist.</ResponseField>
-    <ResponseField name="savedStyles[].username" type="string">Cached style username.</ResponseField>
-    <ResponseField name="savedStyles[].tweetCount" type="number">Number of cached tweets available for that style.</ResponseField>
-    <ResponseField name="source" type="string">Algorithm source attribution.</ResponseField>
-    <ResponseField name="styleNote" type="string">Style fallback note. Present when a requested style is not cached and the request can continue without refreshing it.</ResponseField>
-    <ResponseField name="styleTweets" type="string[]">Cached example tweets used for voice matching. Present when `styleUsername` matches a cached style.</ResponseField>
-    <ResponseField name="topPenalties" type="string[]">Top algorithm penalties to avoid.</ResponseField>
+  <Tab title="200 OK">
+    The response shape matches the requested workflow step.
 
-    ```json
-    {
-      "contentRules": [{ "rule": "Keep under 280 characters" }, { "rule": "Front-load the hook" }],
-      "scorerWeights": [{ "context": "tweet", "signal": "hook", "weight": 2 }],
-      "engagementMultipliers": [{ "action": "reply", "multiplier": "1.5x" }],
-      "engagementVelocity": "First 30 minutes are critical for algorithmic reach",
-      "topPenalties": ["External links reduce reach by ~50%"],
-      "followUpQuestions": [
-        "What tone do you want? (casual, professional, bold)",
-        "Will you attach media (photo, video, none)?",
-        "What call-to-action do you prefer?"
-      ],
-      "intentUrl": "https://x.com/intent/tweet?text=...",
-      "nextStep": "Call with step: refine, providing tone, goal, and topic",
-      "source": "X algorithm analysis"
-    }
-    ```
-  </Tab>
-  <Tab title="200 OK (refine)">
-    <ResponseField name="compositionGuidance" type="string[]">Composition guidance tips.</ResponseField>
-    <ResponseField name="examplePatterns" type="object[]">Example tweet patterns. Each item has `pattern` and `description` fields.</ResponseField>
-    <ResponseField name="intentUrl" type="string">X intent URL for posting the tweet.</ResponseField>
-    <ResponseField name="nextStep" type="string">Instructions for the next API call in the workflow.</ResponseField>
+## Compose Response
 
-    ```json
-    {
-      "compositionGuidance": [
-        "Lead with a personal story or metric.",
-        "End with an open question."
-      ],
-      "examplePatterns": [
-        { "pattern": "Hook -> Context -> CTA", "description": "Surprising metric, 1-2 sentences, open question" }
-      ],
-      "intentUrl": "https://x.com/intent/tweet?text=...",
-      "nextStep": "Write your draft and call with step: score"
-    }
-    ```
-  </Tab>
-  <Tab title="200 OK (score)">
-    <ResponseField name="totalChecks" type="number">Total number of algorithm checks evaluated.</ResponseField>
-    <ResponseField name="passedCount" type="number">Number of checks that passed.</ResponseField>
-    <ResponseField name="passed" type="boolean">Overall pass/fail result.</ResponseField>
-    <ResponseField name="topSuggestion" type="string">Top improvement suggestion.</ResponseField>
-    <ResponseField name="checklist" type="object[]">
-      Individual check results.
-      <Expandable title="check item">
-        <ResponseField name="factor" type="string">Check factor name.</ResponseField>
-        <ResponseField name="passed" type="boolean">Whether this check passed.</ResponseField>
-        <ResponseField name="suggestion" type="string">Improvement suggestion. Omitted if passed.</ResponseField>
-      </Expandable>
-    </ResponseField>
-    <ResponseField name="nextStep" type="string">Instructions for next steps.</ResponseField>
-    <ResponseField name="intentUrl" type="string">X intent URL. Present only when all checks pass.</ResponseField>
+<ResponseField name="contentRules" type="object[]" required>
+  18 Xquik editorial rules. Each item has `rule`.
+</ResponseField>
 
-    ```json
-    {
-      "totalChecks": 11,
-      "passedCount": 9,
-      "passed": false,
-      "topSuggestion": "Add a specific detail or metric to the first line.",
-      "checklist": [
-        { "factor": "No external links in body", "passed": true },
-        { "factor": "No hashtags", "passed": true },
-        { "factor": "No excessive capitalization", "passed": true },
-        { "factor": "Conversation-driving CTA", "passed": true },
-        { "factor": "Optimal length (50-280 characters)", "passed": true },
-        { "factor": "Media attached", "passed": true },
-        { "factor": "No excessive punctuation", "passed": true },
-        { "factor": "No emojis", "passed": true },
-        { "factor": "No em dashes or double dashes", "passed": true },
-        { "factor": "Sufficient substance", "passed": false, "suggestion": "Add a specific detail or metric" },
-        { "factor": "Link-in-reply strategy", "passed": false, "suggestion": "Move the link to a reply instead" }
-      ],
-      "nextStep": "Revise your draft and score again"
-    }
-    ```
+<ResponseField name="followUpQuestions" type="string[]" required>
+  4 questions for the next writing step.
+</ResponseField>
+
+<ResponseField name="engagementMultipliers" type="object[]" required>
+  19 published signal names. Every `multiplier` states that X does not publish
+  the production weight.
+</ResponseField>
+
+<ResponseField name="scorerWeights" type="object[]" required>
+  19 published signal names. Every `weight` is `null`.
+</ResponseField>
+
+<ResponseField name="engagementVelocity" type="string" required>
+  States that X publishes no universal engagement window or decay rate.
+</ResponseField>
+
+<ResponseField name="topPenalties" type="string[]" required>
+  4 negative predictions named by X's public model. No severity order is
+  claimed.
+</ResponseField>
+
+<ResponseField name="source" type="string" required>
+  Signal source and evidence limits.
+</ResponseField>
+
+<ResponseField name="intentUrl" type="string" required>
+  X post intent seeded with the topic.
+</ResponseField>
+
+<ResponseField name="nextStep" type="string" required>
+  Exact fields required for the `refine` call.
+</ResponseField>
+
+<ResponseField name="savedStyles" type="object[]">
+  Saved styles. Present when saved styles exist and `styleUsername` is omitted.
+</ResponseField>
+
+<ResponseField name="savedStyles[].username" type="string">
+  Cached style username.
+</ResponseField>
+
+<ResponseField name="savedStyles[].tweetCount" type="integer">
+  Cached post count for the style.
+</ResponseField>
+
+<ResponseField name="styleTweets" type="string[]">
+  Cached examples. Present when `styleUsername` matches a cached style.
+</ResponseField>
+
+<ResponseField name="styleNote" type="string">
+  Fallback instruction when the requested style is unavailable.
+</ResponseField>
+
+## Refine Response
+
+<ResponseField name="compositionGuidance" type="string[]" required>
+  Goal, tone, media, and editorial guidance.
+</ResponseField>
+
+<ResponseField name="examplePatterns" type="object[]" required>
+  3 patterns. Each item has `description` and `pattern`.
+</ResponseField>
+
+<ResponseField name="intentUrl" type="string" required>
+  X post intent seeded with the topic.
+</ResponseField>
+
+<ResponseField name="nextStep" type="string" required>
+  Exact fields required for the `score` call.
+</ResponseField>
+
+## Score Response
+
+The checks cover:
+
+1. External links in the body
+2. Hashtags
+3. Excessive capitalization
+4. Length from 50 through 280 characters
+5. Excessive punctuation
+6. Emojis
+7. Em dashes, en dashes, or double dashes
+8. At least 8 substantive words
+9. Duplicate link-card URLs
+
+These are Xquik style checks. They are not X ranking guarantees.
+
+```json
+{
+  "checklist": [
+    { "factor": "No external links in body", "passed": true },
+    { "factor": "No hashtags", "passed": true },
+    { "factor": "No excessive capitalization", "passed": true },
+    { "factor": "Length between 50 and 280 characters", "passed": true },
+    { "factor": "No excessive punctuation", "passed": true },
+    { "factor": "No emojis", "passed": true },
+    { "factor": "No em dashes or double dashes", "passed": true },
+    { "factor": "Sufficient substance", "passed": true },
+    { "factor": "Link-in-reply strategy", "passed": true }
+  ],
+  "intentUrl": "https://x.com/intent/tweet?text=...",
+  "nextStep": "All 9 checks passed. Present the post with the intentUrl above for one-click posting.",
+  "passed": true,
+  "passedCount": 9,
+  "topSuggestion": "All Xquik editorial checks passed.",
+  "totalChecks": 9
+}
+```
+
+`intentUrl` appears only when all 9 checks pass. Failed items include a
+`suggestion`.
+
   </Tab>
+</Tabs>
+
+## Errors
+
+<Tabs>
   <Tab title="400 Invalid Input">
     ```json
-    { "error": "invalid_input", "message": "step is required. Must be \"compose\", \"refine\", or \"score\"." }
+    {
+      "error": "invalid_input",
+      "message": "step is required. Must be \"compose\", \"refine\", or \"score\"."
+    }
     ```
-    Invalid JSON returns `invalid_json`. Valid JSON with a missing or unsupported `step`, missing `topic` for `compose`, missing `goal`, `tone`, or `topic` for `refine`, or missing `draft` for `score` returns `invalid_input`.
+
+    Missing step-specific fields also return `invalid_input`.
   </Tab>
+
   <Tab title="401 Unauthenticated">
     ```json
     { "error": "unauthenticated" }
     ```
-    Missing or invalid API key.
   </Tab>
+
   <Tab title="429 Rate Limited">
     ```json
-    { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
     ```
-    Too many requests. Wait for the `Retry-After` header before retrying.
+
+    Wait for `Retry-After` before retrying.
   </Tab>
 </Tabs>
 
 <Note>
-  **Next steps:** [Save Draft](/api-reference/drafts/create) to save a composed tweet for later, or [Analyze Style](/api-reference/styles/analyze) to match another account's voice.
+  Save accepted text with [Create Draft](/api-reference/drafts/create). Analyze
+  a reference voice with [Analyze Style](/api-reference/styles/analyze).
 </Note>

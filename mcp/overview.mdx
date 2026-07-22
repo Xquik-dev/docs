@@ -1,7 +1,7 @@
 ---
 title: Connect AI Agents via MCP
 sidebarTitle: MCP Server
-description: Connect AI agents to Xquik API MCP v2.5.4 with OAuth 2.1 over Streamable HTTP
+description: Connect AI agents to Xquik API MCP v2.5.5 with OAuth 2.1 over Streamable HTTP
 keywords: ["MCP", "model context protocol", "AI agents", "Claude", "ChatGPT", "server setup"]
 ---
 
@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik API MCP v2.5.4 exposes a credential-scoped REST catalog through 2 [Model Context Protocol](https://modelcontextprotocol.io) tools. Full account keys and OAuth tokens see 118 operations. Guest `paid_reads` keys see exactly 33 eligible GET routes.
+Xquik API MCP v2.5.5 exposes a scoped REST catalog through 2 [Model Context Protocol](https://modelcontextprotocol.io) tools. Full credentials see 119 catalog routes. Of these, 118 return JSON or text through MCP. Private support media downloads use REST. Guest `paid_reads` keys see exactly 33 GET routes.
 
 <Note>
   All public X data reads need no connected X account. Every X write requires
@@ -41,7 +41,7 @@ Xquik API MCP v2.5.4 exposes a credential-scoped REST catalog through 2 [Model C
     Connect clients to `https://xquik.com/mcp`.
   </Card>
   <Card title="Server version" icon="badge-check">
-    Current API MCP server version: `2.5.4`.
+    Current API MCP server version: `2.5.5`.
   </Card>
   <Card title="Authentication" icon="key-round">
     Prefer OAuth 2.1. API keys remain available for clients with secure header
@@ -103,7 +103,7 @@ challenge.
 The MCP server supports 2 authentication methods:
 
 - **OAuth 2.1** (recommended): Compatible clients discover Xquik, open the browser login and consent flow, then store and refresh Bearer tokens. Xquik supports CIMD and DCR. No manual client ID, client secret, or API key is required for normal client setup.
-- **API key** (`x-api-key` or `Authorization: Bearer xq_your_api_key_here`): This is an Xquik-specific, non-OAuth fallback, not an OAuth access token. Clients must not apply OAuth discovery or refresh semantics to it. Use this fallback only when the client supports secure header storage but not OAuth. Full account keys expose 118 operations. Active guest keys expose only 33 `paid_reads` GET routes.
+- **API key** (`x-api-key` or `Authorization: Bearer xq_your_api_key_here`): This is an Xquik-specific fallback, not an OAuth token. Do not apply OAuth discovery or refresh rules. Use it only with secure header storage. Full account keys expose 119 catalog routes. Active guest keys expose 33 `paid_reads` GET routes.
 
 See [OAuth 2.1 authorization](/oauth/overview) for discovery URLs, token
 lifetimes, client registration, and implementation details.
@@ -116,7 +116,7 @@ The MCP server uses a **code-execution sandbox model** with 2 tools:
 
 <CardGroup cols={2}>
   <Card title="explore" icon="search">
-    Search the authenticated catalog. Full credentials see 118 operations. Guest keys see 33 eligible GET routes. Read-only, no network calls, no credits.
+    Search the authenticated catalog. Full credentials see 119 routes. Guest keys see 33 GET routes. No network calls. No credits.
   </Card>
   <Card title="xquik" icon="terminal">
     Execute authenticated API calls. Cost follows the endpoint.
@@ -136,7 +136,7 @@ For a guest `paid_reads` session, `xquik` is read-only, idempotent, and limited 
 
 ### `explore` tool
 
-Searches the 118-operation full account catalog. Free means no usage credits; the call still requires MCP authentication through an API key or OAuth Bearer token. The sandbox provides:
+Searches the 119-route full account catalog. The call uses no credits. MCP authentication remains required. The sandbox provides:
 
 With a guest `paid_reads` key, `spec.endpoints` contains only the 33 eligible GET read routes.
 
@@ -145,6 +145,7 @@ interface EndpointInfo {
   method: string;
   path: string;
   summary: string;
+  operationId: string;
   category: string; // account, composition, credits, extraction, media, monitoring, support, twitter, x-accounts, x-write
   free: boolean;
   parameters?: Array<{ name: string; in: 'query' | 'path' | 'body'; required: boolean; type: string; description: string }>;
@@ -163,7 +164,7 @@ declare const xquik: {
   request(path: string, options?: {
     method?: string;  // default: 'GET'
     body?: unknown;
-    query?: Record<string, string>;
+    query?: Record<string, string | number | boolean>;
   }): Promise<unknown>;
 };
 declare const spec: { endpoints: EndpointInfo[] };
@@ -175,13 +176,14 @@ The agent writes code like `async () => xquik.request('/api/v1/radar')` and the 
 
 ### MCP operation boundary
 
-The REST contract documents 127 operations. A full account key or OAuth token exposes 118 through MCP. These 9 credential, session, or binary operations stay outside the executable catalog:
+The REST contract documents 127 operations. Full credentials expose 119 MCP catalog routes. These 8 credential and session operations stay outside the catalog:
 
 - Create, list, or revoke account API keys
 - Charge a saved payment method through quick top-up
 - Open the session-based account top-up redirect route
 - Create, poll, or top up a guest wallet
-- Download private support media as a binary response
+
+The catalog includes private support attachment downloads. MCP rejects their binary responses. Use the REST download endpoint instead. The other 118 routes return MCP-compatible JSON or text.
 
 Guest wallet credential routes remain direct REST only. MCP cannot execute `POST /api/v1/guest-wallets`, `POST /api/v1/guest-wallets/topups`, or `GET /api/v1/guest-wallets/status`. Follow the [accountless guest wallet guide](/guides/guest-wallets) for confirmation, checkout, polling, and top-up steps.
 
@@ -195,7 +197,7 @@ MCP follows REST authentication, authorization, billing, and response contracts 
 
 <CardGroup cols={2}>
   <Card title="MCP Server" icon="terminal">
-    Best for AI agents, IDE integrations, and natural language workflows. Full account credentials expose 118 operations. Guest keys expose 33 eligible GET reads.
+    Use MCP for agents and IDE integrations. Full credentials expose 119 catalog routes. Guest keys expose 33 GET reads. Use REST for binary support downloads.
   </Card>
   <Card title="REST API" icon="route">
     Best for backend services, automation scripts, guest wallet credential routes, and direct programmatic access. The REST contract documents all 127 operations and file download responses.
@@ -218,15 +220,15 @@ Choose the authentication path that your current client can complete. Xquik keep
 | --- | --- | --- |
 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code/mcp) | OAuth 2.1 | Uses Client ID Metadata Documents (CIMD), secure token storage, and automatic refresh |
 | [OpenCode](https://opencode.ai/docs/mcp-servers/) | OAuth 2.1 | Uses Dynamic Client Registration (DCR) and refreshes tokens |
-| [Gemini CLI](https://geminicli.com/docs/tools/mcp-server/) | OAuth 2.1 | Uses DCR and prefers `url` with `type: "http"`; older builds also accept `httpUrl` |
-| [Cursor](https://docs.cursor.com/context/model-context-protocol) | OAuth 2.1 | Uses DCR and accepts Cursor callback URLs |
+| [Gemini CLI](https://geminicli.com/docs/tools/mcp-server/) | OAuth 2.1 | Uses automatic OAuth discovery and DCR; Streamable HTTP configuration uses `httpUrl` |
+| [Cursor](https://docs.cursor.com/context/model-context-protocol) | OAuth 2.1 | Supports remote MCP OAuth and `cursor-agent mcp login` |
 | [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers) | OAuth 2.1 | Uses the browser authorization code flow and DCR |
-| [Cline](https://docs.cline.bot/cli/cli-reference) | OAuth 2.1 | Uses DCR from its MCP configuration flow |
+| [Cline](https://docs.cline.bot/cli/cli-reference) | OAuth 2.1 | Completes OAuth from its MCP configuration flow |
 | [Qwen Code](https://github.com/QwenLM/qwen-code) | OAuth 2.1 | Uses DCR and its `httpUrl` Streamable HTTP field |
 | [Codex](https://learn.chatgpt.com/docs/extend/mcp) | Environment-backed API key | Affected releases can discard the required RFC 9207 `iss` callback value |
 | [Goose](https://goose-docs.ai/docs/getting-started/using-extensions/) | Environment-backed API key | Affected releases can discard the required RFC 9207 `iss` callback value |
 | [Roo Code](https://github.com/RooCodeInc/Roo-Code) | Environment-backed API key | Roo Code's archived final release has Streamable HTTP but no MCP OAuth provider |
-| [Pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | No native MCP path | Pi requires a separately installed and tested MCP adapter |
+| [Pi](https://github.com/earendil-works/pi/tree/main/packages/coding-agent) | No native MCP path | Pi requires a separately installed and tested MCP adapter |
 
 Clients that ignore the optional RFC 9207 `iss` response parameter can still complete OAuth. Affected Codex and Goose releases instead require the parameter after discarding it, so retrying OAuth cannot repair the callback. Xquik does not weaken issuer validation for those releases.
 
@@ -242,10 +244,9 @@ Clients that ignore the optional RFC 9207 `iss` response parameter can still com
     4. Select **Add**.
     5. In a chat, select **+ > Connectors**, enable Xquik, then select **Connect** and approve access.
 
-    Leave the advanced client ID and client secret fields empty. Free accounts
-    can add 1 custom connector. On Team and Enterprise plans, an Owner or
-    Primary Owner must first add the Web connector under **Organization settings
-    > Connectors > Add > Custom**. The feature is currently beta.
+    Leave the advanced client ID and client secret fields empty. Custom remote
+    connectors require Pro, Max, Team, or Enterprise. On Team and Enterprise,
+    an Owner or Primary Owner must add the connector first.
   </Tab>
   <Tab title="Claude Desktop">
     Claude Desktop uses the same remote custom connectors as Claude.ai. Open
@@ -262,14 +263,18 @@ Clients that ignore the optional RFC 9207 `iss` response parameter can still com
     Run `/mcp` inside Claude Code, select `xquik`, then authenticate.
   </Tab>
   <Tab title="ChatGPT">
-    1. In ChatGPT on the web, open **Settings > Apps > Advanced settings** and enable **Developer mode**.
-    2. Open **Settings > Apps > Create**. Workspace administrators may instead use **Workspace settings > Apps > Create**.
-    3. Enter `https://xquik.com/mcp`, choose OAuth, then select **Scan tools**.
-    4. Complete Xquik authorization and select **Create**.
+    1. In ChatGPT on the web, open **Settings > Security and login**. Enable **Developer mode**.
+    2. Open [**Settings > Plugins**](https://chatgpt.com/plugins). Select **+**.
+    3. Enter `https://xquik.com/mcp`, then select **Create**.
+    4. Sign in to Xquik and approve access. Confirm the tool list.
+    5. Start a new chat. Select **+ > More**, then select Xquik.
 
-    ChatGPT uses Xquik OAuth and cannot present a custom API key. Business and
-    Enterprise/Edu workspaces support full MCP, including write tools. Pro
-    supports read and fetch tools only. Custom MCP apps are web-only.
+    ChatGPT uses Xquik OAuth and cannot present a custom API key. Full MCP is in
+    beta for Business and Enterprise/Edu workspaces. Pro supports read and fetch
+    tools only. Link Xquik on the web first. The linked app then appears on
+    mobile. Follow
+    [OpenAI's current setup guide](https://developers.openai.com/apps-sdk/deploy/connect-chatgpt)
+    when ChatGPT changes its labels.
   </Tab>
 </Tabs>
 
@@ -417,7 +422,7 @@ Restart Codex, then run `codex mcp list`. Do not run `codex mcp login xquik` whi
     Add the remote server:
 
     ```bash
-    copilot mcp add --transport http xquik https://xquik.com/mcp
+    copilot mcp add xquik --type http --url https://xquik.com/mcp
     ```
 
     If your installed build does not expose the noninteractive add flags, start
@@ -440,14 +445,11 @@ Restart Codex, then run `codex mcp list`. Do not run `codex mcp login xquik` whi
     {
       "mcpServers": {
         "xquik": {
-          "type": "http",
-          "url": "https://xquik.com/mcp"
+          "httpUrl": "https://xquik.com/mcp"
         }
       }
     }
     ```
-
-    Older Gemini CLI builds also accept the legacy `httpUrl` field.
 
     Run `/mcp auth xquik` to complete OAuth.
   </Tab>
@@ -544,7 +546,7 @@ configuration file, or commit a key.
 
 ## Example prompts
 
-Once connected, you can ask your AI agent things like:
+Once connected, ask:
 
 **Monitoring & Events**
 - Start watching @elonmusk for new tweets and replies.
@@ -573,7 +575,7 @@ Once connected, you can ask your AI agent things like:
 **Radar & News**
 - Show current Radar trends.
 - Show top developer trends today.
-- Show fastest-growing startup trends.
+- Show startups ranked by available growth metrics.
 - Get technology topics from the last 12 hours.
 - Show popular knowledge topics right now.
 - Show regional trends for a selected region.
@@ -640,7 +642,7 @@ Build agents with Xquik's MCP tools in your preferred framework:
 
 The [Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper) gives AI coding agents deep knowledge of the Xquik API without requiring an MCP connection. Install it to let your agent write API integrations, set up webhooks, and configure MCP connections using Xquik best practices.
 
-Works with 40+ AI coding agents including Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code, Gemini CLI, and more. The skill covers MCP tools and 127 REST API operations.
+Works with Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code, Gemini CLI, and other Skill-capable agents. It covers MCP tools and 127 REST API operations.
 
 ```bash
 npx skills add Xquik-dev/x-twitter-scraper

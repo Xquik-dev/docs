@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-The Xquik REST API v1 provides programmatic access to X data and automation. Endpoints are organized into these categories:
+Xquik REST API v1 reads X data and runs automations.
 
 <Note>
   All public X data reads need no connected X account. Every X write requires
@@ -60,7 +60,7 @@ YAML is also available at:
 https://docs.xquik.com/openapi.yaml
 ```
 
-Use these with any OpenAPI-compatible tool (Postman, Insomnia, Swagger UI) or to generate client libraries. The spec follows [RFC 9727](https://www.rfc-editor.org/rfc/rfc9727) service discovery conventions.
+Use either format with OpenAPI tools or client generators. Xquik publishes the spec through [RFC 9727](https://www.rfc-editor.org/rfc/rfc9727) service discovery.
 
 API service discovery is published at:
 
@@ -76,7 +76,7 @@ Account API keys can use `x-api-key`:
 x-api-key: xq_your_api_key_here
 ```
 
-Generate account keys from your [dashboard](https://xquik.com). Xquik API keys can also use `Authorization: Bearer xq_your_api_key_here`. OAuth 2.1 Bearer tokens keep the account access granted by their scopes.
+Generate account keys from the [API Keys dashboard](https://dashboard.xquik.com/en/account?tab=api-keys). Xquik API keys can also use `Authorization: Bearer xq_your_api_key_here`. OAuth 2.1 Bearer tokens keep their granted account scopes.
 
 Accountless guest keys use `Authorization: Bearer` and have the fixed `paid_reads` scope. They work only on the [33 eligible paid-read routes](/guides/guest-wallets#eligible-paid-read-routes) after a verified Stripe webhook. See [Authentication](/api-reference/authentication) for every method.
 
@@ -128,7 +128,7 @@ curl -s https://xquik.com/api/v1/account \
 }
 ```
 
-Replace `xq_your_api_key_here` with your actual API key from the [dashboard](https://xquik.com). If you get `401`, double-check that the header name is `x-api-key` (lowercase) and the key starts with `xq_`.
+Replace `xq_your_api_key_here` with your key. After `401`, confirm the `x-api-key` header and `xq_` prefix.
 
 ## Integration readiness checklist
 
@@ -148,7 +148,7 @@ Run this checklist before connecting a production client, workflow builder, or a
     Handle `402 no_credits` and `402 insufficient_credits`. Treat every `payment_options` action as an offer. Ask the user to select an amount and explicitly confirm before creating checkout.
   </Card>
   <Card title="Rate limits" icon="timer">
-    Respect `Retry-After`. Read calls are 60 per 1s, write calls are 30 per 60s, and delete calls are 15 per 60s. Back off on repeated `429 rate_limit_exceeded` responses.
+    Respect `Retry-After`. Read calls allow 300 per 1s. Writes allow 120 per 60s. Deletes allow 60 per 60s. Back off after repeated `429 rate_limit_exceeded` responses.
   </Card>
   <Card title="Durable writes" icon="activity">
     Send a unique `Idempotency-Key`. Store the returned action. Poll `statusUrl` while `terminal` is `false`. Retry only when `safeToRetry` is `true`, using a new key.
@@ -159,15 +159,15 @@ Run this checklist before connecting a production client, workflow builder, or a
 
 <CardGroup cols={3}>
   <Card title="Read requests" icon="database">
-    `GET`, `HEAD`, and `OPTIONS` requests share a 60 per 1s user bucket.
+    `GET`, `HEAD`, and `OPTIONS` share a 300 per 1s user bucket.
     Standard read throttles return `Retry-After: 1`.
   </Card>
   <Card title="Write requests" icon="pen-line">
-    `POST`, `PUT`, and `PATCH` requests share a 30 per 60s user bucket.
+    `POST`, `PUT`, and `PATCH` share a 120 per 60s user bucket.
     Throttled writes return `Retry-After: 60`.
   </Card>
   <Card title="Delete requests" icon="trash">
-    `DELETE` requests use a separate 15 per 60s user bucket. Throttled deletes
+    `DELETE` requests use a separate 60 per 60s user bucket. Throttled deletes
     return `Retry-After: 60`.
   </Card>
 </CardGroup>
@@ -178,7 +178,7 @@ Exceeding limits returns `429 rate_limit_exceeded` with `Retry-After` and a JSON
 
 <AccordionGroup>
   <Accordion title="IDs are strings">
-    All IDs are returned as strings representing bigint values. Always treat IDs as opaque strings - never parse them as numbers:
+    Treat every ID as an opaque string. IDs may use digits, UUIDs, or prefixes. Never parse them as numbers:
     ```json
     { "id": "123456789" }
     ```
@@ -239,7 +239,7 @@ Exceeding limits returns `429 rate_limit_exceeded` with `Retry-After` and a JSON
           "nextCursor": "MjAyNi0wMi0yNFQxMDozMDowMC4wMDBa..."
         }
         ```
-        Pass `nextCursor` as the `after` query parameter to fetch the next page:
+        Pass `nextCursor` as `after` for events, draws, and extractions. Pass it as `afterCursor` for drafts:
         ```bash
         curl "https://xquik.com/api/v1/events?after=MjAyNi0wMi0yNFQxMDozMDowMC4wMDBa..." \
          -H "x-api-key: xq_your_api_key_here"
@@ -313,6 +313,8 @@ Valid account monitor and webhook types: `tweet.new`, `tweet.quote`,
 `profile.protected.changed`, `profile.pinned_tweet.changed`,
 `profile.unavailable.changed`.
 
+Keyword monitors accept only the 10 `tweet.*` types above.
+
 <CardGroup cols={2}>
   <Card title="tweet.new" icon="bell">
     Original tweet posted by the monitored account or matching query. Used when
@@ -348,9 +350,9 @@ Valid account monitor and webhook types: `tweet.new`, `tweet.quote`,
     User lookups, tweet search, trends, and media downloads.
   </Card>
   <Card title="X Write Actions" icon="pen" href="/api-reference/x-write/create-tweet">
-    Post tweets, like, retweet, follow, DM, and more.
+    Create tweets, likes, retweets, follows, DMs, and profile updates.
   </Card>
   <Card title="Monitors" icon="radar" href="/api-reference/monitors/create">
-    Track X accounts and receive real-time events.
+    Check X accounts every second and receive signed webhook events.
   </Card>
 </CardGroup>

@@ -3,20 +3,18 @@ info:
   title: Xquik API
   version: '1.0'
   description: >-
-    Not affiliated with X Corp. Look up any tweet, user, or trend on X. Search
-    tweets, check follower relationships, download media, and monitor accounts
-    in real time. 33 paid-read endpoints work without a subscription through
-    prepaid credits. 7 fixed-price lookups also accept direct per-call MPP
-    payments. Write endpoints (post, like, retweet, follow, DM) and automation
-    endpoints (bulk extractions, giveaway draws, monitors, webhooks) require an
-    API key or OAuth 2.1 bearer token.
+    Xquik is an independent third-party service. Not affiliated with X Corp.
+    "Twitter" and "X" are trademarks of X Corp. Look up tweets, users, and X
+    trends. Search tweets, check follow relationships, download media, and
+    monitor accounts. 33 paid-read endpoints accept prepaid credits without a
+    subscription. 7 fixed-price lookups also accept direct MPP payments. Write
+    and automation endpoints require an API key or OAuth 2.1 bearer token.
 
 
     ## Xquik SDKs
 
 
-    All SDKs are auto-generated from this OpenAPI spec via Stainless and stay in
-    sync release-by-release. Pick your language:
+    Stainless generates each SDK from this OpenAPI schema. Pick a language:
 
 
     - TypeScript / Node.js: `npm i x-twitter-scraper` -
@@ -43,7 +41,8 @@ info:
     - PHP: `composer require xquik/x-twitter-scraper` -
       [Xquik-dev/x-twitter-scraper-php](https://github.com/Xquik-dev/x-twitter-scraper-php)
 
-    - CLI: `npm i -g x-twitter-scraper-cli` -
+    - CLI: `go install
+    github.com/Xquik-dev/x-twitter-scraper-cli/cmd/x-twitter-scraper@latest` -
       [Xquik-dev/x-twitter-scraper-cli](https://github.com/Xquik-dev/x-twitter-scraper-cli)
 
     - Terraform Provider (Terraform Registry) -
@@ -51,8 +50,8 @@ info:
 
 
     OpenClaw plugin:
-    [Xquik-dev/tweetclaw](https://github.com/Xquik-dev/tweetclaw) (`claw install
-    tweetclaw`).
+    [Xquik-dev/tweetclaw](https://github.com/Xquik-dev/tweetclaw) (`openclaw
+    plugins install clawhub:@xquik/tweetclaw`).
   x-guidance: >-
     ## Common tasks
 
@@ -108,7 +107,7 @@ info:
     ## Authentication
 
 
-    Eligible paid read endpoints accept accountless Stripe credit wallets.
+    Eligible paid read endpoints accept accountless prepaid credit wallets.
     Fixed-price lookups also accept direct MPP payments. Media downloads, write
     endpoints, and automation features require authentication. Send an Xquik API
     key through `x-api-key`, `Xquik-Api-Key`, or `Authorization: Bearer xq_...`.
@@ -173,7 +172,7 @@ tags:
   - name: Media
     description: Media upload and download
   - name: Monitors
-    description: Real-time X account monitoring
+    description: X account monitoring with 1-second checks
   - name: Subscribe
     description: Subscription, billing, and credits
   - name: Support
@@ -253,12 +252,12 @@ paths:
                       creditsPerActiveMonitorDay:
                         type: string
                         description:
-                          Estimated daily credits for 1 active instant monitor.
+                          Rounded daily estimate for 1 active monitor.
                         example: '500'
                       creditsPerActiveMonitorHour:
                         type: string
                         description:
-                          Hourly credits charged for 1 active instant monitor.
+                          Hourly credits charged for 1 active monitor.
                         example: '21'
                       eventsIncluded:
                         type: boolean
@@ -616,108 +615,69 @@ paths:
   /compose:
     post:
       operationId: compose
-      summary: Compose, refine, or score a tweet
+      summary: Build, refine, or check a post draft
+      description: >
+        Run one step of Xquik's three-step writing workflow. Compose returns
+        questions and editorial rules. Refine returns goal-specific guidance.
+        Score applies deterministic text checks. It does not predict reach or
+        expose X ranking weights.
       tags: [Composition]
       security:
         - apiKey: []
         - oauthBearer: []
       requestBody:
         required: true
-        description: Workflow step, topic, goal, and optional style parameters.
+        description: Send exactly one workflow step and its required fields.
         content:
           application/json:
             schema:
-              type: object
-              required: [step]
-              properties:
-                step:
-                  type: string
-                  enum: [compose, refine, score]
-                  description: Workflow step
-                  example: compose
-                topic:
-                  type: string
-                  description: Tweet topic (compose, refine)
-                  example: AI trends in 2025
-                goal:
-                  type: string
-                  enum: [engagement, followers, authority, conversation]
-                  description: Optimization goal
-                  example: engagement
-                draft:
-                  type: string
-                  description: Tweet draft text to evaluate (score)
-                  example: "AI is changing everything. Here's why."
-                tone:
-                  type: string
-                  description: Desired tone (refine)
-                  example: professional
-                styleUsername:
-                  type: string
-                  description:
-                    Cached style username for voice matching (compose)
-                  example: elonmusk
-                additionalContext:
-                  type: string
-                  description: Extra context or URLs (refine)
-                  example: 'https://x.com/elonmusk/status/1234567890'
-                callToAction:
-                  type: string
-                  description: Desired call to action (refine)
-                  example: Follow for more
-                mediaType:
-                  type: string
-                  enum: [photo, video, none]
-                  description: Media type (refine)
-                  example: none
-                hasLink:
-                  type: boolean
-                  description: Whether a link is attached (score)
-                  example: false
-                hasMedia:
-                  type: boolean
-                  description: Whether media is attached (score)
-                  example: false
+              oneOf:
+                - $ref: '#/components/schemas/ComposePrepareRequest'
+                - $ref: '#/components/schemas/ComposeRefineRequest'
+                - $ref: '#/components/schemas/ComposeScoreRequest'
             example:
               step: compose
-              topic: AI trends in 2025
+              topic: PostgreSQL query planning
               goal: engagement
       responses:
         '200':
-          description: Composition result
+          description: Result for the requested workflow step
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  text:
-                    type: string
-                    description: Generated or refined tweet text
-                    example:
-                      'AI is reshaping every industry. Here are 5 trends to
-                      watch in 2025.'
-                  score:
-                    type: number
-                    description: Engagement score (0-100)
-                    example: 78
-                  feedback:
-                    type: string
-                    description: AI feedback on the draft
-                    example: 'Strong hook. Consider adding a call to action.'
-                  suggestions:
-                    type: array
-                    items:
-                      type: string
-                    description: Improvement suggestions
-                    example: ['Add a thread hook', 'Include a relevant hashtag']
-                additionalProperties: true
+                oneOf:
+                  - $ref: '#/components/schemas/ComposePrepareResult'
+                  - $ref: '#/components/schemas/ComposeRefineResult'
+                  - $ref: '#/components/schemas/ComposeScoreResult'
               example:
-                text:
-                  'AI is reshaping every industry. Here are 5 trends to watch in
-                  2025.'
-                score: 78
-                feedback: 'Strong hook. Consider adding a call to action.'
-                suggestions: ['Add a thread hook', 'Include a relevant hashtag']
+                checklist:
+                  - factor: No external links in body
+                    passed: true
+                  - factor: No hashtags
+                    passed: true
+                  - factor: No excessive capitalization
+                    passed: true
+                  - factor: Length between 50 and 280 characters
+                    passed: true
+                  - factor: No excessive punctuation
+                    passed: true
+                  - factor: No emojis
+                    passed: true
+                  - factor: No em dashes or double dashes
+                    passed: true
+                  - factor: Sufficient substance
+                    passed: true
+                  - factor: Link-in-reply strategy
+                    passed: true
+                nextStep: >
+                  All 9 checks passed. Present the post with the intentUrl above
+                  for one-click posting.
+                passed: true
+                passedCount: 9
+                topSuggestion: All Xquik editorial checks passed.
+                totalChecks: 9
+                intentUrl: >-
+                  https://x.com/intent/tweet?text=PostgreSQL%2018%20reduced%20query%20latency
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -1349,7 +1309,7 @@ paths:
       operationId: createMonitor
       summary: Create monitor
       description:
-        Creates an instant monitor. Monitors are unlimited. Active monitors
+        Creates an account monitor. Monitors are unlimited. Active monitors
         check every 1 second and cost 21 credits per hour. Events and webhook
         deliveries are included. Creation requires available credits for the
         first hourly charge and username lookup.
@@ -1491,10 +1451,10 @@ paths:
       operationId: createKeywordMonitor
       summary: Create keyword monitor
       description:
-        Creates an instant keyword monitor. Keyword monitors are unlimited.
-        Active monitors check every 1 second and cost 21 credits per hour.
-        Events and webhook deliveries are included. Creation requires available
-        credits for the first hourly charge.
+        Creates a keyword monitor. Keyword monitors are unlimited. Active
+        monitors check every 1 second and cost 21 credits per hour. Events and
+        webhook deliveries are included. Creation requires available credits for
+        the first hourly charge.
       tags: [Monitors]
       security:
         - apiKey: []
@@ -2175,17 +2135,18 @@ paths:
                 targetCommunityId:
                   type: string
                   description:
-                    Required for community_post_extractor & community_search.
+                    Community ID used to price community_post_extractor or
+                    community_search.
                   example: '1500000000000000000'
                 targetListId:
                   type: string
                   description:
-                    Required for list_follower_explorer, list_member_extractor &
-                    list_post_extractor.
+                    List ID used to price list_follower_explorer,
+                    list_member_extractor, or list_post_extractor.
                   example: '1234567890'
                 targetSpaceId:
                   type: string
-                  description: Required for space_explorer.
+                  description: Space ID used to price space_explorer.
                   example: '1vOGwMdBqpwGB'
                 resultsLimit:
                   type: integer
@@ -2196,7 +2157,8 @@ paths:
                 searchQuery:
                   type: string
                   description:
-                    Required for tweet_search_extractor & community_search.
+                    Query used to price tweet_search_extractor or
+                    community_search.
                   example: 'AI trends 2025'
                 fromUser:
                   type: string
@@ -3082,13 +3044,7 @@ paths:
                 success: true
                 statusCode: 200
         '400':
-          description: Invalid webhook ID or test delivery failed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: 'webhook_test_failed'
+          $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -3140,7 +3096,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                type: object
+                additionalProperties: false
+                required: [error, statusCode, success]
+                properties:
+                  error:
+                    type: string
+                    description:
+                      Delivery failure returned by the webhook sender.
+                    example: 'Connection timed out'
+                  statusCode:
+                    type: integer
+                    description:
+                      Webhook response status, or 0 before a response.
+                    example: 0
+                  success:
+                    type: boolean
+                    const: false
               example:
                 error: 'Connection timed out'
                 statusCode: 0
@@ -3720,6 +3692,12 @@ paths:
                     $ref: '#/components/schemas/TweetDetail'
                   author:
                     $ref: '#/components/schemas/TweetAuthor'
+                    example:
+                      id: '9876543210'
+                      username: 'elonmusk'
+                      name: 'Elon Musk'
+                      followers: 150000000
+                      verified: true
               example:
                 tweet:
                   id: '1234567890'
@@ -3734,6 +3712,7 @@ paths:
                 author:
                   id: '9876543210'
                   username: 'elonmusk'
+                  name: 'Elon Musk'
                   followers: 150000000
                   verified: true
         '400':
@@ -4018,6 +3997,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatchUsers'
+              example:
+                users:
+                  - id: '9876543210'
+                    username: 'elonmusk'
+                    name: 'Elon Musk'
+                has_next_page: false
+                next_cursor: ''
+                requested_count: 2
+                processed_count: 2
+                returned_count: 1
+                unavailable_ids: ['1234567890']
+                unprocessed_ids: []
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -5176,13 +5167,23 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/ConnectAlreadyConnected'
+          description: Verification challenge is no longer active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'connection_challenge_inactive'
+                message: 'Connection challenge is no longer active.'
         '410':
           description: Verification code expired
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'connection_challenge_expired'
+                message: 'Verification code expired. Start again.'
         '422':
           $ref: '#/components/responses/ConnectLoginFailed'
         '429':
@@ -5467,6 +5468,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'invalid_range'
+                message: 'Use one valid byte range.'
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
   /support/tickets:
@@ -5501,22 +5505,37 @@ paths:
               subject: 'Cannot connect X account'
               body: 'I am unable to connect my X account. Please help.'
           multipart/form-data:
+            example:
+              subject: 'Cannot connect X account'
+              body: 'I am unable to connect my X account.'
+              attachments: ['screen.png']
             schema:
               type: object
               required: [subject]
               anyOf:
                 - required: [body]
+                  properties:
+                    body:
+                      type: string
                 - required: [attachments]
+                  properties:
+                    attachments:
+                      type: array
               properties:
                 subject:
                   type: string
+                  minLength: 1
                   maxLength: 500
+                  example: 'Cannot connect X account'
                 body:
                   type: string
                   maxLength: 10000
+                  example: 'I am unable to connect my X account.'
                 attachments:
                   type: array
+                  minItems: 1
                   maxItems: 4
+                  example: ['screen.png']
                   items:
                     type: string
                     format: binary
@@ -5533,25 +5552,33 @@ paths:
             application/json:
               schema:
                 type: object
-                properties:
-                  publicId:
-                    type: string
-                  attachments:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/SupportAttachmentReceipt'
-        '201':
-          description: Ticket created
-          content:
-            application/json:
-              schema:
-                type: object
+                required: [publicId, attachments]
                 properties:
                   publicId:
                     type: string
                     example: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
                   attachments:
                     type: array
+                    example: []
+                    items:
+                      $ref: '#/components/schemas/SupportAttachmentReceipt'
+              example:
+                publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
+                attachments: []
+        '201':
+          description: Ticket created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [publicId, attachments]
+                properties:
+                  publicId:
+                    type: string
+                    example: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
+                  attachments:
+                    type: array
+                    example: []
                     items:
                       $ref: '#/components/schemas/SupportAttachmentReceipt'
               example:
@@ -5567,6 +5594,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'idempotency_key_conflict'
+                message:
+                  'Reuse this Idempotency-Key only with the original request.'
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
     get:
@@ -5792,18 +5823,30 @@ paths:
             example:
               body: 'Thank you for the update.'
           multipart/form-data:
+            example:
+              body: 'Thank you for the update.'
+              attachments: ['details.png']
             schema:
               type: object
               anyOf:
                 - required: [body]
+                  properties:
+                    body:
+                      type: string
                 - required: [attachments]
+                  properties:
+                    attachments:
+                      type: array
               properties:
                 body:
                   type: string
                   maxLength: 10000
+                  example: 'Thank you for the update.'
                 attachments:
                   type: array
+                  minItems: 1
                   maxItems: 4
+                  example: ['details.png']
                   items:
                     type: string
                     format: binary
@@ -5812,7 +5855,7 @@ paths:
           description: Original message replayed after a safe retry
           headers:
             Idempotency-Replayed:
-              description: Present as true when replaying the same request.
+              description: Set to true when this message replays.
               schema:
                 type: string
                 const: 'true'
@@ -5820,25 +5863,33 @@ paths:
             application/json:
               schema:
                 type: object
-                properties:
-                  publicId:
-                    type: string
-                  attachments:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/SupportAttachmentReceipt'
-        '201':
-          description: Message added
-          content:
-            application/json:
-              schema:
-                type: object
+                required: [publicId, attachments]
                 properties:
                   publicId:
                     type: string
                     example: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
                   attachments:
                     type: array
+                    example: []
+                    items:
+                      $ref: '#/components/schemas/SupportAttachmentReceipt'
+              example:
+                publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
+                attachments: []
+        '201':
+          description: Message added
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [publicId, attachments]
+                properties:
+                  publicId:
+                    type: string
+                    example: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
+                  attachments:
+                    type: array
+                    example: []
                     items:
                       $ref: '#/components/schemas/SupportAttachmentReceipt'
               example:
@@ -5851,11 +5902,15 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: Idempotency-Key was reused with different content.
+          description: Reply key was reused with different message content.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'idempotency_key_conflict'
+                message:
+                  'Reuse this Idempotency-Key only with the original request.'
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
 
@@ -5894,7 +5949,7 @@ paths:
                 type: string
                 const: no-store, private
             Idempotent-Replayed:
-              description: Present as true when replaying the same request.
+              description: Set to true when this wallet creation replays.
               schema:
                 type: string
                 const: 'true'
@@ -5932,38 +5987,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'idempotency_conflict'
+                message:
+                  'Reuse this Idempotency-Key only with the original request.'
         '410':
           description: Checkout expired or can no longer be used.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'checkout_unavailable'
+                message:
+                  'Checkout unavailable. Retry with a new Idempotency-Key.'
         '413':
           description: Request body is too large.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'body_too_large'
+                message: 'Request body is too large.'
         '415':
           description: Content-Type must be application/json.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'unsupported_media_type'
+                message: 'Send Content-Type: application/json.'
         '423':
           description: Guest wallet is unavailable.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'guest_wallet_unavailable'
+                message:
+                  'Guest wallet unavailable. Create a new wallet or contact
+                  support.'
         '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+          $ref: '#/components/responses/GuestWalletRateLimited'
         '503':
           description: Guest wallet checkout is unavailable.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'guest_wallets_unavailable'
+                message: 'Guest wallet checkout is temporarily unavailable.'
   /guest-wallets/topups:
     post:
       operationId: topUpGuestWallet
@@ -5980,7 +6057,7 @@ paths:
         - $ref: '#/components/parameters/GuestIdempotencyKey'
       requestBody:
         required: true
-        description: Confirmed USD amount in cents.
+        description: Confirmed top-up amount in USD cents.
         content:
           application/json:
             schema:
@@ -5993,12 +6070,12 @@ paths:
           description: Stripe-hosted checkout and API status URL.
           headers:
             Cache-Control:
-              description: Prevents storage of the secret-bearing response.
+              description: Prevents caching the top-up checkout response.
               schema:
                 type: string
                 const: no-store, private
             Idempotent-Replayed:
-              description: Present as true when replaying the same request.
+              description: Set to true when this top-up replays.
               schema:
                 type: string
                 const: 'true'
@@ -6028,43 +6105,65 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '409':
-          description: Idempotency-Key was reused with a different request.
+          description: Top-up key was reused with a different request.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'idempotency_conflict'
+                message:
+                  'Reuse this Idempotency-Key only with the original request.'
         '410':
-          description: Checkout expired or can no longer be used.
+          description: Top-up checkout expired or became unavailable.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'checkout_unavailable'
+                message:
+                  'Checkout unavailable. Retry with a new Idempotency-Key.'
         '413':
-          description: Request body is too large.
+          description: Top-up request body is too large.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'body_too_large'
+                message: 'Request body is too large.'
         '415':
-          description: Content-Type must be application/json.
+          description: Top-up requires Content-Type application/json.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'unsupported_media_type'
+                message: 'Send Content-Type: application/json.'
         '423':
-          description: Guest wallet is unavailable.
+          description: Guest wallet cannot accept a top-up.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'guest_wallet_unavailable'
+                message:
+                  'Guest wallet unavailable. Create a new wallet or contact
+                  support.'
         '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+          $ref: '#/components/responses/GuestWalletRateLimited'
         '503':
-          description: Guest wallet checkout is unavailable.
+          description: Guest wallet top-up checkout is unavailable.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'guest_wallets_unavailable'
+                message: 'Guest wallet checkout is temporarily unavailable.'
   /guest-wallets/status:
     get:
       operationId: getGuestWalletStatus
@@ -6110,7 +6209,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+          $ref: '#/components/responses/GuestWalletRateLimited'
 
   /credits:
     get:
@@ -6297,7 +6396,7 @@ paths:
           required: true
           schema:
             type: string
-          description: Billing session ID returned by the top-up billing flow.
+          description: Top-up session ID to inspect.
       responses:
         '200':
           description: Top-up billing status
@@ -6337,7 +6436,7 @@ paths:
   /credits/quick-topup:
     post:
       operationId: quickTopUpCredits
-      summary: Instantly charge saved card for credits
+      summary: Charge saved card for credits
       tags:
         - Subscribe
       security:
@@ -6567,7 +6666,7 @@ paths:
           required: true
           schema:
             type: string
-          description: X user ID or username
+          description: Target user ID or username for the replies timeline.
         - name: cursor
           in: query
           schema:
@@ -6579,7 +6678,7 @@ paths:
           schema:
             type: boolean
             default: false
-          description: Include parent tweet for replies
+          description: Include each reply's parent tweet.
         - $ref: '#/components/parameters/TweetFilterFromUser'
         - $ref: '#/components/parameters/TweetFilterToUser'
         - $ref: '#/components/parameters/TweetFilterMentioning'
@@ -8012,7 +8111,7 @@ paths:
           required: true
           schema:
             type: string
-          description: User ID or username
+          description: Target user ID or username for follower lookup.
         - name: cursor
           in: query
           schema:
@@ -8081,7 +8180,7 @@ paths:
           deprecated: true
           schema:
             type: string
-          description: Legacy cursor alias. Prefer cursor.
+          description: Deprecated following cursor alias. Prefer cursor.
         - $ref: '#/components/parameters/FollowerPageSize'
         - name: limit
           in: query
@@ -8662,7 +8761,7 @@ components:
             billing:
               status: pending
               charged: false
-              plannedCredits: '10'
+              plannedCredits: '30'
               chargedCredits: '0'
             request:
               hash: abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789
@@ -9054,19 +9153,6 @@ components:
               value:
                 error: 'x_rate_limited'
                 message: 'Rate limited by X. Wait before retrying.'
-    TransientError:
-      description: >
-        A transient upstream issue occurred. Safe to retry with exponential
-        backoff. Returns error code `x_transient_error`.
-      content:
-        application/json:
-          schema:
-            oneOf:
-              - $ref: '#/components/schemas/Error'
-              - $ref: '#/components/schemas/XWriteActionError'
-          example:
-            error: 'x_transient_error'
-            message: 'X is temporarily unavailable. Retry after a short delay.'
     XApiError:
       description: >
         Dependency unavailable, unauthorized, or rate limited. Default v1
@@ -9197,6 +9283,22 @@ components:
             error: 'rate_limit_exceeded'
             message: 'Too many requests. Try again later.'
             retryAfter: 60
+    GuestWalletRateLimited:
+      description: Guest wallet request limit exceeded.
+      headers:
+        Retry-After:
+          description: Seconds before the next guest wallet request.
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: 'rate_limited'
+            message: 'Try again later.'
     ConnectUserLookupFailed:
       description: >
         The X username could not be resolved. Verify the handle is correct and
@@ -9233,6 +9335,272 @@ components:
             message: 'X account not found.'
 
   schemas:
+    ComposePrepareRequest:
+      type: object
+      required: [step, topic]
+      properties:
+        step:
+          type: string
+          const: compose
+        topic:
+          type: string
+          minLength: 1
+          description: Subject for the post.
+          example: PostgreSQL query planning
+        goal:
+          type: string
+          enum: [engagement, followers, authority, conversation]
+          default: engagement
+          description: Editorial goal used to order the rules and questions.
+        styleUsername:
+          type: string
+          minLength: 1
+          description: Username from a style analysis saved to this account.
+      additionalProperties: true
+    ComposeRefineRequest:
+      type: object
+      required: [step, topic, goal, tone]
+      properties:
+        step:
+          type: string
+          const: refine
+        topic:
+          type: string
+          minLength: 1
+          description: Subject for the post.
+        goal:
+          type: string
+          enum: [engagement, followers, authority, conversation]
+          description: Editorial goal for the guidance.
+        tone:
+          type: string
+          minLength: 1
+          description: Requested writing tone.
+          example: professional
+        mediaType:
+          type: string
+          enum: [photo, video, none]
+          description: Planned media type.
+        callToAction:
+          type: string
+          minLength: 1
+          description: Specific action the draft should request.
+        additionalContext:
+          type: string
+          minLength: 1
+          description: Audience, constraints, sources, or other writing context.
+      additionalProperties: true
+    ComposeScoreRequest:
+      type: object
+      required: [step, draft]
+      properties:
+        step:
+          type: string
+          const: score
+        draft:
+          type: string
+          minLength: 1
+          description: Full post text for deterministic editorial checks.
+        hasLink:
+          type: boolean
+          description: True when a separate link card is attached.
+          default: false
+        hasMedia:
+          type: boolean
+          deprecated: true
+          description: >
+            Accepted for backward compatibility. Text checks ignore this field.
+      additionalProperties: true
+    ComposeContentRule:
+      type: object
+      required: [rule]
+      properties:
+        rule:
+          type: string
+      additionalProperties: false
+    ComposeSignalLabel:
+      type: object
+      required: [action, multiplier]
+      properties:
+        action:
+          type: string
+          description: Human-readable published signal name.
+        multiplier:
+          type: string
+          const: Production weight not published by X
+      additionalProperties: false
+    ComposeScorerSignal:
+      type: object
+      required: [context, signal, weight]
+      properties:
+        context:
+          type: string
+          description: Signal direction and publication limit.
+        signal:
+          type: string
+          description: Signal name from X's public ranking repository.
+        weight:
+          type: 'null'
+          description: X does not publish the production weight.
+      additionalProperties: false
+    ComposeSavedStyle:
+      type: object
+      required: [tweetCount, username]
+      properties:
+        tweetCount:
+          type: integer
+          minimum: 0
+        username:
+          type: string
+      additionalProperties: false
+    ComposePrepareResult:
+      type: object
+      required:
+        - contentRules
+        - engagementMultipliers
+        - engagementVelocity
+        - followUpQuestions
+        - intentUrl
+        - nextStep
+        - scorerWeights
+        - source
+        - topPenalties
+      properties:
+        contentRules:
+          type: array
+          minItems: 18
+          maxItems: 18
+          items:
+            $ref: '#/components/schemas/ComposeContentRule'
+          description: Xquik editorial heuristics, ordered for the goal.
+        engagementMultipliers:
+          type: array
+          minItems: 19
+          maxItems: 19
+          items:
+            $ref: '#/components/schemas/ComposeSignalLabel'
+          description: >
+            Published engagement signal names. Production multipliers are not
+            published.
+        engagementVelocity:
+          type: string
+          description: Publication limit for timing and decay claims.
+        followUpQuestions:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            type: string
+        intentUrl:
+          type: string
+          format: uri
+          description: X post intent seeded with the topic.
+        nextStep:
+          type: string
+        scorerWeights:
+          type: array
+          minItems: 19
+          maxItems: 19
+          items:
+            $ref: '#/components/schemas/ComposeScorerSignal'
+          description: Published signal names with unpublished weights as null.
+        source:
+          type: string
+          description: Signal source and evidence limits.
+        topPenalties:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            type: string
+          description: Negative engagement predictions in the public model.
+        savedStyles:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComposeSavedStyle'
+          description: Style analyses saved to the account.
+        styleTweets:
+          type: array
+          items:
+            type: string
+          description: Cached examples for the requested style username.
+        styleNote:
+          type: string
+          description: Next action when no cached style is available.
+      additionalProperties: false
+    ComposeExamplePattern:
+      type: object
+      required: [description, pattern]
+      properties:
+        description:
+          type: string
+        pattern:
+          type: string
+      additionalProperties: false
+    ComposeRefineResult:
+      type: object
+      required: [compositionGuidance, examplePatterns, intentUrl, nextStep]
+      properties:
+        compositionGuidance:
+          type: array
+          items:
+            type: string
+          description: Goal, tone, media, and editorial guidance.
+        examplePatterns:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/ComposeExamplePattern'
+        intentUrl:
+          type: string
+          format: uri
+          description: X post intent seeded with the topic.
+        nextStep:
+          type: string
+      additionalProperties: false
+    ComposeScoreCheck:
+      type: object
+      required: [factor, passed]
+      properties:
+        factor:
+          type: string
+        passed:
+          type: boolean
+        suggestion:
+          type: string
+          description: Present only when the check fails.
+      additionalProperties: false
+    ComposeScoreResult:
+      type: object
+      required:
+        [checklist, nextStep, passed, passedCount, topSuggestion, totalChecks]
+      properties:
+        checklist:
+          type: array
+          minItems: 9
+          maxItems: 9
+          items:
+            $ref: '#/components/schemas/ComposeScoreCheck'
+          description: Deterministic editorial checks. Not a reach prediction.
+        intentUrl:
+          type: string
+          format: uri
+          description: Present only when every check passes.
+        nextStep:
+          type: string
+        passed:
+          type: boolean
+        passedCount:
+          type: integer
+          minimum: 0
+          maximum: 9
+        topSuggestion:
+          type: string
+        totalChecks:
+          type: integer
+          const: 9
+      additionalProperties: false
     XWriteActionBilling:
       type: object
       additionalProperties: false
@@ -9626,6 +9994,7 @@ components:
       description: >
         Durable failed write action with the applicable payment guidance.
     SupportAttachment:
+      description: Downloadable image or video attached to a support message.
       type: object
       required: [publicId, filename, contentType, kind, sizeBytes, status, url]
       properties:
@@ -9637,6 +10006,7 @@ components:
           example: 'screen.png'
         contentType:
           type: string
+          description: Validated media type.
           enum:
             [
               image/jpeg,
@@ -9649,18 +10019,23 @@ components:
             ]
         kind:
           type: string
+          description: Attachment media class.
           enum: [image, video]
+          example: image
         sizeBytes:
           type: integer
           format: int64
           example: 204800
         status:
           type: string
+          description: Storage processing state.
           enum: [pending, ready, failed]
+          example: ready
         url:
           type: string
           example: '/api/v1/support/attachments/att_a1b2c3d4e5f6a1b2c3d4e5f6'
     SupportAttachmentReceipt:
+      description: Attachment identifier and initial processing state.
       type: object
       required: [publicId, status]
       properties:
@@ -9670,6 +10045,7 @@ components:
         status:
           type: string
           enum: [pending, ready, failed]
+          example: pending
     PaginatedTweets:
       description: >
         Paginated tweet results. The item count can be lower than pageSize when
@@ -9744,6 +10120,10 @@ components:
       properties:
         users:
           type: array
+          example:
+            - id: '9876543210'
+              username: 'elonmusk'
+              name: 'Elon Musk'
           items:
             $ref: '#/components/schemas/UserProfile'
         has_next_page:
@@ -9760,16 +10140,19 @@ components:
           minimum: 0
           maximum: 100
           description: Number of unique IDs requested.
+          example: 2
         processed_count:
           type: integer
           minimum: 0
           maximum: 100
           description: Number of requested IDs included in the lookup.
+          example: 2
         returned_count:
           type: integer
           minimum: 0
           maximum: 100
           description: Number of user profiles returned and charged.
+          example: 1
         unavailable_ids:
           type: array
           description:
@@ -9777,6 +10160,7 @@ components:
           items:
             type: string
             pattern: '^\d+$'
+          example: ['1234567890']
         unprocessed_ids:
           type: array
           description:
@@ -9785,6 +10169,7 @@ components:
           items:
             type: string
             pattern: '^\d+$'
+          example: []
     GuestWalletAmount:
       description: Confirmed USD amount for a guest wallet purchase.
       type: object
@@ -9825,7 +10210,7 @@ components:
           type: integer
           minimum: 1000
           maximum: 25000
-          description: Confirmed USD amount in cents.
+          description: USD cents accepted for this checkout.
           example: 1000
         currency:
           type: string
@@ -10014,6 +10399,7 @@ components:
             - type: integer
               const: 2
             - type: 'null'
+          example: 2
         scope:
           type: string
           const: paid_reads
@@ -10039,6 +10425,9 @@ components:
                   type: string
                   const: /api/v1/guest-wallets/topups
             - type: 'null'
+          example:
+            method: POST
+            path: /api/v1/guest-wallets/topups
         usable:
           type: boolean
           description: Authoritative paid-read readiness. Use instead of status.
@@ -10550,6 +10939,39 @@ components:
                 - unauthenticated
                 - unsupported_field
                 - user_not_found
+                - body_too_large
+                - checkout_unavailable
+                - connection_challenge_expired
+                - connection_challenge_inactive
+                - draft_not_found
+                - favoriters_unavailable
+                - forbidden
+                - guest_wallet_unavailable
+                - guest_wallets_disabled
+                - guest_wallets_unavailable
+                - idempotency_conflict
+                - idempotency_key_conflict
+                - invalid_community_id
+                - invalid_idempotency_key
+                - invalid_list_id
+                - invalid_payment_amount
+                - invalid_range
+                - login_rate_limited
+                - missing_idempotency_key
+                - missing_ids
+                - no_cached_style
+                - passkey_required
+                - rate_limited
+                - read_request_timeout
+                - replies_incomplete
+                - support_media_rate_limit
+                - support_request_rate_limit
+                - too_many_ids
+                - unknown_field
+                - unsupported_media_type
+                - webhook_inactive
+                - write_tracking_unavailable
+                - x_write_unconfirmed
                 - x_account_feature_required
                 - x_account_protected
                 - x_account_suspended
@@ -10639,6 +11061,39 @@ components:
                     - unauthenticated
                     - unsupported_field
                     - user_not_found
+                    - body_too_large
+                    - checkout_unavailable
+                    - connection_challenge_expired
+                    - connection_challenge_inactive
+                    - draft_not_found
+                    - favoriters_unavailable
+                    - forbidden
+                    - guest_wallet_unavailable
+                    - guest_wallets_disabled
+                    - guest_wallets_unavailable
+                    - idempotency_conflict
+                    - idempotency_key_conflict
+                    - invalid_community_id
+                    - invalid_idempotency_key
+                    - invalid_list_id
+                    - invalid_payment_amount
+                    - invalid_range
+                    - login_rate_limited
+                    - missing_idempotency_key
+                    - missing_ids
+                    - no_cached_style
+                    - passkey_required
+                    - rate_limited
+                    - read_request_timeout
+                    - replies_incomplete
+                    - support_media_rate_limit
+                    - support_request_rate_limit
+                    - too_many_ids
+                    - unknown_field
+                    - unsupported_media_type
+                    - webhook_inactive
+                    - write_tracking_unavailable
+                    - x_write_unconfirmed
                     - x_account_feature_required
                     - x_account_protected
                     - x_account_suspended
@@ -10669,17 +11124,21 @@ components:
         message:
           type: string
           description: Human-readable error guidance.
+          example: 'Invalid input. Check the request body.'
         reason:
           type: string
           description: Machine-readable reason for a login cooldown.
+          example: temporary_issue
         retryAfter:
           type: integer
           minimum: 1
-          description: Required wait in seconds.
+          description: Seconds until the next permitted request.
+          example: 60
         retryAfterMs:
           type: integer
           minimum: 1
           description: Required wait in milliseconds.
+          example: 60000
     EventType:
       description: Type of monitor event fired when account activity occurs.
       type: string
@@ -11400,6 +11859,12 @@ components:
       description:
         Tweet author profile. The lookup route always includes follower count
         and verification state. Other profile fields appear when available.
+      example:
+        id: '9876543210'
+        username: 'elonmusk'
+        name: 'Elon Musk'
+        followers: 150000000
+        verified: true
       allOf:
         - $ref: '#/components/schemas/UserProfile'
         - title: TweetAuthorRequirements
@@ -11454,15 +11919,15 @@ components:
           example: false
         inReplyToId:
           type: string
-          description: Tweet ID being replied to
+          description: ID of the tweet this result replies to.
           example: '1234567890'
         inReplyToUserId:
           type: string
-          description: User ID being replied to
+          description: ID of the user this result replies to.
           example: '9876543210'
         inReplyToUsername:
           type: string
-          description: Username being replied to
+          description: Username this result replies to.
           example: 'example_user'
         conversationId:
           type: string
@@ -11476,7 +11941,7 @@ components:
           type: array
           items:
             type: integer
-          description: Start and end offsets for rendered tweet text
+          description: Rendered text's start and end offsets.
           example: [0, 31]
         contentDisclosure:
           $ref: '#/components/schemas/ContentDisclosure'
@@ -11498,11 +11963,11 @@ components:
             Search-result media attachments, omitted when no media is present
         url:
           type: string
-          description: Tweet permalink URL
+          description: Search result permalink.
           example: 'https://x.com/example_user/status/1234567890'
         lang:
           type: string
-          description: Tweet language code
+          description: Search result language code.
           example: 'en'
         likeCount:
           type: integer

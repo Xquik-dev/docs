@@ -67,7 +67,7 @@ const REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_README_SNIPPETS = [
-  '# Xquik Docs - X API, Real-Time X Data & Automation Reference',
+  '# Xquik Docs - X API, 1-Second Monitors & Automation Reference',
   'tweet search',
   'user lookup',
   'follower exports',
@@ -222,7 +222,7 @@ const REQUIRED_SDK_OVERVIEW_SNIPPETS = [
   'Cost: 1 credit per follower extracted or returned.',
   'Cost: 30 credits text-only, plus 2 credits per started MB across attached media.',
   'Cost: 10 credits per media upload plus 10 credits per',
-  'instant monitors cost 21 credits per active monitor-hour.',
+  'active monitors cost 21 credits per monitor-hour.',
   '[MCP Server](/mcp/overview)',
   'export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"',
   'OAuth 2.1 bearer tokens are supported where the generated SDK exposes `X_TWITTER_SCRAPER_BEARER_TOKEN`.',
@@ -1550,7 +1550,8 @@ const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
   '`tweet.new`',
   '`tweet.reply`',
   'Webhook operations are free.',
-  'Active instant monitors check every 1 second and cost 21 credits per active monitor-hour.',
+  'Active monitors check every second and cost 21',
+  'credits per monitor-hour.',
   'Terraform state can contain the webhook `secret` returned at creation time.',
   '`sensitive = true`',
   '## Workflow: Declare Media Tweets and Replies',
@@ -1598,6 +1599,10 @@ const REQUIRED_LLMS_SNIPPETS = [
   '`minQuotes`',
   '`anyWords`',
   '`quotesOfTweetId`',
+  '`listId`',
+  '`placeCountry`',
+  '`pointRadius`',
+  '`boundingBox`',
   '**Tweet result filters**',
   '`GET /x/users/{id}/tweets`',
   '`GET /x/tweets/{id}/quotes`',
@@ -1605,11 +1610,27 @@ const REQUIRED_LLMS_SNIPPETS = [
   'Search and read indexed public docs',
 ] as const;
 
+const REQUIRED_LLMS_RUNTIME_CONTRACT_SNIPPETS = [
+  '## Monitor Event Types (21)',
+  'Account monitors and webhooks accept all 21. Keyword monitors accept only the 10 tweet types.',
+  'Retry: up to 10 attempts. Backoff starts at 1s and caps at 60s.',
+  'Default responses always include `error`.',
+  'Retry writes only when `safeToRetry` is `true`; use a new `Idempotency-Key`.',
+] as const;
+
+const FORBIDDEN_LLMS_RUNTIME_CONTRACT_SNIPPETS = [
+  '## Monitor Event Types (4)',
+  '5 attempts max',
+  '`no_addon`',
+  '`monitor_limit_reached`',
+  'retry only on `429` and `5xx`',
+] as const;
+
 const REQUIRED_SKILL_RATE_LIMIT_SNIPPETS = [
   '### Rate limits',
-  '- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 60 per 1s user bucket.',
-  '- **Write**: `POST`, `PUT`, and `PATCH` share a 30 per 60s user bucket.',
-  '- **Delete**: `DELETE` requests use a 15 per 60s user bucket.',
+  '- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 300 per 1s user bucket.',
+  '- **Write**: `POST`, `PUT`, and `PATCH` share a 120 per 60s user bucket.',
+  '- **Delete**: `DELETE` requests use a 60 per 60s user bucket.',
   'Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header.',
 ] as const;
 
@@ -1624,67 +1645,84 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
   {
     file: 'guides/rate-limits.mdx',
     required: [
-      '**Quick answer:** 60 GET/1s, 30 POST/60s, 15 DELETE/60s per account.',
-      '`GET`, `HEAD`, and `OPTIONS` share a limit of 60 requests per 1 second.',
-      'Read tier (60 per 1s):',
-      'const readLimiter = new WindowRateLimiter(60, 1_000);',
-      'read_limiter = WindowRateLimiter(60, 1)',
-      'var readLimiter = NewWindowRateLimiter(60, time.Second)',
-      'reservoir: 60,            // 60 requests per read window',
+      '**Limits:** 300 GET/1s, 120 POST/60s, 60 DELETE/60s per account.',
+      '`GET`, `HEAD`, and `OPTIONS` share 300 requests per 1 second.',
+      'Read tier (300 per 1s):',
+      'const readLimiter = new WindowRateLimiter(300, 1_000);',
+      'read_limiter = WindowRateLimiter(300, 1)',
+      'var readLimiter = NewWindowRateLimiter(300, time.Second)',
+      'reservoir: 300,           // 300 requests per read window',
     ],
     forbidden: [
-      '10 GET/1s',
-      'limit of 10 requests per 1 second',
-      'Read tier (10 per 1s)',
-      'WindowRateLimiter(10',
-      'NewWindowRateLimiter(10',
-      'reservoir: 10',
-      '10 requests per read window',
-      '10 requests per 1s',
-      '100ms',
-      '120ms stays under 10',
+      '60 GET/1s',
+      '60 requests per 1 second',
+      'Read tier (60 per 1s)',
+      'WindowRateLimiter(60',
+      'NewWindowRateLimiter(60',
+      'reservoir: 60',
+      '60 requests per read window',
+      '60 requests per 1s',
+      '~17ms',
+      '20ms stays under 60',
     ],
   },
   {
     file: 'api-reference/overview.mdx',
     required: [
-      'Read calls are 60 per 1s, write calls are 30 per 60s, and delete calls are 15 per 60s.',
-      '`GET`, `HEAD`, and `OPTIONS` requests share a 60 per 1s user bucket.',
+      'Read calls allow 300 per 1s. Writes allow 120 per 60s. Deletes allow 60 per 60s.',
+      '`GET`, `HEAD`, and `OPTIONS` share a 300 per 1s user bucket.',
     ],
-    forbidden: ['Read calls are 10 per 1s', 'share a 10 per 1s user bucket'],
+    forbidden: ['Read calls are 60 per 1s', 'share a 60 per 1s user bucket'],
   },
   {
     file: 'quickstart.mdx',
-    required: ['60 reads/1s, 30 writes/60s, 15 deletes/60s'],
-    forbidden: ['10 reads/1s, 30 writes/60s, 15 deletes/60s'],
+    required: ['300 reads/1s, 120 writes/60s, and 60 deletes/60s'],
+    forbidden: ['60 reads/1s, 30 writes/60s, 15 deletes/60s'],
   },
   {
     file: 'guides/prefect.mdx',
-    required: ['Read endpoints share a 60 per 1s user bucket.'],
-    forbidden: ['Read endpoints share a 10 per 1s user bucket.'],
+    required: ['Read endpoints share a 300 per 1s user bucket.'],
+    forbidden: ['Read endpoints share a 60 per 1s user bucket.'],
   },
   {
     file: 'guides/troubleshooting.mdx',
     required: [
-      '`GET`, `HEAD`, and `OPTIONS` share a limit of 60 requests per 1 second.',
+      '`GET`, `HEAD`, and `OPTIONS` share 300 requests per 1 second.',
+      '`POST`, `PUT`, and `PATCH` share 120 requests per 60 seconds.',
+      '`DELETE` requests are limited to 60 requests per 60 seconds.',
     ],
     forbidden: [
-      '`GET`, `HEAD`, and `OPTIONS` share a limit of 10 requests per 1 second.',
+      '`GET`, `HEAD`, and `OPTIONS` share a limit of 60 requests per 1 second.',
+      '`POST`, `PUT`, and `PATCH` share a limit of 30 requests per 60 seconds.',
+      '`DELETE` requests are limited to 15 requests per 60 seconds.',
+    ],
+  },
+  {
+    file: 'guides/architecture.mdx',
+    required: [
+      '`GET`, `HEAD`, and `OPTIONS` share a standard user limit of 300 requests per',
+      '`POST`, `PUT`, and `PATCH` share a standard user limit of 120 requests per',
+      '`DELETE` requests are limited to 60 requests per 60 seconds.',
+    ],
+    forbidden: [
+      'standard user limit of 10 requests per',
+      'standard user limit of 30 requests per',
+      '`DELETE` requests are limited to 15 requests per 60 seconds.',
     ],
   },
   {
     file: 'skill.md',
     required: [
-      '- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 60 per 1s user bucket.',
+      '- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 300 per 1s user bucket.',
     ],
     forbidden: [
-      '- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 10 per 1s user bucket.',
+      '- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 60 per 1s user bucket.',
     ],
   },
   {
     file: 'llms.txt',
-    required: ['- Read endpoints: 60 requests per 1s (fixed window)'],
-    forbidden: ['- Read endpoints: 10 requests per 1s (fixed window)'],
+    required: ['- Read endpoints: 300 requests per 1s (fixed window)'],
+    forbidden: ['- Read endpoints: 60 requests per 1s (fixed window)'],
   },
 ] as const;
 
@@ -1693,7 +1731,7 @@ const REQUIRED_SKILL_DECISION_GUIDANCE_SNIPPETS = [
   '- **Use the REST API** for backend services, automation scripts, interval polling, file exports, and fine-grained pagination or request control.',
   '- **Use Docs MCP** for AI agents that need read-only docs search and page retrieval for API parameters, examples, error codes, billing rules, webhook setup, or SDK guidance.',
   '- **Use API MCP** for AI agents that need authenticated Xquik account actions in Claude, ChatGPT, Cursor, VS Code, Codex, and similar clients.',
-  '- **Use webhooks** when monitor events must reach an HTTPS endpoint in real time. Add them to REST or MCP workflows when pushed events are better than polling.',
+  '- **Use webhooks** when monitor events must reach an HTTPS endpoint. Add them when pushed events fit better than polling.',
 ] as const;
 
 const FORBIDDEN_SKILL_DECISION_GUIDANCE_SNIPPETS = [
@@ -1714,7 +1752,7 @@ const REQUIRED_SKILL_MCP_HANDOFF_SNIPPETS = [
   '### Connect an AI agent through MCP',
   '1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only docs search and page retrieval.',
   '2. Configure API MCP at `https://xquik.com/mcp` for live authenticated calls.',
-  '3. Use a full account key or OAuth token for 118 operations. Use an active guest key for 33 eligible GET routes.',
+  '3. Use full credentials for 119 catalog routes. Of these, 118 return JSON or text. Use REST for private support downloads. Guest keys expose 33 GET routes.',
   '4. Use `explore` to search the scoped catalog and `xquik` to run allowed requests.',
   '- Full account REST and API MCP share account state. Guest keys remain limited to wallet-backed paid reads.',
   'Refunds and disputes reconcile affected-purchase credits only. Unrelated credits remain usable.',
@@ -1740,7 +1778,7 @@ const FORBIDDEN_SKILL_MCP_HANDOFF_SNIPPETS = [
 ] as const;
 
 const REQUIRED_SKILL_CONFIDENTIALITY_SNIPPETS = [
-  "- **Trending data**: Access real-time trends across 12 regions plus radar topics from Xquik's own infrastructure.",
+  '- **Trending data**: Access current X trends across 12 regions plus Radar topics.',
 ] as const;
 
 const FORBIDDEN_SKILL_CONFIDENTIALITY_PATTERN =
@@ -1762,7 +1800,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   '`https://dashboard.xquik.com/en/account?tab=api-keys`',
   'direct client examples',
   'only when the client documents secure request headers',
-  'This is an Xquik-specific, non-OAuth fallback, not an OAuth access token.',
+  'This is an Xquik-specific fallback, not an OAuth token.',
   'Agent discovery metadata is also available at',
   '`https://xquik.com/.well-known/agent-index.json`',
   '`com.xquik/mcp`',
@@ -1778,19 +1816,20 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   '`{ "error": "Authentication required" }`',
   'API-key clients should send',
   '`x-api-key` on the first request.',
-  'Full account keys and OAuth tokens see 118 operations. Guest `paid_reads` keys see exactly 33 eligible GET routes.',
+  'Full credentials see 119 catalog routes. Of these, 118 return JSON or text through MCP.',
   'Write and media responses also use the MCP-normalized snake_case contract.',
   'Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `xquik.request()` results.',
   'REST and generated SDK pages may show camelCase fields such as `tweetId`, `writeActionId`, `chargedCredits`, `mediaId`, and `messageId`; keep MCP agents on snake_case when reading tool results.',
-  'Search the authenticated catalog. Full credentials see 118 operations. Guest keys see 33 eligible GET routes.',
-  'Free means no usage credits; the call still requires MCP authentication through an API key or OAuth Bearer token.',
-  'Search the authenticated API catalog. `explore` makes no network calls and consumes no credits.',
+  'Search the authenticated catalog. Full credentials see 119 routes. Guest keys see 33 GET routes.',
+  'The call uses no credits. MCP authentication remains required.',
+  'Search the authenticated API catalog. `explore` makes no network calls and uses no credits.',
   'has_more',
   'next_cursor',
+  'query?: Record<string, string | number | boolean>;',
   'Pass `next_cursor` back as the `cursor` query parameter',
   'Use `q` for keywords and X search operators, or pass a plain Tweet ID or X',
   'status URL when the agent receives a single stored link.',
-  'MCP server\'s `xquik.request()` tool sends that normalized contract automatically',
+  'API MCP v2.5.5 sends that contract automatically.',
   '## Agent handoff patterns',
   'MCP returns JSON.',
   'Use extraction export endpoints when you need Xquik to generate',
@@ -1912,13 +1951,15 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'Full account sessions may create account checkout after confirmation.',
   'Guest wallet creation and top-up remain direct REST after confirmation.',
   'The MCP server never starts subscriptions, checkout, top-up, or other billing mutations in response to an API error.',
-  'The REST API documents 127 operations. The full MCP catalog exposes 118 across 10 categories:',
+  'The REST API documents 127 operations. The full MCP catalog exposes 119 across 10 categories:',
+  '6 operations in `support`: create, list, read, reply, close, and download attachments.',
+  '26 operations across `x-accounts` and `x-write`:',
   '<Card title="X data reads" icon="search">',
   '38 operations in `twitter`: batch and single tweet lookup, tweet search, article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, followers, replies, communities, and lists.',
   '<Card title="X accounts and writes" icon="send">',
-  '25 operations across `x-accounts` and `x-write`: connect accounts, retry connection issues, post tweets, like, retweet, follow, remove followers, send DMs, upload media, update profiles, and manage community membership.',
+  '26 operations across `x-accounts` and `x-write`: connect accounts, resolve challenges, post tweets, like, retweet, follow, remove followers, send DMs, upload media, update profiles, and manage communities.',
   '<Card title="Monitor billing" icon="radio">',
-  'Active instant monitors cost 21 credits per active monitor-hour. Creating monitors requires enough available credits.',
+  'Active monitors cost 21 credits per monitor-hour. Creating one requires enough available credits.',
 ] as const;
 
 const REQUIRED_OAUTH_AGENT_DISCOVERY_SNIPPETS = [
@@ -2003,19 +2044,21 @@ const REQUIRED_CURRENT_MCP_CLIENT_SETUP_SNIPPETS = [
   '[Codex](https://learn.chatgpt.com/docs/extend/mcp)',
   '[Goose](https://goose-docs.ai/docs/getting-started/using-extensions/)',
   '[Roo Code](https://github.com/RooCodeInc/Roo-Code)',
-  '[Pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent)',
+  '[Pi](https://github.com/earendil-works/pi/tree/main/packages/coding-agent)',
   "Roo Code's archived final release has Streamable HTTP but no MCP OAuth provider",
   'Pi requires a separately installed and tested MCP adapter',
-  '**Settings > Apps > Advanced settings**',
-  '**Settings > Apps > Create**',
+  '**Settings > Security and login**',
+  '**Settings > Plugins**',
+  'https://chatgpt.com/plugins',
+  'https://developers.openai.com/apps-sdk/deploy/connect-chatgpt',
   'ChatGPT uses Xquik OAuth and cannot present a custom API key.',
-  '**Organization settings',
-  '**+ > Connectors**',
-  'copilot mcp add --transport http xquik https://xquik.com/mcp',
+  'Custom remote',
+  'connectors require Pro, Max, Team, or Enterprise.',
+  'an Owner or Primary Owner must add the connector first.',
+  'copilot mcp add xquik --type http --url https://xquik.com/mcp',
   'run `/mcp add`',
   'gemini mcp add --transport http xquik https://xquik.com/mcp',
-  '"type": "http"',
-  '"url": "https://xquik.com/mcp"',
+  '"httpUrl": "https://xquik.com/mcp"',
   'Run `cline mcp`',
   'QWEN_CODE_FORCE_ENCRYPTED_FILE_STORAGE=true',
   'qwen mcp add --transport http xquik https://xquik.com/mcp',
@@ -2028,11 +2071,15 @@ const REQUIRED_CURRENT_MCP_CLIENT_SETUP_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_CURRENT_MCP_CLIENT_SETUP_SNIPPETS = [
-  '**Settings > Security and login**',
-  '**Settings > Plugins**',
-  'https://chatgpt.com/plugins',
+  '**Settings > Apps > Advanced settings**',
+  '**Settings > Apps > Create**',
+  'Scan tools',
+  'Custom MCP apps are web-only.',
   '"Authorization": "Bearer ${XQUIK_API_KEY}"',
   'Claude\'s CIMD client',
+  'Free accounts can add 1 custom connector.',
+  'copilot mcp add --transport http xquik https://xquik.com/mcp',
+  'Older Gemini CLI builds also accept the legacy `httpUrl` field.',
 ] as const;
 
 const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
@@ -2045,7 +2092,7 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   'Search docs and read indexed public pages at `https://docs.xquik.com/mcp`. No auth required. Free.',
   '<Card title="API MCP Server" icon="terminal">',
   'Interact with X data at `https://xquik.com/mcp`. Use an API key or OAuth 2.1.',
-  'Full credentials search 118 operations. Guest `paid_reads` keys search 33',
+  'Full credentials search 119 catalog routes. Guest `paid_reads` keys search 33',
   '## Agent route checklist',
   '<Card title="Read docs first" icon="book-open">',
   'Use Docs MCP at `https://docs.xquik.com/mcp` for public docs, API',
@@ -2134,7 +2181,7 @@ const REQUIRED_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS = [
   '<Card title="Search docs" icon="book-open">',
   'Connect `https://docs.xquik.com/mcp`. It is read-only and requires no auth.',
   '<Card title="Run API actions" icon="terminal">',
-  'Connect `https://xquik.com/mcp`. Full credentials expose 118 operations. Guest `paid_reads` keys expose 33 eligible GET routes.',
+  'Connect `https://xquik.com/mcp`. Full credentials expose 119 catalog routes. Of these, 118 return JSON or text. Guest `paid_reads` keys expose 33 GET routes.',
   'For docs search, add `https://docs.xquik.com/mcp`.',
   'For account actions, use a full API key or OAuth login.',
   'For guest reads, activate a guest key through direct REST, then authenticate MCP with that key.',
@@ -2173,6 +2220,7 @@ const FORBIDDEN_MCP_CONTRACT_SNIPPETS = [
   "idempotency_keys: ['streamEventId']",
   'console.log(webhook.secret)',
   'console.log(test)',
+  'query?: Record<string, string>;',
 ] as const;
 
 const REQUIRED_BILLING_RECOVERY_SNIPPETS = [
@@ -2224,9 +2272,9 @@ const REQUIRED_BILLING_MONITOR_SNIPPETS = [
   '<Card title="Keyword monitor slots" icon="search">',
   'Keyword monitor slots are unlimited.',
   '<Card title="Active monitor hour" icon="clock">',
-  'Each active instant monitor costs 21 credits per active monitor-hour.',
+  'Each active monitor costs 21 credits per monitor-hour.',
   '<Card title="Check interval" icon="timer">',
-  'Instant monitors check every 1 second while active.',
+  'Active monitors check every 1 second.',
   '<Card title="Webhook and event delivery" icon="radio">',
   'Webhook and event deliveries are included in active monitor billing.',
   'Creating or reactivating an account monitor requires at least 22 available credits',
@@ -2749,10 +2797,13 @@ const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   '<Card title="400 request validation" icon="circle-alert">',
   '`invalid_json`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`',
   '<Card title="402 billing and credits" icon="credit-card">',
-  '`payment_failed`, `no_credits`, and `insufficient_credits`.',
+  '`payment_failed`,',
+  '`no_credits`, and `insufficient_credits`.',
   '<Card title="403 permissions and account health" icon="shield-alert">',
-  '`api_key_limit_reached`, `monitor_limit_reached`,',
-  '`dm_not_permitted`, `account_needs_reauth`, and `account_restricted`.',
+  '`api_key_limit_reached`, `dm_not_permitted`,',
+  '`account_needs_reauth`, and `account_restricted`.',
+  '## Common error codes',
+  'schema lists every public code.',
   '<Card title="422 write validation" icon="message-circle-warning">',
   '`x_dm_not_allowed`, `x_target_not_found`, `x_content_too_long`',
   '<Card title="202 active write" icon="clock">',
@@ -3180,9 +3231,6 @@ const REQUIRED_BILLING_ERROR_GUIDE_SNIPPETS = [
   '[subscribe](/api-reference/account/subscribe)',
   '<Card title="subscription_inactive" icon="badge-alert">',
   'Remaining credits work.',
-  '<Card title="no_addon" icon="archive">',
-  'current plans include',
-  'unlimited monitor slots.',
   '<Card title="payment_failed" icon="credit-card">',
   'Update the payment method from the',
   '<Card title="no_credits" icon="coins">',
@@ -3194,12 +3242,8 @@ const REQUIRED_BILLING_ERROR_GUIDE_SNIPPETS = [
 
 const REQUIRED_PERMISSION_ERROR_GUIDE_SNIPPETS = [
   '<Accordion title="Permission errors (403)">',
-  '`dm_not_permitted`, `account_needs_reauth`, and `account_restricted`.',
   '<Card title="api_key_limit_reached" icon="key-round">',
   'The account already has 100 active API keys.',
-  '<Card title="monitor_limit_reached" icon="users">',
-  'current plans include',
-  'unlimited monitor slots.',
   '<Card title="dm_not_permitted" icon="message-circle">',
   'DM history requires a connected account that participates in the',
   '<Card title="account_needs_reauth" icon="refresh-cw">',
@@ -3251,7 +3295,7 @@ const REQUIRED_RATE_LIMIT_ERROR_GUIDE_SNIPPETS = [
   'Wait `retryAfterMs` or the',
   '`Retry-After` header before reconnecting or reauthenticating.',
   '<Card title="x_rate_limited" icon="gauge">',
-  'Wait 2-3 minutes, avoid rapid consecutive',
+  'Follow `Retry-After`, then retry with backoff.',
   '<Card title="x_daily_limit" icon="calendar-x">',
   'Connected X account reached its daily posting limit.',
 ] as const;
@@ -3274,7 +3318,7 @@ const REQUIRED_WRITE_VALIDATION_ERROR_GUIDE_SNIPPETS = [
   '<Card title="x_content_too_long" icon="message-circle-warning">',
   'Content exceeds the character limit.',
   '<Card title="x_rejected" icon="circle-x">',
-  'wait 2-3 minutes after rapid attempts',
+  'Retry only when the durable action marks it safe.',
   '<Card title="media_download_failed" icon="image">',
   'Fix the HTTPS URL or pass the',
   'file via multipart/form-data. Do not retry the same URL.',
@@ -3294,6 +3338,8 @@ const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
   'Add a monitor addon from the dashboard.',
   'Delete a monitor or add capacity ($5/month).',
   'add capacity ($5/month per extra monitor)',
+  '`no_addon`',
+  '`monitor_limit_reached`',
   'X data source',
   'Server & upstream errors',
   'Upstream timeout or temporary failure',
@@ -7151,7 +7197,8 @@ const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
 ] as const;
 
 const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
-  'Webhooks deliver events from account or keyword monitors to your server in real time.',
+  'Account and keyword monitors check every second.',
+  'Webhooks deliver matched events',
   'Keyword monitors support tweet event types only.',
   'Output: monitor ID, username or query, and selected event types.',
   '## Choose the webhook source',
@@ -7287,11 +7334,11 @@ const REQUIRED_ARCHITECTURE_DATA_ISOLATION_SNIPPETS = [
 
 const REQUIRED_ARCHITECTURE_RATE_LIMIT_SNIPPETS = [
   '<Card title="Read bucket" icon="database">',
-  '`GET`, `HEAD`, and `OPTIONS` share a standard user limit of 10 requests per',
+  '`GET`, `HEAD`, and `OPTIONS` share a standard user limit of 300 requests per',
   '<Card title="Write bucket" icon="pen-line">',
-  '`POST`, `PUT`, and `PATCH` share a standard user limit of 30 requests per',
+  '`POST`, `PUT`, and `PATCH` share a standard user limit of 120 requests per',
   '<Card title="Delete bucket" icon="circle-x">',
-  '`DELETE` requests are limited to 15 requests per 60 seconds.',
+  '`DELETE` requests are limited to 60 requests per 60 seconds.',
   '<Card title="Retry window" icon="timer">',
   'Throttled reads return `Retry-After: 1`; throttled writes and deletes',
 ] as const;
@@ -7301,7 +7348,7 @@ const REQUIRED_ARCHITECTURE_BILLING_SNIPPETS = [
   'Starter, Pro, and Business plans run from USD 20 to USD 199 per month',
   'include monthly credits.',
   '<Card title="Active monitors" icon="radio">',
-  'Monitor slots are unlimited. Active instant monitors check every 1 second',
+  'Monitor slots are unlimited. Active monitors check every 1 second',
   'cost 21 credits per active monitor-hour.',
   '<Card title="Credit top-ups" icon="wallet">',
   'Top up from USD 10.',
@@ -7343,7 +7390,7 @@ const REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS = [
   '`410 Gone` exhausts immediately;',
   'other failures retry until delivered or exhausted.',
   '<Card title="Monitor slots" icon="activity">',
-  'Active instant monitors check every 1 second',
+  'Active monitors check every 1 second',
   'cost 21 credits per active monitor-hour.',
 ] as const;
 
@@ -7642,8 +7689,8 @@ const REQUIRED_COMPOSE_STYLE_SNIPPETS = [
   'styleTweets',
   'styleNote',
   'Present when `styleUsername` matches a cached style.',
-  '`compose` returns algorithm rules, follow-up questions, and an `intentUrl` built from the topic',
-  'Compose responses can include `savedStyles`, `styleTweets`, or `styleNote` depending on the cached style state.',
+  '`ComposeRequest` drives a 3-step writing flow.',
+  'Compose responses may include `savedStyles`, `styleTweets`, or',
 ] as const;
 
 const FORBIDDEN_DM_HISTORY_SDK_EXAMPLE_SNIPPETS = [
@@ -7677,8 +7724,8 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   'Handoff: proof exports',
   '- **Direct messages:** `GET /x/dm/{userId}/history`.',
   'outbound `messageId`, and success',
-  '- **Real-time monitoring:** `POST /monitors` or `POST /monitors/keywords`.',
-  'Signed webhook payloads and delivery IDs',
+  '- **1-second monitoring:** `POST /monitors` or `POST /monitors/keywords`.',
+  'Signed payloads and delivery IDs',
   '- **AI agent handoff:** `xquik.request(...)`.',
   '- **Saved file exports:** `GET /extractions/{id}/export`.',
   '`GET /extractions/{id}/export`',
@@ -7928,7 +7975,7 @@ const REQUIRED_NO_CODE_WORKFLOW_HANDOFF_SNIPPETS = [
   'title: No-Code Workflow Handoff',
   'Connect Xquik monitor webhooks, extraction jobs, tweet search pages, and follower exports to Zapier, Make, Pipedream, n8n, Sheets, CRM, and queue workflows.',
   '## Pick the Handoff Lane',
-  '<Card title="Instant Monitor Events" icon="radio">',
+  '<Card title="Monitor Event Webhooks" icon="radio">',
   '`POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`',
   '`POST /api/v1/webhooks`',
   '<Card title="Bulk Export Jobs" icon="database">',
@@ -7938,7 +7985,7 @@ const REQUIRED_NO_CODE_WORKFLOW_HANDOFF_SNIPPETS = [
   '`GET /api/v1/x/tweets/search`',
   '<Card title="Replay and Repair" icon="history">',
   '`GET /api/v1/events` and `GET /api/v1/webhooks/{id}/deliveries`',
-  '## Instant Monitor Trigger',
+  '## Monitor Event Trigger',
   '/api/v1/webhooks/15/test',
   '`deliveryId` as the per-endpoint retry key',
   'and `streamEventId` when one',
@@ -9291,7 +9338,7 @@ const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
   'Return the complete action record. Read the confirmed resource ID from result.id.',
   'Keep full DM bodies out of shared outputs.',
   '`tweet_action` stays hidden or disabled unless `HERMES_TWEET_ENABLE_ACTIONS=true`.',
-  'Hermes Tweet includes 106 agent-callable Xquik endpoints generated from the OpenAPI contract. The catalog includes 7 MPP-tagged read endpoints at fixed prices.',
+  'Hermes Tweet includes 102 agent-callable Xquik routes generated from the OpenAPI contract. The catalog includes 7 MPP-tagged read routes at fixed prices.',
 ] as const;
 
 const REQUIRED_TWEETCLAW_GUIDE_SNIPPETS = [
@@ -10478,7 +10525,7 @@ const REQUIRED_AUDIENSE_ALTERNATIVE_SNIPPETS = [
   'Use Audiense influencer views, filters, affinity sorting, uniqueness sorting, and paid-plan XLS export.',
   'Use follower exports, tweet search, verified follower exports, and engagement fields to build your own scoring model.',
   'Audiense prioritizes influencer discovery. Xquik prioritizes data ownership and downstream automation.',
-  'Use keyword monitors, tweet search exports, signed webhooks, and `GET /events` for real-time records.',
+  'Use 1-second keyword monitors, tweet search exports, signed webhooks, and `GET /events` for stored records.',
   'Audiense pricing',
   'Audiense data sources',
   'Audiense report exports',
@@ -11666,6 +11713,27 @@ describe('repository discovery', (): void => {
     expect(llms.length).toBeLessThanOrEqual(MAX_LLMS_TXT_CHARS);
   });
 
+  it('keeps llms.txt runtime contracts current', (): void => {
+    expect.assertions(1);
+
+    const llms = readFileSync('llms.txt', 'utf8');
+    const findings = collectSnippetFindings(
+      llms,
+      'llms.txt runtime contracts',
+      REQUIRED_LLMS_RUNTIME_CONTRACT_SNIPPETS,
+    );
+
+    for (const snippet of FORBIDDEN_LLMS_RUNTIME_CONTRACT_SNIPPETS) {
+      if (llms.includes(snippet)) {
+        findings.push({
+          issue: `llms.txt contains stale runtime wording "${snippet}".`,
+        });
+      }
+    }
+
+    expect(findings).toStrictEqual([]);
+  });
+
   it('keeps MCP response-contract docs aligned with product behavior', (): void => {
     expect.assertions(1);
 
@@ -11730,12 +11798,12 @@ describe('repository discovery', (): void => {
     if (geminiStart < 0 || geminiEnd < 0) {
       findings.push({ issue: 'MCP client setup is missing the Gemini CLI tab.' });
     } else if (
-      !geminiSource.includes('"type": "http"') ||
-      !geminiSource.includes('"url": "https://xquik.com/mcp"') ||
-      geminiSource.includes('"httpUrl": "https://xquik.com/mcp"')
+      !geminiSource.includes('"httpUrl": "https://xquik.com/mcp"') ||
+      geminiSource.includes('"type": "http"') ||
+      geminiSource.includes('"url": "https://xquik.com/mcp"')
     ) {
       findings.push({
-        issue: 'Gemini CLI setup must use url with type http.',
+        issue: 'Gemini CLI setup must use httpUrl for Streamable HTTP.',
       });
     }
 

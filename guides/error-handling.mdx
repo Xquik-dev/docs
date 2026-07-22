@@ -12,10 +12,10 @@ Use each `error` code to choose recovery.
 
 <CardGroup cols={3}>
   <Card title="Getting 400?" icon="circle-x">
-    Fix your request body. See [validation errors](#error-codes-detailed).
+    Fix your request body. See [validation errors](#common-error-codes).
   </Card>
   <Card title="Getting 401 or 402?" icon="credit-card">
-    Read the challenge and payment options. Never start checkout automatically. See [error details](#error-codes-detailed).
+    Read the challenge and payment options. Never start checkout automatically. See [common errors](#common-error-codes).
   </Card>
   <Card title="Getting 429?" icon="gauge">
     Implement backoff. See [retry strategy](#retry-with-exponential-backoff) or [rate limits](/guides/rate-limits).
@@ -40,14 +40,14 @@ Start with the HTTP family. Retry only when a card says so.
   </Card>
   <Card title="402 billing and credits" icon="credit-card">
     Retry: no. Read `payment_options`, then get explicit user confirmation.
-    Covers `no_subscription`, `subscription_inactive`, `no_addon`,
-    `payment_failed`, `no_credits`, and `insufficient_credits`.
+    Covers `no_subscription`, `subscription_inactive`, `payment_failed`,
+    `no_credits`, and `insufficient_credits`.
   </Card>
   <Card title="403 permissions and account health" icon="shield-alert">
     Retry: no. Delete an extra key, check billing status, use a participating
     DM account, re-authenticate the X account, or resolve account health on
-    x.com. Covers `api_key_limit_reached`, `monitor_limit_reached`,
-    `dm_not_permitted`, `account_needs_reauth`, and `account_restricted`.
+    x.com. Covers `api_key_limit_reached`, `dm_not_permitted`,
+    `account_needs_reauth`, and `account_restricted`.
   </Card>
   <Card title="404 missing resource" icon="search-x">
     Retry: no. Verify the resource ID, connected account, username, tweet ID,
@@ -84,15 +84,19 @@ Start with the HTTP family. Retry only when a card says so.
   </Card>
 </CardGroup>
 
-## Error codes (detailed)
+## Common error codes
 
-**Response format:**
+This section covers common recovery paths. The OpenAPI
+[`Error`](https://docs.xquik.com/openapi.yaml) schema lists every public code.
+
+**Default response:**
 
 ```json
 { "error": "error_code", "message": "Human-readable description" }
 ```
 
-Some errors include additional context fields (e.g. `limit`, `retryAfter`).
+Send `xquik-api-contract: 2026-04-29` for a structured `error` object. Some
+responses also include `message`, `reason`, `retryAfter`, or `retryAfterMs`.
 
 <AccordionGroup>
   <Accordion title="Validation errors (400)">
@@ -192,10 +196,6 @@ Some errors include additional context fields (e.g. `limit`, `retryAfter`).
       <Card title="subscription_inactive" icon="badge-alert">
         Plan inactive. Remaining credits work. Top up or reactivate on the [billing page](https://dashboard.xquik.com/en/account?tab=subscription).
       </Card>
-      <Card title="no_addon" icon="archive">
-        Legacy monitor add-on state. Check billing status; current plans include
-        unlimited monitor slots.
-      </Card>
       <Card title="payment_failed" icon="credit-card">
         Payment processing failed. Update the payment method from the
         [dashboard](https://xquik.com/subscription).
@@ -221,10 +221,6 @@ Some errors include additional context fields (e.g. `limit`, `retryAfter`).
       <Card title="api_key_limit_reached" icon="key-round">
         The account already has 100 active API keys. Revoke an active key
         before creating another.
-      </Card>
-      <Card title="monitor_limit_reached" icon="users">
-        Legacy monitor slot limit. Check billing status; current plans include
-        unlimited monitor slots.
       </Card>
       <Card title="dm_not_permitted" icon="message-circle">
         DM history requires a connected account that participates in the
@@ -334,8 +330,8 @@ Some errors include additional context fields (e.g. `limit`, `retryAfter`).
         that supports the requested content length.
       </Card>
       <Card title="x_rejected" icon="circle-x">
-        X rejected the write without a specific reason. Change the request,
-        wait 2-3 minutes after rapid attempts, then retry changed content.
+        X rejected the write without a specific reason. Change the request.
+        Retry only when the durable action marks it safe.
       </Card>
       <Card title="media_download_failed" icon="image">
         Public media URL could not be downloaded. Fix the HTTPS URL or pass the
@@ -374,8 +370,7 @@ Some errors include additional context fields (e.g. `limit`, `retryAfter`).
         `Retry-After` header before reconnecting or reauthenticating.
       </Card>
       <Card title="x_rate_limited" icon="gauge">
-        X throttled the write. Wait 2-3 minutes, avoid rapid consecutive
-        requests to the same account, then retry with backoff.
+        X throttled the write. Follow `Retry-After`, then retry with backoff.
       </Card>
       <Card title="x_daily_limit" icon="calendar-x">
         Connected X account reached its daily posting limit. Wait 24 hours
@@ -501,16 +496,17 @@ When a request is rate limited, Xquik returns `429 Too Many Requests` with a
 
 <AccordionGroup>
   <Accordion title="Distinguish client errors from server errors">
-    **4xx errors** (except 429) indicate a problem with your request. Fix the request before retrying. **5xx errors** and **429** are transient. Retry with backoff.
+    Do not retry a `4xx` response unchanged. Fix authentication, billing,
+    permissions, or input first. Retry `429` and `5xx` only as described above.
   </Accordion>
   <Accordion title="Log error codes for debugging">
-    Always log the full error response including status code and error body. This makes it easy to diagnose issues in production.
+    Log the status and error code. Never log credentials or private payloads.
   </Accordion>
   <Accordion title="Handle 409 gracefully">
     `monitor_already_exists` is not a failure. The monitor you need already exists. List monitors to find it instead of treating this as an error.
   </Accordion>
   <Accordion title="Set request timeouts">
-    Set a 30-second timeout on all API requests. If a request hangs, retry it rather than waiting indefinitely.
+    Set a bounded client timeout. Use status endpoints for long-running jobs.
   </Accordion>
   <Accordion title="Use idempotent operations">
     Creating a monitor for the same username returns `409`. Deleting a non-existent resource returns `404`. Both are safe to retry.

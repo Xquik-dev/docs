@@ -452,7 +452,7 @@ Copy-pasteable TypeScript helpers for common Xquik API objects. Use these for pr
       intentUrl: string;
       nextStep: string;
       savedStyles?: { tweetCount: number; username: string }[];
-      scorerWeights: { signal: string; weight: number; context: string }[];
+      scorerWeights: { signal: string; weight: null; context: string }[];
       source: string;
       styleNote?: string;
       styleTweets?: string[];
@@ -513,9 +513,27 @@ Copy-pasteable TypeScript helpers for common Xquik API objects. Use these for pr
 
     // ─── Error Response ──────────────────────────────────────
 
+    type ApiErrorType =
+      | "api_error"
+      | "authentication_error"
+      | "billing_error"
+      | "dependency_error"
+      | "invalid_request_error"
+      | "permission_error"
+      | "rate_limit_error";
+
+    interface StructuredApiError {
+      message: string;
+      type: ApiErrorType;
+      code: string;
+    }
+
     interface ApiError {
-      error: string;
-      limit?: number; // only present for monitor_limit_reached
+      error: string | StructuredApiError;
+      message?: string;
+      reason?: string;
+      retryAfter?: number;
+      retryAfterMs?: number;
     }
     ```
   </Tab>
@@ -589,6 +607,7 @@ Copy-pasteable TypeScript helpers for common Xquik API objects. Use these for pr
       additionalContext?: string;
       callToAction?: string;
       hasLink?: boolean;
+      /** @deprecated Accepted for compatibility. Text checks ignore it. */
       hasMedia?: boolean;
       mediaType?: MediaType;
       draft?: string;
@@ -622,7 +641,7 @@ Copy-pasteable TypeScript helpers for common Xquik API objects. Use these for pr
       | "profile.pinned_tweet.changed"
       | "profile.unavailable.changed";
 
-    // The data field contains the raw tweet object from the X real-time stream.
+    // The data field contains the tweet object stored with the monitor event.
     interface TweetEventData {
       id: string;
       text: string;
@@ -723,7 +742,7 @@ Copy-pasteable TypeScript helpers for common Xquik API objects. Use these for pr
 ## REST API vs MCP Field Naming
 
 <Info>
-  REST examples show the default v1 response contract unless they explicitly send `xquik-api-contract: 2026-04-29`. The MCP server's `xquik.request()` tool sends that normalized contract automatically in v2.5.4. MCP results use snake_case, date-time fields as Unix seconds, structured errors, `has_more`, and `next_cursor`. Pass `next_cursor` as `cursor` on most X data pages, as `after` for draws, extractions, events, and radar, or as `afterCursor` for drafts. A default `createdAt` field becomes `created`.
+  REST examples show the default v1 response contract unless they send `xquik-api-contract: 2026-04-29`. API MCP v2.5.5 sends that contract automatically. MCP results use snake_case, Unix timestamps, structured errors, `has_more`, and `next_cursor`. Pass `next_cursor` as `cursor` on most X data pages. Use `after` for draws, extractions, events, and radar. Use `afterCursor` for drafts. A default `createdAt` field becomes `created`.
 </Info>
 
 ## Type reference
@@ -794,7 +813,13 @@ Direct X data lookup types. `Tweet` and `TweetAuthor` are returned by the tweet 
 
 ### Compose
 
-`ComposeRequest` drives the 3-step tweet composition flow: `compose` returns algorithm rules, follow-up questions, and an `intentUrl` built from the topic; `refine` returns composition guidance and example patterns; `score` evaluates a draft's quality. `styleUsername` accepts a cached style username for voice matching. Compose responses can include `savedStyles`, `styleTweets`, or `styleNote` depending on the cached style state.
+`ComposeRequest` drives a 3-step writing flow. `compose` returns editorial rules,
+follow-up questions, published signal names, and a topic `intentUrl`. Production
+signal weights are `null` because X does not publish them. `refine` returns
+writing guidance and 3 example patterns. `score` runs 9 deterministic text
+checks. These checks do not predict reach. `styleUsername` selects a cached
+style. Compose responses may include `savedStyles`, `styleTweets`, or
+`styleNote`.
 
 ### X Write
 

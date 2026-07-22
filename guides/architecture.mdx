@@ -29,7 +29,7 @@ Xquik is a hosted SaaS platform for X (Twitter) data. All data processing happen
            │                      │
 ┌──────────▼──────────┐  ┌───────▼─────────────────┐
 │     Database        │  │   Xquik Stream Service   │
-│                     │  │  Real-time event         │
+│                     │  │  Monitor event           │
 │                     │  │  processing & webhooks   │
 └─────────────────────┘  └───────┬─────────────────┘
                                  │
@@ -149,7 +149,7 @@ Xquik uses a flat permission model: no roles, no RBAC, no team workspaces.
 - **One user, one account**: Each account has full access to all its own resources
 - **API key scope**: A valid account API key can perform API-key-authorized operations for that account
 - **API key management**: Listing, creating, and revoking keys require a same-origin dashboard session. API keys and OAuth bearer tokens cannot manage keys
-- **Credit gates**: Creating extractions, draws, active monitors, media downloads, and X lookups require enough available credits. All webhook operations (create, read, update, delete, deliveries, test) are always free. Reading, updating, deleting, exporting, and testing existing extractions, draws, monitors, and stored events is always free. Active instant monitors cost 21 credits per hour while enabled.
+- **Credit gates**: Creating extractions, draws, active monitors, media downloads, and X lookups require enough available credits. All webhook operations are free. Reading and managing stored jobs, monitors, and events is free. Active monitors cost 21 credits per hour.
 
 ## Rate limits
 
@@ -157,15 +157,15 @@ Rate limits are enforced per user account using a **fixed-window counter** algor
 
 <CardGroup cols={2}>
   <Card title="Read bucket" icon="database">
-    `GET`, `HEAD`, and `OPTIONS` share a standard user limit of 10 requests per
+    `GET`, `HEAD`, and `OPTIONS` share a standard user limit of 300 requests per
     1 second.
   </Card>
   <Card title="Write bucket" icon="pen-line">
-    `POST`, `PUT`, and `PATCH` share a standard user limit of 30 requests per
+    `POST`, `PUT`, and `PATCH` share a standard user limit of 120 requests per
     60 seconds.
   </Card>
   <Card title="Delete bucket" icon="circle-x">
-    `DELETE` requests are limited to 15 requests per 60 seconds.
+    `DELETE` requests are limited to 60 requests per 60 seconds.
   </Card>
   <Card title="Retry window" icon="timer">
     Throttled reads return `Retry-After: 1`; throttled writes and deletes
@@ -185,7 +185,7 @@ See the [Rate Limits](/guides/rate-limits) guide for detailed explanations, back
     include monthly credits.
   </Card>
   <Card title="Active monitors" icon="radio">
-    Monitor slots are unlimited. Active instant monitors check every 1 second
+    Monitor slots are unlimited. Active monitors check every 1 second
     and cost 21 credits per active monitor-hour.
   </Card>
   <Card title="Credit top-ups" icon="wallet">
@@ -220,7 +220,7 @@ See [Billing & Usage](/guides/billing) for credit costs and billing.
 
 ## Monitoring architecture
 
-Xquik monitors X accounts and keyword queries in real time through a dedicated background service.
+Xquik checks active account and keyword monitors every second.
 
 ```text
 X Data Stream
@@ -286,7 +286,7 @@ X Data Stream
     other failures retry until delivered or exhausted.
   </Card>
   <Card title="Monitor slots" icon="activity">
-    Monitor slots are unlimited. Active instant monitors check every 1 second
+    Monitor slots are unlimited. Active monitors check every 1 second
     and cost 21 credits per active monitor-hour.
   </Card>
 </CardGroup>

@@ -1,9 +1,11 @@
-# Xquik Docs - X API, Real-Time X Data & Automation Reference
+# Xquik Docs - X API, 1-Second Monitors & Automation Reference
 
 > **Xquik is an independent third-party service.** Not affiliated with X Corp.
 > "Twitter" and "X" are trademarks of X Corp.
 
-Public documentation for [Xquik](https://xquik.com), the X (Twitter) real-time data and automation platform. Built on [Mintlify](https://mintlify.com), deployed at **[docs.xquik.com](https://docs.xquik.com)**.
+Public documentation for [Xquik](https://xquik.com), an X data and automation
+platform. Built on [Mintlify](https://mintlify.com). Deployed at
+**[docs.xquik.com](https://docs.xquik.com)**.
 
 This repository powers the developer reference for the Xquik REST API, webhooks, MCP server, OAuth 2.1, SDKs, glossary, comparison guides, and how-to guides. Use it to find request and response details for tweet search, user lookup, follower exports, media uploads, direct messages, 1-second tweet monitors, signed webhooks, SDK clients, and X automation tasks.
 
@@ -20,7 +22,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 - [Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow) - send DMs and store returned message IDs.
 - [Prefect](https://docs.xquik.com/guides/prefect) - schedule tweet, user, timeline, and trend reads in Prefect flows.
 - [MCP Server](https://docs.xquik.com/mcp) - connect AI clients through their current OAuth or secure API-key path.
-- [Webhooks](https://docs.xquik.com/webhooks/overview) - verify HMAC signatures and receive real-time X events.
+- [Webhooks](https://docs.xquik.com/webhooks/overview) - verify HMAC signatures and receive monitor events.
 - [Apify Actors](https://docs.xquik.com/alternatives/apify) - run X tweet and follower export jobs on Apify.
 - [llms.txt](https://docs.xquik.com/llms.txt) - give AI coding agents the docs index.
 
@@ -50,7 +52,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 
 - **REST API** - 127 operations spanning account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
 - **Webhooks** - HMAC SHA-256 signature verification, retry semantics, payload schemas.
-- **MCP server** - 118 full-scope operations or 33 guest `paid_reads` GET routes through 2 code-mode tools.
+- **MCP server** - 119 full-scope catalog routes or 33 guest `paid_reads` GET routes through 2 code-mode tools. Binary support downloads use REST.
 - **OAuth 2.1** - Automatic discovery, CIMD, DCR fallback, Authorization Code + PKCE, and token refresh.
 - **Guides** - Workflows, error handling, rate limits, billing, trends, extraction workflow, architecture, troubleshooting, types, webhook testing, and framework integrations.
 - **SDKs** - 10 generated client libraries (TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI as Go binary, Terraform provider) with auto-pagination, retry, and typed responses.

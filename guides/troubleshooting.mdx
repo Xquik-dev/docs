@@ -49,7 +49,8 @@ Ask the user to choose an option and amount before creating checkout. Never trig
 
 ### Monitor Credits
 
-Monitor slots are unlimited. Active instant monitors cost 21 credits per hour and require available credits while enabled.
+Monitor slots are unlimited. Active monitors cost 21 credits per hour. They
+require available credits while enabled.
 
 ```json
 { "error": "insufficient_credits", "message": "Insufficient credits" }
@@ -68,13 +69,13 @@ You've exceeded the API rate limit. The API uses fixed windows per tier:
 
 <CardGroup cols={3}>
   <Card title="Read" icon="database">
-    `GET`, `HEAD`, and `OPTIONS` share a limit of 60 requests per 1 second.
+    `GET`, `HEAD`, and `OPTIONS` share 300 requests per 1 second.
   </Card>
   <Card title="Write" icon="pen-line">
-    `POST`, `PUT`, and `PATCH` share a limit of 30 requests per 60 seconds.
+    `POST`, `PUT`, and `PATCH` share 120 requests per 60 seconds.
   </Card>
   <Card title="Delete" icon="circle-x">
-    `DELETE` requests are limited to 15 requests per 60 seconds.
+    `DELETE` requests are limited to 60 requests per 60 seconds.
   </Card>
 </CardGroup>
 
@@ -83,7 +84,7 @@ Solutions:
 - Respect `Retry-After`; otherwise start at 1 second, add jitter, and stop after 3 retries.
 - Requests sent before the fixed window resets keep returning `429` until `Retry-After` elapses.
 - Check the `Retry-After` header for the server-recommended wait time.
-- Use webhooks instead of polling. Webhooks push events to you in real time, eliminating the need for repeated API calls.
+- Use webhooks instead of polling. They push detected events without repeated event-list calls.
 - Batch your logic. Fetch events once per minute instead of once per second.
 
 See the [Rate Limits](/guides/rate-limits) guide for backoff code examples.
@@ -185,7 +186,7 @@ Xquik has 2 MCP servers. Choose based on what the agent needs to do.
     Connect `https://docs.xquik.com/mcp`. It is read-only and requires no auth.
   </Card>
   <Card title="Run API actions" icon="terminal">
-    Connect `https://xquik.com/mcp`. Full credentials expose 118 operations. Guest `paid_reads` keys expose 33 eligible GET routes.
+    Connect `https://xquik.com/mcp`. Full credentials expose 119 catalog routes. Of these, 118 return JSON or text. Guest `paid_reads` keys expose 33 GET routes.
   </Card>
 </CardGroup>
 
@@ -226,8 +227,9 @@ Xquik supports CIMD and DCR. Let the client use its documented registration
 flow. Claude selects CIMD when the authorization metadata advertises support
 and the public `none` authentication method; otherwise it can use DCR. ChatGPT
 app creators choose CIMD or DCR during setup. If a URL-form `client_id` fails,
-its public HTTPS metadata URL must have a non-root path, return JSON without a
-redirect, repeat the exact URL in `client_id`, and list the callback in
+its public HTTPS metadata URL must include an explicit path. A trailing `/` is
+sufficient. It must return JSON
+without a redirect. Repeat the exact URL in `client_id`. List the callback in
 `redirect_uris`.
 
 ### Codex OAuth issuer validation error
