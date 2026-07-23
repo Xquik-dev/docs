@@ -1,0 +1,67 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { describe, expect, it } from 'vitest';
+
+const ROOT = process.cwd();
+
+function read(relativePath: string): string {
+  return readFileSync(join(ROOT, relativePath), 'utf8');
+}
+
+const RADAR_PAGE = read('api-reference/radar/list.mdx');
+const TYPES_GUIDE = read('guides/types.mdx');
+const OPENAPI = read('openapi.yaml');
+const NORMALIZED_RADAR_PAGE = RADAR_PAGE.replaceAll(/\s+/gu, ' ');
+const NORMALIZED_TYPES_GUIDE = TYPES_GUIDE.replaceAll(/\s+/gu, ' ');
+
+const REQUIRED_RADAR_PAGE_COPY = [
+  'When `sourceFormat` is `rss`, rich fields are unavailable.',
+  '`estimatedUpvotes` and `estimatedDownvotes` as estimates',
+  'Comment bodies are not returned.',
+  '`xHandle` | Founder X username without `@`',
+  '`metadata.rank` is the source\'s revenue rank',
+  'The top-level `imageUrl` contains the startup logo',
+  '"source": "github"',
+  '"sourceId": "github_12345"',
+] as const;
+
+const REQUIRED_OPENAPI_COPY = [
+  'subredditSubscribers?, sourceFormat, score?, upvoteRatio?',
+  'estimatedUpvotes?, estimatedDownvotes?, numberComments?',
+  'Comment bodies are not included.',
+  'foundedDate?, googleSearchImpressionsLast30Days?',
+  'profitMarginLast30Days?, rank?, revenuePerVisitor?',
+  'For the startup growth source, xHandle is the founder\'s X username',
+  'description: Source image. Startup growth items return the logo here.',
+] as const;
+
+describe('Radar documentation contract', (): void => {
+  it('documents rich Reddit and startup growth metadata', (): void => {
+    expect.assertions(REQUIRED_RADAR_PAGE_COPY.length + 2);
+
+    for (const snippet of REQUIRED_RADAR_PAGE_COPY) {
+      expect(NORMALIZED_RADAR_PAGE).toContain(snippet);
+    }
+    expect(NORMALIZED_TYPES_GUIDE).toContain(
+      'Reddit metadata can include post text, links, and media. It can also include public scores, estimated vote counts, and comment counts.',
+    );
+    expect(NORMALIZED_TYPES_GUIDE).toContain(
+      'Startup growth metadata can include reported growth and revenue. Company details and a founder `xHandle` appear when available.',
+    );
+  });
+
+  it('locks the machine-readable metadata contract', (): void => {
+    expect.assertions(REQUIRED_OPENAPI_COPY.length);
+
+    for (const snippet of REQUIRED_OPENAPI_COPY) {
+      expect(OPENAPI).toContain(snippet);
+    }
+  });
+
+  it('rejects the retired example source identifier', (): void => {
+    expect.assertions(1);
+
+    expect(RADAR_PAGE).not.toContain('"source": "dev"');
+  });
+});

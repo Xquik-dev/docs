@@ -23,7 +23,7 @@ Reach for Xquik when:
 - **Monitoring accounts**: Check specific X accounts every second for supported events.
 - **Setting up webhooks**: Receive monitor events through HMAC-signed HTTPS payloads.
 - **Running giveaway draws**: Execute transparent, auditable random draws on tweets with public result pages.
-- **Composing posts**: Get editorial guidance and deterministic draft checks.
+- **Composing posts**: Get editorial guidance, Radar research suggestions, and deterministic draft checks.
 - **Connecting AI agents**: Use Docs MCP for no-auth docs search and page retrieval, and API MCP for authenticated account actions.
 - **Running accountless reads**: Use a Stripe-funded guest `paid_reads` key on 33 GET routes or direct MPP on 7 fixed-price operations.
 - **Analyzing styles**: Analyze tweet styles, compare accounts, track engagement performance, or save drafts.
@@ -58,7 +58,7 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 - **X Data**: User lookups, tweet search, trends, media downloads, threads, replies, quotes, and relationships.
 - **X Write**: Post tweets, like, retweet, follow, DM, update profiles, upload media, and manage communities.
 - **Account and Billing**: Account info, credits, API keys, drafts, styles, and subscriptions.
-- **Compose**: Editorial guidance and deterministic draft checks.
+- **Compose**: Editorial guidance, source-specific Radar suggestions, and deterministic draft checks.
 - **Styles**: Analyze tweet styles, compare accounts, and track performance.
 - **Radar**: Trending topics and news from Xquik's own infrastructure.
 
@@ -126,9 +126,10 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 ### Build a post draft
 
 1. Call `POST /api/v1/compose` with `step: "compose"`.
-2. Refine with `step: "refine"` and the selected goal, tone, topic, and media strategy.
-3. Score a draft with `step: "score"`.
-4. Revise only the failed editorial checks.
+2. If fresh context helps, call one returned `radarRecommendations` endpoint.
+3. Call `refine` with goal, tone, topic, and selected `additionalContext`.
+4. Score a draft with `step: "score"`.
+5. Revise only the failed editorial checks.
 
 ### Direct message handoff
 

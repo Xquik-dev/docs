@@ -13,14 +13,15 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **Free.** This endpoint does not consume credits.
 </Callout>
 
-Use 3 calls. The endpoint returns guidance and checks. It does not write or
-publish the final post.
+Use 3 Compose calls. The endpoint returns guidance and checks. It does not write
+or publish the final post.
 
 ## Workflow
 
 1. Call `compose` with a topic.
-2. Call `refine` with the topic, goal, and tone.
-3. Write a draft. Call `score` with the full text.
+2. If fresh context helps, fetch one suggested `radarRecommendations` endpoint.
+3. Pass selected facts to `refine` with the topic, goal, and tone.
+4. Write a draft. Call `score` with the full text.
 
 The guidance uses Xquik editorial heuristics. It does not predict reach. X does
 not publish its production ranking weights.
@@ -29,7 +30,8 @@ not publish its production ranking weights.
 
 <Tabs>
   <Tab title="1. Compose">
-    Returns 18 editorial rules and 4 follow-up questions.
+    Returns 18 editorial rules, 4 follow-up questions, and 7 source-specific
+    Radar recommendations.
 
     <CodeGroup>
     ```bash
@@ -149,7 +151,8 @@ Send either an API key or an authenticated session cookie.
 </ParamField>
 
 <ParamField body="additionalContext" type="string">
-  Optional audience, constraint, or source context for `refine`.
+  Optional audience, constraint, or source context for `refine`. Include selected
+  facts from a recommended Radar endpoint when current context helps.
 </ParamField>
 
 <ParamField body="draft" type="string">
@@ -180,6 +183,26 @@ Send either an API key or an authenticated session cookie.
   4 questions for the next writing step.
 </ResponseField>
 
+<ResponseField name="radarRecommendations" type="object[]" required>
+  7 source-specific suggestions for researching a fresh post angle.
+</ResponseField>
+
+<ResponseField name="radarRecommendations[].endpoint" type="string" required>
+  Radar endpoint for the suggested source.
+</ResponseField>
+
+<ResponseField name="radarRecommendations[].guidance" type="string" required>
+  Source-specific instructions for using returned facts.
+</ResponseField>
+
+<ResponseField name="radarRecommendations[].source" type="string" required>
+  Radar source identifier.
+</ResponseField>
+
+<ResponseField name="radarRecommendations[].useFor" type="string" required>
+  Current-topic research that the source supports.
+</ResponseField>
+
 <ResponseField name="engagementMultipliers" type="object[]" required>
   19 published signal names. Every `multiplier` states that X does not publish
   the production weight.
@@ -207,7 +230,7 @@ Send either an API key or an authenticated session cookie.
 </ResponseField>
 
 <ResponseField name="nextStep" type="string" required>
-  Exact fields required for the `refine` call.
+  Optional Radar research guidance and exact fields required for `refine`.
 </ResponseField>
 
 <ResponseField name="savedStyles" type="object[]">
@@ -278,7 +301,7 @@ These are Xquik style checks. They are not X ranking guarantees.
     { "factor": "Link-in-reply strategy", "passed": true }
   ],
   "intentUrl": "https://x.com/intent/tweet?text=...",
-  "nextStep": "All 9 checks passed. Present the post with the intentUrl above for one-click posting.",
+  "nextStep": "All 9 checks passed. Get an account from GET /api/v1/x/accounts. Then send the draft to POST /api/v1/x/tweets. The intentUrl also supports one-click posting.",
   "passed": true,
   "passedCount": 9,
   "topSuggestion": "All Xquik editorial checks passed.",
@@ -326,6 +349,7 @@ These are Xquik style checks. They are not X ranking guarantees.
 </Tabs>
 
 <Note>
-  Save accepted text with [Create Draft](/api-reference/drafts/create). Analyze
-  a reference voice with [Analyze Style](/api-reference/styles/analyze).
+  Research current context with [Radar](/api-reference/radar/list). Save accepted
+  text with [Create Draft](/api-reference/drafts/create). Analyze a reference
+  voice with [Analyze Style](/api-reference/styles/analyze).
 </Note>

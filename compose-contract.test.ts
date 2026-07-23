@@ -19,7 +19,10 @@ const RELATED_GUIDES = [
 ].join('\n');
 
 const REQUIRED_PAGE_COPY = [
-  'Returns 18 editorial rules and 4 follow-up questions.',
+  'Returns 18 editorial rules, 4 follow-up questions, and 7 source-specific',
+  '<ResponseField name="radarRecommendations" type="object[]" required>',
+  '<ResponseField name="radarRecommendations[].endpoint" type="string" required>',
+  'Optional Radar research guidance and exact fields required for `refine`.',
   'Runs 9 deterministic text checks.',
   'It does not predict reach.',
   'production ranking weights.',
@@ -63,7 +66,7 @@ describe('compose documentation contract', (): void => {
   });
 
   it('locks the OpenAPI variants and exact check count', (): void => {
-    expect.assertions(8);
+    expect.assertions(11);
 
     expect(OPENAPI).toContain("$ref: '#/components/schemas/ComposePrepareRequest'");
     expect(OPENAPI).toContain("$ref: '#/components/schemas/ComposeRefineRequest'");
@@ -71,6 +74,13 @@ describe('compose documentation contract', (): void => {
     expect(OPENAPI).toContain("$ref: '#/components/schemas/ComposePrepareResult'");
     expect(OPENAPI).toContain("$ref: '#/components/schemas/ComposeRefineResult'");
     expect(OPENAPI).toContain("$ref: '#/components/schemas/ComposeScoreResult'");
+    expect(OPENAPI).toContain('ComposeRadarRecommendation:');
+    expect(OPENAPI).toContain(
+      "$ref: '#/components/schemas/ComposeRadarRecommendation'",
+    );
+    expect(OPENAPI).toMatch(
+      /radarRecommendations:[\s\S]*?minItems: 7[\s\S]*?maxItems: 7/gu,
+    );
     expect(OPENAPI).toContain('const: Production weight not published by X');
     expect(OPENAPI).toMatch(/ComposeScoreResult:[\s\S]*?const: 9/gu);
   });

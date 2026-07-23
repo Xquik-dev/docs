@@ -443,6 +443,13 @@ Copy-pasteable TypeScript helpers for common Xquik API objects. Use these for pr
 
     // ─── Compose ──────────────────────────────────────────────
 
+    interface RadarRecommendation {
+      endpoint: string;
+      guidance: string;
+      source: RadarSource;
+      useFor: string;
+    }
+
     // step="compose" response
     interface ComposeTweetResult {
       contentRules: { rule: string }[];
@@ -451,6 +458,7 @@ Copy-pasteable TypeScript helpers for common Xquik API objects. Use these for pr
       followUpQuestions: string[];
       intentUrl: string;
       nextStep: string;
+      radarRecommendations: RadarRecommendation[];
       savedStyles?: { tweetCount: number; username: string }[];
       scorerWeights: { signal: string; weight: null; context: string }[];
       source: string;
@@ -797,7 +805,14 @@ Direct X data lookup types. `Tweet` and `TweetAuthor` are returned by the tweet 
 
 ### Radar
 
-`RadarItem` represents a single trending topic or news item from Xquik's own infrastructure. The `source` field identifies the Radar stream, and the `metadata` object contains stream-specific fields such as author, category, language, score, volume, views, or community signals when available. `RadarList` wraps paginated responses from `GET /api/v1/radar`. Use `nextCursor` with the `after` query parameter to fetch subsequent pages.
+`RadarItem` represents a single trending topic or news item from Xquik's own
+infrastructure. The `source` field identifies the Radar stream. Reddit metadata
+can include post text, links, and media. It can also include public scores,
+estimated vote counts, and comment counts. It never includes comment bodies.
+Startup growth metadata can include reported growth and revenue. Company details
+and a founder `xHandle` appear when available.
+`RadarList` wraps paginated responses from `GET /api/v1/radar`. Use
+`nextCursor` with the `after` query parameter to fetch subsequent pages.
 
 ### Styles
 
@@ -813,12 +828,14 @@ Direct X data lookup types. `Tweet` and `TweetAuthor` are returned by the tweet 
 
 ### Compose
 
-`ComposeRequest` drives a 3-step writing flow. `compose` returns editorial rules,
-follow-up questions, published signal names, and a topic `intentUrl`. Production
-signal weights are `null` because X does not publish them. `refine` returns
-writing guidance and 3 example patterns. `score` runs 9 deterministic text
-checks. These checks do not predict reach. `styleUsername` selects a cached
-style. Compose responses may include `savedStyles`, `styleTweets`, or
+`ComposeRequest` drives a 3-step writing flow. `compose` returns editorial rules
+and follow-up questions. It also returns 7 `radarRecommendations`, published
+signal names, and a topic `intentUrl`. Each recommendation identifies its
+endpoint, source, use case, and drafting guidance. Production signal weights are
+`null` because X does not publish them. `refine` returns writing guidance and 3
+example patterns. `score` runs 9 deterministic text checks. These checks do not
+predict reach. `styleUsername` selects a cached style.
+Compose responses may include `savedStyles`, `styleTweets`, or
 `styleNote`.
 
 ### X Write

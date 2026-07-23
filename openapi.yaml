@@ -618,9 +618,9 @@ paths:
       summary: Build, refine, or check a post draft
       description: >
         Run one step of Xquik's three-step writing workflow. Compose returns
-        questions and editorial rules. Refine returns goal-specific guidance.
-        Score applies deterministic text checks. It does not predict reach or
-        expose X ranking weights.
+        questions, editorial rules, and source-specific Radar recommendations.
+        Refine returns goal-specific guidance. Score applies deterministic text
+        checks. It does not predict reach or expose X ranking weights.
       tags: [Composition]
       security:
         - apiKey: []
@@ -670,8 +670,10 @@ paths:
                   - factor: Link-in-reply strategy
                     passed: true
                 nextStep: >
-                  All 9 checks passed. Present the post with the intentUrl above
-                  for one-click posting.
+                  All 9 checks passed. Get an account from GET
+                  /api/v1/x/accounts. Then send the draft to POST
+                  /api/v1/x/tweets. The intentUrl also supports one-click
+                  posting.
                 passed: true
                 passedCount: 9
                 topSuggestion: All Xquik editorial checks passed.
@@ -9420,6 +9422,32 @@ components:
         rule:
           type: string
       additionalProperties: false
+    ComposeRadarRecommendation:
+      type: object
+      required: [endpoint, guidance, source, useFor]
+      properties:
+        endpoint:
+          type: string
+          description: Radar endpoint for this source.
+        guidance:
+          type: string
+          description: Source-specific drafting guidance.
+        source:
+          type: string
+          enum:
+            [
+              reddit,
+              github,
+              trustmrr,
+              hacker_news,
+              google_trends,
+              wikipedia,
+              polymarket,
+            ]
+        useFor:
+          type: string
+          description: Current-topic research this source supports.
+      additionalProperties: false
     ComposeSignalLabel:
       type: object
       required: [action, multiplier]
@@ -9464,6 +9492,7 @@ components:
         - followUpQuestions
         - intentUrl
         - nextStep
+        - radarRecommendations
         - scorerWeights
         - source
         - topPenalties
@@ -9499,6 +9528,13 @@ components:
           description: X post intent seeded with the topic.
         nextStep:
           type: string
+        radarRecommendations:
+          type: array
+          minItems: 7
+          maxItems: 7
+          items:
+            $ref: '#/components/schemas/ComposeRadarRecommendation'
+          description: Sources and guidance for researching a fresh post angle.
         scorerWeights:
           type: array
           minItems: 19
@@ -12300,13 +12336,56 @@ components:
           type: object
           description: |
             Source-specific fields. Shape varies per source:
-            - reddit: { subreddit: string, author: string }
+            - reddit: { author, authorId?, subreddit, subredditId?,
+              subredditSubscribers?, sourceFormat, score?, upvoteRatio?,
+              estimatedUpvotes?, estimatedDownvotes?, numberComments?,
+              numberCrossposts?, selftext?, contentUrl?, domain?, postHint?,
+              linkFlairText?, distinguished?, totalAwardsReceived?, viewCount?,
+              editedAt?, galleryImageUrls?, redditVideo?, archived?, contestMode?,
+              isCrosspostable?, isMeta?, isNsfw?, isOriginalContent?,
+              isRobotIndexable?, isSelf?, isSpoiler?, isVideo?, locked?,
+              stickied? }. `score` is Reddit's public net score. Exact public
+              upvote and downvote counts are not available. Estimated counts
+              derive from the public score and upvote ratio, which Reddit may
+              fuzz. Comment bodies are not included. Rich fields are absent when
+              `sourceFormat` is `rss`.
             - github: { starsToday: number }
             - hacker_news: { points: number, numberComments: number }
             - google_trends: { approxTraffic: number }
             - polymarket: { volume24hr: number }
             - wikipedia: { views: number }
-            - trustmrr: { mrr, growthPercent, last30Days, total, customers, activeSubscriptions, onSale, xHandle?, category?, askingPrice?, country?, growthMrrPercent?, multiple?, paymentProvider?, rank? }
+            - trustmrr: { mrr, growthPercent, last30Days, total, customers, activeSubscriptions, onSale, xHandle?, category?, askingPrice?, country?, foundedDate?, googleSearchImpressionsLast30Days?, growthMrrPercent?, multiple?, paymentProvider?, profitMarginLast30Days?, rank?, revenuePerVisitor?, targetAudience?, visitorsLast30Days? }
+            For the startup growth source, xHandle is the founder's X username
+            without @. The rank field is the source's revenue rank. Result order
+            represents reported 30-day revenue-growth rank.
+          properties:
+            author:
+              type: string
+            contentUrl:
+              type: string
+              format: uri
+            estimatedDownvotes:
+              type: integer
+              minimum: 0
+            estimatedUpvotes:
+              type: integer
+              minimum: 0
+            numberComments:
+              type: integer
+              minimum: 0
+            score:
+              type: integer
+            selftext:
+              type: string
+            sourceFormat:
+              type: string
+              enum: [json, rss]
+            subreddit:
+              type: string
+            upvoteRatio:
+              type: number
+              minimum: 0
+              maximum: 1
           additionalProperties: true
         publishedAt:
           type: string
@@ -12321,6 +12400,7 @@ components:
           example: 'AI is transforming every industry'
         imageUrl:
           type: string
+          description: Source image. Startup growth items return the logo here.
           example: 'https://example.com/images/ai.jpg'
 
     XAccount:

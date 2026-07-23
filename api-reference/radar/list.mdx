@@ -26,7 +26,9 @@ Radar is authenticated but free. It does not require an active subscription and 
 ## Query parameters
 
 <ParamField query="source" type="string">
-  Filter by Radar source identifier. Omit to return all available streams. Use the `source` value returned on radar items when you need to poll one stream.
+  Filter by Radar source identifier: `reddit`, `github`, `trustmrr`,
+  `hacker_news`, `google_trends`, `wikipedia`, or `polymarket`. Omit to return
+  all available streams.
 </ParamField>
 
 <ParamField query="category" type="string">
@@ -82,7 +84,8 @@ Radar is authenticated but free. It does not require an active subscription and 
 </ResponseField>
 
 <ResponseField name="imageUrl" type="string">
-  Image URL. Omitted when unavailable.
+  Source image URL. Startup growth items return the logo here. Omitted when
+  unavailable.
 </ResponseField>
 
 <ResponseField name="source" type="string" required>
@@ -105,7 +108,7 @@ Radar is authenticated but free. It does not require an active subscription and 
   BCP-47 language code (e.g. `en`, `tr`, `ja`).
 </ResponseField>
 
-<ResponseField name="score" type="integer" required>
+<ResponseField name="score" type="number" required>
   Relevance score (0-10,000). Higher is more trending.
 </ResponseField>
 
@@ -123,19 +126,61 @@ Radar is authenticated but free. It does not require an active subscription and 
 
 ## Metadata
 
-The `metadata` object contains stream-specific fields. Common fields include:
+Use `source` to interpret `metadata`. Multiword fields use camelCase in the
+default REST response and snake_case through API MCP.
 
-| Field | Description |
-|-------|-------------|
-| `author` | Source author or publisher handle when available |
-| `category` | Additional stream category when available |
-| `language` | Language or programming language when available |
-| `numberComments` | Comment count when available |
-| `points` | Stream score or point count when available |
-| `starsToday` | Daily star count when available |
-| `subreddit` | Community identifier when available |
-| `views` | View count when available |
-| `volume24hr` | 24-hour volume when available |
+### Reddit
+
+Every Reddit item identifies `author`, `subreddit`, and `sourceFormat`. JSON
+items can include richer post content, media, and engagement data. When
+`sourceFormat` is `rss`, rich fields are unavailable.
+
+| Fields | Description |
+|--------|-------------|
+| `author`, `authorId` | Author username and optional Reddit author ID |
+| `subreddit`, `subredditId`, `subredditSubscribers` | Community name, ID, and subscriber count |
+| `sourceFormat` | `json` for rich items or `rss` for fallback items |
+| `score`, `upvoteRatio` | Reddit's public net score and public upvote ratio |
+| `estimatedUpvotes`, `estimatedDownvotes` | Estimates derived from score and ratio |
+| `numberComments`, `numberCrossposts`, `totalAwardsReceived`, `viewCount` | Available engagement counts |
+| `selftext`, `contentUrl`, `domain`, `postHint`, `linkFlairText`, `distinguished` | Available post text, destination, and labels |
+| `editedAt` | ISO 8601 edit timestamp when available |
+| `galleryImageUrls` | Available gallery image URLs |
+| `redditVideo` | Video details such as fallback URL, duration, dimensions, bitrate, audio, and GIF status |
+| `archived`, `contestMode`, `isCrosspostable`, `isMeta`, `isNsfw`, `isOriginalContent`, `isRobotIndexable`, `isSelf`, `isSpoiler`, `isVideo`, `locked`, `stickied` | Post state flags |
+
+Exact public upvote and downvote counts are unavailable. Treat
+`estimatedUpvotes` and `estimatedDownvotes` as estimates because Reddit may fuzz
+the public score and ratio. `numberComments` is a count. Comment bodies are not
+returned.
+
+### Startup Growth
+
+Startup growth items always include `mrr`, `growthPercent`, `last30Days`,
+`total`, `customers`, `activeSubscriptions`, and `onSale`.
+
+| Fields | Description |
+|--------|-------------|
+| `xHandle` | Founder X username without `@` |
+| `category`, `country`, `foundedDate`, `targetAudience` | Available company details |
+| `askingPrice`, `multiple`, `paymentProvider` | Available sale and payment details |
+| `growthMrrPercent`, `profitMarginLast30Days`, `revenuePerVisitor` | Available reported growth and efficiency metrics |
+| `googleSearchImpressionsLast30Days`, `visitorsLast30Days` | Available 30-day acquisition metrics |
+| `rank` | Source revenue rank |
+
+Radar orders these items by reported 30-day revenue growth. `metadata.rank` is
+the source's revenue rank. It can differ from the result position. The top-level
+`imageUrl` contains the startup logo when available.
+
+### Other Sources
+
+| Source | Metadata |
+|--------|----------|
+| `github` | `starsToday` |
+| `hacker_news` | `points`, `numberComments` |
+| `google_trends` | `approxTraffic` |
+| `polymarket` | `volume24hr` |
+| `wikipedia` | `views` |
 
 ## Examples
 
@@ -208,9 +253,9 @@ for _, item := range data.Items {
           "title": "Open-source deployment platform launches preview environments",
           "description": "A self-hosted platform adds preview environments and edge functions.",
           "url": "https://example.com/radar/items/12345",
-          "source": "dev",
-          "sourceId": "dev_12345",
-          "category": "tech",
+          "source": "github",
+          "sourceId": "github_12345",
+          "category": "dev",
           "region": "global",
           "language": "en",
           "score": 450,
