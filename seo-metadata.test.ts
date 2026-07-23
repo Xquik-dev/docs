@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 
 const MIN_DESCRIPTION_LENGTH = 50;
 const MAX_DESCRIPTION_LENGTH = 160;
+const SITE_DESCRIPTION =
+  'Search tweets, export followers, retrieve X/Twitter timelines, and automate webhooks with Xquik developer tools. Not affiliated with X Corp.';
 
 interface NavigationGroup {
   readonly anchors?: readonly NavigationItem[];
@@ -15,7 +17,18 @@ interface NavigationGroup {
 type NavigationItem = string | NavigationGroup;
 
 interface DocsConfig {
+  readonly description: string;
+  readonly metadata: {
+    readonly 'og:description': string;
+    readonly timestamp: boolean;
+  };
   readonly navigation: NavigationGroup;
+  readonly search: {
+    readonly prompt: string;
+  };
+  readonly seo: {
+    readonly indexing: string;
+  };
 }
 
 interface MetadataFinding {
@@ -55,11 +68,12 @@ function frontmatterValue(metadata: string, key: string): string | undefined {
   return match?.[1] ?? match?.[2] ?? match?.[3]?.trim();
 }
 
+function loadDocsConfig(): DocsConfig {
+  return JSON.parse(readFileSync('docs.json', 'utf8')) as DocsConfig;
+}
+
 function navigationPages(): readonly string[] {
-  const docsConfig = JSON.parse(
-    readFileSync('docs.json', 'utf8'),
-  ) as DocsConfig;
-  return [...new Set(flattenNavigationPages(docsConfig.navigation))];
+  return [...new Set(flattenNavigationPages(loadDocsConfig().navigation))];
 }
 
 function collectMetadataFindings(): readonly MetadataFinding[] {
@@ -103,6 +117,25 @@ function collectMetadataFindings(): readonly MetadataFinding[] {
 }
 
 describe('SEO metadata', (): void => {
+  it('keeps site discovery metadata specific and intentionally indexed', (): void => {
+    expect.assertions(1);
+
+    const config = loadDocsConfig();
+    expect({
+      description: config.description,
+      indexing: config.seo.indexing,
+      openGraphDescription: config.metadata['og:description'],
+      searchPrompt: config.search.prompt,
+      timestamps: config.metadata.timestamp,
+    }).toStrictEqual({
+      description: SITE_DESCRIPTION,
+      indexing: 'navigable',
+      openGraphDescription: SITE_DESCRIPTION,
+      searchPrompt: 'Search tweet, follower, timeline, SDK, and webhook docs...',
+      timestamps: true,
+    });
+  });
+
   it('keeps every navigation page title and description usable for search previews', (): void => {
     expect.assertions(1);
 
