@@ -9301,7 +9301,7 @@ const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
   'Hermes Tweet is the native Hermes Agent plugin for using Xquik as a structured X automation toolset.',
   'hermes plugins install Xquik-dev/hermes-tweet --enable',
   'uv pip install --python ~/.hermes/hermes-agent/venv/bin/python hermes-tweet',
-  'The current package version is `0.1.8`.',
+  'The current package version is `0.1.11`.',
   'The plugin name is `hermes-tweet`, and the Python entry point is `hermes-tweet = hermes_tweet`.',
   '<Card title="tweet_explore" icon="search">',
   'Search the bundled Xquik endpoint catalog without making an API call.',
@@ -9338,15 +9338,17 @@ const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
   'Return the complete action record. Read the confirmed resource ID from result.id.',
   'Keep full DM bodies out of shared outputs.',
   '`tweet_action` stays hidden or disabled unless `HERMES_TWEET_ENABLE_ACTIONS=true`.',
-  'Hermes Tweet includes 102 agent-callable Xquik routes generated from the OpenAPI contract. The catalog includes 7 MPP-tagged read routes at fixed prices.',
+  'Hermes Tweet includes 102 agent-callable Xquik endpoints.',
+  'OpenAPI generates the catalog.',
+  'The catalog includes 7 MPP-tagged read endpoints at fixed prices.',
 ] as const;
 
 const REQUIRED_TWEETCLAW_GUIDE_SNIPPETS = [
   'TweetClaw is the official OpenClaw plugin for using Xquik from an OpenClaw agent.',
   'openclaw plugins install @xquik/tweetclaw',
-  'openclaw plugins install @xquik/tweetclaw@1.6.37 --pin',
+  'openclaw plugins install @xquik/tweetclaw@1.6.40 --pin',
   '`@xquik/tweetclaw` is the official package. The plugin id is `tweetclaw`.',
-  'The current published npm version and source-truth version are both `1.6.37`.',
+  'The current published npm version and source-truth version are both `1.6.40`.',
   'MPP lets TweetClaw call 7 read-only X API endpoints at fixed prices without an Xquik account or API key.',
   'Use a guest `paid_reads` key when the workflow needs the broader 33-route prepaid catalog.',
   '<Card title="explore" icon="search">',
@@ -9385,7 +9387,7 @@ const REQUIRED_TWEETCLAW_GUIDE_SNIPPETS = [
   'Return the complete action record. Read the confirmed resource ID from result.id.',
   'Keep full DM bodies out of shared outputs.',
   'Only change `baseUrl` for a self-hosted Xquik-compatible API.',
-  'TweetClaw exposes 99 agent-callable endpoints across 9 categories.',
+  'TweetClaw exposes 102 agent-callable endpoints across 9 categories.',
   '<Card title="account" icon="user">',
   '1 endpoint for account status and usage.',
   '<Card title="composition" icon="pen-line">',
@@ -9393,11 +9395,11 @@ const REQUIRED_TWEETCLAW_GUIDE_SNIPPETS = [
   '<Card title="extraction" icon="file-spreadsheet">',
   '9 endpoints for extraction jobs, giveaway draws, and exports.',
   '<Card title="monitoring" icon="radio">',
-  '18 endpoints for account monitors, keyword monitors, events, and webhooks.',
+  '19 endpoints for account monitors, keyword monitors, events, and webhooks.',
   '<Card title="twitter" icon="search">',
-  '37 endpoints for search, lookups, timelines, articles, trends, bookmarks,',
+  '38 endpoints for search, lookups, timelines, articles, trends, bookmarks,',
   '<Card title="x-write" icon="send">',
-  '18 endpoints for post, reply, like, retweet, follow, remove follower, DM,',
+  '19 endpoints for post, reply, like, retweet, follow, remove follower, DM,',
   'TweetClaw keeps credentials in plugin config and injects auth at request time.',
   'OpenClaw approval prompts apply before write-like `tweetclaw` calls.',
   'Dashboard-only account-admin, billing, support-ticket, and raw credential flows are excluded',
@@ -15102,7 +15104,7 @@ describe('repository discovery', (): void => {
       ),
     ).toStrictEqual([]);
     expect(source).not.toContain('The current package version is `0.1.5`');
-    expect(source).not.toContain('The current package version is `0.1.6`');
+    expect(source).not.toContain('The current package version is `0.1.8`');
     expect(source).not.toContain('Hermes Tweet includes 100');
     expect(source).not.toContain('tweet_action` stays enabled');
   });
@@ -15119,8 +15121,8 @@ describe('repository discovery', (): void => {
         REQUIRED_TWEETCLAW_GUIDE_SNIPPETS,
       ),
     ).toStrictEqual([]);
-    expect(source).not.toContain('@xquik/tweetclaw@1.6.30');
-    expect(source).not.toContain('TweetClaw exposes 101 agent-callable');
+    expect(source).not.toContain('@xquik/tweetclaw@1.6.37');
+    expect(source).not.toContain('TweetClaw exposes 99 agent-callable');
     expect(source).not.toContain(
       'For tweets or replies, call `POST /api/v1/x/tweets` with uploaded media IDs',
     );
