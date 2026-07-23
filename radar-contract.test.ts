@@ -16,7 +16,10 @@ const NORMALIZED_RADAR_PAGE = RADAR_PAGE.replaceAll(/\s+/gu, ' ');
 const NORMALIZED_TYPES_GUIDE = TYPES_GUIDE.replaceAll(/\s+/gu, ' ');
 
 const REQUIRED_RADAR_PAGE_COPY = [
-  'When `sourceFormat` is `rss`, rich fields are unavailable.',
+  'server-rendered post data',
+  '`html` for current rich items',
+  '`json` and `rss` identify legacy rows',
+  '`und` means the source did not identify a language.',
   '`estimatedUpvotes` and `estimatedDownvotes` as estimates',
   'Comment bodies are not returned.',
   '`xHandle` | Founder X username without `@`',
@@ -30,6 +33,8 @@ const REQUIRED_OPENAPI_COPY = [
   'subredditSubscribers?, sourceFormat, score?, upvoteRatio?',
   'estimatedUpvotes?, estimatedDownvotes?, numberComments?',
   'Comment bodies are not included.',
+  'enum: [html, json, rss]',
+  'Current items use html.',
   'foundedDate?, googleSearchImpressionsLast30Days?',
   'profitMarginLast30Days?, rank?, revenuePerVisitor?',
   'For the startup growth source, xHandle is the founder\'s X username',
