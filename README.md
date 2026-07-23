@@ -37,16 +37,25 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 - [auth.md](https://xquik.com/auth.md) - read CIMD, DCR, PKCE, and MCP authorization instructions.
 - [OpenAPI spec](https://docs.xquik.com/openapi.yaml) - generate clients or inspect request and response shapes.
 
-## Common jobs
+## Common Questions
 
-- Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
-- Fetch tweet threads, read quotes, and inspect replies.
-- Look up users, export followers, list following, and check relationships.
-- Upload media, create tweets, send DMs with returned message IDs, and update profiles.
-- Track new tweets with 1-second monitors and signed webhook delivery.
-- Export results as JSON, CSV, XLSX, or Markdown.
-- Run [X Tweet Scraper](https://apify.com/xquik/x-tweet-scraper) and [X Follower Scraper](https://apify.com/xquik/x-follower-scraper) Actors for Apify dataset workflows.
-- Compare Xquik with X API, social schedulers, data tools, and automation platforms.
+| Customer Question | Documentation |
+| --- | --- |
+| How do I search tweets through an API? | [Search Tweets API](https://docs.xquik.com/api-reference/x/search-tweets) |
+| How do I export tweet search results? | [Tweet Search Export](https://docs.xquik.com/guides/tweet-search-export) |
+| How do I read an account timeline? | [User Tweets API](https://docs.xquik.com/api-reference/x/user-tweets) |
+| How do I export followers? | [Follower Export Guide](https://docs.xquik.com/guides/follower-export-crm) |
+| How do I scrape following accounts? | [Following API](https://docs.xquik.com/api-reference/x/following) |
+| How do I read my home timeline? | [Home Timeline API](https://docs.xquik.com/api-reference/x/timeline) |
+| How do I monitor accounts or keywords? | [Brand Monitoring Guide](https://docs.xquik.com/guides/brand-monitoring-workflow) |
+| How do I verify signed webhooks? | [Webhook Guide](https://docs.xquik.com/webhooks/overview) |
+| How do I post or reply? | [Create Tweet API](https://docs.xquik.com/api-reference/x-write/create-tweet) |
+| How do I send DMs with returned message IDs? | [Direct Message Workflow](https://docs.xquik.com/guides/direct-message-workflow) |
+| How do I run Apify dataset workflows? | [X Tweet Scraper](https://apify.com/xquik/x-tweet-scraper) or [X Follower Scraper](https://apify.com/xquik/x-follower-scraper) |
+| How does Xquik compare with the X API? | [X API Alternative Guide](https://docs.xquik.com/alternatives/x-api) |
+| How can an AI agent use Xquik? | [MCP Server Guide](https://docs.xquik.com/mcp) |
+
+Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
 
 ## What's covered
 
@@ -115,3 +124,5 @@ To report a vulnerability in the docs site or in any documented endpoint behavio
 ## License
 
 The docs source is published under the MIT License. See [LICENSE](LICENSE) if present, or treat the repository contents as MIT-licensed for the purpose of citing or quoting documentation in third-party material. The Xquik product, brand, and platform are not covered by this license.
+
+Xquik is an independent third-party service. Not affiliated with X Corp. "Twitter" and "X" are trademarks of X Corp.
