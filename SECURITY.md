@@ -2,9 +2,11 @@
 
 Thank you for taking the time to report a vulnerability responsibly.
 
-## Reporting a vulnerability
+## Reporting a Vulnerability
 
-For any security issue affecting **docs.xquik.com**, the documented behaviour of the Xquik REST API, the Xquik MCP server, OAuth 2.1 flow, webhook signature scheme, or any published Xquik SDK, please **email [security@xquik.com](mailto:security@xquik.com)**.
+Use [GitHub private vulnerability reporting][private-report].
+
+Email [security@xquik.com](mailto:security@xquik.com) if GitHub is unavailable.
 
 Do **not** open a public GitHub issue, discussion, or pull request for security findings. Public disclosure before a fix is in place puts every Xquik user at risk.
 
@@ -16,11 +18,12 @@ When reporting, include as much of the following as you can:
 - Impact assessment (data exposure, account takeover, billing bypass, etc.).
 - Any suggested mitigation.
 
-## Response targets
+## Response Targets
 
 - **Acknowledgement:** within 24 hours of receipt.
 - **Initial triage and severity assignment:** within 72 hours.
-- **Fix or mitigation timeline:** communicated after triage. Critical issues are prioritised over all other work.
+- **Fix or mitigation timeline:** communicated after triage. Critical issues are prioritized over all other work.
+- **Progress updates:** at least every 14 days during active remediation.
 
 ## Scope
 
@@ -34,9 +37,23 @@ Out of scope (handle through the main repo or normal channels):
 
 - Bugs in the Xquik product itself - report via [security@xquik.com](mailto:security@xquik.com); the team routes them to the right repository internally.
 - Typos, broken links, or content suggestions - open a normal GitHub issue or PR on this repository.
-- Findings against third-party services Mintlify uses for hosting.
+- Findings that affect only the documentation hosting platform.
 
-## Safe harbour
+## Threat Model
+
+Protected assets include public contract integrity and release metadata.
+
+Repository changes, build inputs, external links, and deployment cross trust boundaries.
+
+Pull requests must not expose credentials or private implementation details.
+
+Pinned workflows and lockfile integrity protect documentation builds.
+
+Contract tests detect drift from the public OpenAPI specification.
+
+Validated fixes require tests, independent review, and coordinated disclosure.
+
+## Safe Harbor
 
 We will not pursue legal action against researchers who:
 
@@ -47,3 +64,7 @@ We will not pursue legal action against researchers who:
 ## Credit
 
 With your permission, we acknowledge reporters in the changelog or in a dedicated security advisory once a fix is shipped. If you prefer to remain anonymous, say so in your initial report.
+
+[private-report]: https://github.com/Xquik-dev/xquik-docs/security/advisories/new
+
+Xquik is an independent third-party service. Not affiliated with X Corp. "Twitter" and "X" are trademarks of X Corp.

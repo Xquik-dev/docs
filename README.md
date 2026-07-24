@@ -4,12 +4,17 @@
 > "Twitter" and "X" are trademarks of X Corp.
 
 Public documentation for [Xquik](https://xquik.com), an X data and automation
-platform. Built on [Mintlify](https://mintlify.com). Deployed at
-**[docs.xquik.com](https://docs.xquik.com)**.
+platform. Published at **[docs.xquik.com](https://docs.xquik.com)**.
 
 This repository powers the developer reference for the Xquik REST API, webhooks, MCP server, OAuth 2.1, SDKs, glossary, comparison guides, and how-to guides. Use it to find request and response details for tweet search, user lookup, follower exports, media uploads, direct messages, 1-second tweet monitors, signed webhooks, SDK clients, and X automation tasks.
 
-## Start here
+## Choose This Repository
+
+Use hosted docs for current task guidance.
+Use this repository to review source, propose fixes, or validate public contracts.
+Use SDK repositories for generated client APIs.
+
+## Start Here
 
 - [Quickstart](https://docs.xquik.com/quickstart) - make the first authenticated API call.
 - [API Reference](https://docs.xquik.com/api-reference) - browse 127 OpenAPI-backed operations.
@@ -23,6 +28,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 - [Prefect](https://docs.xquik.com/guides/prefect) - schedule tweet, user, timeline, and trend reads in Prefect flows.
 - [MCP Server](https://docs.xquik.com/mcp) - connect AI clients through their current OAuth or secure API-key path.
 - [Webhooks](https://docs.xquik.com/webhooks/overview) - verify HMAC signatures and receive monitor events.
+- [Open Source Assurance](https://docs.xquik.com/guides/open-source-assurance) - review OpenSSF project mapping and public controls.
 - [Apify Actors](https://docs.xquik.com/alternatives/apify) - run X tweet and follower export jobs on Apify.
 - [llms.txt](https://docs.xquik.com/llms.txt) - give AI coding agents the docs index.
 
@@ -57,7 +63,7 @@ This repository powers the developer reference for the Xquik REST API, webhooks,
 
 Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
 
-## What's covered
+## What's Covered
 
 - **REST API** - 127 operations spanning account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
 - **Webhooks** - HMAC SHA-256 signature verification, retry semantics, payload schemas.
@@ -67,9 +73,9 @@ Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
 - **SDKs** - 10 generated client libraries (TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI as Go binary, Terraform provider) with auto-pagination, retry, and typed responses.
 - **Comparisons** - Factual alternatives and migration guides for X API, creator tools, social suites, data tools, and workflow platforms.
 - **Apify Actors** - Public Apify Actors for tweet and follower dataset workflows before moving deeper workflows to REST, webhooks, SDKs, or MCP.
-- **OpenAPI 3.1** - Machine-readable spec at `openapi.yaml`, used by Mintlify for endpoint pages and by Stainless for SDK generation.
+- **OpenAPI 3.1** - Machine-readable contract for endpoint pages and SDK generation.
 
-## Repository layout
+## Repository Layout
 
 ```
 api-reference/      127 OpenAPI operations, grouped by resource
@@ -87,24 +93,31 @@ llms.txt            AI-readable site index
 openapi.yaml        OpenAPI 3.1 source of truth
 ```
 
-## Local development
+## Local Development
 
-Prerequisites: [Node.js 20+](https://nodejs.org) and the [Mintlify CLI](https://www.npmjs.com/package/mint).
+Install Node.js 22, Bun 1.3.14, and REUSE 6.2.0.
 
 ```bash
-npm install -g mint
-mint dev          # local preview at http://localhost:3000
-mint broken-links # check for broken internal links
-mint validate     # validate the documentation build
-mint a11y         # check accessibility issues
-mint openapi-check openapi.yaml  # validate the OpenAPI spec
+npm ci --ignore-scripts
+npm run check:dependencies
+npm run test:agent-docs
+npm run docs:validate
+npm run docs:links
+npm audit --audit-level=low
+reuse lint
 ```
 
-Edit any `.mdx` file and the preview reloads automatically.
+Run `npm exec -- mint dev` when visual previewing is necessary.
 
 ## Deployment
 
-`main` auto-deploys to [docs.xquik.com](https://docs.xquik.com) via Mintlify. Deployment status is visible in commit check runs. GitHub Actions also runs the Agent-Friendly Docs test suite and refreshes the Context7 library after docs changes. Run broken-link, OpenAPI, and agent-docs checks locally before pushing.
+`main` auto-deploys to [docs.xquik.com](https://docs.xquik.com).
+
+Deployment status appears in commit check runs.
+
+GitHub Actions runs documentation, contract, security, and licensing checks.
+
+Run every static check before pushing.
 
 ## Contributing
 
@@ -114,7 +127,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for style rules, content conventions, and
 
 To report a vulnerability in the docs site or in any documented endpoint behaviour, see [SECURITY.md](SECURITY.md). Do not file public issues for security findings.
 
-## Related repositories
+## Related Repositories
 
 - **[Xquik](https://xquik.com)** - Main app and dashboard.
 - **[Xquik-dev/x-twitter-scraper-python](https://github.com/Xquik-dev/x-twitter-scraper-python)** - Python SDK.
@@ -123,6 +136,8 @@ To report a vulnerability in the docs site or in any documented endpoint behavio
 
 ## License
 
-The docs source is published under the MIT License. See [LICENSE](LICENSE) if present, or treat the repository contents as MIT-licensed for the purpose of citing or quoting documentation in third-party material. The Xquik product, brand, and platform are not covered by this license.
+The documentation source uses the [MIT License](LICENSE).
+
+The license does not cover the Xquik product, brand, or platform.
 
 Xquik is an independent third-party service. Not affiliated with X Corp. "Twitter" and "X" are trademarks of X Corp.

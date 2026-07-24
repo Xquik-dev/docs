@@ -1,0 +1,60 @@
+import { readFile } from 'node:fs/promises';
+
+const REGISTRY_PREFIX = 'https://registry.npmjs.org/';
+const EXACT_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u;
+
+const [packageJson, lockfile, policy] = await Promise.all(
+  [
+    'package.json',
+    'package-lock.json',
+    'config/dependency-license-policy.json',
+  ].map(async (path) => JSON.parse(await readFile(path, 'utf8'))),
+);
+
+const allowedLicenses = new Set(policy.allowedLicenses);
+const licenseOverrides = new Map(Object.entries(policy.packageLicenses));
+const failures = [];
+
+for (const [name, version] of Object.entries(
+  packageJson.devDependencies ?? {},
+)) {
+  if (!EXACT_VERSION.test(version)) {
+    failures.push(`${name} must use an exact version; found ${version}.`);
+  }
+}
+
+let dependencyCount = 0;
+for (const [path, metadata] of Object.entries(lockfile.packages ?? {})) {
+  if (path === '') {
+    continue;
+  }
+
+  dependencyCount += 1;
+  const name = path.slice(path.lastIndexOf('node_modules/') + 13);
+  const key = `${name}@${metadata.version}`;
+  const license = metadata.license ?? licenseOverrides.get(key);
+
+  if (!metadata.integrity?.startsWith('sha512-')) {
+    failures.push(`${key} must use SHA-512 package integrity metadata.`);
+  }
+  if (!metadata.resolved?.startsWith(REGISTRY_PREFIX)) {
+    failures.push(`${key} does not resolve from the approved registry.`);
+  }
+  if (!license) {
+    failures.push(`${key} is missing license metadata.`);
+  } else if (!allowedLicenses.has(license)) {
+    failures.push(`${key} uses unapproved license ${license}.`);
+  }
+}
+
+if (dependencyCount === 0) {
+  failures.push('The lockfile contains no dependencies.');
+}
+
+if (failures.length > 0) {
+  throw new Error(failures.sort().join('\n'));
+}
+
+process.stdout.write(
+  `Verified ${dependencyCount} locked dependencies with approved integrity and licenses.\n`,
+);

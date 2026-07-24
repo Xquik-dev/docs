@@ -128,34 +128,38 @@ function formatResult(result: CheckResult): string {
   return lines.join('\n');
 }
 
-describe('Agent-Friendly Documentation', () => {
+describe('Agent-Friendly Documentation', (): void => {
+  let configuredCheckIds = new Set<string>();
   let resultsByCheck: Map<string, CheckResult> | undefined;
 
-  beforeAll(async () => {
+  beforeAll(async (): Promise<void> => {
     const config = await loadConfig();
+    configuredCheckIds = new Set(config.checks);
     const report = await runChecks(config.url, runnerOptions(config));
     resultsByCheck = new Map(
-      report.results.map((result) => [result.id, result]),
+      report.results.map(
+        (result): [string, CheckResult] => [result.id, result],
+      ),
     );
   }, LIVE_AGENT_DOCS_TIMEOUT_MS);
 
   for (const check of getChecksSorted()) {
-    it(check.id, (ctx) => {
+    it(check.id, (): void => {
+      expect.assertions(1);
+
       const result = resultsByCheck?.get(check.id);
       if (!result) {
-        ctx.skip();
+        expect(configuredCheckIds.has(check.id)).toBe(false);
         return;
       }
 
       const message = formatResult(result);
-      console.log(message);
-
-      if (result.status === 'fail') {
-        expect.fail(message);
-      }
-      if (result.status === 'error') {
-        expect.fail(`Check error: ${message}`);
-      }
+      process.stdout.write(`${message}\n`);
+      const allowedStatuses: readonly CheckStatus[] =
+        check.id === 'auth-alternative-access'
+          ? ['pass', 'skip']
+          : ['pass'];
+      expect(allowedStatuses, message).toContain(result.status);
     });
   }
 });

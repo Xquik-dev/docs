@@ -7305,16 +7305,16 @@ const REQUIRED_ARCHITECTURE_AUTHENTICATION_SNIPPETS = [
   'Send `x-api-key` on every REST API request.',
   '<Card title="Key format" icon="fingerprint">',
   'Keys start with `xq_` followed by 64 hex characters.',
-  '<Card title="Stored hash" icon="shield-check">',
-  'Xquik stores the SHA-256 key hash and display prefix',
+  '<Card title="One-time display" icon="shield-check">',
+  'Xquik returns the full key only during creation.',
   '<Card title="Revocation" icon="ban">',
   'Revoked or inactive keys stop authenticating immediately',
   '<Card title="Audit trail" icon="clock">',
-  'Successful API-key checks update `lastUsedAt`',
+  'Account audit views show API-key activity',
   '<Card title="OAuth 2.1" icon="lock-keyhole">',
   '[OAuth 2.1 with S256 PKCE](/oauth/overview)',
-  '<Card title="Session auth" icon="cookie">',
-  'API-key creation and revocation',
+  '<Card title="Key management" icon="key-round">',
+  'Create and revoke keys through the authenticated dashboard.',
 ] as const;
 
 const REQUIRED_ARCHITECTURE_DATA_ISOLATION_SNIPPETS = [
@@ -7373,10 +7373,6 @@ const REQUIRED_ARCHITECTURE_USAGE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS = [
-  '<Card title="Single region" icon="map-pin">',
-  'Do not assume',
-  'multi-region',
-  'replication.',
   '<Card title="Bookmarked tweets" icon="bookmark">',
   'Bookmarks and bookmark folders require a connected X account.',
   '[bookmarks](/api-reference/x/bookmarks)',
@@ -7399,6 +7395,8 @@ const FORBIDDEN_ARCHITECTURE_LIMITATION_SNIPPETS = [
   '|------------|--------|',
   '| **Bookmarked tweets** | Bookmarks require an authenticated X account connection |',
   '| **Export cap** | File exports are capped at 100,000 rows per extraction (10,000 for PDF). Formats: CSV, JSON, MD, MD Document, PDF, TXT, XLSX |',
+  '<Card title="Single region" icon="map-pin">',
+  'multi-region replication',
 ] as const;
 
 const FORBIDDEN_ARCHITECTURE_COMPONENT_SNIPPETS = [
@@ -7413,6 +7411,9 @@ const FORBIDDEN_ARCHITECTURE_AUTHENTICATION_SNIPPETS = [
   '| **Header** | `x-api-key`',
   '| **Key format** | `xq_` prefix + 64 hex characters |',
   '| **OAuth 2.1** | MCP server supports',
+  'SHA-256 key hash',
+  '`lastUsedAt`',
+  '<Card title="Session auth" icon="cookie">',
 ] as const;
 
 const FORBIDDEN_ARCHITECTURE_DATA_ISOLATION_SNIPPETS = [
