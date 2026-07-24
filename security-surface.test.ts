@@ -29,12 +29,13 @@ function docsConfig(): DocsConfig {
 
 describe('public security surface', (): void => {
   it('keeps owner verification and security contacts discoverable', (): void => {
-    expect.assertions(7);
+    expect.assertions(9);
 
     const config = docsConfig();
     const trustLinks = config.footer?.links?.find(
       (group): boolean => group.header === 'Trust & Support',
     )?.items;
+    const securityPage = readFileSync('security.mdx', 'utf8');
     const securityText = readFileSync('security.txt', 'utf8');
 
     expect(config.redirects).toContainEqual({
@@ -53,9 +54,13 @@ describe('public security surface', (): void => {
     ]);
     expect(securityText).toContain('Contact: mailto:security@xquik.com\n');
     expect(securityText).toContain('Policy: https://docs.xquik.com/security\n');
-    expect(readFileSync('security.mdx', 'utf8')).toContain(
+    expect(securityPage).toContain(
       '[security@xquik.com](mailto:security@xquik.com)',
     );
+    expect(securityPage).toContain(
+      'https://github.com/Xquik-dev/xquik-docs/security/advisories/new',
+    );
+    expect(securityPage).toContain('Progress updates at least every 14 days');
     expect(
       readFileSync(
         'gridinsoft-uda1iefj0dc1wig4yb4c3afl2m35st1ox7rufm0q4ljla00rmzazwhuyjvlgnzp2.txt',

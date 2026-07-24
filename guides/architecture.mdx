@@ -8,34 +8,30 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik is a hosted SaaS platform for X (Twitter) data. All data processing happens server-side. There is no infrastructure to deploy, no workers to manage, and no X API credentials to configure. You interact with Xquik through the REST API, MCP server, or dashboard.
+Xquik is a hosted service for X data and automation.
 
-## Architecture overview
+You interact through the REST API, MCP server, SDKs, or dashboard.
+
+You do not deploy Xquik infrastructure or configure X API credentials.
+
+## Architecture Overview
 
 ```text
-┌──────────────────────────────────────────────────┐
-│                    Clients                        │
-│  REST API  ·  MCP Server  ·  Dashboard  ·  CLI   │
-└──────────────────────┬───────────────────────────┘
+┌───────────────────────────────────────────────┐
+│                    Clients                    │
+│  REST API · MCP · SDKs · Dashboard · CLI     │
+└──────────────────────┬────────────────────────┘
                        │ HTTPS
-┌──────────────────────▼───────────────────────────┐
-│                  Xquik Server                     │
-│  Next.js App Router  ·  API Routes  ·  MCP Host  │
-├───────────────────────────────────────────────────┤
-│  Auth  ·  Rate Limiter  ·  Usage Tracking         │
-├───────────────────────────────────────────────────┤
-│  Extraction Engine · Draw Engine · Monitors · Write API │
-└──────────┬──────────────────────┬─────────────────┘
-           │                      │
-┌──────────▼──────────┐  ┌───────▼─────────────────┐
-│     Database        │  │   Xquik Stream Service   │
-│                     │  │  Monitor event           │
-│                     │  │  processing & webhooks   │
-└─────────────────────┘  └───────┬─────────────────┘
-                                 │
-                        ┌────────▼────────┐
-                        │   X API Layer   │
-                        └─────────────────┘
+┌──────────────────────▼────────────────────────┐
+│             Public Xquik Interfaces           │
+│  Authentication · Rate Limits · Usage Gates  │
+├───────────────────────────────────────────────┤
+│  Read Service · Write Service · Webhooks     │
+└──────────────────────┬────────────────────────┘
+                       │
+┌──────────────────────▼────────────────────────┐
+│          Documented Responses & Events        │
+└───────────────────────────────────────────────┘
 ```
 
 ### Components
@@ -69,7 +65,7 @@ Xquik is a hosted SaaS platform for X (Twitter) data. All data processing happen
 
 See [integration workflows](/guides/workflows) for end-to-end code examples using these components.
 
-## Security model
+## Security Model
 
 ### Authentication
 
@@ -86,23 +82,21 @@ apps require OAuth and cannot present custom API keys.
     Keys start with `xq_` followed by 64 hex characters. The dashboard shows
     the full key only once.
   </Card>
-  <Card title="Stored hash" icon="shield-check">
-    Xquik stores the SHA-256 key hash and display prefix, not the plaintext
-    key.
+  <Card title="One-time display" icon="shield-check">
+    Xquik returns the full key only during creation. Store it securely.
   </Card>
   <Card title="Revocation" icon="ban">
     Revoked or inactive keys stop authenticating immediately and return `401`.
   </Card>
   <Card title="Audit trail" icon="clock">
-    Successful API-key checks update `lastUsedAt` for account audit views.
+    Account audit views show API-key activity.
   </Card>
   <Card title="OAuth 2.1" icon="lock-keyhole">
     MCP also supports [OAuth 2.1 with S256 PKCE](/oauth/overview) for clients
     that require delegated authorization.
   </Card>
-  <Card title="Session auth" icon="cookie">
-    Dashboard login uses session cookies. API-key creation and revocation
-    require session auth.
+  <Card title="Key management" icon="key-round">
+    Create and revoke keys through the authenticated dashboard.
   </Card>
 </CardGroup>
 
@@ -110,7 +104,7 @@ apps require OAuth and cannot present custom API keys.
   API keys are shown once at creation. Store them securely. There is no way to retrieve a key after creation.
 </Warning>
 
-### Data isolation
+### Data Isolation
 
 Every API key is scoped to a single user account. There is no cross-user access.
 
@@ -151,7 +145,7 @@ Xquik uses a flat permission model: no roles, no RBAC, no team workspaces.
 - **API key management**: Listing, creating, and revoking keys require a same-origin dashboard session. API keys and OAuth bearer tokens cannot manage keys
 - **Credit gates**: Creating extractions, draws, active monitors, media downloads, and X lookups require enough available credits. All webhook operations are free. Reading and managing stored jobs, monitors, and events is free. Active monitors cost 21 credits per hour.
 
-## Rate limits
+## Rate Limits
 
 Rate limits are enforced per user account using a **fixed-window counter** algorithm. Each tier has an independent counter. Read counters reset every 1 second; write and delete counters reset every 60 seconds.
 
@@ -177,7 +171,7 @@ When the limit is reached, requests return `429 Too Many Requests` with a `Retry
 
 See the [Rate Limits](/guides/rate-limits) guide for detailed explanations, backoff strategies, and client-side rate limiter code examples.
 
-## Usage & billing
+## Usage & Billing
 
 <CardGroup cols={3}>
   <Card title="Subscriptions" icon="credit-card">
@@ -194,7 +188,7 @@ See the [Rate Limits](/guides/rate-limits) guide for detailed explanations, back
   </Card>
 </CardGroup>
 
-### What counts as usage
+### What Counts as Usage
 
 <CardGroup cols={2}>
   <Card title="Credit-metered work" icon="gauge">
@@ -218,26 +212,18 @@ See the [Rate Limits](/guides/rate-limits) guide for detailed explanations, back
 
 See [Billing & Usage](/guides/billing) for credit costs and billing.
 
-## Monitoring architecture
+## Monitoring Architecture
 
 Xquik checks active account and keyword monitors every second.
 
 ```text
-X Data Stream
-       │
-       ▼
-┌─────────────────┐     ┌──────────────────┐
-│  Xquik Stream   │────▶│    Database      │
-│    Service      │     │                  │
-└────────┬────────┘     └──────────────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Webhook Delivery │
-│ HMAC-signed POST │
-│ 10 attempts, exp.│
-│ backoff           │
-└─────────────────┘
+X signals
+    │
+    ▼
+Monitor processing ──▶ Stored events
+    │
+    ▼
+Signed webhooks ──▶ Customer HTTPS endpoint
 ```
 
 <CardGroup cols={2}>
@@ -264,13 +250,9 @@ X Data Stream
   </Card>
 </CardGroup>
 
-## Platform limitations
+## Platform Limitations
 
 <CardGroup cols={2}>
-  <Card title="Single region" icon="map-pin">
-    Xquik currently runs as a single-region service. Do not assume multi-region
-    replication.
-  </Card>
   <Card title="Bookmarked tweets" icon="bookmark">
     Bookmarks and bookmark folders require a connected X account. Use
     [bookmarks](/api-reference/x/bookmarks) and
@@ -291,7 +273,7 @@ X Data Stream
   </Card>
 </CardGroup>
 
-## Next steps
+## Next Steps
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
