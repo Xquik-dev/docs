@@ -8,6 +8,12 @@ platform. Published at **[docs.xquik.com](https://docs.xquik.com)**.
 
 This repository powers the developer reference for the Xquik REST API, webhooks, MCP server, OAuth 2.1, SDKs, glossary, comparison guides, and how-to guides. Use it to find request and response details for tweet search, user lookup, follower exports, media uploads, direct messages, 1-second tweet monitors, signed webhooks, SDK clients, and X automation tasks.
 
+## Choose This Repository
+
+Use hosted docs for current task guidance.
+Use this repository to review source, propose fixes, or validate public contracts.
+Use SDK repositories for generated client APIs.
+
 ## Start Here
 
 - [Quickstart](https://docs.xquik.com/quickstart) - make the first authenticated API call.
