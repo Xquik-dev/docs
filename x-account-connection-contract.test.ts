@@ -170,7 +170,7 @@ describe('X account connection documentation contract', (): void => {
   });
 
   it('requires the TOTP secret for a durable connection', (): void => {
-    expect.assertions(2);
+    expect.assertions(4);
     const requestSchema =
       openapi.paths['/x/accounts'].post.requestBody.content['application/json']
         .schema;
@@ -184,6 +184,10 @@ describe('X account connection documentation contract', (): void => {
     expect(CONNECT_PAGE).toContain(
       '<ParamField body="totp_secret" type="string" required>',
     );
+    expect(LLMS_INDEX).toContain(
+      'with credentials and the required Authenticator App TOTP secret.',
+    );
+    expect(LLMS_INDEX).not.toContain('optional TOTP');
   });
 
   it('keeps the guide discoverable and copy-ready', (): void => {
