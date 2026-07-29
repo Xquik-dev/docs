@@ -26,16 +26,22 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   not guarantee one fixed public IP per connected account.
 </Info>
 
+<Info>
+  A connection can finish immediately, continue as a tracked attempt, or ask
+  for an email code. If it continues, follow the returned `Location`. Do not
+  send the credentials again while the attempt is `pending`.
+</Info>
+
 <CodeGroup>
   ```bash cURL
   curl -X POST https://xquik.com/api/v1/x/accounts \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
     -H "Content-Type: application/json" \
     -d '{
-      "username": "elonmusk",
-      "email": "elon@example.com",
-      "password": "s3cureP@ss",
-      "totp_secret": "JBSWY3DPEHPK3PXP"
+      "username": "your_x_username",
+      "email": "account@example.invalid",
+      "password": "<ACCOUNT_PASSWORD>",
+      "totp_secret": "<TOTP_SECRET>"
     }' | jq
   ```
 
@@ -47,10 +53,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      username: "elonmusk",
-      email: "elon@example.com",
-      password: "s3cureP@ss",
-      totp_secret: "JBSWY3DPEHPK3PXP",
+      username: "your_x_username",
+      email: "account@example.invalid",
+      password: "<ACCOUNT_PASSWORD>",
+      totp_secret: "<TOTP_SECRET>",
     }),
   });
   const data = await response.json();
@@ -63,10 +69,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "https://xquik.com/api/v1/x/accounts",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
       json={
-          "username": "elonmusk",
-          "email": "elon@example.com",
-          "password": "s3cureP@ss",
-          "totp_secret": "JBSWY3DPEHPK3PXP",
+          "username": "your_x_username",
+          "email": "account@example.invalid",
+          "password": "<ACCOUNT_PASSWORD>",
+          "totp_secret": "<TOTP_SECRET>",
       },
   )
   data = response.json()
@@ -84,10 +90,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
   func main() {
       body, _ := json.Marshal(map[string]interface{}{
-          "username":    "elonmusk",
-          "email":       "elon@example.com",
-          "password":    "s3cureP@ss",
-          "totp_secret": "JBSWY3DPEHPK3PXP",
+          "username":    "your_x_username",
+          "email":       "account@example.invalid",
+          "password":    "<ACCOUNT_PASSWORD>",
+          "totp_secret": "<TOTP_SECRET>",
       })
 
       req, err := http.NewRequest("POST", "https://xquik.com/api/v1/x/accounts", bytes.NewReader(body))
@@ -198,13 +204,36 @@ If you already saved the secret key, send it as `totp_secret`. If you did not sa
     ```json
     {
       "id": "3",
-      "xUsername": "elonmusk",
-      "xUserId": "44196397",
+      "xUsername": "your_x_username",
+      "xUserId": "9876543210",
       "status": "active",
       "health": "healthy",
       "createdAt": "2026-02-20T08:15:00.000Z"
     }
     ```
+  </Tab>
+  <Tab title="202 Connecting">
+    <ResponseField name="object" type="string">Always `x_account_connection_attempt`.</ResponseField>
+    <ResponseField name="id" type="string">Connection attempt ID.</ResponseField>
+    <ResponseField name="status" type="string">Always `pending`.</ResponseField>
+    <ResponseField name="pollAfterMs" type="integer">Milliseconds to wait before checking the status URL.</ResponseField>
+
+    ```json
+    {
+      "object": "x_account_connection_attempt",
+      "id": "xatt_0123456789abcdef0123456789abcdef",
+      "status": "pending",
+      "pollAfterMs": 3000
+    }
+    ```
+
+    The response includes:
+
+    - `Location: /api/v1/x/account-connection-attempts/{id}`
+    - `Retry-After: 3`
+    - `Cache-Control: no-store`
+
+    Wait for `Retry-After`, then call [Get X Account Connection Status](/api-reference/x-accounts/connection-attempt). Keep checking while `status` is `pending`. Do not create another attempt.
   </Tab>
   <Tab title="202 Email Code Required">
     <ResponseField name="object" type="string">Always `x_account_connection_challenge`.</ResponseField>
@@ -286,5 +315,5 @@ If you already saved the secret key, send it as `totp_secret`. If you did not sa
 </Tabs>
 
 <Note>
-  **Related:** [List X Accounts](/api-reference/x-accounts/list) to see all connected accounts, or [Re-authenticate](/api-reference/x-accounts/reauth) if a session expires later.
+  **Related:** [Get X Account Connection Status](/api-reference/x-accounts/connection-attempt) for a pending attempt, [List X Accounts](/api-reference/x-accounts/list) to see connected accounts, or [Re-authenticate](/api-reference/x-accounts/reauth) if a connection expires later.
 </Note>

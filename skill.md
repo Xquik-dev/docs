@@ -13,7 +13,7 @@ metadata:
 
 ## Product summary
 
-Xquik is an X data platform with 127 documented REST operations, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover 33 prepaid GET reads. Seven fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Primary docs: https://docs.xquik.com
+Xquik is an X data platform with 128 documented REST operations, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover 33 prepaid GET reads. Seven fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Primary docs: https://docs.xquik.com
 
 ## When to use
 
@@ -50,7 +50,7 @@ Reach for Xquik when:
 
 Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Retry only on `429` and `5xx` responses.
 
-### API endpoints (127 documented operations)
+### API endpoints (128 documented operations)
 
 - **Monitors and Events**: Create account and keyword monitors, retrieve events, and manage webhooks.
 - **Extractions**: 23 tools for bulk data extraction.
@@ -142,7 +142,7 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 
 1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only docs search and page retrieval.
 2. Configure API MCP at `https://xquik.com/mcp` for live authenticated calls.
-3. Use full credentials for 119 catalog routes. Of these, 118 return JSON or text. Use REST for private support downloads. Guest keys expose 33 GET routes.
+3. Use full credentials for 120 catalog routes. Of these, 119 return JSON or text. Use REST for private support downloads. Guest keys expose 33 GET routes.
 4. Use `explore` to search the scoped catalog and `xquik` to run allowed requests.
 
 API MCP v2.5.6 uses Streamable HTTP. It returns normalized snake_case fields, Unix timestamps, structured errors, `has_more`, and `next_cursor`. Continue through empty pages while the cursor advances. Stop and report partial progress when a cursor is missing or repeats.

@@ -5103,12 +5103,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SanitizedXAccount'
+                x-stainless-override-schema:
+                  oneOf:
+                    - $ref: '#/components/schemas/SanitizedXAccount'
+                    - $ref: '#/components/schemas/XAccountConnectionAttempt'
+                    - $ref: '#/components/schemas/XAccountConnectionChallenge'
         '202':
-          description: Additional email verification code required
+          description: Connection continues or needs an email code
+          headers:
+            Cache-Control:
+              description:
+                Prevents caching. Present when the response status is `pending`.
+              schema:
+                type: string
+                const: no-store
+            Location:
+              description:
+                Status URL. Present when the response status is `pending`.
+              schema:
+                type: string
+                example: '/api/v1/x/account-connection-attempts/xatt_0123456789abcdef0123456789abcdef'
+            Retry-After:
+              description:
+                Seconds before checking again. Present when the response status
+                is `pending`.
+              schema:
+                type: integer
+                minimum: 0
+                example: 3
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/XAccountConnectionChallenge'
+                oneOf:
+                  - $ref: '#/components/schemas/XAccountConnectionAttempt'
+                  - $ref: '#/components/schemas/XAccountConnectionChallenge'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -5123,6 +5151,51 @@ paths:
           $ref: '#/components/responses/ConnectUserLookupFailed'
         '503':
           $ref: '#/components/responses/ConnectServiceUnavailable'
+
+  /x/account-connection-attempts/{id}:
+    get:
+      operationId: getXAccountConnectionAttempt
+      summary: Get X account connection status
+      tags: [X Accounts]
+      security:
+        - apiKey: []
+        - oauthBearer: []
+      parameters:
+        - $ref: '#/components/parameters/ConnectionAttemptId'
+      responses:
+        '200':
+          description: Current X account connection status
+          headers:
+            Cache-Control:
+              description: Prevents caching of connection status.
+              schema:
+                type: string
+                const: no-store
+            Retry-After:
+              description:
+                Seconds before checking again. Present when the response status
+                is `pending`.
+              schema:
+                type: integer
+                minimum: 0
+                example: 3
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/XAccountConnectionAttempt'
+                  - $ref: '#/components/schemas/XAccountConnectionChallenge'
+              example:
+                object: 'x_account_connection_attempt'
+                id: 'xatt_0123456789abcdef0123456789abcdef'
+                status: 'pending'
+                pollAfterMs: 3000
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
 
   /x/account-connection-challenges/{id}/submit:
     post:
@@ -8406,6 +8479,15 @@ components:
       schema:
         type: string
       description: Resource ID returned by the matching create or list endpoint.
+    ConnectionAttemptId:
+      name: id
+      in: path
+      required: true
+      description: Connection attempt ID returned by `POST /x/accounts`.
+      schema:
+        type: string
+        pattern: '^xatt_[0-9a-f]{32}$'
+        example: 'xatt_0123456789abcdef0123456789abcdef'
     DrawId:
       name: id
       in: path
@@ -12435,8 +12517,9 @@ components:
             Derived connection health. `healthy` = session active. `needsReauth`
             = user must submit fresh credentials. `locked` = X locked the
             account; unlock on x.com first. `suspended` = X banned the account.
-            `recovering` = past cooldown, will auto-retry on next use.
-            `temporaryIssue` = temporary connection problem; retry shortly.
+            `recovering` = cooldown ended; the account can reconnect on its next
+            use. `temporaryIssue` = temporary connection problem; wait before
+            the next use.
           enum:
             [
               healthy,
@@ -12488,6 +12571,87 @@ components:
         username:
           type: string
           example: 'elonmusk'
+
+    XAccountConnectionAttempt:
+      description:
+        Track a connection until it succeeds, fails, or needs an email code.
+      oneOf:
+        - $ref: '#/components/schemas/XAccountConnectionAttemptPending'
+        - $ref: '#/components/schemas/XAccountConnectionAttemptSuccess'
+        - $ref: '#/components/schemas/XAccountConnectionAttemptFailed'
+      discriminator:
+        propertyName: status
+        mapping:
+          pending: '#/components/schemas/XAccountConnectionAttemptPending'
+          success: '#/components/schemas/XAccountConnectionAttemptSuccess'
+          failed: '#/components/schemas/XAccountConnectionAttemptFailed'
+
+    XAccountConnectionAttemptPending:
+      description: The connection is still in progress.
+      type: object
+      additionalProperties: false
+      required: [object, id, status, pollAfterMs]
+      properties:
+        object:
+          type: string
+          const: x_account_connection_attempt
+          example: 'x_account_connection_attempt'
+        id:
+          type: string
+          example: 'xatt_0123456789abcdef0123456789abcdef'
+        status:
+          type: string
+          const: pending
+          example: 'pending'
+        pollAfterMs:
+          type: integer
+          minimum: 0
+          example: 3000
+
+    XAccountConnectionAttemptSuccess:
+      description: The account connected successfully.
+      type: object
+      additionalProperties: false
+      required: [object, id, status]
+      properties:
+        object:
+          type: string
+          const: x_account_connection_attempt
+          example: 'x_account_connection_attempt'
+        id:
+          type: string
+          example: 'xatt_0123456789abcdef0123456789abcdef'
+        status:
+          type: string
+          const: success
+          example: 'success'
+
+    XAccountConnectionAttemptFailed:
+      description: The connection reached a final failure.
+      type: object
+      additionalProperties: false
+      required: [object, id, status, error, retryable]
+      properties:
+        object:
+          type: string
+          const: x_account_connection_attempt
+          example: 'x_account_connection_attempt'
+        id:
+          type: string
+          example: 'xatt_0123456789abcdef0123456789abcdef'
+        status:
+          type: string
+          const: failed
+          example: 'failed'
+        error:
+          type: string
+          example: 'service_unavailable'
+        reason:
+          type: string
+          example: 'wrong_password'
+        retryable:
+          type: boolean
+          example: true
 
     XAccountDetail:
       description:

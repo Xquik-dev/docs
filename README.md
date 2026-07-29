@@ -17,7 +17,7 @@ Use SDK repositories for generated client APIs.
 ## Start Here
 
 - [Quickstart](https://docs.xquik.com/quickstart) - make the first authenticated API call.
-- [API Reference](https://docs.xquik.com/api-reference) - browse 127 OpenAPI-backed operations.
+- [API Reference](https://docs.xquik.com/api-reference) - browse 128 OpenAPI-backed operations.
 - [Guest wallets](https://docs.xquik.com/guides/guest-wallets) - fund 33 accountless GET routes through a confirmed Stripe Payment Link.
 - [Direct MPP](https://docs.xquik.com/mpp/overview) - pay per request on 7 fixed-price GET operations.
 - [SDKs](https://docs.xquik.com/sdks) - use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
@@ -65,9 +65,9 @@ Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
 
 ## What's Covered
 
-- **REST API** - 127 operations spanning account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
+- **REST API** - 128 operations spanning account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
 - **Webhooks** - HMAC SHA-256 signature verification, retry semantics, payload schemas.
-- **MCP server** - 119 full-scope catalog routes or 33 guest `paid_reads` GET routes through 2 code-mode tools. Binary support downloads use REST.
+- **MCP server** - 120 full-scope catalog routes or 33 guest `paid_reads` GET routes through 2 code-mode tools. Binary support downloads use REST.
 - **OAuth 2.1** - Automatic discovery, CIMD, DCR fallback, Authorization Code + PKCE, and token refresh.
 - **Guides** - Workflows, error handling, rate limits, billing, trends, extraction workflow, architecture, troubleshooting, types, webhook testing, and framework integrations.
 - **SDKs** - 10 generated client libraries (TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI as Go binary, Terraform provider) with auto-pagination, retry, and typed responses.
@@ -78,7 +78,7 @@ Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
 ## Repository Layout
 
 ```
-api-reference/      127 OpenAPI operations, grouped by resource
+api-reference/      128 OpenAPI operations, grouped by resource
 guides/             Workflow, operations, and framework guides
 webhooks/           Overview + signature verification
 mcp/                MCP server overview + tool reference

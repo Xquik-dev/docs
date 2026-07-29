@@ -1505,6 +1505,10 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     spec,
     'XAccountConnectionChallenge',
   );
+  const xAccountConnectionAttemptPending = schemaPropertyNames(
+    spec,
+    'XAccountConnectionAttemptPending',
+  );
   const bulkRetry = propertyNames(
     responseSchema(spec, '/x/accounts/bulk-retry', 'post'),
   );
@@ -1777,11 +1781,13 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     {
       allowedFields: uniqueSorted([
         ...sanitizedXAccount,
+        ...xAccountConnectionAttemptPending,
         ...xAccountConnectionChallenge,
       ]),
       page: X_ACCOUNT_CONNECT_PAGE,
       requiredFields: uniqueSorted([
         ...sanitizedXAccount,
+        ...xAccountConnectionAttemptPending,
         ...xAccountConnectionChallenge,
       ]),
     },

@@ -58,6 +58,7 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'GET /x/followers/check',
   'GET /x/articles/{tweetId}',
   'GET /x/accounts',
+  'GET /x/account-connection-attempts/{id}',
   'GET /x/accounts/{id}',
   'GET /x/bookmarks',
   'GET /x/bookmarks/folders',
