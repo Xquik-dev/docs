@@ -33,6 +33,13 @@ interface OpenApiDocument {
     };
     readonly '/x/accounts': {
       readonly post: {
+        readonly requestBody: {
+          readonly content: {
+            readonly 'application/json': {
+              readonly schema: OpenApiSchema;
+            };
+          };
+        };
         readonly responses: {
           readonly '201': OpenApiResponse;
           readonly '202': OpenApiResponse;
@@ -160,6 +167,23 @@ describe('X account connection documentation contract', (): void => {
       'Cache-Control',
       'Retry-After',
     ]);
+  });
+
+  it('requires the TOTP secret for a durable connection', (): void => {
+    expect.assertions(2);
+    const requestSchema =
+      openapi.paths['/x/accounts'].post.requestBody.content['application/json']
+        .schema;
+
+    expect(requestSchema.required).toStrictEqual([
+      'username',
+      'email',
+      'password',
+      'totp_secret',
+    ]);
+    expect(CONNECT_PAGE).toContain(
+      '<ParamField body="totp_secret" type="string" required>',
+    );
   });
 
   it('keeps the guide discoverable and copy-ready', (): void => {
