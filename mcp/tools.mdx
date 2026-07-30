@@ -1,6 +1,6 @@
 ---
 title: MCP tools reference
-description: API MCP v2.5.6 tools, scoped catalogs, sandbox contracts, pagination, and compact workflows
+description: API MCP v2.6.0 tools, scoped catalogs, sandbox contracts, pagination, and compact workflows
 keywords: ["MCP tools", "explore", "xquik", "sandbox", "code execution", "API spec"]
 ---
 
@@ -8,11 +8,15 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik API MCP v2.5.6 exposes a scoped catalog through 2 tools. `explore` searches. `xquik` runs authenticated calls. Full credentials see 119 catalog routes. Of these, 118 return JSON or text through MCP. Active guest `paid_reads` keys see exactly 33 GET routes.
+Xquik API MCP v2.6.0 exposes a scoped catalog through 2 tools. `explore` searches. `xquik` runs authenticated calls. Full credentials see 120 catalog routes. Of these, 119 return JSON or text through MCP. Active guest `paid_reads` keys see exactly 33 GET routes.
+
+Modern clients negotiate MCP `2026-07-28` through `server/discover`.
+Current SDKs add request metadata and HTTP headers automatically.
+See [MCP 2026-07-28](/mcp/overview#mcp-2026-07-28).
 
 ## explore
 
-Search the authenticated API catalog. `explore` makes no network calls and uses no credits. Full credentials search 119 routes. Guest keys search 33 GET routes.
+Search the authenticated API catalog. `explore` makes no network calls and uses no credits. Full credentials search 120 routes. Guest keys search 33 GET routes.
 
 **Input:**
 
@@ -110,9 +114,15 @@ declare const spec: { endpoints: EndpointInfo[] };
 
 `xquik.request()` sends the normalized contract automatically. Responses use snake_case fields, date-time fields as Unix seconds, and structured error objects. A default REST `createdAt` field becomes `created`, while fields such as `publishedAt` become `published_at`.
 
+MCP preserves every safe field that X supplies. Optional fields stay absent.
+See [Read Data Richness](/guides/read-data-richness) for the REST field map.
+
 List and search responses use `has_more` and `next_cursor`, even when a REST page shows `has_next_page` or `hasMore`. Pass `next_cursor` back as the `cursor` query parameter for most X data pages. Use `after` for `/api/v1/draws`, `/api/v1/extractions`, `/api/v1/events`, and `/api/v1/radar`. Use `afterCursor` for `/api/v1/drafts`.
 
 Continue through empty filtered pages while `has_more` is true and the cursor advances. Stop when you reach the requested total or `has_more` becomes false. Treat a missing or repeated `next_cursor` while `has_more` is true as stalled pagination and return the partial count plus a clear stop reason.
+
+Reply lists contain replies visible through Xquik. On `replies_incomplete`,
+search `conversation_id:<tweet_id>`. Disclose that reply coverage depends on X.
 
 Errors use `error.type`, `error.code`, and `error.message`, with fields such as `error.retryable` or `error.retry_after` when available. Dependency failures use HTTP `424` in this contract. Fix validation errors before retrying, and respect `retry_after` on `429`.
 
@@ -122,14 +132,14 @@ Tool output is limited to 24,000 characters. If a result includes `[TRUNCATED]`,
 
 ### Scope and unavailable operations
 
-The REST contract documents 127 operations. Full credentials expose 119 MCP catalog routes. Eight credential and session operations stay outside:
+The REST contract documents 128 operations. Full credentials expose 120 MCP catalog routes. Eight credential and session operations stay outside:
 
 - Create, list, or revoke account API keys
 - Charge a saved payment method through quick top-up
 - Open the session-based account top-up redirect route
 - Create, poll, or top up a guest wallet
 
-The catalog includes private support attachment downloads. MCP rejects their binary responses. Use REST for those downloads. The other 118 routes return JSON or text.
+The catalog includes private support attachment downloads. MCP rejects their binary responses. Use REST for those downloads. The other 119 routes return JSON or text.
 
 The guest wallet routes are direct REST only. Never call `/api/v1/guest-wallets`, `/api/v1/guest-wallets/topups`, or `/api/v1/guest-wallets/status` through `xquik.request()`. Follow the [accountless guest wallet guide](/guides/guest-wallets) outside MCP.
 
@@ -739,7 +749,7 @@ async () => {
 
 ## API endpoints
 
-The REST API documents 127 operations. The full MCP catalog exposes 119 across 10 categories:
+The REST API documents 128 operations. The full MCP catalog exposes 120 across 10 categories:
 
 <CardGroup cols={2}>
   <Card title="Account, composition, and credits" icon="user">
@@ -758,11 +768,11 @@ The REST API documents 127 operations. The full MCP catalog exposes 119 across 1
     38 operations in `twitter`: batch and single tweet lookup, tweet search, article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, followers, replies, communities, and lists.
   </Card>
   <Card title="X accounts and writes" icon="send">
-    26 operations across `x-accounts` and `x-write`: connect accounts, resolve challenges, post tweets, like, retweet, follow, remove followers, send DMs, upload media, update profiles, and manage communities.
+    27 operations across `x-accounts` and `x-write`: connect accounts, resolve challenges, post tweets, like, retweet, follow, remove followers, send DMs, upload media, update profiles, and manage communities.
   </Card>
 </CardGroup>
 
-Use `explore` to browse all 119 catalog routes and their response shapes.
+Use `explore` to browse all 120 catalog routes and their response shapes.
 
 With a guest `paid_reads` key, `explore` and `xquik` expose exactly 33 `twitter` GET operations. Use the [guest paid-read route inventory](/guides/guest-wallets#eligible-paid-read-routes) as the public route list.
 

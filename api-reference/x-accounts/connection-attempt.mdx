@@ -1,0 +1,208 @@
+---
+title: "Get X account connection status"
+description: "Check a tracked X account connection until it succeeds, fails, or requests an email code"
+api: "GET /x/account-connection-attempts/{id}"
+keywords: ["x accounts", "connect", "connection status", "pending"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+<Callout icon="circle-check" color="#16a34a">
+  **Free** - does not consume credits
+</Callout>
+
+<Info>
+  Check this endpoint after the connect response's `Retry-After` delay. Keep
+  using Xquik while the connection continues. Do not send the credentials again
+  while `status` is `pending`.
+</Info>
+
+<CodeGroup>
+  ```bash cURL
+  curl https://xquik.com/api/v1/x/account-connection-attempts/xatt_0123456789abcdef0123456789abcdef \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+  ```
+
+  ```javascript Node.js
+  const attemptId = "xatt_0123456789abcdef0123456789abcdef";
+  const response = await fetch(
+    `https://xquik.com/api/v1/x/account-connection-attempts/${attemptId}`,
+    {
+      headers: {
+        "x-api-key": "xq_YOUR_KEY_HERE",
+      },
+    },
+  );
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  attempt_id = "xatt_0123456789abcdef0123456789abcdef"
+  response = requests.get(
+      f"https://xquik.com/api/v1/x/account-connection-attempts/{attempt_id}",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      attemptID := "xatt_0123456789abcdef0123456789abcdef"
+      url := "https://xquik.com/api/v1/x/account-connection-attempts/" + attemptID
+      req, err := http.NewRequest("GET", url, nil)
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key
+  from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+## Path
+
+<ParamField path="id" type="string" required>
+  Connection attempt ID from the `202 pending` connect response.
+</ParamField>
+
+## Response
+
+Every `200` response includes `Cache-Control: no-store`.
+
+<Tabs>
+  <Tab title="200 Pending">
+    <ResponseField name="object" type="string">Always `x_account_connection_attempt`.</ResponseField>
+    <ResponseField name="id" type="string">Connection attempt ID.</ResponseField>
+    <ResponseField name="status" type="string">Always `pending`.</ResponseField>
+    <ResponseField name="pollAfterMs" type="integer">Milliseconds to wait before checking again.</ResponseField>
+
+    ```json
+    {
+      "object": "x_account_connection_attempt",
+      "id": "xatt_0123456789abcdef0123456789abcdef",
+      "status": "pending",
+      "pollAfterMs": 3000
+    }
+    ```
+
+    The response includes `Retry-After: 3`. Wait, then check the same attempt.
+  </Tab>
+
+  <Tab title="200 Success">
+    <ResponseField name="object" type="string">Always `x_account_connection_attempt`.</ResponseField>
+    <ResponseField name="id" type="string">Connection attempt ID.</ResponseField>
+    <ResponseField name="status" type="string">Always `success`.</ResponseField>
+
+    ```json
+    {
+      "object": "x_account_connection_attempt",
+      "id": "xatt_0123456789abcdef0123456789abcdef",
+      "status": "success"
+    }
+    ```
+
+    The account is ready. Call [List X Accounts](/api-reference/x-accounts/list)
+    if you need its account ID.
+  </Tab>
+
+  <Tab title="200 Email Code Required">
+    <ResponseField name="object" type="string">Always `x_account_connection_challenge`.</ResponseField>
+    <ResponseField name="id" type="string">Challenge ID, not the attempt ID.</ResponseField>
+    <ResponseField name="status" type="string">Always `requires_email_code`.</ResponseField>
+    <ResponseField name="expiresAt" type="string">ISO 8601 challenge expiration time.</ResponseField>
+    <ResponseField name="message" type="string">Human-readable next step.</ResponseField>
+    <ResponseField name="username" type="string">X username being connected.</ResponseField>
+
+    ```json
+    {
+      "object": "x_account_connection_challenge",
+      "id": "xch_8vGd8Y9JvH6dV0xA",
+      "status": "requires_email_code",
+      "expiresAt": "2026-05-08T12:10:00Z",
+      "message": "Enter the email verification code to continue.",
+      "username": "your_x_username"
+    }
+    ```
+
+    Submit the newest code to [Submit X Account Email Code](/api-reference/x-accounts/submit-challenge).
+  </Tab>
+
+  <Tab title="200 Failed">
+    <ResponseField name="object" type="string">Always `x_account_connection_attempt`.</ResponseField>
+    <ResponseField name="id" type="string">Connection attempt ID.</ResponseField>
+    <ResponseField name="status" type="string">Always `failed`.</ResponseField>
+    <ResponseField name="error" type="string">Stable public error code.</ResponseField>
+    <ResponseField name="reason" type="string">More specific reason when available.</ResponseField>
+    <ResponseField name="retryable" type="boolean">Whether another connect request can be attempted.</ResponseField>
+
+    ```json
+    {
+      "object": "x_account_connection_attempt",
+      "id": "xatt_0123456789abcdef0123456789abcdef",
+      "status": "failed",
+      "error": "service_unavailable",
+      "retryable": true
+    }
+    ```
+
+    Stop checking this attempt. Start a new connection only when appropriate.
+  </Tab>
+
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input", "message": "Invalid connection attempt ID. Check the path parameter." }
+    ```
+    The attempt ID is malformed, unavailable, or belongs to another account.
+    Do not rely on indefinite attempt retention. Save the terminal result.
+  </Tab>
+
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated", "message": "Missing or invalid API key" }
+    ```
+    The API key is missing or invalid.
+  </Tab>
+
+  <Tab title="429 Rate Limited">
+    ```json
+    { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
+    ```
+    Wait for `Retry-After` before checking again.
+  </Tab>
+</Tabs>
+
+<Note>
+  **Related:** [Connect X Account](/api-reference/x-accounts/connect) starts the
+  attempt. [Submit X Account Email Code](/api-reference/x-accounts/submit-challenge)
+  completes an email challenge.
+</Note>

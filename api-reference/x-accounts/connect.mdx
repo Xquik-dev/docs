@@ -1,6 +1,6 @@
 ---
 title: "Connect X account"
-description: "Connect an X account to Xquik and prepare the saved TOTP secret key when Authenticator App 2FA is enabled"
+description: "Connect an X account to Xquik with the saved Authenticator App TOTP secret required for a durable connection"
 api: "POST /x/accounts"
 keywords: ["x accounts", "connect", "add", "credentials", "2fa", "totp"]
 ---
@@ -14,16 +14,26 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 </Callout>
 
 <Warning>
-  Credentials are encrypted at rest and used only for maintaining the connection. Xquik never stores plaintext passwords.
+  Xquik encrypts credentials at rest. It only uses them to maintain the
+  connection. Xquik never stores plaintext passwords.
 </Warning>
 
 <Info>
-  If this X account uses 2FA, prepare `totp_secret` before sending the request. If 2FA is already enabled and you did not save the long secret key, turn Authentication App off and on again in X to reveal a new text secret. Copy it, add it to your authenticator app, finish the 6-digit confirmation on X, then send the saved long key as `totp_secret`.
+  Authenticator App 2FA and `totp_secret` are required for a durable Xquik connection.
+  Missing the key? Restart Authentication App 2FA in X to reveal a new secret.
+  Copy it, add it to your authenticator app, and finish X's 6-digit confirmation.
+  Then send the saved long key as `totp_secret`.
 </Info>
 
 <Info>
   Custom, dedicated, and user-supplied proxies are not supported. Xquik does
   not guarantee one fixed public IP per connected account.
+</Info>
+
+<Info>
+  A connection can finish immediately, continue as a tracked attempt, or ask
+  for an email code. If it continues, follow the returned `Location`. Do not
+  send the credentials again while the attempt is `pending`.
 </Info>
 
 <CodeGroup>
@@ -32,10 +42,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     -H "x-api-key: xq_YOUR_KEY_HERE" \
     -H "Content-Type: application/json" \
     -d '{
-      "username": "elonmusk",
-      "email": "elon@example.com",
-      "password": "s3cureP@ss",
-      "totp_secret": "JBSWY3DPEHPK3PXP"
+      "username": "your_x_username",
+      "email": "account@example.invalid",
+      "password": "<ACCOUNT_PASSWORD>",
+      "totp_secret": "<TOTP_SECRET>"
     }' | jq
   ```
 
@@ -47,10 +57,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      username: "elonmusk",
-      email: "elon@example.com",
-      password: "s3cureP@ss",
-      totp_secret: "JBSWY3DPEHPK3PXP",
+      username: "your_x_username",
+      email: "account@example.invalid",
+      password: "<ACCOUNT_PASSWORD>",
+      totp_secret: "<TOTP_SECRET>",
     }),
   });
   const data = await response.json();
@@ -63,10 +73,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "https://xquik.com/api/v1/x/accounts",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
       json={
-          "username": "elonmusk",
-          "email": "elon@example.com",
-          "password": "s3cureP@ss",
-          "totp_secret": "JBSWY3DPEHPK3PXP",
+          "username": "your_x_username",
+          "email": "account@example.invalid",
+          "password": "<ACCOUNT_PASSWORD>",
+          "totp_secret": "<TOTP_SECRET>",
       },
   )
   data = response.json()
@@ -84,10 +94,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
   func main() {
       body, _ := json.Marshal(map[string]interface{}{
-          "username":    "elonmusk",
-          "email":       "elon@example.com",
-          "password":    "s3cureP@ss",
-          "totp_secret": "JBSWY3DPEHPK3PXP",
+          "username":    "your_x_username",
+          "email":       "account@example.invalid",
+          "password":    "<ACCOUNT_PASSWORD>",
+          "totp_secret": "<TOTP_SECRET>",
       })
 
       req, err := http.NewRequest("POST", "https://xquik.com/api/v1/x/accounts", bytes.NewReader(body))
@@ -136,8 +146,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   Password for the X account. Encrypted at rest immediately upon receipt.
 </ParamField>
 
-<ParamField body="totp_secret" type="string">
-  TOTP secret key for accounts with 2FA enabled. This is the base32-encoded secret, not the 6-digit code.
+<ParamField body="totp_secret" type="string" required>
+  Authenticator App TOTP secret required for a durable connection. This is the
+  base32-encoded secret, not the 6-digit code.
 </ParamField>
 
 ## 2FA secret key setup
@@ -198,13 +209,36 @@ If you already saved the secret key, send it as `totp_secret`. If you did not sa
     ```json
     {
       "id": "3",
-      "xUsername": "elonmusk",
-      "xUserId": "44196397",
+      "xUsername": "your_x_username",
+      "xUserId": "9876543210",
       "status": "active",
       "health": "healthy",
       "createdAt": "2026-02-20T08:15:00.000Z"
     }
     ```
+  </Tab>
+  <Tab title="202 Connecting">
+    <ResponseField name="object" type="string">Always `x_account_connection_attempt`.</ResponseField>
+    <ResponseField name="id" type="string">Connection attempt ID.</ResponseField>
+    <ResponseField name="status" type="string">Always `pending`.</ResponseField>
+    <ResponseField name="pollAfterMs" type="integer">Milliseconds to wait before checking the status URL.</ResponseField>
+
+    ```json
+    {
+      "object": "x_account_connection_attempt",
+      "id": "xatt_0123456789abcdef0123456789abcdef",
+      "status": "pending",
+      "pollAfterMs": 3000
+    }
+    ```
+
+    The response includes:
+
+    - `Location: /api/v1/x/account-connection-attempts/{id}`
+    - `Retry-After: 3`
+    - `Cache-Control: no-store`
+
+    Wait for `Retry-After`, then call [Get X Account Connection Status](/api-reference/x-accounts/connection-attempt). Keep checking while `status` is `pending`. Do not create another attempt.
   </Tab>
   <Tab title="202 Email Code Required">
     <ResponseField name="object" type="string">Always `x_account_connection_challenge`.</ResponseField>
@@ -231,7 +265,7 @@ If you already saved the secret key, send it as `totp_secret`. If you did not sa
     ```json
     { "error": "invalid_input", "message": "Invalid input. Check the request body." }
     ```
-    Missing `username`, `email`, or `password`, or invalid field format.
+    Missing `username`, `email`, `password`, or `totp_secret`, or invalid field format.
   </Tab>
   <Tab title="401 Unauthenticated">
     ```json
@@ -286,5 +320,5 @@ If you already saved the secret key, send it as `totp_secret`. If you did not sa
 </Tabs>
 
 <Note>
-  **Related:** [List X Accounts](/api-reference/x-accounts/list) to see all connected accounts, or [Re-authenticate](/api-reference/x-accounts/reauth) if a session expires later.
+  **Related:** [Get X Account Connection Status](/api-reference/x-accounts/connection-attempt) for a pending attempt, [List X Accounts](/api-reference/x-accounts/list) to see connected accounts, or [Re-authenticate](/api-reference/x-accounts/reauth) if a connection expires later.
 </Note>

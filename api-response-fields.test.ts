@@ -174,6 +174,14 @@ const PRODUCT_ARTICLE_FORMAT_PATH = join(
 );
 const PRODUCT_MEDIA_HANDLER_PATH = join(PRODUCT_ROOT, 'lib/media/handler.ts');
 const PRODUCT_X_API_TYPES_PATH = join(PRODUCT_ROOT, 'lib/x-api/types.ts');
+const PRODUCT_READ_RICHNESS_CONTRACT_PATH = join(
+  PRODUCT_ROOT,
+  'lib/x-api/twikit/read-data-richness-contract.ts',
+);
+const PRODUCT_PUBLIC_READ_SANITIZER_PATH = join(
+  PRODUCT_ROOT,
+  'actors/apify/shared/src/public-read-sanitizer.ts',
+);
 const PRODUCT_X_WRITE_TWIKIT_PATH = join(
   PRODUCT_ROOT,
   'lib/x-api/write-client-twikit.ts',
@@ -206,6 +214,7 @@ interface OpenApiSchema {
   readonly items?: OpenApiSchema;
   readonly oneOf?: readonly OpenApiSchema[];
   readonly properties?: Record<string, OpenApiSchema>;
+  readonly required?: readonly string[];
 }
 
 interface PageContract {
@@ -360,6 +369,15 @@ function schemaPropertyNames(spec: OpenApiSpec, name: string): readonly string[]
   );
 }
 
+function requiredSchemaPropertyNames(
+  spec: OpenApiSpec,
+  name: string,
+): readonly string[] {
+  return uniqueSorted(
+    resolveSchema(spec, schemaByName(spec, name)).required ?? [],
+  );
+}
+
 function propertyNames(schema: OpenApiSchema | undefined): readonly string[] {
   return Object.keys(schema?.properties ?? {}).sort((left, right): number =>
     left.localeCompare(right),
@@ -465,56 +483,6 @@ function mapFunctionBody(source: string, functionName: string): string {
     throw new Error(`Could not locate product mapper end: ${functionName}`);
   }
   return source.slice(start, end);
-}
-
-function productMapperFields(functionName: string): readonly string[] {
-  const source = readFileSync(PRODUCT_ROUTE_HELPERS_PATH, 'utf8');
-  const mapperName =
-    functionName === 'mapTweet' ? 'mapTweetAtDepth' : functionName;
-  const body = mapFunctionBody(source, mapperName);
-  const directFields = [...body.matchAll(/^\s{4}(?<field>[A-Za-z_]\w*):/gmu)]
-    .map((match): string => match.groups?.['field'] ?? '')
-    .filter((field): boolean => field.length > 0);
-  const optionalFields = [
-    ...body.matchAll(/optionalField\(\s*'(?<field>[^']+)'/gu),
-  ]
-    .map((match): string => match.groups?.['field'] ?? '')
-    .filter((field): boolean => field.length > 0);
-  const appendStart = body.indexOf('appendOptionalFields({');
-  const groupedAppendStart = body.indexOf(
-    'appendOptionalFields(\n',
-    appendStart,
-  );
-  const appendSearchStart = appendStart < 0 ? groupedAppendStart : appendStart;
-  const appendObjectStart =
-    appendSearchStart < 0 ? -1 : body.indexOf('{', appendSearchStart);
-  const appendObjectEnd = body.indexOf('}', appendObjectStart);
-  const appendDirectFields =
-    appendObjectStart < 0 || appendObjectEnd < 0
-      ? []
-      : objectLiteralPropertyFields(
-          body.slice(appendObjectStart, appendObjectEnd + 1),
-        );
-  const appendOptionalFields = [
-    ...body.matchAll(/\[\s*'(?<field>[^']+)'\s*,/gu),
-  ]
-    .map((match): string => match.groups?.['field'] ?? '')
-    .filter((field): boolean => field.length > 0);
-  const fields = uniqueSorted([
-    ...directFields,
-    ...optionalFields,
-    ...appendDirectFields,
-    ...appendOptionalFields,
-  ]);
-  return functionName === 'mapUser'
-    ? uniqueSorted([
-        ...fields,
-        ...productInterfaceFieldsFromPath(
-          PRODUCT_ROUTE_HELPERS_PATH,
-          'TwitterApiUserExtras',
-        ),
-      ])
-    : fields;
 }
 
 function objectLiteralPropertyFields(source: string): readonly string[] {
@@ -659,6 +627,46 @@ function productArticleContentFields(): readonly string[] {
 
 function productInterfaceFields(interfaceName: string): readonly string[] {
   return productInterfaceFieldsFromPath(PRODUCT_X_API_TYPES_PATH, interfaceName);
+}
+
+function productConstStringArrayFields(
+  path: string,
+  name: string,
+): readonly string[] {
+  const source = readFileSync(path, 'utf8');
+  const declaration = source.indexOf(`const ${name}`);
+  const start = source.indexOf('[', declaration);
+  const end = source.indexOf(']', start);
+  if (declaration < 0 || start < 0 || end < 0) {
+    throw new Error(`Missing product string array: ${name}`);
+  }
+  return uniqueSorted(
+    [...source.slice(start, end).matchAll(/'(?<field>[^']+)'/gu)].map(
+      (match): string => match.groups?.['field'] ?? '',
+    ),
+  );
+}
+
+function productPublicUnsafeFields(): readonly string[] {
+  return uniqueSorted(
+    [
+      'PROFILE_PERMISSION_STATE_KEYS',
+      'PROFILE_RELATION_STATE_KEYS',
+      'TWEET_ACTION_STATE_KEYS',
+      'VIEW_STATE_CONTAINER_KEYS',
+      'COMMUNITY_FETCH_ACCOUNT_STATE_KEYS',
+    ].flatMap((name) =>
+      productConstStringArrayFields(PRODUCT_PUBLIC_READ_SANITIZER_PATH, name),
+    ),
+  );
+}
+
+function withoutFields(
+  fields: readonly string[],
+  excluded: readonly string[],
+): readonly string[] {
+  const excludedSet = new Set(excluded);
+  return fields.filter((field): boolean => !excludedSet.has(field));
 }
 
 function objectLiteralFields(source: string): readonly string[] {
@@ -1354,6 +1362,14 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const tweetAuthor = schemaPropertyNames(spec, 'TweetAuthor');
   const searchTweetMedia = itemPropertyNames(spec, 'SearchTweet', 'media');
   const tweetDetailMedia = itemPropertyNames(spec, 'TweetDetail', 'media');
+  const paginatedTweetRequired = uniqueSorted([
+    ...requiredSchemaPropertyNames(spec, 'PaginatedTweets'),
+    ...requiredSchemaPropertyNames(spec, 'SearchTweet'),
+  ]);
+  const paginatedUserRequired = uniqueSorted([
+    ...requiredSchemaPropertyNames(spec, 'PaginatedUsers'),
+    ...requiredSchemaPropertyNames(spec, 'UserProfile'),
+  ]);
   const notificationsResponse = responseSchema(spec, '/x/notifications', 'get');
   const notifications = propertyNames(notificationsResponse);
   const notification = itemPropertyNamesFromProperty(
@@ -1505,6 +1521,10 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     spec,
     'XAccountConnectionChallenge',
   );
+  const xAccountConnectionAttemptPending = schemaPropertyNames(
+    spec,
+    'XAccountConnectionAttemptPending',
+  );
   const bulkRetry = propertyNames(
     responseSchema(spec, '/x/accounts/bulk-retry', 'post'),
   );
@@ -1521,18 +1541,14 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
         ...searchTweetMedia,
       ]),
       page,
-      requiredFields: uniqueSorted([
-        ...paginatedTweets,
-        ...searchTweet,
-        ...searchTweetMedia,
-      ]),
+      requiredFields: paginatedTweetRequired,
     }),
   );
   const paginatedUserContracts = PAGINATED_USER_PAGES.map(
     (page): PageContract => ({
       allowedFields: uniqueSorted([...paginatedUsers, ...userProfile]),
       page,
-      requiredFields: uniqueSorted([...paginatedUsers, ...userProfile]),
+      requiredFields: paginatedUserRequired,
     }),
   );
 
@@ -1551,15 +1567,14 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       requiredFields: uniqueSorted([
         'author',
         'tweet',
-        ...tweetDetail,
-        ...tweetAuthor,
-        ...tweetDetailMedia,
+        ...requiredSchemaPropertyNames(spec, 'TweetDetail'),
+        ...requiredSchemaPropertyNames(spec, 'TweetAuthor'),
       ]),
     },
     {
       allowedFields: userProfile,
       page: 'api-reference/x/get-user.mdx',
-      requiredFields: userProfile,
+      requiredFields: requiredSchemaPropertyNames(spec, 'UserProfile'),
     },
     {
       allowedFields: uniqueSorted([...notifications, ...notification]),
@@ -1777,11 +1792,13 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     {
       allowedFields: uniqueSorted([
         ...sanitizedXAccount,
+        ...xAccountConnectionAttemptPending,
         ...xAccountConnectionChallenge,
       ]),
       page: X_ACCOUNT_CONNECT_PAGE,
       requiredFields: uniqueSorted([
         ...sanitizedXAccount,
+        ...xAccountConnectionAttemptPending,
         ...xAccountConnectionChallenge,
       ]),
     },
@@ -1960,6 +1977,8 @@ describe('API response field docs', (): void => {
       existsSync(PRODUCT_ARTICLE_FORMAT_PATH) &&
       existsSync(PRODUCT_MEDIA_HANDLER_PATH) &&
       existsSync(PRODUCT_X_API_TYPES_PATH) &&
+      existsSync(PRODUCT_READ_RICHNESS_CONTRACT_PATH) &&
+      existsSync(PRODUCT_PUBLIC_READ_SANITIZER_PATH) &&
       existsSync(PRODUCT_X_WRITE_TWIKIT_PATH);
     if (!productSourceExists) {
       expect(productSourceExists).toBe(false);
@@ -2182,21 +2201,38 @@ describe('API response field docs', (): void => {
       responseSchema(spec, '/api-keys/{id}', 'delete'),
     );
     const productApiKeyRevokeResponseFields = productApiKeyRevokeFields();
+    const publicTweetFields = productConstStringArrayFields(
+      PRODUCT_READ_RICHNESS_CONTRACT_PATH,
+      'PUBLIC_TWEET_DATA_FIELDS',
+    );
+    const publicProfileFields = productConstStringArrayFields(
+      PRODUCT_READ_RICHNESS_CONTRACT_PATH,
+      'PUBLIC_PROFILE_DATA_FIELDS',
+    );
+    const publicUnsafeFields = productPublicUnsafeFields();
+    const publicCommunityInfoFields = withoutFields(
+      productInterfaceFields('TwitterApiCommunityInfo'),
+      publicUnsafeFields,
+    );
+    const publicArticleAuthorFields = withoutFields(
+      productArticleAuthorFields,
+      publicUnsafeFields,
+    );
     const findings = [
       ...setDifference(
         schemaPropertyNames(spec, 'SearchTweet'),
-        productMapperFields('mapTweet'),
+        publicTweetFields,
       ).map((field): string => `SearchTweet has no product field ${field}.`),
       ...setDifference(
-        productMapperFields('mapTweet'),
+        publicTweetFields,
         schemaPropertyNames(spec, 'SearchTweet'),
       ).map((field): string => `SearchTweet is missing ${field}.`),
       ...setDifference(
         schemaPropertyNames(spec, 'UserProfile'),
-        productMapperFields('mapUser'),
+        publicProfileFields,
       ).map((field): string => `UserProfile has no product field ${field}.`),
       ...setDifference(
-        productMapperFields('mapUser'),
+        publicProfileFields,
         schemaPropertyNames(spec, 'UserProfile'),
       ).map((field): string => `UserProfile is missing ${field}.`),
       ...setDifference(
@@ -2223,12 +2259,12 @@ describe('API response field docs', (): void => {
             'get',
           ).properties?.['community'],
         ),
-        productInterfaceFields('TwitterApiCommunityInfo'),
+        publicCommunityInfoFields,
       ).map(
         (field): string => `Community info has no product field ${field}.`,
       ),
       ...setDifference(
-        productInterfaceFields('TwitterApiCommunityInfo'),
+        publicCommunityInfoFields,
         propertyNames(
           responseSchema(
             spec,
@@ -2593,10 +2629,10 @@ describe('API response field docs', (): void => {
       ).map((field): string => `Article inline style is missing ${field}.`),
       ...setDifference(
         openApiArticleAuthorFields,
-        productArticleAuthorFields,
+        publicArticleAuthorFields,
       ).map((field): string => `Article author has no product field ${field}.`),
       ...setDifference(
-        productArticleAuthorFields,
+        publicArticleAuthorFields,
         openApiArticleAuthorFields,
       ).map((field): string => `Article author is missing ${field}.`),
       ...setDifference(
