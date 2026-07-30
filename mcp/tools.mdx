@@ -1,6 +1,6 @@
 ---
 title: MCP tools reference
-description: API MCP v2.5.6 tools, scoped catalogs, sandbox contracts, pagination, and compact workflows
+description: API MCP v2.6.0 tools, scoped catalogs, sandbox contracts, pagination, and compact workflows
 keywords: ["MCP tools", "explore", "xquik", "sandbox", "code execution", "API spec"]
 ---
 
@@ -8,7 +8,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik API MCP v2.5.6 exposes a scoped catalog through 2 tools. `explore` searches. `xquik` runs authenticated calls. Full credentials see 120 catalog routes. Of these, 119 return JSON or text through MCP. Active guest `paid_reads` keys see exactly 33 GET routes.
+Xquik API MCP v2.6.0 exposes a scoped catalog through 2 tools. `explore` searches. `xquik` runs authenticated calls. Full credentials see 120 catalog routes. Of these, 119 return JSON or text through MCP. Active guest `paid_reads` keys see exactly 33 GET routes.
+
+Modern clients negotiate MCP `2026-07-28` through `server/discover`.
+Current SDKs add request metadata and HTTP headers automatically.
+See [MCP 2026-07-28](/mcp/overview#mcp-2026-07-28).
 
 ## explore
 
@@ -110,9 +114,15 @@ declare const spec: { endpoints: EndpointInfo[] };
 
 `xquik.request()` sends the normalized contract automatically. Responses use snake_case fields, date-time fields as Unix seconds, and structured error objects. A default REST `createdAt` field becomes `created`, while fields such as `publishedAt` become `published_at`.
 
+MCP preserves every safe field that X supplies. Optional fields stay absent.
+See [Read Data Richness](/guides/read-data-richness) for the REST field map.
+
 List and search responses use `has_more` and `next_cursor`, even when a REST page shows `has_next_page` or `hasMore`. Pass `next_cursor` back as the `cursor` query parameter for most X data pages. Use `after` for `/api/v1/draws`, `/api/v1/extractions`, `/api/v1/events`, and `/api/v1/radar`. Use `afterCursor` for `/api/v1/drafts`.
 
 Continue through empty filtered pages while `has_more` is true and the cursor advances. Stop when you reach the requested total or `has_more` becomes false. Treat a missing or repeated `next_cursor` while `has_more` is true as stalled pagination and return the partial count plus a clear stop reason.
+
+Reply lists contain replies visible through Xquik. On `replies_incomplete`,
+search `conversation_id:<tweet_id>`. Disclose that reply coverage depends on X.
 
 Errors use `error.type`, `error.code`, and `error.message`, with fields such as `error.retryable` or `error.retry_after` when available. Dependency failures use HTTP `424` in this contract. Fix validation errors before retrying, and respect `retry_after` on `429`.
 

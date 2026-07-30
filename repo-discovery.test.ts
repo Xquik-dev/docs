@@ -1829,7 +1829,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'Pass `next_cursor` back as the `cursor` query parameter',
   'Use `q` for keywords and X search operators, or pass a plain Tweet ID or X',
   'status URL when the agent receives a single stored link.',
-  'API MCP v2.5.6 sends that contract automatically.',
+  'API MCP v2.6.0 sends that contract automatically.',
   '## Agent handoff patterns',
   'MCP returns JSON.',
   'Use extraction export endpoints when you need Xquik to generate',

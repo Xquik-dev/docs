@@ -5,8 +5,18 @@ import { describe, expect, it } from 'vitest';
 
 interface OpenApiSchema {
   readonly $ref?: string;
+  readonly allOf?: readonly OpenApiSchema[];
+  readonly discriminator?: {
+    readonly mapping: Readonly<Record<string, string>>;
+    readonly propertyName: string;
+  };
   readonly oneOf?: readonly OpenApiSchema[];
+  readonly properties?: Readonly<Record<string, OpenApiSchema>>;
   readonly required?: readonly string[];
+  readonly type?: string;
+  readonly 'x-stainless-naming'?: {
+    readonly csharp: { readonly type_name: string };
+  };
   readonly 'x-stainless-override-schema'?: OpenApiSchema;
 }
 
@@ -96,18 +106,45 @@ function refs(schema: Readonly<OpenApiSchema>): readonly string[] {
   return (schema.oneOf ?? []).map((variant) => variant.$ref ?? '');
 }
 
+function responseFieldsForTab(title: string): readonly string[] {
+  const start = STATUS_PAGE.indexOf(`<Tab title="${title}">`);
+  const end = STATUS_PAGE.indexOf('</Tab>', start);
+  if (start < 0 || end < 0) {
+    throw new Error(`Missing connection status tab: ${title}`);
+  }
+  return [
+    ...STATUS_PAGE.slice(start, end).matchAll(
+      /<ResponseField name="(?<field>[^"]+)"/gu,
+    ),
+  ]
+    .map((match): string => match.groups?.['field'] ?? '')
+    .filter((field): boolean => field.length > 0)
+    .sort((left, right): number => left.localeCompare(right));
+}
+
+function schemaFields(name: string): readonly string[] {
+  return Object.keys(openapi.components.schemas[name]?.properties ?? {}).sort(
+    (left, right): number => left.localeCompare(right),
+  );
+}
+
 const openapi = parseOpenApi(OPENAPI_SOURCE);
 
 describe('X account connection documentation contract', (): void => {
   it('publishes every durable connection result', (): void => {
-    expect.assertions(5);
+    expect.assertions(9);
     const connect = openapi.paths['/x/accounts'].post.responses;
     const status =
       openapi.paths['/x/account-connection-attempts/{id}'].get.responses['200'];
 
-    expect(connect['201'].content['application/json'].schema.$ref).toBe(
-      '#/components/schemas/SanitizedXAccount',
+    expect(connect['201'].content['application/json'].schema.type).toBe(
+      'object',
     );
+    expect(
+      (connect['201'].content['application/json'].schema.allOf ?? []).map(
+        (item) => item.$ref,
+      ),
+    ).toStrictEqual(['#/components/schemas/SanitizedXAccount']);
     expect(
       refs(
         connect['201'].content['application/json'].schema[
@@ -116,26 +153,36 @@ describe('X account connection documentation contract', (): void => {
       ),
     ).toStrictEqual([
       '#/components/schemas/SanitizedXAccount',
-      '#/components/schemas/XAccountConnectionAttempt',
-      '#/components/schemas/XAccountConnectionChallenge',
-    ]);
-    expect(refs(connect['202'].content['application/json'].schema)).toStrictEqual(
-      [
-        '#/components/schemas/XAccountConnectionAttempt',
-        '#/components/schemas/XAccountConnectionChallenge',
-      ],
-    );
-    expect(refs(status.content['application/json'].schema)).toStrictEqual([
-      '#/components/schemas/XAccountConnectionAttempt',
-      '#/components/schemas/XAccountConnectionChallenge',
+      '#/components/schemas/XAccountConnectionContinuation',
     ]);
     expect(
-      refs(openapi.components.schemas['XAccountConnectionAttempt'] ?? {}),
-    ).toStrictEqual([
+      connect['201'].content['application/json'].schema[
+        'x-stainless-override-schema'
+      ]?.['x-stainless-naming']?.csharp.type_name,
+    ).toBe('AccountCreateResponse');
+    expect(connect['202'].content['application/json'].schema.$ref).toBe(
+      '#/components/schemas/XAccountConnectionContinuation',
+    );
+    expect(refs(status.content['application/json'].schema)).toStrictEqual([
       '#/components/schemas/XAccountConnectionAttemptPending',
       '#/components/schemas/XAccountConnectionAttemptSuccess',
       '#/components/schemas/XAccountConnectionAttemptFailed',
+      '#/components/schemas/XAccountConnectionChallenge',
     ]);
+    expect(
+      status.content['application/json'].schema['x-stainless-naming']?.csharp
+        .type_name,
+    ).toBe('AccountConnectionAttemptRetrieveResponse');
+    expect(
+      refs(openapi.components.schemas['XAccountConnectionContinuation'] ?? {}),
+    ).toStrictEqual([
+      '#/components/schemas/XAccountConnectionAttemptPending',
+      '#/components/schemas/XAccountConnectionChallenge',
+    ]);
+    expect(
+      openapi.components.schemas['XAccountConnectionContinuation']
+        ?.discriminator?.propertyName,
+    ).toBe('status');
   });
 
   it('keeps status fields and headers exact', (): void => {
@@ -169,8 +216,25 @@ describe('X account connection documentation contract', (): void => {
     ]);
   });
 
-  it('requires the TOTP secret for a durable connection', (): void => {
+  it('keeps every status tab aligned with its OpenAPI variant', (): void => {
     expect.assertions(4);
+
+    expect(responseFieldsForTab('200 Pending')).toStrictEqual(
+      schemaFields('XAccountConnectionAttemptPending'),
+    );
+    expect(responseFieldsForTab('200 Success')).toStrictEqual(
+      schemaFields('XAccountConnectionAttemptSuccess'),
+    );
+    expect(responseFieldsForTab('200 Failed')).toStrictEqual(
+      schemaFields('XAccountConnectionAttemptFailed'),
+    );
+    expect(responseFieldsForTab('200 Email Code Required')).toStrictEqual(
+      schemaFields('XAccountConnectionChallenge'),
+    );
+  });
+
+  it('requires the TOTP secret for a durable connection', (): void => {
+    expect.assertions(5);
     const requestSchema =
       openapi.paths['/x/accounts'].post.requestBody.content['application/json']
         .schema;
@@ -183,6 +247,9 @@ describe('X account connection documentation contract', (): void => {
     ]);
     expect(CONNECT_PAGE).toContain(
       '<ParamField body="totp_secret" type="string" required>',
+    );
+    expect(CONNECT_PAGE).toContain(
+      'Missing `username`, `email`, `password`, or `totp_secret`',
     );
     expect(LLMS_INDEX).toContain(
       'with credentials and the required Authenticator App TOTP secret.',

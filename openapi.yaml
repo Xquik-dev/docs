@@ -3338,14 +3338,31 @@ paths:
                         query:
                           type: string
                           example: '%23AI'
+                        promotedContent:
+                          type: [string, 'null']
+                          description:
+                            Promotion identifier from X. Null for organic
+                            trends.
                         rank:
                           type: integer
                           example: 1
+                        tweetVolume:
+                          type: [integer, 'null']
+                          description:
+                            Approximate public post volume when X supplies it.
+                          example: 250000
+                        url:
+                          type: string
+                          format: uri
+                          description: X search URL for the trend.
                     example:
                       - name: '#AI'
                         description: 'Artificial intelligence discussions'
+                        promotedContent: null
                         query: '%23AI'
                         rank: 1
+                        tweetVolume: 250000
+                        url: 'https://x.com/search?q=%23AI'
                   count:
                     type: integer
                     example: 30
@@ -3356,8 +3373,11 @@ paths:
                 trends:
                   - name: '#AI'
                     description: 'Artificial intelligence discussions'
+                    promotedContent: null
                     query: '%23AI'
                     rank: 1
+                    tweetVolume: 250000
+                    url: 'https://x.com/search?q=%23AI'
                 count: 30
                 woeid: 1
         '401':
@@ -5104,12 +5124,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SanitizedXAccount'
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/SanitizedXAccount'
                 x-stainless-override-schema:
+                  x-stainless-naming:
+                    csharp:
+                      type_name: AccountCreateResponse
                   oneOf:
                     - $ref: '#/components/schemas/SanitizedXAccount'
-                    - $ref: '#/components/schemas/XAccountConnectionAttempt'
-                    - $ref: '#/components/schemas/XAccountConnectionChallenge'
+                    - $ref: '#/components/schemas/XAccountConnectionContinuation'
         '202':
           description: Connection continues or needs an email code
           headers:
@@ -5136,9 +5160,7 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/XAccountConnectionAttempt'
-                  - $ref: '#/components/schemas/XAccountConnectionChallenge'
+                $ref: '#/components/schemas/XAccountConnectionContinuation'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -5184,9 +5206,21 @@ paths:
           content:
             application/json:
               schema:
+                x-stainless-naming:
+                  csharp:
+                    type_name: AccountConnectionAttemptRetrieveResponse
                 oneOf:
-                  - $ref: '#/components/schemas/XAccountConnectionAttempt'
+                  - $ref: '#/components/schemas/XAccountConnectionAttemptPending'
+                  - $ref: '#/components/schemas/XAccountConnectionAttemptSuccess'
+                  - $ref: '#/components/schemas/XAccountConnectionAttemptFailed'
                   - $ref: '#/components/schemas/XAccountConnectionChallenge'
+                discriminator:
+                  propertyName: status
+                  mapping:
+                    pending: '#/components/schemas/XAccountConnectionAttemptPending'
+                    success: '#/components/schemas/XAccountConnectionAttemptSuccess'
+                    failed: '#/components/schemas/XAccountConnectionAttemptFailed'
+                    requires_email_code: '#/components/schemas/XAccountConnectionChallenge'
               example:
                 object: 'x_account_connection_attempt'
                 id: 'xatt_0123456789abcdef0123456789abcdef'
@@ -5461,9 +5495,23 @@ paths:
                         query:
                           type: string
                           example: '%23AI'
+                        promotedContent:
+                          type: [string, 'null']
+                          description:
+                            Promotion identifier from X. Null for organic
+                            trends.
                         rank:
                           type: integer
                           example: 1
+                        tweetVolume:
+                          type: [integer, 'null']
+                          description:
+                            Approximate public post volume when X supplies it.
+                          example: 250000
+                        url:
+                          type: string
+                          format: uri
+                          description: X search URL for the trend.
                     example:
                       - name: '#AI'
                         rank: 1
@@ -5477,8 +5525,11 @@ paths:
                 trends:
                   - name: '#AI'
                     description: 'Artificial intelligence discussions'
+                    promotedContent: null
                     query: '%23AI'
                     rank: 1
+                    tweetVolume: 250000
+                    url: 'https://x.com/search?q=%23AI'
                 total: 30
                 woeid: 1
         '400':
@@ -7429,16 +7480,9 @@ paths:
                       invites_policy:
                         type: string
                         description: Invitation policy
-                      is_member:
-                        type: boolean
-                        description:
-                          Whether the authenticated viewer is a member
                       is_nsfw:
                         type: boolean
                         description: Whether the community is marked sensitive
-                      role:
-                        type: string
-                        description: Authenticated viewer's community role
                       creator:
                         type: object
                         required: [id, username, verified]
@@ -11717,8 +11761,6 @@ components:
           type: boolean
         protected:
           type: boolean
-        canDm:
-          type: boolean
 
     TweetMedia:
       description: Normalized media attached to a tweet.
@@ -11734,6 +11776,91 @@ components:
         url:
           type: string
           description: X media link from the tweet
+        allowDownload:
+          type: boolean
+          description: Whether X permits direct media download.
+        altText:
+          type: string
+          description: Accessibility text supplied for the media.
+        aspectRatio:
+          type: array
+          description: Video aspect ratio as width and height.
+          items:
+            type: integer
+        availabilityStatus:
+          type: string
+          description: Media availability state reported by X.
+        displayUrl:
+          type: string
+          description: Display-friendly media URL reported by X.
+        durationMillis:
+          type: integer
+          description: Video duration in milliseconds.
+        expandedUrl:
+          type: string
+          description: Expanded X media URL.
+        faceRects:
+          type: object
+          description: Face-aware crop rectangles grouped by media size.
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              required: [x, y, w, h]
+              properties:
+                x:
+                  type: integer
+                y:
+                  type: integer
+                w:
+                  type: integer
+                h:
+                  type: integer
+        focusRects:
+          type: array
+          description: Suggested image crops reported by X.
+          items:
+            type: object
+            required: [x, y, w, h]
+            properties:
+              x:
+                type: integer
+              y:
+                type: integer
+              w:
+                type: integer
+              h:
+                type: integer
+        height:
+          type: integer
+          description: Original media height.
+        id:
+          type: string
+          description: X media entity ID.
+        indices:
+          type: array
+          description: Media entity offsets in the tweet text.
+          items:
+            type: integer
+        mediaKey:
+          type: string
+          description: Stable X media key.
+        monetizable:
+          type: boolean
+          description: Whether X reports the media as monetizable.
+        sizes:
+          type: object
+          description: Named media renditions and resize modes.
+          additionalProperties:
+            type: object
+            required: [w, h, resize]
+            properties:
+              w:
+                type: integer
+              h:
+                type: integer
+              resize:
+                type: string
         videoVariants:
           type: array
           description: Available video encodings, ordered as returned
@@ -11747,6 +11874,138 @@ components:
                 type: string
               url:
                 type: string
+        width:
+          type: integer
+          description: Original media width.
+
+    TweetArticleMetadata:
+      description: Article metadata attached to a tweet.
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        previewText:
+          type: string
+        coverMediaUrl:
+          type: string
+
+    TweetCard:
+      description: Public card metadata attached to a tweet.
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        url:
+          type: string
+        bindingValues:
+          type: object
+          additionalProperties: true
+          x-stainless-any: true
+          x-stainless-terraform-type: string
+
+    TweetCommunityNote:
+      description: Community Note presentation metadata returned by X.
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        shortTitle:
+          type: string
+        subtitle:
+          type: string
+        footer:
+          type: string
+        destinationUrl:
+          type: string
+        visualStyle:
+          type: string
+
+    TweetEdit:
+      description: Edit history metadata returned by X.
+      type: object
+      properties:
+        editTweetIds:
+          type: array
+          items:
+            type: string
+        editableUntilMsecs:
+          type: string
+
+    TweetNote:
+      description: Complete Note Tweet content and rich-text metadata.
+      type: object
+      required: [text]
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        isExpandable:
+          type: boolean
+        entities:
+          type: object
+          additionalProperties: true
+          x-stainless-any: true
+          x-stainless-terraform-type: string
+        richtextTags:
+          type: array
+          items:
+            type: object
+            required: [fromIndex, toIndex, types]
+            properties:
+              fromIndex:
+                type: integer
+              toIndex:
+                type: integer
+              types:
+                type: array
+                items:
+                  type: string
+
+    TweetPreviousCounts:
+      description: Engagement counts retained from a prior tweet edit.
+      type: object
+      properties:
+        bookmarkCount:
+          type: integer
+        likeCount:
+          type: integer
+        quoteCount:
+          type: integer
+        replyCount:
+          type: integer
+        retweetCount:
+          type: integer
+
+    TweetPlace:
+      description: Public place metadata attached to a tweet.
+      type: object
+      properties:
+        boundingBox:
+          type: object
+          additionalProperties: true
+          x-stainless-any: true
+          x-stainless-terraform-type: string
+        country:
+          type: string
+        countryCode:
+          type: string
+        fullName:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        placeType:
+          type: string
+        url:
+          type: string
 
     EmbeddedTweet:
       description: >
@@ -11814,11 +12073,35 @@ components:
             type: integer
         contentDisclosure:
           $ref: '#/components/schemas/ContentDisclosure'
+        article:
+          $ref: '#/components/schemas/TweetArticleMetadata'
+        card:
+          $ref: '#/components/schemas/TweetCard'
+        communityNote:
+          $ref: '#/components/schemas/TweetCommunityNote'
+        edit:
+          $ref: '#/components/schemas/TweetEdit'
+        isTranslatable:
+          type: boolean
+        noteTweet:
+          $ref: '#/components/schemas/TweetNote'
+        place:
+          $ref: '#/components/schemas/TweetPlace'
+        possiblySensitive:
+          type: boolean
+        previousCounts:
+          $ref: '#/components/schemas/TweetPreviousCounts'
+        viewState:
+          type: string
         entities:
           type: object
           additionalProperties: true
           x-stainless-any: true
           x-stainless-terraform-type: string
+        quoted_tweet:
+          $ref: '#/components/schemas/EmbeddedTweet'
+        retweeted_tweet:
+          $ref: '#/components/schemas/EmbeddedTweet'
         media:
           type: array
           items:
@@ -11847,10 +12130,6 @@ components:
               type: string
               description: Source of the AI-generated media disclosure.
               example: UserDeclared
-            canEdit:
-              type: boolean
-              description: Whether the disclosure can be edited on X.
-              example: true
             hasAiGeneratedMedia:
               type: boolean
               description:
@@ -11941,6 +12220,26 @@ components:
           example: [0, 31]
         contentDisclosure:
           $ref: '#/components/schemas/ContentDisclosure'
+        article:
+          $ref: '#/components/schemas/TweetArticleMetadata'
+        card:
+          $ref: '#/components/schemas/TweetCard'
+        communityNote:
+          $ref: '#/components/schemas/TweetCommunityNote'
+        edit:
+          $ref: '#/components/schemas/TweetEdit'
+        isTranslatable:
+          type: boolean
+        noteTweet:
+          $ref: '#/components/schemas/TweetNote'
+        place:
+          $ref: '#/components/schemas/TweetPlace'
+        possiblySensitive:
+          type: boolean
+        previousCounts:
+          $ref: '#/components/schemas/TweetPreviousCounts'
+        viewState:
+          type: string
         entities:
           type: object
           additionalProperties: true
@@ -11994,6 +12293,14 @@ components:
         - title: TweetAuthorRequirements
           type: object
           required: [followers, verified]
+          properties:
+            followers:
+              type: integer
+              minimum: 0
+              example: 150000000
+            verified:
+              type: boolean
+              example: true
 
     SearchTweet:
       description:
@@ -12069,6 +12376,26 @@ components:
           example: [0, 31]
         contentDisclosure:
           $ref: '#/components/schemas/ContentDisclosure'
+        article:
+          $ref: '#/components/schemas/TweetArticleMetadata'
+        card:
+          $ref: '#/components/schemas/TweetCard'
+        communityNote:
+          $ref: '#/components/schemas/TweetCommunityNote'
+        edit:
+          $ref: '#/components/schemas/TweetEdit'
+        isTranslatable:
+          type: boolean
+        noteTweet:
+          $ref: '#/components/schemas/TweetNote'
+        place:
+          $ref: '#/components/schemas/TweetPlace'
+        possiblySensitive:
+          type: boolean
+        previousCounts:
+          $ref: '#/components/schemas/TweetPreviousCounts'
+        viewState:
+          type: string
         entities:
           type: object
           additionalProperties: true
@@ -12113,6 +12440,43 @@ components:
           example: 2
         author:
           $ref: '#/components/schemas/UserProfile'
+
+    UserAffiliateLabel:
+      description: Organization affiliation label shown on an X profile.
+      type: object
+      properties:
+        badgeUrl:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+        urlType:
+          type: string
+        userLabelDisplayType:
+          type: string
+        userLabelType:
+          type: string
+
+    UserHighlightsInfo:
+      description: Profile highlight availability and count metadata.
+      type: object
+      properties:
+        canHighlightTweets:
+          type: boolean
+        highlightedTweets:
+          type: string
+
+    UserIdentityVerification:
+      description: Identity verification metadata displayed by X.
+      type: object
+      properties:
+        description:
+          type: string
+        isIdentityVerified:
+          type: boolean
+        verifiedSinceMsec:
+          type: string
 
     UserProfile:
       description:
@@ -12171,9 +12535,6 @@ components:
         mediaCount:
           type: integer
           example: 1200
-        canDm:
-          type: boolean
-          example: false
         protected:
           type: boolean
           description: Whether the profile protects its posts
@@ -12218,18 +12579,40 @@ components:
         verifiedType:
           type: string
           example: 'Business'
+        affiliatesHighlightedLabel:
+          $ref: '#/components/schemas/UserAffiliateLabel'
+        businessAccountAffiliatesCount:
+          type: integer
+        creatorSubscriptionsCount:
+          type: integer
+        hasGraduatedAccess:
+          type: boolean
+        hasHiddenSubscriptionsOnProfile:
+          type: boolean
+        highlightsInfo:
+          $ref: '#/components/schemas/UserHighlightsInfo'
+        identityVerification:
+          $ref: '#/components/schemas/UserIdentityVerification'
+        isProfileTranslatable:
+          type: boolean
+        parodyCommentaryFanLabel:
+          type: string
+        profileDescriptionLanguage:
+          type: string
+        profileImageShape:
+          type: string
+        profileInterstitialType:
+          type: string
+        profileSortEnabled:
+          type: boolean
+        profileTranslatorType:
+          type: string
+        superFollowEligible:
+          type: boolean
         communityRole:
           type: string
           description: Community role when returned by community member reads
           example: Member
-        viewerFollowedBy:
-          type: boolean
-          description: Whether this profile follows the authenticated viewer
-          example: false
-        viewerFollowing:
-          type: boolean
-          description: Whether the authenticated viewer follows this profile
-          example: true
         profile_bio:
           type: object
           additionalProperties: true
@@ -12556,14 +12939,14 @@ components:
       properties:
         object:
           type: string
-          enum: [x_account_connection_challenge]
+          const: x_account_connection_challenge
           example: 'x_account_connection_challenge'
         id:
           type: string
           example: 'xch_8vGd8Y9JvH6dV0xA'
         status:
           type: string
-          enum: [requires_email_code]
+          const: requires_email_code
           example: 'requires_email_code'
         expiresAt:
           type: string
@@ -12576,19 +12959,16 @@ components:
           type: string
           example: 'elonmusk'
 
-    XAccountConnectionAttempt:
-      description:
-        Track a connection until it succeeds, fails, or needs an email code.
+    XAccountConnectionContinuation:
+      description: The connection is still running or needs an email code.
       oneOf:
         - $ref: '#/components/schemas/XAccountConnectionAttemptPending'
-        - $ref: '#/components/schemas/XAccountConnectionAttemptSuccess'
-        - $ref: '#/components/schemas/XAccountConnectionAttemptFailed'
+        - $ref: '#/components/schemas/XAccountConnectionChallenge'
       discriminator:
         propertyName: status
         mapping:
           pending: '#/components/schemas/XAccountConnectionAttemptPending'
-          success: '#/components/schemas/XAccountConnectionAttemptSuccess'
-          failed: '#/components/schemas/XAccountConnectionAttemptFailed'
+          requires_email_code: '#/components/schemas/XAccountConnectionChallenge'
 
     XAccountConnectionAttemptPending:
       description: The connection is still in progress.
@@ -12716,6 +13096,7 @@ components:
           example: 'elonmusk'
         status:
           type: string
+          const: active
           example: 'active'
         health:
           type: string

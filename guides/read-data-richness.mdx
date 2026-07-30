@@ -1,0 +1,139 @@
+---
+title: Read Data Richness
+description: Understand complete normalized tweet, profile, media, and reply fields across REST, SDK, MCP, and Actor reads.
+keywords:
+  [
+    "X API fields",
+    "Twitter API fields",
+    "tweet metadata",
+    "profile metadata",
+    "media metadata",
+    "MCP response fields",
+    "Apify dataset fields",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Xquik preserves every safe field that X supplies for supported reads.
+Core fields remain stable. Optional fields appear only when X supplies them.
+
+The [OpenAPI contract](/api-reference/overview) defines exact REST and SDK
+types. The MCP contract normalizes names for agent use.
+Most fields use `snake_case`. REST `createdAt` becomes MCP `created`.
+It does not become `created_at`.
+
+## Tweet Fields
+
+Every tweet includes its ID, text, metrics, and available author data.
+These optional fields preserve additional X metadata.
+
+Core tweet fields are `id`, `text`, `createdAt`, `isNoteTweet`, `isReply`,
+`isLimitedReply`, `isQuoteStatus`, `conversationId`, `source`, `type`, `url`,
+`lang`, `inReplyToId`, `inReplyToUserId`, `inReplyToUsername`,
+`displayTextRange`, `contentDisclosure`, `entities`, `quoted_tweet`,
+`retweeted_tweet`, `author`, `media`, `retweetCount`, `replyCount`,
+`likeCount`, `quoteCount`, `viewCount`, and `bookmarkCount`.
+
+| Field               | Description                |
+| ------------------- | -------------------------- |
+| `article`           | X Article metadata         |
+| `card`              | Link card metadata         |
+| `communityNote`     | Community Note metadata    |
+| `edit`              | Edit history metadata      |
+| `isTranslatable`    | Translation availability   |
+| `noteTweet`         | Long-form post metadata    |
+| `place`             | Tagged place metadata      |
+| `possiblySensitive` | X sensitivity state        |
+| `previousCounts`    | Pre-edit engagement counts |
+| `viewState`         | X view-state metadata      |
+
+Tweets also include available entities, disclosures, nested tweets, and media.
+
+## Profile Fields
+
+Every profile includes `id`, `username`, and `name`.
+Counts, verification, images, bios, and other metadata appear when X supplies them.
+
+Core profile fields are `id`, `username`, `name`, `description`, `followers`,
+`following`, `verified`, `isBlueVerified`, `isVerified`, `profilePicture`,
+`coverPicture`, `profileBannerUrl`, `location`, `createdAt`, `statusesCount`,
+`mediaCount`, `protected`, `url`, `favouritesCount`,
+`hasCustomTimelines`, `isTranslator`, `withheldInCountries`,
+`possiblySensitive`, `pinnedTweetIds`, `isAutomated`, `automatedBy`,
+`unavailable`, `unavailableReason`, `verifiedType`, `communityRole`, and
+`profile_bio`.
+
+| Field                             | Description                       |
+| --------------------------------- | --------------------------------- |
+| `affiliatesHighlightedLabel`      | Affiliate label metadata          |
+| `businessAccountAffiliatesCount`  | Business affiliate count          |
+| `creatorSubscriptionsCount`       | Creator subscription count        |
+| `hasGraduatedAccess`              | Graduated access state            |
+| `hasHiddenSubscriptionsOnProfile` | Hidden subscription state         |
+| `highlightsInfo`                  | Profile highlights metadata       |
+| `identityVerification`            | Identity verification metadata    |
+| `isProfileTranslatable`           | Profile translation availability  |
+| `parodyCommentaryFanLabel`        | Parody or fan label               |
+| `profileDescriptionLanguage`      | Detected bio language             |
+| `profileImageShape`               | Profile image shape               |
+| `profileInterstitialType`         | Profile interstitial type         |
+| `profileSortEnabled`              | Profile sorting state             |
+| `profileTranslatorType`           | Profile translator type           |
+| `superFollowEligible`             | Subscription eligibility          |
+
+Customer responses omit the fetching account's private action, permission, and
+relationship state. This includes bookmark, like, follow, block, mute, direct
+message, notification, and edit-permission flags.
+
+## Media Fields
+
+Media rows keep their URL and type. These optional fields add detail.
+
+Every media object includes `mediaUrl`, `type`, and `url` when available.
+
+| Field                | Description                  |
+| -------------------- | ---------------------------- |
+| `allowDownload`      | Download permission          |
+| `altText`            | Accessibility text           |
+| `aspectRatio`        | Video aspect ratio           |
+| `availabilityStatus` | Media availability state     |
+| `displayUrl`         | Display URL                  |
+| `durationMillis`     | Video duration               |
+| `expandedUrl`        | Expanded media URL           |
+| `faceRects`          | Detected face rectangles     |
+| `focusRects`         | Crop focus rectangles        |
+| `height`             | Media height                 |
+| `id`                 | Media ID                     |
+| `indices`            | Source-text indices          |
+| `mediaKey`           | X media key                  |
+| `monetizable`        | Monetization state           |
+| `sizes`              | Available image sizes        |
+| `videoVariants`      | Video encodings and bitrates |
+| `width`              | Media width                  |
+
+## Reply Coverage
+
+Reply endpoints return replies visible through X's current conversation view.
+X can hide, rank, or omit replies from that view.
+Reply coverage depends on X.
+
+Xquik returns `424 replies_incomplete` when it detects incomplete first-page
+coverage. Search `conversation_id:<tweet_id>` for a broader fallback.
+
+Always report the rows collected and the final cursor state.
+
+## Surface Mapping
+
+| Surface | Field style | Contract |
+| ------- | ----------- | -------- |
+| REST API | Mostly `camelCase` | `quoted_tweet`, `retweeted_tweet`, and `profile_bio` are documented exceptions |
+| Generated SDKs | Language-native names | Generated OpenAPI models |
+| MCP | Normalized | Most names use `snake_case`; REST `createdAt` becomes MCP `created` |
+| Apify Actors | Configurable | Dataset schemas and Actor READMEs |
+
+<Info>
+  Xquik omits unavailable optional fields. It never invents missing X values.
+</Info>

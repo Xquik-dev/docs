@@ -1,7 +1,7 @@
 ---
 title: Connect AI Agents via MCP
 sidebarTitle: MCP Server
-description: Connect AI agents to Xquik API MCP v2.5.6 with OAuth 2.1 over Streamable HTTP
+description: Connect AI agents to Xquik API MCP v2.6.0 with MCP 2026-07-28, OAuth 2.1, and Streamable HTTP
 keywords: ["MCP", "model context protocol", "AI agents", "Claude", "ChatGPT", "server setup"]
 ---
 
@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik API MCP v2.5.6 exposes a scoped REST catalog through 2 [Model Context Protocol](https://modelcontextprotocol.io) tools. Full credentials see 120 catalog routes. Of these, 119 return JSON or text through MCP. Private support media downloads use REST. Guest `paid_reads` keys see exactly 33 GET routes.
+Xquik API MCP v2.6.0 exposes a scoped REST catalog through 2 [Model Context Protocol](https://modelcontextprotocol.io) tools. Full credentials see 120 catalog routes. Of these, 119 return JSON or text through MCP. Private support media downloads use REST. Guest `paid_reads` keys see exactly 33 GET routes.
 
 <Note>
   All public X data reads need no connected X account. Every X write requires
@@ -41,7 +41,7 @@ Xquik API MCP v2.5.6 exposes a scoped REST catalog through 2 [Model Context Prot
     Connect clients to `https://xquik.com/mcp`.
   </Card>
   <Card title="Server version" icon="badge-check">
-    Current API MCP server version: `2.5.6`.
+    Current API MCP server version: `2.6.0`.
   </Card>
   <Card title="Authentication" icon="key-round">
     Prefer OAuth 2.1. API keys remain available for clients with secure header
@@ -87,6 +87,28 @@ Agent Skills discovery is available at
 `https://xquik.com/.well-known/agent-skills/index.json`. It publishes a
 SHA-256 digest for Xquik's hosted `SKILL.md` so compatible agents can verify the
 downloaded instructions.
+
+## MCP 2026-07-28
+
+Xquik supports MCP `2026-07-28` at the same Streamable HTTP endpoint.
+Current clients start with `server/discover`. They do not call `initialize`
+or create a session for a modern connection.
+
+Use a current MCP SDK. It adds the request `_meta` envelope and required HTTP
+headers automatically. Modern requests must advertise both
+`application/json` and `text/event-stream`.
+
+`server/discover` and `tools/list` include private cache hints with a 5-minute
+TTL. Clients can reuse those results for the same authorization context.
+Never share privately cached catalogs across users or credentials.
+
+Xquik also accepts stateless 2025-era clients at the same endpoint. This keeps
+existing integrations working while current SDKs adopt `2026-07-28`.
+
+<Note>
+  Modern Xquik connections are request-scoped. Ignore legacy session IDs and
+  resume state. Let the client SDK negotiate the protocol.
+</Note>
 
 Unauthenticated requests to `https://xquik.com/mcp` return `401` with a
 `WWW-Authenticate: Bearer` challenge. The challenge includes

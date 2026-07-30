@@ -145,7 +145,14 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 3. Use full credentials for 120 catalog routes. Of these, 119 return JSON or text. Use REST for private support downloads. Guest keys expose 33 GET routes.
 4. Use `explore` to search the scoped catalog and `xquik` to run allowed requests.
 
-API MCP v2.5.6 uses Streamable HTTP. It returns normalized snake_case fields, Unix timestamps, structured errors, `has_more`, and `next_cursor`. Continue through empty pages while the cursor advances. Stop and report partial progress when a cursor is missing or repeats.
+API MCP v2.6.0 supports MCP `2026-07-28` over Streamable HTTP.
+Current SDKs negotiate with `server/discover`. They attach request metadata
+and headers automatically. Do not call `initialize` or manage sessions for
+modern connections. Stateless 2025-era clients remain compatible.
+
+MCP returns normalized snake_case fields, Unix timestamps, structured errors,
+`has_more`, and `next_cursor`. Continue through empty pages while the cursor
+advances. Stop and report partial progress when a cursor is missing or repeats.
 
 API-key lifecycle, saved-payment quick top-up, the account top-up redirect, and all 3 guest wallet credential routes are unavailable through MCP. Private support downloads are discoverable, but their binary responses require REST. Never start checkout or top-up after `401` or `402`. Ask the user to choose an amount. Wait for confirmation.
 

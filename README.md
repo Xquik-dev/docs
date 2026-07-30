@@ -26,7 +26,7 @@ Use SDK repositories for generated client APIs.
 - [Follower export](https://docs.xquik.com/guides/follower-export-crm) - export X followers to CRM or warehouse.
 - [Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow) - send DMs and store returned message IDs.
 - [Prefect](https://docs.xquik.com/guides/prefect) - schedule tweet, user, timeline, and trend reads in Prefect flows.
-- [MCP Server](https://docs.xquik.com/mcp) - connect AI clients through their current OAuth or secure API-key path.
+- [MCP Server v2.6.0](https://docs.xquik.com/mcp) - connect AI clients through MCP 2026-07-28, OAuth, or secure API keys.
 - [Webhooks](https://docs.xquik.com/webhooks/overview) - verify HMAC signatures and receive monitor events.
 - [Open Source Assurance](https://docs.xquik.com/guides/open-source-assurance) - review OpenSSF project mapping and public controls.
 - [Apify Actors](https://docs.xquik.com/alternatives/apify) - run X tweet and follower export jobs on Apify.
@@ -37,6 +37,7 @@ Use SDK repositories for generated client APIs.
 - [Context7 library](https://context7.com/xquik-dev/xquik-docs) - load indexed Xquik docs in supported coding agents.
 - [llms.txt](https://docs.xquik.com/llms.txt) - discover every public docs page before reading deeper.
 - [MCP Server](https://docs.xquik.com/mcp) - connect Xquik tools through OAuth-first Streamable HTTP.
+- [MCP 2026-07-28](https://docs.xquik.com/mcp/overview#mcp-2026-07-28) - understand `server/discover`, request-scoped calls, and private cache hints.
 - [Codex OAuth troubleshooting](https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error) - if Codex reports `Authorization server response missing required issuer: expected https://xquik.com`, use `bearer_token_env_var = "XQUIK_API_KEY"` until the [upstream Codex issue](https://github.com/openai/codex/issues/31573) identifies a fixed release. Xquik already returns the required RFC 9207 `iss` value.
 - [Agent index](https://xquik.com/.well-known/agent-index.json) - discover the API MCP endpoint, manifest, OAuth metadata, and auth.md.
 - [Agent Skills index](https://xquik.com/.well-known/agent-skills/index.json) - discover and verify Xquik's hosted `SKILL.md`.
