@@ -2352,6 +2352,8 @@ const REQUIRED_BILLING_MPP_SNIPPETS = [
 
 const REQUIRED_GUEST_WALLET_GUIDE_SNIPPETS = [
   'Guest wallets provide prepaid access to 33 eligible X read routes without an account',
+  'Every guest-wallet paid read requires the active guest key returned during wallet creation.',
+  'Direct MPP reads use a per-request payment credential.',
   'A `401` or `402` response never creates a checkout.',
   'Create a Payment Link only after the user explicitly confirms.',
   'The `paid_reads` scope permits exactly the 33 GET routes',
@@ -4286,6 +4288,7 @@ const FORBIDDEN_FAVORITERS_API_RAW_OUTPUT_SNIPPETS = [
 
 const REQUIRED_COMMUNITY_INFO_API_HANDOFF_SNIPPETS = [
   '`GET /x/communities/{id}/info`',
+  '<Card title="Keyword search" icon="search" href="/api-reference/x/community-search">',
   'const communityRecord = {',
   'community_id: community.id',
   'community_name: community.name ?? null',
