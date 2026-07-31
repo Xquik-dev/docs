@@ -30,6 +30,15 @@ After `429`, wait for `Retry-After`. Use the limiter below to prevent `429`.
   </Card>
 </CardGroup>
 
+| Rate-limit signal | Meaning | Client action |
+| --- | --- | --- |
+| 300 reads per second | `GET`, `HEAD`, and `OPTIONS` share one window. | Pace read workers below the shared account limit. |
+| 120 writes per minute | `POST`, `PUT`, and `PATCH` share one window. | Queue tweet, monitor, webhook, and profile changes. |
+| 60 deletes per minute | Every `DELETE` request uses the delete window. | Serialize cleanup jobs and preserve their resource IDs. |
+| 20 follows per minute | Follow actions have a stricter endpoint limit. | Enforce both the minute and daily follow limits. |
+| `Retry-After` header | The account hit a server-enforced limit. | Pause for the supplied duration before retrying. |
+| `retryAfter` or `retryAfterMs` | The SDK exposed a retry duration. | Resume the same operation after the specified delay. |
+
 ### Action-specific limits
 
 Some write endpoints have stricter limits that apply on top of the general write tier:

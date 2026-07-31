@@ -423,6 +423,90 @@ const REQUIRED_OPERATIONAL_TABLES = [
       '| Changed fields | Exact request keys | Leave unrelated profile fields absent. |',
     ],
   },
+  {
+    file: 'guides/extraction-workflow.mdx',
+    snippets: [
+      '| Extraction stage | Exact API call | Durable checkpoint |',
+      '| Retrieve rows | `GET /extractions/{id}` | `nextCursor` while `hasMore` is true |',
+    ],
+  },
+  {
+    file: 'guides/rate-limits.mdx',
+    snippets: [
+      '| Rate-limit signal | Meaning | Client action |',
+      '| `Retry-After` header | The account hit a server-enforced limit. | Pause for the supplied duration before retrying. |',
+    ],
+  },
+  {
+    file: 'guides/x-api-typescript-types.mdx',
+    snippets: [
+      '| Contract area | Curated types | Route use |',
+      '| Extractions | `Extraction`, `ExtractionResultPage` | Run follower or reply exports and retrieve saved rows. |',
+    ],
+  },
+  {
+    file: 'mcp/tools.mdx',
+    snippets: [
+      '| Agent task | MCP call | Durable output |',
+      "| Search tweets | `xquik.request('/api/v1/x/tweets/search')` | Preserve tweet IDs, authors, timestamps, and `next_cursor`. |",
+    ],
+  },
+  {
+    file: 'sdks/csharp-x-api-sdk.mdx',
+    snippets: [
+      '| C# worker task | SDK call | Durable checkpoint |',
+      '| Start an extraction | `client.Extractions.Run` | Save `job.ID` immediately. |',
+    ],
+  },
+  {
+    file: 'sdks/go.mdx',
+    snippets: [
+      '| Go task | SDK call | Save |',
+      '| Export followers | `client.Extractions.Run` | `job.ID` |',
+    ],
+  },
+  {
+    file: 'sdks/java.mdx',
+    snippets: [
+      '| Java worker task | SDK call | Durable checkpoint |',
+      '| Start an extraction | `client.extractions().run` | Save `job.id()` immediately. |',
+    ],
+  },
+  {
+    file: 'sdks/kotlin.mdx',
+    snippets: [
+      '| Kotlin task | SDK call | Save |',
+      '| Retrieve saved rows | `client.extractions().retrieve` | Keep `nextCursor()` while `hasMore()` is true. |',
+    ],
+  },
+  {
+    file: 'sdks/php.mdx',
+    snippets: [
+      '| PHP task | SDK call | Save |',
+      '| Export followers | `$client->extractions->run()` | `$job->id` |',
+    ],
+  },
+  {
+    file: 'sdks/python.mdx',
+    snippets: [
+      '| Python task | SDK call | Save |',
+      '| Export followers | `client.extractions.run` | `job.id` |',
+    ],
+  },
+  {
+    file: 'sdks/ruby.mdx',
+    snippets: [
+      '| Ruby task | SDK call | Save |',
+      '| Export followers | `client.extractions.run` | `job.id` |',
+    ],
+  },
+  {
+    file: 'sdks/typescript.mdx',
+    snippets: [
+      '| TypeScript task | SDK call | Save |',
+      '| Export followers | `client.extractions.run` | `job.id` |',
+    ],
+  },
 ] as const;
 
 describe('operational content tables', (): void => {
