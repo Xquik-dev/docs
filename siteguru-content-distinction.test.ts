@@ -23,6 +23,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     file: 'api-reference/monitors/get-keyword.mdx',
     phrases: [
       'Inspect One Twitter Keyword Monitor',
+      'Single-monitor question',
       'tracked search',
       'Verify One Alert Before Incident Review',
       'Diagnose One Keyword Monitor',
@@ -33,6 +34,8 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: 'api-reference/monitors/list-keywords.mdx',
     phrases: [
+      'Reconcile the Entire Keyword Monitor Portfolio',
+      'Portfolio check',
       'Review a Portfolio of Tracked Search Rules',
       'Prepare a Keyword Monitor Budget Report',
     ],
@@ -100,6 +103,8 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: 'api-reference/x/community-tweets.mdx',
     phrases: [
+      'Archive the Unfiltered Community Feed',
+      'Feed decision',
       'Export a Community Timeline Without a Search Query',
       'timeline order',
       'Build a Community Timeline Archive',
@@ -125,6 +130,8 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: 'api-reference/x/community-search.mdx',
     phrases: [
+      'Filter One Community by Query',
+      'Search decision',
       'Compare Latest and Top Results Without Mixing Datasets',
       'Build a Live Community Review Queue',
       'Preserve Decisions Across a Live Moderation Queue',
@@ -144,6 +151,22 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: 'api-reference/x-write/unfollow.mdx',
     phrases: ['Review a Following-Cleanup Batch'],
+  },
+  {
+    file: 'api-reference/x-write/delete-community.mdx',
+    phrases: [
+      'Delete an Owned Community, Not a Membership',
+      'Deletion gate',
+      'This route does not leave a community membership.',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/leave-community.mdx',
+    phrases: [
+      'Leave Membership Without Deleting the Community',
+      'Departure check',
+      'This route does not disband the group.',
+    ],
   },
   {
     file: 'api-reference/support/reply.mdx',
