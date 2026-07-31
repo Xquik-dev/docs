@@ -3423,7 +3423,13 @@ const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
+  'title: "Twitter Followers Scraper API: CSV & CRM Export"',
   'follower_explorer',
+  'Use it as a Twitter follower tracker for repeatable account snapshots.',
+  'A private account does not make its followers public.',
+  'Do not infer inactive',
+  'accounts from missing pages or unchanged follower counts.',
+  'Call the result a full list only when pagination ends normally.',
   '## Twitter Follower Export Questions',
   '### Download Follower List Twitter',
   '### Export Twitter Followers API',
