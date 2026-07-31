@@ -12,6 +12,15 @@ Every webhook delivery is signed with HMAC-SHA256 over a string built from a
 timestamp, nonce, and the raw body. Always verify the signature AND reject
 stale or replayed requests before processing events.
 
+| Verification checkpoint | Exact source | Reject when |
+| --- | --- | --- |
+| Signature | `X-Xquik-Signature` | HMAC-SHA256 differs in a timing-safe comparison. |
+| Timestamp | `X-Xquik-Timestamp` | The delivery falls outside the 5-minute tolerance. |
+| Nonce | `X-Xquik-Nonce` | The webhook already used this nonce within 5 minutes. |
+| Raw body | Unparsed request bytes | Middleware parsed or re-serialized JSON before verification. |
+| Delivery | `deliveryId` | The receiver already queued this webhook attempt. |
+| Monitor event | `streamEventId` | The receiver already processed this monitor event. |
+
 ## Headers sent with every delivery
 
 Read these headers from each webhook `POST` before parsing the JSON body. The

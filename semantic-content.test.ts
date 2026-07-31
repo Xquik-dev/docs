@@ -507,6 +507,20 @@ const REQUIRED_OPERATIONAL_TABLES = [
       '| Export followers | `client.extractions.run` | `job.id` |',
     ],
   },
+  {
+    file: 'webhooks/verification.mdx',
+    snippets: [
+      '| Verification checkpoint | Exact source | Reject when |',
+      '| Monitor event | `streamEventId` | The receiver already processed this monitor event. |',
+    ],
+  },
+  {
+    file: 'x-api-quickstart.mdx',
+    snippets: [
+      '| Integration step | Exact API call | Save for the next step |',
+      '| Monitor tweets and replies | `POST /monitors` | Monitor `id`, `username`, `eventTypes`, and `enabled` |',
+    ],
+  },
 ] as const;
 
 describe('operational content tables', (): void => {
