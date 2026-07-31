@@ -3622,7 +3622,7 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
-  'title: "Get tweet replies"',
+  'title: "Twitter reply scraper & replies export"',
   'Get tweet replies returns reply tweets for one X post by numeric tweet ID.',
   'conversation analysis, support queues, moderation review, giveaway',
   '`GET /api/v1/x/tweets/{id}/replies`',
@@ -3801,7 +3801,7 @@ const FORBIDDEN_TWEET_QUOTES_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_GET_TWEET_API_HANDOFF_SNIPPETS = [
-  'title: "Get tweet"',
+  'title: "Get tweet | REST API reference"',
   '`GET /x/tweets/{id}`',
   '`GET /api/v1/x/tweets/{id}`',
   'tweet lookup API',
@@ -4027,7 +4027,7 @@ const FORBIDDEN_TRENDS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
-  'title: "Get X article"',
+  'title: "Get X article | REST API reference"',
   'Retrieve one long-form X Article by tweet ID',
   '`GET /x/articles/{tweetId}`',
   '`GET /api/v1/x/articles/{tweetId}`',
@@ -4108,7 +4108,7 @@ const FORBIDDEN_GET_ARTICLE_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWEET_THREAD_API_HANDOFF_SNIPPETS = [
-  'title: "Get tweet thread"',
+  'title: "Get tweet thread | REST API reference"',
   '`GET /x/tweets/{id}/thread`',
   '`GET /api/v1/x/tweets/{id}/thread`',
   'tweet thread API',
@@ -4555,7 +4555,7 @@ const FORBIDDEN_COMMUNITY_SEARCH_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
-  'title: "Get followers"',
+  'title: "Twitter followers API & export"',
   'Get an X account\'s followers by username or user ID',
   'Follower Export API',
   'X followers API',
@@ -5389,7 +5389,7 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
-  'return paginated JSON tweet data for CRM, agents, or export handoff',
+  'Search tweets by keyword, ID, or URL. Return text, authors, replies, metrics, media, and cursors for CRM, agents, or exports.',
   'Use Search Tweets for keyword, hashtag, operator, and filtered discovery.',
   'exact lookup, send a Tweet ID or X status',
   'with no time params',
@@ -5702,7 +5702,7 @@ const FORBIDDEN_TIMELINE_API_RAW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS = [
-  'title: "Get user timeline"',
+  'title: "Get user timeline | REST API reference"',
   'Get user timeline is the User Timeline API for a single public X profile.',
   '"user tweets," "profile',
   'timeline," or "X user timeline."',
@@ -6430,7 +6430,7 @@ const FORBIDDEN_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
-  'title: "Upload media"',
+  'title: "Upload media | REST API reference"',
   'post tweet with media',
   'post tweet replies with media',
   'send DM with media',
@@ -7601,7 +7601,7 @@ const FORBIDDEN_DM_HISTORY_LOG_SNIPPETS = [
 ] as const;
 
 const REQUIRED_SEND_DM_API_SNIPPETS = [
-  'title: "Send DM"',
+  'title: "Send DM | REST API reference"',
   'Twitter DM API',
   'X direct message API',
   'send DM with media',

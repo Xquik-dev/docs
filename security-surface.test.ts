@@ -29,7 +29,7 @@ function docsConfig(): DocsConfig {
 
 describe('public security surface', (): void => {
   it('keeps owner verification and security contacts discoverable', (): void => {
-    expect.assertions(9);
+    expect.assertions(10);
 
     const config = docsConfig();
     const trustLinks = config.footer?.links?.find(
@@ -43,8 +43,12 @@ describe('public security surface', (): void => {
       destination: '/security.txt',
     });
     expect(config.redirects).toContainEqual({
+      source: '/',
+      destination: '/api-reference/overview',
+    });
+    expect(config.redirects).toContainEqual({
       source: '/introduction',
-      destination: '/',
+      destination: '/api-reference/overview',
     });
     expect(trustLinks).toStrictEqual([
       { label: 'Security', href: '/security' },
