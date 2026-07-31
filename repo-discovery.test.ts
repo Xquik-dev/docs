@@ -9,6 +9,15 @@ interface DiscoveryFinding {
   readonly issue: string;
 }
 
+interface DocsRedirect {
+  readonly destination: string;
+  readonly source: string;
+}
+
+interface DocsConfig {
+  readonly redirects: readonly DocsRedirect[];
+}
+
 const SKIPPED_PUBLIC_SCAN_DIRS = new Set([
   '.git',
   'node_modules',
@@ -3233,7 +3242,7 @@ const REQUIRED_AUTHENTICATION_ERROR_GUIDE_SNIPPETS = [
 const REQUIRED_BILLING_ERROR_GUIDE_SNIPPETS = [
   '<Accordion title="Billing & credit errors (402)">',
   '<Card title="no_subscription" icon="badge-x">',
-  '[subscribe](/api-reference/account/subscribe)',
+  '[subscribe](/api-reference/account/subscription-checkout)',
   '<Card title="subscription_inactive" icon="badge-alert">',
   'Remaining credits work.',
   '<Card title="payment_failed" icon="credit-card">',
@@ -6100,7 +6109,7 @@ const REQUIRED_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
   'Use `targetSpaceId` for Space jobs:',
   '`space_explorer` extracts participants of a Space.',
   'Store `targetSpaceId` beside the returned extraction `id`.',
-  '[Get Extraction](/api-reference/extractions/get)',
+  '[Get Extraction](/api-reference/extractions/twitter-extraction-results)',
   '[Export Extraction](/api-reference/extractions/export)',
   'read participant user rows.',
 ] as const;
@@ -6128,7 +6137,7 @@ const REQUIRED_EXTRACTION_CREATE_RECEIPT_SNIPPETS = [
   '<Card title="Poll results" icon="rotate-cw">',
   'to read `job.status`, paginated `results`, `hasMore`, and `nextCursor`.',
   '<Card title="Find later" icon="list">',
-  'Use [List Extractions](/api-reference/extractions/list) with `status` and',
+  'Use [List Extractions](/api-reference/extractions/twitter-scraping-job-history) with `status` and',
   '<Card title="Export after completion" icon="download">',
   'Use [Export Extraction](/api-reference/extractions/export) after the detail',
 ] as const;
@@ -6332,7 +6341,7 @@ const REQUIRED_EXTRACTION_LIST_HANDOFF_SNIPPETS = [
   '`detail_path`, and `export_path`',
   '<Card title="Running or failed jobs" icon="circle-alert">',
   '<Card title="Next API step" icon="route">',
-  'Use [Get Extraction](/api-reference/extractions/get)',
+  'Use [Get Extraction](/api-reference/extractions/twitter-extraction-results)',
   'or [Export Extraction](/api-reference/extractions/export) for files.',
   '"tool_type_filter": "reply_extractor"',
   '"status_filter": "completed"',
@@ -8537,9 +8546,9 @@ const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
   '[`POST /webhooks/{id}/test`](/api-reference/webhooks/test)',
   '<Card title="Monitor ID" icon="fingerprint">',
   'Store `id` as `monitor_id`.',
-  '[Get Monitor](/api-reference/monitors/get)',
+  '[Get Monitor](/api-reference/monitors/twitter-account-monitor-status)',
   '[Update Monitor](/api-reference/monitors/update)',
-  '[Delete Monitor](/api-reference/monitors/delete)',
+  '[Delete Monitor](/api-reference/monitors/delete-twitter-account-monitor)',
   '<Card title="Stored Account" icon="user">',
   'Store `username` after trimming the `@` prefix and `xUserId`',
   '<Card title="Event Filter" icon="funnel">',
@@ -8721,7 +8730,7 @@ const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   "Store each monitor's `id`, `username`, and `xUserId`",
   'warehouse, or queue records.',
   '<Card title="Detail Handoff" icon="file-search">',
-  '[Get Monitor](/api-reference/monitors/get)',
+  '[Get Monitor](/api-reference/monitors/twitter-account-monitor-status)',
   'latest event filter, active state, or billing',
   '<Card title="Active Billing" icon="activity">',
   'Filter monitors where `isActive` is `true`.',
@@ -8745,7 +8754,7 @@ const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   '[Update Monitor](/api-reference/monitors/update)',
   'replace `eventTypes`',
   'toggle `isActive`.',
-  '[Delete Monitor](/api-reference/monitors/delete)',
+  '[Delete Monitor](/api-reference/monitors/delete-twitter-account-monitor)',
   'tracked account should stop permanently.',
 ] as const;
 
@@ -8817,7 +8826,7 @@ const REQUIRED_ACCOUNT_MONITOR_UPDATE_API_HANDOFF_SNIPPETS = [
   'configuration.',
   '<Card title="Inventory Sync" icon="list-checks">',
   '[List Monitors](/api-reference/monitors/list)',
-  '[Get Monitor](/api-reference/monitors/get)',
+  '[Get Monitor](/api-reference/monitors/twitter-account-monitor-status)',
   'queues, CRM records, or support notes.',
   '`eventTypes` replaces the current filter.',
   'Keep [List Webhooks](/api-reference/webhooks/list)',
@@ -8922,7 +8931,7 @@ const REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
   '<Card title="Verify Removal" icon="list-checks">',
   '[List Monitors](/api-reference/monitors/list)',
   '[Get',
-  'Monitor](/api-reference/monitors/get)',
+  'Monitor](/api-reference/monitors/twitter-account-monitor-status)',
   'return `404` for the deleted',
   '<Card title="Track New Account" icon="user-plus">',
   'Store the new',
@@ -10735,6 +10744,37 @@ const FORBIDDEN_GENERIC_TITLE_PHRASES = [
   'rest api reference',
 ] as const;
 
+const FOCUSED_API_ROUTE_MIGRATIONS = [
+  {
+    source: '/api-reference/account/subscribe',
+    destination: '/api-reference/account/subscription-checkout',
+  },
+  {
+    source: '/api-reference/draws/list',
+    destination: '/api-reference/draws/twitter-giveaway-history',
+  },
+  {
+    source: '/api-reference/extractions/estimate',
+    destination: '/api-reference/extractions/twitter-scraping-cost-estimator',
+  },
+  {
+    source: '/api-reference/extractions/get',
+    destination: '/api-reference/extractions/twitter-extraction-results',
+  },
+  {
+    source: '/api-reference/extractions/list',
+    destination: '/api-reference/extractions/twitter-scraping-job-history',
+  },
+  {
+    source: '/api-reference/monitors/delete',
+    destination: '/api-reference/monitors/delete-twitter-account-monitor',
+  },
+  {
+    source: '/api-reference/monitors/get',
+    destination: '/api-reference/monitors/twitter-account-monitor-status',
+  },
+] as const;
+
 function listAlternativeFiles(): readonly string[] {
   return [
     'alternatives.mdx',
@@ -11134,6 +11174,63 @@ function collectNonDescriptiveInternalAnchorFindings(): readonly DiscoveryFindin
   return findings;
 }
 
+function collectFocusedApiRouteFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+  const docsConfigSource = readFileSync('docs.json', 'utf8');
+  const docsConfig = JSON.parse(docsConfigSource) as DocsConfig;
+  const navigationSource = docsConfigSource.slice(
+    docsConfigSource.indexOf('"navigation"'),
+  );
+
+  for (const route of FOCUSED_API_ROUTE_MIGRATIONS) {
+    const sourcePath = route.source.slice(1);
+    const destinationPath = route.destination.slice(1);
+
+    if (existsSync(`${sourcePath}.mdx`)) {
+      findings.push({
+        file: `${sourcePath}.mdx`,
+        issue: `Generic audited route "${route.source}" still has a public page.`,
+      });
+    }
+
+    if (!existsSync(`${destinationPath}.mdx`)) {
+      findings.push({
+        file: `${destinationPath}.mdx`,
+        issue: `Focused audited route "${route.destination}" needs a public page.`,
+      });
+    }
+
+    if (navigationSource.includes(`"${sourcePath}"`)) {
+      findings.push({
+        file: 'docs.json',
+        issue: `Navigation still publishes generic audited route "${route.source}".`,
+      });
+    }
+
+    if (!navigationSource.includes(`"${destinationPath}"`)) {
+      findings.push({
+        file: 'docs.json',
+        issue: `Navigation is missing focused audited route "${route.destination}".`,
+      });
+    }
+
+    if (
+      !docsConfig.redirects.some(
+        (redirect) =>
+          redirect.source === route.source &&
+          redirect.destination === route.destination,
+      )
+    ) {
+      findings.push({
+        file: 'docs.json',
+        issue: `Redirect "${route.source}" must preserve links to "${route.destination}".`,
+      });
+    }
+  }
+
+  return findings;
+}
+
 function collectEndpointTitleCaseFindings(): readonly DiscoveryFinding[] {
   const findings: DiscoveryFinding[] = [];
 
@@ -11198,6 +11295,12 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     expect(collectNonDescriptiveInternalAnchorFindings()).toStrictEqual([]);
+  });
+
+  it('keeps audited API routes focused and preserves old links', (): void => {
+    expect.assertions(1);
+
+    expect(collectFocusedApiRouteFindings()).toStrictEqual([]);
   });
 
   it('keeps endpoint titles in sentence case', (): void => {
@@ -13577,7 +13680,7 @@ describe('repository discovery', (): void => {
   it('keeps the get extraction page cursor-safe for JSON handoffs', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/extractions/get.mdx', 'utf8');
+    const source = readFileSync('api-reference/extractions/twitter-extraction-results.mdx', 'utf8');
 
     expect(
       [
@@ -13603,7 +13706,7 @@ describe('repository discovery', (): void => {
   it('keeps the list extractions page cursor-safe for job inventory handoffs', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/extractions/list.mdx', 'utf8');
+    const source = readFileSync('api-reference/extractions/twitter-scraping-job-history.mdx', 'utf8');
 
     expect(
       [
@@ -13746,7 +13849,7 @@ describe('repository discovery', (): void => {
   it('keeps extraction estimate framed as a decision checkpoint', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/extractions/estimate.mdx', 'utf8');
+    const source = readFileSync('api-reference/extractions/twitter-scraping-cost-estimator.mdx', 'utf8');
 
     expect(
       [
@@ -14928,7 +15031,7 @@ describe('repository discovery', (): void => {
   it('keeps the account monitor get API handoff concrete', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/monitors/get.mdx', 'utf8');
+    const source = readFileSync('api-reference/monitors/twitter-account-monitor-status.mdx', 'utf8');
 
     expect(
       [
@@ -15025,7 +15128,7 @@ describe('repository discovery', (): void => {
   it('keeps the account monitor delete API handoff concrete', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/monitors/delete.mdx', 'utf8');
+    const source = readFileSync('api-reference/monitors/delete-twitter-account-monitor.mdx', 'utf8');
 
     expect(
       [
