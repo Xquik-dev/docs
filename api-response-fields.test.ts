@@ -238,7 +238,6 @@ const PAGINATED_TWEET_PAGES = [
   'api-reference/x/list-tweets.mdx',
   'api-reference/x/community-tweets.mdx',
   'api-reference/x/community-search.mdx',
-  'api-reference/x/search-community-tweets.mdx',
   'api-reference/x/user-mentions.mdx',
 ] as const;
 

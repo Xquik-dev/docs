@@ -32,7 +32,6 @@ const LINK_CLUSTERS: readonly LinkCluster[] = [
       '/api-reference/x/community-moderators',
       '/api-reference/x/community-tweets',
       '/api-reference/x/community-search',
-      '/api-reference/x/search-community-tweets',
     ],
   },
   {

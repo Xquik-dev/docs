@@ -180,6 +180,66 @@ Finish the qualification record with these decisions:
 This route creates the qualification record. Collection routes create the
 profile and tweet rows that follow.
 
+## Create a Community Qualification Manifest
+
+Create one manifest before starting member, moderator, or tweet collection.
+Use the returned community ID as its stable key.
+
+Record these community facts:
+
+- Community name and description.
+- Member count and moderator count.
+- Join policy and invitation policy.
+- Viewer membership state and viewer role.
+- Primary topic and content-sensitivity state.
+- Creator profile and banner URL when returned.
+- Every rule ID, rule name, and rule description.
+
+Add a retrieval timestamp in UTC. Community names, counts, rules, and policies
+can change. The timestamp explains which metadata guided later collection.
+
+Keep planned collection work in a separate manifest section. Name the exact
+routes for members, moderators, unfiltered tweets, or keyword matches. Include
+the intended page size, search query, and output format when applicable.
+
+Do not copy member profiles into this metadata record. Do not copy tweets into
+it either. Link later exports by community ID and manifest ID.
+
+Reject a collection request when the returned community ID differs. Require a
+review when the name or topic conflicts with the project brief. Record the
+decision instead of silently selecting another community.
+
+## Use Community Metadata to Choose the Next Route
+
+Use [Community Members](/api-reference/x/community-members) for paginated
+profile rows. The member count only estimates the expected roster size.
+
+Use [Community Moderators](/api-reference/x/community-moderators) for moderator
+profiles. The moderator count does not expose those usernames or user IDs.
+
+Use [Community Tweets](/api-reference/x/community-tweets) for the unfiltered
+community timeline. Preserve community ID and cursor with every page.
+
+Use [Community Search](/api-reference/x/community-search) for matching tweets.
+Preserve the exact keyword expression and sort mode with every result.
+
+Use the creator object only for community ownership context. Do not add that
+profile to member or moderator exports without route evidence.
+
+## Detect Community Metadata Drift
+
+Compare manifests by stable community ID. Never join them by community name.
+
+Report name, description, topic, policy, rule, and sensitivity changes
+separately. A member-count change does not prove a policy change. A rule change
+does not prove that existing tweets changed.
+
+Store both retrieval times and both returned values. Keep missing fields as
+missing. Never convert absent policies or counts into invented defaults.
+
+Refresh this endpoint before long-running exports. Attach the newest manifest
+ID to every new collection job. Keep earlier manifests immutable for audits.
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>

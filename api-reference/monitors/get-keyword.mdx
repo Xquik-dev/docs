@@ -268,6 +268,58 @@ Inspect stored events by `keywordMonitorId`. Inspect delivery records by webhook
 
 Do not edit the monitor during diagnosis. Capture its previous state before any approved change.
 
+## Prove a Keyword Alert With Stored Evidence
+
+Build one evidence chain for the alert under review. Start with this endpoint's
+monitor response. Preserve its ID, exact query, active state, and event types.
+
+Run the exact query through [Tweet Search](/api-reference/x/search-tweets).
+Save matching Tweet IDs and creation times. A search match proves query
+coverage. It does not prove that a monitor stored an event.
+
+Next, list stored events for the same keyword monitor ID. Match the expected
+Tweet ID when the event payload exposes it. Preserve the event ID and event
+timestamp. An event proves monitor ingestion. It does not prove webhook
+delivery.
+
+Finally, inspect deliveries for the subscribed webhook. Join each delivery's
+`streamEventId` to the stored event ID. Record its status and attempt time. A
+delivery record proves notification handling.
+
+Keep three outcomes separate:
+
+- Search found the tweet, but no monitor event exists.
+- A monitor event exists, but no delivery references it.
+- A delivery exists, but the receiving application rejected it.
+
+Never report those outcomes as one generic alert failure. Each outcome needs a
+different correction. Query changes affect matching. Monitor state affects
+future event creation. Webhook work affects notification transport.
+
+Record the investigation window in UTC. Compare tweet, event, and delivery
+timestamps inside that window. Avoid using dashboard refresh time as evidence.
+
+Finish with one durable incident record. Include monitor ID, query, Tweet ID,
+event ID, webhook ID, and delivery result. Link every conclusion to a returned
+field. This makes another operator's review repeatable.
+
+## Distinguish Configuration Drift From Missing Tweets
+
+Compare the returned query with the approved query character by character.
+Check quoted phrases, exclusions, hashtags, usernames, and search operators.
+One missing operator can change every matched tweet.
+
+Compare `eventTypes` with the approved event scope. Keep the full returned
+array. Do not summarize several values as a broad monitoring label.
+
+Check `isActive` and `nextBillingAt` together. A stored monitor can remain
+visible while paused. A future billing timestamp supports the next budget
+review. Neither field proves that a specific tweet created an event.
+
+Use [Update Account Monitor](/api-reference/monitors/update) only for account
+monitors. Keyword monitors use their dedicated update route. Keep monitor types
+separate when support tickets contain several IDs.
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>

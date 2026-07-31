@@ -26,6 +26,8 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
       'tracked search',
       'Verify One Alert Before Incident Review',
       'Diagnose One Keyword Monitor',
+      'Prove a Keyword Alert With Stored Evidence',
+      'Distinguish Configuration Drift From Missing Tweets',
     ],
   },
   {
@@ -48,6 +50,9 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
       'Validate an X Community Before Extraction',
       'wrong X community',
       'Qualify a Community Before Collecting Profiles or Tweets',
+      'Create a Community Qualification Manifest',
+      'Use Community Metadata to Choose the Next Route',
+      'Detect Community Metadata Drift',
     ],
   },
   {
@@ -84,6 +89,9 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
       'Audit a Cursor-Based Community Feed',
       'Preserve Community Tweet Authors and Media',
       'Compare Community Timeline Snapshots',
+      'Measure a Community Timeline Window',
+      'Reconcile a Moving Community Feed',
+      'Audit Authors, Engagement, and Media',
     ],
   },
   {
@@ -98,23 +106,23 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     phrases: ['Add API Credits With a Saved Payment Method', 'Read `outcome`'],
   },
   {
-    file: 'api-reference/x/search-community-tweets.mdx',
+    file: 'api-reference/x/community-search.mdx',
     phrases: [
+      'Compare Latest and Top Results Without Mixing Datasets',
+      'Build a Live Community Review Queue',
       'Preserve Decisions Across a Live Moderation Queue',
       'Build a Query-Specific Community Review Batch',
       'Separate Search Matches From Community Feed Coverage',
     ],
   },
   {
-    file: 'api-reference/x/community-search.mdx',
-    phrases: [
-      'Compare Latest and Top Results Without Mixing Datasets',
-      'Rank Community Discovery Candidates',
-    ],
-  },
-  {
     file: 'api-reference/monitors/update.mdx',
-    phrases: ['Change One Account Monitor Safely'],
+    phrases: [
+      'Change One Account Monitor Safely',
+      'Prepare a Reversible Account Monitor Change',
+      'Separate Pausing, Filtering, and Deletion',
+      'Verify the First Event After Resuming',
+    ],
   },
   {
     file: 'api-reference/x-write/unfollow.mdx',
