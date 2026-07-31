@@ -22,12 +22,20 @@ This is accountless access, not anonymous access. Every guest-wallet paid read r
 ### What Twitter APIs Work Without Connecting an X Account?
 
 Xquik guest wallets cover 33 documented GET routes. They read tweets, replies,
-threads, profiles, followers, following, timelines, communities, lists, trends,
-relationships, and articles. They do not require a connected X account.
+threads, profiles, followers, following, and timelines. Other routes cover
+communities, lists, trends, relationships, and articles. They do not require a
+connected X account.
 
 The caller still needs one active guest key. Create the wallet, let the user
 complete checkout, then poll its status. Start reads only when the response
 reports `usable: true`.
+
+Eligible routes cover tweet lookups, search, replies, threads, and profiles.
+They also cover followers, following, timelines, communities, lists, and
+trends. Relationship and article routes are also eligible. Guest access
+excludes posts, likes, reposts, follows, and messages. It also excludes
+monitors, webhooks, extractions, draws, and account management. Check the
+33-route list below before building the request.
 
 ### Can I Scrape Twitter Without an API Account?
 
@@ -39,25 +47,58 @@ Accountless does not mean anonymous. Keep the guest key secret. Send it as a
 Bearer credential on each eligible read. A missing or inactive key returns the
 documented `401` or `402` response.
 
-### What Does “Twitter API No Account Required” Mean?
+Create a wallet only after the user confirms the amount. The hosted checkout
+does not prove activation. Poll the status route and require `usable: true`.
+Store the guest key in a secret manager. Never place it in a URL, log, prompt,
+or shared export. Use full account credentials for writes, monitors, and
+webhooks. They also cover extraction jobs, draws, and management routes.
+
+### Twitter API No Account Required
 
 It means no Xquik account and no connected X account are required. It does not
 remove authentication, payment confirmation, route scope, or rate limits. The
 guest key proves access to its funded wallet.
 
-Guest access excludes tweet posting, replies, likes, reposts, follows, direct
-messages, monitors, webhooks, extractions, draws, and account management. Use a
-full account key or OAuth token for those operations.
+Guest access excludes tweet posting, replies, likes, reposts, and follows. It
+also excludes messages, monitors, webhooks, extractions, draws, and management.
+Use a full account key or OAuth token for those operations.
 
-### When Should I Use a Guest Key Twitter API?
+The guest wallet remains prepaid. The user chooses and confirms a supported
+amount. They complete hosted checkout and await verified activation. Each
+eligible read consumes credits under its documented route contract. A `401` or
+`402` response only presents recovery choices. It does not authorize wallet
+creation or payment.
+
+### Accountless Twitter Scraper
+
+Use an accountless Twitter scraper for read-only searches and public profiles.
+It does not require an Xquik account. A funded guest key can call 33 listed GET
+routes. It can retrieve tweets, replies, threads, profiles, followers, and
+following. It can also read timelines, communities, lists, trends,
+relationships, and articles.
+
+This path still uses authentication, credits, route limits, and rate limits.
+It cannot post, like, repost, follow, or send messages. It cannot create
+monitors, webhooks, extraction jobs, draws, or account changes. Use stable Tweet
+and user IDs in stored results. Keep the guest key secret. Poll wallet status
+before the first paid read.
+
+### Guest Key Twitter API
 
 Use a guest key for prepaid read-only workflows. It fits tweet search, profile
-lookup, follower pages, reply pages, timelines, community reads, and list reads.
-Use direct MPP when one supported request should carry its own payment.
+lookup, follower pages, and reply pages. It also fits timelines, community
+reads, and list reads. Use direct MPP when one supported request carries its
+own payment.
 
 Use a full account credential when the workflow needs broader API coverage.
 Choose the access method before coding retries. Each method returns different
 payment and authentication recovery actions.
+
+Create the wallet after the user confirms the amount. Send a unique UUID v4
+idempotency key. Store both secrets securely. Give only the hosted checkout URL to
+the user. Poll status until `usable: true`. Reuse the same guest key after an
+approved top-up. Do not create a new wallet when one paid read returns
+`insufficient_credits`.
 
 ## Choose an access method
 

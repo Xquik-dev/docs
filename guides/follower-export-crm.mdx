@@ -17,17 +17,24 @@ This Twitter follower export runs `follower_explorer` as a saved Twitter followe
 
 ## Twitter Follower Export Questions
 
-### How Do I Download a Twitter Follower List?
+### Download Follower List Twitter
 
 Use `follower_explorer` when the workflow needs a saved file. Estimate the
-requested followers, create one extraction, poll its job ID, then export CSV,
-JSON, or XLSX. Keep the source username and resolved X user ID.
+requested followers, then create one extraction. Poll its job ID. Export CSV,
+JSON, or XLSX after completion. Keep the source username and resolved X user
+ID.
 
 CSV works well for Google Sheets and CRM imports. XLSX supports analyst review.
 JSON fits queues, warehouses, and app ingestion. Use `x_user_id` as the stable
 row key because usernames can change.
 
-### What API Exports Someone's Twitter Followers?
+Keep one profile row per stable user ID. Store username, profile name, bio,
+location, and verification. Add follower count, following count, profile image,
+and source account ID. Keep collection time and extraction ID when returned.
+Compare exported rows with the completed job result. Mark result caps, credit
+limits, failed pages, or interrupted downloads as bounded exports.
+
+### Export Twitter Followers API
 
 Use `POST /api/v1/extractions` with `toolType: follower_explorer` for a reusable
 Twitter follower export. Supply the public profile username as
@@ -36,6 +43,25 @@ Twitter follower export. Supply the public profile username as
 Use `GET /api/v1/x/users/{id}/followers` for one live follower page. This route
 returns profiles plus `has_next_page` and `next_cursor`. Save each opaque cursor
 only after the returned profiles become durable.
+
+Choose the saved extraction for estimates, audit trails, and CSV, JSON, or
+XLSX files. Choose the live followers route for low-latency application pages.
+Both paths require scoped credentials and rate-limit handling. Deduplicate
+resumed pages by user ID. Never use a username as the only CRM key.
+
+### What API Can I Use to Get Someone’s Twitter Followers?
+
+Resolve the public profile to its stable X user ID. Then call
+`GET /api/v1/x/users/{id}/followers` for one current page. Request another page
+only when `has_next_page` is true. Pass `next_cursor` back unchanged.
+
+Use `follower_explorer` when the same request needs a saved job and downloadable
+file. Set `targetUsername` and an explicit `resultsLimit`. Keep user IDs,
+usernames, names, bios, locations, and verification. Add audience counts,
+profile images, cursors, and collection time when returned. Access remains
+subject to public availability, credits, rate limits, and documented responses.
+The API does not expose private followers. It never guarantees a complete
+uncapped archive.
 
 ### How Do I Export All Followers of a Twitter Account?
 
@@ -47,18 +73,32 @@ until it reaches `completed` or `failed`. Export the completed job, then compare
 its returned rows with the stored job result.
 
 Large follower lists may need a lower `resultsLimit`. Record that cap beside the
-file. Label the export as bounded when it contains fewer profiles than the
-account's current follower count.
+file. Label exports with fewer profiles as bounded. Compare them with the
+current follower count. This label prevents false completeness claims.
 
-### When Should I Use the Twitter Followers Scraper?
+For live pagination, save each profile page before persisting its cursor. Stop
+only when `has_next_page` becomes false or a documented limit interrupts the
+run. Deduplicate by stable user ID after a retry. Record the source profile ID,
+first cursor, and last cursor. Add page count, unique row count, and completion
+time. Profile counts can change during the export. Displayed follower counts
+are not fixed reconciliation totals.
+
+### Twitter Followers Scraper
 
 Use the saved scraper for cost estimates, repeatable files, and audit trails.
 Use the live Twitter API followers route for low-latency pages. Both return
-concrete profile fields such as user ID, username, bio, verification, follower
-count, following count, location, and profile image when available.
+concrete profile fields. These include user ID, username, bio, and verification.
+They can include follower count, following count, location, and profile image.
 
 Keep account access and API keys scoped. Respect each read rate limit. Never
 guess cursors or restart pagination with a different source account.
+
+For CRM imports, map the stable user ID to a unique external field. Treat the
+username, name, bio, location, and verification as replaceable attributes. Do
+the same for audience counts and profile images. Upsert small batches. Store
+rejected rows for review. For warehouse snapshots, keep source account,
+collection time, page cursor, and extraction ID. These fields distinguish new
+followers from changed profiles or incomplete runs.
 
 ## Outcome
 
