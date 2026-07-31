@@ -255,6 +255,90 @@ const REQUIRED_OPERATIONAL_TABLES = [
       '| Receiver URL | `webhooks[].url` | Confirm the intended HTTPS destination. |',
     ],
   },
+  {
+    file: 'api-reference/api-keys/create.mdx',
+    snippets: [
+      '| API key receipt column | Response source | Storage rule |',
+      '| Full API key | `fullKey` | Store it once in an approved secret manager. |',
+    ],
+  },
+  {
+    file: 'api-reference/credits/quick-topup.mdx',
+    snippets: [
+      '| Credit top-up outcome | Response fields | Next action |',
+      '| Immediate charge | `outcome: "charged"` | Store `credits` and the updated `balance`. |',
+    ],
+  },
+  {
+    file: 'api-reference/drafts/create.mdx',
+    snippets: [
+      '| Tweet draft column | Request or response source | Publishing rule |',
+      '| Published tweet ID | None | Create a tweet separately after approval. |',
+    ],
+  },
+  {
+    file: 'api-reference/draws/create.mdx',
+    snippets: [
+      '| Giveaway draw column | Request or response source | Audit rule |',
+      '| Backup state | `winners[].isBackup` | Separate primary and backup winners. |',
+    ],
+  },
+  {
+    file: 'api-reference/extractions/twitter-extraction-results.mdx',
+    snippets: [
+      '| Extraction result page column | Response source | Export rule |',
+      '| X user ID | `results[].xUserId` | Preserve the stable profile join. |',
+    ],
+  },
+  {
+    file: 'api-reference/extractions/twitter-scraping-job-history.mdx',
+    snippets: [
+      '| Scraping job inventory column | Response source | Reconciliation rule |',
+      '| Extracted rows | `extractions[].totalResults` | Compare this count with saved result pages. |',
+    ],
+  },
+  {
+    file: 'api-reference/styles/save.mdx',
+    snippets: [
+      '| Tweet style profile column | Request or response source | Reuse rule |',
+      '| Source tweets | Request `tweets[].text` | Review every supplied post before saving. |',
+    ],
+  },
+  {
+    file: 'api-reference/support/create.mdx',
+    snippets: [
+      '| Support ticket receipt column | Request or response source | Handoff rule |',
+      '| Ticket ID | Response `publicId` | Use this ID for status and reply requests. |',
+    ],
+  },
+  {
+    file: 'api-reference/support/get.mdx',
+    snippets: [
+      '| Support ticket history column | Response source | Review rule |',
+      '| Message author | `messages[].sender` | Separate user and support replies. |',
+    ],
+  },
+  {
+    file: 'api-reference/trends/list.mdx',
+    snippets: [
+      '| Regional trend column | Response source | Monitoring rule |',
+      '| Search query | `trends[].query` | Pass this value to tweet search. |',
+    ],
+  },
+  {
+    file: 'api-reference/webhooks/resume.mdx',
+    snippets: [
+      '| Webhook resume check | Response source | Recovery rule |',
+      '| Delivery state | `webhook.deliveryStatus` | Expect `active` after recovery. |',
+    ],
+  },
+  {
+    file: 'api-reference/webhooks/update.mdx',
+    snippets: [
+      '| Webhook update column | Request or response source | Verification rule |',
+      '| Receiver URL | Request and response `url` | Confirm the intended HTTPS endpoint. |',
+    ],
+  },
 ] as const;
 
 describe('operational content tables', (): void => {
