@@ -7,10 +7,6 @@ keywords: ["Go SDK", "Golang Twitter scraper SDK", "X API Go", "Go client", "twe
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-<article>
-
-<section aria-label="Page overview">
-
 <LlmsDirective />
 
 Use typed Go requests to search tweets and export followers or replies. Send JSON Lines, CSV, or XLSX files to workers, queues, and analysts.
@@ -20,19 +16,11 @@ Use typed Go requests to search tweets and export followers or replies. Send JSO
 | Search tweets | `client.X.Tweets.Search` | `NextCursor` |
 | Export followers | `client.Extractions.Run` | `job.ID` |
 
-</section>
-
-<section>
-
 ## Install
 
 ```bash
 go get github.com/Xquik-dev/x-twitter-scraper-go
 ```
-
-</section>
-
-<section>
 
 ## Authenticate
 
@@ -45,10 +33,6 @@ client := xtwitterscraper.NewClient(
 	option.WithAPIKey(os.Getenv("X_TWITTER_SCRAPER_API_KEY")),
 )
 ```
-
-</section>
-
-<section>
 
 ## Basic Example
 
@@ -94,10 +78,6 @@ func main() {
 	}
 }
 ```
-
-</section>
-
-<section>
 
 ## Workflow: Search Tweets to JSON Lines, CSV, or XLSX
 
@@ -180,10 +160,6 @@ The example builds an `XTweetSearchParams` request so the Go fields stay aligned
   </Card>
 </CardGroup>
 
-</section>
-
-<section>
-
 ## Returned Data & Handoff
 
 `client.X.Tweets.Search` returns `PaginatedTweets`:
@@ -201,10 +177,6 @@ The example builds an `XTweetSearchParams` request so the Go fields stay aligned
 </CardGroup>
 
 Write `Tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets. Pass `ID`, `Text`, `Author.Username`, `CreatedAt`, and engagement counts into your CRM or enrichment pipeline. For explicit `Limit` pulls, resume with the same query, filters, `QueryType`, and `Limit`; only `Cursor` changes.
-
-</section>
-
-<section>
 
 ## Workflow: Follower Export to CSV, JSON, or XLSX
 
@@ -349,10 +321,6 @@ func writeExport(
 
 `follower_explorer` requires `TargetUsername`. Persist `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling so a worker restart can resume the same follower export. `client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`; pass `NextCursor` back as `After` when you need stored JSON pages before exporting files. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
 
-</section>
-
-<section>
-
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
 Use this workflow when a Go worker, queue consumer, or agent service needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV/JSON/XLSX file export. It calls `POST /extractions/estimate` through `client.Extractions.EstimateCost`, creates the job with `client.Extractions.Run`, reads rows with `client.Extractions.Get`, and downloads files with `client.Extractions.ExportResults`.
@@ -389,10 +357,6 @@ writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFo
 ```
 
 `reply_extractor` requires `TargetTweetID`. `client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`; the shared `writeRows` helper passes `NextCursor` back as `After` until all stored rows are written. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.Extractions.ExportResults` supports CSV, JSON, and XLSX for file handoff. Cost: 1 credit per reply extracted or returned.
-
-</section>
-
-<section>
 
 ## Workflow: Post Media Tweets and DM Attachments
 
@@ -548,29 +512,17 @@ Keep DM body text in private systems. Shared logs, public artifacts, queue statu
 
 Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `MediaID` values to `client.X.Tweets.New`; that method uses `Media` with public media URLs.
 
-</section>
-
-<section>
-
 ## Cost, Limits & Retries
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `Limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. Read calls are rate-limited, and `429` responses include `Retry-After`.
 
 Generated Go methods return `error` for connection failures and non-success responses. Retry connection errors, 408, 409, 429, and 5xx responses with backoff. Do not retry 400, 401, 403, 404, or 422 until the request, authentication, permission, or input issue is fixed.
 
-</section>
-
-<section>
-
 ## Error Handling
 
 Generated Go methods return `error` for connection failures and non-success API responses. Check the concrete error type from the SDK when you need status-code specific handling, and use the [error handling guide](/guides/error-handling) for response semantics.
 
 Common retryable cases are connection errors, 408, 409, 429, and 5xx responses.
-
-</section>
-
-<section>
 
 ## Pagination
 
@@ -581,10 +533,6 @@ if tweets.HasNextPage {
 	fmt.Println("More results are available")
 }
 ```
-
-</section>
-
-<section>
 
 ## Webhooks & References
 
@@ -598,7 +546,3 @@ if tweets.HasNextPage {
 - [Twitter Scraper API Overview](/api-reference/overview)
 - Download the OpenAPI schema: `curl -o openapi.json https://xquik.com/openapi.json`
 - [Source Repository](https://github.com/Xquik-dev/x-twitter-scraper-go)
-
-</section>
-
-</article>
