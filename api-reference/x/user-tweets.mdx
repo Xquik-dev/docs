@@ -250,6 +250,30 @@ photo, video, or animated GIF tweets matter.
 Do not treat row order as durable identity. New tweets can change the first
 page. Use tweet IDs for updates and deduplication.
 
+| Profile timeline column | Response source | Archive rule |
+| --- | --- | --- |
+| `source_x_user_id` | Resolved profile ID | Keep one stable source ID across username changes. |
+| `source_username` | Requested or resolved username | Preserve the readable profile handle observed during collection. |
+| `tweet_id` | `tweets[].id` | Use as the stable tweet upsert and deduplication key. |
+| `tweet_url` | `tweets[].url` | Open the original X post during review. |
+| `text` | `tweets[].text` | Preserve the complete tweet or note-tweet text returned by the API. |
+| `created_at` | `tweets[].createdAt` | Order archived tweets by creation time, not cursor position. |
+| `is_reply` | `tweets[].isReply` | Separate original profile posts from replies. |
+| `in_reply_to_id` | `tweets[].inReplyToId` | Join a reply to its immediate parent when returned. |
+| `conversation_id` | `tweets[].conversationId` | Group tweets from one conversation thread. |
+| `media_urls` | `tweets[].media[].mediaUrl` | Preserve image, video, or animated GIF URLs. |
+| `page_cursor` | Request `cursor` | Prove which profile timeline page produced the row. |
+| `collected_at` | Integration timestamp | Distinguish repeated profile timeline snapshots. |
+
+| Timeline requirement | Route and parameters | Result shape |
+| --- | --- | --- |
+| Original profile posts | `/x/users/{id}/tweets` | Profile tweets without replies by default. |
+| Profile posts and replies | `/x/users/{id}/tweets?includeReplies=true` | Original posts plus reply rows. |
+| Replies with parent context | Add `includeParentTweet=true` | Reply rows with parent tweet context when available. |
+| Media-only profile feed | `/x/users/{id}/media` | Tweets containing profile media. |
+| Keyword or date search | `/x/tweets/search` | Search results selected by query, operator, date, or media filters. |
+| Connected account home feed | `/x/timeline` | Ranked home timeline rows for the authenticated account. |
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>

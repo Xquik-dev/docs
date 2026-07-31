@@ -159,6 +159,29 @@ record.
   </Card>
 </CardGroup>
 
+## Store a tweet lookup record
+
+Use the numeric Tweet ID as the stable key. Keep text, author, thread, quote,
+engagement, media, and disclosure fields as separate columns instead of
+flattening the response into one unsearchable value.
+
+| Tweet record column | Response source | Handoff rule |
+| --- | --- | --- |
+| `tweet_id` | `tweet.id` | Use as the stable tweet upsert key. |
+| `tweet_url` | `tweet.url` | Preserve the original X permalink when returned. |
+| `text` | `tweet.text` | Store the complete returned tweet or Note Tweet text. |
+| `created_at` | `tweet.createdAt` | Preserve the tweet publication time. |
+| `author_id` | `author.id` | Keep a stable author identity when usernames change. |
+| `author_username` | `author.username` | Display the current author handle. |
+| `conversation_id` | `tweet.conversationId` | Join the tweet to its conversation thread. |
+| `in_reply_to_id` | `tweet.inReplyToId` | Join replies to their immediate parent tweet. |
+| `quote_tweet_id` | `tweet.quoted_tweet.id` | Preserve quoted-tweet attribution when present. |
+| `is_note_tweet` | `tweet.isNoteTweet` | Distinguish long-form Note Tweet text. |
+| `like_count` | `tweet.likeCount` | Store the observed engagement count with lookup time. |
+| `reply_count` | `tweet.replyCount` | Route active conversation threads for review. |
+| `media_urls` | `tweet.media[].mediaUrl` | Preserve image, video, or animated GIF URLs. |
+| `content_disclosure` | `tweet.contentDisclosure` | Preserve paid-promotion or AI-media labels when returned. |
+
 Direct tweet reads cost 1 credit per successful call. For MPP callers, this
 endpoint is billed as a fixed charge at USD 0.00015 per call.
 

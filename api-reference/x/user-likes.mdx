@@ -190,6 +190,28 @@ relevant, irrelevant, or needs review.
 Do not overwrite the original tweet text with notes. Preserve both values in
 separate fields.
 
+| Liked-tweet library column | Response source | Library rule |
+| --- | --- | --- |
+| `liked_by_x_user_id` | Resolved source profile ID | Keep the liking profile separate from the tweet author. |
+| `tweet_id` | `tweets[].id` | Use as the stable liked-tweet upsert key. |
+| `tweet_url` | `tweets[].url` | Open the original tweet during review. |
+| `text` | `tweets[].text` | Preserve the original tweet body without reviewer edits. |
+| `author_id` | `tweets[].author.id` | Keep the original author as a stable identity. |
+| `author_username` | `tweets[].author.username` | Display the author handle observed during collection. |
+| `created_at` | `tweets[].createdAt` | Preserve when the tweet was created, not when it was liked. |
+| `like_count` | `tweets[].likeCount` | Store the visible tweet count observed during collection. |
+| `media_urls` | `tweets[].media[].mediaUrl` | Preserve image, video, or animated GIF URLs. |
+| `snapshot_id` | Integration value | Group liked-tweet pages from the same collection run. |
+| `snapshot_complete` | Integration value | Compare disappearance only across complete snapshots. |
+| `collected_at` | Integration timestamp | Keep first-seen and last-seen observations auditable. |
+
+| Snapshot comparison | Tweet ID condition | Safe interpretation |
+| --- | --- | --- |
+| Newly observed | Present only in the latest complete snapshot | The tweet was newly observed in the liked feed. |
+| Still observed | Present in both complete snapshots | The tweet remained visible at both collection times. |
+| No longer observed | Present only in the earlier complete snapshot | Availability changed; do not claim the user removed the like. |
+| Unknown | Either snapshot is partial or uses different paging depth | Defer classification and preserve both collection records. |
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>

@@ -180,6 +180,44 @@ Create a tweet or reply from one connected X account. Put public HTTPS image URL
   ```
 </CodeGroup>
 
+## Choose the Twitter post request
+
+Use this Twitter API to post tweets, replies, community posts, image tweets,
+video tweets, or long-form note tweets. Send only the fields required for the
+intended post.
+
+| Post intent | Required fields | Validation before sending |
+| --- | --- | --- |
+| Standard tweet | `account` and `text` | Keep standard tweet text at 280 characters or fewer. |
+| Tweet reply | `account`, `text`, and `reply_to_tweet_id` | Store the parent Tweet ID and confirm the connected account may reply. |
+| Community post | `account`, `text`, and `community_id` | Confirm the connected account belongs to the target X Community. |
+| Image tweet | `account`, optional `text`, and 1 to 4 image URLs in `media` | Use public HTTPS JPEG, PNG, GIF, WebP, or AVIF URLs. |
+| Video tweet | `account`, optional `text`, and 1 MP4 URL in `media` | Send one public HTTPS MP4 URL up to 100 MB. Do not mix video and images. |
+| Note tweet | `account`, `text`, and `is_note_tweet: true` | Keep note tweet text at 25,000 characters or fewer. |
+
+For automatic Twitter posting, create one `Idempotency-Key` for each intended
+tweet. Reuse that key only when replaying the exact same network request. A new
+tweet, reply, caption, media URL, account, or community requires a new key.
+
+## Store the tweet write receipt
+
+Persist the write receipt before another worker posts the next tweet. These
+fields support polling, billing reconciliation, duplicate prevention, and
+tweet reply audits.
+
+| Response field | Store it as | Why it matters |
+| --- | --- | --- |
+| `id` | Write action ID | Use it to correlate the request with later status checks. |
+| `request.hash` | Request fingerprint | Detect an accidental payload change during retry handling. |
+| `status` | Current write state | Route pending, completed, and failed actions separately. |
+| `terminal` | Completion flag | Stop polling only when this value becomes `true`. |
+| `safeToRetry` | Retry decision | Create a new idempotency key only when retry is explicitly safe. |
+| `account` | Connected X account | Prove which account submitted the tweet or reply. |
+| `target` | Write target | Preserve the resolved tweet, reply, or community target. |
+| `result.id` or `tweetId` | Published Tweet ID | Join the write receipt to tweet search, replies, quotes, and engagement checks. |
+| `billing.chargedCredits` | Settled credit charge | Reconcile the write action and attached media charge. |
+| `statusUrl` | Polling path | Poll this route while `terminal` remains `false`. |
+
 ## Post with public media URLs
 
 Use `media` when your image or MP4 video is already a public HTTPS URL or when [Upload Media](/api-reference/x-write/upload-media) returned `mediaUrl`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not send `media_ids`; that field is for DMs only. Attached media adds 2 credits per started MB across all files.

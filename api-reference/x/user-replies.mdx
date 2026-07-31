@@ -245,6 +245,29 @@ New replies can shift the first page between runs.
 Use tweet replies to inspect replies under one specific tweet. Use user tweets
 for a profile timeline. Those routes begin from different targets.
 
+| Profile reply column | Response source | Archive rule |
+| --- | --- | --- |
+| `source_x_user_id` | Resolved profile ID | Keep the authored-reply archive tied to one stable profile. |
+| `reply_id` | `tweets[].id` | Use as the stable reply upsert and deduplication key. |
+| `text` | `tweets[].text` | Preserve the reply body returned by the API. |
+| `created_at` | `tweets[].createdAt` | Order replies by creation time, not cursor position. |
+| `in_reply_to_id` | `tweets[].inReplyToId` | Join each reply to its immediate parent tweet. |
+| `conversation_id` | `tweets[].conversationId` | Group reply rows from the same X conversation. |
+| `parent_tweet` | Included parent object | Preserve parent context when `includeParentTweet=true`. |
+| `like_count` | `tweets[].likeCount` | Rank authored replies by observed likes. |
+| `reply_count` | `tweets[].replyCount` | Identify replies that started deeper discussion. |
+| `media_urls` | `tweets[].media[].mediaUrl` | Preserve images and videos attached to the reply. |
+| `page_cursor` | Request `cursor` | Prove which With Replies page produced the row. |
+| `collected_at` | Integration timestamp | Distinguish repeated reply archive snapshots. |
+
+| Reply collection requirement | Route and parameters | Use |
+| --- | --- | --- |
+| Every authored reply | `/x/users/{id}/replies` | Collect one profile's With Replies timeline. |
+| Parent tweet context | Add `includeParentTweet=true` | Review the source tweet beside each authored reply. |
+| Optional replies in a profile timeline | `/x/users/{id}/tweets?includeReplies=true` | Combine original posts and replies in one profile feed. |
+| Replies under one tweet | `/x/tweets/{id}/replies` | Collect every returned reply to a specific source tweet. |
+| Media-only profile posts | `/x/users/{id}/media` | Collect profile tweets that contain media. |
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>

@@ -221,6 +221,36 @@ downloads after completion.
 
 Direct replies cost 1 credit per tweet returned. Low credit balances can return fewer replies than a full page; zero affordable results return `402 insufficient_credits`. Retry `429` with the `Retry-After` header. Retry `424 x_api_unavailable` or `502` after a short backoff. For `424 replies_incomplete`, follow `diagnostic.recommendedFallback`.
 
+## Build a reply moderation table
+
+Store one row per reply. Keep the parent Tweet ID and conversation ID beside
+the reply so support, moderation, campaign, and giveaway reviews can reconstruct
+the thread.
+
+| Reply column | Response source | Review use |
+| --- | --- | --- |
+| `parent_tweet_id` | Requested path ID | Join every reply to the source tweet. |
+| `reply_id` | `tweets[].id` | De-duplicate replies and reference one reply safely. |
+| `text` | `tweets[].text` | Search, label, and display the reply body. |
+| `author_id` | `tweets[].author.id` | Keep a stable author key when usernames change. |
+| `author_username` | `tweets[].author.username` | Show the current reply author handle. |
+| `author_followers` | `tweets[].author.followers` | Add audience context without using it as an identity key. |
+| `author_verified` | `tweets[].author.verified` | Preserve the observed verification state. |
+| `created_at` | `tweets[].createdAt` | Sort replies inside the campaign or moderation window. |
+| `in_reply_to_id` | `tweets[].inReplyToId` | Join nested replies to their immediate parent. |
+| `conversation_id` | `tweets[].conversationId` | Group replies that belong to the same X conversation. |
+| `like_count` | `tweets[].likeCount` | Prioritize replies with stronger visible engagement. |
+| `media_urls` | `tweets[].media[].mediaUrl` | Preserve image or video evidence attached to the reply. |
+
+| Collection checkpoint | Stored value | Recovery rule |
+| --- | --- | --- |
+| Page identity | `page_index` and `page_cursor` | Save both before writing the next reply page. |
+| Resume cursor | `next_cursor` | Send it as `cursor` only when `has_next_page` is `true`. |
+| Collection mode | `mode` | Keep `complete` runs separate from paginated direct-reply runs. |
+| Time window | `sinceTime` and `untilTime` | Reuse the same Unix-second bounds after a safe retry. |
+| Completion state | `has_next_page` plus the terminal cursor | Mark the export complete only after the final page. |
+| Partial coverage | `diagnostic` from `424 replies_incomplete` | Store safe rows and follow `recommendedFallback`. |
+
 ## Which replies endpoint?
 
 - Use `GET /api/v1/x/tweets/{id}/replies` for one tweet's replies as JSON rows.
