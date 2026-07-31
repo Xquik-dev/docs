@@ -81,6 +81,7 @@ function navigationPages(): readonly string[] {
 
 function collectMetadataFindings(): readonly MetadataFinding[] {
   const findings: MetadataFinding[] = [];
+  const titles = new Map<string, string>();
   const descriptions = new Map<string, string>();
 
   for (const page of navigationPages()) {
@@ -107,6 +108,16 @@ function collectMetadataFindings(): readonly MetadataFinding[] {
         findings.push({
           file,
           issue: `Rendered title is ${renderedTitle.length} characters; maximum is ${MAX_RENDERED_TITLE_LENGTH}.`,
+        });
+      }
+
+      const duplicateFile = titles.get(renderedTitle);
+      if (duplicateFile === undefined) {
+        titles.set(renderedTitle, file);
+      } else {
+        findings.push({
+          file,
+          issue: `Rendered title duplicates ${duplicateFile}.`,
         });
       }
     }
