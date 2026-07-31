@@ -42,14 +42,21 @@ const TWEET_FIELDS = [
   'displayTextRange',
   'contentDisclosure',
   'article',
+  'bookmarked',
   'card',
   'communityNote',
   'edit',
+  'favorited',
+  'grokAnalysisButton',
+  'grokImageEditable',
   'isTranslatable',
   'noteTweet',
   'place',
   'possiblySensitive',
+  'possiblySensitiveEditable',
   'previousCounts',
+  'quickPromoteEligibility',
+  'retweeted',
   'viewState',
   'entities',
   'quoted_tweet',
@@ -81,6 +88,7 @@ const PROFILE_FIELDS = [
   'createdAt',
   'statusesCount',
   'mediaCount',
+  'canDm',
   'protected',
   'url',
   'favouritesCount',
@@ -96,12 +104,15 @@ const PROFILE_FIELDS = [
   'verifiedType',
   'affiliatesHighlightedLabel',
   'businessAccountAffiliatesCount',
+  'canMediaTag',
   'creatorSubscriptionsCount',
+  'followRequestSent',
   'hasGraduatedAccess',
   'hasHiddenSubscriptionsOnProfile',
   'highlightsInfo',
   'identityVerification',
   'isProfileTranslatable',
+  'notificationsEnabled',
   'parodyCommentaryFanLabel',
   'profileDescriptionLanguage',
   'profileImageShape',
@@ -109,7 +120,15 @@ const PROFILE_FIELDS = [
   'profileSortEnabled',
   'profileTranslatorType',
   'superFollowEligible',
+  'superFollowedBy',
+  'superFollowing',
   'communityRole',
+  'viewerFollowedBy',
+  'viewerFollowing',
+  'viewerBlockedBy',
+  'viewerBlocking',
+  'viewerLiveFollowing',
+  'viewerMuting',
   'profile_bio',
 ] as const;
 
@@ -199,7 +218,9 @@ describe('read data richness documentation', (): void => {
     expect(MCP_TOOLS).toContain('/guides/tweet-profile-api-fields');
     expect(GUIDE).toContain('Xquik omits unavailable optional fields');
     expect(GUIDE).toContain('coverage depends on X');
-    expect(GUIDE).toContain("omit the fetching account's private action");
+    expect(GUIDE).toContain(
+      'Viewer-specific tweet and profile fields need authenticated X context',
+    );
     expect(DOCS_CONFIG).toContain('"guides/tweet-profile-api-fields"');
     expect(LLMS_INDEX).toContain(
       'https://docs.xquik.com/guides/tweet-profile-api-fields',

@@ -5624,11 +5624,15 @@ paths:
               properties:
                 subject:
                   type: string
+                  minLength: 1
                   maxLength: 500
+                  pattern: '.*\S.*'
                   example: 'Cannot connect X account'
                 body:
                   type: string
+                  minLength: 1
                   maxLength: 10000
+                  pattern: '.*\S.*'
                   title: TicketContent
                   example: 'I am unable to connect my X account. Please help.'
             example:
@@ -5647,6 +5651,8 @@ paths:
                   properties:
                     body:
                       type: string
+                      minLength: 1
+                      pattern: '.*\S.*'
                 - required: [attachments]
                   properties:
                     attachments:
@@ -5656,6 +5662,7 @@ paths:
                   type: string
                   minLength: 1
                   maxLength: 500
+                  pattern: '.*\S.*'
                   example: 'Cannot connect X account'
                 body:
                   type: string
@@ -5744,11 +5751,21 @@ paths:
             application/json:
               schema:
                 type: object
+                required: [tickets]
                 properties:
                   tickets:
                     type: array
                     items:
                       type: object
+                      required:
+                        [
+                          publicId,
+                          subject,
+                          status,
+                          messageCount,
+                          createdAt,
+                          updatedAt,
+                        ]
                       properties:
                         publicId:
                           type: string
@@ -5758,9 +5775,11 @@ paths:
                           example: 'Cannot connect X account'
                         status:
                           type: string
+                          enum: [open, in_progress, resolved, closed]
                           example: 'open'
                         messageCount:
                           type: integer
+                          minimum: 1
                           example: 2
                         createdAt:
                           type: string
@@ -5809,6 +5828,8 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  [publicId, subject, status, createdAt, updatedAt, messages]
                 properties:
                   publicId:
                     type: string
@@ -5818,6 +5839,7 @@ paths:
                     example: 'Cannot connect X account'
                   status:
                     type: string
+                    enum: [open, in_progress, resolved, closed]
                     example: 'open'
                   createdAt:
                     type: string
@@ -5831,12 +5853,14 @@ paths:
                     type: array
                     items:
                       type: object
+                      required: [body, sender, createdAt, attachments]
                       properties:
                         body:
                           type: string
                           example: 'I am unable to connect my X account.'
                         sender:
                           type: string
+                          enum: [user, support, system]
                           example: 'user'
                         createdAt:
                           type: string
@@ -5903,12 +5927,14 @@ paths:
             application/json:
               schema:
                 type: object
+                required: [publicId, status]
                 properties:
                   publicId:
                     type: string
                     example: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
                   status:
                     type: string
+                    enum: [open, resolved, closed]
                     example: 'resolved'
               example:
                 publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
@@ -5917,6 +5943,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
   /support/tickets/{id}/messages:
@@ -5947,7 +5975,9 @@ paths:
               properties:
                 body:
                   type: string
+                  minLength: 1
                   maxLength: 10000
+                  pattern: '.*\S.*'
                   title: MessageContent
                   example: 'Thank you for the update.'
             example:
@@ -5963,6 +5993,8 @@ paths:
                   properties:
                     body:
                       type: string
+                      minLength: 1
+                      pattern: '.*\S.*'
                 - required: [attachments]
                   properties:
                     attachments:
@@ -7480,9 +7512,16 @@ paths:
                       invites_policy:
                         type: string
                         description: Invitation policy
+                      is_member:
+                        type: boolean
+                        description:
+                          Whether the authenticated viewer is a member
                       is_nsfw:
                         type: boolean
                         description: Whether the community is marked sensitive
+                      role:
+                        type: string
+                        description: Authenticated viewer's community role
                       creator:
                         type: object
                         required: [id, username, verified]
@@ -9600,7 +9639,7 @@ components:
           type: string
           description: Signal name from X's public ranking repository.
         weight:
-          type: 'null'
+          type: [number, 'null']
           description: X does not publish the production weight.
       additionalProperties: false
     ComposeSavedStyle:
@@ -11761,6 +11800,8 @@ components:
           type: boolean
         protected:
           type: boolean
+        canDm:
+          type: boolean
 
     TweetMedia:
       description: Normalized media attached to a tweet.
@@ -11936,6 +11977,10 @@ components:
             type: string
         editableUntilMsecs:
           type: string
+        editsRemaining:
+          type: string
+        isEditEligible:
+          type: boolean
 
     TweetNote:
       description: Complete Note Tweet content and rich-text metadata.
@@ -12075,12 +12120,21 @@ components:
           $ref: '#/components/schemas/ContentDisclosure'
         article:
           $ref: '#/components/schemas/TweetArticleMetadata'
+        bookmarked:
+          type: boolean
         card:
           $ref: '#/components/schemas/TweetCard'
         communityNote:
           $ref: '#/components/schemas/TweetCommunityNote'
         edit:
           $ref: '#/components/schemas/TweetEdit'
+        favorited:
+          type: boolean
+        grokAnalysisButton:
+          type: boolean
+          description: Whether X offers its analysis action for this post.
+        grokImageEditable:
+          type: boolean
         isTranslatable:
           type: boolean
         noteTweet:
@@ -12089,8 +12143,14 @@ components:
           $ref: '#/components/schemas/TweetPlace'
         possiblySensitive:
           type: boolean
+        possiblySensitiveEditable:
+          type: boolean
         previousCounts:
           $ref: '#/components/schemas/TweetPreviousCounts'
+        quickPromoteEligibility:
+          type: string
+        retweeted:
+          type: boolean
         viewState:
           type: string
         entities:
@@ -12130,6 +12190,10 @@ components:
               type: string
               description: Source of the AI-generated media disclosure.
               example: UserDeclared
+            canEdit:
+              type: boolean
+              description: Whether the disclosure can be edited on X.
+              example: true
             hasAiGeneratedMedia:
               type: boolean
               description:
@@ -12222,12 +12286,21 @@ components:
           $ref: '#/components/schemas/ContentDisclosure'
         article:
           $ref: '#/components/schemas/TweetArticleMetadata'
+        bookmarked:
+          type: boolean
         card:
           $ref: '#/components/schemas/TweetCard'
         communityNote:
           $ref: '#/components/schemas/TweetCommunityNote'
         edit:
           $ref: '#/components/schemas/TweetEdit'
+        favorited:
+          type: boolean
+        grokAnalysisButton:
+          type: boolean
+          description: Whether X offers its analysis action for this post.
+        grokImageEditable:
+          type: boolean
         isTranslatable:
           type: boolean
         noteTweet:
@@ -12236,8 +12309,14 @@ components:
           $ref: '#/components/schemas/TweetPlace'
         possiblySensitive:
           type: boolean
+        possiblySensitiveEditable:
+          type: boolean
         previousCounts:
           $ref: '#/components/schemas/TweetPreviousCounts'
+        quickPromoteEligibility:
+          type: string
+        retweeted:
+          type: boolean
         viewState:
           type: string
         entities:
@@ -12378,12 +12457,21 @@ components:
           $ref: '#/components/schemas/ContentDisclosure'
         article:
           $ref: '#/components/schemas/TweetArticleMetadata'
+        bookmarked:
+          type: boolean
         card:
           $ref: '#/components/schemas/TweetCard'
         communityNote:
           $ref: '#/components/schemas/TweetCommunityNote'
         edit:
           $ref: '#/components/schemas/TweetEdit'
+        favorited:
+          type: boolean
+        grokAnalysisButton:
+          type: boolean
+          description: Whether X offers its analysis action for this post.
+        grokImageEditable:
+          type: boolean
         isTranslatable:
           type: boolean
         noteTweet:
@@ -12392,8 +12480,14 @@ components:
           $ref: '#/components/schemas/TweetPlace'
         possiblySensitive:
           type: boolean
+        possiblySensitiveEditable:
+          type: boolean
         previousCounts:
           $ref: '#/components/schemas/TweetPreviousCounts'
+        quickPromoteEligibility:
+          type: string
+        retweeted:
+          type: boolean
         viewState:
           type: string
         entities:
@@ -12535,6 +12629,9 @@ components:
         mediaCount:
           type: integer
           example: 1200
+        canDm:
+          type: boolean
+          example: false
         protected:
           type: boolean
           description: Whether the profile protects its posts
@@ -12583,8 +12680,12 @@ components:
           $ref: '#/components/schemas/UserAffiliateLabel'
         businessAccountAffiliatesCount:
           type: integer
+        canMediaTag:
+          type: boolean
         creatorSubscriptionsCount:
           type: integer
+        followRequestSent:
+          type: boolean
         hasGraduatedAccess:
           type: boolean
         hasHiddenSubscriptionsOnProfile:
@@ -12594,6 +12695,8 @@ components:
         identityVerification:
           $ref: '#/components/schemas/UserIdentityVerification'
         isProfileTranslatable:
+          type: boolean
+        notificationsEnabled:
           type: boolean
         parodyCommentaryFanLabel:
           type: string
@@ -12609,10 +12712,30 @@ components:
           type: string
         superFollowEligible:
           type: boolean
+        superFollowedBy:
+          type: boolean
+        superFollowing:
+          type: boolean
         communityRole:
           type: string
           description: Community role when returned by community member reads
           example: Member
+        viewerFollowedBy:
+          type: boolean
+          description: Whether this profile follows the authenticated viewer
+          example: false
+        viewerFollowing:
+          type: boolean
+          description: Whether the authenticated viewer follows this profile
+          example: true
+        viewerBlockedBy:
+          type: boolean
+        viewerBlocking:
+          type: boolean
+        viewerLiveFollowing:
+          type: boolean
+        viewerMuting:
+          type: boolean
         profile_bio:
           type: object
           additionalProperties: true

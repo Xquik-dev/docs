@@ -1997,10 +1997,10 @@ const FORBIDDEN_OAUTH_AGENT_DISCOVERY_SNIPPETS = [
 const REQUIRED_MCP_EXAMPLE_PROMPT_SNIPPETS = [
   'Replay stored events for monitor mon_123 using the last next_cursor as after.',
   'Search recent X posts about TypeScript.',
-  'Pull all replies to this tweet: https://x.com/elonmusk/status/1893456789012345678',
-  'Set up a webhook at https://my-server.com/events for new tweets.',
+  'Pull all replies to this tweet: `https://x.com/elonmusk/status/1893456789012345678`',
+  'Set up a webhook at `https://my-server.com/events` for new tweets.',
   'Post a tweet saying: Just shipped v2.0!',
-  'Post a tweet saying: New feature! Use public image URL https://example.com/launch.png.',
+  'Post a tweet saying: New feature! Use public image URL `https://example.com/launch.png`.',
 ] as const;
 
 const FORBIDDEN_MCP_EXAMPLE_PROMPT_SNIPPETS = [
@@ -2083,7 +2083,7 @@ const FORBIDDEN_CURRENT_MCP_CLIENT_SETUP_SNIPPETS = [
 ] as const;
 
 const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
-  'title: Docs MCP server',
+  'title: "Docs MCP Server for Tweet, Follower & Webhook Docs"',
   'Xquik documentation is available as an MCP server at `https://docs.xquik.com/mcp`.',
   'AI tools can search the full docs site and retrieve indexed public pages',
   'This differs from the [Xquik API MCP server](/mcp/overview) at `xquik.com/mcp`.',
@@ -2147,7 +2147,7 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
 ] as const;
 
 const REQUIRED_AGENT_MCP_HANDOFF_SNIPPETS = [
-  'title: Agent MCP Handoff',
+  'title: "AI Agent MCP Handoff for Tweet Search & Exports"',
   'description: "Route AI agents between tweet search, follower exports, account actions, Docs MCP, API MCP, REST, SDKs, webhooks, and event replay."',
   '<Card title="Docs MCP" icon="book-open">',
   '`https://docs.xquik.com/mcp`',
@@ -3801,7 +3801,7 @@ const FORBIDDEN_TWEET_QUOTES_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_GET_TWEET_API_HANDOFF_SNIPPETS = [
-  'title: "Get tweet | REST API reference"',
+  'title: "Tweet lookup API & post details"',
   '`GET /x/tweets/{id}`',
   '`GET /api/v1/x/tweets/{id}`',
   'tweet lookup API',
@@ -4027,7 +4027,7 @@ const FORBIDDEN_TRENDS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
-  'title: "Get X article | REST API reference"',
+  'title: "X article API & long-form post content"',
   'Retrieve one long-form X Article by tweet ID',
   '`GET /x/articles/{tweetId}`',
   '`GET /api/v1/x/articles/{tweetId}`',
@@ -4108,7 +4108,7 @@ const FORBIDDEN_GET_ARTICLE_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWEET_THREAD_API_HANDOFF_SNIPPETS = [
-  'title: "Get tweet thread | REST API reference"',
+  'title: "Tweet thread API & conversation export"',
   '`GET /x/tweets/{id}/thread`',
   '`GET /api/v1/x/tweets/{id}/thread`',
   'tweet thread API',
@@ -5902,6 +5902,7 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   'Scrape tweets, export followers, estimate credits, start extraction jobs, paginate JSON results, and export CSV, JSON, or XLSX files',
   'Run bulk data extractions from X in 5 stages:',
   'Use this workflow to scrape tweets, export followers, pull tweet replies, save CSV/JSON/XLSX files, or hand paginated JSON to a CRM, warehouse, queue, or AI agent.',
+  'Extract visible replies to this tweet: `https://x.com/vercel/status/1893704267862470862`',
   'Treat `202 Accepted` as a queued run receipt.',
   'Credits are reserved after the job starts.',
   'Poll `GET /extractions/{id}` before handoff',
@@ -6431,7 +6432,7 @@ const FORBIDDEN_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
-  'title: "Upload media | REST API reference"',
+  'title: "Twitter media upload API & tweet attachments"',
   'post tweet with media',
   'post tweet replies with media',
   'send DM with media',
@@ -7602,7 +7603,7 @@ const FORBIDDEN_DM_HISTORY_LOG_SNIPPETS = [
 ] as const;
 
 const REQUIRED_SEND_DM_API_SNIPPETS = [
-  'title: "Send DM | REST API reference"',
+  'title: "Twitter DM API & direct message sending"',
   'Twitter DM API',
   'X direct message API',
   'send DM with media',
@@ -9308,7 +9309,7 @@ const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
   'Hermes Tweet is the native Hermes Agent plugin for using Xquik as a structured X automation toolset.',
   'hermes plugins install Xquik-dev/hermes-tweet --enable',
   'uv pip install --python ~/.hermes/hermes-agent/venv/bin/python hermes-tweet',
-  'The current package version is `0.1.11`.',
+  'The current package version is `0.1.12`.',
   'The plugin name is `hermes-tweet`, and the Python entry point is `hermes-tweet = hermes_tweet`.',
   '<Card title="tweet_explore" icon="search">',
   'Search the bundled Xquik endpoint catalog without making an API call.',
@@ -9353,9 +9354,9 @@ const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
 const REQUIRED_TWEETCLAW_GUIDE_SNIPPETS = [
   'TweetClaw is the official OpenClaw plugin for using Xquik from an OpenClaw agent.',
   'openclaw plugins install @xquik/tweetclaw',
-  'openclaw plugins install @xquik/tweetclaw@1.6.40 --pin',
+  'openclaw plugins install @xquik/tweetclaw@1.6.41 --pin',
   '`@xquik/tweetclaw` is the official package. The plugin id is `tweetclaw`.',
-  'The current published npm version and source-truth version are both `1.6.40`.',
+  'The current published npm version and source-truth version are both `1.6.41`.',
   'MPP lets TweetClaw call 7 read-only X API endpoints at fixed prices without an Xquik account or API key.',
   'Use a guest `paid_reads` key when the workflow needs the broader 33-route prepaid catalog.',
   '<Card title="explore" icon="search">',
@@ -10727,6 +10728,13 @@ const ALLOWED_ENDPOINT_TITLE_UPPERCASE_TOKENS: ReadonlySet<string> = new Set([
   'XLSX',
 ]);
 
+const FORBIDDEN_GENERIC_TITLE_PHRASES = [
+  'api documentation',
+  'api reference',
+  'integration guide',
+  'rest api reference',
+] as const;
+
 function listAlternativeFiles(): readonly string[] {
   return [
     'alternatives.mdx',
@@ -11053,11 +11061,44 @@ function collectRedundantApiTitleSuffixFindings(): readonly DiscoveryFinding[] {
 
     const title = source.match(/^title:\s*"?(.*?)"?\s*$/mu)?.[1];
 
+    if (title?.includes('REST API reference') === true) {
+      findings.push({
+        file,
+        issue: `Endpoint title "${title}" uses a generic REST API reference suffix.`,
+      });
+    }
+
     if (title?.endsWith(' API') === true) {
       findings.push({
         file,
         issue: `Endpoint title "${title}" adds redundant API text that appears in the sidebar.`,
       });
+    }
+  }
+
+  return findings;
+}
+
+function collectGenericPublicTitleFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const file of listPublicMarkdownFiles()) {
+    const source = readFileSync(file, 'utf8');
+    const title = source.match(/^title:\s*"?(.*?)"?\s*$/mu)?.[1];
+
+    if (title === undefined) {
+      continue;
+    }
+
+    const normalizedTitle = title.toLocaleLowerCase('en');
+
+    for (const phrase of FORBIDDEN_GENERIC_TITLE_PHRASES) {
+      if (normalizedTitle.includes(phrase)) {
+        findings.push({
+          file,
+          issue: `Public title "${title}" uses generic phrase "${phrase}".`,
+        });
+      }
     }
   }
 
@@ -11116,6 +11157,12 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     expect(collectRedundantApiTitleSuffixFindings()).toStrictEqual([]);
+  });
+
+  it('keeps public titles focused instead of generic', (): void => {
+    expect.assertions(1);
+
+    expect(collectGenericPublicTitleFindings()).toStrictEqual([]);
   });
 
   it('keeps endpoint titles in sentence case', (): void => {
@@ -11876,6 +11923,12 @@ describe('repository discovery', (): void => {
         REQUIRED_MCP_EXAMPLE_PROMPT_SNIPPETS,
       ),
     ];
+
+    for (const match of source.matchAll(/(?<!`)https:\/\/[^\s`]+/g)) {
+      findings.push({
+        issue: `MCP example prompt URL is not inline code: "${match[0]}".`,
+      });
+    }
 
     for (const snippet of FORBIDDEN_MCP_EXAMPLE_PROMPT_SNIPPETS) {
       if (source.includes(snippet)) {
