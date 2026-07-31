@@ -290,6 +290,46 @@ For shared teams, record reviewer identity and decision time outside tweet
 fields. The API returns post and author facts. Your queue owns moderation
 state.
 
+## Build a Query-Specific Community Review Batch
+
+Save the exact search query before requesting tweets. Keep every operator,
+quoted phrase, exclusion, language choice, and engagement filter. Reviewers
+must see the expression that produced the queue.
+
+Store Tweet ID, author ID, text, creation time, engagement, and media for every
+match. Add the request time and returned cursor. Keep reviewer fields in a
+separate table keyed by Tweet ID.
+
+Assign one review purpose to each batch. Examples include campaign replies,
+support complaints, product feedback, rule violations, or event coverage.
+Avoid mixing unrelated queries in one queue.
+
+Persist the page before advancing its cursor. Deduplicate repeated Tweet IDs
+after retries. Never discard a prior reviewer decision when engagement counts
+change.
+
+Record an explicit terminal state. Use completed, capped, credit-bounded, or
+interrupted. A live search page never proves a complete historical community
+archive.
+
+## Separate Search Matches From Community Feed Coverage
+
+This route returns community tweets matching a search expression. It does not
+return every recent post. Use the community feed route for a cursor-based
+timeline without a query.
+
+Keep search-match counts separate from total community activity. A narrow
+query can return zero rows while the community remains active. A broad query
+can produce more review work without improving relevance.
+
+Test the expression before opening a long review queue. Inspect several Tweet
+IDs, authors, timestamps, replies, reposts, likes, and media. Narrow recurring
+false matches with supported operators.
+
+When comparing two queries, use the same review window and result cap. Report
+unique Tweet IDs for each expression. List overlapping matches separately.
+Never combine both result sets under one unrecorded query label.
+
 ## Query parameters
 
 <ParamField query="communityId" type="string" required>
