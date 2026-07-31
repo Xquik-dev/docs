@@ -171,8 +171,7 @@ describe('SEO metadata', (): void => {
       description: SITE_DESCRIPTION,
       indexing: 'navigable',
       openGraphDescription: SITE_DESCRIPTION,
-      searchPrompt:
-        'Search tweet, follower, reply, profile, API, SDK & MCP docs...',
+      searchPrompt: 'Search documentation...',
       timestamps: true,
     });
   });

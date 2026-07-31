@@ -254,6 +254,42 @@ should restore decisions by tweet ID, not row position.
 Show the collection time beside loaded pages. Reviewers can then distinguish
 new results from an older cached queue without inspecting server logs.
 
+## Preserve Decisions Across a Live Moderation Queue
+
+Create one queue identity from the community ID, query, and sort mode. Keep
+that identity unchanged while reviewers page through tweets.
+
+Store each decision against `tweet.id`. Never attach a label to the visible
+row number. New posts can change ordering between `Latest` requests.
+
+Separate four queue states in the interface:
+
+- Unreviewed tweets loaded from the current page.
+- Selected tweets waiting for an explicit action.
+- Reviewed tweets with a stored decision.
+- Failed pages that still retain their previous cursor.
+
+When a page request fails, keep the current rows and cursor. Show the error
+beside the next-page control. Retry with the same query parameters.
+
+When `has_next_page` is false, mark the loaded stream complete. Do not create
+another request from an empty or remembered cursor. A later refresh starts a
+new review window.
+
+Treat `Latest` as a moving queue. Deduplicate incoming rows by tweet ID before
+display. Keep earlier decisions when the same tweet appears again.
+
+Treat `Top` as a relevance review. Record the collection time because ranking
+can change. Do not compare row positions across separate requests.
+
+Pass reviewed tweet IDs into reply, thread, profile, or media workflows only
+after approval. Keep each follow-up result separate from the search response.
+This preserves the evidence that caused the reviewer to act.
+
+For shared teams, record reviewer identity and decision time outside tweet
+fields. The API returns post and author facts. Your queue owns moderation
+state.
+
 ## Query parameters
 
 <ParamField query="communityId" type="string" required>

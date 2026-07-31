@@ -282,6 +282,41 @@ pause, or must resume without creating a new monitor ID.
   </Card>
 </CardGroup>
 
+## Change One Account Monitor Safely
+
+Treat the PATCH as a replacement of selected monitor settings. Read the
+current monitor before building the request. Preserve its ID and tracked
+account in the change record.
+
+For an event-filter change, construct the complete desired `eventTypes` array.
+Do not send only the newly added type. The returned array becomes the active
+filter for future account activity.
+
+For a temporary stop, send `isActive: false`. Keep the monitor ID so the same
+configuration can resume later. Deletion serves permanent removal instead.
+
+Before resuming, check the credit balance and intended event scope. Send
+`isActive: true` only when the monitor should restart. Record the returned
+`nextBillingAt` for the next budget checkpoint.
+
+Use this verification sequence after every update:
+
+1. Confirm the returned `id` matches the requested monitor.
+2. Confirm `username` and `xUserId` still identify the intended profile.
+3. Compare returned `eventTypes` with the approved filter.
+4. Confirm `isActive` matches the requested operating state.
+5. Store `nextBillingAt` when the monitor is active.
+6. Refresh the monitor inventory.
+7. Align webhook subscriptions with the updated event types.
+
+Do not use PATCH to change the tracked profile. Create another account monitor
+for a different username or user ID. This avoids attaching historical events
+to a new account identity.
+
+An update changes future monitoring behavior. It does not rewrite existing
+events or completed webhook deliveries. Keep historical records under the
+same monitor ID and interpret them using their event timestamps.
+
 ## Response
 
 ### 200 OK

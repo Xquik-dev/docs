@@ -119,6 +119,41 @@ Store the action ID and returned lifecycle state. Do not confuse unfollowing
 with removing a follower. The remove-follower route changes an inbound
 relationship instead.
 
+## Review a Following-Cleanup Batch
+
+Resolve every target to an X user ID before sending unfollow requests. Keep
+the username only as a reviewer-friendly label. The path requires the stable
+user ID.
+
+Create one approval row per outbound relationship. Include the acting account,
+target user ID, target username, reason, and approval reference. Never reuse
+one row for several targets.
+
+Generate a separate idempotency key for every approved unfollow. Reuse that
+key only when retrying the identical request. A different target requires a
+different key.
+
+Submit cleanup rows independently. Store each returned action ID immediately.
+One failed action must not erase completed results from the same batch.
+
+Poll non-terminal actions before reporting completion. Classify final results
+as completed or failed. Keep retryable transport failures separate from final
+action failures.
+
+Do not infer an unfollow from a missing profile in an earlier export. Resolve
+the intended target and preserve the decision source. Profile availability and
+following state are different facts.
+
+Use the correct route for each relationship change:
+
+- Unfollow removes whom the connected account follows.
+- Remove follower ends one inbound relationship to the connected account.
+- Unretweet removes one repost and keeps follow relationships unchanged.
+- Tweet deletion removes a post and does not modify following.
+
+Finish the batch with target counts, completed actions, failed actions, and
+stored action IDs. This gives reviewers a precise following-cleanup audit.
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>

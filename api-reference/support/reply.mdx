@@ -100,6 +100,42 @@ Use JSON for text-only replies. Use `multipart/form-data` when attaching media.
   ```
 </CodeGroup>
 
+## Send a Durable Support Reply
+
+Read the ticket before composing a response. Confirm its public ID, status,
+latest sender, and most recent message. This prevents a reply from repeating
+an answer already added by another operator.
+
+Choose the request format from the actual content. Send JSON for text only.
+Use multipart form fields when screenshots or videos are required.
+
+Write a specific message body. Reference the observed problem, completed
+check, or requested next step. Avoid pasting secrets, API keys, or private
+browser session details.
+
+Review every attachment before upload. Use only the documented image and video
+formats. Keep each file and the combined request within the documented size
+limits.
+
+Generate one idempotency key after the text and attachments are final. Reuse
+it only when the identical request loses its response. Changed text or files
+require a new key.
+
+Interpret reply outcomes precisely:
+
+- `201` means the new message was created.
+- `200` with `Idempotency-Replayed` returns the earlier message.
+- `409` means the key already represents different content.
+- `404` means the ticket is missing or belongs elsewhere.
+- `429` requires waiting for `Retry-After`.
+
+Store the ticket ID, idempotency key, reply time, and attachment receipts. Do
+not store attachment bytes in shared logs.
+
+Fetch the ticket again after creation. Confirm the message appears once and
+the sender is correct. Inspect each attachment status before telling the user
+that a screenshot or video is available.
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>

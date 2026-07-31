@@ -84,6 +84,40 @@ Use this endpoint after creating a standard [top-up checkout](/api-reference/cre
   ```
 </CodeGroup>
 
+## Gate Queued API Work on the Checkout Result
+
+Store the checkout session ID when creating a standard top-up. Associate it
+with the intended tweet, follower, reply, monitor, or write workload. Never
+substitute a session from another account or purchase.
+
+Poll this endpoint before releasing credit-dependent work. Interpret the
+returned status as a state machine:
+
+- `processing` keeps the workload paused.
+- `paid` allows a fresh credit-balance check.
+- `failed` requires a new checkout.
+- `expired` requires a new checkout.
+
+Do not start work from `amount_dollars` or `credits` alone. Only `paid`
+confirms that credits were granted. Then call
+[Get Credits](/api-reference/credits/get). Compare the balance with the planned
+request cost.
+
+Keep processing polls bounded. Wait between requests and honor
+`Retry-After` after rate limiting. Several rapid polls cannot accelerate the
+payment result.
+
+Store the last observed status and check time with the session ID. This lets
+another worker resume polling without creating a second purchase.
+
+Handle terminal states explicitly. A failed or expired checkout must not be
+retried as though payment were still processing. Create a new checkout only
+after the user or approved billing workflow requests it.
+
+When `paid` appears, release only the workload tied to that checkout. Keep
+unrelated queues behind their own credit and approval checks. This prevents
+one top-up from silently authorizing broader activity.
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
