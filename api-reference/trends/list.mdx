@@ -32,6 +32,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     headers: { "x-api-key": "xq_your_api_key_here" },
   });
   const data = await response.json();
+  const returnedTotal = data.trends.length;
   const trendRows = data.trends.map((trend) => ({
     trend_name: trend.name,
     rank: trend.rank ?? null,
@@ -39,7 +40,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     search_query: trend.query ?? trend.name,
     region_woeid: data.woeid,
     requested_count: Number(requestedCount),
-    returned_total: data.total,
+    returned_total: returnedTotal,
   }));
 
   for (const row of trendRows) {
@@ -59,6 +60,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_your_api_key_here"},
   )
   data = response.json()
+  returned_total = len(data["trends"])
   trend_rows = [
       {
           "trend_name": trend["name"],
@@ -67,7 +69,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           "search_query": trend.get("query", trend["name"]),
           "region_woeid": data["woeid"],
           "requested_count": requested_count,
-          "returned_total": data["total"],
+          "returned_total": returned_total,
       }
       for trend in data["trends"]
   ]
@@ -127,6 +129,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       log.Fatal(err)
     }
 
+    returnedTotal := len(data.Trends)
     encoder := json.NewEncoder(os.Stdout)
     for _, trend := range data.Trends {
       searchQuery := trend.Name
@@ -140,7 +143,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
         SearchQuery:    searchQuery,
         RegionWoeid:    data.Woeid,
         RequestedCount: requestedCount,
-        ReturnedTotal:  data.Total,
+        ReturnedTotal:  returnedTotal,
       }); err != nil {
         log.Fatal(err)
       }
@@ -160,8 +163,10 @@ The Node.js, Python, and Go examples shape one JSON line per trend. Store
 [Search Tweets](/api-reference/x/search-tweets) when the next step needs
 matching tweets.
 
-`total` is the number of valid trends available before `count` slicing. Use it
-to detect whether a smaller `count` hid extra rows.
+Map `trends[].name` to `trend_name` and `trends[].query` to `search_query`.
+Map `woeid` to `region_woeid` and request `count` to `requested_count`.
+Derive `returned_total` from `trends.length`. The raw `total` field remains the
+number of valid trends available before `count` slicing.
 
 ## Headers
 
@@ -188,7 +193,8 @@ to detect whether a smaller `count` hid extra rows.
 ### 200 OK
 
 <ResponseField name="trends" type="object[]">
-  Array of trending topics.
+  Array of trending topics. Map `name` to `trend_name` in integration rows.
+  Map `query` to `search_query`.
   **Trend object fields:**
     <ResponseField name="name" type="string">Trend name or hashtag.</ResponseField>
     <ResponseField name="description" type="string">Short description. Omitted if unavailable.</ResponseField>
@@ -198,9 +204,10 @@ to detect whether a smaller `count` hid extra rows.
 </ResponseField>
 <ResponseField name="total" type="number">
   Full count of available trends before slicing by `count`.
+  Derive `returned_total` from `trends.length` instead.
 </ResponseField>
 <ResponseField name="woeid" type="number">
-  Region WOEID used for this request.
+  Region WOEID used for this request. Map it to `region_woeid`.
 </ResponseField>
 
 ```json

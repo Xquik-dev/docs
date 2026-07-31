@@ -1678,9 +1678,9 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
   {
     file: 'api-reference/overview.mdx',
     required: [
-      'Read calls allow 300 per 1s. Writes allow 120 per 60s. Deletes allow 60 per 60s.',
       'The read bucket covers `GET`, `HEAD`, and `OPTIONS`.',
       'It allows 300 calls each second.',
+      'Exceeding a bucket returns `429 rate_limit_exceeded`',
     ],
     forbidden: ['Read calls are 60 per 1s', 'share a 60 per 1s user bucket'],
   },
@@ -4009,7 +4009,8 @@ const REQUIRED_TRENDS_API_HANDOFF_SNIPPETS = [
   'search_query: trend.query ?? trend.name',
   'region_woeid: data.woeid',
   'requested_count: Number(requestedCount)',
-  'returned_total: data.total',
+  'const returnedTotal = data.trends.length;',
+  'returned_total: returnedTotal',
   'region_woeid = 23424977',
   'requested_count = 10',
   'trend_rows = [',
@@ -4017,17 +4018,20 @@ const REQUIRED_TRENDS_API_HANDOFF_SNIPPETS = [
   '"search_query": trend.get("query", trend["name"])',
   '"region_woeid": data["woeid"]',
   '"requested_count": requested_count',
-  '"returned_total": data["total"]',
+  'returned_total = len(data["trends"])',
+  '"returned_total": returned_total',
   'type TrendsResponse struct {',
   'type TrendRow struct {',
   'RequestedCount int     `json:"requested_count"`',
   'ReturnedTotal  int     `json:"returned_total"`',
+  'returnedTotal := len(data.Trends)',
   'searchQuery := trend.Name',
   'encoder.Encode(TrendRow{',
   'one JSON line per trend',
   '`trend_name`, `rank`, `description`,',
   '`requested_count`, and `returned_total`',
-  '`total` is the number of valid trends available before `count` slicing',
+  'Derive `returned_total` from `trends.length`.',
+  'number of valid trends available before `count` slicing',
 ] as const;
 
 const FORBIDDEN_TRENDS_API_RAW_OUTPUT_SNIPPETS = [
