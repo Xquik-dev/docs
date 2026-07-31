@@ -540,7 +540,7 @@ const REQUIRED_OVERVIEW_KEYWORDS = [
 ] as const;
 
 const REQUIRED_CHANGELOG_CONTENT = [
-  'title: "Xquik Changelog: Twitter API & Scraper Documentation Updates"',
+  'title: "Xquik Changelog: Twitter API & Scraper Updates"',
   'Xquik documentation updates',
   'Xquik changelog',
   'API keys',
