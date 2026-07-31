@@ -149,6 +149,48 @@ state. Poll the status route when processing remains asynchronous.
 | Stored archive | Community info, tweets, and rules | Preserve required records before deletion. |
 | Removal proof | Community info lookup | Expect the community to become unavailable. |
 
+## Archive a Community Before Permanent Removal
+
+Collect each required community record before deletion. Start with
+[Community Info](/api-reference/x/community-info). Save the community name,
+description, rules, creator, policies, banner, and member count.
+
+Archive community posts with
+[Community Tweets](/api-reference/x/community-tweets). Follow every cursor when
+the archive requires the complete timeline. Store each tweet ID, author ID,
+text, timestamp, and media URL. Also store reply, repost, and like counts.
+
+Export the current roster with
+[Community Members](/api-reference/x/community-members). Export moderators
+separately with
+[Community Moderators](/api-reference/x/community-moderators). Member rows do
+not prove moderator roles. Keep both snapshots beside the deletion approval.
+
+| Community archive | API route | Required checkpoint |
+| --- | --- | --- |
+| Identity and rules | `GET /x/communities/{id}/info` | Community ID, name, creator, rules, and policies |
+| Tweet timeline | `GET /x/communities/{id}/tweets` | Every saved cursor page and tweet ID |
+| Member roster | `GET /x/communities/{id}/members` | Every saved member page and stable user ID |
+| Moderator roster | `GET /x/communities/{id}/moderators` | Moderator user IDs and snapshot time |
+| Deletion approval | Internal workflow record | Owner, reason, approver, and community name |
+
+Do not infer a complete archive from one page. Record the final `hasMore`
+state for every cursor-based request. Store archive timestamps separately from
+the deletion time. Community membership and tweets can change between reads.
+
+## Verify Permanent Community Deletion
+
+Wait for a terminal write result before checking the community. Preserve the
+returned action ID, requested community ID, acting account, and final status.
+
+Request the community info route after successful deletion. An unavailable
+community confirms removal for this workflow. A temporary read failure does
+not prove deletion. Retry the read before sending another write request.
+
+Keep deletion distinct from leaving. Leaving removes one connected account.
+Deleting removes the owned community for every member. Never use deletion for
+routine membership cleanup.
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>

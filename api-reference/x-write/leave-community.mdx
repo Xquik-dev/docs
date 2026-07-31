@@ -145,6 +145,48 @@ verification is required.
 | Existing tweets | Community tweet archive | Preserve required posts before departure. |
 | Departure proof | Community member pages | Confirm the account is absent when required. |
 
+## How to Leave a Twitter Community Through the API
+
+Resolve the numeric community ID before submitting the leave request. Use
+[Community Info](/api-reference/x/community-info) to confirm the community
+name. Save the connected account that should leave.
+
+Check [Community Members](/api-reference/x/community-members) when current
+membership must be proven. Follow every cursor page before declaring the
+account absent. A missing profile on one partial page proves nothing.
+
+Send `DELETE /x/communities/{id}/join` with the connected account. Create a
+new idempotency key for this departure. Store the returned action ID before
+polling its write status.
+
+After terminal success, read the member roster again when verification matters.
+Record the verification time and completed cursor. Do not delete the community
+to remove one account.
+
+| Membership task | Correct route | Expected result |
+| --- | --- | --- |
+| Confirm the community | `GET /x/communities/{id}/info` | Name, rules, creator, and policies |
+| Confirm current membership | `GET /x/communities/{id}/members` | Connected account appears in a complete roster |
+| Leave the community | `DELETE /x/communities/{id}/join` | One connected account leaves |
+| Rejoin later | `POST /x/communities/{id}/join` | The connected account requests membership again |
+| Delete an owned community | `DELETE /x/communities/{id}` | The entire community is removed |
+
+Use this community membership API for one account. It preserves the group,
+its other members, rules, moderators, and tweet timeline.
+
+## Reconcile Community Membership After Leaving
+
+Keep the leave receipt separate from later roster snapshots. The receipt
+records the requested action. The roster records membership observed later.
+
+Store the community ID, connected account, action ID, terminal state, and
+verification timestamp. A later rejoin creates a new action and idempotency
+key. Never overwrite the earlier departure record.
+
+If the account still appears after terminal success, refresh the complete
+roster once. Preserve the unexpected result and request ID. Do not submit
+parallel leave requests with different keys.
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>

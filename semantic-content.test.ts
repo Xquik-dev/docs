@@ -162,6 +162,8 @@ const REQUIRED_OPERATIONAL_TABLES = [
     snippets: [
       '| Repost action column | Source | Distribution rule |',
       '| Already reposted | Converged terminal result |',
+      '| Publishing intent | API route | Required content |',
+      'Use [Unretweet](/api-reference/x-write/unretweet) for an approved rollback.',
     ],
   },
   {
@@ -372,6 +374,8 @@ const REQUIRED_OPERATIONAL_TABLES = [
     snippets: [
       '| Community deletion record | Request or response source | Completion rule |',
       '| Community name | Request `community_name` | Require the confirmation safeguard. |',
+      '| Community archive | API route | Required checkpoint |',
+      '## Verify Permanent Community Deletion',
     ],
   },
   {
@@ -379,6 +383,8 @@ const REQUIRED_OPERATIONAL_TABLES = [
     snippets: [
       '| Tweet deletion record | Request or response source | Completion rule |',
       '| Tweet text | Pre-deletion lookup | Save the approved post content first. |',
+      '| Cleanup intent | API route | What changes |',
+      '## Preserve Tweet Deletion Evidence',
     ],
   },
   {
@@ -393,6 +399,8 @@ const REQUIRED_OPERATIONAL_TABLES = [
     snippets: [
       '| Community departure record | Request or response source | Membership rule |',
       '| Idempotency key | Request header | Never reuse the earlier join key. |',
+      '## How to Leave a Twitter Community Through the API',
+      '| Membership task | Correct route | Expected result |',
     ],
   },
   {
