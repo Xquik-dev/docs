@@ -169,7 +169,7 @@ describe('SEO metadata', (): void => {
       timestamps: config.metadata.timestamp,
     }).toStrictEqual({
       description: SITE_DESCRIPTION,
-      indexing: 'navigable',
+      indexing: 'all',
       openGraphDescription: SITE_DESCRIPTION,
       searchPrompt: 'Search documentation...',
       timestamps: true,
