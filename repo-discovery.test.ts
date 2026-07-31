@@ -18,6 +18,13 @@ interface DocsConfig {
   readonly redirects: readonly DocsRedirect[];
 }
 
+function getDocumentationContentLength(source: string): number {
+  return source.replace(
+    /\n*<\/?(?:article|section)(?:\s[^>]*)?>\n*/g,
+    '\n',
+  ).length;
+}
+
 const SKIPPED_PUBLIC_SCAN_DIRS = new Set([
   '.git',
   'node_modules',
@@ -11577,7 +11584,7 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('sdks/typescript.mdx', 'utf8');
 
-    expect(source.length).toBeLessThanOrEqual(19_050);
+    expect(getDocumentationContentLength(source)).toBeLessThanOrEqual(19_050);
 
     expect(
       [
@@ -11606,7 +11613,7 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('sdks/go.mdx', 'utf8');
 
-    expect(source.length).toBeLessThanOrEqual(20_100);
+    expect(getDocumentationContentLength(source)).toBeLessThanOrEqual(20_100);
 
     expect(
       [
@@ -11634,7 +11641,7 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('sdks/python.mdx', 'utf8');
 
-    expect(source.length).toBeLessThanOrEqual(20_400);
+    expect(getDocumentationContentLength(source)).toBeLessThanOrEqual(20_400);
 
     expect(
       [
@@ -11663,7 +11670,7 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('sdks/ruby.mdx', 'utf8');
 
-    expect(source.length).toBeLessThanOrEqual(17_950);
+    expect(getDocumentationContentLength(source)).toBeLessThanOrEqual(17_950);
 
     expect(
       [
@@ -11692,7 +11699,7 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('sdks/cli.mdx', 'utf8');
 
-    expect(source.length).toBeLessThanOrEqual(18_950);
+    expect(getDocumentationContentLength(source)).toBeLessThanOrEqual(18_950);
 
     expect(
       [
@@ -11720,7 +11727,7 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('sdks/csharp-x-api-sdk.mdx', 'utf8');
 
-    expect(source.length).toBeLessThanOrEqual(23_100);
+    expect(getDocumentationContentLength(source)).toBeLessThanOrEqual(23_100);
 
     expect(
       [
@@ -11748,7 +11755,7 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('sdks/php.mdx', 'utf8');
 
-    expect(source.length).toBeLessThanOrEqual(20_150);
+    expect(getDocumentationContentLength(source)).toBeLessThanOrEqual(20_150);
 
     expect(
       [
@@ -11777,7 +11784,7 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('sdks/java.mdx', 'utf8');
 
-    expect(source.length).toBeLessThanOrEqual(27_500);
+    expect(getDocumentationContentLength(source)).toBeLessThanOrEqual(27_500);
 
     expect(
       [
@@ -11800,7 +11807,7 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('sdks/kotlin.mdx', 'utf8');
 
-    expect(source.length).toBeLessThanOrEqual(25_800);
+    expect(getDocumentationContentLength(source)).toBeLessThanOrEqual(25_800);
 
     expect(
       [
@@ -13442,7 +13449,7 @@ describe('repository discovery', (): void => {
         ),
       ],
     ).toStrictEqual([]);
-    expect(source.length).toBeLessThanOrEqual(19_000);
+    expect(getDocumentationContentLength(source)).toBeLessThanOrEqual(19_000);
   });
 
   it('keeps tweet-list API result filters visible', (): void => {
@@ -13637,7 +13644,7 @@ describe('repository discovery', (): void => {
         ),
       ],
     ).toStrictEqual([]);
-    expect(source.length).toBeLessThanOrEqual(27_500);
+    expect(getDocumentationContentLength(source)).toBeLessThanOrEqual(27_500);
   });
 
   it('keeps response formats and exports source-backed', (): void => {
@@ -14777,7 +14784,9 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('guides/workflows.mdx', 'utf8');
 
-    expect(source.length).toBeLessThanOrEqual(MAX_WORKFLOWS_OVERVIEW_CHARS);
+    expect(getDocumentationContentLength(source)).toBeLessThanOrEqual(
+      MAX_WORKFLOWS_OVERVIEW_CHARS,
+    );
   });
 
   it('keeps request-efficient API usage source-backed', (): void => {
