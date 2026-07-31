@@ -129,6 +129,25 @@ Refresh the liked-tweets view only when downstream work requires current proof. 
 
 Preserve generic errors and request IDs. Then retry the same Tweet. This operation does not change reposts, replies, follows, or bookmarks.
 
+| Unlike action column | Source | Removal rule |
+| --- | --- | --- |
+| `acting_account` | Request `account` | Match the account that owns the original like. |
+| `tweet_id` | Path `id` | Match the exact liked Tweet ID. |
+| `removal_reason` | Workflow value | Preserve why the like should be removed. |
+| `idempotency_key` | Request header | Use a new key, separate from the original like. |
+| `write_action_id` | Response `id` | Store the durable removal action. |
+| `status` | Response `status` | Keep pending, completed, and failed removals distinct. |
+| `terminal` | Response `terminal` | Update the local ledger only when `true`. |
+| `requested_at` | Integration timestamp | Keep removal time separate from original like time. |
+
+| Unlike outcome | Evidence | Ledger update |
+| --- | --- | --- |
+| Queued | `terminal: false` | Poll `statusUrl`; keep the like state unchanged. |
+| Completed | Terminal success | Mark the like removed for this account and Tweet ID. |
+| Already unliked | Converged terminal result | Mark the desired state without another request. |
+| Tweet unavailable | Terminal lookup or action outcome | Preserve the Tweet ID and investigate separately. |
+| Final failure | Terminal failure | Store the error and keep the previous like record. |
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>

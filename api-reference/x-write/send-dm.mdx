@@ -271,6 +271,29 @@ This endpoint costs 10 credits per send. Uploading media first with `POST /x/med
 
 Open the [Direct Message Workflow](/guides/direct-message-workflow) for queue design. Use [Get DM History](/api-reference/x/dm-history) for approved conversation context. Use [Upload Media](/api-reference/x-write/upload-media) to create the one `mediaId` allowed in `media_ids`.
 
+## Store a direct message send record
+
+| DM record column | Request or response source | Audit rule |
+| --- | --- | --- |
+| `message_id` | Response `messageId` | Use as the external identifier after a successful send. |
+| `recipient_user_id` | Path `userId` | Keep the numeric recipient ID with every message. |
+| `sender_account` | Request `account` | Prove which connected X account sent the DM. |
+| `text` | Request `text` | Preserve the exact approved message body. |
+| `media_id` | Request `media_ids[0]` | Store the one uploaded attachment ID when present. |
+| `idempotency_key` | Request header | Reuse only for an exact interrupted network replay. |
+| `send_status` | HTTP and response outcome | Mark `sent` only after `200 OK`. |
+| `sent_at` | Integration timestamp | Keep the downstream send time separate from DM history times. |
+| `approval_reference` | Integration value | Link the send to its support, sales, community, or CRM decision. |
+
+| DM outcome | Evidence | Recovery |
+| --- | --- | --- |
+| Sent text DM | `200 OK` and `messageId` | Store the message ID and complete the send job. |
+| Sent media DM | `200 OK`, `messageId`, and one `media_id` | Reconcile the uploaded attachment with the sent message. |
+| Recipient disallows DMs | `422 x_dm_not_allowed` | Do not retry unchanged. Use a permitted account or request access. |
+| Invalid attachment array | Empty or multiple `media_ids` | Upload or select exactly one media ID. |
+| Unsupported reply field | `reply_to_message_id` supplied | Remove the field; the REST route does not accept DM replies. |
+| Ambiguous network result | No terminal response | Reuse the same idempotency key for the exact request only. |
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>

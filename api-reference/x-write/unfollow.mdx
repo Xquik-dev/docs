@@ -154,6 +154,25 @@ Use the correct route for each relationship change:
 Finish the batch with target counts, completed actions, failed actions, and
 stored action IDs. This gives reviewers a precise following-cleanup audit.
 
+| Unfollow batch column | Source | Cleanup rule |
+| --- | --- | --- |
+| `batch_id` | Integration value | Group one approved following-cleanup run. |
+| `acting_account` | Request `account` | Keep relationship changes isolated by connected account. |
+| `target_user_id` | Path `id` | Use the stable numeric target ID. |
+| `target_username` | Review context | Keep a readable label without using it as the key. |
+| `reason` | Approval row | Preserve why this outbound relationship should end. |
+| `idempotency_key` | Request header | Generate one unique key per target. |
+| `write_action_id` | Response `id` | Store immediately for independent polling. |
+| `status` | Response `status` | Classify queued, completed, and failed rows. |
+| `terminal` | Response `terminal` | Count completion only after a terminal state. |
+
+| Relationship change | Correct route | What changes |
+| --- | --- | --- |
+| Stop following a profile | `DELETE /x/users/{id}/follow` | One outbound following relationship |
+| Remove an account follower | `POST /x/users/{id}/remove-follower` | One inbound follower relationship |
+| Remove a repost | `DELETE /x/tweets/{id}/retweet` | Repost state only |
+| Delete a tweet | `DELETE /x/tweets/{id}` | One post, not follower or following state |
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>

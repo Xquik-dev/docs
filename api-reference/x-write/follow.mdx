@@ -134,6 +134,26 @@ After success, use follower check when current relationship proof is required. A
 
 On failure, preserve the generic error and request ID. Retry the same target with the same idempotency key.
 
+| Follow decision column | Source | Audit rule |
+| --- | --- | --- |
+| `acting_account` | Request `account` | Keep the connected account separate from the target profile. |
+| `target_user_id` | Path `id` | Use the stable numeric target ID. |
+| `target_username` | Review context | Store as a readable label, not the relationship key. |
+| `approval_reference` | Workflow value | Prove who or what approved the follow. |
+| `idempotency_key` | Request header | Reuse only for the identical follow request. |
+| `write_action_id` | Response `id` | Poll and reconcile the durable follow action. |
+| `status` | Response `status` | Keep queued, completed, and failed states distinct. |
+| `terminal` | Response `terminal` | Report completion only when this value is `true`. |
+| `safe_to_retry` | Response `safeToRetry` | Retry only when the lifecycle response permits it. |
+
+| Follow outcome | Evidence | Next action |
+| --- | --- | --- |
+| Queued | `terminal: false` | Poll `statusUrl`; do not claim the relationship changed. |
+| Completed | Terminal success | Store the completion time and optional relationship proof. |
+| Already followed | Converged terminal result | Complete the job without a second follow request. |
+| Failed and retryable | `safeToRetry: true` | Follow lifecycle guidance and preserve the original receipt. |
+| Failed and final | Terminal failure | Store the error and stop automatic retries. |
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>

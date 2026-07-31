@@ -87,6 +87,90 @@ const REQUIRED_OPERATIONAL_TABLES = [
       '| `content_disclosure` | `tweet.contentDisclosure` |',
     ],
   },
+  {
+    file: 'api-reference/x/bookmarks.mdx',
+    snippets: [
+      '| Bookmark library column | Response source | Account-scoped rule |',
+      '| Public output | None by default |',
+    ],
+  },
+  {
+    file: 'api-reference/x/batch-tweets.mdx',
+    snippets: [
+      '| Batch lookup column | Response source | Reconciliation rule |',
+      '| Zero affordable results | Stop on `402 insufficient_credits`',
+    ],
+  },
+  {
+    file: 'api-reference/x/download-media.mdx',
+    snippets: [
+      '| Manifest column | Response or request source | Reconciliation rule |',
+      '| Partial bulk result | `totalTweets` below valid input count |',
+    ],
+  },
+  {
+    file: 'api-reference/x/get-article.mdx',
+    snippets: [
+      '| Article archive column | Response source | Archive rule |',
+      '| Code | Code text | Language and formatting metadata |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/send-dm.mdx',
+    snippets: [
+      '| DM record column | Request or response source | Audit rule |',
+      '| Recipient disallows DMs | `422 x_dm_not_allowed` |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/upload-media.mdx',
+    snippets: [
+      '| Upload receipt column | Request or response source | Handoff rule |',
+      '| Media DM | `mediaId` | Exactly one item in `media_ids`',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/follow.mdx',
+    snippets: [
+      '| Follow decision column | Source | Audit rule |',
+      '| Already followed | Converged terminal result |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/unfollow.mdx',
+    snippets: [
+      '| Unfollow batch column | Source | Cleanup rule |',
+      '| Remove an account follower | `POST /x/users/{id}/remove-follower` |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/like.mdx',
+    snippets: [
+      '| Like action column | Source | Engagement rule |',
+      '| Already liked | Converged terminal result |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/unlike.mdx',
+    snippets: [
+      '| Unlike action column | Source | Removal rule |',
+      '| Already unliked | Converged terminal result |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/retweet.mdx',
+    snippets: [
+      '| Repost action column | Source | Distribution rule |',
+      '| Already reposted | Converged terminal result |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/unretweet.mdx',
+    snippets: [
+      '| Repost removal column | Source | Cleanup rule |',
+      '| Already removed | Converged terminal result |',
+    ],
+  },
 ] as const;
 
 describe('operational content tables', (): void => {

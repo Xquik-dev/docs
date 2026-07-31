@@ -151,6 +151,26 @@ Refresh the account timeline only when downstream work needs current proof. Pres
 
 This operation changes only repost state. It does not change follows, likes, replies, or bookmarks.
 
+| Repost removal column | Source | Cleanup rule |
+| --- | --- | --- |
+| `acting_account` | Request `account` | Match the account that owns the repost. |
+| `tweet_id` | Path `id` | Match the exact reposted Tweet ID. |
+| `original_approval_reference` | Repost ledger | Preserve why the repost originally occurred. |
+| `removal_reason` | Workflow value | Preserve why the repost should end. |
+| `idempotency_key` | Request header | Use a new key, separate from the original repost. |
+| `write_action_id` | Response `id` | Store the durable removal action. |
+| `status` | Response `status` | Keep pending, completed, and failed removals distinct. |
+| `terminal` | Response `terminal` | Update the campaign ledger only when `true`. |
+| `requested_at` | Integration timestamp | Keep cleanup time separate from repost time. |
+
+| Removal outcome | Evidence | Campaign update |
+| --- | --- | --- |
+| Queued | `terminal: false` | Poll `statusUrl`; keep the repost active locally. |
+| Completed | Terminal success | Mark the repost removed for this account and Tweet ID. |
+| Already removed | Converged terminal result | Mark the desired state without another request. |
+| Retryable failure | `safeToRetry: true` | Preserve the receipt and follow lifecycle guidance. |
+| Final failure | Terminal failure | Store the error and keep the prior repost state. |
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
