@@ -32,7 +32,7 @@ const PRODUCT_APP_ICON_FILE = '/Users/burak/Developer/xquik/app/icon.svg';
 const DOCS_X_ONLY_ICON_SHA256 =
   '7002c1dd82b5b903d69777fa212f39b0e0410cb156e7bcb1b4426fcec3a7cdc5';
 const TWEET_SEARCH_EXPORT_SEMRUSH_SHA256 =
-  'bcfbcf2ae0efb277d35b060abd8800c5668789de23a60f16bb7c2477dddf2cd9';
+  'ca211d6cb21da95e349c09b6353426c15512980529eda45d76c5c6ad3fc00a54';
 const CODEX_OAUTH_ISSUER_ERROR =
   'Authorization server response missing required issuer: expected https://xquik.com';
 const CODEX_OAUTH_UPSTREAM_ISSUE =

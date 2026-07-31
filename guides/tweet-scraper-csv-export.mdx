@@ -51,7 +51,7 @@ Start with the search intent. Define keywords, hashtags, authors, language, date
 
 ## Build a Scheduled Tweet Export Pipeline
 
-A recurring tweet scraping workflow needs an explicit search window. Store the keyword, author, language, start time, and end time for every run. Reuse those values for retries. Schedule one run through cron, Prefect, or another job runner. Call POST /extractions/estimate before creating the extraction. Stop when the estimate exceeds the approved result count or credit budget. Create one extraction for the approved window. Store its job ID immediately. Poll GET /extractions/{id} until the job completes or fails. Do not create a replacement job while the first job still runs. Export the completed rows once. Write the CSV, JSON, or XLSX file to a dated path. Record its extraction ID, search query, filters, row count, and format. Advance the schedule checkpoint only after the file becomes durable. A failed upload must not move the next start time. This rule prevents missing tweets between recurring runs. Python pipelines can use the Python SDK for direct pages. They can also call the REST job endpoints. Keep orchestration separate from tweet normalization. This makes retries predictable across Python, CLI, and no-code runners.
+A recurring tweet scraping workflow needs an explicit search window. Store the keyword, author, language, start time, and end time for every run. Reuse those values for retries. Schedule one run through cron, Prefect, or another job runner. Call POST /extractions/estimate before creating the extraction. Stop when the estimate exceeds the approved result count or credit budget. Create one extraction for the approved window. Store its job ID immediately. Poll `GET /extractions/{id}` until the job completes or fails. Do not create a replacement job while the first job still runs. Export the completed rows once. Write the CSV, JSON, or XLSX file to a dated path. Record its extraction ID, search query, filters, row count, and format. Advance the schedule checkpoint only after the file becomes durable. A failed upload must not move the next start time. This rule prevents missing tweets between recurring runs. Python pipelines can use the Python SDK for direct pages. They can also call the REST job endpoints. Keep orchestration separate from tweet normalization. This makes retries predictable across Python, CLI, and no-code runners.
 
 ## Validate Tweet Export Completeness
 
@@ -84,11 +84,11 @@ Create the job with the same toolType, searchQuery, filters, and optional result
 
 Store the creation response as a local handoff before polling:
 
-Poll by tweet_search_extraction_id; keep search_query, filters, and results_limit with the audit record. Do not wait for totalResults or createdAt in the create response; those fields arrive from GET /extractions/{id}.
+Poll by tweet_search_extraction_id; keep search_query, filters, and results_limit with the audit record. Do not wait for totalResults or createdAt in the create response; those fields arrive from `GET /extractions/{id}`.
 
 ## Step 3: Poll job status
 
-Poll GET /extractions/{id} until the job is completed or failed.
+Poll `GET /extractions/{id}` until the job is completed or failed.
 
 Use the paginated response when your app wants JSON rows instead of a file download.
 
@@ -98,7 +98,7 @@ Exports are free after the extraction job exists. Use CSV for spreadsheets, JSON
 
 ## Step 5: Hand off rows
 
-For API handoff, call GET /extractions/{id} with limit up to 1000 and pass nextCursor as after until hasMore is false. Store job, results, hasMore, and nextCursor. Normalize each tweet row before sending it downstream:
+For API handoff, call `GET /extractions/{id}` with limit up to 1000 and pass nextCursor as after until hasMore is false. Store job, results, hasMore, and nextCursor. Normalize each tweet row before sending it downstream:
 
 For direct API handoff, normalize tweets[].id, tweets[].text, tweets[].createdAt, tweets[].author.id, tweets[].author.username, has_next_page, and next_cursor. For JSON Lines, write one normalized tweet object per line to xquik-tweet-search.jsonl.
 
