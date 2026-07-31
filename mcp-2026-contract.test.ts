@@ -18,7 +18,7 @@ const DOCS_MCP = readFileSync(
   'utf8',
 );
 const QUICKSTART = readFileSync(
-  join(PROJECT_ROOT, 'quickstart.mdx'),
+  join(PROJECT_ROOT, 'x-api-quickstart.mdx'),
   'utf8',
 );
 const INTRODUCTION = readFileSync(

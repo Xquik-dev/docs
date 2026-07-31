@@ -16,12 +16,12 @@ Use SDK repositories for generated client APIs.
 
 ## Start Here
 
-- [Quickstart](https://docs.xquik.com/quickstart) - make the first authenticated API call.
+- [Quickstart](https://docs.xquik.com/x-api-quickstart) - make the first authenticated API call.
 - [API Reference](https://docs.xquik.com/api-reference) - browse 128 OpenAPI-backed operations.
 - [Guest wallets](https://docs.xquik.com/guides/guest-wallets) - fund 33 accountless GET routes through a confirmed Stripe Payment Link.
-- [Direct MPP](https://docs.xquik.com/mpp/overview) - pay per request on 7 fixed-price GET operations.
+- [Direct MPP](https://docs.xquik.com/mpp/machine-payments-protocol) - pay per request on 7 fixed-price GET operations.
 - [SDKs](https://docs.xquik.com/sdks) - use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
-- [Tweet search export](https://docs.xquik.com/guides/tweet-search-export) - export tweets by keyword to CSV, JSON, or XLSX.
+- [Tweet search export](https://docs.xquik.com/guides/tweet-scraper-csv-export) - export tweets by keyword to CSV, JSON, or XLSX.
 - [Tweet replies export](https://docs.xquik.com/guides/tweet-replies-export) - export replies to CSV, JSON, or XLSX.
 - [Follower export](https://docs.xquik.com/guides/follower-export-crm) - export X followers to CRM or warehouse.
 - [Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow) - send DMs and store returned message IDs.
@@ -49,7 +49,7 @@ Use SDK repositories for generated client APIs.
 | Customer Question | Documentation |
 | --- | --- |
 | How do I search tweets through an API? | [Search Tweets API](https://docs.xquik.com/api-reference/x/search-tweets) |
-| How do I export tweet search results? | [Tweet Search Export](https://docs.xquik.com/guides/tweet-search-export) |
+| How do I export tweet search results? | [Tweet Search Export](https://docs.xquik.com/guides/tweet-scraper-csv-export) |
 | How do I read an account timeline? | [User Tweets API](https://docs.xquik.com/api-reference/x/user-tweets) |
 | How do I export followers? | [Follower Export Guide](https://docs.xquik.com/guides/follower-export-crm) |
 | How do I scrape following accounts? | [Following API](https://docs.xquik.com/api-reference/x/following) |
@@ -87,7 +87,7 @@ oauth/              OAuth 2.1 setup + flow
 sdks/               Per-language SDK landing pages
 alternatives/       Comparison and migration guides
 introduction.mdx    Platform overview
-quickstart.mdx      2-minute quickstart
+x-api-quickstart.mdx      2-minute quickstart
 docs.json           Navigation + theme config
 custom.css          Custom styling
 llms.txt            AI-readable site index

@@ -78,12 +78,12 @@ const REQUIRED_README_SNIPPETS = [
   'signed webhooks',
   'SDK clients',
   'X automation',
-  '[Quickstart](https://docs.xquik.com/quickstart)',
+  '[Quickstart](https://docs.xquik.com/x-api-quickstart)',
   '[API Reference](https://docs.xquik.com/api-reference)',
   'browse 128 OpenAPI-backed operations',
   '**REST API** - 128 operations',
   '[SDKs](https://docs.xquik.com/sdks)',
-  '[Tweet search export](https://docs.xquik.com/guides/tweet-search-export)',
+  '[Tweet search export](https://docs.xquik.com/guides/tweet-scraper-csv-export)',
   'export tweets by keyword to CSV, JSON, or XLSX',
   '[Tweet replies export](https://docs.xquik.com/guides/tweet-replies-export)',
   'export replies to CSV, JSON, or XLSX',
@@ -181,7 +181,7 @@ const REQUIRED_SDK_OVERVIEW_SNIPPETS = [
   '<Card title="Java" icon="coffee" href="/sdks/java">',
   'Maven Central publication is pending. Build from source at',
   '<Card title="Kotlin" icon="blocks" href="/sdks/kotlin">',
-  '<Card title="C# / .NET" icon="hash" href="/sdks/csharp">',
+  '<Card title="C# / .NET" icon="hash" href="/sdks/csharp-x-api-sdk">',
   'Install with `dotnet add package XTwitterScraper`;',
   '<Card title="Ruby" icon="gem" href="/sdks/ruby">',
   'Install with `gem install x-twitter-scraper`;',
@@ -1675,7 +1675,7 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
     forbidden: ['Read calls are 60 per 1s', 'share a 60 per 1s user bucket'],
   },
   {
-    file: 'quickstart.mdx',
+    file: 'x-api-quickstart.mdx',
     required: ['300 reads/1s, 120 writes/60s, and 60 deletes/60s'],
     forbidden: ['60 reads/1s, 30 writes/60s, 15 deletes/60s'],
   },
@@ -1826,10 +1826,10 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'has_more',
   'next_cursor',
   'query?: Record<string, string | number | boolean>;',
-  'Pass `next_cursor` back as the `cursor` query parameter',
+  'Pass `next_cursor` as `cursor` for tweet, profile, follower, reply, timeline, community, and list pages.',
   'Use `q` for keywords and X search operators, or pass a plain Tweet ID or X',
   'status URL when the agent receives a single stored link.',
-  'API MCP v2.6.0 sends that contract automatically.',
+  'API MCP v2.6.0 sends that contract',
   '## Agent handoff patterns',
   'MCP returns JSON.',
   'Use extraction export endpoints when you need Xquik to generate',
@@ -1954,7 +1954,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'The REST API documents 128 operations. The full MCP catalog exposes 120 across 10 categories:',
   '6 operations in `support`: create, list, read, reply, close, and download attachments.',
   '27 operations across `x-accounts` and `x-write`:',
-  '<Card title="X data reads" icon="search">',
+  '<Card title="Tweets, profiles & followers" icon="search">',
   '38 operations in `twitter`: batch and single tweet lookup, tweet search, article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, followers, replies, communities, and lists.',
   '<Card title="X accounts and writes" icon="send">',
   '27 operations across `x-accounts` and `x-write`: connect accounts, resolve challenges, post tweets, like, retweet, follow, remove followers, send DMs, upload media, update profiles, and manage communities.',
@@ -2086,12 +2086,12 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   'title: Docs MCP server',
   'Xquik documentation is available as an MCP server at `https://docs.xquik.com/mcp`.',
   'AI tools can search the full docs site and retrieve indexed public pages',
-  'This is separate from the [Xquik API MCP server](/mcp/overview) at `xquik.com/mcp`',
+  'This differs from the [Xquik API MCP server](/mcp/overview) at `xquik.com/mcp`.',
   'The docs MCP server is read-only and requires no authentication.',
   '<Card title="Docs MCP Server" icon="book-open">',
   'Search docs and read indexed public pages at `https://docs.xquik.com/mcp`. No auth required. Free.',
   '<Card title="API MCP Server" icon="terminal">',
-  'Interact with X data at `https://xquik.com/mcp`. Use an API key or OAuth 2.1.',
+  'Search tweets, inspect profiles, export followers, and manage monitors at',
   'Full credentials search 120 catalog routes. Guest `paid_reads` keys search 33',
   '## Agent route checklist',
   '<Card title="Read docs first" icon="book-open">',
@@ -2148,7 +2148,7 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
 
 const REQUIRED_AGENT_MCP_HANDOFF_SNIPPETS = [
   'title: Agent MCP Handoff',
-  'Route AI agents across Xquik Docs MCP, API MCP, REST, SDKs, webhooks, event replay, and file exports.',
+  'description: "Route AI agents between tweet search, follower exports, account actions, Docs MCP, API MCP, REST, SDKs, webhooks, and event replay."',
   '<Card title="Docs MCP" icon="book-open">',
   '`https://docs.xquik.com/mcp`',
   '<Card title="API MCP" icon="terminal">',
@@ -2321,8 +2321,8 @@ const REQUIRED_BILLING_CARRYOVER_SNIPPETS = [
 
 const REQUIRED_BILLING_MPP_SNIPPETS = [
   '## Pay-per-use (MPP)',
-  'Seven fixed-price read operations accept direct [MPP](/mpp/overview) payments.',
-  'Use [MPP overview](/mpp/overview#eligible-endpoints) for the complete 7-operation list.',
+  'Seven fixed-price read operations accept direct [MPP](/mpp/machine-payments-protocol) payments.',
+  'Use [MPP overview](/mpp/machine-payments-protocol#eligible-endpoints) for the complete 7-operation list.',
   'Direct MPP uses fixed `charge` pricing:',
   '<Card title="USD 0.00015 units" icon="coins">',
   '`GET /x/tweets/{id}`, `GET /x/users/{id}`, and `GET /x/communities/{id}/info` cost USD 0.00015 per call.',
@@ -2346,7 +2346,7 @@ const REQUIRED_GUEST_WALLET_GUIDE_SNIPPETS = [
   'Create a Payment Link only after the user explicitly confirms.',
   'The `paid_reads` scope permits exactly the 33 GET routes',
   '## Eligible paid-read routes',
-  'Seven routes also accept [direct MPP payment](/mpp/overview#eligible-endpoints).',
+  'Seven routes also accept [direct MPP payment](/mpp/machine-payments-protocol#eligible-endpoints).',
   'The other 26 routes require a guest or full account credential.',
   'Available account credits; plans add monthly credits',
   'The 3 guest credential routes remain direct REST only:',
@@ -2423,7 +2423,7 @@ const REQUIRED_PAID_READ_REFERENCE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_DIRECT_MPP_REFERENCE_SNIPPETS = [
-  'Direct [MPP](/mpp/overview):',
+  'Direct [MPP](/mpp/machine-payments-protocol):',
   '`Payment ...`',
   '`WWW-Authenticate: Payment` challenge',
 ] as const;
@@ -2646,7 +2646,7 @@ const REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EVENT_LIST_API_HANDOFF_SNIPPETS = [
-  'description: "Query stored account and keyword monitor events with filters and cursor pagination. See List events examples and guidance."',
+  'description: "Query stored tweet, follower, following, profile, and keyword monitor events by monitor, event type, time range, and cursor."',
   "jq '. as $page | .events[] | {",
   'event_id: .id',
   'monitor_type: .monitorType',
@@ -2790,7 +2790,7 @@ const FORBIDDEN_TYPES_GUIDE_COMPLETENESS_OVERCLAIMS = [
 ] as const;
 
 const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
-  'description: "Recover from Xquik API error codes and rate limits. Review Error handling parameters, examples, responses, and integration guidance."',
+  'description: "Recover from API key, subscription, credit, rate-limit, validation, cursor, write-action, monitor, webhook, and dependency errors."',
   'Use each `error` code to choose recovery.',
   'safeToRetry',
   'Start with the HTTP family. Retry only when a card says so.',
@@ -2984,7 +2984,7 @@ const REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
-  'description: "Connect an X account to Xquik with the saved Authenticator App TOTP secret required for a durable connection. See examples."',
+  'description: "Connect an X account with username, password, and its saved Authenticator App TOTP secret for durable tweet, reply, DM, and profile actions."',
   'Authenticator App 2FA and `totp_secret` are required for a durable Xquik',
   'Missing the key? Restart Authentication App 2FA in X to reveal a new secret.',
   "add it to your authenticator app, and finish X's 6-digit confirmation.",
@@ -3019,7 +3019,7 @@ const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
-  'description: "Re-authenticate an X account by reusing its saved TOTP secret or sending a replacement. See Re-authenticate X account examples."',
+  'description: "Restore a connected X account by reusing its saved Authenticator App TOTP secret or sending a replacement for the login challenge."',
   'Omit `totp_secret` to reuse the saved key.',
   'Send a replacement only if X',
   'changed or rejected the saved key.',
@@ -3052,7 +3052,7 @@ const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
-  'description: "Submit an email code for an active pending challenge; stale challenges need fresh connect or reauth. See examples and guidance."',
+  'description: "Submit an email verification code for an active X account login challenge. Start a fresh connect or reauthentication when it expires."',
   'This endpoint cannot reopen an expired, failed, completed, or replaced challenge.',
   'After `409`, `410`, or `422`, start [Connect X Account](/api-reference/x-accounts/connect) again for a new account.',
   'For an existing account, use [Re-authenticate X Account](/api-reference/x-accounts/reauth)',
@@ -3098,7 +3098,7 @@ const REQUIRED_X_ACCOUNTS_BULK_RETRY_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_GET_STATE_SNIPPETS = [
-  'Use X account health before writes: healthy writes, recovering is ready, temporaryIssue waits, needsReauth fixes access',
+  'Check a connected X account before tweets, replies, DMs, likes, follows, or profile updates.',
   'Read `health` first.',
   'Use `recovering` on the next action.',
   'Wait or bulk retry `temporaryIssue`.',
@@ -4707,7 +4707,7 @@ const FORBIDDEN_CHECK_FOLLOWER_RENDER_RISK_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS = [
-  'description: "Verify whether one X user follows another for campaign proof, giveaway eligibility, CRM flags, and audit workflows. See examples."',
+  'description: "Check whether one X user follows another in either direction for giveaway eligibility, campaign proof, CRM flags, and relationship audits."',
   'Check follower verifies one known relationship without exporting a follower',
   '`isFollowing` for source-to-target proof and `isFollowedBy` for',
   'async function buildFollowCheckAudit()',
@@ -5390,10 +5390,11 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
 
 const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   'Search tweets by keyword, ID, or URL. Return text, authors, replies, metrics, media, and cursors for CRM, agents, or exports.',
-  'Use Search Tweets for keyword, hashtag, operator, and filtered discovery.',
-  'exact lookup, send a Tweet ID or X status',
+  'Use Search Tweets as an advanced Twitter search API for keywords, hashtags,',
+  'operators, dates, authors, media, and engagement filters.',
+  'send a Tweet ID or X status URL',
   'with no time params',
-  '[Get user timeline](/api-reference/x/user-tweets)',
+  '[Search user tweets](/api-reference/x/user-tweets)',
   '`GET /x/users/{id}/tweets`',
   'Date params append `since:` and `until:`',
   '`q=from:username&sinceTime=2026-05-01&untilTime=2026-05-02` stays on search.',
@@ -5406,7 +5407,7 @@ const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   'above write JSON Lines rows with tweet fields, author ID, username, display',
   'name, follower count, verified state, profile image URL, media, and cursor',
   'resume from the last saved `next_cursor`',
-  'Use [`tweet_search_extractor`](/guides/tweet-search-export) instead when a team',
+  'Use [`tweet_search_extractor`](/guides/tweet-scraper-csv-export) instead when a team',
   'needs an estimate, extraction ID, saved result pages, or CSV, JSON, and XLSX',
   '<Card title="Live search page" icon="search">',
   'Call `GET /x/tweets/search` with `q`, filters, `queryType`, `limit`, and',
@@ -5468,7 +5469,7 @@ const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   'mediaType',
   'verifiedOnly',
   'advancedQuery',
-  '[Tweet Search Export Workflow](/guides/tweet-search-export)',
+  '[Tweet Search Export Workflow](/guides/tweet-scraper-csv-export)',
   'saved CSV, JSON, or XLSX files',
   '1 credit per tweet returned',
   'A plain Tweet ID or X status URL returns the exact tweet when available.',
@@ -5702,10 +5703,10 @@ const FORBIDDEN_TIMELINE_API_RAW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS = [
-  'title: "Get user timeline | REST API reference"',
-  'Get user timeline is the User Timeline API for a single public X profile.',
+  'title: "Search user tweets & profile timeline"',
+  'Search user tweets returns the public profile timeline for one Twitter or X',
   '"user tweets," "profile',
-  'timeline," or "X user timeline."',
+  'account. Use it for "user tweets," "profile timeline," or "X user timeline"',
   '`GET /api/v1/x/users/{id}/tweets`',
   '# Username profile timeline',
   'https://xquik.com/api/v1/x/users/elonmusk/tweets',
@@ -6032,7 +6033,7 @@ const REQUIRED_TRENDS_REGION_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TRENDS_GUIDE_COPY_SNIPPETS = [
-  'description: "Find ranked X trends by WOEID region and search tweets from each topic. Review examples, responses, and integration guidance."',
+  'description: "Find ranked X trends by WOEID region, preserve each trend query and rank, then search matching tweets with cursor pagination."',
   'Xquik returns ranked X trends for 12 supported WOEID regions.',
   "Use each trend's",
   '`query` with [Search Tweets](/api-reference/x/search-tweets)',
@@ -6349,7 +6350,7 @@ const REQUIRED_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
   '`mediaUrl`',
   '`mediaId`',
   'POST /x/tweets',
-  'one media attachment in DMs',
+  'mediaId for one DM attachment',
   '## End-to-end media handoff',
   '"workflow": "media_upload_handoff"',
   '"upload": {',
@@ -7816,7 +7817,7 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   'Compose, refine, and score are free',
   '## Focused Workflow Pages',
   'Use the overview to choose the path, then move to the focused page for copy-ready examples, SDK handoff, and endpoint-specific error recovery.',
-  '<Card title="Tweet search exports" icon="search" href="/guides/tweet-search-export">',
+  '<Card title="Tweet search exports" icon="search" href="/guides/tweet-scraper-csv-export">',
   'Build CSV, JSON, or XLSX exports from `tweet_search_extractor`, or use direct `GET /x/tweets/search` pagination.',
   '<Card title="Tweet replies exports" icon="messages-square" href="/guides/tweet-replies-export">',
   '<Card title="Follower CRM export" icon="users" href="/guides/follower-export-crm">',
@@ -8032,7 +8033,7 @@ const REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS = [
   'Use `/x/timeline` for the authenticated home timeline.',
   'Call `POST /api/v1/extractions/estimate` with the same target and `resultsLimit` you plan to run.',
   'Call `GET /api/v1/extractions/{id}/export?format=csv`, `format=json`, or `format=xlsx` for file handoff.',
-  'For X data pages, pass `next_cursor` back as `cursor`.',
+  'For tweet, profile, follower, reply, timeline, community, and list pages, pass `next_cursor` back as `cursor`.',
   'For stored extraction JSON pages, pass `nextCursor` as `after`.',
   'Do not decode or construct cursors manually.',
   'For tweet posts, pass public image URLs or one public MP4 URL in `media` on `POST /api/v1/x/tweets`.',
@@ -11338,7 +11339,7 @@ describe('repository discovery', (): void => {
   it('keeps the quickstart concrete and aligned with monitor response fields', (): void => {
     expect.assertions(2);
 
-    const quickstart = readFileSync('quickstart.mdx', 'utf8');
+    const quickstart = readFileSync('x-api-quickstart.mdx', 'utf8');
 
     expect(
       collectSnippetFindings(
@@ -11527,7 +11528,7 @@ describe('repository discovery', (): void => {
   it('keeps the C# SDK page useful for tweet search handoffs', (): void => {
     expect.assertions(2);
 
-    const source = readFileSync('sdks/csharp.mdx', 'utf8');
+    const source = readFileSync('sdks/csharp-x-api-sdk.mdx', 'utf8');
 
     expect(source.length).toBeLessThanOrEqual(23_100);
 
@@ -11748,7 +11749,7 @@ describe('repository discovery', (): void => {
     const source = [
       readFileSync('mcp/overview.mdx', 'utf8'),
       readFileSync('mcp/tools.mdx', 'utf8'),
-      readFileSync('guides/types.mdx', 'utf8'),
+      readFileSync('guides/x-api-typescript-types.mdx', 'utf8'),
     ].join('\n');
     const findings: DiscoveryFinding[] = [];
 
@@ -13225,7 +13226,7 @@ describe('repository discovery', (): void => {
   it('keeps tweet search export workflow steps concrete', (): void => {
     expect.assertions(2);
 
-    const source = readFileSync('guides/tweet-search-export.mdx', 'utf8');
+    const source = readFileSync('guides/tweet-scraper-csv-export.mdx', 'utf8');
 
     expect(
       collectSnippetFindings(
@@ -13845,7 +13846,7 @@ describe('repository discovery', (): void => {
   it('keeps shared monitor types aligned with account and keyword monitor APIs', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('guides/types.mdx', 'utf8');
+    const source = readFileSync('guides/x-api-typescript-types.mdx', 'utf8');
 
     expect(
       collectSnippetFindings(
@@ -13859,7 +13860,7 @@ describe('repository discovery', (): void => {
   it('keeps shared event types aligned with account and keyword monitor events', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('guides/types.mdx', 'utf8');
+    const source = readFileSync('guides/x-api-typescript-types.mdx', 'utf8');
 
     expect(
       collectSnippetFindings(
@@ -13925,7 +13926,7 @@ describe('repository discovery', (): void => {
   it('keeps shared draft types aligned with draft API formatting', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('guides/types.mdx', 'utf8');
+    const source = readFileSync('guides/x-api-typescript-types.mdx', 'utf8');
 
     expect(
       collectSnippetFindings(
@@ -13939,7 +13940,7 @@ describe('repository discovery', (): void => {
   it('keeps the types guide from claiming complete schema coverage', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('guides/types.mdx', 'utf8');
+    const source = readFileSync('guides/x-api-typescript-types.mdx', 'utf8');
 
     expect(
       FORBIDDEN_TYPES_GUIDE_COMPLETENESS_OVERCLAIMS.flatMap(
@@ -13960,7 +13961,7 @@ describe('repository discovery', (): void => {
 
     const source = [
       readFileSync('api-reference/compose/create.mdx', 'utf8'),
-      readFileSync('guides/types.mdx', 'utf8'),
+      readFileSync('guides/x-api-typescript-types.mdx', 'utf8'),
     ].join('\n');
 
     expect(
@@ -13976,7 +13977,7 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     const testing = readFileSync('guides/webhook-testing.mdx', 'utf8');
-    const types = readFileSync('guides/types.mdx', 'utf8');
+    const types = readFileSync('guides/x-api-typescript-types.mdx', 'utf8');
     const overview = readFileSync('webhooks/overview.mdx', 'utf8');
     const verification = readFileSync('webhooks/verification.mdx', 'utf8');
     const architecture = readFileSync('guides/architecture.mdx', 'utf8');

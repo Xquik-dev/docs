@@ -2,7 +2,7 @@
 title: "Twitter search API guide"
 description: "Search tweets by keyword, ID, or URL. Return text, authors, replies, metrics, media, and cursors for CRM, agents, or exports."
 api: "GET /x/tweets/search"
-keywords: ["search tweets", "tweet scraper", "X API search", "agent handoff"]
+keywords: ["advanced Twitter search", "Twitter search API", "search tweets", "tweet scraper", "Twitter scraper", "X API search", "tweet search export", "agent handoff"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -21,10 +21,11 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
 </Note>
 
 <Info>
-  Use Search Tweets for keyword, hashtag, operator, and filtered discovery. For
-  exact lookup, send a Tweet ID or X status URL in `q` with no time params. For
-  plain account timelines, call
-  [Get user timeline](/api-reference/x/user-tweets)
+  Use Search Tweets as an advanced Twitter search API for keywords, hashtags,
+  operators, dates, authors, media, and engagement filters. For exact lookup,
+  send a Tweet ID or X status URL in `q` with no time params. To search one
+  user's tweets as a plain timeline, call
+  [Search user tweets](/api-reference/x/user-tweets)
   (`GET /x/users/{id}/tweets`). Date params append `since:` and `until:`
   search operators to `q`, so
   `q=from:username&sinceTime=2026-05-01&untilTime=2026-05-02` stays on search.
@@ -121,7 +122,7 @@ above write JSON Lines rows with tweet fields, author ID, username, display
 name, follower count, verified state, profile image URL, media, and cursor
 fields so a worker can resume from the last saved `next_cursor`.
 
-Use [`tweet_search_extractor`](/guides/tweet-search-export) instead when a team
+Use [`tweet_search_extractor`](/guides/tweet-scraper-csv-export) instead when a team
 needs an estimate, extraction ID, saved result pages, or CSV, JSON, and XLSX
 downloads after completion.
 
@@ -160,7 +161,7 @@ when available. Send no cursor on the first lookup; cursor requests return an
 empty final page for exact IDs.
 
 For CSV or XLSX output, project the returned `tweets[]` rows locally or use
-[`tweet_search_extractor`](/guides/tweet-search-export) for saved CSV, JSON, or
+[`tweet_search_extractor`](/guides/tweet-scraper-csv-export) for saved CSV, JSON, or
 XLSX files.
 
 <CardGroup cols={2}>
@@ -258,45 +259,46 @@ already have trusted raw X search operator syntax to append.
     <ResponseField name="tweets" type="object[]">
       Array of matching tweets.
       <Expandable title="tweet object">
+        Fields absent from a source tweet are omitted.
         <ResponseField name="id" type="string">Tweet ID.</ResponseField>
-        <ResponseField name="text" type="string">Tweet text content.</ResponseField>
-        <ResponseField name="type" type="string">Tweet type. Omitted if unavailable.</ResponseField>
-        <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp. Omitted if unavailable.</ResponseField>
-        <ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet. Omitted if unavailable.</ResponseField>
-        <ResponseField name="likeCount" type="number">Like count. Omitted if unavailable.</ResponseField>
-        <ResponseField name="retweetCount" type="number">Retweet count. Omitted if unavailable.</ResponseField>
-        <ResponseField name="replyCount" type="number">Reply count. Omitted if unavailable.</ResponseField>
-        <ResponseField name="quoteCount" type="number">Quote tweet count. Omitted if unavailable.</ResponseField>
-        <ResponseField name="viewCount" type="number">View count. Omitted if unavailable.</ResponseField>
-        <ResponseField name="bookmarkCount" type="number">Bookmark count. Omitted if unavailable.</ResponseField>
-        <ResponseField name="url" type="string">Permalink URL. Omitted if unavailable.</ResponseField>
-        <ResponseField name="lang" type="string">Tweet language code. Omitted if unavailable.</ResponseField>
-        <ResponseField name="isReply" type="boolean">Whether the tweet is a reply. Omitted if unavailable.</ResponseField>
+        <ResponseField name="text" type="string">Tweet text.</ResponseField>
+        <ResponseField name="type" type="string">Tweet type.</ResponseField>
+        <ResponseField name="createdAt" type="string">ISO 8601 creation time.</ResponseField>
+        <ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet.</ResponseField>
+        <ResponseField name="likeCount" type="number">Like count.</ResponseField>
+        <ResponseField name="retweetCount" type="number">Repost count.</ResponseField>
+        <ResponseField name="replyCount" type="number">Reply count.</ResponseField>
+        <ResponseField name="quoteCount" type="number">Quote count.</ResponseField>
+        <ResponseField name="viewCount" type="number">View count.</ResponseField>
+        <ResponseField name="bookmarkCount" type="number">Bookmark count.</ResponseField>
+        <ResponseField name="url" type="string">Tweet URL.</ResponseField>
+        <ResponseField name="lang" type="string">Tweet language code.</ResponseField>
+        <ResponseField name="isReply" type="boolean">Whether the tweet is a reply.</ResponseField>
         <ResponseField name="inReplyToId" type="string">Tweet ID being replied to. Omitted if not a reply.</ResponseField>
         <ResponseField name="inReplyToUserId" type="string">User ID being replied to. Omitted if not a reply.</ResponseField>
         <ResponseField name="inReplyToUsername" type="string">Username being replied to. Omitted if not a reply.</ResponseField>
-        <ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
-        <ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
-        <ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
-        <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
-        <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
-        <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
-        <ResponseField name="contentDisclosure" type="object">Disclosure labels. Omitted if unavailable.</ResponseField>
+        <ResponseField name="conversationId" type="string">Conversation thread ID.</ResponseField>
+        <ResponseField name="source" type="string">Tweet client.</ResponseField>
+        <ResponseField name="displayTextRange" type="number[]">Rendered text offsets.</ResponseField>
+        <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited.</ResponseField>
+        <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another.</ResponseField>
+        <ResponseField name="entities" type="object">Parsed entities.</ResponseField>
+        <ResponseField name="contentDisclosure" type="object">Disclosure labels.</ResponseField>
         <ResponseField name="author" type="object">
-          Tweet author. Omitted if author data is unavailable.
+          Tweet author profile.
           <Expandable title="author object">
             <ResponseField name="id" type="string">Author user ID.</ResponseField>
             <ResponseField name="username" type="string">Author X username.</ResponseField>
             <ResponseField name="name" type="string">Author display name.</ResponseField>
-            <ResponseField name="followers" type="number">Follower count. Omitted if unavailable.</ResponseField>
-            <ResponseField name="following" type="number">Following count. Omitted if unavailable.</ResponseField>
-            <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
-            <ResponseField name="profilePicture" type="string">Profile picture URL. Omitted if unavailable.</ResponseField>
-            <ResponseField name="coverPicture" type="string">Cover image URL. Omitted if unavailable.</ResponseField>
-            <ResponseField name="description" type="string">Profile bio. Omitted if unavailable.</ResponseField>
-            <ResponseField name="location" type="string">Profile location. Omitted if unavailable.</ResponseField>
-            <ResponseField name="createdAt" type="string">Account creation date. Omitted if unavailable.</ResponseField>
-            <ResponseField name="statusesCount" type="number">Total tweet count. Omitted if unavailable.</ResponseField>
+            <ResponseField name="followers" type="number">Follower count.</ResponseField>
+            <ResponseField name="following" type="number">Following count.</ResponseField>
+            <ResponseField name="verified" type="boolean">Whether the author is verified.</ResponseField>
+            <ResponseField name="profilePicture" type="string">Profile image URL.</ResponseField>
+            <ResponseField name="coverPicture" type="string">Cover image URL.</ResponseField>
+            <ResponseField name="description" type="string">Profile bio.</ResponseField>
+            <ResponseField name="location" type="string">Profile location.</ResponseField>
+            <ResponseField name="createdAt" type="string">Account creation date.</ResponseField>
+            <ResponseField name="statusesCount" type="number">Total tweet count.</ResponseField>
           </Expandable>
         </ResponseField>
         <ResponseField name="media" type="object[]">
@@ -394,5 +396,5 @@ already have trusted raw X search operator syntax to append.
 </Tabs>
 
 <Note>
-  **Next steps:** [Tweet Search Export Workflow](/guides/tweet-search-export) when you need saved CSV, JSON, or XLSX files, [Get Tweet](/api-reference/x/get-tweet) to fetch full details for a specific tweet, or [Get User](/api-reference/x/get-user) to look up an author profile.
+  **Next steps:** [Tweet Search Export Workflow](/guides/tweet-scraper-csv-export) when you need saved CSV, JSON, or XLSX files, [Get Tweet](/api-reference/x/get-tweet) to fetch full details for a specific tweet, or [Get User](/api-reference/x/get-user) to look up an author profile.
 </Note>

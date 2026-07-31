@@ -53,7 +53,7 @@ const REQUIRED_SUBSCRIBABLE_EVENT_DOCS = [
   'api-reference/overview.mdx',
   'api-reference/webhooks/create.mdx',
   'api-reference/webhooks/update.mdx',
-  'guides/types.mdx',
+  'guides/x-api-typescript-types.mdx',
   'llms.txt',
   'webhooks/overview.mdx',
 ] as const;

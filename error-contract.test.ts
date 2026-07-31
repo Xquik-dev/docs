@@ -79,10 +79,10 @@ describe("public error contract", (): void => {
   it("keeps copied TypeScript error types aligned with OpenAPI", (): void => {
     expect.assertions(3);
 
-    const source = readFileSync("guides/types.mdx", "utf8");
+    const source = readFileSync("guides/x-api-typescript-types.mdx", "utf8");
     const typeBlock = source.match(/type ApiErrorType =([\s\S]*?);/u)?.[1];
     if (typeBlock === undefined) {
-      throw new Error("guides/types.mdx is missing ApiErrorType.");
+      throw new Error("guides/x-api-typescript-types.mdx is missing ApiErrorType.");
     }
     const documentedTypes = [...typeBlock.matchAll(/"([a-z_]+)"/gu)].map(
       (match): string => match[1] ?? "",
