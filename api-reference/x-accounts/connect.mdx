@@ -199,126 +199,134 @@ If you already saved the secret key, send it as `totp_secret`. If you did not sa
 
 ## Response
 
-<Tabs>
-  <Tab title="201 Created">
-    <ResponseField name="id" type="string">Unique account ID.</ResponseField>
-    <ResponseField name="xUsername" type="string">Connected X username.</ResponseField>
-    <ResponseField name="xUserId" type="string">X user ID.</ResponseField>
-    <ResponseField name="status" type="string">Account connection status (e.g. `"active"`).</ResponseField>
-    <ResponseField name="health" type="string">Derived login/cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`. See [Account health](/api-reference/x-accounts/list#account-health) for meanings.</ResponseField>
-    <ResponseField name="createdAt" type="string">ISO 8601 timestamp of when the account was connected.</ResponseField>
-    ```json
-    {
-      "id": "3",
-      "xUsername": "your_x_username",
-      "xUserId": "9876543210",
-      "status": "active",
-      "health": "healthy",
-      "createdAt": "2026-02-20T08:15:00.000Z"
-    }
-    ```
-  </Tab>
-  <Tab title="202 Connecting">
-    <ResponseField name="object" type="string">Always `x_account_connection_attempt`.</ResponseField>
-    <ResponseField name="id" type="string">Connection attempt ID.</ResponseField>
-    <ResponseField name="status" type="string">Always `pending`.</ResponseField>
-    <ResponseField name="pollAfterMs" type="integer">Milliseconds to wait before checking the status URL.</ResponseField>
+### 201 Created
 
-    ```json
-    {
-      "object": "x_account_connection_attempt",
-      "id": "xatt_0123456789abcdef0123456789abcdef",
-      "status": "pending",
-      "pollAfterMs": 3000
-    }
-    ```
+<ResponseField name="id" type="string">Unique account ID.</ResponseField>
+<ResponseField name="xUsername" type="string">Connected X username.</ResponseField>
+<ResponseField name="xUserId" type="string">X user ID.</ResponseField>
+<ResponseField name="status" type="string">Account connection status (e.g. `"active"`).</ResponseField>
+<ResponseField name="health" type="string">Derived login/cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`. See [Account health](/api-reference/x-accounts/list#account-health) for meanings.</ResponseField>
+<ResponseField name="createdAt" type="string">ISO 8601 timestamp of when the account was connected.</ResponseField>
+```json
+{
+  "id": "3",
+  "xUsername": "your_x_username",
+  "xUserId": "9876543210",
+  "status": "active",
+  "health": "healthy",
+  "createdAt": "2026-02-20T08:15:00.000Z"
+}
+```
 
-    The response includes:
+### 202 Connecting
 
-    - `Location: /api/v1/x/account-connection-attempts/{id}`
-    - `Retry-After: 3`
-    - `Cache-Control: no-store`
+<ResponseField name="object" type="string">Always `x_account_connection_attempt`.</ResponseField>
+<ResponseField name="id" type="string">Connection attempt ID.</ResponseField>
+<ResponseField name="status" type="string">Always `pending`.</ResponseField>
+<ResponseField name="pollAfterMs" type="integer">Milliseconds to wait before checking the status URL.</ResponseField>
 
-    Wait for `Retry-After`, then call [Get X Account Connection Status](/api-reference/x-accounts/connection-attempt). Keep checking while `status` is `pending`. Do not create another attempt.
-  </Tab>
-  <Tab title="202 Email Code Required">
-    <ResponseField name="object" type="string">Always `x_account_connection_challenge`.</ResponseField>
-    <ResponseField name="id" type="string">Challenge ID to submit with the email verification code.</ResponseField>
-    <ResponseField name="status" type="string">Always `requires_email_code`.</ResponseField>
-    <ResponseField name="expiresAt" type="string">ISO 8601 expiration time for the challenge.</ResponseField>
-    <ResponseField name="message" type="string">Human-readable next step.</ResponseField>
-    <ResponseField name="username" type="string">X username being connected.</ResponseField>
+```json
+{
+  "object": "x_account_connection_attempt",
+  "id": "xatt_0123456789abcdef0123456789abcdef",
+  "status": "pending",
+  "pollAfterMs": 3000
+}
+```
 
-    ```json
-    {
-      "object": "x_account_connection_challenge",
-      "id": "xch_8vGd8Y9JvH6dV0xA",
-      "status": "requires_email_code",
-      "expiresAt": "2026-05-08T12:10:00Z",
-      "message": "Enter the email verification code to continue.",
-      "username": "elonmusk"
-    }
-    ```
+The response includes:
 
-    Submit the code to [Submit X Account Email Code](/api-reference/x-accounts/submit-challenge).
-  </Tab>
-  <Tab title="400 Invalid Input">
-    ```json
-    { "error": "invalid_input", "message": "Invalid input. Check the request body." }
-    ```
-    Missing `username`, `email`, `password`, or `totp_secret`, or invalid field format.
-  </Tab>
-  <Tab title="401 Unauthenticated">
-    ```json
-    { "error": "unauthenticated", "message": "Missing or invalid API key" }
-    ```
-    Missing or invalid API key.
-  </Tab>
-  <Tab title="409 Duplicate">
-    ```json
-    { "error": "account_already_connected", "message": "This X account is already connected." }
-    ```
-    The specified X account is already connected to your Xquik account.
-  </Tab>
-  <Tab title="429 Rate Limit Exceeded">
-    ```json
-    { "error": "rate_limit_exceeded", "message": "Connection safety limit reached. Try again later.", "retryAfter": 900 }
-    ```
-    The connection safety limit was reached. The response includes a `Retry-After: 900` header indicating how many seconds to wait before retrying. See the [rate limits guide](/guides/rate-limits) for details.
-  </Tab>
-  <Tab title="429 Login Cooldown">
-    ```json
-    { "error": "login_cooldown", "message": "Login is temporarily paused", "reason": "automated", "retryAfterMs": 3600000 }
-    ```
-    A prior login attempt triggered a cooldown (for example, X flagged the session). Wait for `retryAfterMs` before retrying. The response includes a `Retry-After` header in seconds.
-  </Tab>
-  <Tab title="422 Login Failed">
-    ```json
-    { "error": "login_failed", "message": "Login failed. Check credentials and try again.", "retryAfterMs": 300000 }
-    ```
-    X rejected the submitted username, email, password, or TOTP secret. Retry with the current password and the saved Authenticator App secret key, not a 6-digit code. When `retryAfterMs` is present, wait for that exact duration. The response also includes `Retry-After` in seconds.
+- `Location: /api/v1/x/account-connection-attempts/{id}`
+- `Retry-After: 3`
+- `Cache-Control: no-store`
 
-    ```json
-    {
-      "error": "passkey_required",
-      "message": "Passkey verification is not supported. Use Authenticator app 2FA for this X account, then try again."
-    }
-    ```
-    X asked for passkey verification. Switch the account to Authenticator App 2FA, save the long TOTP secret key, finish setup on X, then connect with `totp_secret`.
-  </Tab>
-  <Tab title="502 X User Lookup Failed">
-    ```json
-    { "error": "x_user_lookup_failed", "message": "X user not found. Check the username." }
-    ```
-    The X username could not be resolved. Verify the handle is correct and that the account exists.
-  </Tab>
-  <Tab title="503 Service Unavailable">
-    ```json
-    { "error": "service_unavailable", "message": "Service temporarily unavailable. Try again." }
-    ```
-    The X connection service is temporarily unavailable. Retry after a short delay.
-  </Tab>
-</Tabs>
+Wait for `Retry-After`, then call [Get X Account Connection Status](/api-reference/x-accounts/connection-attempt). Keep checking while `status` is `pending`. Do not create another attempt.
+
+### 202 Email Code Required
+
+<ResponseField name="object" type="string">Always `x_account_connection_challenge`.</ResponseField>
+<ResponseField name="id" type="string">Challenge ID to submit with the email verification code.</ResponseField>
+<ResponseField name="status" type="string">Always `requires_email_code`.</ResponseField>
+<ResponseField name="expiresAt" type="string">ISO 8601 expiration time for the challenge.</ResponseField>
+<ResponseField name="message" type="string">Human-readable next step.</ResponseField>
+<ResponseField name="username" type="string">X username being connected.</ResponseField>
+
+```json
+{
+  "object": "x_account_connection_challenge",
+  "id": "xch_8vGd8Y9JvH6dV0xA",
+  "status": "requires_email_code",
+  "expiresAt": "2026-05-08T12:10:00Z",
+  "message": "Enter the email verification code to continue.",
+  "username": "elonmusk"
+}
+```
+
+Submit the code to [Submit X Account Email Code](/api-reference/x-accounts/submit-challenge).
+
+### 400 Invalid Input
+
+```json
+{ "error": "invalid_input", "message": "Invalid input. Check the request body." }
+```
+Missing `username`, `email`, `password`, or `totp_secret`, or invalid field format.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated", "message": "Missing or invalid API key" }
+```
+Missing or invalid API key.
+
+### 409 Duplicate
+
+```json
+{ "error": "account_already_connected", "message": "This X account is already connected." }
+```
+The specified X account is already connected to your Xquik account.
+
+### 429 Rate Limit Exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "message": "Connection safety limit reached. Try again later.", "retryAfter": 900 }
+```
+The connection safety limit was reached. The response includes a `Retry-After: 900` header indicating how many seconds to wait before retrying. See the [rate limits guide](/guides/rate-limits) for details.
+
+### 429 Login Cooldown
+
+```json
+{ "error": "login_cooldown", "message": "Login is temporarily paused", "reason": "automated", "retryAfterMs": 3600000 }
+```
+A prior login attempt triggered a cooldown (for example, X flagged the session). Wait for `retryAfterMs` before retrying. The response includes a `Retry-After` header in seconds.
+
+### 422 Login Failed
+
+```json
+{ "error": "login_failed", "message": "Login failed. Check credentials and try again.", "retryAfterMs": 300000 }
+```
+X rejected the submitted username, email, password, or TOTP secret. Retry with the current password and the saved Authenticator App secret key, not a 6-digit code. When `retryAfterMs` is present, wait for that exact duration. The response also includes `Retry-After` in seconds.
+
+```json
+{
+  "error": "passkey_required",
+  "message": "Passkey verification is not supported. Use Authenticator app 2FA for this X account, then try again."
+}
+```
+X asked for passkey verification. Switch the account to Authenticator App 2FA, save the long TOTP secret key, finish setup on X, then connect with `totp_secret`.
+
+### 502 X User Lookup Failed
+
+```json
+{ "error": "x_user_lookup_failed", "message": "X user not found. Check the username." }
+```
+The X username could not be resolved. Verify the handle is correct and that the account exists.
+
+### 503 Service Unavailable
+
+```json
+{ "error": "service_unavailable", "message": "Service temporarily unavailable. Try again." }
+```
+The X connection service is temporarily unavailable. Retry after a short delay.
 
 <Note>
   **Related:** [Get X Account Connection Status](/api-reference/x-accounts/connection-attempt) for a pending attempt, [List X Accounts](/api-reference/x-accounts/list) to see connected accounts, or [Re-authenticate](/api-reference/x-accounts/reauth) if a connection expires later.

@@ -1678,8 +1678,9 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
   {
     file: 'api-reference/overview.mdx',
     required: [
-      'Read calls allow 300 per 1s. Writes allow 120 per 60s. Deletes allow 60 per 60s.',
-      '`GET`, `HEAD`, and `OPTIONS` share a 300 per 1s user bucket.',
+      'The read bucket covers `GET`, `HEAD`, and `OPTIONS`.',
+      'It allows 300 calls each second.',
+      'Exceeding a bucket returns `429 rate_limit_exceeded`',
     ],
     forbidden: ['Read calls are 60 per 1s', 'share a 60 per 1s user bucket'],
   },
@@ -2351,6 +2352,8 @@ const REQUIRED_BILLING_MPP_SNIPPETS = [
 
 const REQUIRED_GUEST_WALLET_GUIDE_SNIPPETS = [
   'Guest wallets provide prepaid access to 33 eligible X read routes without an account',
+  'Every guest-wallet paid read requires the active guest key returned during wallet creation.',
+  'Direct MPP reads use a per-request payment credential.',
   'A `401` or `402` response never creates a checkout.',
   'Create a Payment Link only after the user explicitly confirms.',
   'The `paid_reads` scope permits exactly the 33 GET routes',
@@ -2426,7 +2429,7 @@ const DIRECT_MPP_REFERENCE_PAGES = new Set([
 const REQUIRED_PAID_READ_REFERENCE_SNIPPETS = [
   '<ParamField header="Authorization" type="string">',
   '`paid_reads`',
-  '<Tab title="402 Payment required">',
+  '### 402 Payment required',
   'guest wallet',
   'checkout',
 ] as const;
@@ -2539,8 +2542,8 @@ const FORBIDDEN_AUTHENTICATION_ACCOUNT_SNIPPETS = [
   'monitor quota',
 ] as const;
 
-const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
-  '## Integration readiness checklist',
+const REQUIRED_X_API_INTEGRATION_CHECKLIST_SNIPPETS = [
+  '## Integration Readiness Checklist',
   '<Card title="Authentication" icon="key">',
   '`x-api-key`',
   '<Card title="Response contract" icon="file-json">',
@@ -3465,7 +3468,8 @@ const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   '"nextCursor": "1001"',
   'Use `limit` up to `1000` and pass `nextCursor` as `after`',
   'import { writeFile } from "node:fs/promises";',
-  'const exportFilePath = "x-followers-elonmusk.json";',
+  'const exportFilePath = "x-followers-elonmusk.csv";',
+  'export_format: "csv",',
   'throw new Error(`Export failed with ${response.status}`);',
   'const bytes = Buffer.from(await response.arrayBuffer());',
   'await writeFile(exportFilePath, bytes);',
@@ -3701,7 +3705,7 @@ const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   '`sinceTime` and `untilTime` are Unix timestamps in seconds',
   'Direct replies calls use the default paid page size',
   'Tweet author profile. Omitted if unavailable.',
-  '<Expandable title="Author object fields">',
+  '**Author object fields:**',
   '<ResponseField name="id" type="string">Author user ID.',
   '<ResponseField name="username" type="string">Author handle without `@`.',
   '<ResponseField name="name" type="string">Author display name.',
@@ -3790,7 +3794,7 @@ const REQUIRED_TWEET_QUOTES_API_HANDOFF_SNIPPETS = [
   '[`POST /webhooks`](/api-reference/webhooks/create)',
   '[`GET /events`](/api-reference/events/list)',
   'Tweet author profile. Omitted if unavailable.',
-  '<Expandable title="Author object fields">',
+  '**Author object fields:**',
   '<ResponseField name="id" type="string">Author user ID.',
   '<ResponseField name="username" type="string">Author handle without `@`.',
   '<ResponseField name="name" type="string">Author display name.',
@@ -4008,7 +4012,8 @@ const REQUIRED_TRENDS_API_HANDOFF_SNIPPETS = [
   'search_query: trend.query ?? trend.name',
   'region_woeid: data.woeid',
   'requested_count: Number(requestedCount)',
-  'returned_total: data.total',
+  'const returnedTotal = data.trends.length;',
+  'returned_total: returnedTotal',
   'region_woeid = 23424977',
   'requested_count = 10',
   'trend_rows = [',
@@ -4016,17 +4021,20 @@ const REQUIRED_TRENDS_API_HANDOFF_SNIPPETS = [
   '"search_query": trend.get("query", trend["name"])',
   '"region_woeid": data["woeid"]',
   '"requested_count": requested_count',
-  '"returned_total": data["total"]',
+  'returned_total = len(data["trends"])',
+  '"returned_total": returned_total',
   'type TrendsResponse struct {',
   'type TrendRow struct {',
   'RequestedCount int     `json:"requested_count"`',
   'ReturnedTotal  int     `json:"returned_total"`',
+  'returnedTotal := len(data.Trends)',
   'searchQuery := trend.Name',
   'encoder.Encode(TrendRow{',
   'one JSON line per trend',
   '`trend_name`, `rank`, `description`,',
   '`requested_count`, and `returned_total`',
-  '`total` is the number of valid trends available before `count` slicing',
+  'Derive `returned_total` from `trends.length`.',
+  'number of valid trends available before `count` slicing',
 ] as const;
 
 const FORBIDDEN_TRENDS_API_RAW_OUTPUT_SNIPPETS = [
@@ -4281,6 +4289,7 @@ const FORBIDDEN_FAVORITERS_API_RAW_OUTPUT_SNIPPETS = [
 
 const REQUIRED_COMMUNITY_INFO_API_HANDOFF_SNIPPETS = [
   '`GET /x/communities/{id}/info`',
+  '<Card title="Keyword search" icon="search" href="/api-reference/x/community-search">',
   'const communityRecord = {',
   'community_id: community.id',
   'community_name: community.name ?? null',
@@ -5827,7 +5836,7 @@ const REQUIRED_USER_LIKES_API_HANDOFF_SNIPPETS = [
   '"media_urls": [',
   'print(json.dumps(liked_row, separators=(",", ":")))',
   'Tweet author profile. Omitted if unavailable.',
-  '<Expandable title="Author object fields">',
+  '**Author object fields:**',
   '<ResponseField name="id" type="string">Author user ID.',
   '<ResponseField name="username" type="string">Author handle without `@`.',
   '<ResponseField name="name" type="string">Author display name.',
@@ -5890,7 +5899,7 @@ const REQUIRED_USER_MEDIA_API_HANDOFF_SNIPPETS = [
   '"media_types": [item["type"] for item in media_items if item.get("type")]',
   'print(json.dumps(media_row, separators=(",", ":")))',
   'Tweet author profile. Omitted if unavailable.',
-  '<Expandable title="Author object fields">',
+  '**Author object fields:**',
   '<ResponseField name="id" type="string">Author user ID.',
   '<ResponseField name="username" type="string">Author handle without `@`.',
   '<ResponseField name="name" type="string">Author display name.',
@@ -7948,8 +7957,8 @@ const REQUIRED_TARGET_AUDIENCE_DISCOVERY_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS = [
-  'title: "Twitter Brand Monitoring With Tweets & Webhooks"',
-  'Monitor brand accounts, search queries, mentions, and campaign terms with 1-second X monitors, signed webhooks, stored events, and replay-safe rows.',
+  'title: "Twitter Monitoring API for Keywords, Accounts & Webhooks"',
+  'Monitor accounts, keywords, mentions, hashtags, products, and campaigns with 1-second tweet checks. Deliver signed webhook alerts with replayable stored events.',
   '## Pick the Monitor Path',
   '<Card title="Account Monitor" icon="radio">',
   '`POST /api/v1/monitors`',
@@ -12481,24 +12490,27 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
   });
 
-  it('keeps the API overview integration checklist concrete', (): void => {
+  it('keeps the X API integration checklist concrete', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/overview.mdx', 'utf8');
+    const source = readFileSync(
+      'guides/x-api-integration-checklist.mdx',
+      'utf8',
+    );
 
     expect(
       [
         ...collectSnippetFindings(
           source,
-          'API overview',
-          REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS,
+          'X API integration checklist',
+          REQUIRED_X_API_INTEGRATION_CHECKLIST_SNIPPETS,
         ),
         ...FORBIDDEN_API_OVERVIEW_SNIPPETS.flatMap(
           (snippet): readonly DiscoveryFinding[] =>
             source.includes(snippet)
               ? [
                   {
-                    issue: `API overview contains stale read-service wording "${snippet}".`,
+                    issue: `X API integration checklist contains stale read-service wording "${snippet}".`,
                   },
                 ]
               : [],

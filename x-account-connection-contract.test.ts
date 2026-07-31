@@ -106,12 +106,14 @@ function refs(schema: Readonly<OpenApiSchema>): readonly string[] {
   return (schema.oneOf ?? []).map((variant) => variant.$ref ?? '');
 }
 
-function responseFieldsForTab(title: string): readonly string[] {
-  const start = STATUS_PAGE.indexOf(`<Tab title="${title}">`);
-  const end = STATUS_PAGE.indexOf('</Tab>', start);
-  if (start < 0 || end < 0) {
-    throw new Error(`Missing connection status tab: ${title}`);
+function responseFieldsForSection(title: string): readonly string[] {
+  const marker = `### ${title}`;
+  const start = STATUS_PAGE.indexOf(marker);
+  const nextSection = STATUS_PAGE.indexOf('\n### ', start + marker.length);
+  if (start < 0) {
+    throw new Error(`Missing connection status section: ${title}`);
   }
+  const end = nextSection < 0 ? STATUS_PAGE.length : nextSection;
   return [
     ...STATUS_PAGE.slice(start, end).matchAll(
       /<ResponseField name="(?<field>[^"]+)"/gu,
@@ -216,19 +218,19 @@ describe('X account connection documentation contract', (): void => {
     ]);
   });
 
-  it('keeps every status tab aligned with its OpenAPI variant', (): void => {
+  it('keeps every status section aligned with its OpenAPI variant', (): void => {
     expect.assertions(4);
 
-    expect(responseFieldsForTab('200 Pending')).toStrictEqual(
+    expect(responseFieldsForSection('200 Pending')).toStrictEqual(
       schemaFields('XAccountConnectionAttemptPending'),
     );
-    expect(responseFieldsForTab('200 Success')).toStrictEqual(
+    expect(responseFieldsForSection('200 Success')).toStrictEqual(
       schemaFields('XAccountConnectionAttemptSuccess'),
     );
-    expect(responseFieldsForTab('200 Failed')).toStrictEqual(
+    expect(responseFieldsForSection('200 Failed')).toStrictEqual(
       schemaFields('XAccountConnectionAttemptFailed'),
     );
-    expect(responseFieldsForTab('200 Email Code Required')).toStrictEqual(
+    expect(responseFieldsForSection('200 Email Code Required')).toStrictEqual(
       schemaFields('XAccountConnectionChallenge'),
     );
   });

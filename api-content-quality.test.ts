@@ -85,8 +85,8 @@ function collectContentFindings(): readonly ContentFinding[] {
       findings.push({ file, issue: 'Missing response section.' });
     }
 
-    if (!/<Tab title="2\d\d\b/u.test(source)) {
-      findings.push({ file, issue: 'Missing successful response tab.' });
+    if (!/(?:<Tab title="|^### )2\d\d\b/mu.test(source)) {
+      findings.push({ file, issue: 'Missing successful response section.' });
     }
 
     const key = operationKey(source);

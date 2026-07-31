@@ -14,6 +14,33 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 
 Use the X communities API to resolve one community. Then read its members, moderators, rules, or tweets. Keep its numeric ID for later requests.
 
+## Choose the Right Twitter Community API
+
+Start with community details when the numeric ID needs validation. Then choose the route that matches the records you need.
+
+<CardGroup cols={2}>
+  <Card title="Community details" icon="circle-info">
+    Get the name, description, creator, rules, policies, and banner. Keep member and moderator counts with the record.
+  </Card>
+  <Card title="Community members" icon="users" href="/api-reference/x/community-members">
+    Retrieve member profiles with usernames, bios, verification, follower counts, and cursor pagination.
+  </Card>
+  <Card title="Community tweets" icon="message-square-text" href="/api-reference/x/community-tweets">
+    Retrieve recent tweets, authors, replies, reposts, likes, quotes, media, and cursor pages.
+  </Card>
+  <Card title="Keyword search" icon="search" href="/api-reference/x/community-search">
+    Search one community for matching tweets. Keep the query and cursor with each page.
+  </Card>
+  <Card title="Moderator profiles" icon="shield-check" href="/api-reference/x/community-moderators">
+    Retrieve the smaller moderator roster without treating every member as a moderator.
+  </Card>
+  <Card title="Saved exports" icon="file-spreadsheet" href="/api-reference/extractions/create">
+    Run a community extraction when you need saved CSV, JSON, or XLSX files.
+  </Card>
+</CardGroup>
+
+Use member routes for profile rows. Use tweet routes for posts and engagement counts. Use extraction jobs for downloadable files.
+
 ## Choose Community Metadata
 
 Use this route for community metadata, rules, policies, roles, and counts. It returns one community record, not member profiles or tweet rows. Use member and tweet routes for those collections.
@@ -114,91 +141,96 @@ enrichment. Store `community_id`, `community_name`, `description`,
 
 ## Response
 
-<Tabs>
-  <Tab title="200 OK">
-    <ResponseField name="community" type="object">
-      Community details.
-      <Expandable title="community object">
-        <ResponseField name="id" type="string">Community ID.</ResponseField>
-        <ResponseField name="name" type="string">Community name. Omitted if unavailable.</ResponseField>
-        <ResponseField name="description" type="string">Community description. Omitted if empty.</ResponseField>
-        <ResponseField name="member_count" type="number">Total member count. Omitted if unavailable.</ResponseField>
-        <ResponseField name="moderator_count" type="number">Moderator count. Omitted if unavailable.</ResponseField>
-        <ResponseField name="join_policy" type="string">Join policy (e.g. `Open`). Omitted if unavailable.</ResponseField>
-        <ResponseField name="invites_policy" type="string">Invitation policy. Omitted if unavailable.</ResponseField>
-        <ResponseField name="is_member" type="boolean">Whether the authenticated viewer belongs to the community. Omitted without viewer context.</ResponseField>
-        <ResponseField name="is_nsfw" type="boolean">Whether the community is marked sensitive. Omitted if unavailable.</ResponseField>
-        <ResponseField name="role" type="string">Authenticated viewer's community role. Omitted without viewer context.</ResponseField>
-        <ResponseField name="creator" type="object">Creator profile with `id`, `username`, `verified`, and optional `name`. Omitted if unavailable.</ResponseField>
-        <ResponseField name="banner_url" type="string">Banner image URL. Omitted if unavailable.</ResponseField>
-        <ResponseField name="created_at" type="string">ISO 8601 creation timestamp. Omitted if unavailable.</ResponseField>
-        <ResponseField name="primary_topic" type="object">Primary topic with `id` and `name` fields. Omitted if unavailable.</ResponseField>
-        <ResponseField name="rules" type="object[]">Community rules, each with `id`, `name`, and `description`. Omitted if unavailable.</ResponseField>
-      </Expandable>
-    </ResponseField>
+### 200 OK
 
-    ```json
-    {
-      "community": {
-        "id": "1234567890",
-        "name": "Web Developers",
-        "description": "A community for web developers",
-        "member_count": 15000,
-        "moderator_count": 5,
-        "join_policy": "Open",
-        "is_member": true,
-        "role": "Member",
-        "created_at": "2024-01-15T00:00:00.000Z",
-        "primary_topic": { "id": "1", "name": "Technology" },
-        "rules": [
-          { "id": "1", "name": "Be respectful", "description": "Treat all members with respect." }
-        ]
-      }
-    }
-    ```
-  </Tab>
-  <Tab title="400 Invalid community ID">
-    ```json
-    { "error": "invalid_community_id" }
-    ```
-    The community ID is empty or invalid.
-  </Tab>
-  <Tab title="401 Unauthenticated">
-    ```json
-    { "error": "unauthenticated" }
-    ```
-    Missing or invalid API key.
-  </Tab>
-  <Tab title="402 Payment required">
-    Account keys get account options; guest keys get guest top-up only.
-    Anonymous calls receive a direct MPP `WWW-Authenticate: Payment` challenge plus a guest wallet creation action.
-    No checkout starts automatically. Confirm any payment action.
-  </Tab>
-  <Tab title="404 Community not found">
-    ```json
-    { "error": "not_found" }
-    ```
-    The community could not be resolved. Check the community ID.
-  </Tab>
-  <Tab title="502 X API unavailable">
-    ```json
-    { "error": "x_api_unavailable" }
-    ```
-    The read service returned an error. Retry after a short delay.
-  </Tab>
-  <Tab title="429 Rate Limit Exceeded">
-    ```json
-    { "error": "rate_limit_exceeded", "retryAfter": 60 }
-    ```
-    Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
-  </Tab>
-  <Tab title="424 Dependency Failed">
-    ```json
-    { "error": "x_api_unavailable" }
-    ```
-    The normalized v1 response contract can return 424 when the read service is unavailable.
-  </Tab>
-</Tabs>
+<ResponseField name="community" type="object">
+  Community details.
+  **Community object fields:**
+    <ResponseField name="id" type="string">Community ID.</ResponseField>
+    <ResponseField name="name" type="string">Community name. Omitted if unavailable.</ResponseField>
+    <ResponseField name="description" type="string">Community description. Omitted if empty.</ResponseField>
+    <ResponseField name="member_count" type="number">Total member count. Omitted if unavailable.</ResponseField>
+    <ResponseField name="moderator_count" type="number">Moderator count. Omitted if unavailable.</ResponseField>
+    <ResponseField name="join_policy" type="string">Join policy (e.g. `Open`). Omitted if unavailable.</ResponseField>
+    <ResponseField name="invites_policy" type="string">Invitation policy. Omitted if unavailable.</ResponseField>
+    <ResponseField name="is_member" type="boolean">Whether the authenticated viewer belongs to the community. Omitted without viewer context.</ResponseField>
+    <ResponseField name="is_nsfw" type="boolean">Whether the community is marked sensitive. Omitted if unavailable.</ResponseField>
+    <ResponseField name="role" type="string">Authenticated viewer's community role. Omitted without viewer context.</ResponseField>
+    <ResponseField name="creator" type="object">Creator profile with `id`, `username`, `verified`, and optional `name`. Omitted if unavailable.</ResponseField>
+    <ResponseField name="banner_url" type="string">Banner image URL. Omitted if unavailable.</ResponseField>
+    <ResponseField name="created_at" type="string">ISO 8601 creation timestamp. Omitted if unavailable.</ResponseField>
+    <ResponseField name="primary_topic" type="object">Primary topic with `id` and `name` fields. Omitted if unavailable.</ResponseField>
+    <ResponseField name="rules" type="object[]">Community rules, each with `id`, `name`, and `description`. Omitted if unavailable.</ResponseField>
+
+</ResponseField>
+
+```json
+{
+  "community": {
+    "id": "1234567890",
+    "name": "Web Developers",
+    "description": "A community for web developers",
+    "member_count": 15000,
+    "moderator_count": 5,
+    "join_policy": "Open",
+    "is_member": true,
+    "role": "Member",
+    "created_at": "2024-01-15T00:00:00.000Z",
+    "primary_topic": { "id": "1", "name": "Technology" },
+    "rules": [
+      { "id": "1", "name": "Be respectful", "description": "Treat all members with respect." }
+    ]
+  }
+}
+```
+
+### 400 Invalid community ID
+
+```json
+{ "error": "invalid_community_id" }
+```
+The community ID is empty or invalid.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated" }
+```
+Missing or invalid API key.
+
+### 402 Payment required
+
+Account keys get account options; guest keys get guest top-up only.
+Anonymous calls receive a direct MPP `WWW-Authenticate: Payment` challenge plus a guest wallet creation action.
+No checkout starts automatically. Confirm any payment action.
+
+### 404 Community not found
+
+```json
+{ "error": "not_found" }
+```
+The community could not be resolved. Check the community ID.
+
+### 502 X API unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+The read service returned an error. Retry after a short delay.
+
+### 429 Rate Limit Exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
+
+### 424 Dependency Failed
+
+```json
+{ "error": "x_api_unavailable" }
+```
+The normalized v1 response contract can return 424 when the read service is unavailable.
 
 <Note>
   **Next steps:** [Community Members](/api-reference/x/community-members) to list members, or [Community Tweets](/api-reference/x/community-tweets) to browse posts.

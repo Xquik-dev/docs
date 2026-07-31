@@ -1,17 +1,17 @@
 ---
-title: "Twitter account monitor API & real-time tweet alerts"
+title: "Twitter account monitor API & real-time webhook alerts"
 description: "Monitor one X account every second for tweets, followers, following, profile, or relationship changes and deliver signed webhook events."
 api: "POST /monitors"
-keywords: ["monitor tweets", "account monitor", "Twitter monitor", "X monitor", "signed webhooks", "tweet alerts"]
+keywords: ["Twitter account monitor API", "monitor Twitter account", "Twitter webhook alerts", "real-time Twitter alerts", "monitor tweets", "account monitor", "signed webhooks"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Create an account monitor when one profile needs continuous tweet or
-relationship checks. Select event types, store the monitor ID, then connect a
-signed webhook.
+Create a Twitter account monitor when one profile needs continuous tweet,
+profile, or relationship checks. Select event types, store the monitor ID,
+then connect a signed webhook for real-time alerts.
 
 <Callout icon="coins" color="#5c3327">
   **Requires 22 available credits** - 1 credit for the username lookup plus 21 credits for the first active monitor hour
@@ -297,65 +297,69 @@ Valid account monitor types: `tweet.new`, `tweet.quote`, `tweet.reply`,
 
 ## Response
 
-<Tabs>
-  <Tab title="201 Created">
-    <ResponseField name="id" type="string">Unique monitor ID.</ResponseField>
-    <ResponseField name="username" type="string">Stored X username after trimming and removing the `@` prefix.</ResponseField>
-    <ResponseField name="xUserId" type="string">Resolved X user ID for the account.</ResponseField>
-    <ResponseField name="eventTypes" type="string[]">Event types this monitor is subscribed to.</ResponseField>
-    <ResponseField name="isActive" type="boolean">Whether the monitor is currently active.</ResponseField>
-    <ResponseField name="createdAt" type="string">ISO 8601 timestamp of when the monitor was created.</ResponseField>
-    <ResponseField name="nextBillingAt" type="string">Next hourly credit charge time. New active monitors are due immediately.</ResponseField>
+### 201 Created
 
-    ```json
-    {
-      "id": "7",
-      "username": "elonmusk",
-      "xUserId": "44196397",
-      "eventTypes": ["tweet.new", "tweet.reply"],
-      "isActive": true,
-      "createdAt": "2026-02-24T10:30:00.000Z",
-      "nextBillingAt": "2026-02-24T10:30:00.000Z"
-    }
-    ```
-  </Tab>
-  <Tab title="400 Invalid Input">
-    ```json
-    { "error": "invalid_input", "message": "Invalid username format or event types" }
-    ```
-    Invalid username format or missing/invalid `eventTypes` array.
-  </Tab>
-  <Tab title="401 Unauthenticated">
-    ```json
-    { "error": "unauthenticated", "message": "Missing or invalid API key" }
-    ```
-    Missing or invalid API key.
-  </Tab>
-  <Tab title="402 Payment Required">
-    ```json
-    { "error": "insufficient_credits", "message": "Insufficient credits" }
-    ```
-    At least 22 available credits are required for the username lookup and first active monitor hour. Possible errors include `no_credits` and `insufficient_credits`.
-  </Tab>
-  <Tab title="404 User Not Found">
-    ```json
-    { "error": "user_not_found", "message": "X user not found" }
-    ```
-    The specified X username does not exist or could not be resolved.
-  </Tab>
-  <Tab title="409 Duplicate">
-    ```json
-    { "error": "monitor_already_exists", "message": "Monitor already exists." }
-    ```
-    An active monitor already exists for this resolved X account. Use [Update Monitor](/api-reference/monitors/update) to change event types instead.
-  </Tab>
-  <Tab title="429 Rate Limited">
-    ```json
-    { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
-    ```
-    Too many requests. Wait for the `Retry-After` header before retrying.
-  </Tab>
-</Tabs>
+<ResponseField name="id" type="string">Unique monitor ID.</ResponseField>
+<ResponseField name="username" type="string">Stored X username after trimming and removing the `@` prefix.</ResponseField>
+<ResponseField name="xUserId" type="string">Resolved X user ID for the account.</ResponseField>
+<ResponseField name="eventTypes" type="string[]">Event types this monitor is subscribed to.</ResponseField>
+<ResponseField name="isActive" type="boolean">Whether the monitor is currently active.</ResponseField>
+<ResponseField name="createdAt" type="string">ISO 8601 timestamp of when the monitor was created.</ResponseField>
+<ResponseField name="nextBillingAt" type="string">Next hourly credit charge time. New active monitors are due immediately.</ResponseField>
+
+```json
+{
+  "id": "7",
+  "username": "elonmusk",
+  "xUserId": "44196397",
+  "eventTypes": ["tweet.new", "tweet.reply"],
+  "isActive": true,
+  "createdAt": "2026-02-24T10:30:00.000Z",
+  "nextBillingAt": "2026-02-24T10:30:00.000Z"
+}
+```
+
+### 400 Invalid Input
+
+```json
+{ "error": "invalid_input", "message": "Invalid username format or event types" }
+```
+Invalid username format or missing/invalid `eventTypes` array.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated", "message": "Missing or invalid API key" }
+```
+Missing or invalid API key.
+
+### 402 Payment Required
+
+```json
+{ "error": "insufficient_credits", "message": "Insufficient credits" }
+```
+At least 22 available credits are required for the username lookup and first active monitor hour. Possible errors include `no_credits` and `insufficient_credits`.
+
+### 404 User Not Found
+
+```json
+{ "error": "user_not_found", "message": "X user not found" }
+```
+The specified X username does not exist or could not be resolved.
+
+### 409 Duplicate
+
+```json
+{ "error": "monitor_already_exists", "message": "Monitor already exists." }
+```
+An active monitor already exists for this resolved X account. Use [Update Monitor](/api-reference/monitors/update) to change event types instead.
+
+### 429 Rate Limited
+
+```json
+{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
+```
+Too many requests. Wait for the `Retry-After` header before retrying.
 
 <Info>
   If a monitor for the same account was previously deleted, it will be silently reactivated with the new event types instead of creating a duplicate.

@@ -1,16 +1,25 @@
 ---
-title: "Twitter Scraper API, SDKs & Webhook Automation"
+title: "Twitter Scraper API & X API Alternative"
 sidebarTitle: Twitter scraper API overview
-description: "Use Xquik REST API v1 to search tweets, retrieve profiles and followers, export replies and timelines, monitor accounts, post tweets, and send webhooks."
-keywords: ["Twitter API documentation", "Twitter REST API", "Twitter API tool", "API explorer", "X API documentation", "REST API", "base URL", "rate limits", "authentication", "error codes", "pagination"]
+description: "Use Xquik as a Twitter API alternative to search tweets, export followers, following and replies, retrieve profiles, monitor accounts, post tweets, and send webhooks."
+keywords: ["Twitter scraper API", "Twitter API alternative", "X API alternative", "Twitter API", "X API", "Twitter API docs", "Twitter API documentation", "Twitter API for developers"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik REST API v1 searches tweets, exports followers and replies, retrieves
-profiles and timelines, posts tweets, monitors accounts, and sends webhooks.
+Use Xquik as a Twitter API alternative for public reads and automated actions.
+Use it as an X API alternative across REST, SDKs, webhooks, and MCP.
+
+These Twitter API docs cover authentication, public reads, automated writes,
+and webhooks. Use this Twitter API documentation as a practical Twitter API for
+developers. It covers tweets, profiles, followers, replies, monitors, and media.
+
+Search tweets with the Twitter search API. Export user tweets, replies, followers,
+following, user profiles, timelines, communities, lists, and media. Post tweets
+and monitor accounts in real time. Deliver signed webhook events from the same
+API.
 
 <Note>
   Public tweet, profile, follower, reply, timeline, community, and list reads
@@ -19,12 +28,30 @@ profiles and timelines, posts tweets, monitors accounts, and sends webhooks.
   [Connect X account](/api-reference/x-accounts/connect).
 </Note>
 
+## Choose a Twitter API Workflow
+
+Start with the workflow that matches your search intent:
+
+- [Search recent or top tweets](/api-reference/x/search-tweets) by query.
+- [Export tweet replies](/api-reference/x/tweet-replies) with author profiles.
+- [Export followers](/api-reference/x/followers) with pagination cursors.
+- [Export following profiles](/api-reference/x/following) for one account.
+- [Retrieve profiles](/api-reference/x/get-user) by username or user ID.
+- [Create account monitors](/api-reference/monitors/create) for new tweets and profile changes.
+- [Create keyword monitors](/api-reference/monitors/create-keyword) for matching tweets.
+- [Send Twitter webhook events](/api-reference/webhooks/create) to your HTTPS endpoint.
+
+Use the Twitter scraper API for tweet search and brand monitoring. Retrieve
+tweets, profiles, timelines, communities, lists, and media as structured JSON.
+The follower scraper exports follower and following profiles. The reply scraper
+returns replies and authors. Webhooks deliver new-tweet and profile-change events.
+
 <CardGroup cols={2}>
   <Card title="Monitors & Events" icon="bell" href="/api-reference/monitors/create">
     Create account and keyword monitors, retrieve events, manage webhooks
   </Card>
   <Card title="Draws & Extractions" icon="shuffle" href="/api-reference/draws/create">
-    Run giveaway draws, extract tweet data
+    Run tweet giveaway draws; extract tweets, replies, profiles, and followers
   </Card>
   <Card title="Tweets, Profiles & Followers" icon="database" href="/api-reference/x/get-user">
     Search tweets, retrieve profiles, export followers, and download media
@@ -33,7 +60,7 @@ profiles and timelines, posts tweets, monitors accounts, and sends webhooks.
     Post tweets, like, retweet, follow, DM, profile updates
   </Card>
   <Card title="Account & Billing" icon="user" href="/api-reference/account/get">
-    Account info, API keys, drafts, styles, subscriptions
+    Manage credits, API keys, drafts, styles, and subscriptions
   </Card>
   <Card title="Accountless Paid Reads" icon="wallet-cards" href="/guides/guest-wallets">
     Stripe-funded guest keys for 33 eligible GET routes
@@ -130,25 +157,41 @@ Account API keys can use `x-api-key`:
 x-api-key: xq_your_api_key_here
 ```
 
-Generate account keys from the [API Keys dashboard](https://dashboard.xquik.com/en/account?tab=api-keys). Xquik API keys can also use `Authorization: Bearer xq_your_api_key_here`. OAuth 2.1 Bearer tokens keep their granted account scopes.
+Generate account keys from the [API Keys dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+Xquik API keys also support `Authorization: Bearer xq_your_api_key_here`.
+OAuth 2.1 Bearer tokens keep their granted account scopes.
 
-Accountless guest keys use `Authorization: Bearer` and have the fixed `paid_reads` scope. They work only on the [33 eligible paid-read routes](/guides/guest-wallets#eligible-paid-read-routes) after a verified Stripe webhook. See [Authentication](/api-reference/authentication) for every method.
+Accountless guest keys use `Authorization: Bearer`. They have the fixed
+`paid_reads` scope. They work on the
+[33 eligible paid-read routes](/guides/guest-wallets#eligible-paid-read-routes).
+A verified Stripe webhook activates each paid guest key. See
+[Authentication](/api-reference/authentication) for every method.
 
 ### Machine Payments Protocol
 
-Seven fixed-price GET operations also accept anonymous [MPP](/mpp/machine-payments-protocol) payments. The server returns a `402` with its `WWW-Authenticate: Payment` challenge and an optional guest wallet action. Your client can complete the MPP challenge or ask the user to confirm a $10-$250 USD guest wallet. A failed request creates no checkout.
+Seven fixed-price GET operations accept anonymous
+[MPP](/mpp/machine-payments-protocol) payments. The server returns `402` with a
+`WWW-Authenticate: Payment` challenge. The response can include a guest wallet
+action. Complete the MPP challenge or request explicit wallet confirmation.
+A failed request creates no checkout.
 
 ### Accountless guest wallets
 
-`POST /api/v1/guest-wallets` creates a one-use Stripe-hosted Payment Link after explicit user confirmation. It returns the guest key and status URL without requiring an account, email, or dashboard. The key remains inactive for paid reads until verified payment activates it.
+`POST /api/v1/guest-wallets` creates one Stripe-hosted Payment Link. It requires
+explicit user confirmation. The response returns a guest key and status URL.
+It requires no account, email, or dashboard. Verified payment activates paid
+reads for that key.
 
-Anonymous requests to the 26 non-MPP paid reads return `401` with `WWW-Authenticate: Bearer` and a guest wallet action. The 7 direct MPP reads return `402` with a Payment challenge and the same action. Neither response creates checkout.
+Anonymous requests to 26 non-MPP paid reads return `401`. They include
+`WWW-Authenticate: Bearer` and a guest wallet action. The 7 direct MPP reads
+return `402` with a Payment challenge. They include the same optional action.
+Neither response creates checkout.
 
 See [Accountless guest wallets](/guides/guest-wallets) for creation, polling, top-ups, scope boundaries, and MCP behavior.
 
 ## First request
 
-Copy-paste this to verify your API key works:
+Run this request to verify your API key:
 
 ```bash
 curl -s https://xquik.com/api/v1/account \
@@ -184,36 +227,18 @@ curl -s https://xquik.com/api/v1/account \
 
 Replace `xq_your_api_key_here` with your key. After `401`, confirm the `x-api-key` header and `xq_` prefix.
 
-## Integration readiness checklist
+## Production Integration
 
-Run this checklist before connecting a production client, workflow builder, or agent to the API.
-
-<CardGroup cols={2}>
-  <Card title="Authentication" icon="key">
-    Send a full account key or OAuth token for account operations. Use an active guest key on its 33 paid reads. Use direct MPP only on its 7 fixed-price operations. Handle the documented `401` and `402` contracts separately.
-  </Card>
-  <Card title="Response contract" icon="file-json">
-    Default REST examples use the v1 shape. Send `xquik-api-contract: 2026-04-29` when your client expects snake_case, date-time fields as Unix seconds, structured errors, `has_more`, and `next_cursor`. The API MCP server sends this contract automatically.
-  </Card>
-  <Card title="Pagination" icon="list">
-    Use `after` with `nextCursor` on events, draws, extractions, and Radar. Use `afterCursor` on drafts. Use `cursor` with `next_cursor` on tweet, profile, follower, reply, timeline, community, and list endpoints. De-duplicate stable IDs and reject repeated cursors.
-  </Card>
-  <Card title="Billing" icon="credit-card">
-    Handle `402 no_credits` and `402 insufficient_credits`. Treat every `payment_options` action as an offer. Ask the user to select an amount and explicitly confirm before creating checkout.
-  </Card>
-  <Card title="Rate limits" icon="timer">
-    Respect `Retry-After`. Read calls allow 300 per 1s. Writes allow 120 per 60s. Deletes allow 60 per 60s. Back off after repeated `429 rate_limit_exceeded` responses.
-  </Card>
-  <Card title="Durable writes" icon="activity">
-    Send a unique `Idempotency-Key`. Store the returned action. Poll `statusUrl` while `terminal` is `false`. Retry only when `safeToRetry` is `true`, using a new key.
-  </Card>
-</CardGroup>
+Use the [X API integration checklist](/guides/x-api-integration-checklist)
+before launching a client, workflow, or agent. It covers authentication,
+pagination, billing, rate limits, and durable writes.
 
 ## Rate limits
 
 <CardGroup cols={3}>
   <Card title="Read requests" icon="database">
-    `GET`, `HEAD`, and `OPTIONS` share a 300 per 1s user bucket.
+    The read bucket covers `GET`, `HEAD`, and `OPTIONS`.
+    It allows 300 calls each second.
     Standard read throttles return `Retry-After: 1`.
   </Card>
   <Card title="Write requests" icon="pen-line">
@@ -226,171 +251,18 @@ Run this checklist before connecting a production client, workflow builder, or a
   </Card>
 </CardGroup>
 
-Exceeding limits returns `429 rate_limit_exceeded` with `Retry-After` and a JSON `retryAfter` field. See the [Rate Limits guide](/guides/rate-limits) for backoff implementations in multiple languages.
+Exceeding a bucket returns `429 rate_limit_exceeded` with `Retry-After` and a
+JSON `retryAfter` field. See the
+[Rate Limits guide](/guides/rate-limits) for backoff implementations.
 
-## Conventions
+## Response, Error & Event Contracts
 
-<AccordionGroup>
-  <Accordion title="IDs are strings">
-    Treat every ID as an opaque string. IDs may use digits, UUIDs, or prefixes. Never parse them as numbers:
-    ```json
-    { "id": "123456789" }
-    ```
-  </Accordion>
-  <Accordion title="Default timestamps are ISO 8601 UTC">
-    Default REST responses use ISO 8601 UTC strings. The normalized contract converts date-time fields to Unix seconds and renames `createdAt` to `created`:
-    ```json
-    { "created": 1771929000 }
-    ```
-  </Accordion>
-  <Accordion title="Default errors use string codes">
-    Default REST errors return an `error` field with a machine-readable string code:
-    ```json
-    { "error": "error_code" }
-    ```
+Use these references while building production integrations:
 
-    **Common errors:**
-
-    <CardGroup cols={2}>
-      <Card title="400 validation" icon="circle-alert">
-        `invalid_input` means the request body, query, or path failed
-        validation. Fix the schema, field types, or required parameters before
-        retrying.
-      </Card>
-      <Card title="401 authentication" icon="key-round">
-        `unauthenticated` means the API key or bearer token is missing or
-        invalid. Send `x-api-key` or a valid `Authorization` bearer token.
-      </Card>
-      <Card title="402 billing state" icon="credit-card">
-        `no_subscription`, `no_credits`, and `insufficient_credits` mean the
-        request lacks usable billing access or enough credits. Existing
-        available credits work without an active plan.
-      </Card>
-      <Card title="404 missing resource" icon="search">
-        `not_found` means the requested resource does not exist or is not
-        available to the authenticated account.
-      </Card>
-      <Card title="429 rate limit" icon="timer">
-        `rate_limit_exceeded` includes `Retry-After` and JSON `retryAfter`.
-        Wait for the window and retry with backoff.
-      </Card>
-      <Card title="502 read service retry" icon="rotate-ccw">
-        `x_api_unavailable` means the read service is temporarily unavailable.
-        Retry with exponential backoff.
-      </Card>
-    </CardGroup>
-
-    See [Error Handling](/guides/error-handling) for the full error code list and handling strategies.
-  </Accordion>
-  <Accordion title="Cursor-based pagination">
-    <Tabs>
-      <Tab title="Platform endpoints">
-        Events, draws, extractions, and drafts use cursor-based pagination. When more results exist, the response includes `hasMore: true` and a `nextCursor` value:
-        ```json
-        {
-          "events": [],
-          "hasMore": true,
-          "nextCursor": "MjAyNi0wMi0yNFQxMDozMDowMC4wMDBa..."
-        }
-        ```
-        Pass `nextCursor` as `after` for events, draws, and extractions. Pass it as `afterCursor` for drafts:
-        ```bash
-        curl "https://xquik.com/api/v1/events?after=MjAyNi0wMi0yNFQxMDozMDowMC4wMDBa..." \
-         -H "x-api-key: xq_your_api_key_here"
-        ```
-      </Tab>
-      <Tab title="X endpoints">
-        Tweet, profile, follower, reply, timeline, community, and list endpoints
-        under `/x/*` use a different pagination shape. When more results exist,
-        the response includes `has_next_page: true` and a `next_cursor` value:
-        ```json
-        {
-          "tweets": [],
-          "has_next_page": true,
-          "next_cursor": "DAABCgABGRnYttk__..."
-        }
-        ```
-        Pass `next_cursor` as the `cursor` query parameter to fetch the next page:
-        ```bash
-        curl "https://xquik.com/api/v1/x/tweets/search?q=xquik&cursor=DAABCgABGRnYttk__..." \
-         -H "x-api-key: xq_your_api_key_here"
-        ```
-      </Tab>
-    </Tabs>
-    Cursors are opaque strings. Do not decode or construct them. Continue through empty pages while the response says more data exists. Stop and surface a pagination error when the next cursor is missing, unchanged, or already seen. Monitors, webhooks, and API keys return up to 200 items without pagination.
-  </Accordion>
-  <Accordion title="Opt-in response contract">
-    v1 keeps the default response contract unchanged for existing clients. Send `xquik-api-contract: 2026-04-29` to opt in to the normalized v1 response contract.
-
-    ```bash
-    curl "https://xquik.com/api/v1/events" \
-     -H "x-api-key: xq_your_api_key_here" \
-     -H "xquik-api-contract: 2026-04-29"
-    ```
-
-    Opt-in responses use snake_case field names, Unix timestamps in seconds, structured error objects, `has_more` and `next_cursor` pagination fields, an `object` field on recognized resources, and prefixed IDs where available. Date-only strings stay unchanged. A default `createdAt` field becomes `created`.
-
-    ```json
-    {
-      "events": [],
-      "has_more": true,
-      "next_cursor": "MjAyNi0wMi0yNFQxMDozMDowMC4wMDBa..."
-    }
-    ```
-
-    Legacy dependency failures that return `502` by default return `424 Failed Dependency` in the opt-in contract:
-
-    ```json
-    {
-      "error": {
-        "type": "dependency_error",
-        "code": "x_api_unavailable",
-        "message": "Read service temporarily unavailable. Retry shortly."
-      }
-    }
-    ```
-
-    Pass `next_cursor` as `cursor` on tweet, profile, follower, reply, timeline,
-    community, and list endpoints. Use `after` for events, draws, extractions,
-    and Radar. Use `afterCursor` for drafts.
-  </Accordion>
-</AccordionGroup>
-
-## Event types
-
-### Monitor events
-
-Used across monitors, webhooks, and events:
-
-Valid account monitor and webhook types: `tweet.new`, `tweet.quote`,
-`tweet.reply`, `tweet.retweet`, `tweet.media`, `tweet.link`, `tweet.poll`,
-`tweet.mention`, `tweet.hashtag`, `tweet.longform`,
-`profile.avatar.changed`, `profile.banner.changed`, `profile.name.changed`,
-`profile.username.changed`, `profile.bio.changed`,
-`profile.location.changed`, `profile.url.changed`, `profile.verified.changed`,
-`profile.protected.changed`, `profile.pinned_tweet.changed`,
-`profile.unavailable.changed`.
-
-Keyword monitors accept only the 10 `tweet.*` types above.
-
-<CardGroup cols={2}>
-  <Card title="tweet.new" icon="bell">
-    Original tweet posted by the monitored account or matching query. Used when
-    no reply, quote, or retweet signal is present.
-  </Card>
-  <Card title="tweet.quote" icon="quote">
-    Quote tweet posted by the monitored account or matching query. Classified
-    when quote metadata is present.
-  </Card>
-  <Card title="tweet.reply" icon="message-circle">
-    Reply posted by the monitored account or matching query. Classified from
-    reply flags or reply target IDs.
-  </Card>
-  <Card title="tweet.retweet" icon="repeat-2">
-    Retweet posted by the monitored account or matching query. Classified from
-    retweet flags or `RT @` text.
-  </Card>
-</CardGroup>
+- [X API integration checklist](/guides/x-api-integration-checklist) covers IDs, timestamps, pagination, normalized responses, and monitor events.
+- [Error handling](/guides/error-handling) lists error codes and retry actions.
+- [Monitor events](/api-reference/events/list) documents tweet and profile event filters.
+- [Webhook testing](/guides/webhook-testing) verifies signed deliveries and retries.
 
 ## Next steps
 
