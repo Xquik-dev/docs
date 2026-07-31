@@ -6062,7 +6062,18 @@ const FORBIDDEN_EXTRACTION_CREATE_RECEIPT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EXTRACTION_ESTIMATE_HANDOFF_SNIPPETS = [
-  '## Decision handoff',
+  '## Estimate Twitter API Scraping Cost',
+  '| Search tweets with filters | `tweet_search_extractor` | `searchQuery` |',
+  '| Export tweet replies | `reply_extractor` | `targetTweetId` |',
+  '| Export followers | `follower_explorer` | `targetUsername` |',
+  '| Export following | `following_explorer` | `targetUsername` |',
+  '| Export profile tweets | `post_extractor` | `targetUsername` |',
+  '| Export community tweets | `community_post_extractor` | `targetCommunityId` |',
+  '| Export list members | `list_member_extractor` | `targetListId` |',
+  '| Export list tweets | `list_post_extractor` | `targetListId` |',
+  'A quote never starts a scraping job.',
+  'The estimator caps `estimatedResults` at that limit.',
+  '## Decision Handoff',
   'Treat the `200 OK` response as a planning checkpoint, not a running extraction.',
   '"checkpoint_type": "extraction_estimate"',
   '"estimatedResults": 500',

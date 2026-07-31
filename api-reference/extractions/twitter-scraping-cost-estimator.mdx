@@ -1,7 +1,7 @@
 ---
 title: "Twitter scraping cost estimator & credit quote"
 sidebarTitle: "Scraping cost estimate"
-description: "Estimate result counts and API credits before exporting tweets, followers, following, replies, profiles, timelines, communities, or lists."
+description: "Estimate API credits before exporting tweet searches, replies, followers, following, profiles, communities, or lists. Plan every extraction before it starts."
 api: "POST /extractions/estimate"
 keywords: ["extraction", "estimate", "cost", "usage", "quota"]
 ---
@@ -103,6 +103,53 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   }
   ```
 </CodeGroup>
+
+## Estimate Twitter API Scraping Cost
+
+Request a free credit quote before starting any extraction. The response estimates results and required credits. It also checks your available credit balance. A quote never starts a scraping job.
+
+Use the same request fields for estimation and extraction. Keep `toolType`, target fields, filters, and `resultsLimit` unchanged. This pairing makes the API cost estimate useful during approval and budgeting.
+
+### Match Each Scraping Task
+
+Choose the tool matching the tweets, profiles, or members you need.
+
+| Twitter scraping task | `toolType` | Required target | Estimated results |
+| --- | --- | --- | --- |
+| Search tweets with filters | `tweet_search_extractor` | `searchQuery` | Matching tweet search results |
+| Export tweet replies | `reply_extractor` | `targetTweetId` | Replies beneath one tweet |
+| Export followers | `follower_explorer` | `targetUsername` | Follower profiles |
+| Export following | `following_explorer` | `targetUsername` | Followed profiles |
+| Export profile tweets | `post_extractor` | `targetUsername` | Tweets from one profile |
+| Export community tweets | `community_post_extractor` | `targetCommunityId` | Tweets from one community |
+| Export list members | `list_member_extractor` | `targetListId` | Profiles inside one list |
+| Export list tweets | `list_post_extractor` | `targetListId` | Tweets from list members |
+
+Other supported tools estimate likes, media, mentions, quotes, reposts, threads, Spaces, and articles. Use their matching target fields below.
+
+### Control the Credit Quote
+
+Set `resultsLimit` when you need a smaller export. The estimator caps `estimatedResults` at that limit. It then adjusts `creditsRequired` for the capped result count.
+
+Narrow tweet search estimates with dates, authors, languages, engagement thresholds, or media filters. Reuse those filters when creating the extraction. Changed filters can produce a different estimate.
+
+The `source` field explains the result-count signal. Examples include `followers`, `following`, `posts`, `replyCount`, `quoteCount`, `retweetCount`, and `resultsLimit`. Save this field beside the credit quote.
+
+<Tip>
+  Start with a conservative `resultsLimit`. Increase it after the first quote passes your budget.
+</Tip>
+
+### Read the Estimate
+
+Check these response fields before creating the extraction:
+
+- `estimatedResults` projects the matching tweets, replies, profiles, or members.
+- `creditsRequired` states the projected credit charge.
+- `creditsAvailable` states the current balance.
+- `allowed` confirms whether that balance covers the estimate.
+- `source` identifies the signal behind the projected result count.
+
+When `allowed` is `false`, reduce the requested result count. You can also narrow filters or add credits. Request another quote before creating the extraction.
 
 ## Headers
 
@@ -231,7 +278,7 @@ The target user does not exist or is suspended.
 ```
 Wait for the `Retry-After` value before requesting another estimate.
 
-## Decision handoff
+## Decision Handoff
 
 Treat the `200 OK` response as a planning checkpoint, not a running extraction. Store the estimate with the request you plan to run:
 
@@ -268,7 +315,7 @@ Treat the `200 OK` response as a planning checkpoint, not a running extraction. 
 </CardGroup>
 
 <Note>
-  **Always call this endpoint before running an extraction** to avoid hitting credit limits. If `allowed` is `false`, the corresponding [Create Extraction](/api-reference/extractions/create) request will return a `402` error. Check your current usage on the [dashboard](https://xquik.com/dashboard).
+  **Always call this endpoint before running an extraction.** This prevents avoidable credit errors. If `allowed` is `false`, Create Extraction returns a `402` error. Check your current usage on the [dashboard](https://xquik.com/dashboard).
 </Note>
 
 <Note>
