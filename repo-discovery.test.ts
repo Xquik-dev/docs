@@ -2352,7 +2352,7 @@ const REQUIRED_BILLING_MPP_SNIPPETS = [
 
 const REQUIRED_GUEST_WALLET_GUIDE_SNIPPETS = [
   'Guest wallets provide prepaid access to 33 eligible X read routes without an account',
-  '## Accountless Twitter API Questions',
+  '## Accountless Twitter Scraper API Questions',
   '### What Twitter APIs Work Without Connecting an X Account?',
   '### Can I Scrape Twitter Without an API Account?',
   '### What Does “Twitter API No Account Required” Mean?',
