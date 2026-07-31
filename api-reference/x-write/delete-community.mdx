@@ -1,7 +1,7 @@
 ---
 title: "X community deletion API & group cleanup"
 sidebarTitle: "Delete community"
-description: "Permanently delete an owned X community by ID. This removes its membership, community tweets, replies, media, and settings."
+description: "Permanently delete an owned X community by ID and confirmed name, then track the write lifecycle before reporting completion."
 api: "DELETE /x/communities/{id}"
 keywords: ["community", "delete", "remove", "disband"]
 ---
@@ -121,6 +121,17 @@ Require explicit review for:
 Treat the deletion as irreversible within this API workflow. Do not report
 success from the request alone. Store the returned action ID and lifecycle
 state. Poll the status route when processing remains asynchronous.
+
+| Community deletion record | Request or response source | Completion rule |
+| --- | --- | --- |
+| Community ID | Path `{id}` | Confirm the exact group before approval. |
+| Acting X account | Request `account` | Confirm the connected community owner. |
+| Community name | Request `community_name` | Require the confirmation safeguard. |
+| Idempotency key | Request header | Reuse it only for an exact replay. |
+| Write action ID | Response `id` | Poll the matching lifecycle record. |
+| Lifecycle state | Response `status` and `terminal` | Stop only after a terminal state. |
+| Stored archive | Community info, tweets, and rules | Preserve required records before deletion. |
+| Removal proof | Community info lookup | Expect the community to become unavailable. |
 
 ## Headers
 

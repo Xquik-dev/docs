@@ -339,6 +339,90 @@ const REQUIRED_OPERATIONAL_TABLES = [
       '| Receiver URL | Request and response `url` | Confirm the intended HTTPS endpoint. |',
     ],
   },
+  {
+    file: 'api-reference/radar/list.mdx',
+    snippets: [
+      '| Radar monitoring column | Response source | Queue rule |',
+      '| Trend score | `items[].score` | Sort higher-scoring items first. |',
+    ],
+  },
+  {
+    file: 'api-reference/x-accounts/connect.mdx',
+    snippets: [
+      '| X account connection result | Response source | Next step |',
+      '| Email challenge | `id` from `202 requires_email_code` | Submit the matching email code before expiry. |',
+    ],
+  },
+  {
+    file: 'api-reference/x-accounts/reauth.mdx',
+    snippets: [
+      '| X account recovery column | Request or response source | Recovery rule |',
+      '| Replacement TOTP key | Request `totp_secret` | Send the base32 key, never a 6-digit code. |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/create-community.mdx',
+    snippets: [
+      '| Community creation record | Request or response source | Completion rule |',
+      '| Community ID | Response `communityId` | Store the confirmed new community ID. |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/delete-community.mdx',
+    snippets: [
+      '| Community deletion record | Request or response source | Completion rule |',
+      '| Community name | Request `community_name` | Require the confirmation safeguard. |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/delete-tweet.mdx',
+    snippets: [
+      '| Tweet deletion record | Request or response source | Completion rule |',
+      '| Tweet text | Pre-deletion lookup | Save the approved post content first. |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/join-community.mdx',
+    snippets: [
+      '| Community join record | Request or response source | Membership rule |',
+      '| Posting permission | Separate approval | Never infer permission from membership. |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/leave-community.mdx',
+    snippets: [
+      '| Community departure record | Request or response source | Membership rule |',
+      '| Idempotency key | Request header | Never reuse the earlier join key. |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/remove-follower.mdx',
+    snippets: [
+      '| Follower removal record | Request or response source | Moderation rule |',
+      '| Unfollow distinction | `DELETE /x/users/{id}/follow` | Use that route for outgoing follows. |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/update-avatar.mdx',
+    snippets: [
+      '| Profile avatar update column | Request or response source | Review rule |',
+      '| Uploaded file | Request `file` | Accept JPEG or PNG up to 700 KB. |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/update-banner.mdx',
+    snippets: [
+      '| Profile banner update column | Request or response source | Review rule |',
+      '| Uploaded file | Request `file` | Accept JPEG or PNG up to 2 MB. |',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/update-profile.mdx',
+    snippets: [
+      '| X profile text update column | Request or response source | Review rule |',
+      '| Changed fields | Exact request keys | Leave unrelated profile fields absent. |',
+    ],
+  },
 ] as const;
 
 describe('operational content tables', (): void => {
