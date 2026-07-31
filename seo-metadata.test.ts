@@ -4,11 +4,11 @@ import { describe, expect, it } from 'vitest';
 
 const MIN_DESCRIPTION_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 170;
-const MIN_RENDERED_TITLE_LENGTH = 15;
+const MIN_RENDERED_TITLE_LENGTH = 30;
 const MAX_RENDERED_TITLE_LENGTH = 70;
 const TITLE_SUFFIX = ' - Xquik';
 const SITE_DESCRIPTION =
-  'Search tweets, export followers, retrieve X/Twitter timelines, and automate webhooks with Xquik developer tools. Not affiliated with X Corp.';
+  'Search tweets, export followers and replies, retrieve profiles and timelines, monitor accounts, post tweets, and use webhooks, SDKs & MCP. Not affiliated with X Corp.';
 
 interface NavigationGroup {
   readonly anchors?: readonly NavigationItem[];
@@ -171,7 +171,8 @@ describe('SEO metadata', (): void => {
       description: SITE_DESCRIPTION,
       indexing: 'navigable',
       openGraphDescription: SITE_DESCRIPTION,
-      searchPrompt: 'Search tweet, follower, timeline, SDK, and webhook docs...',
+      searchPrompt:
+        'Search tweet, follower, reply, profile, API, SDK & MCP docs...',
       timestamps: true,
     });
   });
