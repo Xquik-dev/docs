@@ -5308,7 +5308,9 @@ const FORBIDDEN_FOLLOWERS_YOU_KNOW_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
+  'title: "Twitter Advanced Search API: Export Tweets to CSV"',
   'scrape tweets',
+  'Use this Twitter advanced search API workflow to export tweets into explicit rows.',
   '## Frequently Asked Tweet Scraping Questions',
   '### What Is the Best Twitter Scraper API for Developers in 2026?',
   'Compare supported searches, tweet',
@@ -5320,6 +5322,11 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   'Use CSV with Google Sheets.',
   '### Scrape Tweets Python',
   'Use the [Python SDK](/sdks/python)',
+  '## Run Twitter Advanced Search With Python',
+  'pip install x_twitter_scraper',
+  'Use `from:username` to search tweets from one Twitter account.',
+  'Respect API rate limits after every search page.',
+  "Review applicable laws and X's Terms of Service before storing public tweets",
   '## Build a Scheduled Tweet Export Pipeline',
   'A recurring tweet scraping workflow needs an explicit search window.',
   'Advance the schedule checkpoint only after the file becomes durable.',

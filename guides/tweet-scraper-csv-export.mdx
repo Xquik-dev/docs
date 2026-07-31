@@ -1,8 +1,8 @@
 ---
-title: "Twitter Search API: Scrape Tweets to CSV, JSON, or XLSX"
+title: "Twitter Advanced Search API: Export Tweets to CSV"
 sidebarTitle: "Tweet export"
-description: "Scrape tweets by keyword with tweet_search_extractor. Cap result counts and export tweet text, authors, metrics, and URLs to CSV, JSON, or XLSX."
-keywords: ["scrape tweets", "scrape Twitter", "Twitter scraping", "tweet scraper", "Twitter scraper", "search tweets", "Twitter search export", "X search API", "tweet_search_extractor", "CSV export", "JSON export", "XLSX export"]
+description: "Run Twitter advanced search for keywords, hashtags, or specific accounts. Export tweet text, authors, replies, reposts, likes, media, and URLs to CSV."
+keywords: ["Twitter advanced search", "scrape tweets", "scrape Twitter", "Twitter scraping", "tweet scraper", "Twitter scraper", "search tweets", "Twitter search export", "X search API", "specific accounts", "hashtag search", "tweet_search_extractor", "CSV export", "JSON export", "XLSX export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -11,7 +11,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 <LlmsDirective />
 <TweetReadApiLinks />
 
-Use this tweet scraper workflow to scrape Twitter posts into explicit rows. Search by keyword, hashtag, author, language, date, media type, or engagement. Choose the Twitter scraper API for saved jobs, cost estimates, and export audit trails. Choose the Twitter search API for cursor pages or exact Tweet ID lookups. Export CSV, JSON, or XLSX.
+Use this Twitter advanced search API workflow to export tweets into explicit rows. Search keywords, hashtags, specific accounts, languages, dates, media, or engagement. Choose extraction jobs for saved searches, credit estimates, and export audit trails. Choose direct tweet search for cursor pages or exact Tweet ID lookups. Export CSV, JSON, or XLSX.
 
 ## Frequently Asked Tweet Scraping Questions
 
@@ -99,6 +99,37 @@ saved jobs, estimate first. Then create, poll, and export the completed job.
 Retry `429`, `424`, or `502` only as documented. Never advance date checkpoints
 before the output becomes durable.
 
+## Run Twitter Advanced Search With Python
+
+Install the Python SDK before building the tweet export worker:
+
+```bash
+pip install x_twitter_scraper
+```
+
+Follow this step-by-step Twitter advanced search process:
+
+1. Load the API key from `X_TWITTER_SCRAPER_API_KEY`.
+2. Build one query for keywords, hashtags, or specific accounts.
+3. Add `since:` and `until:` operators for the UTC date window.
+4. Add `lang:en` when the export needs English tweets.
+5. Request `Latest` results for chronological backfills.
+6. Save every tweet before storing the next cursor.
+
+Use `from:username` to search tweets from one Twitter account. Combine it with
+a keyword when the worker needs matching posts from specific accounts. For
+hashtags, search the exact `#topic` token. Keep the same query and cursor during
+retries.
+
+Respect API rate limits after every search page. Wait for `retryAfter` after a
+`429` response. Retry documented `424` or `502` failures with exponential
+backoff. Stop on authentication, validation, or credit errors.
+
+Review applicable laws and X's Terms of Service before storing public tweets
+or Twitter profiles. Keep the Xquik API key outside source code and logs.
+Record Tweet IDs, author user IDs, timestamps, query operators, and cursors.
+These fields make the Python export reproducible without vague coverage claims.
+
 ### Automate Tweet Export
 
 Store one explicit query and time window for each automated run. Estimate the
@@ -139,14 +170,15 @@ limits too. Then create one extraction. Poll its ID to a terminal state. Downloa
 format and validate unique Tweet IDs, timestamps, authors, and row counts.
 Upload the file, record its checksum, then advance the schedule checkpoint.
 Never advance after a timeout, failed extraction, invalid file, or incomplete
-destination upload. Check replies, reposts, and media columns before delivery.
+upload. Confirm the durable destination before advancing the next UTC window.
+Check replies, reposts, and media columns before delivery.
 
 ### Twitter Data Pipeline Python
 
 Keep orchestration, API access, normalization, and destination writes in
 separate Python functions. One function builds the query and date window. One
 estimates and creates the extraction. One polls the stored ID. One validates
-and writes tweet rows.
+tweet rows and writes each normalized record.
 
 Use typed models for Tweet ID, author ID, text, and creation time. Include
 engagement counts, media URLs, query, and extraction ID. Persist status before
@@ -359,7 +391,7 @@ Tweet search exports include base user fields, tweet fields, engagement counts, 
 
 ## Step 1: Estimate tweets and credits
 
-Call `POST /extractions/estimate` before scraping tweets. `tweet_search_extractor` requires `searchQuery`. Add `resultsLimit` when you want a sample or a hard cost cap.
+Call `POST /extractions/estimate` before scraping tweets. `tweet_search_extractor` requires `searchQuery`. Add `resultsLimit` for an approved sample size or maximum credit budget.
 
 ```bash
 curl -X POST https://xquik.com/api/v1/extractions/estimate \
