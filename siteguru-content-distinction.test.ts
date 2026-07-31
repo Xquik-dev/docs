@@ -171,6 +171,17 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     file: 'alternatives/hypefury.mdx',
     phrases: ['Hypefury Trial Evidence'],
   },
+  {
+    file: 'alternatives/postwise.mdx',
+    phrases: [
+      'Postwise Creator Calendar Trial',
+      'Test the Postwise-to-Xquik Handoff',
+    ],
+  },
+  {
+    file: 'alternatives/postproxy.mdx',
+    phrases: ['Postproxy Webhook & Quota Trial'],
+  },
 ] as const;
 
 describe('SiteGuru content distinction', (): void => {

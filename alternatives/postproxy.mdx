@@ -116,11 +116,47 @@ For API comparisons, price the whole task: endpoint access, pagination, retries,
   </Step>
 </Steps>
 
+## Postproxy Webhook & Quota Trial
+
+Test one profile group before migrating a publishing queue. Connect only the
+social profiles required for the trial. Keep the Postproxy profile-group ID
+beside each scheduled post.
+
+Publish one text post and one media post. Cross-post each item only where the
+campaign requires it. Record the Postproxy post ID and every platform-specific
+result.
+
+Subscribe a test receiver to Postproxy post events. Capture these documented
+states when they occur:
+
+- `post.processed` for the completed parent post job.
+- `platform_post.published` for a successful platform result.
+- `platform_post.failed` for a final platform failure.
+- `platform_post.failed_waiting_for_retry` during retry handling.
+- `platform_post.insights` when refreshed engagement becomes available.
+- `profile.disconnected` when a connected profile needs attention.
+- `media.failed` when an attached media item cannot publish.
+
+Store the event name, Postproxy post ID, platform, delivery time, and receiver
+result. This separates a queue failure from an X-only publishing failure.
+
+Run the X portion once with shared publishing limits. Run it again with your
+own X developer credentials when the trial permits. Compare accepted posts,
+retries, X credit use, and platform errors. Do not infer quota behavior from
+monthly Postproxy post limits alone.
+
+Use Xquik for the surrounding X workflow. Search source tweets before writing.
+Retrieve the published Tweet ID afterward. Then export replies, quotes,
+reposts, and likes through their specific routes. Use an account monitor when
+new post alerts must continue after the publishing job completes.
+
 ## Migration path
 
 Start with one API-backed task. Keep the current integration running while you compare output shape, latency, pagination, retries, exports, and alert delivery in Xquik.
 
-Keep the test small: one task, one output, one cost model, and one downstream owner. Switch only when Xquik gives the same X record quality with less glue code or lower cost.
+Keep the test small: one task, one output, one cost model, and one downstream
+owner. Confirm Xquik returns every required tweet, reply, follower, profile,
+and media field. Switch only when the handoff needs less code or costs less.
 
 Price the real workload. On Postproxy, price monthly post volume, profile groups, publish logs, comments, analytics, webhooks, and platform quota needs. On Xquik, Starter is USD 20/month with 140,000 credits. Top-ups are USD 0.00015/credit, webhook and stored-event management are free, and active monitors bill only while enabled.
 
