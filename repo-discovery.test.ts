@@ -200,7 +200,7 @@ const REQUIRED_SDK_OVERVIEW_SNIPPETS = [
   '<Card title="Agent handoff" icon="bot">',
   '[TypeScript](/sdks/typescript)',
   '[Python](/sdks/python)',
-  '[Go](/sdks/go)',
+  '[Go SDK](/sdks/go)',
   '[CLI](/sdks/cli)',
   '[Search Tweets](/api-reference/x/search-tweets)',
   '[Follower Export CRM Workflow](/guides/follower-export-crm)',
@@ -3411,7 +3411,7 @@ const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   '[CLI](/sdks/cli)',
   '[TypeScript](/sdks/typescript)',
   '[Python](/sdks/python)',
-  '[Go](/sdks/go)',
+  '[Go SDK](/sdks/go)',
   'resultsLimit',
   'Call `GET /extractions/{id}/export?format=csv`, `format=json`, or `format=xlsx`',
   '`md`, `md-document`, `pdf`, and `txt` are also supported',
@@ -11092,6 +11092,16 @@ function collectGenericPublicTitleFindings(): readonly DiscoveryFinding[] {
 
     const normalizedTitle = title.toLocaleLowerCase('en');
 
+    if (
+      file.startsWith('alternatives/') &&
+      normalizedTitle.endsWith(' alternative')
+    ) {
+      findings.push({
+        file,
+        issue: `Public title "${title}" needs a focused alternative intent.`,
+      });
+    }
+
     for (const phrase of FORBIDDEN_GENERIC_TITLE_PHRASES) {
       if (normalizedTitle.includes(phrase)) {
         findings.push({
@@ -11099,6 +11109,25 @@ function collectGenericPublicTitleFindings(): readonly DiscoveryFinding[] {
           issue: `Public title "${title}" uses generic phrase "${phrase}".`,
         });
       }
+    }
+  }
+
+  return findings;
+}
+
+function collectNonDescriptiveInternalAnchorFindings(): readonly DiscoveryFinding[] {
+  const findings: DiscoveryFinding[] = [];
+
+  for (const file of listPublicMarkdownFiles()) {
+    const source = readFileSync(file, 'utf8');
+
+    for (const match of source.matchAll(
+      /\[(?:click here|go|here|learn more|read more)\]\(\/[^)]+\)/giu,
+    )) {
+      findings.push({
+        file,
+        issue: `Internal link "${match[0]}" needs descriptive anchor text.`,
+      });
     }
   }
 
@@ -11163,6 +11192,12 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     expect(collectGenericPublicTitleFindings()).toStrictEqual([]);
+  });
+
+  it('keeps internal anchor text descriptive', (): void => {
+    expect.assertions(1);
+
+    expect(collectNonDescriptiveInternalAnchorFindings()).toStrictEqual([]);
   });
 
   it('keeps endpoint titles in sentence case', (): void => {
