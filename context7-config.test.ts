@@ -50,7 +50,7 @@ const REQUIRED_EXCLUDED_FOLDERS = [
   'node_modules',
 ] as const;
 const REQUIRED_RULE_SNIPPETS = [
-  'quickstart.mdx',
+  'x-api-quickstart.mdx',
   'api-reference/overview.mdx',
   '128 documented REST operations',
   '33 prepaid paid-read GET routes',
@@ -79,7 +79,7 @@ const REQUIRED_RULE_SNIPPETS = [
   'guides/guest-wallets.mdx',
   'webhooks/',
   'guides/workflows.mdx',
-  'guides/tweet-search-export.mdx',
+  'guides/tweet-scraper-csv-export.mdx',
   'guides/tweet-replies-export.mdx',
   'guides/follower-export-crm.mdx',
   'guides/media-upload-workflow.mdx',

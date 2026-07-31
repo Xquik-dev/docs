@@ -15,7 +15,7 @@ interface OpenApiDocument {
 
 const PROJECT_ROOT = process.cwd();
 const GUIDE = readFileSync(
-  join(PROJECT_ROOT, 'guides/read-data-richness.mdx'),
+  join(PROJECT_ROOT, 'guides/tweet-profile-api-fields.mdx'),
   'utf8',
 );
 const OPENAPI = readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8');
@@ -196,13 +196,13 @@ describe('read data richness documentation', (): void => {
     expect(MCP_TOOLS).toContain('preserves every safe field');
     expect(MCP_TOOLS).toContain('replies_incomplete');
     expect(MCP_TOOLS).toContain('conversation_id:<tweet_id>');
-    expect(MCP_TOOLS).toContain('/guides/read-data-richness');
+    expect(MCP_TOOLS).toContain('/guides/tweet-profile-api-fields');
     expect(GUIDE).toContain('Xquik omits unavailable optional fields');
     expect(GUIDE).toContain('coverage depends on X');
     expect(GUIDE).toContain("omit the fetching account's private action");
-    expect(DOCS_CONFIG).toContain('"guides/read-data-richness"');
+    expect(DOCS_CONFIG).toContain('"guides/tweet-profile-api-fields"');
     expect(LLMS_INDEX).toContain(
-      'https://docs.xquik.com/guides/read-data-richness',
+      'https://docs.xquik.com/guides/tweet-profile-api-fields',
     );
   });
 });

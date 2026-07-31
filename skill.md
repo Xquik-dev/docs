@@ -206,7 +206,7 @@ Refunds and disputes reconcile affected-purchase credits only. Unrelated credits
 ## Resources
 
 - Docs index: https://docs.xquik.com/llms.txt
-- Quickstart: https://docs.xquik.com/quickstart
+- Quickstart: https://docs.xquik.com/x-api-quickstart
 - API overview: https://docs.xquik.com/api-reference/overview
 - Docs MCP server: https://docs.xquik.com/mcp
 - API MCP server: https://docs.xquik.com/mcp/overview
@@ -216,7 +216,7 @@ Refunds and disputes reconcile affected-purchase credits only. Unrelated credits
 - OAuth instructions: https://xquik.com/auth.md
 - Codex OAuth troubleshooting: https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error
 - Guest wallets: https://docs.xquik.com/guides/guest-wallets
-- Direct MPP: https://docs.xquik.com/mpp/overview
+- Direct MPP: https://docs.xquik.com/mpp/machine-payments-protocol
 - Error handling: https://docs.xquik.com/guides/error-handling
 - Extraction workflow: https://docs.xquik.com/guides/extraction-workflow
 - Webhook verification: https://docs.xquik.com/webhooks/verification

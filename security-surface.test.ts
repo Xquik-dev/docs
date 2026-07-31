@@ -72,4 +72,37 @@ describe('public security surface', (): void => {
       ).trim(),
     ).toBe(OWNERSHIP_TOKEN);
   });
+
+  it('keeps renamed SEO routes redirected to specific keyword slugs', (): void => {
+    expect.assertions(1);
+
+    expect(docsConfig().redirects).toEqual(
+      expect.arrayContaining([
+        {
+          source: '/quickstart',
+          destination: '/x-api-quickstart',
+        },
+        {
+          source: '/guides/read-data-richness',
+          destination: '/guides/tweet-profile-api-fields',
+        },
+        {
+          source: '/guides/tweet-search-export',
+          destination: '/guides/tweet-scraper-csv-export',
+        },
+        {
+          source: '/guides/types',
+          destination: '/guides/x-api-typescript-types',
+        },
+        {
+          source: '/mpp/overview',
+          destination: '/mpp/machine-payments-protocol',
+        },
+        {
+          source: '/sdks/csharp',
+          destination: '/sdks/csharp-x-api-sdk',
+        },
+      ]),
+    );
+  });
 });

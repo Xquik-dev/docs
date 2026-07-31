@@ -10,7 +10,7 @@ function read(relativePath: string): string {
 }
 
 const RADAR_PAGE = read('api-reference/radar/list.mdx');
-const TYPES_GUIDE = read('guides/types.mdx');
+const TYPES_GUIDE = read('guides/x-api-typescript-types.mdx');
 const OPENAPI = read('openapi.yaml');
 const NORMALIZED_RADAR_PAGE = RADAR_PAGE.replaceAll(/\s+/gu, ' ');
 const NORMALIZED_TYPES_GUIDE = TYPES_GUIDE.replaceAll(/\s+/gu, ' ');

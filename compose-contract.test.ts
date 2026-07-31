@@ -15,7 +15,7 @@ const RELATED_GUIDES = [
   read('index.mdx'),
   read('skill.md'),
   read('mcp/tools.mdx'),
-  read('guides/types.mdx'),
+  read('guides/x-api-typescript-types.mdx'),
 ].join('\n');
 
 const REQUIRED_PAGE_COPY = [
