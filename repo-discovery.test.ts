@@ -10263,6 +10263,11 @@ const REQUIRED_TRYPOST_ALTERNATIVE_SNIPPETS = [
   'FSL-1.1-MIT, self-hosting is available at no cost',
   'scheduling and auto-publishing across multiple platforms, a drag-and-drop visual calendar',
   'REST API. They also list Build with AI for connecting AI assistants through MCP.',
+  '## Connect a TryPost Schedule to Xquik Reads',
+  'Do not treat a scheduler success state as engagement evidence.',
+  '## Verify a Cloud or Self-Hosted TryPost Trial',
+  'TryPost owns the editorial',
+  'calendar and cross-network schedule.',
 ] as const;
 
 const REQUIRED_XANGUARD_ALTERNATIVE_SNIPPETS = [
