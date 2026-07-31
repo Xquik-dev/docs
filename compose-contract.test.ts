@@ -12,7 +12,7 @@ function read(relativePath: string): string {
 const COMPOSE_PAGE = read('api-reference/compose/create.mdx');
 const OPENAPI = read('openapi.yaml');
 const RELATED_GUIDES = [
-  read('introduction.mdx'),
+  read('index.mdx'),
   read('skill.md'),
   read('mcp/tools.mdx'),
   read('guides/types.mdx'),

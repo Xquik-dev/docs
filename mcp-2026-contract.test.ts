@@ -22,7 +22,7 @@ const QUICKSTART = readFileSync(
   'utf8',
 );
 const INTRODUCTION = readFileSync(
-  join(PROJECT_ROOT, 'introduction.mdx'),
+  join(PROJECT_ROOT, 'index.mdx'),
   'utf8',
 );
 const SKILL = readFileSync(join(PROJECT_ROOT, 'skill.md'), 'utf8');
