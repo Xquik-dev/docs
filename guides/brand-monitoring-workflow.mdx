@@ -1,5 +1,6 @@
 ---
-title: "Twitter Monitoring API for Keywords, Accounts & Webhooks"
+title: "Twitter Monitoring API for Accounts & Keywords"
+sidebarTitle: Brand monitoring
 description: Monitor accounts, keywords, mentions, hashtags, products, and campaigns with 1-second tweet checks. Deliver signed webhook alerts with replayable stored events.
 keywords:
   [
@@ -55,6 +56,32 @@ Twitter webhook, and replay stored events.
   </Card>
 </CardGroup>
 
+## Plan a Brand Monitoring Scope
+
+Start brand monitoring with one documented question. A support team may need
+new complaints. Marketing may need campaign mentions. Research may need posts
+from known competitors. Each question requires a different monitor.
+
+Use an account monitor for one known profile. Track new posts, replies, quotes,
+reposts, or documented profile changes. Keep the stable X user ID beside the
+username. Usernames can change after monitoring begins.
+
+Use a keyword monitor for text that can appear across many profiles. Choose a
+brand name, product name, handle, hashtag, campaign phrase, or supported search
+expression. Store the exact query with every monitor ID.
+
+Do not combine unrelated products inside one broad query. Separate monitors
+produce clearer events and simpler routing rules. They also let teams pause one
+campaign without stopping other brand alerts.
+
+Define the receiving team before monitor creation. Record whether support,
+marketing, research, or an agent owns each event. This ownership prevents the
+same Twitter mention from entering several unmanaged queues.
+
+Write the required event types beside the monitoring goal. Remove event types
+that no receiver uses. A narrow event contract reduces unnecessary webhook
+traffic and review work.
+
 ## Create an Account Monitor
 
 Use an account monitor when the workflow tracks an owned account, creator,
@@ -94,6 +121,35 @@ Keyword monitors are best for campaign names, product launches, support terms,
 and category discovery. Account monitors are better when every event should be
 anchored to one known profile.
 
+## Write Focused Twitter Monitoring Queries
+
+A useful query describes one recognizable conversation. Include the brand,
+product, campaign, hashtag, or handle that reviewers actually understand.
+Preserve the query exactly after creation.
+
+Use quoted phrases when word order matters. Use a handle when direct mentions
+matter. Use a hashtag when a campaign publishes one. Combine terms only when
+they share the same business intent.
+
+Test the query with tweet search before starting continuous monitoring. Review
+returned tweets, replies, authors, media, and engagement counts. Remove terms
+that attract unrelated conversations.
+
+Keep separate queries for product support and industry research. Support needs
+specific complaints, account mentions, and reply context. Research often needs
+broader category terms and longer review windows.
+
+Version material query changes. Store the old monitor ID, old query, replacement
+monitor ID, and change time. This protects comparisons across campaign periods.
+
+Do not rewrite historical events after changing a query. Earlier events reflect
+the search expression active at their event time. New events belong to the
+replacement or updated monitor contract.
+
+Review high-volume queries before enabling more receivers. A precise Twitter
+monitoring tool should produce actionable tweets. Avoid unbounded streams of
+generic words.
+
 ## Deliver Events to a Webhook
 
 Create one webhook per receiver boundary. Store the returned `secret` once, then
@@ -113,6 +169,36 @@ Webhook payloads include `deliveryId`, `streamEventId`, `eventType`, `timestamp`
 and `data`. Return `2xx` after signature verification and durable enqueueing.
 Use `deliveryId` for receiver retry de-dupe and `streamEventId` for event
 de-dupe across webhook endpoints.
+
+## Route Real Time Alerts to the Right Team
+
+Map each event type to one receiver action. New tweets may enter a research
+queue. Replies may enter support triage. Profile changes may enter an account
+review workflow.
+
+Verify every Twitter webhook before reading its event. Reject invalid
+signatures, stale timestamps, and reused nonces. Store the accepted delivery
+before running enrichment or classification.
+
+Use `streamEventId` as the event identity across webhook endpoints. Use
+`deliveryId` for one receiver attempt. Keeping both IDs prevents duplicate
+alerts during retries.
+
+Return a successful response after durable enqueueing. Do not wait for slow
+profile lookups, media downloads, CRM writes, or agent analysis. Process those
+steps from the queue.
+
+Keep raw signing values outside shared tables. Store the verification result,
+event type, tweet ID, author ID, monitor ID, and received time. These fields
+support later audits without exposing authentication material.
+
+Define escalation rules outside the webhook handler. A support service can
+route reply events by product. Marketing can route campaign posts by query.
+Research can retain events without notifying a person.
+
+Real time alerts still need replay. Receiver downtime, deployments, and queue
+failures can interrupt webhook handling. Stored events provide the recovery
+path.
 
 ## Replay Stored Events
 
@@ -151,6 +237,36 @@ curl "https://xquik.com/api/v1/x/users/username/mentions?limit=50" \
 Keep backfill rows separate from monitor events so dashboards can distinguish
 historical search results from live webhook deliveries.
 
+## Measure Brand Monitoring Coverage
+
+Count stored events by monitor ID, query, event type, and collection window.
+Keep account-monitor events separate from keyword-monitor events. This prevents
+one active profile from distorting broader brand mention counts.
+
+Track unique tweet IDs and unique author IDs. Event counts alone can overstate
+activity when several receivers process the same event. Deduplicate with
+`streamEventId` before calculating reporting totals.
+
+Xquik returns tweets, replies, authors, profiles, media, and monitor events. It
+does not return a calculated share of voice. Build that metric downstream from
+clearly defined brand and comparison queries.
+
+For share of voice, record every included query and time window. Count unique
+matching tweets for each brand. Divide one brand's count by the combined count.
+Do not mix incomplete backfills with complete monitor windows.
+
+Treat sentiment as a separate classification step. Preserve the original tweet
+text and classifier version. Never replace the returned post with only a
+positive, neutral, or negative label.
+
+Report delivery health separately from conversation volume. A high tweet count
+does not prove every Twitter webhook succeeded. Compare stored event IDs with
+delivery records for transport coverage.
+
+Label partial windows clearly. A paused monitor, exhausted credits, failed
+backfill, or receiver outage can change the observed total. Store those states
+beside every report.
+
 ## Receiver Row
 
 Create one durable row per accepted delivery before slow enrichment, routing,
@@ -178,6 +294,71 @@ or AI classification.
 
 Do not put endpoint signing values, raw request bodies, raw signatures, or full
 headers into shared analytics rows.
+
+## Build a Brand Mention Triage Queue
+
+Create one review item from each verified event. Show the tweet text, author,
+creation time, event type, matching query, and source monitor. Keep the tweet
+ID available for replies, threads, and profile lookups.
+
+Support reviewers need concrete context. Show whether the event is a new tweet,
+reply, quote, repost, or mention. Link related replies or thread context only
+after the reviewer requests them.
+
+Use explicit queue states. New items await review. Assigned items identify an
+owner. Resolved items store the decision time. Ignored items retain a reason.
+
+Never use visible row order as identity. New events can change the queue order.
+Store reviewer decisions against `streamEventId` and tweet ID.
+
+Route product questions by the keyword monitor query. Route account-specific
+activity by account monitor ID. Keep routing rules readable so operators can
+explain why a post reached their team.
+
+Avoid automatic public replies from a brand monitoring event. Review the tweet,
+author, conversation, and connected account first. X write actions need their
+own approval and idempotency key.
+
+Keep a replay checkpoint for every queue. Store the last completed cursor only
+after all returned events are durable. Resume with `after` when `hasMore` is
+true.
+
+Measure queue latency from event time to first review. Measure delivery latency
+separately. These timings identify whether monitoring, transport, or human
+review caused a delay.
+
+## Maintain Account and Keyword Monitors
+
+Review active monitors on a regular schedule. Confirm the owner, purpose,
+query, event types, receiver, and next billing time. Pause monitors that no
+longer serve an active workflow.
+
+Check account monitor identity with both username and X user ID. A renamed
+profile should remain tied to the stable ID. A different target requires a new
+monitor.
+
+Review keyword queries after launches, incidents, and campaign changes. Remove
+expired terms. Separate a new product name into its own monitor when routing or
+reporting differs.
+
+Compare each monitor's event types with webhook subscriptions. Missing webhook
+types prevent expected alerts. Extra webhook types create receiver work that
+the monitoring plan did not request.
+
+Test the receiver after configuration changes. Verify a signed delivery, queue
+write, event identity, and replay lookup. Keep the result with the change
+record.
+
+Check credits before resuming several monitors. Active account and keyword
+monitors consume credits each hour. Record `nextBillingAt` for budget alerts.
+
+Delete a monitor only when its query or account should stop permanently. Export
+required event and delivery evidence first. Use pause when a team expects to
+resume the same monitor later.
+
+Document every material change. Store the monitor ID, earlier state, new state,
+operator, reason, and change time. This history keeps brand monitoring reports
+understandable.
 
 ## Cost and Retry Notes
 
