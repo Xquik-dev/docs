@@ -106,7 +106,7 @@ describe('public security surface', (): void => {
     );
   });
 
-  it('normalizes trailing slashes to each canonical documentation URL', (): void => {
+  it('normalizes trailing slashes on nested documentation URLs', (): void => {
     expect.assertions(1);
 
     expect(docsConfig().redirects).toEqual(
@@ -114,30 +114,6 @@ describe('public security surface', (): void => {
         {
           source: '/:section/:slug*/',
           destination: '/:section/:slug*',
-        },
-        {
-          source: '/alternatives/',
-          destination: '/alternatives',
-        },
-        {
-          source: '/changelog/',
-          destination: '/changelog',
-        },
-        {
-          source: '/non-affiliation/',
-          destination: '/non-affiliation',
-        },
-        {
-          source: '/sdks/',
-          destination: '/sdks',
-        },
-        {
-          source: '/security/',
-          destination: '/security',
-        },
-        {
-          source: '/x-api-quickstart/',
-          destination: '/x-api-quickstart',
         },
       ]),
     );

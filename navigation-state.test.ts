@@ -21,6 +21,11 @@ interface ApiMdxConfig {
   readonly server?: string;
 }
 
+interface DocsRedirect {
+  readonly destination: string;
+  readonly source: string;
+}
+
 interface DocsConfig {
   readonly api: {
     readonly examples?: {
@@ -32,6 +37,7 @@ interface DocsConfig {
     readonly content?: string;
   };
   readonly navigation: NavigationNode;
+  readonly redirects: readonly DocsRedirect[];
 }
 
 const X_API_GROUPS = [
@@ -148,5 +154,23 @@ describe('navigation default state', (): void => {
     );
 
     expect(missingRoutes).toStrictEqual([]);
+  });
+
+  it('keeps exact redirects from normalizing into self-redirects', (): void => {
+    expect.assertions(1);
+
+    const selfRedirects = docsConfig().redirects.filter((redirect): boolean => {
+      if (redirect.source.includes(':') || redirect.source.includes('*')) {
+        return false;
+      }
+
+      const normalizedSource = redirect.source.replace(/\/+$/, '') || '/';
+      const normalizedDestination =
+        redirect.destination.replace(/\/+$/, '') || '/';
+
+      return normalizedSource === normalizedDestination;
+    });
+
+    expect(selfRedirects).toStrictEqual([]);
   });
 });
