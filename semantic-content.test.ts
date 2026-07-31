@@ -523,6 +523,13 @@ const REQUIRED_OPERATIONAL_TABLES = [
   },
 ] as const;
 
+const REQUIRED_OVERVIEW_KEYWORDS = [
+  'tweet scraping API',
+  'follower scraping API',
+  'tweet reply scraping',
+  'Twitter webhook API',
+] as const;
+
 describe('operational content tables', (): void => {
   it('keeps audited API pages specific and structurally useful', (): void => {
     expect.assertions(1);
@@ -540,5 +547,21 @@ describe('operational content tables', (): void => {
     }
 
     expect(findings).toStrictEqual([]);
+  });
+});
+
+describe('API overview search intent', (): void => {
+  it('keeps the broad scraper and webhook workflows explicit', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/overview.mdx', 'utf8').replace(
+      /\s+/g,
+      ' ',
+    );
+    const missing = REQUIRED_OVERVIEW_KEYWORDS.filter(
+      (keyword) => !source.includes(keyword),
+    );
+
+    expect(missing).toStrictEqual([]);
   });
 });
