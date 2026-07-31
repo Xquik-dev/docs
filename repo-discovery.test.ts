@@ -7949,8 +7949,8 @@ const REQUIRED_TARGET_AUDIENCE_DISCOVERY_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS = [
-  'title: "Twitter Brand Monitoring With Tweets & Webhooks"',
-  'Monitor brand accounts, search queries, mentions, and campaign terms with 1-second X monitors, signed webhooks, stored events, and replay-safe rows.',
+  'title: "Twitter Monitoring API for Keywords, Accounts & Webhooks"',
+  'Monitor accounts, keywords, mentions, hashtags, products, and campaigns with 1-second tweet checks. Deliver signed webhook alerts with replayable stored events.',
   '## Pick the Monitor Path',
   '<Card title="Account Monitor" icon="radio">',
   '`POST /api/v1/monitors`',
