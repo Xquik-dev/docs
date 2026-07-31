@@ -523,6 +523,50 @@ const REQUIRED_OPERATIONAL_TABLES = [
   },
 ] as const;
 
+const REQUIRED_OVERVIEW_KEYWORDS = [
+  'tweet scraping API',
+  'follower scraping API',
+  'tweet reply scraping',
+  'Twitter webhook API',
+] as const;
+
+const REQUIRED_CHANGELOG_CONTENT = [
+  'title: "Xquik Changelog: Twitter API & Scraper Documentation Updates"',
+  'Xquik documentation updates',
+  'Xquik changelog',
+  'API keys',
+  'signed webhook',
+  'Search tweets',
+  'user profile',
+] as const;
+
+const REQUIRED_COMMUNITY_TIMELINE_CONTENT = [
+  'community timeline export',
+  'Twitter community scraping guide',
+] as const;
+
+const REQUIRED_QUICK_TOPUP_CONTENT = [
+  'title: "Twitter API billing: instant X API credit top-up"',
+  'X API credits',
+  'Twitter API billing',
+] as const;
+
+const REQUIRED_APIFY_COMPARISON_CONTENT = [
+  'Xquik vs Apify Twitter scraper',
+  'Apify alternative',
+  'Use this guide to compare Apify, Xquik, and Xquik\'s Apify Actors.',
+  'Export table-like dataset',
+  'Each Actor accepts structured JSON input.',
+  'The running docs describe this Apify flow.',
+  'The dataset docs define each run\'s default dataset as append-only storage.',
+  'Apify\'s Store API docs say `/v2/store` lists public Actors.',
+  'Match reply rows against',
+  'Use full or raw output modes for optional profile metadata',
+  'The row uses `resultType: "diagnostic"`.',
+  'For account backfills, pass a Search Terms value.',
+  'Before production use, open the current Actor page.',
+] as const;
+
 describe('operational content tables', (): void => {
   it('keeps audited API pages specific and structurally useful', (): void => {
     expect.assertions(1);
@@ -540,5 +584,82 @@ describe('operational content tables', (): void => {
     }
 
     expect(findings).toStrictEqual([]);
+  });
+});
+
+describe('API overview search intent', (): void => {
+  it('keeps the broad scraper and webhook workflows explicit', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/overview.mdx', 'utf8').replace(
+      /\s+/g,
+      ' ',
+    );
+    const missing = REQUIRED_OVERVIEW_KEYWORDS.filter(
+      (keyword) => !source.includes(keyword),
+    );
+
+    expect(missing).toStrictEqual([]);
+  });
+});
+
+describe('changelog search intent', (): void => {
+  it('keeps the release history specific to Xquik API changes', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('changelog.mdx', 'utf8').replace(/\s+/g, ' ');
+    const missing = REQUIRED_CHANGELOG_CONTENT.filter(
+      (requirement) => !source.includes(requirement),
+    );
+
+    expect(missing).toStrictEqual([]);
+  });
+});
+
+describe('community timeline search intent', (): void => {
+  it('keeps community tweet exports distinct from keyword search', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x/community-tweets.mdx',
+      'utf8',
+    ).replace(/\s+/g, ' ');
+    const missing = REQUIRED_COMMUNITY_TIMELINE_CONTENT.filter(
+      (requirement) => !source.includes(requirement),
+    );
+
+    expect(missing).toStrictEqual([]);
+  });
+});
+
+describe('quick top-up search intent', (): void => {
+  it('keeps API credit funding distinct from hosted checkout', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/credits/quick-topup.mdx',
+      'utf8',
+    ).replace(/\s+/g, ' ');
+    const missing = REQUIRED_QUICK_TOPUP_CONTENT.filter(
+      (requirement) => !source.includes(requirement),
+    );
+
+    expect(missing).toStrictEqual([]);
+  });
+});
+
+describe('Apify comparison search intent', (): void => {
+  it('keeps the comparison focused on tweet and follower jobs', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('alternatives/apify.mdx', 'utf8').replace(
+      /\s+/g,
+      ' ',
+    );
+    const missing = REQUIRED_APIFY_COMPARISON_CONTENT.filter(
+      (requirement) => !source.includes(requirement),
+    );
+
+    expect(missing).toStrictEqual([]);
   });
 });
