@@ -44,6 +44,15 @@ const X_API_GROUPS = [
   'Lists',
 ] as const;
 
+const PRIORITY_API_ROUTES = [
+  '/api-reference/account/subscription-checkout',
+  '/api-reference/draws/twitter-giveaway-history',
+  '/api-reference/extractions/twitter-scraping-cost-estimator',
+  '/api-reference/extractions/twitter-scraping-job-history',
+  '/api-reference/monitors/delete-twitter-account-monitor',
+  '/api-reference/monitors/twitter-account-monitor-status',
+] as const;
+
 function docsConfig(): DocsConfig {
   return JSON.parse(readFileSync('docs.json', 'utf8')) as DocsConfig;
 }
@@ -120,5 +129,16 @@ describe('navigation default state', (): void => {
       'javascript',
       'go',
     ]);
+  });
+
+  it('links priority API tasks directly from the API overview', (): void => {
+    expect.assertions(1);
+
+    const overview = readFileSync('api-reference/overview.mdx', 'utf8');
+    const missingRoutes = PRIORITY_API_ROUTES.filter(
+      (route): boolean => !overview.includes(`href="${route}"`),
+    );
+
+    expect(missingRoutes).toStrictEqual([]);
   });
 });
