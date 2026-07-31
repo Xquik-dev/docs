@@ -120,6 +120,26 @@ Do not infer success from the request alone. Store the returned action ID and
 state. Poll the write-action status route when processing continues
 asynchronously.
 
+| Like action column | Source | Engagement rule |
+| --- | --- | --- |
+| `acting_account` | Request `account` | Keep the connected X account with the engagement. |
+| `tweet_id` | Path `id` | Use the stable Tweet ID selected by review. |
+| `approval_reference` | Workflow value | Link the like to its human or automated rule. |
+| `idempotency_key` | Request header | Generate one key for this account and Tweet ID. |
+| `write_action_id` | Response `id` | Store the durable action before polling. |
+| `status` | Response `status` | Keep queued, completed, and failed likes distinct. |
+| `terminal` | Response `terminal` | Mark the like complete only when `true`. |
+| `safe_to_retry` | Response `safeToRetry` | Retry only when the lifecycle response permits it. |
+| `requested_at` | Integration timestamp | Audit when the engagement decision was submitted. |
+
+| Like outcome | Evidence | Ledger update |
+| --- | --- | --- |
+| Queued | `terminal: false` | Keep the row pending and poll `statusUrl`. |
+| Completed | Terminal success | Record the completed like for this account and Tweet ID. |
+| Already liked | Converged terminal result | Complete without submitting another like. |
+| Retryable failure | `safeToRetry: true` | Preserve the action receipt and follow lifecycle guidance. |
+| Final failure | Terminal failure | Store the error and keep the ledger unchanged. |
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>

@@ -132,6 +132,35 @@ media URLs, `has_next_page`, and `next_cursor`. Join returned tweets by
 always return `has_next_page: false` and `next_cursor: ""`; zero affordable
 results return `402 insufficient_credits`.
 
+## Store exact batch lookup results
+
+Keep the original request order separately. Join returned tweets by numeric
+Tweet ID because unavailable or unaffordable IDs can be absent.
+
+| Batch lookup column | Response source | Reconciliation rule |
+| --- | --- | --- |
+| `batch_id` | Integration value | Group every requested and returned Tweet ID. |
+| `requested_tweet_id` | Parsed `ids` input | Preserve all requested IDs, including missing ones. |
+| `tweet_id` | `tweets[].id` | Join a returned tweet to its request row. |
+| `text` | `tweets[].text` | Preserve the returned tweet or Note Tweet text. |
+| `author_id` | `tweets[].author.id` | Keep a stable author key. |
+| `author_username` | `tweets[].author.username` | Display the returned author handle. |
+| `created_at` | `tweets[].createdAt` | Preserve the tweet publication time. |
+| `conversation_id` | `tweets[].conversationId` | Join returned tweets to conversation workflows. |
+| `media_urls` | `tweets[].media[].mediaUrl` | Preserve image and video URLs for returned tweets. |
+| `lookup_status` | Derived from returned IDs | Set `returned` or `missing` for every requested ID. |
+| `has_next_page` | Response value | Expect `false` for an exact batch request. |
+| `next_cursor` | Response value | Expect an empty string; never paginate an exact batch. |
+
+| Input or result condition | Handling |
+| --- | --- |
+| More than 100 Tweet IDs | Split the IDs into batches of 100 or fewer. |
+| Duplicate Tweet IDs | De-duplicate before sending; preserve source references separately. |
+| Returned Tweet ID | Store the normalized row under the matching request ID. |
+| Missing Tweet ID | Keep a missing row for targeted retry or review. |
+| Low credit balance | Accept a smaller returned set and reconcile missing IDs explicitly. |
+| Zero affordable results | Stop on `402 insufficient_credits` and fund the account before retrying. |
+
 ## Query parameters
 
 <ParamField query="ids" type="string" required>

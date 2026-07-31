@@ -255,6 +255,33 @@ URL.
   </Card>
 </CardGroup>
 
+## Store a tweet media download manifest
+
+Keep one manifest row per single or bulk request. A gallery URL represents the
+download result. It is not an uploaded media ID and is not a direct asset URL.
+
+| Manifest column | Response or request source | Reconciliation rule |
+| --- | --- | --- |
+| `download_request_id` | Integration value | Correlate the selected tweet inputs with one gallery result. |
+| `input_mode` | Presence of non-empty `tweetIds` | Store `single` or `bulk`. |
+| `requested_tweet_ids` | Normalized request inputs | Preserve every valid ID submitted to the download route. |
+| `tweet_id` | Single response `tweetId` | Store the resolved Tweet ID for single mode. |
+| `gallery_url` | Response `galleryUrl` | Use as the shareable downloaded-media result. |
+| `cache_hit` | Single response `cacheHit` | Record whether the single download used free cached media. |
+| `successful_tweet_count` | Bulk response `totalTweets` | Count only successful tweets that contained media. |
+| `media_item_count` | Bulk response `totalMedia` | Reconcile the number of downloaded images, videos, and GIFs. |
+| `requested_at` | Integration timestamp | Audit when the download request started. |
+| `completed_at` | Integration timestamp | Audit when the gallery result was stored. |
+
+| Download outcome | Evidence | Next action |
+| --- | --- | --- |
+| Cached single result | `cacheHit: true` and `galleryUrl` | Store the free cached gallery result. |
+| Fresh single result | `cacheHit: false` and `galleryUrl` | Reconcile 1 processed tweet with media. |
+| Partial bulk result | `totalTweets` below valid input count | Store successes and review skipped or failed Tweet IDs. |
+| No media | `400 no_media` | Keep the Tweet ID and choose another source tweet. |
+| Invalid bulk items | Valid IDs remain after normalization | Continue with valid IDs and preserve the rejected inputs. |
+| More than 50 items | Request list exceeds the route limit | Split the backfill into batches of 50 or fewer. |
+
 Fresh downloads cost 1 credit per tweet processed with media. Cached single downloads return `cacheHit: true` and are free. Bulk responses do not return `freshCount`; store the request IDs with `totalTweets` and `totalMedia` for reconciliation.
 
 ## Response

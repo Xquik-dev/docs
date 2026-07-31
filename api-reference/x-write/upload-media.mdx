@@ -250,6 +250,28 @@ For JSON URL upload, the URL must use HTTPS, resolve to a public address, return
 
 Upload media costs 10 credits per upload call. Posting a tweet or reply is a separate 30-credit create-tweet call before media surcharges; sending the DM is a separate 10-credit write call.
 
+## Store the media upload receipt
+
+| Upload receipt column | Request or response source | Handoff rule |
+| --- | --- | --- |
+| `media_id` | Response `mediaId` | Pass only as the single `media_ids` item for a DM. |
+| `media_url` | Response `mediaUrl` | Pass in the `media` array for a tweet or reply. |
+| `success` | Response `success` | Continue only after the upload succeeds. |
+| `sender_account` | Request `account` | Keep the connected X account with the uploaded asset. |
+| `source_kind` | Multipart file or JSON URL | Record how Xquik received the asset. |
+| `source_reference` | Filename or HTTPS URL | Reconcile the upload with the approved source asset. |
+| `idempotency_key` | Request header | Reuse only for the exact interrupted upload. |
+| `uploaded_at` | Integration timestamp | Audit when the reusable upload receipt was stored. |
+
+| Next write | Value from upload | Required request shape |
+| --- | --- | --- |
+| Image tweet | `mediaUrl` | `media: ["<mediaUrl>"]` on `POST /x/tweets` |
+| Video tweet | `mediaUrl` | One MP4 URL in `media` on `POST /x/tweets` |
+| Media reply | `mediaUrl` | `media` plus `reply_to_tweet_id` on `POST /x/tweets` |
+| Media DM | `mediaId` | Exactly one item in `media_ids` on `POST /x/dm/{userId}` |
+| Public image already hosted | No upload required | Send the public HTTPS URL directly in tweet `media` |
+| Public MP4 already hosted | No upload required | Send exactly one public HTTPS MP4 URL in tweet `media` |
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>

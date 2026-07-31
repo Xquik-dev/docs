@@ -190,6 +190,36 @@ an X Article URL. A normal tweet ID can be valid and still return
   </Card>
 </CardGroup>
 
+## Store an X Article archive
+
+Preserve the wrapper Tweet ID, article fields, structured content blocks,
+author, cover image, and collection time. Keep `article.contents[]` when the
+archive must reconstruct headings, lists, quotes, media, dividers, or code.
+
+| Article archive column | Response source | Archive rule |
+| --- | --- | --- |
+| `wrapper_tweet_id` | Requested `tweetId` | Use as the stable article lookup key. |
+| `article_title` | `article.title` | Preserve the returned X Article title. |
+| `preview_text` | `article.previewText` | Store the short article preview when returned. |
+| `body_text` | Derived from `article.contents[]` | Build searchable text without discarding structured blocks. |
+| `content_blocks` | `article.contents[]` | Preserve block order, type, text, styles, and media references. |
+| `cover_image_url` | `article.coverImageUrl` | Keep the article cover asset with its source record. |
+| `author_id` | `author.id` | Use as the stable article-author key. |
+| `author_username` | `author.username` | Display the current author handle. |
+| `created_at` | `article.createdAt` | Preserve the article publication time. |
+| `media_urls` | Media block URLs | Keep inline images or videos with their block positions. |
+| `collected_at` | Integration timestamp | Audit when the article body was retrieved. |
+
+| Content block | Text projection | Structured value to preserve |
+| --- | --- | --- |
+| Heading | Heading text | Heading level and inline styles |
+| Paragraph | Paragraph text | Inline links, mentions, and styles |
+| List | Ordered item text | List type, item order, and nesting |
+| Quote | Quoted text | Quote attribution when returned |
+| Media | Alt text or caption | Media URL, type, and position |
+| Code | Code text | Language and formatting metadata |
+| Divider | No body text | Block position in the article |
+
 Direct article reads cost 5 credits per successful call. For MPP callers, this
 endpoint is billed as a fixed charge at USD 0.00075 per call.
 

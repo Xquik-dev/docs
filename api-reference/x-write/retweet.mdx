@@ -118,6 +118,26 @@ Repost workflows often include:
 Do not assume an accepted request already changed the account timeline. Read
 the lifecycle state. Poll the status endpoint when the action remains queued.
 
+| Repost action column | Source | Distribution rule |
+| --- | --- | --- |
+| `acting_account` | Request `account` | Keep the connected account with the repost decision. |
+| `tweet_id` | Path `id` | Use the exact source Tweet ID approved for distribution. |
+| `source_author_id` | Review context | Preserve the original tweet author when available. |
+| `approval_reference` | Workflow value | Link the repost to its campaign or moderation decision. |
+| `idempotency_key` | Request header | Generate one key for this account and Tweet ID. |
+| `write_action_id` | Response `id` | Store the durable repost action before polling. |
+| `status` | Response `status` | Keep queued, completed, and failed reposts distinct. |
+| `terminal` | Response `terminal` | Mark distribution complete only when `true`. |
+| `requested_at` | Integration timestamp | Audit when the repost request was submitted. |
+
+| Repost outcome | Evidence | Campaign action |
+| --- | --- | --- |
+| Queued | `terminal: false` | Poll `statusUrl`; do not count the repost yet. |
+| Completed | Terminal success | Record the account, source Tweet ID, and completion time. |
+| Already reposted | Converged terminal result | Complete without another repost request. |
+| Retryable failure | `safeToRetry: true` | Preserve the receipt and follow lifecycle guidance. |
+| Final failure | Terminal failure | Store the error and exclude the repost from completed totals. |
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
