@@ -112,6 +112,7 @@ const REQUIRED_OPERATIONAL_TABLES = [
     file: 'api-reference/x/get-article.mdx',
     snippets: [
       '| Article archive column | Response source | Archive rule |',
+      '| Article block | Text projection | Structured value to preserve |',
       '| Code | Code text | Language and formatting metadata |',
     ],
   },
