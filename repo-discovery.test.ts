@@ -10695,7 +10695,10 @@ const REQUIRED_AGENT_DOCS_PAGE_SIZE_CHECKS = [
   '  - page-size-markdown',
   'content-start-position stays disabled until the bounded afdocs sample starts',
   'Keep the live CI crawl deterministic and bounded',
+  '  maxConcurrency: 6',
   '  maxLinksToTest: 30',
+  '  requestDelay: 100',
+  '  requestTimeout: 10000',
   'llms-txt-directive-html stays enabled even when it warns on buried positions',
   'Treat that warning as generated HTML',
 ] as const;
@@ -11295,6 +11298,32 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     expect(collectNonDescriptiveInternalAnchorFindings()).toStrictEqual([]);
+  });
+
+  it('uses download commands instead of page links for OpenAPI JSON', (): void => {
+    expect.assertions(1);
+
+    expect(
+      ['sdks/typescript.mdx', 'sdks/python.mdx', 'sdks/go.mdx'].flatMap(
+        (file): readonly DiscoveryFinding[] => {
+          const source = readFileSync(file, 'utf8');
+
+          return source.includes(
+            'Download the OpenAPI schema: `curl -o openapi.json https://xquik.com/openapi.json`',
+          ) &&
+            !source.includes(
+              '[OpenAPI JSON](https://xquik.com/openapi.json)',
+            )
+            ? []
+            : [
+                {
+                  file,
+                  issue: 'OpenAPI JSON needs an explicit download command.',
+                },
+              ];
+        },
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps audited API routes focused and preserves old links', (): void => {
