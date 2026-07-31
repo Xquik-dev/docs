@@ -81,6 +81,23 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     ],
   },
   {
+    file: 'api-reference/x-write/create-community.mdx',
+    phrases: [
+      'Build a Reviewable Community Brief',
+      'Validate the New Community',
+      'Handle Creation Failures Safely',
+    ],
+  },
+  {
+    file: 'api-reference/x-write/join-community.mdx',
+    phrases: [
+      'Resolve Membership Intent',
+      'Join Communities in Controlled Batches',
+      'Verify Visible Membership',
+      'Recover From Join Failures',
+    ],
+  },
+  {
     file: 'api-reference/x/community-tweets.mdx',
     phrases: [
       'Export a Community Timeline Without a Search Query',

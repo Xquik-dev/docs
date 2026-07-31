@@ -128,6 +128,75 @@ Do not submit parallel requests with different keys for one intended
 community. That can create multiple communities. Read the lifecycle state
 before exposing the new community to downstream workflows.
 
+## Build a Reviewable Community Brief
+
+Create a short brief before calling this endpoint. Record the proposed name,
+description, owner account, audience, and moderation purpose. Keep that brief
+beside the approval record. Reviewers can then compare the submitted fields
+against the approved community identity.
+
+Treat the name as a lasting public label. Check spelling, capitalization, and
+topic scope before approval. Use the description to explain who should join.
+Avoid campaign dates or temporary slogans in either field. Those details age
+quickly and make later community discovery confusing.
+
+Choose one connected account as the accountable owner. Record its username and
+stable account ID when available. Confirm that the account appears in your
+connected-account inventory. Do not switch owner accounts during a network
+retry. A changed account represents a different write request.
+
+Store these creation inputs together:
+
+- Connected owner username and account ID.
+- Final community name and description.
+- Approval reference and approving operator.
+- Idempotency key for this exact submission.
+- Returned action ID and lifecycle state.
+
+This record separates governance from transport recovery. A timeout can reuse
+the same key and body. An editorial change requires another approval and key.
+
+## Validate the New Community
+
+Wait for the write lifecycle to finish before announcing the community. A
+`202` response means Xquik accepted the write for processing. It does not prove
+that X completed community creation. Follow the returned lifecycle state until
+the action reaches its final result.
+
+Capture the new community ID from the confirmed result. Then request
+[`GET /x/communities/{id}/info`](/api-reference/x/community-info). Compare its
+name and description with the approved brief. Save the returned community ID
+beside the owner account and action ID.
+
+Run these checks before inviting members:
+
+1. Confirm the community ID resolves.
+2. Compare the returned name with the approved name.
+3. Compare the returned description with the approved description.
+4. Confirm the intended owner account remains connected.
+5. Record the final write state and verification time.
+
+Do not create another community when verification fails temporarily. Retry the
+read first. Reuse the original write key only for identical transport recovery.
+
+## Handle Creation Failures Safely
+
+Treat each response by its actual cause. Fix invalid names or missing accounts
+before sending another write. Restore credits before retrying a `402` response.
+Reconnect the owner account after an account authorization failure.
+
+A `409` response can indicate an idempotency conflict. Compare the stored body
+with the proposed body. Reuse the key only when every creation field matches.
+Generate a new key after any approved field changes.
+
+For `422`, preserve the rejected request and returned reason. Do not rewrite
+the community brief automatically. Return it to the operator for review. For
+`429`, respect the retry guidance and keep the same approved intent.
+
+For `503` or an uncertain network result, query the write lifecycle first.
+Never assume failure from a lost client connection. Duplicate creation is more
+costly than a delayed verification read.
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>

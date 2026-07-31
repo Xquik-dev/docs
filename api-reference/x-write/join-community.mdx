@@ -119,6 +119,88 @@ Use `GET /x/communities/{id}/info` before this write. Use community members
 afterward when your workflow must verify visible membership. Do not infer
 membership from the submitted request alone.
 
+## Resolve Membership Intent
+
+Start with a community ID, not a copied display name. Community names can look
+similar across unrelated groups. Resolve the ID through a trusted discovery
+step. Then request
+[`GET /x/communities/{id}/info`](/api-reference/x/community-info) before joining.
+
+Show the operator the community name, description, rules, and member count.
+Also show the connected account that will join. Record the operator decision
+beside both identifiers. This prevents one account from joining a similarly
+named community by mistake.
+
+Keep one membership-intent record with these values:
+
+- Community ID and verified display name.
+- Connected username and stable account ID.
+- Approval reference and approving operator.
+- Idempotency key for this exact join.
+- Returned action ID and lifecycle state.
+
+Do not reuse a join approval for another connected account. Each account and
+community pair represents a separate membership decision.
+
+## Join Communities in Controlled Batches
+
+Process approved account-community pairs independently. Assign one idempotency
+key to each pair. Keep retries serial for that pair. Parallel requests with
+different keys can create unclear audit histories.
+
+Use a small batch ledger when several accounts need reviewed memberships. Each
+row should contain one account, one community ID, and one approval. Record the
+latest action state without overwriting earlier attempts.
+
+Pause the batch when any pair returns an account authorization error. Confirm
+the connected account before continuing its remaining joins. Other approved
+accounts can proceed through separate workers.
+
+Do not treat a successful join as permission to publish community tweets.
+Posting is another write decision. Gate community posting behind its own
+approval, account choice, and idempotency key.
+
+## Verify Visible Membership
+
+Wait for the write lifecycle to complete before checking membership. A `202`
+response only confirms accepted processing. Follow the returned action until
+the final state becomes available.
+
+Use the
+[`community members endpoint`](/api-reference/x/community-members) when the
+workflow requires visible membership proof. Search the returned member pages
+for the connected account. Follow cursors when the first page does not contain
+that profile.
+
+Store the verification result with these facts:
+
+1. Community ID and connected account.
+2. Final write action state.
+3. Member lookup time and cursor coverage.
+4. Matched username and user ID, when present.
+5. Operator decision when membership stays unconfirmed.
+
+Do not resubmit the join immediately after an incomplete member lookup. The
+member list may require more cursor pages. Finish the read before deciding.
+
+## Recover From Join Failures
+
+Fix malformed community IDs before retrying `400` responses. Restore credits
+before retrying a `402` response. Reconnect the selected account after an
+account authorization error.
+
+For `409`, compare the saved account, community ID, and body. Reuse the key
+only when all three still match. A different account requires a new approval
+and idempotency key.
+
+Preserve `422` rejection details for the operator. Do not substitute another
+community automatically. Respect retry guidance after `429` responses. Keep
+the original account-community intent unchanged during that retry.
+
+For `503` or a dropped connection, inspect the write lifecycle first. Never
+infer that the join failed from client transport alone. Verification prevents
+duplicate requests and keeps the membership ledger trustworthy.
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
