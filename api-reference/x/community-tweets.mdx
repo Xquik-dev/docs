@@ -64,7 +64,7 @@ Store `next_cursor` only when `has_next_page` is true. Send that cursor back
 unchanged for the next page. De-duplicate by stable tweet ID when a busy
 community receives new posts during pagination.
 
-Use [Live Community Tweet Search](/api-reference/x/search-community-tweets)
+Use [Live Community Tweet Search](/api-reference/x/community-search)
 when the workflow includes specific keywords. Feed retrieval answers what the
 community posted recently. Keyword search answers which community tweets match
 the supplied query.
@@ -271,6 +271,62 @@ and cursor recovery.
 Keep the request time, page count, row count, and completion state. These
 fields let another reviewer repeat the comparison without guessing its scope.
 
+## Measure a Community Timeline Window
+
+Define one timeline window before requesting the first page. Record the
+community ID and collection start time. This route needs no keyword query.
+
+Save each page before advancing its cursor. Store page number, request time,
+first Tweet ID, last Tweet ID, and returned row count. Preserve the exact
+cursor used for each request.
+
+After the final page, calculate these concrete measures:
+
+- Unique Tweet IDs collected.
+- Earliest and latest tweet creation times.
+- Authors represented by stable user ID.
+- Tweets containing photos, videos, or animated GIFs.
+- Total replies, reposts, likes, and quotes when returned.
+- Duplicate Tweet IDs removed after retries.
+
+Label the result as a captured timeline window. Never call it a complete
+community archive without separate completeness evidence.
+
+Store the final `has_next_page` value. A false value closes this cursor chain.
+A stopped job remains interrupted when another page was available.
+
+## Reconcile a Moving Community Feed
+
+New community tweets can appear while older cursor pages load. Deduplicate all
+rows by Tweet ID before export. Keep the newest complete engagement fields.
+
+Do not sort only by page position. Preserve `createdAt` and Tweet ID. Page
+boundaries can move between requests while the community remains active.
+
+When a request fails, retain the last durable cursor. Retry with the same
+community ID and page size. Never guess, shorten, or decode the cursor.
+
+If a retry repeats a page, compare its Tweet IDs with saved rows. Keep one row
+per Tweet ID. Record the repeated request in the collection manifest.
+
+For scheduled snapshots, use separate run IDs. Compare overlaps by Tweet ID.
+Report new, repeated, and missing IDs independently.
+
+## Audit Authors, Engagement, and Media
+
+Join authors by stable user ID. Keep usernames and display names as changeable
+profile attributes. Never use a visible name as the author key.
+
+Validate every media item against its owning Tweet ID. Preserve its media type
+and URL. Do not infer attachments from tweet text.
+
+Keep replies, reposts, likes, quotes, views, and bookmarks in separate columns.
+Missing fields stay missing. Never replace unavailable engagement counts with
+zero.
+
+Record when each snapshot captured those counts. Engagement can change after
+the tweet first appears. Compare counts only with both collection times.
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>
@@ -294,7 +350,7 @@ fields let another reviewer repeat the comparison without guessing its scope.
     Use `GET /x/communities/{id}/tweets` for posts from one known community.
   </Card>
   <Card title="Community tweet search" icon="search">
-    Use [`GET /x/communities/tweets`](/api-reference/x/search-community-tweets)
+    Use [`GET /x/communities/tweets`](/api-reference/x/community-search)
     with `communityId` and `q` to search within one community.
   </Card>
   <Card title="Community members" icon="users">

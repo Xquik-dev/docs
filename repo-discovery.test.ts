@@ -32,7 +32,7 @@ const PRODUCT_APP_ICON_FILE = '/Users/burak/Developer/xquik/app/icon.svg';
 const DOCS_X_ONLY_ICON_SHA256 =
   '7002c1dd82b5b903d69777fa212f39b0e0410cb156e7bcb1b4426fcec3a7cdc5';
 const TWEET_SEARCH_EXPORT_SEMRUSH_SHA256 =
-  'ca211d6cb21da95e349c09b6353426c15512980529eda45d76c5c6ad3fc00a54';
+  'dfe034c801941231051b86d1a70ecb9edc1bc1f31d17d473357723fdf7540801';
 const CODEX_OAUTH_ISSUER_ERROR =
   'Authorization server response missing required issuer: expected https://xquik.com';
 const CODEX_OAUTH_UPSTREAM_ISSUE =
@@ -2409,7 +2409,6 @@ const PAID_READ_REFERENCE_PAGES = [
   'api-reference/x/list-members.mdx',
   'api-reference/x/list-tweets.mdx',
   'api-reference/x/retweeters.mdx',
-  'api-reference/x/search-community-tweets.mdx',
   'api-reference/x/search-tweets.mdx',
   'api-reference/x/search-users.mdx',
   'api-reference/x/trends.mdx',
@@ -4384,7 +4383,7 @@ const REQUIRED_COMMUNITY_MODERATORS_API_HANDOFF_SNIPPETS = [
   '[`GET /x/communities/{id}/members`](/api-reference/x/community-members)',
   '[`GET /x/communities/{id}/info`](/api-reference/x/community-info)',
   '[`GET /x/communities/{id}/tweets`](/api-reference/x/community-tweets)',
-  '[`GET /x/communities/tweets`](/api-reference/x/search-community-tweets)',
+  '[`GET /x/communities/tweets`](/api-reference/x/community-search)',
   '`community_extractor`, or',
   '`community_post_extractor` for queued file exports',
 ] as const;
@@ -4439,7 +4438,7 @@ const REQUIRED_COMMUNITY_TWEETS_API_HANDOFF_SNIPPETS = [
   '## Which community endpoint?',
   '<Card title="Community tweets" icon="message-square-text">',
   '<Card title="Community tweet search" icon="search">',
-  '[`GET /x/communities/tweets`](/api-reference/x/search-community-tweets)',
+  '[`GET /x/communities/tweets`](/api-reference/x/community-search)',
   '<Card title="Community members" icon="users">',
   '[`GET /x/communities/{id}/members`](/api-reference/x/community-members)',
   '<Card title="Bulk community jobs" icon="file-spreadsheet">',
@@ -4448,75 +4447,6 @@ const REQUIRED_COMMUNITY_TWEETS_API_HANDOFF_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_COMMUNITY_TWEETS_API_RAW_OUTPUT_SNIPPETS = [
-  'console.log(data);',
-  'print(data)',
-] as const;
-
-const REQUIRED_COMMUNITY_TWEET_SEARCH_API_HANDOFF_SNIPPETS = [
-  '## Direct community tweet search handoff',
-  '`GET /x/communities/tweets`',
-  'monitoring job, research queue,',
-  'social listening workflow, or agent needs matching tweets',
-  'const communityId = "1234567890";',
-  'const searchQuery = "machine learning";',
-  'const queryType = "Latest";',
-  'const tweetRows = data.tweets.map((tweet) => {',
-  'const author = tweet.author ?? {};',
-  'search_query: searchQuery',
-  'query_type: queryType',
-  'tweet_id: tweet.id',
-  'author_id: author.id ?? null',
-  'author_username: author.username ?? null',
-  'author_name: author.name ?? null',
-  'author_followers: author.followers ?? null',
-  'author_verified: author.verified ?? null',
-  'author_profile_picture: author.profilePicture ?? null',
-  'created_at: tweet.createdAt ?? null',
-  'media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? []',
-  'const nextCursor = data.has_next_page ? data.next_cursor : null;',
-  'const checkpoint = {',
-  'search_query = "machine learning"',
-  'query_type = "Latest"',
-  'tweet_rows = []',
-  'author = tweet.get("author") or {}',
-  '"search_query": search_query',
-  '"query_type": query_type',
-  '"tweet_id": tweet["id"]',
-  '"author_id": author.get("id")',
-  '"author_username": author.get("username")',
-  '"author_name": author.get("name")',
-  '"author_followers": author.get("followers")',
-  '"author_verified": author.get("verified")',
-  '"author_profile_picture": author.get("profilePicture")',
-  '"created_at": tweet.get("createdAt")',
-  '"media_urls": [',
-  'next_cursor = data["next_cursor"] if data["has_next_page"] else None',
-  'shape one durable row per matching community',
-  'with the same `communityId`, `q`, `queryType`, and `pageSize`.',
-  '`community_id`, `search_query`, `query_type`, `tweet_id`,',
-  '`author_followers`, `author_verified`,',
-  '`author_profile_picture`, `created_at`, engagement counts, & `media_urls`',
-  '<ResponseField name="profilePicture" type="string">',
-  'Set `queryType=Latest` for recent queues or backfills',
-  'Set `queryType=Top` for',
-  '<Card title="Search row checkpoint" icon="search">',
-  '<Card title="Sort mode" icon="arrow-down-up">',
-  '<Card title="Default page" icon="rows-3">',
-  '<Card title="Saved export" icon="file-spreadsheet">',
-  'Request 1 to 100 tweets with `pageSize`. The default is 20.',
-  'Use `community_search` with `targetCommunityId` and `searchQuery`',
-  '## Which community search route?',
-  '<Card title="Scoped community search" icon="search">',
-  '<Card title="Community search route" icon="list-filter">',
-  '[`GET /x/communities/search`](/api-reference/x/community-search)',
-  '`communityId`, `q`, `queryType`, `cursor`, and `pageSize` shape.',
-  '<Card title="Known community posts" icon="message-square-text">',
-  '[`GET /x/communities/{id}/tweets`](/api-reference/x/community-tweets)',
-  '<Card title="Bulk community jobs" icon="file-spreadsheet">',
-  '`community_search` with `targetCommunityId` and `searchQuery`',
-] as const;
-
-const FORBIDDEN_COMMUNITY_TWEET_SEARCH_API_RAW_OUTPUT_SNIPPETS = [
   'console.log(data);',
   'print(data)',
 ] as const;
@@ -4577,8 +4507,9 @@ const REQUIRED_COMMUNITY_SEARCH_API_HANDOFF_SNIPPETS = [
   '## Which community search route?',
   '<Card title="Community search route" icon="list-filter">',
   '<Card title="Equivalent scoped route" icon="search">',
-  '[`GET /x/communities/tweets`](/api-reference/x/search-community-tweets)',
-  '`communityId`, `q`, `queryType`, `cursor`, and `pageSize` shape.',
+  '`GET /x/communities/tweets` when your integration already uses that',
+  'path. It accepts the same `communityId`, `q`, `queryType`, `cursor`, and',
+  '`pageSize` shape.',
   '<Card title="Known community posts" icon="message-square-text">',
   '[`GET /x/communities/{id}/tweets`](/api-reference/x/community-tweets)',
   '<Card title="Bulk community jobs" icon="file-spreadsheet">',
@@ -5313,7 +5244,7 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   'title: "Twitter Advanced Search API: CSV Export via REST"',
   'description: "Install the Python SDK with pip install x_twitter_scraper. Follow this step by step flow for specific accounts. Use from:username for one Twitter account."',
   'scrape tweets',
-  "For hashtags search, pass the exact hashtag token. Respect API rate limits and X's Terms of Service. Store Twitter profiles separately from tweet rows..",
+  "For hashtags search, pass the exact hashtag token. Respect API rate limits and X's Terms of Service. Store Twitter profiles separately from tweet rows.",
   '### How Do I Scrape Tweets Without Getting Blocked?',
   'Respect each rate limit and wait for retryAfter after a 429 response.',
   '### Export Twitter Data',
@@ -5323,7 +5254,7 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   '### How Do I Build an Automated Twitter Data Pipeline With an API?',
   '### How to Schedule Recurring Tweet Exports Using a REST API',
   'incomplete destination upload',
-  'One validates and writes tweet rows.',
+  'A final function validates and writes tweet rows.',
   '## Build a Scheduled Tweet Export Pipeline',
   'A recurring tweet scraping workflow needs an explicit search window.',
   'Advance the schedule checkpoint only after the file becomes durable.',
@@ -5332,6 +5263,8 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   'Check the first and last tweet creation times.',
   'Keep user profiles separate from tweet identity.',
   'Use monitors when the workflow needs real-time events.',
+  '## When to use this workflow',
+  'Use this workflow for repeatable keyword, hashtag, account, or campaign exports.',
   '## End-to-end export handoff',
   'Store one checkpoint that carries the search request through estimate, job creation, JSON pagination, and file export:',
   '## Choose the right path',
@@ -5340,24 +5273,33 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   'GET /x/tweets/search',
   'exact lookup from one stored Tweet ID or X status URL.',
   'CSV, JSON, or XLSX',
-  'CSV, JSON, and XLSX exports are capped at 100,000 rows.',
+  'CSV, JSON, and XLSX exports support up to 100,000 rows.',
   '## Filter fields to operators',
   'tweet_search_extractor merges structured fields into searchQuery before the job runs.',
   'Poll by tweet_search_extraction_id',
   'Do not wait for totalResults or createdAt in the create response',
-  'tweets[].id, tweets[].text, tweets[].createdAt, tweets[].author.id, tweets[].author.username, has_next_page, and next_cursor',
+  'tweets[].id, tweets[].text, and tweets[].createdAt',
+  'tweets[].author.id, tweets[].author.username, has_next_page, and next_cursor',
   'xquik-tweet-search.jsonl',
   'Leave limit unset for a simple cursor-driven page loop',
   'q=from:username&sinceTime=2026-05-01&untilTime=2026-05-02 behaves like',
-  'chronological backfills',
+  'time-ordered backfills',
   'normal search ranking',
-  'For bounded direct API requests with limit, a bare q=from:username',
-  'is treated as a user timeline pull',
+  'When a bounded request sets limit, q=from:username',
+  'selects a user timeline pull',
   'single page with has_next_page: false',
   'search pagination for that user',
   'credit per tweet returned.',
   '## Failure handling',
+  'Treat every failure as a stopped checkpoint, not a reason to skip tweets.',
+  'Honor retryAfter after a 429 response.',
+  'Treat a failed extraction status as terminal for that job.',
+  'Mark every interrupted export as partial.',
   '## Handoff checklist',
+  'Record the terminal status, export format, file name, checksum, byte size, row count, and unique Tweet count.',
+  'Preserve Tweet ID, text, author ID, username, display name, and creation time.',
+  'Name the downstream owner and destination.',
+  'Advance the checkpoint only after this final confirmation.',
 ] as const;
 
 const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
@@ -5910,6 +5852,8 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   'Store `page_cursor`, `next_cursor`, and `has_more` for each JSON page',
   '<Card title="File handoff" icon="download">',
   'Store `inventory_path` for later job lookup and `export_path`',
+  '## Step 4: Retrieve results',
+  'row count, cursor, and format before',
   '## Data handoff',
   '`job`, `results`, `hasMore`, `nextCursor`',
   'Use `limit` up to 1,000 and pass `nextCursor` as `after`',
@@ -13069,33 +13013,6 @@ describe('repository discovery', (): void => {
             : [],
       ),
     ).toStrictEqual([]);
-  });
-
-  it('keeps the community tweet search API handoff concrete', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync(
-      'api-reference/x/search-community-tweets.mdx',
-      'utf8',
-    );
-
-    expect([
-      ...collectSnippetFindings(
-        source,
-        'Community tweet search API page',
-        REQUIRED_COMMUNITY_TWEET_SEARCH_API_HANDOFF_SNIPPETS,
-      ),
-      ...FORBIDDEN_COMMUNITY_TWEET_SEARCH_API_RAW_OUTPUT_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? [
-                {
-                  issue: `Community tweet search API page prints raw tweet data with "${snippet}".`,
-                },
-              ]
-            : [],
-      ),
-    ]).toStrictEqual([]);
   });
 
   it('keeps the community search API handoff concrete', (): void => {

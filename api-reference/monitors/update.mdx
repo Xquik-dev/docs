@@ -317,6 +317,65 @@ An update changes future monitoring behavior. It does not rewrite existing
 events or completed webhook deliveries. Keep historical records under the
 same monitor ID and interpret them using their event timestamps.
 
+## Prepare a Reversible Account Monitor Change
+
+Write one change record before sending PATCH. Include the monitor ID, tracked
+username, current event types, active state, and next billing time.
+
+Add the requested future state beside that snapshot. Name every event type.
+Never describe the request as a generic settings update. Explicit values make
+review and rollback possible.
+
+Choose one change category:
+
+- Pause future tweet and profile alerts.
+- Resume an approved account monitor.
+- Replace the complete event filter.
+- Combine an active-state change with a complete event filter.
+
+Use a narrow request whenever possible. Send only supported PATCH fields.
+Omitted fields keep their current values. An `eventTypes` array replaces the
+saved filter, so send the complete approved array.
+
+Store the response before refreshing any dashboard. Verify the returned
+monitor ID and tracked account first. Then verify event types and active state.
+Record `nextBillingAt` when the response includes it.
+
+If verification fails, do not send an automatic inverse request. Read the
+monitor again first. Another approved change may have occurred meanwhile.
+Compare that fresh response with the pre-change snapshot.
+
+Resume only after checking credits and webhook subscriptions. A resumed
+monitor can create account events immediately after activation. Confirm that
+receivers accept every selected event type.
+
+## Separate Pausing, Filtering, and Deletion
+
+Pause with `isActive: false` when the same monitor may resume. The monitor ID
+and historical event relationships remain available.
+
+Replace `eventTypes` when future account activity needs a different scope.
+Existing events keep their historical meaning. Document the effective change
+time beside later incident reviews.
+
+Delete only when monitoring should stop permanently. Export required event and
+delivery evidence first. Deletion is not a substitute for a temporary pause.
+
+Create another monitor when the tracked account must change. PATCH does not
+reassign historical activity to another username or user ID.
+
+## Verify the First Event After Resuming
+
+After resuming, read the monitor and confirm `isActive: true`. Keep its returned
+event types beside the verification note.
+
+Wait for relevant account activity through the normal workflow. Then list
+stored events using the same monitor ID. Check the first matching event's type
+and timestamp.
+
+Inspect webhook deliveries separately. Join `streamEventId` to the stored event
+ID. Do not treat a successful PATCH response as delivery proof.
+
 ## Response
 
 ### 200 OK

@@ -64,7 +64,6 @@ const PRIORITY_API_ROUTES = [
   '/api-reference/x/community-tweets',
   '/api-reference/x/following',
   '/api-reference/x/retweeters',
-  '/api-reference/x/search-community-tweets',
 ] as const;
 
 function docsConfig(): DocsConfig {
