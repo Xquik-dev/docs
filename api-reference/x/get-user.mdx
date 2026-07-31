@@ -160,6 +160,38 @@ the full lookup response.
   </Card>
 </CardGroup>
 
+## Store a Twitter profile lookup
+
+Keep the numeric X user ID as the stable key. Profile usernames, names, bios,
+counts, verification, locations, links, and images can change between lookups.
+
+| Profile column | Response field | CRM or warehouse rule |
+| --- | --- | --- |
+| `x_user_id` | `id` | Use as the stable profile upsert and relationship key. |
+| `x_username` | `username` | Store the current handle without using it as the durable key. |
+| `display_name` | `name` | Preserve the public profile name observed during lookup. |
+| `bio` | `description` | Store the profile bio when X returns it. |
+| `follower_count` | `followers` | Preserve the observed follower count with the lookup time. |
+| `following_count` | `following` | Preserve the observed following count with the lookup time. |
+| `verified` | `verified` | Record the observed verification state. |
+| `verified_type` | `verifiedType` | Distinguish returned business or government verification types. |
+| `location` | `location` | Preserve the public profile location when supplied. |
+| `profile_url` | `url` | Keep the public website link from the profile. |
+| `profile_image_url` | `profilePicture` | Use the returned image in profile previews and review queues. |
+| `account_created_at` | `createdAt` | Preserve the account creation timestamp when available. |
+| `unavailable` | `unavailable` | Separate an unavailable profile from a successful active lookup. |
+| `unavailable_reason` | `unavailableReason` | Route suspended, deactivated, or otherwise unavailable profiles. |
+
+| Next workflow | Stable input | Route |
+| --- | --- | --- |
+| Follower export | `id` | `/x/users/{id}/followers` |
+| Following export | `id` | `/x/users/{id}/following` |
+| Profile timeline | `id` | `/x/users/{id}/tweets` |
+| Profile replies | `id` | `/x/users/{id}/replies` |
+| Profile media | `id` | `/x/users/{id}/media` |
+| One follow relationship | Source and target profile IDs | `/x/followers/check` |
+| Saved profile or audience job | Numeric profile ID in the selected tool input | `/extractions` |
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>

@@ -207,6 +207,30 @@ original tweet text with a generated summary.
 Reprocess a tweet only when its routing rule changes. This prevents repeated
 notifications from overlapping timeline polls.
 
+| Home timeline column | Response source | Feed use |
+| --- | --- | --- |
+| `account_id` | Connected account context | Keep one home feed isolated from every other connected account. |
+| `tweet_id` | `tweets[].id` | De-duplicate timeline rows and build tweet URLs. |
+| `tweet_url` | `tweets[].url` | Open the original tweet during inbox or CRM review. |
+| `text` | `tweets[].text` | Apply support, research, campaign, or moderation rules. |
+| `author_id` | `tweets[].author.id` | Keep a stable author key when usernames change. |
+| `author_username` | `tweets[].author.username` | Display the current X handle. |
+| `created_at` | `tweets[].createdAt` | Sort new home timeline tweets by creation time. |
+| `in_reply_to_id` | `tweets[].inReplyToId` | Route tweet replies with their parent context. |
+| `conversation_id` | `tweets[].conversationId` | Group tweets from the same conversation. |
+| `media_urls` | `tweets[].media[].mediaUrl` | Send image and video tweets to asset review. |
+| `page_cursor` | Request `cursor` | Prove which home timeline page produced the row. |
+| `next_cursor` | Response `next_cursor` | Resume only after the current page is stored. |
+
+| Routing rule | Concrete match | Destination |
+| --- | --- | --- |
+| Support reply | `isReply` plus an approved support account or keyword | Support review queue |
+| Campaign mention | Campaign phrase in `text` | Campaign verification queue |
+| Media review | Non-empty `media` | Image or video asset review |
+| High-engagement tweet | Approved threshold on likes, replies, reposts, or views | Priority research queue |
+| Saved author | `author.id` in an approved watchlist | CRM or analyst review |
+| No rule match | No approved condition matches | Store without generating a notification |
+
 ## Query parameters
 
 <ParamField query="cursor" type="string">

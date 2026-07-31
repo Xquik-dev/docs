@@ -221,6 +221,26 @@ Save every cursor page before marking a snapshot complete. Record the final
 row count and completion time. A failed or credit-limited run should remain
 partial.
 
+| Follower tracker column | Source | Comparison rule |
+| --- | --- | --- |
+| `source_x_user_id` | Resolve the requested account once | Keep the source account stable across snapshots. |
+| `snapshot_id` | Generate for each complete collection | Compare rows only inside the intended snapshot pair. |
+| `collected_at` | Set when each cursor page is stored | Preserve collection order and snapshot recency. |
+| `x_user_id` | `users[].id` | Use as the stable follower identity. |
+| `x_username` | `users[].username` | Display the current handle, but never use it as the join key. |
+| `follower_count` | `users[].followers` | Preserve the observed audience size for segmentation. |
+| `verified` | `users[].verified` | Preserve the observed verification state for filtering. |
+| `profile_picture_url` | `users[].profilePicture` | Use in review queues and CRM profile previews. |
+| `snapshot_complete` | Set after the final cursor page | Compare removals only when both snapshots are complete. |
+| `row_count` | Sum the stored `users.length` values | Reconcile stored followers with the completed export. |
+
+| Snapshot result | ID condition | Tracker action |
+| --- | --- | --- |
+| Newly observed follower | Present only in the latest complete snapshot | Add the first-seen time and latest follower profile fields. |
+| Continuing follower | Present in both complete snapshots | Update mutable username, profile, count, and verification fields. |
+| Removed follower | Present only in the earlier complete snapshot | Add the last-seen time; do not delete the historical row. |
+| Unknown change | Either snapshot is partial | Preserve both snapshots and defer follower-change classification. |
+
 ## Which follower endpoint?
 
 - Use `GET /api/v1/x/users/{id}/followers` for one account's live follower page.

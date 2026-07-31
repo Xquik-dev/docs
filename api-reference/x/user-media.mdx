@@ -199,6 +199,29 @@ does not mean the asset was downloaded.
 Keep failed downloads retryable by tweet ID and media URL. Do not rerun the
 entire profile export for one failed asset.
 
+| Media inventory column | Response source | Asset rule |
+| --- | --- | --- |
+| `source_x_user_id` | Resolved profile ID | Keep every media tweet tied to the intended profile. |
+| `tweet_id` | `tweets[].id` | Use as the parent key for one or more media items. |
+| `tweet_url` | `tweets[].url` | Preserve the original X post for attribution and review. |
+| `tweet_text` | `tweets[].text` | Keep the caption or post context beside each asset. |
+| `author_id` | `tweets[].author.id` | Preserve the original publisher as a stable identity. |
+| `created_at` | `tweets[].createdAt` | Store the tweet publication time. |
+| `media_index` | Position inside `tweets[].media` | Preserve the order of several assets on one tweet. |
+| `media_type` | `tweets[].media[].type` | Separate photo, video, and animated GIF processing. |
+| `media_url` | `tweets[].media[].mediaUrl` | De-duplicate an asset only within its parent tweet. |
+| `video_variants` | `tweets[].media[].videoVariants` | Keep every returned rendition until a download is approved. |
+| `page_cursor` | Request `cursor` | Resume the profile media inventory after stored pages. |
+| `collected_at` | Integration timestamp | Audit when the media URL and engagement counts were observed. |
+
+| Asset decision | Required evidence | Next action |
+| --- | --- | --- |
+| Review only | Tweet URL, media URL, author, and text | Keep the remote asset linked to its source tweet. |
+| Approved image download | Image media type and approved usage | Call the download route for the selected media URL. |
+| Approved video download | Video variants and selected format | Choose a variant after inspecting bitrate and content type. |
+| Rejected asset | Reviewer decision and reason | Keep the source record without downloading the file. |
+| Failed selected download | Tweet ID, media URL, and failure state | Retry only the selected asset, not the entire profile inventory. |
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>

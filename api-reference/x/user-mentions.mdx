@@ -208,6 +208,30 @@ agent workflow needs bounded mention pages with resumable cursor state.
 }
 ```
 
+| Mention queue column | Response source | Triage use |
+| --- | --- | --- |
+| `mentioned_x_user_id` | Resolved target profile ID | Keep every mention tied to the intended account. |
+| `tweet_id` | `tweets[].id` | De-duplicate mentions and open one source tweet. |
+| `tweet_url` | `tweets[].url` | Send reviewers to the original X post. |
+| `text` | `tweets[].text` | Apply support, lead, campaign, or moderation rules. |
+| `author_id` | `tweets[].author.id` | Keep a stable mention-author key. |
+| `author_username` | `tweets[].author.username` | Display the current author handle. |
+| `author_followers` | `tweets[].author.followers` | Add audience context to priority rules. |
+| `author_verified` | `tweets[].author.verified` | Preserve the observed verification state. |
+| `created_at` | `tweets[].createdAt` | Enforce the intended support or campaign window. |
+| `conversation_id` | `tweets[].conversationId` | Group mention tweets from one conversation. |
+| `in_reply_to_id` | `tweets[].inReplyToId` | Join reply mentions to their immediate parent. |
+| `media_urls` | `tweets[].media[].mediaUrl` | Preserve image and video context for review. |
+
+| Mention rule | Concrete condition | Queue action |
+| --- | --- | --- |
+| Direct support request | Approved support phrase in `text` | Create a support-review item. |
+| Campaign mention | Campaign phrase within `sinceTime` and `untilTime` | Add the tweet to the campaign report. |
+| High-reach author | Approved `author.followers` threshold | Raise the review priority without changing the author identity. |
+| Reply in an existing thread | Non-empty `inReplyToId` or `conversationId` | Attach the existing conversation context. |
+| Media evidence | Non-empty `media` | Preserve image or video URLs with the triage record. |
+| No approved rule | No explicit rule matches | Store the mention without inventing a category. |
+
 ## Which timeline endpoint?
 
 - Use `GET /api/v1/x/users/{id}/mentions` for one user's mentions timeline.
