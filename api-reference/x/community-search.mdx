@@ -263,6 +263,39 @@ Version the manifest when a query changes. Keep earlier exports immutable.
 This preserves comparisons between research periods and prevents silent
 rewrites.
 
+## Compare Latest and Top Results Without Mixing Datasets
+
+Run `Latest` and `Top` as independent searches when research needs both views.
+They answer different questions and may return overlapping tweets.
+
+Give each run its own manifest, cursor chain, and output file. Keep the same
+community ID and query when comparing the two modes. Changing another input
+would invalidate the comparison.
+
+Use `Latest` to capture recent discussion. Record when the first page was
+requested. New tweets can appear while later pages are collected.
+
+Use `Top` to capture relevance-ranked discussion. Record the collection time,
+but do not treat rank as a permanent score. The order can change later.
+
+After both runs finish, join rows by tweet ID. Label every tweet as
+`latest_only`, `top_only`, or `both`. Keep the original engagement counts from
+each run when collection times differ.
+
+Do not append one mode beneath the other without a source column. Analysts
+could mistake duplicated tweets for extra community activity.
+
+Validate each dataset before comparison:
+
+- Every row uses the intended community ID.
+- Every row stores the exact search query.
+- Every cursor belongs to one sort mode.
+- Duplicate tweet IDs are removed within each run.
+- Partial runs remain clearly labeled.
+
+Use the combined view for research prioritization. Preserve the independent
+exports for reproducibility and later audits.
+
 ## Query parameters
 
 <ParamField query="communityId" type="string" required>

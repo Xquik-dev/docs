@@ -224,6 +224,40 @@ monitor for your account only; deleted or cross-account IDs return `404`.
   </Card>
 </CardGroup>
 
+## Verify One Alert Before Incident Review
+
+Inspect one stored monitor before investigating a missed or unexpected alert.
+Start with the monitor ID recorded by the alerting system. A list response can
+hide which row the workflow actually used.
+
+Compare the returned `query` with the intended Twitter search expression.
+Check capitalization, quoted phrases, exclusions, and operators. Store the
+returned value as evidence. Do not reconstruct it from a dashboard label.
+
+Next, compare `eventTypes` with the event under review. A monitor configured
+only for `tweet.new` cannot explain an expected profile-change alert. Update
+the filter only after recording its current value.
+
+Read `isActive` before examining an empty event window. A paused monitor stays
+available through this endpoint. It does not create future matching events.
+Check `nextBillingAt` when the monitor should be active.
+
+Use the returned ID to query stored events. Keep these outcomes separate:
+
+- The monitor exists, but its query does not match the expected tweet.
+- The query matches, but the required event type is absent.
+- The event type exists, but the monitor is paused.
+- The monitor is active, but no stored event matches the review window.
+- A stored event exists, but its webhook delivery needs inspection.
+
+Open the matching event before diagnosing webhook delivery. Then join its
+event ID with `streamEventId` from delivery records. This separates search
+matching from notification transport.
+
+Finish with a compact incident note. Record the monitor ID, exact query,
+active state, event types, event ID, and delivery result. That record lets
+another operator repeat the check without listing every monitor.
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>
