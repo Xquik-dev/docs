@@ -101,6 +101,12 @@ function findGroup(parent: NavigationNode, groupName: string): NavigationNode {
 }
 
 describe('navigation default state', (): void => {
+  it('uses theme fonts without loading an external Google font', (): void => {
+    expect.assertions(1);
+
+    expect(Object.hasOwn(docsConfig(), 'fonts')).toBe(false);
+  });
+
   it('keeps the sticky affiliation banner concise', (): void => {
     expect.assertions(2);
 
