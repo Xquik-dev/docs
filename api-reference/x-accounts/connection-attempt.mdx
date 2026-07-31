@@ -99,107 +99,105 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Every `200` response includes `Cache-Control: no-store`.
 
-<Tabs>
-  <Tab title="200 Pending">
-    <ResponseField name="object" type="string">Always `x_account_connection_attempt`.</ResponseField>
-    <ResponseField name="id" type="string">Connection attempt ID.</ResponseField>
-    <ResponseField name="status" type="string">Always `pending`.</ResponseField>
-    <ResponseField name="pollAfterMs" type="integer">Milliseconds to wait before checking again.</ResponseField>
+### 200 Pending
 
-    ```json
-    {
-      "object": "x_account_connection_attempt",
-      "id": "xatt_0123456789abcdef0123456789abcdef",
-      "status": "pending",
-      "pollAfterMs": 3000
-    }
-    ```
+<ResponseField name="object" type="string">Always `x_account_connection_attempt`.</ResponseField>
+<ResponseField name="id" type="string">Connection attempt ID.</ResponseField>
+<ResponseField name="status" type="string">Always `pending`.</ResponseField>
+<ResponseField name="pollAfterMs" type="integer">Milliseconds to wait before checking again.</ResponseField>
 
-    The response includes `Retry-After: 3`. Wait, then check the same attempt.
-  </Tab>
+```json
+{
+  "object": "x_account_connection_attempt",
+  "id": "xatt_0123456789abcdef0123456789abcdef",
+  "status": "pending",
+  "pollAfterMs": 3000
+}
+```
 
-  <Tab title="200 Success">
-    <ResponseField name="object" type="string">Always `x_account_connection_attempt`.</ResponseField>
-    <ResponseField name="id" type="string">Connection attempt ID.</ResponseField>
-    <ResponseField name="status" type="string">Always `success`.</ResponseField>
+The response includes `Retry-After: 3`. Wait, then check the same attempt.
 
-    ```json
-    {
-      "object": "x_account_connection_attempt",
-      "id": "xatt_0123456789abcdef0123456789abcdef",
-      "status": "success"
-    }
-    ```
+### 200 Success
 
-    The account is ready. Call [List X Accounts](/api-reference/x-accounts/list)
-    if you need its account ID.
-  </Tab>
+<ResponseField name="object" type="string">Always `x_account_connection_attempt`.</ResponseField>
+<ResponseField name="id" type="string">Connection attempt ID.</ResponseField>
+<ResponseField name="status" type="string">Always `success`.</ResponseField>
 
-  <Tab title="200 Email Code Required">
-    <ResponseField name="object" type="string">Always `x_account_connection_challenge`.</ResponseField>
-    <ResponseField name="id" type="string">Challenge ID, not the attempt ID.</ResponseField>
-    <ResponseField name="status" type="string">Always `requires_email_code`.</ResponseField>
-    <ResponseField name="expiresAt" type="string">ISO 8601 challenge expiration time.</ResponseField>
-    <ResponseField name="message" type="string">Human-readable next step.</ResponseField>
-    <ResponseField name="username" type="string">X username being connected.</ResponseField>
+```json
+{
+  "object": "x_account_connection_attempt",
+  "id": "xatt_0123456789abcdef0123456789abcdef",
+  "status": "success"
+}
+```
 
-    ```json
-    {
-      "object": "x_account_connection_challenge",
-      "id": "xch_8vGd8Y9JvH6dV0xA",
-      "status": "requires_email_code",
-      "expiresAt": "2026-05-08T12:10:00Z",
-      "message": "Enter the email verification code to continue.",
-      "username": "your_x_username"
-    }
-    ```
+The account is ready. Call [List X Accounts](/api-reference/x-accounts/list)
+if you need its account ID.
 
-    Submit the newest code to [Submit X Account Email Code](/api-reference/x-accounts/submit-challenge).
-  </Tab>
+### 200 Email Code Required
 
-  <Tab title="200 Failed">
-    <ResponseField name="object" type="string">Always `x_account_connection_attempt`.</ResponseField>
-    <ResponseField name="id" type="string">Connection attempt ID.</ResponseField>
-    <ResponseField name="status" type="string">Always `failed`.</ResponseField>
-    <ResponseField name="error" type="string">Stable public error code.</ResponseField>
-    <ResponseField name="reason" type="string">More specific reason when available.</ResponseField>
-    <ResponseField name="retryable" type="boolean">Whether another connect request can be attempted.</ResponseField>
+<ResponseField name="object" type="string">Always `x_account_connection_challenge`.</ResponseField>
+<ResponseField name="id" type="string">Challenge ID, not the attempt ID.</ResponseField>
+<ResponseField name="status" type="string">Always `requires_email_code`.</ResponseField>
+<ResponseField name="expiresAt" type="string">ISO 8601 challenge expiration time.</ResponseField>
+<ResponseField name="message" type="string">Human-readable next step.</ResponseField>
+<ResponseField name="username" type="string">X username being connected.</ResponseField>
 
-    ```json
-    {
-      "object": "x_account_connection_attempt",
-      "id": "xatt_0123456789abcdef0123456789abcdef",
-      "status": "failed",
-      "error": "service_unavailable",
-      "retryable": true
-    }
-    ```
+```json
+{
+  "object": "x_account_connection_challenge",
+  "id": "xch_8vGd8Y9JvH6dV0xA",
+  "status": "requires_email_code",
+  "expiresAt": "2026-05-08T12:10:00Z",
+  "message": "Enter the email verification code to continue.",
+  "username": "your_x_username"
+}
+```
 
-    Stop checking this attempt. Start a new connection only when appropriate.
-  </Tab>
+Submit the newest code to [Submit X Account Email Code](/api-reference/x-accounts/submit-challenge).
 
-  <Tab title="400 Invalid Input">
-    ```json
-    { "error": "invalid_input", "message": "Invalid connection attempt ID. Check the path parameter." }
-    ```
-    The attempt ID is malformed, unavailable, or belongs to another account.
-    Do not rely on indefinite attempt retention. Save the terminal result.
-  </Tab>
+### 200 Failed
 
-  <Tab title="401 Unauthenticated">
-    ```json
-    { "error": "unauthenticated", "message": "Missing or invalid API key" }
-    ```
-    The API key is missing or invalid.
-  </Tab>
+<ResponseField name="object" type="string">Always `x_account_connection_attempt`.</ResponseField>
+<ResponseField name="id" type="string">Connection attempt ID.</ResponseField>
+<ResponseField name="status" type="string">Always `failed`.</ResponseField>
+<ResponseField name="error" type="string">Stable public error code.</ResponseField>
+<ResponseField name="reason" type="string">More specific reason when available.</ResponseField>
+<ResponseField name="retryable" type="boolean">Whether another connect request can be attempted.</ResponseField>
 
-  <Tab title="429 Rate Limited">
-    ```json
-    { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
-    ```
-    Wait for `Retry-After` before checking again.
-  </Tab>
-</Tabs>
+```json
+{
+  "object": "x_account_connection_attempt",
+  "id": "xatt_0123456789abcdef0123456789abcdef",
+  "status": "failed",
+  "error": "service_unavailable",
+  "retryable": true
+}
+```
+
+Stop checking this attempt. Start a new connection only when appropriate.
+
+### 400 Invalid Input
+
+```json
+{ "error": "invalid_input", "message": "Invalid connection attempt ID. Check the path parameter." }
+```
+The attempt ID is malformed, unavailable, or belongs to another account.
+Do not rely on indefinite attempt retention. Save the terminal result.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated", "message": "Missing or invalid API key" }
+```
+The API key is missing or invalid.
+
+### 429 Rate Limited
+
+```json
+{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
+```
+Wait for `Retry-After` before checking again.
 
 <Note>
   **Related:** [Connect X Account](/api-reference/x-accounts/connect) starts the

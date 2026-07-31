@@ -322,104 +322,106 @@ monitor, or `keywordMonitorId` when replaying one keyword monitor.
 
 ## Response
 
-<Tabs>
-  <Tab title="200 OK">
-    <ResponseField name="deliveries" type="array">
-      List of delivery attempts, most recent first. Returns up to 100 deliveries.
-      <Expandable title="delivery object">
-        <ResponseField name="id" type="string">
-          Unique delivery identifier.
-        </ResponseField>
-        <ResponseField name="streamEventId" type="string">
-          ID of the stream event that triggered this delivery.
-        </ResponseField>
-        <ResponseField name="status" type="string">
-          Current delivery status: `pending`, `delivered`, `failed`, or `exhausted`.
-        </ResponseField>
-        <ResponseField name="attempts" type="number">
-          Total number of delivery attempts made.
-        </ResponseField>
-        <ResponseField name="lastStatusCode" type="number">
-          HTTP status code returned by your endpoint on the most recent attempt. Omitted if no attempt has been made yet.
-        </ResponseField>
-        <ResponseField name="lastError" type="string">
-          Error message from the most recent failed attempt. Omitted on success.
-        </ResponseField>
-        <ResponseField name="createdAt" type="string">
-          ISO 8601 timestamp of when the delivery was queued.
-        </ResponseField>
-        <ResponseField name="deliveredAt" type="string">
-          ISO 8601 timestamp of successful delivery. Omitted if not yet delivered.
-        </ResponseField>
-      </Expandable>
+### 200 OK
+
+<ResponseField name="deliveries" type="array">
+  List of delivery attempts, most recent first. Returns up to 100 deliveries.
+  **Delivery object fields:**
+    <ResponseField name="id" type="string">
+      Unique delivery identifier.
+    </ResponseField>
+    <ResponseField name="streamEventId" type="string">
+      ID of the stream event that triggered this delivery.
+    </ResponseField>
+    <ResponseField name="status" type="string">
+      Current delivery status: `pending`, `delivered`, `failed`, or `exhausted`.
+    </ResponseField>
+    <ResponseField name="attempts" type="number">
+      Total number of delivery attempts made.
+    </ResponseField>
+    <ResponseField name="lastStatusCode" type="number">
+      HTTP status code returned by your endpoint on the most recent attempt. Omitted if no attempt has been made yet.
+    </ResponseField>
+    <ResponseField name="lastError" type="string">
+      Error message from the most recent failed attempt. Omitted on success.
+    </ResponseField>
+    <ResponseField name="createdAt" type="string">
+      ISO 8601 timestamp of when the delivery was queued.
+    </ResponseField>
+    <ResponseField name="deliveredAt" type="string">
+      ISO 8601 timestamp of successful delivery. Omitted if not yet delivered.
     </ResponseField>
 
-    ```json
+</ResponseField>
+
+```json
+{
+  "deliveries": [
     {
-      "deliveries": [
-        {
-          "id": "501",
-          "streamEventId": "9001",
-          "status": "delivered",
-          "attempts": 1,
-          "lastStatusCode": 200,
-          "createdAt": "2026-02-24T14:22:01.000Z",
-          "deliveredAt": "2026-02-24T14:22:02.000Z"
-        },
-        {
-          "id": "502",
-          "streamEventId": "9002",
-          "status": "failed",
-          "attempts": 3,
-          "lastStatusCode": 500,
-          "lastError": "HTTP 500",
-          "createdAt": "2026-02-24T14:25:00.000Z"
-        },
-        {
-          "id": "503",
-          "streamEventId": "9003",
-          "status": "exhausted",
-          "attempts": 10,
-          "lastStatusCode": 503,
-          "lastError": "HTTP 503",
-          "createdAt": "2026-02-24T14:30:00.000Z"
-        },
-        {
-          "id": "504",
-          "streamEventId": "9004",
-          "status": "pending",
-          "attempts": 0,
-          "createdAt": "2026-02-24T14:35:00.000Z"
-        }
-      ]
+      "id": "501",
+      "streamEventId": "9001",
+      "status": "delivered",
+      "attempts": 1,
+      "lastStatusCode": 200,
+      "createdAt": "2026-02-24T14:22:01.000Z",
+      "deliveredAt": "2026-02-24T14:22:02.000Z"
+    },
+    {
+      "id": "502",
+      "streamEventId": "9002",
+      "status": "failed",
+      "attempts": 3,
+      "lastStatusCode": 500,
+      "lastError": "HTTP 500",
+      "createdAt": "2026-02-24T14:25:00.000Z"
+    },
+    {
+      "id": "503",
+      "streamEventId": "9003",
+      "status": "exhausted",
+      "attempts": 10,
+      "lastStatusCode": 503,
+      "lastError": "HTTP 503",
+      "createdAt": "2026-02-24T14:30:00.000Z"
+    },
+    {
+      "id": "504",
+      "streamEventId": "9004",
+      "status": "pending",
+      "attempts": 0,
+      "createdAt": "2026-02-24T14:35:00.000Z"
     }
-    ```
-  </Tab>
-  <Tab title="401 Unauthenticated">
-    ```json
-    { "error": "unauthenticated" }
-    ```
-    Missing or invalid API key. Check the `x-api-key` header value.
-  </Tab>
-  <Tab title="400 Invalid ID">
-    ```json
-    { "error": "invalid_id" }
-    ```
-    The provided webhook ID is not a valid format.
-  </Tab>
-  <Tab title="404 Not Found">
-    ```json
-    { "error": "not_found" }
-    ```
-    No webhook exists with this ID, or it belongs to a different account.
-  </Tab>
-  <Tab title="429 Rate Limited">
-    ```json
-    { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
-    ```
-    Too many requests. Wait for the `Retry-After` header before retrying.
-  </Tab>
-</Tabs>
+  ]
+}
+```
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated" }
+```
+Missing or invalid API key. Check the `x-api-key` header value.
+
+### 400 Invalid ID
+
+```json
+{ "error": "invalid_id" }
+```
+The provided webhook ID is not a valid format.
+
+### 404 Not Found
+
+```json
+{ "error": "not_found" }
+```
+No webhook exists with this ID, or it belongs to a different account.
+
+### 429 Rate Limited
+
+```json
+{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
+```
+Too many requests. Wait for the `Retry-After` header before retrying.
 
 ## Delivery statuses
 

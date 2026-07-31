@@ -11,7 +11,7 @@ const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
 );
 const WRITE_ACTION_DIR = join(PROJECT_ROOT, 'api-reference/x-write');
 const FRONTMATTER_API_PATTERN = /^api:\s*"([A-Z]+) ([^"]+)"/mu;
-const RESPONSE_TAB_PATTERN = /<Tab title="(\d{3})\b/gu;
+const RESPONSE_STATUS_PATTERN = /(?:<Tab title="|^### )(\d{3})\b/gmu;
 const STATUS_CODE_PATTERN = /^\d{3}$/u;
 const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'DELETE /api-keys/{id}',
@@ -217,15 +217,17 @@ function successfulResponseStatuses(
     .sort();
 }
 
-function documentedSuccessfulResponseTabs(source: string): readonly string[] {
-  return [...source.matchAll(RESPONSE_TAB_PATTERN)]
+function documentedSuccessfulResponseStatuses(
+  source: string,
+): readonly string[] {
+  return [...source.matchAll(RESPONSE_STATUS_PATTERN)]
     .map((match): string => match[1] ?? '')
     .filter((status): boolean => status.startsWith('2'))
     .sort();
 }
 
-function documentedResponseTabs(source: string): readonly string[] {
-  return [...source.matchAll(RESPONSE_TAB_PATTERN)]
+function documentedResponseStatuses(source: string): readonly string[] {
+  return [...source.matchAll(RESPONSE_STATUS_PATTERN)]
     .map((match): string => match[1] ?? '')
     .sort();
 }
@@ -245,7 +247,7 @@ function collectResponseStatusFindings(
   spec: OpenApiSpec,
 ): readonly ResponseStatusFinding[] {
   return collectStatusFindings({
-    docsStatusProvider: documentedSuccessfulResponseTabs,
+    docsStatusProvider: documentedSuccessfulResponseStatuses,
     issuePrefix: 'success ',
     spec,
     statusProvider: successfulResponseStatuses,
@@ -262,7 +264,7 @@ function collectAuditedResponseStatusFindings(
   spec: OpenApiSpec,
 ): readonly ResponseStatusFinding[] {
   return collectStatusFindings({
-    docsStatusProvider: documentedResponseTabs,
+    docsStatusProvider: documentedResponseStatuses,
     issuePrefix: '',
     operationFilter: (apiDoc): boolean =>
       FULL_STATUS_AUDITED_OPERATIONS.has(operationKey(apiDoc)),

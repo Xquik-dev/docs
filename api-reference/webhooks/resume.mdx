@@ -167,107 +167,110 @@ one-time secret from [Create Webhook](/api-reference/webhooks/create).
 
 ## Response
 
-<Tabs>
-  <Tab title="200 OK">
-    <ResponseField name="success" type="boolean">
-      `true` when the signed test request succeeded and the webhook was resumed.
+### 200 OK
+
+<ResponseField name="success" type="boolean">
+  `true` when the signed test request succeeded and the webhook was resumed.
+</ResponseField>
+<ResponseField name="statusCode" type="number">
+  HTTP status code returned by your receiver during the signed test.
+</ResponseField>
+<ResponseField name="webhook" type="object">
+  Updated webhook configuration.
+  **Webhook object fields:**
+    <ResponseField name="id" type="string">
+      Unique webhook identifier.
     </ResponseField>
-    <ResponseField name="statusCode" type="number">
-      HTTP status code returned by your receiver during the signed test.
+    <ResponseField name="url" type="string">
+      Delivery endpoint URL.
     </ResponseField>
-    <ResponseField name="webhook" type="object">
-      Updated webhook configuration.
-      <Expandable title="webhook object">
-        <ResponseField name="id" type="string">
-          Unique webhook identifier.
-        </ResponseField>
-        <ResponseField name="url" type="string">
-          Delivery endpoint URL.
-        </ResponseField>
-        <ResponseField name="eventTypes" type="string[]">
-          Event types this webhook is subscribed to.
-        </ResponseField>
-        <ResponseField name="isActive" type="boolean">
-          `true` after a successful resume.
-        </ResponseField>
-        <ResponseField name="consecutiveFailures" type="number">
-          Consecutive receiver failures. Resets to `0` after a successful resume.
-        </ResponseField>
-        <ResponseField name="deliveryStatus" type="string">
-          `active`, `paused`, or `needs_attention`.
-        </ResponseField>
-        <ResponseField name="failureHardCap" type="number">
-          Failure count where the webhook needs attention before resuming.
-        </ResponseField>
-        <ResponseField name="createdAt" type="string">
-          ISO 8601 creation timestamp.
-        </ResponseField>
-      </Expandable>
+    <ResponseField name="eventTypes" type="string[]">
+      Event types this webhook is subscribed to.
+    </ResponseField>
+    <ResponseField name="isActive" type="boolean">
+      `true` after a successful resume.
+    </ResponseField>
+    <ResponseField name="consecutiveFailures" type="number">
+      Consecutive receiver failures. Resets to `0` after a successful resume.
+    </ResponseField>
+    <ResponseField name="deliveryStatus" type="string">
+      `active`, `paused`, or `needs_attention`.
+    </ResponseField>
+    <ResponseField name="failureHardCap" type="number">
+      Failure count where the webhook needs attention before resuming.
+    </ResponseField>
+    <ResponseField name="createdAt" type="string">
+      ISO 8601 creation timestamp.
     </ResponseField>
 
-    ```json
-    {
-      "success": true,
-      "statusCode": 200,
-      "webhook": {
-        "id": "15",
-        "url": "https://your-server.com/webhook",
-        "eventTypes": ["tweet.new", "tweet.reply"],
-        "isActive": true,
-        "consecutiveFailures": 0,
-        "deliveryStatus": "active",
-        "failureHardCap": 200,
-        "createdAt": "2026-02-24T10:30:00.000Z"
-      }
-    }
-    ```
-  </Tab>
-  <Tab title="400 Test Failed">
-    <ResponseField name="success" type="boolean">
-      `false` when the signed test did not receive a `2xx` response.
-    </ResponseField>
-    <ResponseField name="statusCode" type="number">
-      HTTP status code from the receiver, or `0` if it was unreachable.
-    </ResponseField>
-    <ResponseField name="error" type="string">
-      Delivery failure reason.
-    </ResponseField>
+</ResponseField>
 
-    ```json
-    {
-      "success": false,
-      "statusCode": 500,
-      "error": "HTTP 500"
-    }
-    ```
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "webhook": {
+    "id": "15",
+    "url": "https://your-server.com/webhook",
+    "eventTypes": ["tweet.new", "tweet.reply"],
+    "isActive": true,
+    "consecutiveFailures": 0,
+    "deliveryStatus": "active",
+    "failureHardCap": 200,
+    "createdAt": "2026-02-24T10:30:00.000Z"
+  }
+}
+```
 
-    Fix the receiver, then retry this endpoint.
-  </Tab>
-  <Tab title="400 Invalid Request">
-    ```json
-    { "error": "invalid_id", "message": "Invalid webhook ID format" }
-    ```
-    The provided webhook ID is not a valid format.
-  </Tab>
-  <Tab title="401 Unauthenticated">
-    ```json
-    { "error": "unauthenticated", "message": "Missing or invalid API key" }
-    ```
-    Missing or invalid API key / session cookie.
-  </Tab>
-  <Tab title="404 Not Found">
-    ```json
-    { "error": "not_found", "message": "Webhook not found" }
-    ```
-    No webhook exists with this ID, or it belongs to a different account.
-  </Tab>
-  <Tab title="429 Rate Limited">
-    ```json
-    { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
-    ```
-    Too many requests. Wait for the `Retry-After` header before retrying.
-  </Tab>
-</Tabs>
+### 400 Test Failed
+
+<ResponseField name="success" type="boolean">
+  `false` when the signed test did not receive a `2xx` response.
+</ResponseField>
+<ResponseField name="statusCode" type="number">
+  HTTP status code from the receiver, or `0` if it was unreachable.
+</ResponseField>
+<ResponseField name="error" type="string">
+  Delivery failure reason.
+</ResponseField>
+
+```json
+{
+  "success": false,
+  "statusCode": 500,
+  "error": "HTTP 500"
+}
+```
+
+Fix the receiver, then retry this endpoint.
+
+### 400 Invalid Request
+
+```json
+{ "error": "invalid_id", "message": "Invalid webhook ID format" }
+```
+The provided webhook ID is not a valid format.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated", "message": "Missing or invalid API key" }
+```
+Missing or invalid API key / session cookie.
+
+### 404 Not Found
+
+```json
+{ "error": "not_found", "message": "Webhook not found" }
+```
+No webhook exists with this ID, or it belongs to a different account.
+
+### 429 Rate Limited
+
+```json
+{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
+```
+Too many requests. Wait for the `Retry-After` header before retrying.
 
 ## Recovery handoff
 

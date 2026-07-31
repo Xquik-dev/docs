@@ -1,0 +1,375 @@
+---
+title: "Twitter API Rate Limits, Errors & Webhook Events"
+sidebarTitle: API errors & webhook checklist
+description: "Handle Xquik REST API calls with authentication, pagination, HTTP errors, Twitter API rate limits, webhook events, durable writes, and normalized responses."
+keywords: ["Twitter API rate limits", "REST API call", "API error handling", "API pagination", "webhook events"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use this production checklist to handle Twitter API rate limits, REST API
+calls, error responses, cursor pagination, and signed webhook events with
+Xquik. Apply its API error handling rules before launching a client, workflow,
+or agent.
+
+Use API pagination for complete tweet, follower, reply, and event collections.
+Treat HTTP status codes as control flow. Protect durable API writes with
+idempotency keys and status polling.
+
+## Integration Readiness Checklist
+
+Run this checklist before connecting a production client, workflow builder, or agent to the API.
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key">
+    Send a full account key or OAuth token for account operations. Use an active guest key on its 33 paid reads. Use direct MPP only on its 7 fixed-price operations. Handle the documented `401` and `402` contracts separately.
+  </Card>
+  <Card title="Response contract" icon="file-json">
+    Default REST examples use the v1 shape. Send `xquik-api-contract: 2026-04-29` when your client expects snake_case, date-time fields as Unix seconds, structured errors, `has_more`, and `next_cursor`. The API MCP server sends this contract automatically.
+  </Card>
+  <Card title="Pagination" icon="list">
+    Use `after` with `nextCursor` on events, draws, extractions, and Radar. Use `afterCursor` on drafts. Use `cursor` with `next_cursor` on tweet, profile, follower, reply, timeline, community, and list endpoints. De-duplicate stable IDs and reject repeated cursors.
+  </Card>
+  <Card title="Billing" icon="credit-card">
+    Handle `402 no_credits` and `402 insufficient_credits`. Treat every `payment_options` action as an offer. Ask the user to select an amount and explicitly confirm before creating checkout.
+  </Card>
+  <Card title="Rate limits" icon="timer">
+    Respect `Retry-After`. Read calls allow 300 per 1s. Writes allow 120 per 60s. Deletes allow 60 per 60s. Back off after repeated `429 rate_limit_exceeded` responses.
+  </Card>
+  <Card title="Durable writes" icon="activity">
+    Send a unique `Idempotency-Key`. Store the returned action. Poll `statusUrl` while `terminal` is `false`. Retry only when `safeToRetry` is `true`, using a new key.
+  </Card>
+</CardGroup>
+
+## Validate Every HTTP Request
+
+Match each HTTP request to its documented API endpoint. Use the listed HTTP
+methods, path parameters, query parameters, and headers. Send `GET` for reads.
+Use `POST` requests for creation and actions. Use `PATCH` or `PUT` for supported
+updates. Send `DELETE` only for documented removal routes.
+
+Validate required values before sending the REST API call. Confirm X usernames,
+tweet IDs, list IDs, community IDs, and monitor IDs. Check numeric limits and
+allowed enum values. Reject an empty search query on the client side. These
+checks reduce avoidable `400 Bad Request` responses.
+
+Send JSON writes with `Content-Type: application/json`. Encode the request body
+once. Never send secrets in query parameters. Put account keys in `x-api-key`
+or `Authorization`. Store webhook secrets outside the request body.
+
+Check the complete URL before release. The base URL is
+`https://xquik.com/api/v1`. Keep the version segment in every API endpoint.
+Do not send production credentials to test hosts.
+
+## Classify API Responses
+
+Read the HTTP status code before parsing API responses. A successful response
+does not always use `200`. Creation routes can return `201`. Accepted work can
+return `202`. Durable actions can return a status URL for later polling.
+
+Handle each failure class separately:
+
+- `400` means the path, query, or request body failed validation.
+- `401` means authentication is missing or invalid.
+- `402` means billing access or credits need attention.
+- `404` means the requested tweet, profile, monitor, or resource is unavailable.
+- `424` or `502` means a read dependency failed temporarily.
+- `429` means the current method bucket reached its limit.
+
+Keep the machine-readable error code with each failed request. Show human-readable
+error messages where a person must act. Never replace exact codes with guessed
+messages. When an error occurs, inspect the code before choosing a retry.
+
+## Separate Client and Server Errors
+
+Fix client-side errors before retrying. A repeated invalid query produces the
+same response. Correct the field, type, identifier, or authentication header.
+Do not hide validation failures behind automatic retries.
+
+Treat temporary server errors differently. Retry `424` and `502` failures with
+bounded exponential backoff. Stop after the configured attempt limit. Surface
+the final failure with its original status and error code.
+
+Never retry every `4xx` response. A `401` needs a valid credential. A `402`
+needs an explicit billing choice. A `404` may require a different tweet or
+profile ID. A `429` must wait for `Retry-After`.
+
+Preserve request context without logging secrets. Record the method, route,
+status, retry count, and returned code. Remove API keys, bearer tokens, webhook
+secrets, cookies, and payment credentials.
+
+## Page Through Tweets, Followers & Replies
+
+API pagination uses opaque cursors. Store each cursor exactly as returned.
+Never decode, trim, or construct it. Use stable tweet and profile IDs to remove
+duplicates across pages.
+
+Tweet, profile, follower, reply, timeline, community, and list reads use
+`cursor`. Send the returned `next_cursor` on the next REST API call. Continue
+while `has_next_page` is true.
+
+Events, draws, extractions, and Radar use `after`. Drafts use `afterCursor`.
+Send the matching `nextCursor` value without changing its case. Each family has
+a different parameter contract.
+
+Continue through an empty page when the response still reports more results.
+Stop when the next cursor is missing, unchanged, or already seen. Report that
+edge case instead of looping forever.
+
+Store partial tweets, followers, following profiles, replies, or events before
+requesting the next page. Resume from the last confirmed cursor after a
+temporary failure.
+
+## Recover From Twitter API Rate Limits
+
+Treat Twitter API rate limits as method-specific Xquik buckets. Reads share one
+window. Writes share another. Deletes use their own window. One busy workflow
+should not force unrelated methods into the same retry queue.
+
+Always read `Retry-After` from a `429` response. Wait for that duration before
+sending another HTTP request. Add bounded jitter when many workers share one
+credential. This prevents synchronized retry spikes.
+
+Limit concurrency before the error occurs. Batch tweet or profile IDs on
+endpoints that support batches. Use exports for large follower, reply, or
+timeline jobs. Cache stable profile fields when freshness permits.
+
+Track `rate_limit_exceeded` by method and route. Measure repeated throttles,
+retry delay, and final success. Reduce request frequency when the same route
+reaches its bucket repeatedly.
+
+Never treat a `429` as an authentication or billing failure. Keep its recovery
+path separate from `401` and `402` handling.
+
+## Process Webhook Events Safely
+
+Accept webhook events only on HTTPS. Save the one-time secret during webhook
+creation. Verify the HMAC signature before trusting a tweet or profile event.
+Reject a missing or invalid signature.
+
+Read the event type before processing the payload. Tweet events include new
+tweets, replies, quotes, reposts, media, links, polls, mentions, hashtags, and
+long-form posts. Profile events cover names, usernames, bios, locations, URLs,
+avatars, banners, verification, protection, pinned tweets, and availability.
+
+Store the event ID before starting side effects. Use it to prevent duplicate
+notifications or repeated downstream writes. Keep handlers idempotent across
+delivery retries.
+
+Return a successful status only after accepting the event. Keep expensive work
+outside the request path. Test signatures, failure responses, and retries before
+enabling real-time monitor traffic.
+
+Use [webhook verification](/webhooks/verification) for signature code. Use
+[webhook testing](/guides/webhook-testing) for delivery and retry checks.
+
+## Protect Durable API Writes
+
+Send a unique `Idempotency-Key` with each new write intent. Keep that key with
+the submitted action. Do not reuse it for a different tweet, like, follow,
+message, or profile update.
+
+Store the returned action ID and `statusUrl`. Poll while `terminal` is false.
+Stop when the action succeeds, fails, or requires user action. Respect the
+documented polling interval and rate limits.
+
+Read `safeToRetry` before creating another action. Retry only when it is true.
+Use a new idempotency key for that retry. Preserve the earlier action for
+diagnosis.
+
+Treat connected-account failures as account state. Reauthenticate the X account
+when the response requires it. Do not convert an account restriction into an
+automatic retry loop.
+
+Verify the final action result before updating local state. A submitted request
+does not prove that X accepted the write.
+
+## Test Production Edge Cases
+
+Test success and failure paths before launch. Use a valid API key, then an
+invalid key. Send one malformed request body. Request one missing tweet or
+profile. Exhaust a safe test rate-limit window. Confirm each response maps to
+the expected handler.
+
+Test API pagination with multiple pages, an empty intermediate page, and a
+repeated cursor. Confirm the collector stops safely. Verify deduplication with
+repeated tweet or profile IDs.
+
+Test webhook events with a valid signature, invalid signature, duplicate event,
+and handler failure. Confirm only verified events reach downstream systems.
+
+Test durable writes through submission, polling, success, and failure. Confirm
+the client never repeats an unsafe action. Review logs to ensure no credential
+or webhook secret appears.
+
+Keep these checks in automated integration tests. Run them after authentication,
+pagination, response, webhook, or write-contract changes.
+
+## Conventions
+
+<AccordionGroup>
+  <Accordion title="IDs are strings">
+    Treat every ID as an opaque string. IDs may use digits, UUIDs, or prefixes. Never parse them as numbers:
+    ```json
+    { "id": "123456789" }
+    ```
+  </Accordion>
+  <Accordion title="Default timestamps are ISO 8601 UTC">
+    Default REST responses use ISO 8601 UTC strings. The normalized contract converts date-time fields to Unix seconds and renames `createdAt` to `created`:
+    ```json
+    { "created": 1771929000 }
+    ```
+  </Accordion>
+  <Accordion title="Default errors use string codes">
+    Default REST errors return an `error` field with a machine-readable string code:
+    ```json
+    { "error": "error_code" }
+    ```
+
+    **Common errors:**
+
+    <CardGroup cols={2}>
+      <Card title="400 validation" icon="circle-alert">
+        `invalid_input` means the request body, query, or path failed
+        validation. Fix the schema, field types, or required parameters before
+        retrying.
+      </Card>
+      <Card title="401 authentication" icon="key-round">
+        `unauthenticated` means the API key or bearer token is missing or
+        invalid. Send `x-api-key` or a valid `Authorization` bearer token.
+      </Card>
+      <Card title="402 billing state" icon="credit-card">
+        `no_subscription`, `no_credits`, and `insufficient_credits` mean the
+        request lacks usable billing access or enough credits. Existing
+        available credits work without an active plan.
+      </Card>
+      <Card title="404 missing resource" icon="search">
+        `not_found` means the requested resource does not exist or is not
+        available to the authenticated account.
+      </Card>
+      <Card title="429 rate limit" icon="timer">
+        `rate_limit_exceeded` includes `Retry-After` and JSON `retryAfter`.
+        Wait for the window and retry with backoff.
+      </Card>
+      <Card title="502 read service retry" icon="rotate-ccw">
+        `x_api_unavailable` means the read service is temporarily unavailable.
+        Retry with exponential backoff.
+      </Card>
+    </CardGroup>
+
+    See [Error Handling](/guides/error-handling) for the full error code list and handling strategies.
+  </Accordion>
+  <Accordion title="Cursor-based pagination">
+    <Tabs>
+      <Tab title="Platform endpoints">
+        Events, draws, extractions, and drafts use cursor-based pagination. When more results exist, the response includes `hasMore: true` and a `nextCursor` value:
+        ```json
+        {
+          "events": [],
+          "hasMore": true,
+          "nextCursor": "MjAyNi0wMi0yNFQxMDozMDowMC4wMDBa..."
+        }
+        ```
+        Pass `nextCursor` as `after` for events, draws, and extractions. Pass it as `afterCursor` for drafts:
+        ```bash
+        curl "https://xquik.com/api/v1/events?after=MjAyNi0wMi0yNFQxMDozMDowMC4wMDBa..." \
+         -H "x-api-key: xq_your_api_key_here"
+        ```
+      </Tab>
+      <Tab title="X endpoints">
+        Tweet, profile, follower, reply, timeline, community, and list endpoints
+        under `/x/*` use a different pagination shape. When more results exist,
+        the response includes `has_next_page: true` and a `next_cursor` value:
+        ```json
+        {
+          "tweets": [],
+          "has_next_page": true,
+          "next_cursor": "DAABCgABGRnYttk__..."
+        }
+        ```
+        Pass `next_cursor` as the `cursor` query parameter to fetch the next page:
+        ```bash
+        curl "https://xquik.com/api/v1/x/tweets/search?q=xquik&cursor=DAABCgABGRnYttk__..." \
+         -H "x-api-key: xq_your_api_key_here"
+        ```
+      </Tab>
+    </Tabs>
+    Cursors are opaque strings. Do not decode or construct them. Continue through empty pages while the response says more data exists. Stop and surface a pagination error when the next cursor is missing, unchanged, or already seen. Monitors, webhooks, and API keys return up to 200 items without pagination.
+  </Accordion>
+  <Accordion title="Opt-in response contract">
+    v1 keeps the default response contract unchanged for existing clients. Send `xquik-api-contract: 2026-04-29` to opt in to the normalized v1 response contract.
+
+    ```bash
+    curl "https://xquik.com/api/v1/events" \
+     -H "x-api-key: xq_your_api_key_here" \
+     -H "xquik-api-contract: 2026-04-29"
+    ```
+
+    Opt-in responses use snake_case field names, Unix timestamps in seconds, structured error objects, `has_more` and `next_cursor` pagination fields, an `object` field on recognized resources, and prefixed IDs where available. Date-only strings stay unchanged. A default `createdAt` field becomes `created`.
+
+    ```json
+    {
+      "events": [],
+      "has_more": true,
+      "next_cursor": "MjAyNi0wMi0yNFQxMDozMDowMC4wMDBa..."
+    }
+    ```
+
+    Legacy dependency failures that return `502` by default return `424 Failed Dependency` in the opt-in contract:
+
+    ```json
+    {
+      "error": {
+        "type": "dependency_error",
+        "code": "x_api_unavailable",
+        "message": "Read service temporarily unavailable. Retry shortly."
+      }
+    }
+    ```
+
+    Pass `next_cursor` as `cursor` on tweet, profile, follower, reply, timeline,
+    community, and list endpoints. Use `after` for events, draws, extractions,
+    and Radar. Use `afterCursor` for drafts.
+  </Accordion>
+</AccordionGroup>
+
+## Event Types
+
+### Monitor Events
+
+Monitors, webhooks, and events share these event types:
+
+- Tweet events: `tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`,
+  `tweet.media`, `tweet.link`, `tweet.poll`, `tweet.mention`, `tweet.hashtag`,
+  and `tweet.longform`.
+- Profile identity events: `profile.name.changed`,
+  `profile.username.changed`, `profile.bio.changed`,
+  `profile.location.changed`, and `profile.url.changed`.
+- Profile media events: `profile.avatar.changed` and
+  `profile.banner.changed`.
+- Profile status events: `profile.verified.changed`,
+  `profile.protected.changed`, `profile.pinned_tweet.changed`, and
+  `profile.unavailable.changed`.
+
+Keyword monitors accept only the 10 `tweet.*` types above.
+
+<CardGroup cols={2}>
+  <Card title="tweet.new" icon="bell">
+    Original tweet posted by the monitored account or matching query. Used when
+    no reply, quote, or retweet signal is present.
+  </Card>
+  <Card title="tweet.quote" icon="quote">
+    Quote tweet posted by the monitored account or matching query. Classified
+    when quote metadata is present.
+  </Card>
+  <Card title="tweet.reply" icon="message-circle">
+    Reply posted by the monitored account or matching query. Classified from
+    reply flags or reply target IDs.
+  </Card>
+  <Card title="tweet.retweet" icon="repeat-2">
+    Retweet posted by the monitored account or matching query. Classified from
+    retweet flags or `RT @` text.
+  </Card>
+</CardGroup>

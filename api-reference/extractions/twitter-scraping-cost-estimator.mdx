@@ -152,80 +152,84 @@ The request body accepts the same fields as [Create Extraction](/api-reference/e
 
 ## Response
 
-<Tabs>
-  <Tab title="200 OK">
-    <ResponseField name="allowed" type="boolean">Whether the extraction can proceed given the current credit balance.</ResponseField>
-    <ResponseField name="source" type="string">Data source used for the estimate. One of: `followers`, `following`, `paginationCap`, `posts`, `quoteCount`, `replyCount`, `resultsLimit`, `retweetCount`, `unknown`.</ResponseField>
-    <ResponseField name="estimatedResults" type="number">Estimated number of results the extraction will return.</ResponseField>
-    <ResponseField name="creditsRequired" type="string">Credits this extraction will consume (stringified integer).</ResponseField>
-    <ResponseField name="creditsAvailable" type="string">Credits currently available in your balance (stringified integer).</ResponseField>
-    <ResponseField name="resolvedXUserId" type="string">Resolved X user ID when `targetUsername` was provided. Omitted for non-user-based tools.</ResponseField>
+### 200 OK
 
-    ```json
-    {
-      "allowed": true,
-      "creditsRequired": "500",
-      "creditsAvailable": "50000",
-      "estimatedResults": 250,
-      "source": "replyCount",
-      "resolvedXUserId": "123456"
-    }
-    ```
+<ResponseField name="allowed" type="boolean">Whether the extraction can proceed given the current credit balance.</ResponseField>
+<ResponseField name="source" type="string">Data source used for the estimate. One of: `followers`, `following`, `paginationCap`, `posts`, `quoteCount`, `replyCount`, `resultsLimit`, `retweetCount`, `unknown`.</ResponseField>
+<ResponseField name="estimatedResults" type="number">Estimated number of results the extraction will return.</ResponseField>
+<ResponseField name="creditsRequired" type="string">Credits this extraction will consume (stringified integer).</ResponseField>
+<ResponseField name="creditsAvailable" type="string">Credits currently available in your balance (stringified integer).</ResponseField>
+<ResponseField name="resolvedXUserId" type="string">Resolved X user ID when `targetUsername` was provided. Omitted for non-user-based tools.</ResponseField>
 
-    When `allowed` is `false`, credits required exceed the available balance:
+```json
+{
+  "allowed": true,
+  "creditsRequired": "500",
+  "creditsAvailable": "50000",
+  "estimatedResults": 250,
+  "source": "replyCount",
+  "resolvedXUserId": "123456"
+}
+```
 
-    ```json
-    {
-      "allowed": false,
-      "creditsRequired": "250000",
-      "creditsAvailable": "18000",
-      "estimatedResults": 250000,
-      "source": "followers"
-    }
-    ```
-  </Tab>
-  <Tab title="400 Invalid input">
-    ```json
-    { "error": "invalid_input" }
-    ```
-    Request body is missing or malformed. Ensure `toolType` and the corresponding target field are present.
-  </Tab>
-  <Tab title="400 Invalid tool type">
-    ```json
-    { "error": "invalid_tool_type" }
-    ```
-    The `toolType` value is not one of the 23 supported tools.
-  </Tab>
-  <Tab title="401 Unauthenticated">
-    ```json
-    { "error": "unauthenticated" }
-    ```
-    Missing or invalid API key.
-  </Tab>
-  <Tab title="402 Insufficient credits">
-    ```json
-    { "error": "insufficient_credits" }
-    ```
-    The available balance cannot cover the estimate. Possible error values include `no_subscription`, `subscription_inactive`, `no_credits`, and `insufficient_credits`.
-  </Tab>
-  <Tab title="404 Not Found">
-    ```json
-    { "error": "tweet_not_found", "message": "Tweet not found" }
-    ```
-    The target tweet does not exist, was deleted, or the ID is invalid.
+When `allowed` is `false`, credits required exceed the available balance:
 
-    ```json
-    { "error": "user_not_found", "message": "X user not found" }
-    ```
-    The target user does not exist or is suspended.
-  </Tab>
-  <Tab title="429 Rate Limited">
-    ```json
-    { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
-    ```
-    Wait for the `Retry-After` value before requesting another estimate.
-  </Tab>
-</Tabs>
+```json
+{
+  "allowed": false,
+  "creditsRequired": "250000",
+  "creditsAvailable": "18000",
+  "estimatedResults": 250000,
+  "source": "followers"
+}
+```
+
+### 400 Invalid input
+
+```json
+{ "error": "invalid_input" }
+```
+Request body is missing or malformed. Ensure `toolType` and the corresponding target field are present.
+
+### 400 Invalid tool type
+
+```json
+{ "error": "invalid_tool_type" }
+```
+The `toolType` value is not one of the 23 supported tools.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated" }
+```
+Missing or invalid API key.
+
+### 402 Insufficient credits
+
+```json
+{ "error": "insufficient_credits" }
+```
+The available balance cannot cover the estimate. Possible error values include `no_subscription`, `subscription_inactive`, `no_credits`, and `insufficient_credits`.
+
+### 404 Not Found
+
+```json
+{ "error": "tweet_not_found", "message": "Tweet not found" }
+```
+The target tweet does not exist, was deleted, or the ID is invalid.
+
+```json
+{ "error": "user_not_found", "message": "X user not found" }
+```
+The target user does not exist or is suspended.
+
+### 429 Rate Limited
+
+```json
+{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
+```
+Wait for the `Retry-After` value before requesting another estimate.
 
 ## Decision handoff
 

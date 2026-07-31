@@ -50,7 +50,7 @@ const REQUIRED_SUBSCRIBABLE_EVENT_DOCS = [
   'api-reference/events/list.mdx',
   'api-reference/monitors/create.mdx',
   'api-reference/monitors/update.mdx',
-  'api-reference/overview.mdx',
+  'guides/x-api-integration-checklist.mdx',
   'api-reference/webhooks/create.mdx',
   'api-reference/webhooks/update.mdx',
   'guides/x-api-typescript-types.mdx',

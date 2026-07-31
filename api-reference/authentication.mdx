@@ -1,15 +1,20 @@
 ---
-title: "Xquik API Key Authentication"
+title: "X API Key Authentication for Tweets & Webhooks"
 sidebarTitle: "Authentication"
-description: "Authenticate tweet, follower, monitor, webhook, and write requests with account keys, guest paid-read keys, OAuth 2.1, sessions, or MPP."
-keywords: ["X API key", "Twitter API key", "API key authentication", "Xquik API key", "guest wallet", "paid_reads", "OAuth 2.1", "MPP", "x-api-key", "session cookie"]
+description: "Authenticate tweets, follower exports, monitors, webhooks, and X writes with Xquik API keys, guest keys, OAuth 2.1, sessions, or MPP."
+keywords: ["X API key", "Twitter API key", "x-api-key", "REST API authentication", "REST API key", "X API token", "Xquik API key", "API key authentication", "OAuth 2.1", "guest API key"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik supports account API keys, accountless guest keys, OAuth 2.1, and anonymous MPP payments. Choose the narrowest method that covers the route.
+Authenticate tweet, follower, monitor, webhook, and write requests with an
+Xquik API key. This REST API authentication guide also covers guest keys,
+OAuth 2.1, sessions, and MPP.
+
+Xquik keys authenticate Xquik endpoints only. They are not an official Twitter
+API key or X API token. Choose the narrowest method that covers the route.
 
 ## API Key Format
 
@@ -21,11 +26,11 @@ xq_your_api_key_here
 
 - **Prefix:** `xq_`
 - **Body:** 64 hexadecimal characters
-- **Storage:** Keep the raw value in a secret manager. Never log or commit it.
+- **Storage:** Keep each REST API key in a secret manager. Never log or commit it.
 
 ## Using your API key
 
-Pass an account key in the `x-api-key` header:
+Send account API requests with the `x-api-key` request header:
 
 <CodeGroup>
 
@@ -75,24 +80,26 @@ func main() {
 
 </CodeGroup>
 
-Xquik API keys can also use Bearer authentication:
+For Bearer tokens, send the same key in the authorization header:
 
 ```text
 Authorization: Bearer xq_your_api_key_here
 ```
 
-Use Bearer authentication for guest keys. Values beginning with `xq_` remain Xquik API keys. OAuth Bearer tokens use the same header without the `xq_` prefix.
+Use Bearer authentication for guest keys. An `xq_` value remains an Xquik API
+key. OAuth 2.1 access tokens omit the `xq_` prefix.
 
 ## Auth methods by endpoint
 
-Most endpoints support **dual authentication**: either an API key or a session cookie from the dashboard.
+This access control matrix maps each API endpoint to its accepted method. Most
+routes accept an API key or dashboard session cookie.
 
 <CardGroup cols={2}>
   <Card title="API key only" icon="key-round">
     `GET /account` accepts `x-api-key`. Use it to check plan, credit balance, and monitor billing from server-side integrations.
   </Card>
   <Card title="Session cookie only" icon="shield">
-    `POST /api-keys`, `GET /api-keys`, and `DELETE /api-keys/{id}` require a dashboard session cookie.
+    `POST /api-keys`, `GET /api-keys`, and `DELETE /api-keys/{id}` require a dashboard session cookie. The session identifies the authenticated user.
   </Card>
   <Card title="Account and billing" icon="user-cog">
     `PATCH /account`, `PUT /account/x-identity`, and `POST /subscribe` accept either `x-api-key` or a dashboard session cookie.
@@ -123,7 +130,10 @@ Most endpoints support **dual authentication**: either an API key or a session c
 
 ## Accountless guest keys
 
-Create a guest key with `POST /api/v1/guest-wallets` after the user confirms a $10-$250 USD amount. The response contains a one-use Stripe-hosted Payment Link, the guest key, and a status URL. Creating the Payment Link does not charge the user.
+Create a guest key with `POST /api/v1/guest-wallets` after the user confirms a
+$10-$250 USD amount. The response includes a one-use Stripe-hosted Payment
+Link, the guest key, and a status URL. Creating the Payment Link does not
+charge the user.
 
 The guest key remains inactive for paid reads until a verified Stripe webhook activates the wallet. It can authenticate `GET /api/v1/guest-wallets/status` while pending. Once active, it can call exactly the [33 eligible paid-read routes](/guides/guest-wallets#eligible-paid-read-routes).
 
@@ -135,7 +145,10 @@ Guest credential routes are direct REST only. The API MCP server never exposes w
 
 ## Machine Payments Protocol
 
-Seven fixed-price read operations also accept direct [MPP](/mpp/machine-payments-protocol) payments instead of API key authentication. When you call one without an API key or session cookie, the server returns a 402 payment challenge.
+Seven fixed-price reads also accept direct
+[MPP](/mpp/machine-payments-protocol) payments. This replaces API key
+authentication for those reads. Without credentials, the API server returns a
+402 payment challenge.
 
 ### Challenge header
 
@@ -169,7 +182,10 @@ Settled responses include a receipt:
 Payment-Receipt: <base64url-encoded JSON>
 ```
 
-The receipt confirms settlement and includes a reference ID and timestamp. Every response after accepted payment includes this header, including non-2xx responses. Check the HTTP status and response body to determine application success.
+The receipt confirms settlement with a reference ID and timestamp. Every
+response after accepted payment includes this header, including non-2xx
+responses. Check the HTTP status and response body. Confirm application
+success before processing the result.
 
 ### Eligible endpoints
 
@@ -215,7 +231,12 @@ Invalid or missing API key returns:
 
 **Status:** `401 Unauthorized`
 
+The API blocks unauthorized access. Replace the credential before retrying API
+access.
+
 ## Security best practices
+
+Apply these API security controls to every environment.
 
 <AccordionGroup>
   <Accordion title="Store keys in environment variables">

@@ -1,15 +1,49 @@
 ---
-title: "Twitter API Quickstart for Tweet Search & Webhooks"
+title: "Twitter API Integration for Tweet Monitors & Webhooks"
 sidebarTitle: Quickstart
-description: Create an X API key, make your first REST request, monitor tweets every 1 second, and send signed webhooks in 5 minutes.
-keywords: ["X API quickstart", "Twitter API", "API key", "REST API", "monitor tweets", "signed webhooks", "MCP", "SDKs"]
+description: "Build a Twitter API integration with Xquik. Create an API key, authenticate a REST request, monitor tweets every 1 second, and send signed webhooks."
+keywords: ["Twitter API integration", "REST API integration", "Twitter webhook", "Twitter API webhook", "REST API key authentication example", "X API quickstart", "monitor tweets", "signed webhooks"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use this account quickstart to create a full API key, call `GET /account`, monitor tweets every 1 second with `POST /monitors`, and send signed webhook events with `POST /webhooks`. For accountless reads, use a [guest wallet](/guides/guest-wallets) across 33 routes or [direct MPP](/mpp/quickstart) across 7 operations.
+Use this X API quickstart to build a Twitter API integration with Xquik. First,
+follow the REST API key authentication example. Then call `GET /account`,
+monitor tweets every 1 second, and register a Twitter webhook. This REST API
+integration uses `POST /monitors` and `POST /webhooks`.
+
+For accountless reads, use a [guest wallet](/guides/guest-wallets) across 33
+routes. You can also use [direct MPP](/mpp/quickstart) across 7 operations.
+
+## How the Integration Works
+
+Your first API request checks credentials, credits, and monitor billing. Send
+the `x-api-key` request header for API key authentication. Each
+write sends `Content-Type: application/json` with a JSON request body.
+
+The monitor watches one X account for selected tweet events. The Twitter API
+webhook step stores your HTTPS API endpoint and chosen webhook events. Signed
+webhooks then deliver new tweets and replies to that endpoint. Verify every
+delivery with the saved secret before processing its payload.
+
+This flow creates one complete REST integration. The API call confirms access.
+The monitor detects tweets. The webhook forwards each matching event. Keep the
+returned monitor and webhook IDs for later updates, tests, or deletion.
+
+## Before You Start
+
+- Create an Xquik account with enough credits for the monitor.
+- Prepare a secret manager for the API key and webhook secret.
+- Expose an HTTPS endpoint that can receive webhook events.
+- Choose the X username and exact tweet event types to monitor.
+- Use an HTTP client that can send JSON requests and headers.
+
+Keep the 2 credentials separate. The API key grants Xquik API access. The
+webhook secret verifies deliveries sent to your server. Never send the Xquik
+key to the webhook endpoint. Treat the webhook secret as a separate secret
+key.
 
 <CardGroup cols={2}>
   <Card title="First API Call" icon="terminal">
@@ -325,18 +359,40 @@ Use this account quickstart to create a full API key, call `GET /account`, monit
     }
     ```
 
-    Save the `secret` from the response in a secret manager. It is only returned once, and you need it to [verify webhook signatures](/webhooks/verification). Do not print it in shared logs.
+    Save the `secret` from the response in a secret manager. Xquik returns it once. Use it to [verify webhook signatures](/webhooks/verification). Do not print it in shared logs.
   </Step>
 </Steps>
+
+## Verify Each Result
+
+Confirm every step before continuing. The account API endpoint should return a
+successful status code. Its response shows the plan, credit balance, and
+monitor billing values. A `401` means the API key is missing, invalid, or
+revoked.
+
+Next, inspect the monitor response. Confirm its `id`, `username`, `eventTypes`,
+and `isActive` values. The username must match the account you intend to watch.
+The event types must match the tweets or replies you need.
+
+Finally, inspect the webhook response. Confirm its `id`, `url`, and
+`eventTypes`. Store the returned `secret` immediately. Xquik returns that
+secret only during creation. Use the test endpoint before relying on live
+webhook events.
+
+Verify the HMAC signature before parsing a delivery. Return `2xx` after
+accepting the event. Inspect failed HTTP requests using their status and
+response body. Never log secret-bearing HTTP headers.
+Use the troubleshooting steps below for authentication, payment, webhook, or
+rate-limit failures.
 
 ## Next steps
 
 <CardGroup cols={3}>
   <Card title="API Reference" icon="book" href="/api-reference/overview">
-    Full endpoint documentation.
+    Browse tweet, profile, follower, timeline, monitor, and webhook endpoints.
   </Card>
   <Card title="Export Tweets & Followers" icon="pickaxe" href="/api-reference/extractions/create">
-    Pull followers, replies, and more from X.
+    Export tweets, replies, followers, following, likes, lists, and media.
   </Card>
   <Card title="Run a Draw" icon="trophy" href="/api-reference/draws/create">
     Execute a giveaway draw on a tweet.
@@ -351,7 +407,7 @@ Use this account quickstart to create a full API key, call `GET /account`, monit
     Handle errors, rate limits, and retries.
   </Card>
   <Card title="Billing & Usage" icon="credit-card" href="/guides/billing">
-    Track usage, manage your subscription, and view quotas.
+    Track credits, monitor costs, subscriptions, and rate-limit quotas.
   </Card>
 </CardGroup>
 
@@ -365,7 +421,7 @@ Use this account quickstart to create a full API key, call `GET /account`, monit
     Verify the header name is `x-api-key` (lowercase). Check that the key starts with `xq_` and hasn't been revoked. Regenerate from the [API Keys dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
   </Accordion>
   <Accordion title="Getting 401 or 402">
-    Neither status creates checkout. Anonymous non-MPP paid reads return `401` with a Bearer challenge and guest wallet action. The 7 direct MPP reads return `402` with a Payment challenge and the same action. Account and guest credit failures return `402` with credential-specific choices. Ask the user to choose and confirm before creating checkout. See [Billing](/guides/billing).
+    Neither status creates checkout. Anonymous non-MPP paid reads return `401` with a Bearer challenge and guest wallet action. The 7 direct MPP reads return `402` with a Payment challenge and the same action. A `402` response lists choices for account or guest credit failures. Ask the user to choose and confirm before creating checkout. See [Billing](/guides/billing).
   </Accordion>
   <Accordion title="Webhook not receiving events">
     Verify the URL uses HTTPS. Check that the webhook is active via [List Webhooks](/api-reference/webhooks/list). Test delivery with the [Test Webhook](/api-reference/webhooks/test) endpoint.

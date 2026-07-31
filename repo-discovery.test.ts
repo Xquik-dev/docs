@@ -1679,7 +1679,8 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
     file: 'api-reference/overview.mdx',
     required: [
       'Read calls allow 300 per 1s. Writes allow 120 per 60s. Deletes allow 60 per 60s.',
-      '`GET`, `HEAD`, and `OPTIONS` share a 300 per 1s user bucket.',
+      'The read bucket covers `GET`, `HEAD`, and `OPTIONS`.',
+      'It allows 300 calls each second.',
     ],
     forbidden: ['Read calls are 60 per 1s', 'share a 60 per 1s user bucket'],
   },
@@ -2426,7 +2427,7 @@ const DIRECT_MPP_REFERENCE_PAGES = new Set([
 const REQUIRED_PAID_READ_REFERENCE_SNIPPETS = [
   '<ParamField header="Authorization" type="string">',
   '`paid_reads`',
-  '<Tab title="402 Payment required">',
+  '### 402 Payment required',
   'guest wallet',
   'checkout',
 ] as const;
@@ -2539,8 +2540,8 @@ const FORBIDDEN_AUTHENTICATION_ACCOUNT_SNIPPETS = [
   'monitor quota',
 ] as const;
 
-const REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS = [
-  '## Integration readiness checklist',
+const REQUIRED_X_API_INTEGRATION_CHECKLIST_SNIPPETS = [
+  '## Integration Readiness Checklist',
   '<Card title="Authentication" icon="key">',
   '`x-api-key`',
   '<Card title="Response contract" icon="file-json">',
@@ -3701,7 +3702,7 @@ const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   '`sinceTime` and `untilTime` are Unix timestamps in seconds',
   'Direct replies calls use the default paid page size',
   'Tweet author profile. Omitted if unavailable.',
-  '<Expandable title="Author object fields">',
+  '**Author object fields:**',
   '<ResponseField name="id" type="string">Author user ID.',
   '<ResponseField name="username" type="string">Author handle without `@`.',
   '<ResponseField name="name" type="string">Author display name.',
@@ -3790,7 +3791,7 @@ const REQUIRED_TWEET_QUOTES_API_HANDOFF_SNIPPETS = [
   '[`POST /webhooks`](/api-reference/webhooks/create)',
   '[`GET /events`](/api-reference/events/list)',
   'Tweet author profile. Omitted if unavailable.',
-  '<Expandable title="Author object fields">',
+  '**Author object fields:**',
   '<ResponseField name="id" type="string">Author user ID.',
   '<ResponseField name="username" type="string">Author handle without `@`.',
   '<ResponseField name="name" type="string">Author display name.',
@@ -5827,7 +5828,7 @@ const REQUIRED_USER_LIKES_API_HANDOFF_SNIPPETS = [
   '"media_urls": [',
   'print(json.dumps(liked_row, separators=(",", ":")))',
   'Tweet author profile. Omitted if unavailable.',
-  '<Expandable title="Author object fields">',
+  '**Author object fields:**',
   '<ResponseField name="id" type="string">Author user ID.',
   '<ResponseField name="username" type="string">Author handle without `@`.',
   '<ResponseField name="name" type="string">Author display name.',
@@ -5890,7 +5891,7 @@ const REQUIRED_USER_MEDIA_API_HANDOFF_SNIPPETS = [
   '"media_types": [item["type"] for item in media_items if item.get("type")]',
   'print(json.dumps(media_row, separators=(",", ":")))',
   'Tweet author profile. Omitted if unavailable.',
-  '<Expandable title="Author object fields">',
+  '**Author object fields:**',
   '<ResponseField name="id" type="string">Author user ID.',
   '<ResponseField name="username" type="string">Author handle without `@`.',
   '<ResponseField name="name" type="string">Author display name.',
@@ -12481,24 +12482,27 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
   });
 
-  it('keeps the API overview integration checklist concrete', (): void => {
+  it('keeps the X API integration checklist concrete', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/overview.mdx', 'utf8');
+    const source = readFileSync(
+      'guides/x-api-integration-checklist.mdx',
+      'utf8',
+    );
 
     expect(
       [
         ...collectSnippetFindings(
           source,
-          'API overview',
-          REQUIRED_API_OVERVIEW_CHECKLIST_SNIPPETS,
+          'X API integration checklist',
+          REQUIRED_X_API_INTEGRATION_CHECKLIST_SNIPPETS,
         ),
         ...FORBIDDEN_API_OVERVIEW_SNIPPETS.flatMap(
           (snippet): readonly DiscoveryFinding[] =>
             source.includes(snippet)
               ? [
                   {
-                    issue: `API overview contains stale read-service wording "${snippet}".`,
+                    issue: `X API integration checklist contains stale read-service wording "${snippet}".`,
                   },
                 ]
               : [],

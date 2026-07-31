@@ -188,81 +188,86 @@ If you never saved the secret key, or X rejects the current one, reset the authe
 
 ## Response
 
-<Tabs>
-  <Tab title="200 OK">
-    <ResponseField name="id" type="string">Account ID.</ResponseField>
-    <ResponseField name="xUsername" type="string">X username.</ResponseField>
-    <ResponseField name="xUserId" type="string">X user ID.</ResponseField>
-    <ResponseField name="status" type="string">Account status (e.g. `active`).</ResponseField>
-    <ResponseField name="health" type="string">Derived login/cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`. See [Account health](/api-reference/x-accounts/list#account-health) for meanings.</ResponseField>
-    <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
-    ```json
-    {
-      "id": "3",
-      "xUsername": "elonmusk",
-      "xUserId": "44196397",
-      "status": "active",
-      "health": "healthy",
-      "createdAt": "2026-02-20T08:15:00.000Z"
-    }
-    ```
-  </Tab>
-  <Tab title="400 Invalid Input">
-    ```json
-    { "error": "invalid_input", "message": "Missing required password field" }
-    ```
-    Missing `password` field or invalid format.
+### 200 OK
 
-    ```json
-    { "error": "invalid_id", "message": "Invalid account ID format" }
-    ```
-    The provided account ID is not a valid format.
-  </Tab>
-  <Tab title="401 Unauthenticated">
-    ```json
-    { "error": "unauthenticated", "message": "Missing or invalid API key" }
-    ```
-    Missing or invalid API key.
-  </Tab>
-  <Tab title="404 Not Found">
-    ```json
-    { "error": "account_not_found", "message": "X account not found." }
-    ```
-    No account exists with this ID, or it belongs to a different Xquik account.
-  </Tab>
-  <Tab title="429 Login Cooldown">
-    ```json
-    { "error": "login_cooldown", "message": "Login is temporarily paused", "reason": "automated", "retryAfterMs": 3600000 }
-    ```
-    A prior login attempt triggered a cooldown (for example, X flagged the session). Wait for `retryAfterMs` before retrying. The response includes a `Retry-After` header in seconds.
-  </Tab>
-  <Tab title="429 Rate Limited">
-    ```json
-    { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
-    ```
-    Wait for the `Retry-After` value before starting another re-authentication request.
-  </Tab>
-  <Tab title="422 Login Failed">
-    ```json
-    { "error": "login_failed", "message": "Login failed. Check credentials and try again." }
-    ```
-    X rejected the submitted password or TOTP secret. Retry with the current password and the saved Authenticator App secret key, not a 6-digit code.
+<ResponseField name="id" type="string">Account ID.</ResponseField>
+<ResponseField name="xUsername" type="string">X username.</ResponseField>
+<ResponseField name="xUserId" type="string">X user ID.</ResponseField>
+<ResponseField name="status" type="string">Account status (e.g. `active`).</ResponseField>
+<ResponseField name="health" type="string">Derived login/cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`. See [Account health](/api-reference/x-accounts/list#account-health) for meanings.</ResponseField>
+<ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
+```json
+{
+  "id": "3",
+  "xUsername": "elonmusk",
+  "xUserId": "44196397",
+  "status": "active",
+  "health": "healthy",
+  "createdAt": "2026-02-20T08:15:00.000Z"
+}
+```
 
-    ```json
-    {
-      "error": "passkey_required",
-      "message": "Passkey verification is not supported. Use Authenticator app 2FA for this X account, then try again."
-    }
-    ```
-    X asked for passkey verification. Switch the account to Authenticator App 2FA, save the long TOTP secret key, finish setup on X, then re-authenticate with `totp_secret`.
-  </Tab>
-  <Tab title="503 Service Unavailable">
-    ```json
-    { "error": "service_unavailable", "message": "Service temporarily unavailable. Try again." }
-    ```
-    The X re-authentication service is temporarily unavailable. Retry after a short delay.
-  </Tab>
-</Tabs>
+### 400 Invalid Input
+
+```json
+{ "error": "invalid_input", "message": "Missing required password field" }
+```
+Missing `password` field or invalid format.
+
+```json
+{ "error": "invalid_id", "message": "Invalid account ID format" }
+```
+The provided account ID is not a valid format.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated", "message": "Missing or invalid API key" }
+```
+Missing or invalid API key.
+
+### 404 Not Found
+
+```json
+{ "error": "account_not_found", "message": "X account not found." }
+```
+No account exists with this ID, or it belongs to a different Xquik account.
+
+### 429 Login Cooldown
+
+```json
+{ "error": "login_cooldown", "message": "Login is temporarily paused", "reason": "automated", "retryAfterMs": 3600000 }
+```
+A prior login attempt triggered a cooldown (for example, X flagged the session). Wait for `retryAfterMs` before retrying. The response includes a `Retry-After` header in seconds.
+
+### 429 Rate Limited
+
+```json
+{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
+```
+Wait for the `Retry-After` value before starting another re-authentication request.
+
+### 422 Login Failed
+
+```json
+{ "error": "login_failed", "message": "Login failed. Check credentials and try again." }
+```
+X rejected the submitted password or TOTP secret. Retry with the current password and the saved Authenticator App secret key, not a 6-digit code.
+
+```json
+{
+  "error": "passkey_required",
+  "message": "Passkey verification is not supported. Use Authenticator app 2FA for this X account, then try again."
+}
+```
+X asked for passkey verification. Switch the account to Authenticator App 2FA, save the long TOTP secret key, finish setup on X, then re-authenticate with `totp_secret`.
+
+### 503 Service Unavailable
+
+```json
+{ "error": "service_unavailable", "message": "Service temporarily unavailable. Try again." }
+```
+The X re-authentication service is temporarily unavailable. Retry after a short delay.
 
 <Note>
   **Related:** [Get X Account](/api-reference/x-accounts/get) to check account status, or [Connect X Account](/api-reference/x-accounts/connect) if you need to add a new account instead.

@@ -137,95 +137,102 @@ The dashboard follows the same flow: it keeps the pending row open, asks for the
 
 ## Response
 
-<Tabs>
-  <Tab title="201 Created">
-    <ResponseField name="id" type="string">Unique account ID.</ResponseField>
-    <ResponseField name="xUsername" type="string">Connected X username.</ResponseField>
-    <ResponseField name="xUserId" type="string">X user ID.</ResponseField>
-    <ResponseField name="status" type="string">Account connection status (e.g. `"active"`).</ResponseField>
-    <ResponseField name="health" type="string">Derived login/cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`. See [Account health](/api-reference/x-accounts/list#account-health) for meanings.</ResponseField>
-    <ResponseField name="createdAt" type="string">ISO 8601 timestamp of when the account was connected.</ResponseField>
-    ```json
-    {
-      "id": "3",
-      "xUsername": "elonmusk",
-      "xUserId": "44196397",
-      "status": "active",
-      "health": "healthy",
-      "createdAt": "2026-02-20T08:15:00.000Z"
-    }
-    ```
-  </Tab>
-  <Tab title="202 Email Code Required">
-    <ResponseField name="object" type="string">Always `x_account_connection_challenge`.</ResponseField>
-    <ResponseField name="id" type="string">Challenge ID to submit with the next email verification code.</ResponseField>
-    <ResponseField name="status" type="string">Always `requires_email_code`.</ResponseField>
-    <ResponseField name="expiresAt" type="string">ISO 8601 expiration time for the challenge.</ResponseField>
-    <ResponseField name="message" type="string">Human-readable next step.</ResponseField>
-    <ResponseField name="username" type="string">X username being connected.</ResponseField>
+### 201 Created
 
-    ```json
-    {
-      "object": "x_account_connection_challenge",
-      "id": "xch_8vGd8Y9JvH6dV0xA",
-      "status": "requires_email_code",
-      "expiresAt": "2026-05-08T12:10:00Z",
-      "message": "Enter the email verification code to continue.",
-      "username": "elonmusk"
-    }
-    ```
+<ResponseField name="id" type="string">Unique account ID.</ResponseField>
+<ResponseField name="xUsername" type="string">Connected X username.</ResponseField>
+<ResponseField name="xUserId" type="string">X user ID.</ResponseField>
+<ResponseField name="status" type="string">Account connection status (e.g. `"active"`).</ResponseField>
+<ResponseField name="health" type="string">Derived login/cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`. See [Account health](/api-reference/x-accounts/list#account-health) for meanings.</ResponseField>
+<ResponseField name="createdAt" type="string">ISO 8601 timestamp of when the account was connected.</ResponseField>
+```json
+{
+  "id": "3",
+  "xUsername": "elonmusk",
+  "xUserId": "44196397",
+  "status": "active",
+  "health": "healthy",
+  "createdAt": "2026-02-20T08:15:00.000Z"
+}
+```
 
-    The connection still needs a valid email code. Submit the new code to the same endpoint.
-  </Tab>
-  <Tab title="400 Invalid Input">
-    ```json
-    { "error": "invalid_input", "message": "Invalid input. Check the request body." }
-    ```
-    Missing `email_code`, invalid JSON, or a code outside the accepted length.
-  </Tab>
-  <Tab title="401 Unauthenticated">
-    ```json
-    { "error": "unauthenticated", "message": "Missing or invalid API key" }
-    ```
-    Missing or invalid API key.
-  </Tab>
-  <Tab title="404 Not Found">
-    ```json
-    { "error": "connection_challenge_not_found", "message": "Connection challenge not found." }
-    ```
-    The challenge ID does not exist or does not belong to the authenticated user.
-  </Tab>
-  <Tab title="409 Conflict">
-    ```json
-    { "error": "connection_challenge_inactive", "message": "Connection challenge is no longer active." }
-    ```
-    The challenge was already completed, failed, expired, or replaced.
-  </Tab>
-  <Tab title="410 Expired">
-    ```json
-    { "error": "connection_challenge_expired", "message": "Verification code expired. Start again." }
-    ```
-    Start a new account connection to receive a fresh challenge.
-  </Tab>
-  <Tab title="422 Login Failed">
-    ```json
-    { "error": "login_failed", "message": "Login failed. Check credentials and try again." }
-    ```
-    The code or account login state was rejected. Start a new connection if the account requires fresh credentials.
-  </Tab>
-  <Tab title="429 Rate Limit Exceeded">
-    ```json
-    { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
-    ```
-    Wait for the `Retry-After` header before retrying.
-  </Tab>
-  <Tab title="503 Service Unavailable">
-    ```json
-    { "error": "service_unavailable", "message": "Service temporarily unavailable. Try again later." }
-    ```
-    Retry after a short delay.
-  </Tab>
-</Tabs>
+### 202 Email Code Required
+
+<ResponseField name="object" type="string">Always `x_account_connection_challenge`.</ResponseField>
+<ResponseField name="id" type="string">Challenge ID to submit with the next email verification code.</ResponseField>
+<ResponseField name="status" type="string">Always `requires_email_code`.</ResponseField>
+<ResponseField name="expiresAt" type="string">ISO 8601 expiration time for the challenge.</ResponseField>
+<ResponseField name="message" type="string">Human-readable next step.</ResponseField>
+<ResponseField name="username" type="string">X username being connected.</ResponseField>
+
+```json
+{
+  "object": "x_account_connection_challenge",
+  "id": "xch_8vGd8Y9JvH6dV0xA",
+  "status": "requires_email_code",
+  "expiresAt": "2026-05-08T12:10:00Z",
+  "message": "Enter the email verification code to continue.",
+  "username": "elonmusk"
+}
+```
+
+The connection still needs a valid email code. Submit the new code to the same endpoint.
+
+### 400 Invalid Input
+
+```json
+{ "error": "invalid_input", "message": "Invalid input. Check the request body." }
+```
+Missing `email_code`, invalid JSON, or a code outside the accepted length.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated", "message": "Missing or invalid API key" }
+```
+Missing or invalid API key.
+
+### 404 Not Found
+
+```json
+{ "error": "connection_challenge_not_found", "message": "Connection challenge not found." }
+```
+The challenge ID does not exist or does not belong to the authenticated user.
+
+### 409 Conflict
+
+```json
+{ "error": "connection_challenge_inactive", "message": "Connection challenge is no longer active." }
+```
+The challenge was already completed, failed, expired, or replaced.
+
+### 410 Expired
+
+```json
+{ "error": "connection_challenge_expired", "message": "Verification code expired. Start again." }
+```
+Start a new account connection to receive a fresh challenge.
+
+### 422 Login Failed
+
+```json
+{ "error": "login_failed", "message": "Login failed. Check credentials and try again." }
+```
+The code or account login state was rejected. Start a new connection if the account requires fresh credentials.
+
+### 429 Rate Limit Exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
+```
+Wait for the `Retry-After` header before retrying.
+
+### 503 Service Unavailable
+
+```json
+{ "error": "service_unavailable", "message": "Service temporarily unavailable. Try again later." }
+```
+Retry after a short delay.
 
 <Note>
   **Related:** [Connect X Account](/api-reference/x-accounts/connect) starts the challenge, and [List X Accounts](/api-reference/x-accounts/list) verifies the account after connection.
