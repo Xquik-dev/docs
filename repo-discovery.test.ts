@@ -5067,8 +5067,8 @@ const FORBIDDEN_SEARCH_USERS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS = [
-  'title: "Get user mentions timeline"',
-  'Get user mentions timeline returns tweets that mention one X account.',
+  'title: "Twitter mentions timeline API & profile alerts"',
+  'Twitter mentions timeline API returns tweets that mention one X account.',
   'brand mentions, support inboxes, lead routing, and agent handoffs',
   '`GET /api/v1/x/users/{id}/mentions`',
   '# Username mentions timeline',
@@ -5967,7 +5967,7 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_RESPONSE_FORMATS_EXPORTS_SNIPPETS = [
-  'title: Response Formats & Exports',
+  'title: "Tweet, Follower & Reply API Export Formats"',
   'Choose JSON pages, CSV, JSON, XLSX, Markdown, PDF, or TXT handoffs',
   '## Choose the Output Shape',
   '<Card title="Live JSON Page" icon="radio">',
@@ -7871,7 +7871,7 @@ const FORBIDDEN_WORKFLOW_ENDPOINT_FINDER_TABLE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
-  'title: Campaign Verification Workflow',
+  'title: "Twitter Campaign Verification for Follows & Reposts"',
   'Verify X campaign participation with follow checks, retweeters, replies, quotes, giveaway draws, and exportable audit rows.',
   '## Pick the Proof Path',
   '<Card title="Follow Task" icon="user-check">',
@@ -7948,7 +7948,7 @@ const REQUIRED_TARGET_AUDIENCE_DISCOVERY_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS = [
-  'title: Brand Monitoring Workflow',
+  'title: "Twitter Brand Monitoring With Tweets & Webhooks"',
   'Monitor brand accounts, search queries, mentions, and campaign terms with 1-second X monitors, signed webhooks, stored events, and replay-safe rows.',
   '## Pick the Monitor Path',
   '<Card title="Account Monitor" icon="radio">',
@@ -7989,7 +7989,7 @@ const REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_NO_CODE_WORKFLOW_HANDOFF_SNIPPETS = [
-  'title: No-Code Workflow Handoff',
+  'title: "No-Code Twitter Automation With Webhooks & Exports"',
   'Connect Xquik monitor webhooks, extraction jobs, tweet search pages, and follower exports to Zapier, Make, Pipedream, n8n, Sheets, CRM, and queue workflows.',
   '## Pick the Handoff Lane',
   '<Card title="Monitor Event Webhooks" icon="radio">',
