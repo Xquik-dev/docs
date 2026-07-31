@@ -35,6 +35,7 @@ const CONCRETE_TERMS = [
 const REQUIRED_PROMPTS_BY_FILE = {
   'alternatives.mdx': [
     'What Is the Best API to Scrape Twitter Data in 2026?',
+    'What Is the Best Twitter Scraper API for Developers in 2026?',
     'Best Twitter API 2026',
     'Which Twitter API Alternative Is Easiest to Use?',
     'Twitter Data API Comparison',
@@ -46,7 +47,6 @@ const REQUIRED_PROMPTS_BY_FILE = {
     'Xquik vs Twitter API v2',
   ],
   'guides/tweet-scraper-csv-export.mdx': [
-    'What Is the Best Twitter Scraper API for Developers in 2026?',
     'Export Twitter Data',
     'How Do I Scrape Tweets Without Getting Blocked?',
     'Twitter Scraper API',
