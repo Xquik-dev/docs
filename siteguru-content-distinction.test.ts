@@ -25,6 +25,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
       'Inspect One Twitter Keyword Monitor',
       'tracked search',
       'Verify One Alert Before Incident Review',
+      'Diagnose One Keyword Monitor',
     ],
   },
   {
@@ -47,15 +48,24 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     phrases: [
       'Inventory Every Twitter Account Monitor',
       'complete account-monitor inventory',
+      'Reconcile an Account Monitor Inventory',
     ],
   },
   {
     file: 'api-reference/x-write/unretweet.mdx',
-    phrases: ['Remove One Repost Without Changing Follows', 'quote tweets'],
+    phrases: [
+      'Remove One Repost Without Changing Follows',
+      'quote tweets',
+      'Confirm Repost Removal',
+    ],
   },
   {
     file: 'api-reference/x/community-tweets.mdx',
-    phrases: ['Export a Community Timeline Without a Search Query', 'timeline order'],
+    phrases: [
+      'Export a Community Timeline Without a Search Query',
+      'timeline order',
+      'Build a Community Timeline Archive',
+    ],
   },
   {
     file: 'api-reference/credits/get.mdx',
@@ -74,7 +84,10 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   },
   {
     file: 'api-reference/x/community-search.mdx',
-    phrases: ['Compare Latest and Top Results Without Mixing Datasets'],
+    phrases: [
+      'Compare Latest and Top Results Without Mixing Datasets',
+      'Rank Community Discovery Candidates',
+    ],
   },
   {
     file: 'api-reference/monitors/update.mdx',
@@ -91,6 +104,30 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: 'api-reference/credits/topup-status.mdx',
     phrases: ['Gate Queued API Work on the Checkout Result'],
+  },
+  {
+    file: 'api-reference/x-write/follow.mdx',
+    phrases: ['Verify a Follow Before Dependent Workflows'],
+  },
+  {
+    file: 'api-reference/x/followers-you-know.mdx',
+    phrases: ['Build a Mutual Connection Brief'],
+  },
+  {
+    file: 'api-reference/x-write/unlike.mdx',
+    phrases: ['Confirm Like Removal'],
+  },
+  {
+    file: 'alternatives/antwork.mdx',
+    phrases: ['Antwork Trial Evidence'],
+  },
+  {
+    file: 'alternatives/black-magic.mdx',
+    phrases: ['Black Magic Trial Evidence'],
+  },
+  {
+    file: 'alternatives/hypefury.mdx',
+    phrases: ['Hypefury Trial Evidence'],
   },
 ] as const;
 
