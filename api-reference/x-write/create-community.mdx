@@ -1,7 +1,7 @@
 ---
 title: "X community creation API & group setup"
 sidebarTitle: "Create community"
-description: "Create an X community under a connected account with a name, description, purpose, membership policy, and optional banner."
+description: "Create an X community under a connected account with an approved name and optional public description, then track the write lifecycle."
 api: "POST /x/communities"
 keywords: ["community", "create", "x community", "group"]
 ---
@@ -196,6 +196,17 @@ the community brief automatically. Return it to the operator for review. For
 For `503` or an uncertain network result, query the write lifecycle first.
 Never assume failure from a lost client connection. Duplicate creation is more
 costly than a delayed verification read.
+
+| Community creation record | Request or response source | Completion rule |
+| --- | --- | --- |
+| Acting X account | Request `account` | Confirm the connected community owner. |
+| Community name | Request `name` | Preserve the approved group name. |
+| Community purpose | Request `description` | Preserve the reviewed public description. |
+| Idempotency key | Request header | Reuse it only for an exact replay. |
+| Write action ID | Response `id` | Poll the matching lifecycle record. |
+| Lifecycle state | Response `status` and `terminal` | Stop only after a terminal state. |
+| Community ID | Response `communityId` | Store the confirmed new community ID. |
+| Verification route | `GET /x/communities/{id}/info` | Confirm the name and owner after success. |
 
 ## Headers
 
