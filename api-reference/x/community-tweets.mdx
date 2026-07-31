@@ -210,6 +210,67 @@ Deduplicate by Tweet ID. Record the first and last tweet times per page. Label i
 
 Use community search separately when the community ID is unknown. This route archives one known community timeline.
 
+## Audit a Cursor-Based Community Feed
+
+Start each feed run with one numeric community ID. Record the request time and
+requested `pageSize`. Do not add a keyword to this route. Use community search
+when the workflow needs text matching.
+
+Persist every response before advancing its cursor. Store `has_next_page` with
+`next_cursor`. Request another page only when the flag is true. Pass the cursor
+back unchanged.
+
+Count returned rows and unique Tweet IDs after each page. A busy community can
+receive new posts during pagination. Deduplicate repeated Tweet IDs without
+discarding richer author, engagement, or media fields.
+
+Keep the first and last tweet timestamps for every run. They describe the
+observed feed window. They do not prove a complete historical archive. Label
+result caps, credit limits, and interrupted cursors explicitly.
+
+Store a completion record after the final page. Include community ID, page
+count, unique Tweet count, first timestamp, and last timestamp. Add collection
+time and the interrupted cursor when applicable.
+
+## Preserve Community Tweet Authors and Media
+
+Use one row per stable Tweet ID. Keep author ID, username, profile name, and
+verification when returned. Store tweet text and creation time separately from
+profile fields.
+
+Keep replies, reposts, likes, and quotes as measured engagement fields. Record
+the collection time beside them. Counts can change after the feed run.
+
+Store each media URL with its owning Tweet ID. Keep media type when available.
+Do not infer missing images or videos from tweet text. Do not move media URLs
+into an author profile column.
+
+Use JSON when an application needs nested authors or media. Use CSV when
+analysts need one normalized row. Use XLSX for reviewed spreadsheet handoffs.
+Document any column flattening beside the exported file.
+
+Join later profile refreshes through stable author ID. Usernames and profile
+names can change. Never replace the original tweet creation time with a profile
+refresh time.
+
+## Compare Community Timeline Snapshots
+
+Create a new snapshot ID for every completed feed run. Keep the same community
+ID across snapshots. Compare stable Tweet IDs before engagement counts.
+
+Report newly observed tweets separately from changed tweet fields. A missing
+Tweet ID may reflect the observed window. It does not prove deletion from X.
+
+Compare authors through stable user IDs. Report username or profile changes as
+attributes. Do not treat them as new authors.
+
+Mark every incomplete run before comparison. Exclude partial snapshots from
+claims about feed growth or activity. Preserve their rows for troubleshooting
+and cursor recovery.
+
+Keep the request time, page count, row count, and completion state. These
+fields let another reviewer repeat the comparison without guessing its scope.
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>

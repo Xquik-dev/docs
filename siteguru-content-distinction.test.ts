@@ -29,6 +29,13 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     ],
   },
   {
+    file: 'api-reference/monitors/list-keywords.mdx',
+    phrases: [
+      'Review a Portfolio of Tracked Search Rules',
+      'Prepare a Keyword Monitor Budget Report',
+    ],
+  },
+  {
     file: 'api-reference/drafts/create.mdx',
     phrases: [
       'Save a Tweet Draft Before Publishing',
@@ -49,6 +56,15 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
       'Inventory Every Twitter Account Monitor',
       'complete account-monitor inventory',
       'Reconcile an Account Monitor Inventory',
+      'Assign Account Monitor Ownership',
+      'Prepare Safe Bulk Account Monitor Cleanup',
+    ],
+  },
+  {
+    file: 'api-reference/monitors/twitter-account-monitor-status.mdx',
+    phrases: [
+      'Approve One Account Monitor Change',
+      'Trace One Missing Profile Alert',
     ],
   },
   {
@@ -65,6 +81,9 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
       'Export a Community Timeline Without a Search Query',
       'timeline order',
       'Build a Community Timeline Archive',
+      'Audit a Cursor-Based Community Feed',
+      'Preserve Community Tweet Authors and Media',
+      'Compare Community Timeline Snapshots',
     ],
   },
   {
@@ -80,7 +99,11 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   },
   {
     file: 'api-reference/x/search-community-tweets.mdx',
-    phrases: ['Preserve Decisions Across a Live Moderation Queue'],
+    phrases: [
+      'Preserve Decisions Across a Live Moderation Queue',
+      'Build a Query-Specific Community Review Batch',
+      'Separate Search Matches From Community Feed Coverage',
+    ],
   },
   {
     file: 'api-reference/x/community-search.mdx',
@@ -111,7 +134,18 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   },
   {
     file: 'api-reference/x/followers-you-know.mdx',
-    phrases: ['Build a Mutual Connection Brief'],
+    phrases: [
+      'Build a Mutual Connection Brief',
+      'Prepare a Warm-Introduction Review',
+      'Compare Mutual Follower Graph Snapshots',
+    ],
+  },
+  {
+    file: 'api-reference/x/verified-followers.mdx',
+    phrases: [
+      'Build a Verified Follower Directory',
+      'Validate Verified Follower Export Completeness',
+    ],
   },
   {
     file: 'api-reference/x-write/unlike.mdx',

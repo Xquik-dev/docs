@@ -211,6 +211,47 @@ for your account only; deleted or cross-account IDs return `404`.
   </Card>
 </CardGroup>
 
+## Approve One Account Monitor Change
+
+Fetch the monitor immediately before an approved update. Store its monitor ID,
+username, and stable X user ID. Add event types, active state, and billing
+checkpoint. This snapshot becomes the change baseline.
+
+Confirm the target profile first. Usernames can change. The stable `xUserId`
+prevents a renamed profile from looking like another account. Stop when the
+requested profile does not match the stored target.
+
+Compare current `eventTypes` with the proposed replacement. List every added
+and removed account event. Check whether existing webhooks accept the proposed
+types. Update webhook subscriptions before relying on new alerts.
+
+Read `isActive` separately from event configuration. A pause keeps the target
+and event types. A resume restores polling under the stored contract. Record
+the previous state before toggling it.
+
+After the update, fetch the same monitor ID again. Compare its target, event
+types, active state, and `nextBillingAt`. Keep both snapshots with the approval
+record. This proves the exact account-monitor change.
+
+## Trace One Missing Profile Alert
+
+Start with the monitor ID from the affected workflow. Confirm its username and
+stable X user ID. Then verify the expected event type exists.
+
+Check `isActive` during the missing-alert window. A paused monitor does not
+create future account events. Check `nextBillingAt` and available credits when
+the row should remain active.
+
+Query stored events with `monitorId`. Separate an absent event from an absent
+webhook delivery. Open the matching event before inspecting receiver attempts.
+
+For delivery review, join the event ID with delivery `streamEventId`. Keep
+`deliveryId` as the attempt identity. Do not join through an X Tweet ID.
+
+Record one diagnosis outcome. The monitor may target the wrong profile. It may
+omit the event type or remain paused. It may lack a stored event. The webhook
+delivery may fail. Those outcomes require different fixes.
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>
