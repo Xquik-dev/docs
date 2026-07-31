@@ -2352,6 +2352,11 @@ const REQUIRED_BILLING_MPP_SNIPPETS = [
 
 const REQUIRED_GUEST_WALLET_GUIDE_SNIPPETS = [
   'Guest wallets provide prepaid access to 33 eligible X read routes without an account',
+  '## Accountless Twitter API Questions',
+  '### What Twitter APIs Work Without Connecting an X Account?',
+  '### Can I Scrape Twitter Without an API Account?',
+  '### What Does “Twitter API No Account Required” Mean?',
+  '### When Should I Use a Guest Key Twitter API?',
   'Every guest-wallet paid read requires the active guest key returned during wallet creation.',
   'Direct MPP reads use a per-request payment credential.',
   'A `401` or `402` response never creates a checkout.',
@@ -3418,6 +3423,12 @@ const FORBIDDEN_ERROR_HANDLING_SNIPPETS = [
 
 const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   'follower_explorer',
+  '## Twitter Follower Export Questions',
+  '### How Do I Download a Twitter Follower List?',
+  '### What API Exports Someone\'s Twitter Followers?',
+  '### How Do I Export All Followers of a Twitter Account?',
+  'Label the export as bounded when it contains fewer profiles than the',
+  '### When Should I Use the Twitter Followers Scraper?',
   '## Choose the right path',
   '`GET /x/users/{id}/followers?pageSize=200&cursor={next_cursor}`',
   '[CLI](/sdks/cli)',
@@ -4313,6 +4324,10 @@ const FORBIDDEN_COMMUNITY_INFO_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_COMMUNITY_MEMBERS_API_HANDOFF_SNIPPETS = [
+  '## X Community Member Scraping Questions',
+  '### How Do I Scrape Members From an X Community?',
+  '### What Is the Best Way to Export X Community Members?',
+  '### How Should I Compare Community Member Lists?',
   '`GET /x/communities/{id}/members`',
   'const nextCursor = data.has_next_page ? data.next_cursor : null;',
   'const memberRows = data.users.map((user) => ({',
@@ -4381,6 +4396,10 @@ const FORBIDDEN_COMMUNITY_MODERATORS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_COMMUNITY_TWEETS_API_HANDOFF_SNIPPETS = [
+  '## X Community Tweet Export Questions',
+  '### How Do I Export Tweets From an X Community?',
+  '### What Does the Twitter Community API Return?',
+  '### How Do I Build a Complete Community Tweet Export?',
   '## Direct community tweet handoff',
   '`GET /x/communities/{id}/tweets`',
   'const nextCursor = data.has_next_page ? data.next_cursor : null;',
@@ -7912,6 +7931,12 @@ const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
   '`GET /api/v1/x/tweets/{id}/quotes`',
   '<Card title="Giveaway Selection" icon="trophy">',
   '`POST /api/v1/draws`',
+  '## Twitter Giveaway Automation Questions',
+  '### How Do I Automate a Twitter Giveaway With an API?',
+  '### What Makes a Reliable Twitter Giveaway Picker API?',
+  '### What Is the Best Tool for a Programmatic Twitter Giveaway Draw?',
+  '### How Should a Tweet Draw Tool Handle Retries?',
+  '### How Do I Prove Giveaway Winners Were Eligible?',
   '## Follow Check',
   'participant_handle',
   '## Tweet-Level Checks',
@@ -9991,6 +10016,12 @@ const REQUIRED_PHANTOMBUSTER_ALTERNATIVE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_ALTERNATIVES_SECTOR_SNIPPETS = [
+  '## Twitter API Alternative Questions for 2026',
+  '### Which Twitter API Alternative Is Easiest to Use?',
+  '### Is Xquik Better Than the Official Twitter API for Scraping?',
+  '### How Does Xquik Compare With an Apify Twitter Scraper?',
+  '### How Does Xquik Compare With Twitter API v2?',
+  '### What Makes a Strong Twitter API Comparison?',
   '## Sector Decision Matrix',
   '<Card title="Developer API teams" icon="code">',
   '<Card title="Scraping and dataset teams" icon="database">',

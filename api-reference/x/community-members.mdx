@@ -14,6 +14,34 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 
 Scrape X community members into explicit profile rows. Store the community and user IDs with every page. Keep the username, bio, verification, follower count, and cursor.
 
+## X Community Member Scraping Questions
+
+### How Do I Scrape Members From an X Community?
+
+Call `GET /api/v1/x/communities/{id}/members` with the numeric community ID.
+Store every returned user ID, username, profile name, bio, verification state,
+follower count, and page cursor.
+
+Request the next page only when `has_next_page` is true. Pass `next_cursor`
+back unchanged. Save each profile page before advancing its cursor.
+
+### What Is the Best Way to Export X Community Members?
+
+Build one roster row per community and user ID. Keep the collection time and
+source cursor beside each row. Deduplicate resumed pages by stable user ID.
+
+Use JSON for app ingestion and queue handoffs. Create CSV or XLSX downstream
+when analysts need spreadsheets. Preserve the profile fields returned by the
+API instead of flattening every member into a username.
+
+### How Should I Compare Community Member Lists?
+
+Complete every cursor page before comparing snapshots. Mark interrupted runs
+as partial. Use community ID plus user ID as the comparison key.
+
+Report newly observed and missing members separately. Do not infer why a user
+joined or left. Refresh a profile when later work needs current counts or bio.
+
 <Note>
   Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
 </Note>

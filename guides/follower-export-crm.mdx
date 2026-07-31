@@ -14,6 +14,51 @@ Use this workflow to download a Twitter follower list as CSV, XLSX, or JSON. Kee
 
 This Twitter follower export runs `follower_explorer` as a saved Twitter followers scraper.
 
+## Twitter Follower Export Questions
+
+### How Do I Download a Twitter Follower List?
+
+Use `follower_explorer` when the workflow needs a saved file. Estimate the
+requested followers, create one extraction, poll its job ID, then export CSV,
+JSON, or XLSX. Keep the source username and resolved X user ID.
+
+CSV works well for Google Sheets and CRM imports. XLSX supports analyst review.
+JSON fits queues, warehouses, and app ingestion. Use `x_user_id` as the stable
+row key because usernames can change.
+
+### What API Exports Someone's Twitter Followers?
+
+Use `POST /api/v1/extractions` with `toolType: follower_explorer` for a reusable
+Twitter follower export. Supply the public profile username as
+`targetUsername`. Set `resultsLimit` when the job needs a hard row cap.
+
+Use `GET /api/v1/x/users/{id}/followers` for one live follower page. This route
+returns profiles plus `has_next_page` and `next_cursor`. Save each opaque cursor
+only after the returned profiles become durable.
+
+### How Do I Export All Followers of a Twitter Account?
+
+Estimate the account first. The response resolves its X user ID and projected
+follower count. Confirm the credit budget before creating the extraction.
+
+Do not promise a complete file before the job finishes. Poll the extraction
+until it reaches `completed` or `failed`. Export the completed job, then compare
+its returned rows with the stored job result.
+
+Large follower lists may need a lower `resultsLimit`. Record that cap beside the
+file. Label the export as bounded when it contains fewer profiles than the
+account's current follower count.
+
+### When Should I Use the Twitter Followers Scraper?
+
+Use the saved scraper for cost estimates, repeatable files, and audit trails.
+Use the live Twitter API followers route for low-latency pages. Both return
+concrete profile fields such as user ID, username, bio, verification, follower
+count, following count, location, and profile image when available.
+
+Keep account access and API keys scoped. Respect each read rate limit. Never
+guess cursors or restart pagination with a different source account.
+
 ## Outcome
 
 <CardGroup cols={2}>
