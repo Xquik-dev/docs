@@ -7778,8 +7778,8 @@ const FORBIDDEN_WORKFLOW_ENDPOINT_FINDER_TABLE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
-  'title: "Twitter Campaign Verification for Follows & Reposts"',
-  'Verify X campaign participation with follow checks, retweeters, replies, quotes, giveaway draws, and exportable audit rows.',
+  'title: "Twitter Giveaway Picker API & Campaign Verification"',
+  'Verify giveaway follows, retweets, replies, quotes, winners, and participant exports through one reviewable API workflow.',
   '## Pick the Proof Path',
   '<Card title="Follow Task" icon="user-check">',
   '`GET /api/v1/x/followers/check?source={participant}&target={brand}`',
@@ -7797,6 +7797,10 @@ const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
   '### Tweet Draw Tool',
   '### Twitter Giveaway Picker API',
   '### How Do I Prove Giveaway Winners Were Eligible?',
+  '## Programmatic Twitter Giveaway Draw Checklist',
+  '## Frequently Asked Questions',
+  '### How Does the Twitter Giveaway Picker Work?',
+  '### What Should I Publish With the Winner?',
   '## Follow Check',
   'participant_handle',
   '## Tweet-Level Checks',
