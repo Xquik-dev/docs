@@ -1,5 +1,5 @@
 ---
-title: Scrape Tweets by Keyword to CSV, JSON, or XLSX
+title: "Twitter Search API: Scrape Tweets to CSV, JSON, or XLSX"
 sidebarTitle: "Tweet export"
 description: "Scrape tweets by keyword with tweet_search_extractor. Cap result counts and export tweet text, authors, metrics, and URLs to CSV, JSON, or XLSX."
 keywords: ["scrape tweets", "scrape Twitter", "Twitter scraping", "tweet scraper", "Twitter scraper", "search tweets", "Twitter search export", "X search API", "tweet_search_extractor", "CSV export", "JSON export", "XLSX export"]
@@ -18,9 +18,9 @@ Use this tweet scraper workflow to scrape Twitter posts into explicit rows. Sear
 ### What Is the Best Twitter Scraper API for Developers in 2026?
 
 No single Twitter API fits every export. Compare supported searches, tweet
-fields, author fields, rate limits, cursor behavior, SDKs, costs, and file
-formats. Check whether the API returns tweet text, replies, reposts, likes,
-media, profiles, and stable Tweet IDs.
+fields, author fields, rate limits, and cursor behavior. Then compare SDKs,
+costs, and file formats. Check for tweet text, replies, reposts, and likes. Also
+check media, profiles, and stable Tweet IDs.
 
 Xquik fits developers who need direct Twitter search and saved export jobs. The
 direct route returns cursor pages. Extraction jobs add estimates, receipts,
@@ -29,6 +29,29 @@ status polling, and CSV, JSON, or XLSX files. Both paths use one API key.
 Use direct search for low-latency pages. Use extraction jobs for repeatable
 exports. Use account or keyword monitors for real-time alerts. This separation
 keeps each request contract clear.
+
+Test the complete integration before choosing. Include API-key storage, query
+operators, date ranges, and cursor checkpoints. Test rate limits, `429`
+recovery, temporary failures, and row deduplication. Validate every export.
+Compare Tweet IDs, author IDs, timestamps, text, engagement counts, media, and
+URLs. The best developer API makes those records and recovery steps
+predictable.
+
+### Export Twitter Data
+
+Define the export as tweet rows, author rows, or both. Keep each stable Tweet
+ID, text, author ID, creation time, and permalink. Add replies, reposts, likes,
+quotes, views, bookmarks, and media when returned. Store profile names,
+usernames, bios, verification, and audience counts in separate author columns.
+
+Use `tweet_search_extractor` for a durable job and downloadable files. Choose
+CSV, JSON, or XLSX. Save query, operators, language, date window, and result
+cap. Add extraction ID, completion status, and export time. Count unique Tweet
+IDs after download. Label limited windows and capped jobs clearly. Never call
+a bounded search export a complete account archive.
+
+Use CSV with Google Sheets. Use XLSX for analyst review. Use JSON for queues,
+warehouses, or application ingestion.
 
 ### How Do I Scrape Tweets Without Getting Blocked?
 
@@ -43,25 +66,107 @@ the requested tweets and the estimated credit cost.
 Store `nextCursor` only after saving every returned tweet. Resume from that
 checkpoint after a process restart. Never guess or modify an opaque cursor.
 
-### How Do I Export Tweets, Authors, and Engagement Counts?
+Keep concurrent requests within the documented limits. Add jitter to delayed
+retries so several workers do not restart together. Stop retrying permanent
+authentication, validation, or credit errors. Record the request ID and error
+body for diagnosis. This approach protects continuity without browser evasion,
+rotating identities, or unsupported anti-bot tactics. Keep the API key secret,
+and validate author IDs after every resumed page. Validate media URLs too.
 
-Start `tweet_search_extractor`, poll its job ID, then export CSV, JSON, or XLSX.
-Each row can carry tweet text, creation time, author details, and engagement
-counts. Keep the Tweet ID as the stable row key.
+### Twitter Scraper API
 
-Use CSV with Google Sheets. Use XLSX for analyst handoffs. Use JSON or JSON
-Lines for queues, warehouses, and app ingestion. Keep search filters and the
-export time beside every file.
+Use the live Twitter search route for immediate cursor pages. Use
+`tweet_search_extractor` for estimates, durable job IDs, and status polling.
+It also provides saved rows and CSV, JSON, or XLSX files. Use a monitor when a
+keyword or account match must create a stored event.
 
-### How Do I Scrape Tweets With Python?
+Every path should preserve Tweet IDs, author IDs, text, and timestamps. Add
+engagement counts, media, query filters, and page state. Keep the API key in a
+secret manager. Respect rate limits and documented error recovery. A Twitter
+scraper API removes browser maintenance. It cannot make unclear queries
+complete. It cannot turn a result cap into an archive.
 
-Use the [Python SDK](/sdks/python) when Python owns the request loop. Follow the
-same estimate, create, poll, and export sequence shown below. Keep API keys in a
-secret manager or environment variable.
+### Scrape Tweets Python
 
-For direct search, store `tweets`, `has_next_page`, and `next_cursor`. For saved
-jobs, store the extraction ID and terminal status. Write normalized tweet rows
-only after the API response succeeds.
+Use the [Python SDK](/sdks/python) or call REST with `requests`. Load the API
+key from a secret store. Send the keyword, hashtag, author, and language. Add
+the required date range, media, and engagement filters. Save returned tweets
+before advancing the opaque cursor.
+
+Normalize Tweet ID, text, author ID, username, and creation time. Add permalink,
+replies, reposts, likes, quotes, and media URLs. Deduplicate by Tweet ID. For
+saved jobs, estimate first. Then create, poll, and export the completed job.
+Retry `429`, `424`, or `502` only as documented. Never advance date checkpoints
+before the output becomes durable.
+
+### Automate Tweet Export
+
+Store one explicit query and time window for each automated run. Estimate the
+requested result count. Create one extraction after the estimate passes the
+credit budget. Save its extraction ID before polling. Export only after the
+job reports `completed`.
+
+Write CSV, JSON, or XLSX to a dated, durable path. Record the query, filters,
+window, result cap, row count, extraction ID, status, and checksum. Count
+unique Tweet IDs before loading the destination. Advance the next time window
+only after the file upload succeeds. This prevents a failed handoff from
+creating an unseen gap. Validate author IDs, replies, reposts, and media before
+publishing the export.
+
+### How Do I Build an Automated Twitter Data Pipeline With an API?
+
+Translate “data pipeline” into named records and checkpoints. Capture tweets,
+authors, replies, engagement counts, media URLs, and the exact search filters.
+Use stable Tweet IDs and author IDs as keys. Keep usernames and profile names
+as changeable attributes.
+
+The pipeline should estimate, create, poll, export, validate, and load. Save the
+extraction ID immediately. Retry status reads without creating another job.
+Verify terminal status, row count, and unique Tweet IDs. Check first and last
+timestamps plus required fields. Load files idempotently. Record the last durable date
+window or cursor. Send failed jobs to review with their documented error,
+request ID, and unchanged input.
+
+### How to Schedule Recurring Tweet Exports Using a REST API
+
+Run one fixed interval through cron, a queue worker, or an orchestrator. Use
+nonoverlapping UTC windows for routine exports. Add a small overlap only when
+the destination deduplicates by Tweet ID. Save every window before starting
+its request.
+
+Call the estimate route and enforce approved result limits. Enforce credit
+limits too. Then create one extraction. Poll its ID to a terminal state. Download the selected
+format and validate unique Tweet IDs, timestamps, authors, and row counts.
+Upload the file, record its checksum, then advance the schedule checkpoint.
+Never advance after a timeout, failed extraction, invalid file, or incomplete
+destination upload. Check replies, reposts, and media columns before delivery.
+
+### Twitter Data Pipeline Python
+
+Keep orchestration, API access, normalization, and destination writes in
+separate Python functions. One function builds the query and date window. One
+estimates and creates the extraction. One polls the stored ID. One validates
+and writes tweet rows.
+
+Use typed models for Tweet ID, author ID, text, and creation time. Include
+engagement counts, media URLs, query, and extraction ID. Persist status before
+every retry. Honor `retryAfter` for rate limits. Use exponential backoff for
+documented temporary failures. Upsert by Tweet ID in the destination. Commit
+the next window only after the file or transaction succeeds. This structure
+makes reruns safe and testable.
+
+### Tweet Scraping Workflow
+
+Start with the search intent. Define keywords, hashtags, authors, language,
+dates, media type, and minimum engagement. Choose live search for immediate
+cursor pages. Choose an extraction job for estimates, saved results, and file
+exports. Choose a monitor for continuous account or keyword events.
+
+Store the request, API path, result cap, cursor or extraction ID, and execution
+time. Normalize Tweet IDs, author IDs, text, timestamps, engagement, media, and
+permalinks. Save each page before advancing its cursor. Deduplicate by Tweet
+ID. Validate the first and last timestamps. Mark capped, interrupted, or
+credit-bounded results as partial. Route only validated rows downstream.
 
 ## Build a Scheduled Tweet Export Pipeline
 

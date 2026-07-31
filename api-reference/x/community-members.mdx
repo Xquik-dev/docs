@@ -16,23 +16,60 @@ Scrape X community members into explicit profile rows. Store the community and u
 
 ## X Community Member Scraping Questions
 
+### Scrape X Community Members
+
+Call `GET /api/v1/x/communities/{id}/members` with the numeric community ID.
+Store the community ID and stable user ID. Keep the username, profile name,
+bio, location, and verification. Add follower count, following count, profile
+image, page cursor, and collection time when available.
+
+Save the page before advancing its opaque cursor. Request another page only
+when `has_next_page` is true. Pass `next_cursor` back unchanged. Deduplicate a
+resumed page by community ID and user ID. Mark a credit-bounded, failed, or
+interrupted run as partial. Use the moderators route for role-specific
+profiles. The members route returns the complete roster.
+
+### What Is the Best Way to Extract Data From a Twitter Community?
+
+Replace “data” with the community records the workflow needs. Use the info
+route for the community name and description. Use the members route for user
+IDs and profile fields. Use the moderators route for role-specific profiles.
+Use the tweets route for recent community posts. Use community search for
+posts matching a keyword.
+
+Keep community profiles and tweets in separate tables. Join them with stable
+community and user IDs. Save page cursors, collection times, row counts, and
+completion states. Export JSON for applications. Create CSV or XLSX only when
+analysts need rows. Never flatten membership, moderator roles, and tweet
+activity into one ambiguous record.
+
 ### How Do I Scrape Members From an X Community?
 
 Call `GET /api/v1/x/communities/{id}/members` with the numeric community ID.
-Store every returned user ID, username, profile name, bio, verification state,
-follower count, and page cursor.
+Store each user ID, username, profile name, bio, and verification state. Add
+the follower count and page cursor.
 
 Request the next page only when `has_next_page` is true. Pass `next_cursor`
 back unchanged. Save each profile page before advancing its cursor.
 
-### What Is the Best Way to Export X Community Members?
+Deduplicate resumed pages by stable user ID. Preserve the community ID on
+every row. Record the collection time because usernames, bios, verification,
+and audience counts can change. Do not infer moderator status from membership.
+Use the dedicated moderators route for that role. Mark an interrupted or
+credit-bounded export as partial.
 
-Build one roster row per community and user ID. Keep the collection time and
-source cursor beside each row. Deduplicate resumed pages by stable user ID.
+### Twitter Community API
 
-Use JSON for app ingestion and queue handoffs. Create CSV or XLSX downstream
-when analysts need spreadsheets. Preserve the profile fields returned by the
-API instead of flattening every member into a username.
+Choose the route that matches the record. The info route returns community
+details. The members route returns member profiles. The moderators route
+returns moderator profiles. The tweets route returns recent community posts.
+Community search returns posts matching a query.
+
+For member exports, build one roster row per community ID and user ID. Keep
+profile fields, source cursor, collection time, and completion state. For tweet
+exports, store Tweet ID, author ID, text, timestamp, engagement, media, and
+cursor. Keep those schemas separate. Use stable IDs for joins. Respect API-key
+scope, credits, page limits, and rate limits.
 
 ### How Should I Compare Community Member Lists?
 
@@ -43,7 +80,9 @@ Report newly observed and missing members separately. Do not infer why a user
 joined or left. Refresh a profile when later work needs current counts or bio.
 
 <Note>
-  Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+  Requested result counts are upper bounds for paid authenticated calls. Low
+  credit balances can reduce a page or ID list. If zero results are affordable,
+  Xquik returns `402 insufficient_credits`.
 </Note>
 
 <Callout icon="coins" color="#5c3327">

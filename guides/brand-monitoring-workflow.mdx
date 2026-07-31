@@ -62,6 +62,19 @@ Twitter webhook, and replay stored events.
 
 ## Answer Common Twitter Monitoring Questions
 
+### What Is the Best API to Track Twitter Keyword Mentions?
+
+Choose an API storing the exact query and stable event identity. It should
+also support receiver recovery. Test a brand name, `@handle`, hashtag,
+product, campaign phrase, or Boolean search. Review the Tweet ID, author ID,
+text, timestamp, media, and matched query.
+
+Xquik keyword monitors check for matching tweets every 1 second. Each monitor
+has its own ID and query. Matching activity becomes a stored event. A signed
+webhook can deliver it to a support queue, campaign dashboard, or warehouse.
+Use event replay after receiver downtime. Test the query with tweet search
+first. Narrow ambiguous terms before paying for continuous monitoring.
+
 ### How Do I Monitor a Keyword on Twitter in Real Time?
 
 Create a keyword monitor with `POST /api/v1/monitors/keywords`. Use one focused
@@ -71,7 +84,25 @@ Twitter keyword monitor checks for matching tweets every 1 second.
 Store the monitor ID with its exact query. This keeps later events explainable.
 Use the returned event IDs to deduplicate alerts and measure coverage.
 
-### What API Tracks Twitter Keyword Mentions?
+Create a webhook that subscribes to the required event types. Verify its
+signature, timestamp, and nonce before parsing the body. Save the event before
+returning `2xx`. Route events by monitor ID and matched query. Use the events
+API to recover stored activity after receiver downtime. Pause an inactive
+campaign monitor so it stops producing unnecessary checks.
+
+### Track Keywords Twitter API
+
+Use `POST /api/v1/monitors/keywords` for continuous keyword checks. Keep one
+focused query per monitor. Separate brand handles, product names, and support
+phrases. Use distinct monitors for campaign hashtags and competitor terms.
+
+Save the monitor ID, exact query, enabled state, and owner. Add its creation
+time and expected event types. Test matching tweets before enabling the
+monitor. Store stable Tweet IDs and author IDs with received events.
+Deduplicate by event ID, not tweet text. Queue rate-limit or receiver failures
+for retry. Never create a changed monitor during those retries.
+
+### Twitter Mention Tracking Tool
 
 Use Xquik as a Twitter mention tracking tool. The keyword monitor can track a
 brand name, `@handle`, or hashtag. It can also match a campaign phrase or
@@ -85,7 +116,26 @@ Xquik events to broader social listening tools for other networks.
 Test the query with tweet search first. Review tweets, replies, authors, and
 media before enabling continuous monitoring. Remove terms that attract noise.
 
-### How Do I Monitor a Twitter Account Programmatically?
+Create separate destinations when support, marketing, and research rules
+differ. Keep the matching Tweet ID, author ID, text, and timestamp. Add the
+query, monitor ID, event ID, and delivery ID. Do not infer sentiment or author
+intent without a reviewed downstream classifier. The monitor supplies
+matching X activity and replayable delivery evidence.
+
+### Twitter Keyword Monitor
+
+A Twitter keyword monitor watches a stored search expression. Use an exact
+brand name, `@handle`, hashtag, campaign phrase, or product name. Supported
+Boolean queries can narrow the result. Avoid expressions mixing several
+products and owners.
+
+Before enabling it, run the expression through tweet search. Inspect replies,
+reposts, author profiles, language, media, and recurring false matches. Save
+the approved query with the monitor ID. Subscribe a verified webhook to the
+needed event types. Queue received events durably. Deduplicate by event ID.
+Pause the monitor after the campaign or investigation ends.
+
+### What Is the Best Way to Monitor a Twitter Account Programmatically?
 
 Create an account monitor with `POST /api/v1/monitors`. Supply the username and
 only the event types your receiver needs. Store both `username` and `xUserId`.
@@ -94,7 +144,52 @@ The Twitter account monitor API follows new tweets, replies, reposts, and
 quotes. It can also detect documented profile changes. Pause the monitor when
 the workflow becomes inactive.
 
-### How Do I Get Real-Time Twitter Alerts Through a Webhook?
+Connect the monitor to a signed webhook. Save its ID and stable X user ID. Add
+the event type, Tweet ID, event ID, delivery ID, and timestamp. Return `2xx`
+only after durable queueing. Replay stored events after receiver downtime. Do
+not create duplicate monitors during an uncertain retry. Reuse a matching
+account and event configuration.
+
+### Monitor Twitter Mentions
+
+Track an `@handle`, brand spelling, product name, or campaign hashtag. Use a
+separate monitor for each support phrase. A handle-only monitor finds explicit
+mentions. A brand-name monitor finds references omitting the handle. A
+campaign monitor isolates time-bounded work.
+
+Route matched tweets to the responsible queue. Store Tweet ID, author ID,
+text, timestamp, matched query, monitor ID, and event ID. Review false matches
+before broadening the query. Add downstream labels only after a human or tested
+classifier reviews the tweet. Use stored event replay after webhook downtime
+instead of depending on receiver availability.
+
+### Twitter Webhook Alerts
+
+Create a webhook endpoint for the exact monitor event types your application
+handles. Verify `X-Xquik-Signature`, `X-Xquik-Timestamp`, and
+`X-Xquik-Nonce` before accepting the payload. Reject stale timestamps and
+replayed nonces according to the documented verification flow.
+
+Queue the payload durably, then return `2xx`. Use `streamEventId` as event
+identity and `deliveryId` as the individual receiver attempt. Log monitor ID,
+event type, Tweet ID, and queue result without logging secrets. Replay stored
+events through `GET /api/v1/events` when a receiver, queue, or warehouse load
+fails. Preserve the author ID and matched keyword when present. Also keep the
+reply or repost type.
+
+### Twitter Account Monitor API
+
+Use the account monitor API for one known profile. Select only required new
+tweets, replies, reposts, quotes, or profile changes. Keep the stable X user ID
+beside the username. Usernames can change.
+
+Store monitor ID, enabled state, event types, owner, webhook destination, and
+creation time. Deduplicate received activity by event ID. Keep Tweet IDs for
+post events. Pause the monitor when the account leaves scope. Use keyword
+monitors for broad terms spanning many accounts. Avoid long lists of unrelated
+account monitors.
+
+### How Do I Get Real-Time Twitter Alerts via Webhook?
 
 Create a receiver with `POST /api/v1/webhooks`. Subscribe it to the same event
 types as the account or keyword monitor. Verify every signature before reading
@@ -104,6 +199,12 @@ Return `2xx` after durable queueing. Use `streamEventId` for event identity and
 `deliveryId` for each receiver attempt. These Twitter webhook alerts remain
 recoverable through stored event replay. They provide instant alerts without
 making receiver uptime the only recovery path.
+
+Test the complete path with a noncritical monitor. Reject signature failures.
+Keep duplicate deliveries idempotent. Confirm a stored event can be replayed.
+Record monitor ID, event ID, delivery ID, and event type. Add Tweet ID,
+receive time, and queue result. Keep API keys and webhook secrets outside
+payload logs. Queue downstream retries after acknowledging a valid delivery.
 
 ## Plan a Brand Monitoring Scope
 
