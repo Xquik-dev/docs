@@ -138,6 +138,40 @@ the lifecycle state. Poll the status endpoint when the action remains queued.
 | Retryable failure | `safeToRetry: true` | Preserve the receipt and follow lifecycle guidance. |
 | Final failure | Terminal failure | Store the error and exclude the repost from completed totals. |
 
+## Choose a Repost or New Tweet
+
+Use a repost when the account should share an existing tweet unchanged. The
+request needs the source tweet ID and connected account. It creates no new
+caption or reply text.
+
+Use [Create Tweet](/api-reference/x-write/create-tweet) for original posts,
+replies, or media captions. A reply needs `reply_to_tweet_id`. A repost uses
+this endpoint instead.
+
+| Publishing intent | API route | Required content |
+| --- | --- | --- |
+| Share an existing tweet unchanged | `POST /x/tweets/{id}/retweet` | Source tweet ID and connected account |
+| Publish original text | `POST /x/tweets` | New tweet text and connected account |
+| Reply to a tweet | `POST /x/tweets` | Reply text and `reply_to_tweet_id` |
+| Remove a repost | `DELETE /x/tweets/{id}/retweet` | Source tweet ID and connected account |
+
+Show the source tweet during approval. Include its author, text, media, and
+current availability. Do not substitute a search result's position for its
+stable tweet ID.
+
+## Reconcile Retweet Automation
+
+Store one receipt per connected account and source tweet. This key prevents
+two workers from counting the same repost as separate campaign results.
+
+Keep queued, completed, already-reposted, and failed outcomes distinct. An
+already-reposted outcome satisfies the requested state. It does not create a
+second repost.
+
+Use [Unretweet](/api-reference/x-write/unretweet) for an approved rollback.
+The rollback needs a new idempotency key. Preserve both action IDs so the
+campaign record shows distribution and later removal.
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>

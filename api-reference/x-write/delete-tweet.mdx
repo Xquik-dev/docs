@@ -129,6 +129,39 @@ the action response confirms completion.
 | Deleted tweet | Response `tweetId` or `targetId` | Require the requested tweet ID. |
 | Removal proof | Tweet lookup after success | Confirm the post is unavailable. |
 
+## Choose Tweet Deletion, Unlike, or Unretweet
+
+Use tweet deletion only when the connected account owns the published post.
+It removes that post. It does not merely reverse an engagement action.
+
+Use [Unlike Tweet](/api-reference/x-write/unlike) to remove one account's like.
+Use [Unretweet](/api-reference/x-write/unretweet) to remove one account's
+repost. Both actions preserve the source tweet.
+
+| Cleanup intent | API route | What changes |
+| --- | --- | --- |
+| Remove an owned post | `DELETE /x/tweets/{id}` | The connected account's tweet becomes unavailable. |
+| Remove a like | `DELETE /x/tweets/{id}/like` | Only that account's like is removed. |
+| Remove a repost | `DELETE /x/tweets/{id}/retweet` | Only that account's repost is removed. |
+| Remove a reply | `DELETE /x/tweets/{id}` | The owned reply tweet is deleted by its own ID. |
+
+Never delete the source tweet when a campaign only needs engagement cleanup.
+Confirm the route and intended state during approval.
+
+## Preserve Tweet Deletion Evidence
+
+Read [Get Tweet](/api-reference/x/get-tweet) before deletion. Save the tweet
+ID, author ID, text, creation time, media, and conversation ID when returned.
+Keep the approval reference beside this snapshot.
+
+After terminal success, request the same tweet ID again. Store the lookup time
+and result. Do not treat a client timeout as deletion proof. Poll the original
+write action before replaying the request.
+
+A replacement post receives another tweet ID. Keep the deleted ID in the
+audit record. This prevents incorrect joins with the replacement. It protects
+analytics, reply archives, and moderation queues.
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
