@@ -3,7 +3,7 @@ title: "Twitter followers API & export"
 sidebarTitle: "Get followers"
 description: "Get an X account's followers by username or user ID with cursor pagination for CRM, warehouse, audience, and agent workflows"
 api: "GET /x/users/{id}/followers"
-keywords: ["Twitter followers", "get Twitter followers", "Twitter followers API", "Twitter followers scraper", "follower export", "Follower Export API", "X followers API", "followers API", "CRM export", "JSON export"]
+keywords: ["Twitter followers", "get Twitter followers", "Twitter follower tracker", "track Twitter followers", "Twitter followers API", "Twitter followers scraper", "follower export", "Follower Export API", "X followers API", "followers API", "CRM export", "JSON export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -203,6 +203,23 @@ CSV/JSON/XLSX files after completion.
 `pageSize` from 20 to 200 is an upper bound. Paid authenticated calls can return fewer rows when the remaining credit balance is lower than the requested page size. Treat the returned `users.length` as the billable row count for that page. A balance that cannot afford any result returns `402 insufficient_credits`.
 
 For high-volume follower pulls, de-duplicate profiles by `id`, continue through empty pages when the cursor advances, and stop with a partial-result status when `next_cursor` is missing or repeats.
+
+## Build a Twitter follower tracker
+
+Store complete follower snapshots with the source profile and collection time.
+Compare snapshots by numeric user ID.
+
+Classify IDs that appear only in the latest snapshot as newly observed
+followers. Classify IDs missing from the latest complete snapshot as removed
+followers. Do not compare partial exports.
+
+Keep username, profile name, verification state, follower counts, and profile
+image beside each ID. These fields make review easier. Use the numeric ID for
+the actual comparison because usernames can change.
+
+Save every cursor page before marking a snapshot complete. Record the final
+row count and completion time. A failed or credit-limited run should remain
+partial.
 
 ## Which follower endpoint?
 

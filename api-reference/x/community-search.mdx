@@ -176,6 +176,88 @@ relevance-ranked review.
   </Card>
 </CardGroup>
 
+## Plan a community search export
+
+Choose this route for repeatable research across one known community. Define
+the question before choosing the query. A focused query produces cleaner tweet
+rows and simpler review.
+
+Start each export with these values:
+
+- The numeric community ID.
+- The exact search expression.
+- Either `Latest` or `Top`.
+- A stable page size.
+- The time when collection started.
+
+Keep those values beside every saved cursor. Resume with the same values.
+Changing the query during pagination creates a different result stream.
+
+Use `Latest` for incident review, event coverage, and recent topic monitoring.
+Use `Top` for relevance-ranked discovery. Do not combine both orders inside one
+export file. Create separate exports when reviewers need both perspectives.
+
+Normalize each tweet into explicit columns. Useful columns include tweet ID,
+text, author username, creation time, likes, replies, reposts, and media URLs.
+Keep the community ID and query on every row. Those columns preserve context
+after CSV or XLSX handoff.
+
+Stop when `has_next_page` becomes false. Store the final checkpoint with the
+row count. Deduplicate resumed exports by tweet ID. This protects downstream
+spreadsheets when a worker retries the last completed page.
+
+## Write precise community queries
+
+Use concrete terms that match the research question. Combine keywords with
+supported search operators when required. Test the first page before starting
+a large export.
+
+For moderation, search the specific phrase or hashtag under review. For
+research, separate broad themes into independent queries. For event coverage,
+record the chosen sort order and collection time.
+
+Avoid changing `q` after receiving a cursor. Start a new search instead. This
+keeps each cursor tied to one understandable result set.
+
+## Validate a completed research file
+
+Count unique tweet IDs after the final page. Compare that count with the
+written row count. Any difference reveals repeated rows.
+
+Check that every row carries the same community ID, query, and sort mode.
+Reject a mixed file before analyst handoff. Keep media URLs as arrays or
+separate child rows.
+
+Write a short export manifest. Include collection time, page count, unique
+tweet count, final cursor state, and output format. This makes a CSV or XLSX
+file understandable without the original job logs.
+
+When a run stops early, label it partial. Preserve the last durable cursor for
+resumption. Do not present a partial export as the community’s complete search
+result.
+
+## Schedule independent searches
+
+Give every community-and-query pair its own checkpoint. Never share cursors
+between two terms.
+
+Run urgent moderation searches more frequently than broad research queries.
+Record the schedule beside the export manifest.
+
+If a query changes, start a new series. This preserves understandable
+comparisons across collection windows.
+
+Use separate output names for each community. Include a short query slug and
+collection date. Keep the full query inside the manifest.
+
+Archive successful manifests beside their CSV, JSON, or XLSX files. This lets
+another analyst reproduce the search parameters without opening application
+logs.
+
+Version the manifest when a query changes. Keep earlier exports immutable.
+This preserves comparisons between research periods and prevents silent
+rewrites.
+
 ## Query parameters
 
 <ParamField query="communityId" type="string" required>
