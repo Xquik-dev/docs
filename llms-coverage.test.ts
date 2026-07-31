@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const DOCS_ORIGIN = 'https://docs.xquik.com';
 const MARKDOWN_LINK_PATTERN =
-  /\[[^\]]+\]\(https:\/\/docs\.xquik\.com\/([^\s)]+)\)/gu;
+  /\[[^\]]+\]\(https:\/\/docs\.xquik\.com\/([^\s)]*)\)/gu;
 
 interface NavigationGroup {
   readonly anchors?: readonly NavigationItem[];
@@ -33,10 +33,12 @@ function flattenNavigationPages(item: NavigationItem): readonly string[] {
 }
 
 function normalizePagePath(page: string): string {
-  return page
+  const normalizedPage = page
     .replace(/^\/+/u, '')
     .replace(/\.mdx?$/u, '')
     .replace(/#.*$/u, '');
+
+  return normalizedPage === 'index' ? '' : normalizedPage;
 }
 
 function documentedLlmsPages(source: string): ReadonlySet<string> {

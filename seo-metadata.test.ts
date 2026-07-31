@@ -2,8 +2,11 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-const MIN_DESCRIPTION_LENGTH = 50;
-const MAX_DESCRIPTION_LENGTH = 160;
+const MIN_DESCRIPTION_LENGTH = 120;
+const MAX_DESCRIPTION_LENGTH = 170;
+const MIN_RENDERED_TITLE_LENGTH = 15;
+const MAX_RENDERED_TITLE_LENGTH = 70;
+const TITLE_SUFFIX = ' - Xquik';
 const SITE_DESCRIPTION =
   'Search tweets, export followers, retrieve X/Twitter timelines, and automate webhooks with Xquik developer tools. Not affiliated with X Corp.';
 
@@ -78,6 +81,7 @@ function navigationPages(): readonly string[] {
 
 function collectMetadataFindings(): readonly MetadataFinding[] {
   const findings: MetadataFinding[] = [];
+  const descriptions = new Map<string, string>();
 
   for (const page of navigationPages()) {
     const file = `${page}.mdx`;
@@ -90,6 +94,21 @@ function collectMetadataFindings(): readonly MetadataFinding[] {
     const title = frontmatterValue(metadata, 'title');
     if (title === undefined || title.trim() === '') {
       findings.push({ file, issue: 'Missing title.' });
+    } else {
+      const renderedTitle = `${title}${TITLE_SUFFIX}`;
+      if (renderedTitle.length < MIN_RENDERED_TITLE_LENGTH) {
+        findings.push({
+          file,
+          issue: `Rendered title is ${renderedTitle.length} characters; minimum is ${MIN_RENDERED_TITLE_LENGTH}.`,
+        });
+      }
+
+      if (renderedTitle.length > MAX_RENDERED_TITLE_LENGTH) {
+        findings.push({
+          file,
+          issue: `Rendered title is ${renderedTitle.length} characters; maximum is ${MAX_RENDERED_TITLE_LENGTH}.`,
+        });
+      }
     }
 
     const description = frontmatterValue(metadata, 'description');
@@ -109,6 +128,16 @@ function collectMetadataFindings(): readonly MetadataFinding[] {
       findings.push({
         file,
         issue: `Description is ${description.length} characters; maximum is ${MAX_DESCRIPTION_LENGTH}.`,
+      });
+    }
+
+    const duplicateFile = descriptions.get(description);
+    if (duplicateFile === undefined) {
+      descriptions.set(description, file);
+    } else {
+      findings.push({
+        file,
+        issue: `Description duplicates ${duplicateFile}.`,
       });
     }
   }

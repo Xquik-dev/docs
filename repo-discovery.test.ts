@@ -2646,7 +2646,7 @@ const REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EVENT_LIST_API_HANDOFF_SNIPPETS = [
-  'description: "Query stored account and keyword monitor events with filters and cursor pagination"',
+  'description: "Query stored account and keyword monitor events with filters and cursor pagination. See List events examples and guidance."',
   "jq '. as $page | .events[] | {",
   'event_id: .id',
   'monitor_type: .monitorType',
@@ -2790,7 +2790,7 @@ const FORBIDDEN_TYPES_GUIDE_COMPLETENESS_OVERCLAIMS = [
 ] as const;
 
 const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
-  'description: Recover from Xquik API error codes and rate limits',
+  'description: "Recover from Xquik API error codes and rate limits. Review Error handling parameters, examples, responses, and integration guidance."',
   'Use each `error` code to choose recovery.',
   'safeToRetry',
   'Start with the HTTP family. Retry only when a card says so.',
@@ -2984,7 +2984,7 @@ const REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
-  'description: "Connect an X account to Xquik with the saved Authenticator App TOTP secret required for a durable connection"',
+  'description: "Connect an X account to Xquik with the saved Authenticator App TOTP secret required for a durable connection. See examples."',
   'Authenticator App 2FA and `totp_secret` are required for a durable Xquik',
   'Missing the key? Restart Authentication App 2FA in X to reveal a new secret.',
   "add it to your authenticator app, and finish X's 6-digit confirmation.",
@@ -3019,7 +3019,7 @@ const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
-  'description: "Re-authenticate an X account by reusing its saved TOTP secret or sending a replacement"',
+  'description: "Re-authenticate an X account by reusing its saved TOTP secret or sending a replacement. See Re-authenticate X account examples."',
   'Omit `totp_secret` to reuse the saved key.',
   'Send a replacement only if X',
   'changed or rejected the saved key.',
@@ -3052,7 +3052,7 @@ const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
-  'description: "Submit an email code for an active pending challenge; stale challenges need fresh connect or reauth"',
+  'description: "Submit an email code for an active pending challenge; stale challenges need fresh connect or reauth. See examples and guidance."',
   'This endpoint cannot reopen an expired, failed, completed, or replaced challenge.',
   'After `409`, `410`, or `422`, start [Connect X Account](/api-reference/x-accounts/connect) again for a new account.',
   'For an existing account, use [Re-authenticate X Account](/api-reference/x-accounts/reauth)',
@@ -4707,7 +4707,7 @@ const FORBIDDEN_CHECK_FOLLOWER_RENDER_RISK_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS = [
-  'description: "Verify whether one X user follows another for campaign proof, giveaway eligibility, CRM flags, and audit workflows"',
+  'description: "Verify whether one X user follows another for campaign proof, giveaway eligibility, CRM flags, and audit workflows. See examples."',
   'Check follower verifies one known relationship without exporting a follower',
   '`isFollowing` for source-to-target proof and `isFollowedBy` for',
   'async function buildFollowCheckAudit()',
@@ -6032,7 +6032,7 @@ const REQUIRED_TRENDS_REGION_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TRENDS_GUIDE_COPY_SNIPPETS = [
-  'description: "Find ranked X trends by WOEID region and search tweets from each topic"',
+  'description: "Find ranked X trends by WOEID region and search tweets from each topic. Review examples, responses, and integration guidance."',
   'Xquik returns ranked X trends for 12 supported WOEID regions.',
   "Use each trend's",
   '`query` with [Search Tweets](/api-reference/x/search-tweets)',
@@ -11132,7 +11132,7 @@ describe('repository discovery', (): void => {
   it('keeps public agent entry points visible to docs crawlers', (): void => {
     expect.assertions(1);
 
-    const introduction = readFileSync('introduction.mdx', 'utf8');
+    const introduction = readFileSync('index.mdx', 'utf8');
     const llms = readFileSync('llms.txt', 'utf8');
 
     expect([
@@ -11148,7 +11148,7 @@ describe('repository discovery', (): void => {
   it('keeps introduction radar copy public-safe', (): void => {
     expect.assertions(1);
 
-    const introduction = readFileSync('introduction.mdx', 'utf8');
+    const introduction = readFileSync('index.mdx', 'utf8');
 
     expect(
       [

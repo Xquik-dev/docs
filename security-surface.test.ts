@@ -43,8 +43,8 @@ describe('public security surface', (): void => {
       destination: '/security.txt',
     });
     expect(config.redirects).toContainEqual({
-      source: '/',
-      destination: 'https://docs.xquik.com/api-reference/overview',
+      source: '/introduction',
+      destination: '/',
     });
     expect(trustLinks).toStrictEqual([
       { label: 'Security', href: '/security' },
