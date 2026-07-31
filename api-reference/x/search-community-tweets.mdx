@@ -1,8 +1,9 @@
 ---
-title: "Search community tweets by query"
+title: "Live X community tweet search"
+sidebarTitle: "Search community tweets"
 description: "Search tweets inside one X community by community ID and keyword. Return authors, text, engagement metrics, media, and cursor pages."
 api: "GET /x/communities/tweets"
-keywords: ["community", "search", "tweets", "query", "x api"]
+keywords: ["X community tweet search", "search X community tweets", "Twitter community search API", "community tweets", "keyword search", "live review queue"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -175,6 +176,81 @@ relevance-ranked review.
     workflow needs a saved job with CSV/JSON/XLSX output.
   </Card>
 </CardGroup>
+
+## Feed a live community review queue
+
+Choose this route for direct, page-by-page community tweet retrieval. It works
+well behind moderation screens, support consoles, and analyst dashboards.
+
+Build the first request from the selected community and visible filter. Show
+the active query and sort order above the results. Reviewers should always know
+why each tweet appeared.
+
+Render concrete tweet fields:
+
+- Tweet text and creation time.
+- Author name, username, and verification state.
+- Like, reply, and repost counts.
+- Attached photo or video URLs.
+- The tweet ID for follow-up actions.
+
+Keep `next_cursor` outside the visible tweet list. Attach it to the current
+community, query, sort, and page size. Disable the next-page control when
+`has_next_page` is false.
+
+Use `Latest` for fast-moving discussions. New tweets may arrive between page
+requests. Deduplicate the interface by tweet ID. Use `Top` for a
+relevance-oriented review where recency matters less.
+
+Treat an empty page as a valid search result. It does not mean the community
+is missing. Distinguish empty matches from authentication, credit, and request
+errors in the interface.
+
+## Hand tweets to another action
+
+Pass only reviewed tweet IDs into later workflows. A moderator can open the
+tweet, inspect replies, or save media. A support agent can copy the author
+username into a profile lookup. A monitoring worker can preserve the tweet ID
+as evidence.
+
+Do not pass a displayed row position as identity. Result order can change.
+Use the tweet ID and community ID for every durable handoff.
+
+## Design the reviewer interface
+
+Place the query, community, and sort mode above the tweet list. Show loading,
+empty, error, and final-page states separately.
+
+Keep the next-page action disabled during a request. Append new rows only
+after verifying the response. Reject a repeated cursor before requesting
+another page.
+
+Allow reviewers to copy tweet IDs and open source URLs. Keep profile lookup,
+reply inspection, and media download as explicit actions. Do not trigger them
+automatically for every row.
+
+For shared queues, store the reviewer decision beside the tweet ID. A changed
+result order should not move that decision to another tweet.
+
+## Handle reviewer pagination
+
+Keep the current cursor in server-side queue state. Do not expose it as an
+editable field.
+
+When a reviewer changes the query, clear existing rows and cursor state. Show
+that a new result stream has started.
+
+Preserve selected tweet IDs across harmless interface refreshes. Clear them
+only after an explicit decision or query change.
+
+Display a source link only when `tweets[].url` is present. Otherwise, show the
+tweet ID as the fallback identifier.
+
+Keep selection state independent from pagination. Returning to an earlier page
+should restore decisions by tweet ID, not row position.
+
+Show the collection time beside loaded pages. Reviewers can then distinguish
+new results from an older cached queue without inspecting server logs.
 
 ## Query parameters
 

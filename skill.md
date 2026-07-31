@@ -1,6 +1,6 @@
 ---
 name: Xquik
-description: Use when building X data integrations, accountless paid reads, monitors, extractions, giveaway draws, tweet composition, webhooks, Docs MCP, or API MCP.
+description: Build Xquik tweet, profile, follower, monitor, webhook, export, Docs MCP, and API MCP integrations.
 metadata:
   mintlify-proj: xquik
   version: "1.0"

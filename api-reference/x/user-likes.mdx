@@ -142,6 +142,50 @@ username, display name, follower count, verified state, profile image URL,
 engagement counts, media URLs, and cursor fields so a worker can resume from
 the last saved `next_cursor`.
 
+## Build a liked-tweet library
+
+Use this route to collect tweets liked by one profile. Keep the source user ID
+with every tweet. A tweet can appear in several users’ liked feeds.
+
+Store fields that support review:
+
+- Tweet ID, text, author, and creation time.
+- Like, reply, repost, quote, and view counts.
+- Photo, video, or animated GIF URLs.
+- Source profile ID, cursor, and collection time.
+
+Liked tweets reflect a public account action. They do not prove agreement,
+ownership, or endorsement. Preserve the original author separately.
+
+For repeated collection, compare tweet IDs between snapshots. New IDs indicate
+newly observed likes. Missing IDs need careful interpretation because paging
+depth and source availability can change.
+
+Use user media when the workflow needs tweets containing media from the
+profile itself. Use user tweets for the profile timeline. These feeds answer
+different questions.
+
+## Compare liked-feed snapshots
+
+Label every run as complete or partial. Compare only complete runs collected
+to the same paging depth.
+
+Keep first-seen and last-seen timestamps in your own store. The endpoint
+returns the current page, not a historical like event log.
+
+When a liked tweet disappears, record it as no longer observed. Do not claim
+the user removed the like unless another verified source confirms that action.
+Tweet deletion or availability changes can produce the same observation.
+
+For review queues, link each row to the source tweet. Keep the liking profile
+separate from the tweet author.
+
+Store reviewer labels outside the tweet response. Use explicit values such as
+relevant, irrelevant, or needs review.
+
+Do not overwrite the original tweet text with notes. Preserve both values in
+separate fields.
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>

@@ -72,7 +72,7 @@ Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
 - **OAuth 2.1** - Automatic discovery, CIMD, DCR fallback, Authorization Code + PKCE, and token refresh.
 - **Guides** - Workflows, error handling, rate limits, billing, trends, extraction workflow, architecture, troubleshooting, types, webhook testing, and framework integrations.
 - **SDKs** - 10 generated client libraries (TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI as Go binary, Terraform provider) with auto-pagination, retry, and typed responses.
-- **Comparisons** - Factual alternatives and migration guides for X API, creator tools, social suites, data tools, and workflow platforms.
+- **Comparisons** - Alternatives for X APIs, tweet scrapers, follower exporters, creator tools, and social suites.
 - **Apify Actors** - Public Apify Actors for tweet and follower dataset workflows before moving deeper workflows to REST, webhooks, SDKs, or MCP.
 - **OpenAPI 3.1** - Machine-readable contract for endpoint pages and SDK generation.
 

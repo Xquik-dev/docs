@@ -151,6 +151,50 @@ can resume from the last saved `next_cursor`.
   media URL before a write. Pass `mediaUrl` to `POST /api/v1/x/tweets`, or pass
   `mediaId` as the only `media_ids` item for `POST /api/v1/x/dm/{userId}`.
 
+## Build a profile media inventory
+
+Use this route for tweets containing photos, videos, or animated GIFs from one
+profile. Keep the source profile ID with every media item.
+
+Record both tweet and media fields:
+
+- Tweet ID, text, author, and creation time.
+- Media type and media URL.
+- Video variants when present.
+- Engagement counts and page cursor.
+
+One tweet can contain several media items. Preserve the tweet-to-media
+relationship. Do not flatten several URLs into an ambiguous single value.
+
+Use the inventory for asset review, campaign research, or approved archiving.
+Respect the original publisher and applicable usage rights.
+
+Deduplicate tweets by tweet ID. Deduplicate individual assets by their media
+URL within that tweet. Save each page before advancing the cursor.
+
+Use user likes for tweets the profile liked. Use user tweets for the complete
+profile timeline. Use download media only after selecting a specific asset.
+
+## Hand media into an asset workflow
+
+Create one child row per media item. Include the parent tweet ID, media type,
+source URL, author ID, and collection time.
+
+Choose the best available video variant only after inspecting its metadata.
+Keep the original variant list when later processing may need another format.
+
+Do not download every asset during discovery. First filter and approve the
+relevant tweets. Then call the download route for selected media.
+
+Preserve attribution and source links in any archive. The media URL alone does
+not explain who published the asset or where it appeared.
+
+Record download status separately from discovery status. A listed media URL
+does not mean the asset was downloaded.
+
+Keep failed downloads retryable by tweet ID and media URL. Do not rerun the
+entire profile export for one failed asset.
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>

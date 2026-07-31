@@ -81,6 +81,48 @@ audience review, or moderator handoff. It creates one row per community member.
 Store `community_id`, `member_id`, `username`, `display_name`, `bio`,
 `follower_count`, `verified`, `profile_image_url`, and `next_cursor`.
 
+## Build a community membership roster
+
+Use this route to enumerate profiles that belong to one community. Keep the
+community ID on every exported row. A username alone does not preserve the
+membership source.
+
+Choose columns that support the next task:
+
+- User ID, username, and profile name.
+- Biography, location, and verification state.
+- Follower and following counts.
+- Community ID, page cursor, and collection time.
+
+Use the roster for member directories, CRM enrichment, or moderation review.
+Do not label every member as a moderator. Use the moderators route for that
+smaller role-specific group.
+
+Paginate until no next cursor remains. Persist each page before saving its
+cursor. Deduplicate by user ID when a resumed job repeats the previous page.
+
+Profile fields can change after collection. Record the collection time beside
+the row. Refresh the profile through user lookup when a later workflow needs
+current biography, counts, or avatar details.
+
+## Compare community membership snapshots
+
+Collect every cursor page before comparing membership. Mark interrupted runs
+as partial.
+
+Use community ID and user ID as the comparison key. Record newly observed and
+missing members separately. Avoid inferring why a membership changed.
+
+Keep the snapshot’s page count, row count, first cursor, and completion time.
+These values help reviewers distinguish a real change from an incomplete
+export.
+
+Store membership notes outside returned profile fields. Never place private
+moderation notes inside a public username or biography column.
+
+Use a separate role column when another process joins moderator status onto
+the member roster.
+
 ## Path parameters
 
 <ParamField path="id" type="string" required>
