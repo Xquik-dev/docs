@@ -4,13 +4,30 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 interface OpenApiSchema {
+  readonly maximum?: number;
   readonly properties?: Readonly<Record<string, unknown>>;
+}
+
+interface OpenApiParameter {
+  readonly name?: string;
+  readonly schema?: OpenApiSchema;
 }
 
 interface OpenApiDocument {
   readonly components?: Readonly<{
     readonly schemas?: Readonly<Record<string, OpenApiSchema>>;
   }>;
+  readonly paths?: Readonly<
+    Record<
+      string,
+      Readonly<{
+        readonly get?: Readonly<{
+          readonly description?: string;
+          readonly parameters?: readonly OpenApiParameter[];
+        }>;
+      }>
+    >
+  >;
 }
 
 const PROJECT_ROOT = process.cwd();
@@ -20,6 +37,10 @@ const GUIDE = readFileSync(
 );
 const OPENAPI = readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8');
 const MCP_TOOLS = readFileSync(join(PROJECT_ROOT, 'mcp/tools.mdx'), 'utf8');
+const TWEET_REPLIES = readFileSync(
+  join(PROJECT_ROOT, 'api-reference/x/tweet-replies.mdx'),
+  'utf8',
+);
 const DOCS_CONFIG = readFileSync(join(PROJECT_ROOT, 'docs.json'), 'utf8');
 const LLMS_INDEX = readFileSync(join(PROJECT_ROOT, 'llms.txt'), 'utf8');
 
@@ -42,21 +63,14 @@ const TWEET_FIELDS = [
   'displayTextRange',
   'contentDisclosure',
   'article',
-  'bookmarked',
   'card',
   'communityNote',
   'edit',
-  'favorited',
-  'grokAnalysisButton',
-  'grokImageEditable',
   'isTranslatable',
   'noteTweet',
   'place',
   'possiblySensitive',
-  'possiblySensitiveEditable',
   'previousCounts',
-  'quickPromoteEligibility',
-  'retweeted',
   'viewState',
   'entities',
   'quoted_tweet',
@@ -88,7 +102,6 @@ const PROFILE_FIELDS = [
   'createdAt',
   'statusesCount',
   'mediaCount',
-  'canDm',
   'protected',
   'url',
   'favouritesCount',
@@ -104,15 +117,12 @@ const PROFILE_FIELDS = [
   'verifiedType',
   'affiliatesHighlightedLabel',
   'businessAccountAffiliatesCount',
-  'canMediaTag',
   'creatorSubscriptionsCount',
-  'followRequestSent',
   'hasGraduatedAccess',
   'hasHiddenSubscriptionsOnProfile',
   'highlightsInfo',
   'identityVerification',
   'isProfileTranslatable',
-  'notificationsEnabled',
   'parodyCommentaryFanLabel',
   'profileDescriptionLanguage',
   'profileImageShape',
@@ -120,15 +130,7 @@ const PROFILE_FIELDS = [
   'profileSortEnabled',
   'profileTranslatorType',
   'superFollowEligible',
-  'superFollowedBy',
-  'superFollowing',
   'communityRole',
-  'viewerFollowedBy',
-  'viewerFollowing',
-  'viewerBlockedBy',
-  'viewerBlocking',
-  'viewerLiveFollowing',
-  'viewerMuting',
   'profile_bio',
 ] as const;
 
@@ -166,6 +168,8 @@ function parseOpenApi(source: string): OpenApiDocument {
   return parse(source) as OpenApiDocument;
 }
 
+const PARSED_OPENAPI = parseOpenApi(OPENAPI);
+
 function schemaFields(
   openApi: Readonly<OpenApiDocument>,
   name: string,
@@ -186,25 +190,24 @@ function sortedFields(fields: readonly string[]): readonly string[] {
 describe('read data richness documentation', (): void => {
   it('documents every normalized field from the OpenAPI contract', (): void => {
     const fields = [...TWEET_FIELDS, ...PROFILE_FIELDS, ...MEDIA_FIELDS];
-    const openApi = parseOpenApi(OPENAPI);
     expect.assertions(fields.length + 5);
 
     for (const field of fields) {
       expect(GUIDE, `guide omits ${field}`).toContain(`\`${field}\``);
     }
-    expect(schemaFields(openApi, 'EmbeddedTweet')).toStrictEqual(
+    expect(schemaFields(PARSED_OPENAPI, 'EmbeddedTweet')).toStrictEqual(
       sortedFields(TWEET_FIELDS),
     );
-    expect(schemaFields(openApi, 'TweetDetail')).toStrictEqual(
+    expect(schemaFields(PARSED_OPENAPI, 'TweetDetail')).toStrictEqual(
       sortedFields(TWEET_FIELDS),
     );
-    expect(schemaFields(openApi, 'SearchTweet')).toStrictEqual(
+    expect(schemaFields(PARSED_OPENAPI, 'SearchTweet')).toStrictEqual(
       sortedFields(TWEET_FIELDS),
     );
-    expect(schemaFields(openApi, 'UserProfile')).toStrictEqual(
+    expect(schemaFields(PARSED_OPENAPI, 'UserProfile')).toStrictEqual(
       sortedFields(PROFILE_FIELDS),
     );
-    expect(schemaFields(openApi, 'TweetMedia')).toStrictEqual(
+    expect(schemaFields(PARSED_OPENAPI, 'TweetMedia')).toStrictEqual(
       sortedFields(MEDIA_FIELDS),
     );
   });
@@ -219,11 +222,31 @@ describe('read data richness documentation', (): void => {
     expect(GUIDE).toContain('Xquik omits unavailable optional fields');
     expect(GUIDE).toContain('coverage depends on X');
     expect(GUIDE).toContain(
-      'Viewer-specific tweet and profile fields need authenticated X context',
+      'Viewer-specific relationship and action state is excluded',
     );
     expect(DOCS_CONFIG).toContain('"guides/tweet-profile-api-fields"');
     expect(LLMS_INDEX).toContain(
       'https://docs.xquik.com/guides/tweet-profile-api-fields',
     );
+  });
+
+  it('documents complete direct-reply coverage on every public surface', (): void => {
+    expect.assertions(8);
+    const operation =
+      PARSED_OPENAPI.paths?.['/x/tweets/{id}/replies']?.get;
+    const limit = operation?.parameters?.find(
+      (parameter) => parameter.name === 'limit',
+    );
+
+    expect(limit?.schema?.maximum).toBe(25_000);
+    expect(
+      PARSED_OPENAPI.components?.schemas?.['ReplyCoverageDiagnostic'],
+    ).toBeDefined();
+    expect(operation?.description).toContain('labeled hidden-content branches');
+    expect(GUIDE).toContain('mode=complete&limit=25000');
+    expect(GUIDE).toContain('Nested conversation replies');
+    expect(MCP_TOOLS).toContain('mode=complete&limit=25000');
+    expect(MCP_TOOLS).toContain('nested_replies');
+    expect(TWEET_REPLIES).toContain('diagnostic.recommendedFallback');
   });
 });

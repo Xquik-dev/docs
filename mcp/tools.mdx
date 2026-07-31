@@ -122,8 +122,15 @@ List and search responses use `has_more` and `next_cursor`, even when a REST pag
 
 Continue through empty filtered pages while `has_more` is true and the cursor advances. Stop when you reach the requested total or `has_more` becomes false. Treat a missing or repeated `next_cursor` while `has_more` is true as stalled pagination and return the partial count plus a clear stop reason.
 
-Reply lists contain replies visible through Xquik. On `replies_incomplete`,
-search `conversation_id:<tweet_id>`. Disclose that reply coverage depends on X.
+For complete reply collection, call
+`/api/v1/x/tweets/<tweet_id>/replies?mode=complete&limit=25000`. Count only
+direct rows whose `inReplyToId` matches the requested post. Keep
+`nested_replies` separate. On `replies_incomplete`, inspect the reported count,
+coverage, attempted strategies, cursor failures, missing fields, and
+recommended fallback. The complete collector can use
+`conversation_id:<tweet_id>` as one bounded fallback. It still filters direct
+rows by exact parent ID. Claim completeness only when `diagnostic.complete` is
+true.
 
 Errors use `error.type`, `error.code`, and `error.message`, with fields such as `error.retryable` or `error.retry_after` when available. Dependency failures use HTTP `424` in this contract. Fix validation errors before retrying, and respect `retry_after` on `429`.
 

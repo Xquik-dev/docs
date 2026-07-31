@@ -210,6 +210,7 @@ interface OpenApiResponse {
 
 interface OpenApiSchema {
   readonly $ref?: string;
+  readonly allOf?: readonly OpenApiSchema[];
   readonly anyOf?: readonly OpenApiSchema[];
   readonly items?: OpenApiSchema;
   readonly oneOf?: readonly OpenApiSchema[];
@@ -233,7 +234,6 @@ const PAGINATED_TWEET_PAGES = [
   'api-reference/x/bookmarks.mdx',
   'api-reference/x/timeline.mdx',
   'api-reference/x/tweet-quotes.mdx',
-  'api-reference/x/tweet-replies.mdx',
   'api-reference/x/tweet-thread.mdx',
   'api-reference/x/list-tweets.mdx',
   'api-reference/x/community-tweets.mdx',
@@ -391,6 +391,9 @@ function responseFieldNamesFromSchema(
   const resolved = resolveSchema(spec, schema);
   return uniqueSorted([
     ...propertyNames(resolved),
+    ...(resolved.allOf ?? []).flatMap((nested): readonly string[] =>
+      responseFieldNamesFromSchema(spec, nested),
+    ),
     ...(resolved.oneOf ?? []).flatMap((nested): readonly string[] =>
       responseFieldNamesFromSchema(spec, nested),
     ),
@@ -1355,6 +1358,10 @@ function prefixedFields(
 
 function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const paginatedTweets = schemaPropertyNames(spec, 'PaginatedTweets');
+  const tweetReplies = responseFieldNamesFromSchema(
+    spec,
+    schemaByName(spec, 'TweetReplies'),
+  );
   const paginatedUsers = schemaPropertyNames(spec, 'PaginatedUsers');
   const searchTweet = schemaPropertyNames(spec, 'SearchTweet');
   const userProfile = schemaPropertyNames(spec, 'UserProfile');
@@ -1554,6 +1561,16 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
 
   return [
     ...paginatedTweetContracts,
+    {
+      allowedFields: uniqueSorted([
+        ...tweetReplies,
+        ...searchTweet,
+        ...userProfile,
+        ...searchTweetMedia,
+      ]),
+      page: 'api-reference/x/tweet-replies.mdx',
+      requiredFields: paginatedTweetRequired,
+    },
     ...paginatedUserContracts,
     {
       allowedFields: uniqueSorted([
