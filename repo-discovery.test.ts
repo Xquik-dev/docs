@@ -4061,7 +4061,7 @@ const FORBIDDEN_TRENDS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
-  'title: "X article API & long-form post content"',
+  'title: "X article API & long-form post body"',
   'Retrieve one long-form X Article by tweet ID',
   '`GET /x/articles/{tweetId}`',
   '`GET /api/v1/x/articles/{tweetId}`',
@@ -9161,6 +9161,8 @@ const REQUIRED_PIPEDREAM_GUIDE_SNIPPETS = [
 
 const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
   'Use the [`prefect-xquik`](https://github.com/Xquik-dev/prefect-xquik) collection',
+  'automated Twitter API workflows in Python',
+  'Twitter search pipeline Python',
   'The current `0.1.5` release is read-focused.',
   'https://github.com/Xquik-dev/prefect-xquik/releases/download/v0.1.5/prefect_xquik-0.1.5-py3-none-any.whl',
   'prefect block register -m prefect_xquik',
