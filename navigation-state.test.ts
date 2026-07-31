@@ -51,6 +51,14 @@ const PRIORITY_API_ROUTES = [
   '/api-reference/extractions/twitter-scraping-job-history',
   '/api-reference/monitors/delete-twitter-account-monitor',
   '/api-reference/monitors/twitter-account-monitor-status',
+  '/api-reference/x/community-info',
+  '/api-reference/x/community-members',
+  '/api-reference/x/community-moderators',
+  '/api-reference/x/community-search',
+  '/api-reference/x/community-tweets',
+  '/api-reference/x/following',
+  '/api-reference/x/retweeters',
+  '/api-reference/x/search-community-tweets',
 ] as const;
 
 function docsConfig(): DocsConfig {
