@@ -43,21 +43,14 @@ Core tweet fields are `id`, `text`, `createdAt`, `isNoteTweet`, `isReply`,
 | Field                         | Description                                  |
 | ----------------------------- | -------------------------------------------- |
 | `article`                     | X Article metadata                           |
-| `bookmarked`                  | Viewer bookmark state                        |
 | `card`                        | Link card metadata                           |
 | `communityNote`               | Community Note metadata                      |
 | `edit`                        | Edit history and remaining edit state        |
-| `favorited`                   | Viewer like state                            |
-| `grokAnalysisButton`          | X analysis action availability               |
-| `grokImageEditable`           | X image editing availability                 |
 | `isTranslatable`              | Translation availability                     |
 | `noteTweet`                   | Long-form post metadata                      |
 | `place`                       | Tagged place metadata                        |
 | `possiblySensitive`           | X sensitivity state                          |
-| `possiblySensitiveEditable`   | Sensitivity-setting edit availability        |
 | `previousCounts`              | Pre-edit engagement counts                   |
-| `quickPromoteEligibility`     | X quick-promotion eligibility                |
-| `retweeted`                   | Viewer repost state                          |
 | `viewState`                   | X view-state metadata                        |
 
 Tweets also include available entities, disclosures, nested tweets, and media.
@@ -70,7 +63,7 @@ Counts, verification, images, bios, and other metadata appear when X supplies th
 Core profile fields are `id`, `username`, `name`, `description`, `followers`,
 `following`, `verified`, `isBlueVerified`, `isVerified`, `profilePicture`,
 `coverPicture`, `profileBannerUrl`, `location`, `createdAt`, `statusesCount`,
-`mediaCount`, `canDm`, `protected`, `url`, `favouritesCount`,
+`mediaCount`, `protected`, `url`, `favouritesCount`,
 `hasCustomTimelines`, `isTranslator`, `withheldInCountries`,
 `possiblySensitive`, `pinnedTweetIds`, `isAutomated`, `automatedBy`,
 `unavailable`, `unavailableReason`, `verifiedType`, `communityRole`, and
@@ -80,15 +73,12 @@ Core profile fields are `id`, `username`, `name`, `description`, `followers`,
 | --------------------------------- | -------------------------------------------- |
 | `affiliatesHighlightedLabel`      | Affiliate label metadata                     |
 | `businessAccountAffiliatesCount`  | Business affiliate count                     |
-| `canMediaTag`                     | Viewer permission to tag the profile in media |
 | `creatorSubscriptionsCount`       | Creator subscription count                   |
-| `followRequestSent`               | Viewer follow-request state                   |
 | `hasGraduatedAccess`              | Graduated access state                       |
 | `hasHiddenSubscriptionsOnProfile` | Hidden subscription state                    |
 | `highlightsInfo`                  | Profile highlights metadata                  |
 | `identityVerification`            | Identity verification metadata               |
 | `isProfileTranslatable`           | Profile translation availability             |
-| `notificationsEnabled`            | Viewer notification state                    |
 | `parodyCommentaryFanLabel`        | Parody or fan label                          |
 | `profileDescriptionLanguage`      | Detected bio language                        |
 | `profileImageShape`               | Profile image shape                          |
@@ -96,19 +86,9 @@ Core profile fields are `id`, `username`, `name`, `description`, `followers`,
 | `profileSortEnabled`              | Profile sorting state                        |
 | `profileTranslatorType`           | Profile translator type                      |
 | `superFollowEligible`             | Subscription eligibility                     |
-| `superFollowedBy`                 | Creator subscription relationship            |
-| `superFollowing`                  | Viewer creator-subscription state             |
-| `viewerFollowedBy`                | Whether the profile follows the viewer        |
-| `viewerFollowing`                 | Whether the viewer follows the profile        |
-| `viewerBlockedBy`                 | Whether the profile blocks the viewer         |
-| `viewerBlocking`                  | Whether the viewer blocks the profile         |
-| `viewerLiveFollowing`             | Viewer live-notification follow state         |
-| `viewerMuting`                    | Whether the viewer mutes the profile          |
 
-Viewer-specific tweet and profile fields need authenticated X context. They can
-include bookmark, like, repost, follow, block, mute, direct-message,
-notification, promotion, and edit-permission state. Public or guest reads can
-omit them.
+Viewer-specific relationship and action state is excluded from public read
+responses. It describes the authenticated viewer, not the requested resource.
 
 ## Media Fields
 
@@ -138,14 +118,19 @@ Every media object includes `mediaUrl`, `type`, and `url` when available.
 
 ## Reply Coverage
 
-Reply endpoints return replies visible through X's current conversation view.
-X can hide, rank, or omit replies from that view.
-Reply coverage depends on X.
+Reply coverage depends on X. X can hide, rank, or omit counted replies.
 
-Xquik returns `424 replies_incomplete` when it detects incomplete first-page
-coverage. Search `conversation_id:<tweet_id>` for a broader fallback.
+Use `GET /api/v1/x/tweets/<tweet_id>/replies?mode=complete&limit=25000`.
+Complete mode merges authenticated rankings, forward cursors, hidden-content
+branches, and search. It counts only rows whose `inReplyToId` matches the
+requested post. Nested conversation replies stay in `nested_replies`.
 
-Always report the rows collected and the final cursor state.
+Xquik returns `424 replies_incomplete` below 80% direct-reply coverage. The
+response preserves safe partial rows and a detailed `diagnostic`. Inspect
+`reportedReplyCount`, `uniqueDirectReplies`, `coveragePercentage`,
+`strategiesAttempted`, `cursorFailures`, `missingResponseModulesOrFields`, and
+`recommendedFallback`. Claim completeness only when `diagnostic.complete` is
+`true`.
 
 ## Surface Mapping
 

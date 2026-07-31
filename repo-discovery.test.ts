@@ -2435,7 +2435,6 @@ const DIRECT_MPP_REFERENCE_PAGES = new Set([
 const REQUIRED_PAID_READ_REFERENCE_SNIPPETS = [
   '<ParamField header="Authorization" type="string">',
   '`paid_reads`',
-  '### 402 Payment required',
   'guest wallet',
   'checkout',
 ] as const;
@@ -3460,7 +3459,6 @@ const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   '"export_paths": {',
   '"normalized_row": {',
   '"account_created_at": "2021-03-01T12:00:00.000Z"',
-  '"can_dm": true',
   '"crm_import": {',
   '"unique_field": "x_user_id"',
   '"upsert_mode": "external_id"',
@@ -3525,7 +3523,6 @@ const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   '`users[].id` to `x_user_id`',
   '`users[].username` to `x_username`',
   '`users[].createdAt` to `account_created_at`',
-  '`users[].canDm` to `can_dm`',
   '`statusesCount`',
   '`pageSize` accepts `20` to `200`',
   'paid calls can return fewer users',
@@ -3718,7 +3715,7 @@ const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   '`sinceTime` and `untilTime` are Unix timestamps in seconds',
   'Direct replies calls use the default paid page size',
   'Tweet author profile. Omitted if unavailable.',
-  '**Author object fields:**',
+  '<Expandable title="Author object fields">',
   '<ResponseField name="id" type="string">Author user ID.',
   '<ResponseField name="username" type="string">Author handle without `@`.',
   '<ResponseField name="name" type="string">Author display name.',
@@ -4214,7 +4211,6 @@ const REQUIRED_RETWEETERS_API_HANDOFF_SNIPPETS = [
   'retweeter_id: user.id',
   'username: user.username',
   'display_name: user.name',
-  'can_dm: user.canDm ?? null',
   'follower_count: user.followers ?? null',
   'following_count: user.following ?? null',
   'verified: user.verified ?? false',
@@ -4225,7 +4221,6 @@ const REQUIRED_RETWEETERS_API_HANDOFF_SNIPPETS = [
   '"source_tweet_id": tweet_id',
   '"retweeter_id": user["id"]',
   '"display_name": user["name"]',
-  '"can_dm": user.get("canDm")',
   '"follower_count": user.get("followers")',
   '"following_count": user.get("following")',
   '"verified_type": user.get("verifiedType")',
@@ -4234,7 +4229,7 @@ const REQUIRED_RETWEETERS_API_HANDOFF_SNIPPETS = [
   '## Direct retweeter handoff',
   'workflow needs one row per',
   '`source_tweet_id`, `retweeter_id`,',
-  '`username`, `display_name`, `can_dm`,',
+  '`username`, `display_name`, `follower_count`,',
   '`verified`, `verified_type`, `profile_image_url`,',
   '<Card title="Retweeters" icon="repeat-2">',
   '[`GET /x/tweets/{id}/favoriters`](/api-reference/x/favoriters)',
@@ -4263,7 +4258,6 @@ const REQUIRED_FAVORITERS_API_HANDOFF_SNIPPETS = [
   'liker_id: user.id',
   'username: user.username',
   'display_name: user.name',
-  'can_dm: user.canDm ?? null',
   'follower_count: user.followers ?? null',
   'following_count: user.following ?? null',
   'verified: user.verified ?? false',
@@ -4274,7 +4268,6 @@ const REQUIRED_FAVORITERS_API_HANDOFF_SNIPPETS = [
   '"source_tweet_id": tweet_id',
   '"liker_id": user["id"]',
   '"display_name": user["name"]',
-  '"can_dm": user.get("canDm")',
   '"follower_count": user.get("followers")',
   '"following_count": user.get("following")',
   '"verified_type": user.get("verifiedType")',
@@ -4283,7 +4276,7 @@ const REQUIRED_FAVORITERS_API_HANDOFF_SNIPPETS = [
   '## Direct tweet liker handoff',
   'workflow needs one row per',
   '`source_tweet_id`, `liker_id`, `username`,',
-  '`display_name`, `can_dm`, `follower_count`,',
+  '`display_name`, `follower_count`, `following_count`,',
   '`verified_type`, `profile_image_url`,',
   '<Card title="Tweet likers" icon="heart">',
   '[`GET /x/tweets/{id}/retweeters`](/api-reference/x/retweeters)',
@@ -5268,12 +5261,10 @@ const REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS = [
   '--data-urlencode "cursor=abc123"',
   'const mutualRows = data.users.map((user) => ({',
   'target_user_id: userId',
-  'can_dm: user.canDm ?? null',
   'const checkpoint = { target_user_id: userId, next_cursor: nextCursor };',
   'import json',
   'mutual_rows = [',
   '"target_user_id": user_id',
-  '"can_dm": user.get("canDm")',
   'shape durable mutual follower rows instead of',
   'worker can resume pagination with `next_cursor`',
   '## Direct mutual followers handoff',
@@ -5284,7 +5275,7 @@ const REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS = [
   '<CardGroup cols={2}>',
   '<Card title="Mutual rows"',
   '<Card title="Warm-intro labels"',
-  '<Card title="DM preflight"',
+  '<Card title="Approved contact"',
   '[Direct message workflow](/guides/direct-message-workflow)',
   '[Send DM](/api-reference/x-write/send-dm)',
   '[DM history](/api-reference/x/dm-history)',
@@ -5292,7 +5283,6 @@ const REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS = [
   '`users[].id`',
   '`x_user_id`',
   '`users[].username` and `users[].name`',
-  '`users[].canDm`',
   '`messageId`',
   'participant-scoped context',
   '`has_next_page` and `next_cursor`',
@@ -11152,6 +11142,13 @@ function collectSnippetFindings(
   return findings;
 }
 
+function hasPaymentRequiredSection(source: string): boolean {
+  return (
+    source.includes('### 402 Payment required') ||
+    source.includes('<Tab title="402 Payment required">')
+  );
+}
+
 function collectComparisonPositioningFindings(): readonly DiscoveryFinding[] {
   const findings: DiscoveryFinding[] = [];
 
@@ -12428,6 +12425,9 @@ describe('repository discovery', (): void => {
             file,
             REQUIRED_PAID_READ_REFERENCE_SNIPPETS,
           ),
+          ...(!hasPaymentRequiredSection(source)
+            ? [{ issue: `${file} is missing its 402 response section.` }]
+            : []),
           ...collectSnippetFindings(
             source,
             file,
