@@ -171,6 +171,90 @@ const REQUIRED_OPERATIONAL_TABLES = [
       '| Already removed | Converged terminal result |',
     ],
   },
+  {
+    file: 'api-reference/events/get.mdx',
+    snippets: [
+      '| Event detail column | Response source | Handoff rule |',
+      '| Tweet ID | `xEventId` | Store the X tweet identifier separately. |',
+    ],
+  },
+  {
+    file: 'api-reference/events/list.mdx',
+    snippets: [
+      '| Event inventory column | Response source | Pagination rule |',
+      '| Next page | `nextCursor` | Pass this value as the next `after` parameter. |',
+    ],
+  },
+  {
+    file: 'api-reference/monitors/create.mdx',
+    snippets: [
+      '| Created monitor column | Response source | Setup rule |',
+      '| X user ID | `xUserId` | Use this stable ID for account joins. |',
+    ],
+  },
+  {
+    file: 'api-reference/monitors/delete-twitter-account-monitor.mdx',
+    snippets: [
+      '| Account monitor deletion check | Source | Completion rule |',
+      '| Detail lookup | `GET /monitors/{id}` | Expect `404 not_found` after deletion. |',
+    ],
+  },
+  {
+    file: 'api-reference/monitors/get-keyword.mdx',
+    snippets: [
+      '| Keyword monitor column | Response source | Decision rule |',
+      '| X search query | `query` | Compare the stored query with the intended search. |',
+    ],
+  },
+  {
+    file: 'api-reference/monitors/list.mdx',
+    snippets: [
+      '| Account monitor inventory column | Response source | Reconciliation rule |',
+      '| X user ID | `monitors[].xUserId` | Use this stable ID for account joins. |',
+    ],
+  },
+  {
+    file: 'api-reference/monitors/list-keywords.mdx',
+    snippets: [
+      '| Keyword monitor inventory column | Response source | Reconciliation rule |',
+      '| X search query | `monitors[].query` | Preserve the exact stored keyword expression. |',
+    ],
+  },
+  {
+    file: 'api-reference/monitors/twitter-account-monitor-status.mdx',
+    snippets: [
+      '| Account monitor status column | Response source | Decision rule |',
+      '| X username | `username` | Confirm the intended tracked profile. |',
+    ],
+  },
+  {
+    file: 'api-reference/monitors/update.mdx',
+    snippets: [
+      '| Account monitor update column | Request or response source | Verification rule |',
+      '| Webhook alignment | `GET /webhooks` | Match subscriptions before trusting alerts. |',
+    ],
+  },
+  {
+    file: 'api-reference/monitors/update-keyword.mdx',
+    snippets: [
+      '| Keyword monitor update column | Request or response source | Verification rule |',
+      '| X search query | Response `query` | Confirm the immutable query stayed unchanged. |',
+    ],
+  },
+  {
+    file: 'api-reference/webhooks/deliveries.mdx',
+    snippets: [
+      '| Webhook delivery incident column | Response source | Triage rule |',
+      '| Monitor event ID | `deliveries[].streamEventId` | Join the delivery to `GET /events/{id}`. |',
+    ],
+  },
+  {
+    file: 'api-reference/webhooks/list.mdx',
+    snippets: [
+      '| Webhook inventory column | Response source | Reconciliation rule |',
+      '| Receiver URL | `webhooks[].url` | Confirm the intended HTTPS destination. |',
+    ],
+  },
 ] as const;
 
 describe('operational content tables', (): void => {
