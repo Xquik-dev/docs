@@ -137,8 +137,8 @@ curl -X POST https://xquik.com/api/v1/extractions/estimate \
 ```
 
 The estimate returns `allowed`, `estimatedResults`, `creditsRequired`,
-`creditsAvailable`, and `source`. For reply scraping, `source` is `replyCount`
-when the tweet count lookup succeeds. Set `resultsLimit` on the create request
+`creditsAvailable`, and `source`. A successful tweet count lookup sets `source`
+to `replyCount`. Set `resultsLimit` on the create request
 when you want a smaller sample or hard run cap; final rows and credits can be
 lower than the estimate.
 
@@ -193,7 +193,7 @@ Use the paginated response when your app wants JSON rows instead of a file downl
 
 ## Step 4: Export CSV, JSON, or XLSX
 
-Exports are free after the extraction job exists. Save `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff.
+File exports do not charge credits after job creation. Save `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff.
 
 ```bash
 curl -X GET "https://xquik.com/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=csv" \
@@ -326,7 +326,7 @@ do {
 } while (cursor);
 ```
 
-Use the extraction workflow instead when the job needs a durable export file, a cost estimate before scraping, or a hard `resultsLimit`.
+Choose the extraction workflow for stored files, cost estimates, or hard `resultsLimit` caps.
 
 ## Choose the right reply output
 
@@ -336,7 +336,7 @@ Use the Twitter reply API when an application needs the latest cursor page. It r
 
 ### When should I run a saved reply extraction?
 
-Use `reply_extractor` when a team needs a durable file or reviewable job. Estimate the parent tweet first. Then create one capped or uncapped extraction. Poll the returned job ID until completion. Export that job without spending additional credits on file conversion.
+Choose `reply_extractor` for stored files and reviewable jobs. Estimate the parent tweet first. Then create one capped or uncapped extraction. Poll the returned job ID until completion. File conversion does not charge additional credits.
 
 ### Which file format should I choose?
 
@@ -352,7 +352,7 @@ Check that every row has a reply tweet ID and parent tweet ID. Preserve author I
 
 ## Cost and failure handling
 
-Estimate is free. A `reply_extractor` job costs 1 credit per result. Direct `GET /x/tweets/{id}/replies` calls cost 1 credit per returned tweet. Available credits can reduce the returned page size. Exports are free after the extraction job exists.
+Estimate is free. A `reply_extractor` job costs 1 credit per result. Direct `GET /x/tweets/{id}/replies` calls cost 1 credit per returned tweet. Available credits can reduce the returned page size. File exports do not charge credits after job creation.
 
 Respect the read rate limit on live Twitter API pages. Use the parent reply count only for estimates. Treat returned reply rows as the source of truth.
 
