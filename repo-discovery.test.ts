@@ -7893,9 +7893,9 @@ const REQUIRED_TARGET_AUDIENCE_DISCOVERY_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS = [
-  'title: "Twitter Monitoring Tool API for Accounts & Keywords"',
+  'title: "Monitor Twitter Accounts & Keywords with Webhooks"',
   'sidebarTitle: Brand monitoring',
-  'Monitor accounts, keywords, mentions, hashtags, products, and campaigns with 1-second tweet checks. Deliver signed webhook alerts with replayable stored events.',
+  'Monitor Twitter accounts, keywords, mentions, hashtags, products, and campaigns every second. Deliver signed webhook alerts with replayable stored events.',
   '## Pick the Monitor Path',
   '<Card title="Account Monitor" icon="radio">',
   '`POST /api/v1/monitors`',
@@ -7913,7 +7913,7 @@ const REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS = [
   'Use Xquik as a Twitter mention tracking tool.',
   'Marketing teams can route matching tweets to their',
   'This routing helps protect brand reputation.',
-  'Use precise queries to track Twitter mentions inside relevant online',
+  'Use precise queries to track Twitter mentions in relevant conversations for',
   'Xquik events to broader social listening tools for other networks.',
   '### What Is the Best Way to Monitor a Twitter Account Programmatically?',
   'The Twitter account monitor API follows new tweets, replies, reposts, and',
@@ -7948,7 +7948,7 @@ const REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS = [
   '## Measure Brand Monitoring Coverage',
   'does not return a calculated share of voice.',
   'Build Twitter analytics downstream from unique tweet IDs and event windows.',
-  'Handle social media management approvals in a separate workflow.',
+  'Keep social media management approvals outside this monitor pipeline.',
   'Classify sentiment after collection.',
   '## Receiver Row',
   '"brand_monitor_id": "brand-xquik-q2"',
