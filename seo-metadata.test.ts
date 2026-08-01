@@ -166,14 +166,18 @@ describe('SEO metadata', (): void => {
       indexing: config.seo.indexing,
       openGraphDescription: config.metadata['og:description'],
       searchPrompt: config.search.prompt,
-      timestamps: config.metadata.timestamp,
     }).toStrictEqual({
       description: SITE_DESCRIPTION,
       indexing: 'all',
       openGraphDescription: SITE_DESCRIPTION,
       searchPrompt: 'Search docs',
-      timestamps: true,
     });
+  });
+
+  it('disables timezone-sensitive page timestamps', (): void => {
+    expect.assertions(1);
+
+    expect(loadDocsConfig().metadata.timestamp).toBe(false);
   });
 
   it('keeps every navigation page title and description usable for search previews', (): void => {
