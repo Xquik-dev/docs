@@ -75,9 +75,9 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
 <TweetReadApiLinks />
 <ConnectedAccountApiLinks />
 
-Use this Twitter media downloader API with 1-50 tweet IDs or URLs. It downloads
-photos, videos, and GIFs into a review gallery. Use it to download Twitter media
-from one tweet or a 50-tweet batch. Each response includes gallery metadata.
+Use this Twitter media downloader API with 1-50 tweet IDs or URLs.
+Download Twitter media from one tweet or a batch of 50.
+Each response contains a gallery of photos, videos, and GIFs.
 
 <Callout icon="coins" color="#5c3327">
   **1 credit per fresh tweet processed with media** · cache hits are free · [All plans](https://xquik.com/#pricing) from $0.00012/credit
@@ -324,7 +324,6 @@ download result. A gallery URL is neither an uploaded media ID nor a direct asse
 
 | Manifest column | Response or request source | Reconciliation rule |
 | --- | --- | --- |
-| `download_request_id` | Integration value | Link the selected tweet inputs to one gallery. |
 | `input_mode` | Presence of non-empty `tweetIds` | Store `single` or `bulk`. |
 | `requested_tweet_ids` | Normalized request inputs | Preserve every valid ID submitted to the download route. |
 | `tweet_id` | Single response `tweetId` | Store the resolved Tweet ID for single mode. |
@@ -335,14 +334,14 @@ download result. A gallery URL is neither an uploaded media ID nor a direct asse
 | `requested_at` | Integration timestamp | Audit when the download request started. |
 | `completed_at` | Integration timestamp | Record when your integration stores the gallery. |
 
-| Download outcome | Evidence | Next action |
-| --- | --- | --- |
-| Cached single result | `cacheHit: true` and `galleryUrl` | Store the free cached gallery result. |
-| Fresh single result | `cacheHit: false` and `galleryUrl` | Reconcile 1 processed tweet with media. |
-| Partial bulk result | `totalTweets` below valid input count | Store successes and review the skipped Tweet IDs. |
-| No media | `400 no_media` | Keep the Tweet ID and choose another source tweet. |
-| Invalid bulk items | Valid IDs remain | Continue with valid IDs and preserve rejected inputs. |
-| More than 50 items | Request exceeds the limit | Split the backfill into groups of 50 or fewer. |
+Use these outcomes when reconciling a download request:
+
+- `cacheHit: true` confirms a free cached single result.
+- `cacheHit: false` confirms a fresh single result.
+- If `totalTweets` is below the valid input count, review skipped Tweet IDs.
+- A `400 no_media` response means the source tweet has no downloadable media.
+- Preserve rejected inputs while processing valid Tweet IDs.
+- Split more than 50 inputs into groups of 50 or fewer.
 
 Fresh downloads cost 1 credit per tweet processed with media. Cached single downloads return `cacheHit: true` and are free. Bulk responses do not return `freshCount`; store the request IDs with `totalTweets` and `totalMedia` for reconciliation.
 
@@ -486,8 +485,8 @@ per-file downloads or resolution controls.
 
 ### Can I Download Media From Many Tweets?
 
-Yes. Send 1-50 tweet IDs through `tweetIds`. The response returns one combined
-gallery with tweet and media counts.
+Yes. Send 1-50 tweet IDs through `tweetIds`.
+The response returns one gallery with tweet and media counts.
 
 <Info>
   First download is metered and counts toward your monthly credit allowance. Subsequent requests for the same tweet return cached URLs at no cost (`cacheHit: true`). All downloads are saved to your gallery at `https://xquik.com/gallery`.
