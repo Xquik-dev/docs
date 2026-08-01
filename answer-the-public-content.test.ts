@@ -63,6 +63,13 @@ const REQUIRED_PROMPTS_BY_FILE = {
     'What API Can I Use to Get Someone’s Twitter Followers?',
     'How Do I Export All Followers of a Twitter Account?',
     'Twitter Followers Scraper',
+    'How Can I Scrape Twitter Followers for a Specific Account?',
+    'Export List of Twitter Followers to CSV or Excel',
+    'Can I Export Twitter Followers to a Spreadsheet Automatically?',
+    'Can I Scrape Twitter Followers With Python Scripts?',
+    'What Are the Risks of Twitter Follower Scraping Tools?',
+    'How Do I Get Public Follower Lists Responsibly?',
+    'Can I Download My Own X Archive Instead?',
   ],
   'guides/brand-monitoring-workflow.mdx': [
     'What Is the Best API to Track Twitter Keyword Mentions?',
