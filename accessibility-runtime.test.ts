@@ -36,8 +36,8 @@ describe('Mintlify accessibility overrides', (): void => {
     expect(source).toContain('html:not(.dark) .text-stone-400');
     expect(source).toContain('html:not(.dark) [class~="peer/title"]');
     expect(source).toContain('html:not(.dark) p.truncate.font-medium');
+    expect(source).toContain('html:not(.dark) #navbar button span');
     expect(source).toContain('html:not(.dark) .method-pill');
-    expect(source).toContain('html:not(.dark) .method-nav-pill span');
     expect(source).toContain('html:not(.dark) .tryit-button');
     expect(source).toContain('background-color: #116b46 !important;');
     expect(source).toContain(
@@ -46,5 +46,64 @@ describe('Mintlify accessibility overrides', (): void => {
     expect(source).toContain('@supports (content-visibility: auto)');
     expect(source).toContain('content-visibility: auto;');
     expect(source).toContain('contain-intrinsic-size: auto 320px;');
+  });
+
+  it('reserves intrinsic logo dimensions without late CSS resizing', (): void => {
+    expect.assertions(3);
+
+    const source = readFileSync('custom.css', 'utf8');
+    const lightLogo = readFileSync('logo/light.svg', 'utf8');
+    const darkLogo = readFileSync('logo/dark.svg', 'utf8');
+
+    expect(source).not.toMatch(/\.nav-logo\s*\{/u);
+    expect(lightLogo).toContain('width="64" height="29"');
+    expect(darkLogo).toContain('width="64" height="29"');
+  });
+
+  it('keeps API method badges above WCAG AA contrast', (): void => {
+    expect.assertions(7);
+
+    const source = readFileSync('custom.css', 'utf8');
+
+    expect(source).toContain('span[class*="bg-[#3064E3]"]');
+    expect(source).toContain('span[class*="bg-[#CB3A32]"]');
+    expect(source).toContain('span[class*="bg-[#2AB673]"]');
+    expect(source).toContain('span[class*="bg-[#DA622B]"]');
+    expect(source).toContain('color: #ffffff !important;');
+    expect(source).toContain('background-color: #147a4b !important;');
+    expect(source).toContain('background-color: #a9471b !important;');
+  });
+
+  it('reserves related API link accordions before hydration', (): void => {
+    expect.assertions(5);
+
+    const css = readFileSync('custom.css', 'utf8');
+    const snippets = [
+      'snippets/x-audience-community-api-links.mdx',
+      'snippets/x-connected-account-api-links.mdx',
+      'snippets/x-tweet-read-api-links.mdx',
+    ];
+
+    expect(css).toContain('.related-api-links');
+    expect(css).toContain('min-height: 3rem;');
+    for (const file of snippets) {
+      expect(readFileSync(file, 'utf8')).toContain(
+        '<div className="related-api-links">',
+      );
+    }
+  });
+
+  it('avoids focusable links inside linked Card overlays', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('sdks.mdx', 'utf8');
+    const linkedCards = [...source.matchAll(
+      /<Card\b[^>]*\bhref=(?:"[^"]*"|'[^']*'|\{[^}]*\})[^>]*>([\s\S]*?)<\/Card>/gu,
+    )];
+    const nestedLinkCards = linkedCards.filter((match): boolean =>
+      /\[[^\]]+\]\([^)]+\)/u.test(match[1] ?? ''),
+    );
+
+    expect(nestedLinkCards).toStrictEqual([]);
   });
 });

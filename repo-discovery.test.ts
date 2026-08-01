@@ -2160,7 +2160,7 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
 
 const REQUIRED_AGENT_MCP_HANDOFF_SNIPPETS = [
   'title: "AI Agent MCP Handoff for Tweet Search & Exports"',
-  'description: "Route AI agents between tweet search, follower exports, account actions, Docs MCP, API MCP, REST, SDKs, webhooks, and event replay."',
+  'description: "Route AI agents between tweet search, follower exports, account actions, Docs MCP, API MCP, REST, SDKs, webhooks, and event replay. See tool examples."',
   '<Card title="Docs MCP" icon="book-open">',
   '`https://docs.xquik.com/mcp`',
   '<Card title="API MCP" icon="terminal">',
@@ -2664,7 +2664,7 @@ const REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EVENT_LIST_API_HANDOFF_SNIPPETS = [
-  'description: "Query stored tweet, follower, following, profile, and keyword monitor events by monitor, event type, time range, and cursor."',
+  'description: "Query stored tweet, follower, following, profile, and keyword monitor events by monitor, event type, time range, and cursor. Includes response fields."',
   "jq '. as $page | .events[] | {",
   'event_id: .id',
   'monitor_type: .monitorType',
@@ -2808,7 +2808,7 @@ const FORBIDDEN_TYPES_GUIDE_COMPLETENESS_OVERCLAIMS = [
 ] as const;
 
 const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
-  'description: "Recover from API key, subscription, credit, rate-limit, validation, cursor, write-action, monitor, webhook, and dependency errors."',
+  'description: "Recover from API key, subscription, credit, rate-limit, validation, cursor, write-action, monitor, webhook, and dependency errors. Follow exact steps."',
   'Use each `error` code to choose recovery.',
   'safeToRetry',
   'Start with the HTTP family. Retry only when a card says so.',
@@ -3002,7 +3002,7 @@ const REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
-  'description: "Connect an X account with username, password, and its saved Authenticator App TOTP secret for durable tweet, reply, DM, and profile actions."',
+  'description: "Connect an X account with username, password, and its saved Authenticator App TOTP secret for durable tweet, reply, DM, and profile actions. See costs."',
   'Authenticator App 2FA and `totp_secret` are required for a durable Xquik',
   'Missing the key? Restart Authentication App 2FA in X to reveal a new secret.',
   "add it to your authenticator app, and finish X's 6-digit confirmation.",
@@ -3037,7 +3037,7 @@ const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
-  'description: "Restore a connected X account by reusing its saved Authenticator App TOTP secret or sending a replacement for the login challenge."',
+  'description: "Restore a connected X account by reusing its saved Authenticator App TOTP secret or sending a replacement for the login challenge. See request fields."',
   'Omit `totp_secret` to reuse the saved key.',
   'Send a replacement only if X',
   'changed or rejected the saved key.',
@@ -3070,7 +3070,7 @@ const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
-  'description: "Submit an email verification code for an active X account login challenge. Start a fresh connect or reauthentication when it expires."',
+  'description: "Submit an email verification code for an active X account login challenge. Start a fresh connect or reauthentication when it expires. See request fields."',
   'This endpoint cannot reopen an expired, failed, completed, or replaced challenge.',
   'After `409`, `410`, or `422`, start [Connect X Account](/api-reference/x-accounts/connect) again for a new account.',
   'For an existing account, use [Re-authenticate X Account](/api-reference/x-accounts/reauth)',
@@ -3093,7 +3093,7 @@ const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_BULK_RETRY_SNIPPETS = [
-  'description: "Clear only temporary login failures; use re-authentication or X-side fixes for credentials, TOTP, passkeys, locked, or suspended accounts"',
+  'description: "Clear only temporary login failures; use re-authentication or X-side fixes for credentials, TOTP, passkeys, locked, or suspended accounts. See fields."',
   'Bulk retry only clears `transient` and `automated` login-failure states.',
   'It does not update passwords, TOTP secret keys, passkeys, email challenges, locked accounts, or suspended accounts.',
   'Use re-authentication or reconnect for credential and 2FA fixes',
@@ -3165,7 +3165,7 @@ const FORBIDDEN_X_ACCOUNT_PUBLIC_CONTRACT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_DISCONNECT_SNIPPETS = [
-  'description: "Delete the stored Xquik connection only; the X account stays unchanged, old IDs return 404, and reconnecting creates a new ID"',
+  'description: "Delete the stored Xquik connection only; the X account stays unchanged, old IDs return 404, and reconnecting creates a new ID. Includes request fields."',
   'It deletes only the stored Xquik connection for that account ID.',
   'It does not change the X account itself.',
   'After success, the old Xquik account ID returns `404`; reconnect the account to get a new ID.',
@@ -3652,7 +3652,7 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
-  'title: "Twitter reply scraper & replies export"',
+  'title: "Twitter Reply Scraper, Replies Export & Authors"',
   'Get tweet replies returns reply tweets for one X post by numeric tweet ID.',
   'conversation analysis, support queues, moderation review, giveaway',
   '`GET /api/v1/x/tweets/{id}/replies`',
@@ -3831,7 +3831,7 @@ const FORBIDDEN_TWEET_QUOTES_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_GET_TWEET_API_HANDOFF_SNIPPETS = [
-  'title: "Tweet lookup API & post details"',
+  'title: "Tweet Lookup API, Post Details & Engagement Counts"',
   '`GET /x/tweets/{id}`',
   '`GET /api/v1/x/tweets/{id}`',
   'tweet lookup API',
@@ -3949,7 +3949,7 @@ const FORBIDDEN_GET_USER_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_NOTIFICATIONS_API_HANDOFF_SNIPPETS = [
-  'description: "Retrieve authenticated X account notifications, store triage rows, and route mentions, verified activity, and older pages with next_cursor"',
+  'description: "Retrieve authenticated X account notifications, store triage rows, and route mentions, verified activity, and older pages with next_cursor. See costs."',
   'Get notifications reads the connected account inbox.',
   'Use `type=Mentions` for',
   'mention triage, `type=Verified` for verified-account activity',
@@ -4061,7 +4061,7 @@ const FORBIDDEN_TRENDS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
-  'title: "X article API & long-form post body"',
+  'title: "X Article API for Long-Form Tweet & Post Content"',
   'Retrieve one long-form X Article by tweet ID',
   '`GET /x/articles/{tweetId}`',
   '`GET /api/v1/x/articles/{tweetId}`',
@@ -4142,7 +4142,7 @@ const FORBIDDEN_GET_ARTICLE_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWEET_THREAD_API_HANDOFF_SNIPPETS = [
-  'title: "Tweet thread API & conversation export"',
+  'title: "Tweet Thread API, Conversation Export & Authors"',
   '`GET /x/tweets/{id}/thread`',
   '`GET /api/v1/x/tweets/{id}/thread`',
   'tweet thread API',
@@ -4528,7 +4528,7 @@ const FORBIDDEN_COMMUNITY_SEARCH_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
-  'title: "Twitter followers API & export"',
+  'title: "Twitter Followers API, Profile Export & Cursors"',
   'Get an X account\'s followers by username or user ID',
   'Follower Export API',
   'X followers API',
@@ -4680,7 +4680,7 @@ const FORBIDDEN_CHECK_FOLLOWER_RENDER_RISK_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS = [
-  'description: "Check whether one X user follows another in either direction for giveaway eligibility, campaign proof, CRM flags, and relationship audits."',
+  'description: "Check whether one X user follows another in either direction for giveaway eligibility, campaign proof, CRM flags, and relationship audits. See fields."',
   'Check follower verifies one known relationship without exporting a follower',
   '`isFollowing` for source-to-target proof and `isFollowedBy` for',
   'async function buildFollowCheckAudit()',
@@ -5031,7 +5031,7 @@ const FORBIDDEN_SEARCH_USERS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS = [
-  'title: "Twitter mentions timeline API & profile alerts"',
+  'title: "Twitter Mentions Timeline API & Profile Alerts"',
   'Twitter mentions timeline API returns tweets that mention one X account.',
   'brand mentions, support inboxes, lead routing, and agent handoffs',
   '`GET /api/v1/x/users/{id}/mentions`',
@@ -5623,7 +5623,7 @@ const FORBIDDEN_TIMELINE_API_RAW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS = [
-  'title: "Search user tweets & profile timeline"',
+  'title: "Search User Tweets, Profile Timeline & Cursors"',
   'Search user tweets returns the public profile timeline for one Twitter or X',
   '"user tweets," "profile',
   'account. Use it for "user tweets," "profile timeline," or "X user timeline"',
@@ -5956,7 +5956,7 @@ const REQUIRED_TRENDS_REGION_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TRENDS_GUIDE_COPY_SNIPPETS = [
-  'description: "Find ranked X trends by WOEID region, preserve each trend query and rank, then search matching tweets with cursor pagination."',
+  'description: "Find ranked X trends by WOEID region, preserve each trend query and rank, then search matching tweets with cursor pagination. Includes exact API steps."',
   'Xquik returns ranked X trends for 12 supported WOEID regions.',
   "Use each trend's",
   '`query` with [Search Tweets](/api-reference/x/search-tweets)',
@@ -6365,7 +6365,7 @@ const FORBIDDEN_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
-  'title: "Twitter media upload API & tweet attachments"',
+  'title: "Twitter Media Upload API & Tweet Attachments"',
   'post tweet with media',
   'post tweet replies with media',
   'send DM with media',
@@ -7536,7 +7536,7 @@ const FORBIDDEN_DM_HISTORY_LOG_SNIPPETS = [
 ] as const;
 
 const REQUIRED_SEND_DM_API_SNIPPETS = [
-  'title: "Twitter DM API & direct message sending"',
+  'title: "Twitter DM API for Direct Messages & Media Uploads"',
   'Twitter DM API',
   'X direct message API',
   'send DM with media',
@@ -7844,7 +7844,7 @@ const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TARGET_AUDIENCE_DISCOVERY_WORKFLOW_SNIPPETS = [
-  'title: Target Audience Discovery Workflow',
+  'title: "Target Audience Discovery with Follower Exports"',
   'Find X audience segments with user search, follower exports, following pages, verified followers, batch enrichment, and CSV or JSON handoff.',
   '## Pick the Discovery Path',
   '<Card title="Keyword Seeds" icon="search">',
@@ -7957,7 +7957,7 @@ const REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_NO_CODE_WORKFLOW_HANDOFF_SNIPPETS = [
-  'title: "No-Code Twitter Automation With Webhooks & Exports"',
+  'title: "No-Code Twitter Automation with Webhooks & Exports"',
   'Connect Xquik monitor webhooks, extraction jobs, tweet search pages, and follower exports to Zapier, Make, Pipedream, n8n, Sheets, CRM, and queue workflows.',
   '## Pick the Handoff Lane',
   '<Card title="Monitor Event Webhooks" icon="radio">',
@@ -7998,7 +7998,7 @@ const REQUIRED_NO_CODE_WORKFLOW_HANDOFF_SNIPPETS = [
 ] as const;
 
 const REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS = [
-  'title: Request-efficient API usage',
+  'title: "Request-efficient API Usage | X API Tutorial"',
   'Use this guide when you need fewer duplicate reads, cleaner checkpoints, and better downstream handoffs.',
   'Quick answer: batch known IDs, use profile timelines for one user, use tweet search for keywords, use home timeline for the connected account feed, and use extraction jobs for saved CSV/JSON/XLSX files.',
   'Use `GET /api/v1/x/tweets?ids=...` for up to 100 comma-separated tweet IDs in one request.',
@@ -10675,23 +10675,27 @@ const FORBIDDEN_COMPARISON_POSITIONING = [
   ['high', 'tech'].join('-'),
 ] as const;
 
-const ALLOWED_ENDPOINT_TITLE_UPPERCASE_TOKENS: ReadonlySet<string> = new Set([
-  'API',
-  'CLI',
-  'DM',
-  'HMAC',
-  'ID',
-  'IDs',
-  'JSON',
-  'MCP',
-  'MPP',
-  'OAuth',
-  'REST',
-  'SDK',
-  'TOTP',
-  'URL',
-  'X',
-  'XLSX',
+const CHICAGO_TITLE_LOWERCASE_WORDS: ReadonlySet<string> = new Set([
+  'a',
+  'an',
+  'and',
+  'as',
+  'at',
+  'but',
+  'by',
+  'for',
+  'from',
+  'in',
+  'into',
+  'nor',
+  'of',
+  'on',
+  'or',
+  'per',
+  'the',
+  'to',
+  'via',
+  'with',
 ]);
 
 const FORBIDDEN_GENERIC_TITLE_PHRASES = [
@@ -11052,10 +11056,10 @@ function collectRedundantApiTitleSuffixFindings(): readonly DiscoveryFinding[] {
       });
     }
 
-    if (title?.endsWith(' API') === true) {
+    if (/\s\|\s[^|]+ API$/u.test(title ?? '')) {
       findings.push({
         file,
-        issue: `Endpoint title "${title}" adds redundant API text that appears in the sidebar.`,
+        issue: `Endpoint title "${title}" adds a generic API keyword suffix.`,
       });
     }
   }
@@ -11175,7 +11179,7 @@ function collectFocusedApiRouteFindings(): readonly DiscoveryFinding[] {
   return findings;
 }
 
-function collectEndpointTitleCaseFindings(): readonly DiscoveryFinding[] {
+function collectEndpointChicagoTitleCaseFindings(): readonly DiscoveryFinding[] {
   const findings: DiscoveryFinding[] = [];
 
   for (const file of listPublicMarkdownFiles('api-reference')) {
@@ -11190,17 +11194,17 @@ function collectEndpointTitleCaseFindings(): readonly DiscoveryFinding[] {
       continue;
     }
 
-    const [, ...tokens] = title.split(/\s+/u);
-    for (const token of tokens) {
+    const tokens = title.split(/\s+/u);
+    for (const [index, token] of tokens.entries()) {
       const normalized = token.replace(/^[^A-Za-z0-9#]+|[^A-Za-z0-9#]+$/gu, '');
       if (
         normalized !== '' &&
-        !ALLOWED_ENDPOINT_TITLE_UPPERCASE_TOKENS.has(normalized) &&
-        /^[A-Z][a-z]/u.test(normalized)
+        /^[a-z]/u.test(normalized) &&
+        (index === 0 || !CHICAGO_TITLE_LOWERCASE_WORDS.has(normalized))
       ) {
         findings.push({
           file,
-          issue: `Endpoint title "${title}" uses title case token "${normalized}". Use sentence case for endpoint labels and keep acronyms uppercase.`,
+          issue: `Endpoint title "${title}" keeps significant word "${normalized}" lowercase. Use Chicago Title Case for page headings.`,
         });
       }
     }
@@ -11273,10 +11277,10 @@ describe('repository discovery', (): void => {
     expect(collectFocusedApiRouteFindings()).toStrictEqual([]);
   });
 
-  it('keeps endpoint titles in sentence case', (): void => {
+  it('keeps endpoint titles in Chicago Title Case', (): void => {
     expect.assertions(1);
 
-    expect(collectEndpointTitleCaseFindings()).toStrictEqual([]);
+    expect(collectEndpointChicagoTitleCaseFindings()).toStrictEqual([]);
   });
 
   it('keeps public confidentiality wording generic and product-approved', (): void => {

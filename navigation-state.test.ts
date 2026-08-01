@@ -118,20 +118,20 @@ describe('navigation default state', (): void => {
     expect(bannerContent).not.toContain('trademarks of X Corp.');
   });
 
-  it('keeps X API endpoint sections expanded in the sidebar', (): void => {
+  it('keeps X API endpoint sections complete and collapsed by default', (): void => {
     expect.assertions(2);
 
     const apiReferenceTab = findTab(docsConfig(), 'API Reference');
     const xApiGroup = findGroup(apiReferenceTab, 'X API');
     const xApiSubgroups = objectItems(xApiGroup.pages);
-    const collapsedGroups = xApiSubgroups
-      .filter((group): boolean => group.expanded !== true)
+    const expandedGroups = xApiSubgroups
+      .filter((group): boolean => group.expanded === true)
       .map((group): string => group.group ?? '(unnamed)');
 
     expect(xApiSubgroups.map((group): string | undefined => group.group)).toStrictEqual([
       ...X_API_GROUPS,
     ]);
-    expect(collapsedGroups).toStrictEqual([]);
+    expect(expandedGroups).toStrictEqual([]);
   });
 
   it('keeps MDX API snippets pointed at the public API origin', (): void => {
@@ -177,5 +177,18 @@ describe('navigation default state', (): void => {
     });
 
     expect(selfRedirects).toStrictEqual([]);
+  });
+
+  it('redirects historical Bing crawl paths to canonical pages', (): void => {
+    expect.assertions(2);
+
+    expect(docsConfig().redirects).toContainEqual({
+      source: '/overview',
+      destination: '/api-reference/overview',
+    });
+    expect(docsConfig().redirects).toContainEqual({
+      source: '/agents',
+      destination: '/mcp/agent-handoff',
+    });
   });
 });
