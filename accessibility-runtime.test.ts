@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
@@ -15,41 +15,12 @@ describe('Mintlify accessibility overrides', (): void => {
     expect(docsConfig.api?.playground?.display).toBe('simple');
   });
 
-  it('leaves linked card semantics to the nested anchor', (): void => {
-    expect.assertions(11);
+  it('avoids global custom JavaScript during React hydration', (): void => {
+    expect.assertions(1);
 
-    const source = readFileSync('accessibility.js', 'utf8');
-
-    expect(source).toContain('#content .card[role="link"]');
-    expect(source).toContain("card.removeAttribute('role')");
-    expect(source).toContain("card.removeAttribute('tabindex')");
-    expect(source).toContain("card.removeAttribute('aria-labelledby')");
-    expect(source).toContain("anchor.removeAttribute('aria-hidden')");
-    expect(source).toContain("anchor.setAttribute('tabindex', '0')");
-    expect(source).toContain('new MutationObserver(scheduleAccessibilityUpdate)');
-    expect(source).toContain(
-      "window.addEventListener('load', scheduleAccessibilityInitialization",
+    expect(readdirSync('.').filter((file) => file.endsWith('.js'))).toStrictEqual(
+      [],
     );
-    expect(source).toContain("typeof window.requestIdleCallback === 'function'");
-    expect(source).toContain('window.setTimeout(initializeAccessibilityRepairs, 1000)');
-    expect(source).not.toMatch(/https?:\/\//u);
-  });
-
-  it('keeps visible control labels in their accessible names', (): void => {
-    expect.assertions(6);
-
-    const source = readFileSync('accessibility.js', 'utf8');
-
-    expect(source).toContain("'#search-bar-entry'");
-    expect(source).toContain("'#search-bar-entry-mobile'");
-    expect(source).toContain(
-      "'button[aria-label^=\"Select language\"]'",
-    );
-    expect(source).toContain("(control.textContent ?? '')");
-    expect(source).toContain(
-      "control.setAttribute('aria-label', visibleLabel)",
-    );
-    expect(source).toContain('repairVisibleControlNames()');
   });
 
   it('uses an AA-safe light-theme label color', (): void => {
