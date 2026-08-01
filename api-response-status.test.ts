@@ -3,6 +3,11 @@ import { join, relative } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import {
+  GENERATED_RESPONSE_EXAMPLES_END,
+  GENERATED_RESPONSE_EXAMPLES_START,
+} from './scripts/lib/generated-response-examples';
+
 const PROJECT_ROOT = process.cwd();
 const API_REFERENCE_DIR = join(PROJECT_ROOT, 'api-reference');
 const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
@@ -107,6 +112,20 @@ function documentedResponseStatuses(source: string): readonly string[] {
   return [...source.matchAll(RESPONSE_STATUS_PATTERN)]
     .map((match): string => match[1] ?? '')
     .sort();
+}
+
+function generatedResponseTabLabels(source: string): readonly string[] {
+  const start = source.indexOf(GENERATED_RESPONSE_EXAMPLES_START);
+  const end = source.indexOf(GENERATED_RESPONSE_EXAMPLES_END);
+  if (start === -1 || end === -1 || end < start) {
+    return [];
+  }
+
+  return [
+    ...source
+      .slice(start, end)
+      .matchAll(/^  ```(?:json|text) ([^\r\n]+)$/gmu),
+  ].map((match): string => match[1] ?? '');
 }
 
 function operationKey(apiDoc: ApiDoc): string {
@@ -215,6 +234,35 @@ describe('API success response status documentation', (): void => {
 
     const spec = parseYaml(readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'));
     expect(collectAuditedResponseStatusFindings(spec)).toStrictEqual([]);
+  });
+
+  it('keeps persisted response selections local to one API page', (): void => {
+    expect.assertions(2);
+
+    const labels: string[] = [];
+    const findings = readApiDocs().flatMap((apiDoc): readonly string[] => {
+      const pageLabels = generatedResponseTabLabels(apiDoc.source);
+      const scope = apiDoc.file
+        .replace(/^api-reference\//u, '')
+        .replace(/\.mdx$/u, '');
+      labels.push(...pageLabels.slice(1));
+
+      return [
+        ...(pageLabels[0]?.startsWith('2') === true
+          ? []
+          : [`${apiDoc.file}: first response tab is not a success status.`]),
+        ...pageLabels
+          .slice(1)
+          .filter((label): boolean => !label.endsWith(` · ${scope}`))
+          .map(
+            (label): string =>
+              `${apiDoc.file}: response tab is not page-scoped: ${label}`,
+          ),
+      ];
+    });
+
+    expect(findings).toStrictEqual([]);
+    expect(new Set(labels).size).toBe(labels.length);
   });
 
   it('keeps every write page idempotent and lifecycle-aware', (): void => {

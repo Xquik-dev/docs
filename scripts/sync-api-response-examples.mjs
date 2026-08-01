@@ -225,14 +225,15 @@ function formatValue(language, value) {
   return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
 }
 
-function responseExampleBlock(document, responses) {
-  const codeBlocks = Object.entries(responses).map(([status, rawResponse]) => {
+function responseExampleBlock(document, responses, scope) {
+  const codeBlocks = Object.entries(responses).map(([status, rawResponse], index) => {
     const example = responseExample(document, rawResponse, status);
+    const tabLabel = index === 0 ? status : `${status} · ${scope}`;
     const value = formatValue(example.language, example.value)
       .split('\n')
       .map((line) => `  ${line}`)
       .join('\n');
-    return `  \`\`\`${example.language} ${status}\n${value}\n  \`\`\``;
+    return `  \`\`\`${example.language} ${tabLabel}\n${value}\n  \`\`\``;
   });
 
   return [
@@ -292,7 +293,8 @@ for (const file of listMdxFiles(API_REFERENCE_DIR)) {
     continue;
   }
 
-  const block = responseExampleBlock(document, operation.responses ?? {});
+  const scope = relative(API_REFERENCE_DIR, file).replace(/\.mdx$/u, '');
+  const block = responseExampleBlock(document, operation.responses ?? {}, scope);
   const nextSource = replaceGeneratedBlock(source, block);
   pages += 1;
   statuses += Object.keys(operation.responses ?? {}).length;
