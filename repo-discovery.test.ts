@@ -3810,7 +3810,7 @@ const REQUIRED_TWEET_QUOTES_API_HANDOFF_SNIPPETS = [
   'checkpoint = {"quoted_tweet_id": tweet_id, "next_cursor": next_cursor}',
   'print(json.dumps({"checkpoint": checkpoint}))',
   'support, campaign, moderation,',
-  'for each quote of the requested tweet',
+  'for every quote tweet in the response',
   'Store `quoted_tweet_id`, `quote_id`,',
   '`author_id`, `author_username`, `author_name`, `author_followers`,',
   '`author_verified`, `author_profile_picture`,',
