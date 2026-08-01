@@ -1,9 +1,9 @@
 ---
-title: "Twitter DM History API & Conversation Sync"
+title: "Twitter DM API for Message History & CRM Sync"
 sidebarTitle: "Get DM history"
-description: "Read participant-scoped X direct message history with a connected account, store private rows, and resume older pages with next_cursor. See API fields."
+description: "Read participant-scoped Twitter DMs with a connected account. Store private message rows, preserve sender and recipient IDs, and resume pages with next_cursor."
 api: "GET /x/dm/{userId}/history"
-keywords: ["direct messages", "DM history", "Twitter DM history API", "X DM history API", "direct message export", "next_cursor", "participant-scoped DM"]
+keywords: ["Twitter DM API", "Twitter API DM", "direct messages", "DM history", "Twitter DM history API", "X DM history API", "direct message export", "next_cursor", "participant-scoped DM"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -90,10 +90,13 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
   **1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 </Callout>
 
-Use this endpoint to sync participant-scoped DM pages before a support, CRM,
-warehouse, or agent workflow replies. Pass the connected participant account in
-`account`, store message IDs plus `next_cursor`, and keep full message text only
-in private systems.
+This Twitter API DM endpoint reads participant-scoped conversation history.
+Pass the connected participant account through `account`. Store message IDs and
+`next_cursor` in private systems. Keep full message text private. Use
+[Send DM](/api-reference/x-write/send-dm) when the workflow needs a reply.
+
+Compare fields with [X's Direct Messages lookup guide](https://docs.x.com/x-api/direct-messages/lookup/introduction).
+Xquik returns the normalized message fields listed below.
 
 <Note>
   Requires a connected X account passed via the `account` query parameter. DM history is participant-scoped, so pass the connected account that belongs to the conversation.
@@ -237,8 +240,8 @@ in private systems.
 The examples normalize each page into private `dm_history` rows. Store
 `message_id`, `sender_id`, `receiver_id`, `message_text`, `created_at`,
 optional `media_url`, `conversation_user_id`, `sender_account`, and
-`page_next_cursor`. Keep `message_text` only in private systems; use the IDs,
-timestamp, media URL, and job status in shared logs.
+`page_next_cursor`. Keep `message_text` only in private systems. Use IDs,
+timestamps, media URLs, and job status in shared logs.
 
 ## Path parameters
 
@@ -263,7 +266,7 @@ timestamp, media URL, and job status in shared logs.
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported.
+  Your API key. You can also authenticate with an OAuth bearer token.
 </ParamField>
 
 ## Response
@@ -271,21 +274,21 @@ timestamp, media URL, and job status in shared logs.
 ### 200 OK
 
 <ResponseField name="messages" type="object[]">
-  Array of direct messages.
+  Contains direct messages.
   **Message object fields:**
-    <ResponseField name="id" type="string">Message ID.</ResponseField>
-    <ResponseField name="text" type="string">Message text. Omitted if unavailable.</ResponseField>
-    <ResponseField name="senderId" type="string">Sender user ID.</ResponseField>
-    <ResponseField name="receiverId" type="string">Receiver user ID.</ResponseField>
-    <ResponseField name="createdAt" type="string">ISO 8601 timestamp. Omitted if unavailable.</ResponseField>
-    <ResponseField name="mediaUrl" type="string">URL of attached media (image, GIF, or video). Omitted when the message has no media attachment.</ResponseField>
+    <ResponseField name="id" type="string">Identifies the message.</ResponseField>
+    <ResponseField name="text" type="string">Contains message text when available.</ResponseField>
+    <ResponseField name="senderId" type="string">Identifies the sender.</ResponseField>
+    <ResponseField name="receiverId" type="string">Identifies the recipient.</ResponseField>
+    <ResponseField name="createdAt" type="string">Reports the ISO 8601 timestamp when available.</ResponseField>
+    <ResponseField name="mediaUrl" type="string">Links attached media when present.</ResponseField>
 
 </ResponseField>
 <ResponseField name="has_next_page" type="boolean">
-  Whether older messages are available.
+  Reports whether older messages are available.
 </ResponseField>
 <ResponseField name="next_cursor" type="string">
-  Opaque cursor for the next page. Empty string when no more messages.
+  Provides the next-page cursor. Returns an empty string after the final page.
 </ResponseField>
 
 ```json
@@ -323,7 +326,7 @@ The `account` query parameter was missing or empty. Pass the handle of a connect
 ```json
 { "error": "unauthenticated" }
 ```
-Missing or invalid API key.
+Supply a valid API key or OAuth bearer token.
 
 ### 402 Insufficient credits
 
@@ -351,7 +354,7 @@ The connected X account is suspended, locked, or otherwise restricted. Use a dif
 ```json
 { "error": "account_needs_reauth" }
 ```
-The connected account needs to be reauthenticated. Reconnect it from the dashboard.
+Reconnect the connected account from the dashboard.
 
 ### 404 Account not found
 
@@ -365,21 +368,44 @@ The requested connected X account was not found. Connect it first or pass anothe
 ```json
 { "error": "rate_limit_exceeded", "retryAfter": 60 }
 ```
-Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
+You exceeded your tier's rate limit. Wait for `Retry-After` before retrying.
 
 ### 424 Dependency Failed
 
 ```json
 { "error": "x_api_unavailable" }
 ```
-The normalized v1 response contract can return 424 when the read service is unavailable.
+The opt-in normalized contract returns 424 when the read service fails.
+Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns 502.
 
 ### 502 X API unavailable
 
 ```json
 { "error": "x_api_unavailable" }
 ```
-The read service returned an error. Retry after a short delay.
+The read service failed. Retry after a short delay.
+
+## Twitter DM API Questions
+
+### Can I Retrieve DM History?
+
+Yes. Call `GET /x/dm/{userId}/history` with a participating connected account.
+
+### Can I Send a Reply Through This Endpoint?
+
+No. Use [Send DM](/api-reference/x-write/send-dm). This endpoint reads history only.
+
+### Does This Endpoint Create Direct Message Webhooks?
+
+No. It reads participant-scoped history when called. It does not register webhooks.
+
+### How Do I Authenticate?
+
+Send an API key or OAuth bearer token.
+
+### How Do I Handle a Rate Limit?
+
+Wait for `Retry-After`, then retry the same page.
 
 ## History sync handoff
 
