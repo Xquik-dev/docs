@@ -20,6 +20,19 @@ const HTTP_METHODS = new Set([
   'post',
   'put',
 ]);
+const ERROR_EXAMPLE_KEYS = [
+  'error',
+  'message',
+  'code',
+  'status',
+  'retryAfter',
+  'charged',
+  'chargedCredits',
+  'retryable',
+  'safeToRetry',
+  'writeActionId',
+  'statusUrl',
+];
 
 function listMdxFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -143,7 +156,43 @@ function exampleFromSchema(document, rawSchema, depth = 0, visited = new Set()) 
   return '<string>';
 }
 
-function responseExample(document, rawResponse) {
+function compactExample(value, maxFields, depth = 0) {
+  if (Array.isArray(value)) {
+    return value
+      .slice(0, 1)
+      .map((item) => compactExample(item, maxFields, depth + 1));
+  }
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
+
+  const fieldLimit = depth === 0 ? maxFields : Math.min(maxFields, 5);
+  return Object.fromEntries(
+    Object.entries(value)
+      .slice(0, fieldLimit)
+      .map(([key, item]) => [key, compactExample(item, maxFields, depth + 1)]),
+  );
+}
+
+function compactErrorExample(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return value;
+  }
+
+  const entries = Object.entries(value);
+  const selected = ERROR_EXAMPLE_KEYS.flatMap((key) => {
+    const entry = entries.find(([name]) => name === key);
+    return entry === undefined ? [] : [entry];
+  });
+  return Object.fromEntries(
+    (selected.length > 0 ? selected : entries.slice(0, 6)).map(([key, item]) => [
+      key,
+      compactExample(item, 5, 1),
+    ]),
+  );
+}
+
+function responseExample(document, rawResponse, status) {
   const response = resolveNode(document, rawResponse);
   const contentEntries = Object.entries(response.content ?? {});
   if (contentEntries.length === 0) {
@@ -159,10 +208,13 @@ function responseExample(document, rawResponse) {
     media.example ??
     firstNamedExample?.value ??
     exampleFromSchema(document, media.schema);
+  const compactValue = status.startsWith('4') || status.startsWith('5')
+    ? compactErrorExample(value)
+    : compactExample(value, 10);
 
   return {
     language: mediaType.includes('json') ? 'json' : 'text',
-    value,
+    value: compactValue,
   };
 }
 
@@ -175,7 +227,7 @@ function formatValue(language, value) {
 
 function responseExampleBlock(document, responses) {
   const codeBlocks = Object.entries(responses).map(([status, rawResponse]) => {
-    const example = responseExample(document, rawResponse);
+    const example = responseExample(document, rawResponse, status);
     const value = formatValue(example.language, example.value)
       .split('\n')
       .map((line) => `  ${line}`)
