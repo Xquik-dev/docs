@@ -48,8 +48,8 @@ describe('Mintlify accessibility overrides', (): void => {
     expect(source).toContain('contain-intrinsic-size: auto 320px;');
   });
 
-  it('reserves intrinsic logo dimensions without late CSS resizing', (): void => {
-    expect.assertions(4);
+  it('keeps the wordmark readable without distorting its ratio', (): void => {
+    expect.assertions(5);
 
     const source = readFileSync('custom.css', 'utf8');
     const lightLogo = readFileSync('logo/light.svg', 'utf8');
@@ -57,7 +57,8 @@ describe('Mintlify accessibility overrides', (): void => {
     const logoRule = source.match(/\.nav-logo\s*\{([^}]*)\}/u)?.[1] ?? '';
 
     expect(logoRule).toContain('aspect-ratio: 64 / 29;');
-    expect(logoRule).not.toMatch(/\b(?:block-size|height|inline-size|width)\s*:/u);
+    expect(logoRule).toContain('block-size: 2.25rem !important;');
+    expect(logoRule).toContain('inline-size: auto !important;');
     expect(lightLogo).toContain('width="64" height="29"');
     expect(darkLogo).toContain('width="64" height="29"');
   });
