@@ -187,15 +187,14 @@ tweets. Compare returned folder IDs with the preceding snapshot. Match a renamed
 folder by ID when both snapshots preserve that identifier.
 
 A missing folder ID means only that the current response omitted it. Retain
-earlier export history until your retention policy authorizes deletion. This
-rule prevents one incomplete snapshot from erasing a valid bookmark archive.
+prior exports until the current snapshot is verified. This rule prevents one
+incomplete snapshot from erasing a valid bookmark archive.
 
 ### Store One Checkpoint per Folder
 
 Create an independent export checkpoint for every folder. Store its folder ID,
 latest bookmark cursor, completion state, and collection timestamp. Resume only
-the incomplete folder after a temporary read failure. Completed folder exports
-do not need to restart.
+the incomplete folder after a temporary read failure.
 
 Keep checkpoints separate from exported tweet rows. This separation lets a
 worker replace cursor state without rewriting saved tweet records. It also
@@ -208,15 +207,16 @@ the cursor only after every row is durably stored.
 
 ### Define Folder Export Records
 
-Store folder identity beside each saved tweet. Useful CSV columns include
-`account_id`, `folder_id`, `folder_name`, `tweet_id`, `tweet_text`, `author_id`,
-`username`, `created_at`, `like_count`, `reply_count`, `repost_count`,
-`view_count`, `media_url`, and `collected_at`.
+Store folder identity beside each saved tweet. Use `account_id`, `folder_id`,
+and `folder_name` for folder scope. Use `tweet_id`, `tweet_text`, `author_id`,
+and `username` for tweet identity. Preserve `like_count`, `reply_count`,
+`repost_count`, and `view_count` for engagement analysis. Store attachment
+locations in `media_url`. Keep `created_at` and `collected_at` as timestamps.
 
-Add `source_cursor` when an audit must reproduce page boundaries. Never use
-`folder_name` as the only join key because names can change. Keep private names
-out of public object paths, logs, and alerts. Validate required IDs before
-sending records to a spreadsheet, CRM, research queue, or storage system.
+Store `source_cursor` beside each page for later audits. Never use `folder_name`
+as the only join key because names can change. Keep private names out of public
+object paths, logs, and alerts. Validate required IDs before sending records to
+a spreadsheet, CRM, research queue, or storage system.
 
 ## Twitter Bookmark Folder Questions
 
@@ -238,9 +238,9 @@ authenticated account. Mobile and desktop clients may present them differently.
 
 ### How Do I Back Up Twitter Bookmark Folders?
 
-Save the folder index as JSON Lines or CSV. Then export each folder's tweets.
-Join both files by `folder_id`. Include the authenticated account ID and
-collection timestamp in backup metadata.
+Save the folder index as JSON Lines or CSV. Export the saved tweets associated
+with every returned folder. Join both files by `folder_id`. Include the
+authenticated account ID and collection timestamp in backup metadata.
 
 ### What Errors Can Stop a Folder Export?
 
