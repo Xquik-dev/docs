@@ -1,9 +1,9 @@
 ---
-title: "Twitter Likes Scraper API & Tweet Favoriters"
+title: "How to See Who Liked My Tweet with Twitter API"
 sidebarTitle: "Get tweet favoriters"
-description: "Retrieve visible users who liked a tweet with usernames, profile fields, follower counts, verification state, and cursor checkpoints. See request fields."
+description: "See who liked a tweet with user profiles, follower counts, verification fields, cursor checkpoints, visibility limits & exact Twitter API examples for exports."
 api: "GET /x/tweets/{id}/favoriters"
-keywords: ["get tweet favoriters", "tweet likers API", "tweet likes API", "users who liked a tweet", "Twitter tweet likers API", "X tweet likers API", "CRM enrichment", "giveaway verification"]
+keywords: ["how to see who liked my tweet", "how do I see who liked my tweet", "can't see who liked my tweet", "get tweet favoriters", "tweet likers API", "tweet likes API", "users who liked a tweet", "Twitter tweet likers API", "giveaway verification"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -72,10 +72,6 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 <LlmsDirective />
 <TweetReadApiLinks />
 
-## Choose Liker Identities
-
-Use this route when liker identities are the required output. It returns user profiles and can report unavailable identities. Use retweeters when reposting accounts are the target population.
-
 <Note>
   Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
 </Note>
@@ -85,10 +81,9 @@ Use this route when liker identities are the required output. It returns user pr
 </Callout>
 
 <Info>
-  Get tweet favoriters returns user profiles when X exposes who liked a post. It
-  is also useful as a tweet likers API, tweet likes API, X tweet likers API,
-  Twitter tweet likers API, or users who liked a tweet endpoint. The canonical
-  endpoint remains `GET /api/v1/x/tweets/{id}/favoriters`.
+  Use this Twitter API to see who liked one public tweet. The response returns
+  profiles only when X exposes liker identities. The canonical route is
+  `GET /api/v1/x/tweets/{id}/favoriters`.
 </Info>
 
 <Warning>
@@ -178,10 +173,10 @@ from the last completed page without duplicate rows.
 ## Direct tweet liker handoff
 
 Use `GET /api/v1/x/tweets/{id}/favoriters` when a workflow needs one row per
-visible account that liked a post for giveaway checks, CRM enrichment, audience
-analysis, or follow-up jobs. Store `source_tweet_id`, `liker_id`, `username`,
-`display_name`, `follower_count`, `following_count`, `verified`,
-`verified_type`, `profile_image_url`, and a separate `next_cursor` checkpoint.
+visible account that liked a post. Use these rows for giveaway checks, CRM
+imports, audience reviews, or follow-up jobs. Store `source_tweet_id`,
+`liker_id`, `username`, `display_name`, `follower_count`, `following_count`,
+`verified`, `verified_type`, `profile_image_url`, and `next_cursor`.
 
 <CardGroup cols={2}>
   <Card title="Liker rows" icon="rows-3">
@@ -222,41 +217,36 @@ Direct tweet liker reads cost 1 credit per user returned. Low credit balances
 can return fewer users than a full page; zero affordable results return
 `402 insufficient_credits`.
 
-## Review who liked one tweet
+## Tweet Liker Questions
 
-Use this route when the tweet is the fixed starting point. Return profiles that
-liked that tweet. Keep the source tweet ID with every profile row.
+### How Do I See Who Liked My Tweet?
 
-Store user ID, username, profile name, biography, verification state, follower
-counts, and collection time. Preserve the cursor for each completed page.
+Pass the tweet's numeric ID. The response lists visible user profiles. Continue
+pagination only when the response confirms another page.
+[X documents this read intent as Get Liking Users.](https://docs.x.com/x-api/posts/get-liking-users)
 
-Liker profiles can support campaign review or audience research. A like does
-not prove agreement, purchase intent, or affiliation. Keep conclusions
-separate from the observed public action.
+### Why Can't I See Who Liked My Tweet?
 
-Compare repeated snapshots by user ID. Avoid using username changes as new
-liker events. Deduplicate resumed pages by tweet ID and user ID.
+X does not expose every liker set. A tweet can show a like count while its liker
+profiles remain hidden. `424 favoriters_unavailable` does not mean zero likes.
+Deleted, protected, blocked, or withheld accounts may not appear.
 
-Use retweeters when the question concerns repost distribution. Use tweet
-replies for conversation participants. Each engagement route represents a
-different public action.
+### Does This Show an Account's Private Likes?
 
-## Segment liker profiles carefully
+No. This endpoint returns visible users for one source tweet. It does not return
+an account's Likes tab or private like history.
 
-Create segments from explicit profile fields. Examples include verification
-state, location, or follower-count ranges.
+### How Do I Export Tweet Likers?
 
-Keep the segmentation rule beside the output. Do not label a profile as a
-customer, lead, or advocate from a like alone.
+The Node.js and Python examples write one JSON Lines row per visible user. Store
+the source tweet ID beside each profile. Use `next_cursor` to resume an export.
+Use `toolType=favoriters` for a saved CSV, JSON, or XLSX job.
 
-For repeated analysis, apply the same rule to each complete snapshot. Changes
-in public profile fields can move a user between segments.
+### How Can I Track and Analyze Tweet Likes?
 
-Keep segment totals beside the exact source tweet and collection time. Avoid
-comparing totals produced by different rules.
-
-Open selected profiles through user lookup when current biography or counts
-matter. The liker page represents the collection moment.
+Run timestamped snapshots and compare them by numeric user ID. This read
+endpoint does not send notifications for future likes. A like does not prove
+endorsement, purchase intent, or affiliation. Report only returned fields.
 
 ## Path parameters
 
@@ -267,8 +257,8 @@ matter. The liker page represents the collection moment.
 ## Query parameters
 
 <ParamField query="cursor" type="string">
-  Pagination cursor from `next_cursor` in a previous response. Omit for the
-  first page. Pass a cursor only when `has_next_page` is true.
+  Pagination cursor from `next_cursor` in a previous response. Omit it on the
+  initial request. Pass it only when `has_next_page` is true.
 </ParamField>
 
 ## Which tweet engagement endpoint?
@@ -328,26 +318,26 @@ matter. The liker page represents the collection moment.
     <ResponseField name="profilePicture" type="string">Profile image URL.</ResponseField>
     <ResponseField name="location" type="string">Profile location.</ResponseField>
     <ResponseField name="createdAt" type="string">Account creation date (ISO 8601).</ResponseField>
-    <ResponseField name="statusesCount" type="number">Total number of tweets posted. Omitted if unavailable.</ResponseField>
-    <ResponseField name="coverPicture" type="string">Cover/banner image URL. Omitted if unavailable.</ResponseField>
-    <ResponseField name="mediaCount" type="number">Total number of media tweets posted. Omitted if unavailable.</ResponseField>
+    <ResponseField name="statusesCount" type="number">This value records the total tweet count. X may omit it.</ResponseField>
+    <ResponseField name="coverPicture" type="string">This value contains the cover image URL. X may omit it.</ResponseField>
+    <ResponseField name="mediaCount" type="number">This value records the media tweet count. X may omit it.</ResponseField>
     <ResponseField name="url" type="string">Website URL from profile. Omitted if empty.</ResponseField>
-    <ResponseField name="favouritesCount" type="number">Total number of tweets liked. Omitted if unavailable.</ResponseField>
-    <ResponseField name="hasCustomTimelines" type="boolean">Whether the user has custom timelines. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isTranslator" type="boolean">Whether the user is an X translator. Omitted if unavailable.</ResponseField>
+    <ResponseField name="favouritesCount" type="number">This value records the liked tweet count. X may omit it.</ResponseField>
+    <ResponseField name="hasCustomTimelines" type="boolean">X sets this flag for accounts with custom timelines. X may omit it.</ResponseField>
+    <ResponseField name="isTranslator" type="boolean">X sets this flag for translator accounts. X may omit it.</ResponseField>
     <ResponseField name="withheldInCountries" type="string[]">Country codes where the account is withheld. Omitted if empty.</ResponseField>
-    <ResponseField name="possiblySensitive" type="boolean">Whether the account is flagged as possibly sensitive. Omitted if unavailable.</ResponseField>
-    <ResponseField name="pinnedTweetIds" type="string[]">IDs of pinned tweets. Omitted if none.</ResponseField>
-    <ResponseField name="isAutomated" type="boolean">Whether the account is marked as automated. Omitted if unavailable.</ResponseField>
+    <ResponseField name="possiblySensitive" type="boolean">X sets this flag for sensitive accounts. X may omit it.</ResponseField>
+    <ResponseField name="pinnedTweetIds" type="string[]">This array contains pinned tweet IDs. Omitted if none.</ResponseField>
+    <ResponseField name="isAutomated" type="boolean">X sets this flag for automated accounts. X may omit it.</ResponseField>
     <ResponseField name="automatedBy" type="string">Username of the account operator if automated. Omitted if not automated.</ResponseField>
-    <ResponseField name="unavailable" type="boolean">Whether the account is unavailable. Omitted if available.</ResponseField>
-    <ResponseField name="unavailableReason" type="string">Reason the account is unavailable. Omitted if available.</ResponseField>
+    <ResponseField name="unavailable" type="boolean">X sets this flag when it cannot return the account.</ResponseField>
+    <ResponseField name="unavailableReason" type="string">X may give a reason for a missing account.</ResponseField>
     <ResponseField name="verifiedType" type="string">Verification type (e.g. `Business`, `Government`). Omitted if not verified or standard blue check.</ResponseField>
-    <ResponseField name="profile_bio" type="object">Structured profile bio with entity annotations. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isBlueVerified" type="boolean">Whether the account has X Premium verification. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isVerified" type="boolean">Normalized verification status. Omitted if unavailable.</ResponseField>
-    <ResponseField name="profileBannerUrl" type="string">Profile banner URL. Omitted if unavailable.</ResponseField>
-    <ResponseField name="protected" type="boolean">Whether the account protects its posts. Omitted if unavailable.</ResponseField>
+    <ResponseField name="profile_bio" type="object">Use this object for bio text and linked profile entities. X may omit it.</ResponseField>
+    <ResponseField name="isBlueVerified" type="boolean">X sets this flag for X Premium verification. X may omit it.</ResponseField>
+    <ResponseField name="isVerified" type="boolean">Use this field for normalized verification status. X may omit it.</ResponseField>
+    <ResponseField name="profileBannerUrl" type="string">This value contains the profile banner URL. X may omit it.</ResponseField>
+    <ResponseField name="protected" type="boolean">X sets this flag for protected accounts. X may omit it.</ResponseField>
     <ResponseField name="communityRole" type="string">Role within the requested community context. Omitted outside community results.</ResponseField>
 
 </ResponseField>
@@ -358,67 +348,15 @@ matter. The liker page represents the collection moment.
   Opaque cursor for the next page. Empty string when no more results.
 </ResponseField>
 
-```json
-{
-  "users": [
-    {
-      "id": "987654321",
-      "username": "username",
-      "name": "Xquik",
-      "followers": 10000,
-      "verified": true
-    }
-  ],
-  "has_next_page": true,
-  "next_cursor": "DAADDAABCgABF..."
-}
-```
-
-### 400 Invalid tweet ID
-
-```json
-{ "error": "invalid_tweet_id" }
-```
-The tweet ID is empty or invalid.
-
 ### 401 Unauthenticated
 
-Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
-```json
-{ "error": "unauthenticated" }
-```
-Missing or invalid API key.
+Anonymous requests receive `WWW-Authenticate: Bearer`.
+This is not a Payment challenge.
 
 ### 402 Payment required
 
-Account keys get account options; guest keys get guest top-up only.
-No checkout starts automatically. Confirm any payment action.
-
-### 502 X API unavailable
-
-```json
-{ "error": "x_api_unavailable" }
-```
-The read service returned an error. Retry after a short delay.
-
-### 429 Rate Limit Exceeded
-
-```json
-{ "error": "rate_limit_exceeded", "retryAfter": 60 }
-```
-Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
-
-### 424 Liker Identities Unavailable
-
-```json
-{
-  "error": "favoriters_unavailable",
-  "message": "Users who liked this post are unavailable. Use retweeters or replies instead."
-}
-```
-The post reports likes, but X does not expose the corresponding user
-identities. Use retweeters or replies when the workflow needs a visible
-participant list.
+Account keys receive account options. A guest wallet receives a checkout
+option. Confirm any payment action.
 
 <Note>
   **Related:** [Retweeters](/api-reference/x/retweeters) · [Quote tweets](/api-reference/x/tweet-quotes) · [Tweet replies](/api-reference/x/tweet-replies)
