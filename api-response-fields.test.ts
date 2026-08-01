@@ -1576,7 +1576,7 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     },
     {
       allowedFields: userProfile,
-      page: 'api-reference/x/get-user.mdx',
+      page: 'api-reference/x/twitter-profile-lookup.mdx',
       requiredFields: requiredSchemaPropertyNames(spec, 'UserProfile'),
     },
     {

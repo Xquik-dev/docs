@@ -2182,7 +2182,7 @@ const REQUIRED_AGENT_MCP_HANDOFF_SNIPPETS = [
   '"export_route": "GET /api/v1/extractions/77777/export?format=json"',
   'Keep API keys, webhook secrets, raw request bodies, raw signatures, and full',
   '<Card title="File Exports" icon="braces" href="/guides/response-formats-exports">',
-  '<Card title="Webhook Receivers" icon="webhook" href="/guides/webhook-testing">',
+  '<Card title="Webhook Receivers" icon="webhook" href="/guides/twitter-webhook-testing">',
   '<Card title="SDK Backends" icon="boxes" href="/sdks">',
   '"mcp/agent-handoff"',
   '[Agent MCP Handoff](https://docs.xquik.com/mcp/agent-handoff)',
@@ -2404,7 +2404,7 @@ const PAID_READ_REFERENCE_PAGES = [
   'api-reference/x/following.mdx',
   'api-reference/x/get-article.mdx',
   'api-reference/x/get-tweet.mdx',
-  'api-reference/x/get-user.mdx',
+  'api-reference/x/twitter-profile-lookup.mdx',
   'api-reference/x/list-followers.mdx',
   'api-reference/x/list-members.mdx',
   'api-reference/x/list-tweets.mdx',
@@ -2429,7 +2429,7 @@ const DIRECT_MPP_REFERENCE_PAGES = new Set([
   'api-reference/x/community-info.mdx',
   'api-reference/x/get-article.mdx',
   'api-reference/x/get-tweet.mdx',
-  'api-reference/x/get-user.mdx',
+  'api-reference/x/twitter-profile-lookup.mdx',
   'api-reference/x/trends.mdx',
 ]);
 
@@ -4922,7 +4922,7 @@ const REQUIRED_BATCH_USERS_API_HANDOFF_SNIPPETS = [
   '## Direct batch user handoff',
   '`GET /x/users/batch`',
   'CRM, warehouse, enrichment, lead scoring,',
-  '[Get User](/api-reference/x/get-user)',
+  '[Get User](/api-reference/x/twitter-profile-lookup)',
   'const profilesById = new Map(data.users.map',
   'const profileRows = data.users.map',
   'const missingIds = ids.filter',
@@ -4947,7 +4947,7 @@ const REQUIRED_BATCH_USERS_API_HANDOFF_SNIPPETS = [
   'single-page batch contract',
   '## Which lookup endpoint?',
   '<Card title="One profile" icon="user-round">',
-  '[`GET /x/users/{id}`](/api-reference/x/get-user)',
+  '[`GET /x/users/{id}`](/api-reference/x/twitter-profile-lookup)',
   '<Card title="Many known IDs" icon="key-round">',
   'up to 100 comma-separated user IDs',
   '<Card title="Name or partial handle" icon="search">',
@@ -5000,7 +5000,7 @@ const REQUIRED_SEARCH_USERS_API_HANDOFF_SNIPPETS = [
   '## Direct user search handoff',
   '`GET /x/users/search`',
   'CRM, enrichment, creator discovery, support,',
-  '[Get User](/api-reference/x/get-user)',
+  '[Get User](/api-reference/x/twitter-profile-lookup)',
   '[Get Users (Batch)](/api-reference/x/batch-users)',
   'const params = new URLSearchParams({ q: query });',
   'const response = await fetch(`https://xquik.com/api/v1/x/users/search?${params}`',
@@ -5226,7 +5226,7 @@ const REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS = [
   'participant-scoped context',
   '`has_next_page` and `next_cursor`',
   'Target X user ID as a numeric string.',
-  '[Get user](/api-reference/x/get-user)',
+  '[Get user](/api-reference/x/twitter-profile-lookup)',
   'Pass a cursor only when `has_next_page` is true.',
   '## Which follower graph endpoint?',
   '<Card title="Mutual followers"',
@@ -7457,7 +7457,7 @@ const REQUIRED_DM_HISTORY_API_SNIPPETS = [
   '[`POST /x/media`](/api-reference/x-write/upload-media)',
   'the only `media_ids` item',
   '<Card title="Resolve participant ID" icon="user-search">',
-  '[`GET /x/users/{id}`](/api-reference/x/get-user)',
+  '[`GET /x/users/{id}`](/api-reference/x/twitter-profile-lookup)',
   'params={"account": "your_handle"}',
   'function historyUrl(userId, account, cursor) {',
   'const params = new URLSearchParams({ account });',
@@ -7519,7 +7519,7 @@ const REQUIRED_DM_HISTORY_API_SNIPPETS = [
   'Store `next_cursor` when `has_next_page` is true',
   'Store optional `messages[].mediaUrl` with `messages[].createdAt`',
   '[Direct Message Workflow](/guides/direct-message-workflow)',
-  '[Get User](/api-reference/x/get-user)',
+  '[Get User](/api-reference/x/twitter-profile-lookup)',
   '[Send DM](/api-reference/x-write/send-dm)',
   '[Upload Media](/api-reference/x-write/upload-media)',
   'participant-scoped history sync',
@@ -7593,7 +7593,7 @@ const REQUIRED_SEND_DM_API_SNIPPETS = [
   'use `message_id` as the external DM identifier',
   '## Direct message handoff',
   'support, sales, community, CRM, or agent workflow',
-  '[`GET /x/users/{id}`](/api-reference/x/get-user)',
+  '[`GET /x/users/{id}`](/api-reference/x/twitter-profile-lookup)',
   '[`GET /x/dm/{userId}/history`](/api-reference/x/dm-history)',
   'Store `messageId` as the external message ID for support logs, CRM records, queues, or agent memory.',
   'Mark the send job complete after a `200 OK` response.',
@@ -7757,7 +7757,7 @@ const REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS = [
   '<Card title="Follower CRM export" icon="users" href="/guides/follower-export-crm">',
   '<Card title="Campaign verification" icon="badge-check" href="/guides/campaign-verification-workflow">',
   'Check social actions and draw exports.',
-  '<Card title="Monitor webhooks" icon="webhook" href="/guides/webhook-testing">',
+  '<Card title="Monitor webhooks" icon="webhook" href="/guides/twitter-webhook-testing">',
   'Test signed deliveries, verify `X-Xquik-Signature`, store `deliveryId` and `streamEventId`, and return `2xx` before slow work.',
   '<Card title="Media tweets and DMs" icon="image" href="/guides/media-upload-workflow">',
   '<Card title="Direct messages" icon="send" href="/guides/direct-message-workflow">',
@@ -10738,7 +10738,7 @@ const FOCUSED_API_ROUTE_MIGRATIONS = [
 
 function listAlternativeFiles(): readonly string[] {
   return [
-    'alternatives.mdx',
+    'twitter-api-alternatives.mdx',
     ...readdirSync('alternatives')
       .filter((file) => file.endsWith('.mdx'))
       .map((file) => `alternatives/${file}`),
@@ -11019,7 +11019,7 @@ function collectComparisonPositioningFindings(): readonly DiscoveryFinding[] {
 }
 
 function collectAlternativesOverviewCardParagraphFindings(): readonly DiscoveryFinding[] {
-  const source = readFileSync('alternatives.mdx', 'utf8');
+  const source = readFileSync('twitter-api-alternatives.mdx', 'utf8');
   const findings: DiscoveryFinding[] = [];
   const cardPattern = /<Card title="([^"]+)"[^>]*>([\s\S]*?)<\/Card>/gu;
 
@@ -12706,7 +12706,7 @@ describe('repository discovery', (): void => {
   it('keeps the get user API handoff concrete', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/x/get-user.mdx', 'utf8');
+    const source = readFileSync('api-reference/x/twitter-profile-lookup.mdx', 'utf8');
 
     expect(
       collectSnippetFindings(
@@ -14123,7 +14123,7 @@ describe('repository discovery', (): void => {
   it('keeps webhook testing and verification examples runnable', (): void => {
     expect.assertions(1);
 
-    const testing = readFileSync('guides/webhook-testing.mdx', 'utf8');
+    const testing = readFileSync('guides/twitter-webhook-testing.mdx', 'utf8');
     const types = readFileSync('guides/x-api-typescript-types.mdx', 'utf8');
     const overview = readFileSync('webhooks/overview.mdx', 'utf8');
     const verification = readFileSync('webhooks/verification.mdx', 'utf8');
@@ -15389,7 +15389,7 @@ describe('repository discovery', (): void => {
   it('keeps the alternatives workflow shortlist concrete', (): void => {
     expect.assertions(2);
 
-    const source = readFileSync('alternatives.mdx', 'utf8');
+    const source = readFileSync('twitter-api-alternatives.mdx', 'utf8');
 
     expect(
       collectSnippetFindings(
@@ -15479,7 +15479,7 @@ describe('repository discovery', (): void => {
   it('keeps the alternatives sector matrix concrete', (): void => {
     expect.assertions(3);
 
-    const source = readFileSync('alternatives.mdx', 'utf8');
+    const source = readFileSync('twitter-api-alternatives.mdx', 'utf8');
 
     expect(
       collectSnippetFindings(

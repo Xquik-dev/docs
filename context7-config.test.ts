@@ -23,7 +23,7 @@ const REQUIRED_EXCLUDED_FILES = [
   'api-params.test.ts',
   'api-response-fields.test.ts',
   'api-response-status.test.ts',
-  'alternatives.mdx',
+  'twitter-api-alternatives.mdx',
   'context7-config.test.ts',
   'custom.css',
   'docs.json',
