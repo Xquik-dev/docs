@@ -85,8 +85,8 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 
 <Info>
   Use this Twitter API to view quote tweets for one original tweet. Each row
-  contains the quoting tweet's commentary, author, engagement, and media. The
-  canonical route remains `GET /api/v1/x/tweets/{id}/quotes`.
+  includes the quoting tweet's commentary, author, engagement counts, and media
+  attachments. The canonical route remains `GET /api/v1/x/tweets/{id}/quotes`.
 </Info>
 
 <CodeGroup>
@@ -191,7 +191,7 @@ handoff can resume from the last completed page without duplicate rows.
 
 Use `GET /api/v1/x/tweets/{id}/quotes` when a support, campaign, moderation,
 research, or agent workflow needs quote tweets as JSON rows. It returns one row
-per quote tweet for a single source tweet. Store `quoted_tweet_id`, `quote_id`,
+for each quote of the requested tweet. Store `quoted_tweet_id`, `quote_id`,
 `text`, `author_id`, `author_username`, `author_name`, `author_followers`,
 `author_verified`, `author_profile_picture`, `created_at`, engagement counts,
 media URLs, and a separate `next_cursor` checkpoint. Use `sinceTime`,
@@ -277,27 +277,27 @@ It never changes the original tweet.
 
 Pass the original tweet's numeric ID through the path. Store every returned
 `quote_id` before requesting `next_cursor`. Keep the original tweet ID beside
-each row for attribution, deduplication, and campaign analysis.
+each row for attribution, deduplication, and campaign reporting.
 
 ### Why Are Some Quote Tweets Not Showing?
 
 X controls which quote tweets each request exposes. Deleted, protected,
 withheld, blocked, or unavailable tweets may not appear. Filters can also
-remove otherwise visible rows. Never treat a missing row as proof that no
-quote tweet exists.
+remove otherwise visible rows. A missing row does not prove that nobody quoted
+the tweet.
 
 ### How Do Quote Tweets Differ From Replies and Reposts?
 
 A quote tweet adds its author's commentary and references the original tweet.
-A repost shares the original without added commentary. A reply joins the
-tweet's conversation. Use retweeters for reposting profiles and replies for
-conversation rows.
+A repost shares the original without added commentary. Replies belong to the
+original tweet's conversation. Use retweeters for reposting profiles. Use the
+replies endpoint to retrieve conversation members.
 
 ### How Can Teams Analyze Quote Tweets?
 
-Store the quote tweet's text, author, creation time, engagement counts, and
-media. Keep the source relationship separate. Deduplicate by source tweet ID
-and quote tweet ID. Use monitors and signed webhooks for future quote alerts.
+Store text, author, creation time, engagement counts, and media URLs. Keep the
+source relationship separate. Use both tweet IDs as the deduplication key. Use
+monitors and signed webhooks for future quote alerts.
 
 ## Path parameters
 
@@ -308,8 +308,8 @@ and quote tweet ID. Use monitors and signed webhooks for future quote alerts.
 ## Query parameters
 
 <ParamField query="cursor" type="string">
-  Pagination cursor from `next_cursor` in a previous response. Omit for the
-  first page. Pass a cursor only when `has_next_page` is true.
+  Pagination cursor from `next_cursor` in a previous response. Leave it empty
+  for the initial request. Pass a cursor only when `has_next_page` is true.
 </ParamField>
 
 <ParamField query="sinceTime" type="string">
@@ -489,7 +489,7 @@ Your tier rate limit was exceeded. Wait for the `Retry-After` header before retr
 ```json
 { "error": "x_api_unavailable" }
 ```
-The normalized v1 response contract can return 424 when the read service is unavailable.
+Status `424` means the read service did not return quote tweets. Retry later.
 
 <Note>
   **Related:** [Tweet replies](/api-reference/x/tweet-replies) · [Tweet thread](/api-reference/x/tweet-thread) · [Retweeters](/api-reference/x/retweeters) · [Tweet favoriters](/api-reference/x/favoriters)
