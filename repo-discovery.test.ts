@@ -3721,7 +3721,7 @@ const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   'username, display name, follower count, verified state, profile image URL,',
   '`tweets[].inReplyToId` and `conversationId`',
   '`has_next_page` and `next_cursor`',
-  'one reply for a single tweet',
+  'one reply tied to the requested tweet',
   '`parent_tweet_id`, `reply_id`, `text`,',
   'Use [`reply_extractor`](/guides/tweet-replies-export) instead when a team needs',
   'an estimate, durable extraction ID, stored result pages, or CSV, JSON, and XLSX',
