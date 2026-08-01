@@ -10,196 +10,179 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 
 <LlmsDirective />
 
-Use this workflow to download a Twitter follower list as CSV, XLSX, or JSON. Keep stable user IDs, usernames, profile names, verification, images, and audience counts. Then import the rows into a CRM or warehouse.
+Download a Twitter follower list as CSV, XLSX, or JSON. Keep stable user IDs,
+usernames, bios, verification, profile images, and audience counts. Import the
+rows into a CRM, spreadsheet, queue, or warehouse.
 
 <AudienceCommunityApiLinks />
-
-This Twitter follower export runs `follower_explorer` as a saved Twitter followers scraper.
-Use it as a Twitter follower tracker for repeatable account snapshots. It is
-not a real-time follower feed.
 
 ## Twitter Follower Export Questions
 
 ### Download Follower List Twitter
 
-Use `follower_explorer` when the workflow needs a saved file. Estimate the
-requested followers, then create one extraction. Poll its job ID. Export CSV,
-JSON, or XLSX after completion. Keep the source username and resolved X user
-ID.
+Run `follower_explorer` when you need a saved follower export. Use it as a
+Twitter follower tracker for repeatable account snapshots. Estimate credits
+before starting. Keep the source username and resolved user ID. Poll the job
+until completion.
 
-CSV works well for Google Sheets and CRM imports. XLSX supports analyst review.
-JSON fits queues, warehouses, and app ingestion. Use `x_user_id` as the stable
-row key because usernames can change.
-
-Keep one Twitter user profile per stable user ID. Store username, profile name,
-bio, location, and verification. Add follower count, following count, profile
-image, and source account ID. Keep collection time and extraction ID when
-returned.
-Compare exported rows with the completed job result. Mark result caps, credit
-limits, failed pages, or interrupted downloads as bounded exports.
+<Accordion title="File Formats & Follower Fields">
+Download CSV for CRM lists or spreadsheet imports. Choose
+XLSX for analyst review and JSON for queues. Store one profile per user ID.
+Keep follower counts, following counts, verification, collection time, and the
+applied result limit. Mark any interrupted export as bounded.
+</Accordion>
 
 ### Export Twitter Followers API
 
-Use `POST /api/v1/extractions` with `toolType: follower_explorer` for a reusable
-Twitter follower export. Supply the public profile username as
-`targetUsername`. Set `resultsLimit` when the job needs a hard row cap.
+Use `POST /api/v1/extractions` for a saved follower export. Supply the public
+username and `follower_explorer`. Set `resultsLimit` before creating a large
+job. Use `GET /api/v1/x/users/{id}/followers` for current profile pages. That
+route returns `users`, `has_next_page`, and `next_cursor`.
 
-Use `GET /api/v1/x/users/{id}/followers` for one live follower page. This route
-returns profiles plus `has_next_page` and `next_cursor`. Save each opaque cursor
-only after the returned profiles become durable.
-
-Choose the saved extraction for estimates, audit trails, and CSV, JSON, or
-XLSX files. Choose the live followers route for low-latency application pages.
-Both paths require scoped credentials and rate-limit handling. Deduplicate
-resumed pages by user ID. Never use a username as the only CRM key.
+<Accordion title="Cursor, API Key & Rate-Limit Rules">
+Treat `next_cursor` as opaque. Persist every follower page before saving its cursor. Keep the API
+key outside exported lists. Handle each documented rate limit and error status.
+Deduplicate retries by user ID. Save the collection time.
+</Accordion>
 
 ### What API Can I Use to Get Someone’s Twitter Followers?
 
-Resolve the public profile to its stable X user ID. Then call
-`GET /api/v1/x/users/{id}/followers` for one current page. Request another page
-only when `has_next_page` is true. Pass `next_cursor` back unchanged.
+Resolve a public profile to its stable user ID. Then use the
+[live Followers API contract](https://docs.xquik.com/api-reference/x/followers)
+for current follower pages. Use `follower_explorer` for a saved export or list.
 
-Use `follower_explorer` when the same request needs a saved job and downloadable
-file. Set `targetUsername` and an explicit `resultsLimit`. Keep user IDs,
-usernames, names, bios, locations, and verification. Add audience counts,
-profile images, cursors, and collection time when returned. Access remains
-subject to public availability, credits, rate limits, and documented responses.
-The API does not expose private followers. It never guarantees a complete
-uncapped archive.
-
-A private account does not make its followers public. Do not infer inactive
-accounts from missing pages or unchanged follower counts.
+<Accordion title="Public Profile Boundaries">
+A private account does not make its followers public. Never infer private
+profiles from a missing page. Save each username, user ID, cursor, and
+collection time. Request another page only after the current profiles become
+durable. Respect API key scope, credits, and every returned rate limit.
+</Accordion>
 
 ### How Do I Export All Followers of a Twitter Account?
 
-Estimate the account first. The response resolves its X user ID and projected
-follower count. Confirm the credit budget before creating the extraction.
+Estimate the public profile first. Confirm credits and set `resultsLimit` before
+creating the follower export. Poll the job until completion or failure. Save
+each returned list page before its cursor.
 
-Do not promise a complete file before the job finishes. Poll the extraction
-until it reaches `completed` or `failed`. Export the completed job, then compare
-its returned rows with the stored job result.
-
-Large follower lists may need a lower `resultsLimit`. Record that cap beside the
-file. Label exports with fewer profiles as bounded. Compare them with the
-current follower count. This label prevents false completeness claims.
-
-For live pagination, save each profile page before persisting its cursor. Stop
-only when `has_next_page` becomes false or a documented limit interrupts the
-run. Deduplicate by stable user ID after a retry. Record the source profile ID,
-first cursor, and last cursor. Add page count, unique row count, and completion
-time. Profile counts can change during the export. Displayed follower counts
-are not fixed reconciliation totals.
-
-Call the result a full list only when pagination ends normally. Otherwise,
-label the export with its result cap, interruption, or credit boundary.
+<Accordion title="Completeness & Reconciliation">
+Deduplicate profiles by stable user ID after retries.
+Call the result a full list only when pagination ends normally.
+Label exports with fewer profiles as bounded. Record the source
+username, first cursor, final cursor, unique row count, and completion time.
+Follower totals may change during collection.
+</Accordion>
 
 ### Twitter Followers Scraper
 
-Use the saved scraper for cost estimates, repeatable files, and audit trails.
-Use the live Twitter API followers route for low-latency pages. Both return
-concrete profile fields. These include user ID, username, bio, and verification.
-They can include follower count, following count, location, and profile image.
+Use the saved Twitter followers scraper for cost estimates and reusable files.
+Use it as a Twitter follower tracker for repeatable account snapshots. Choose
+the live follower API for low-latency profile pages.
 
-Keep account access and API keys scoped. Respect each read rate limit. Never
-guess cursors or restart pagination with a different source account.
-
-For CRM imports, map the stable user ID to a unique external field. Treat the
-username, name, bio, location, and verification as replaceable attributes. Do
-the same for audience counts and profile images. Upsert small batches. Store
-rejected rows for review. For warehouse snapshots, keep source account,
-collection time, page cursor, and extraction ID. These fields distinguish new
-followers from changed profiles or incomplete runs.
+<Accordion title="Returned Profile Fields">
+Both paths return user ID, username, bio, and verification. They can also return
+follower counts, following counts, location, and profile images. Keep every API key
+scoped. Respect the read rate limit. Store cursors with their source profile.
+Never restart pagination under another username.
+</Accordion>
 
 ### How Can I Scrape Twitter Followers for a Specific Account?
 
-Resolve the public username to its stable X user ID. Use the live followers
-endpoint for current JSON pages. Use `follower_explorer` when the workflow needs
-a saved export. Set `resultsLimit` before starting a large extraction. Estimate
-credits first. Then create one job and poll its returned ID. Export completed
-rows as CSV, JSON, or XLSX. Deduplicate profiles by numeric user ID after every
-retry. Store each opaque cursor only after its page becomes durable. Stop when
-pagination ends or a documented boundary interrupts collection. Label
-interrupted results as bounded exports. Never infer private followers from an
-incomplete page. Review the
-[live Followers API contract](https://docs.xquik.com/api-reference/x/followers)
-before choosing request fields.
+Supply one public username to `follower_explorer`. Estimate credits, create one
+job, and poll its returned ID. Export completed follower rows as CSV, JSON, or
+XLSX.
+
+<Accordion title="Specific Account Checkpoints">
+Use the live API for current profile pages. Persist each
+list before its opaque cursor. Deduplicate retries by numeric user ID. Store the
+mutable username, bio, follower count, following count, and verification. Stop
+at a documented limit. Never infer private followers from an incomplete page.
+Record completion time.
+</Accordion>
 
 ### Export List of Twitter Followers to CSV or Excel
 
-Use `follower_explorer` to export a list of Twitter followers for one public
-account. Choose CSV for CRM imports and Excel-compatible XLSX for analyst
-review. Choose JSON for queues, warehouses, and custom application ingestion.
-Map `User ID` to the stable CRM external key. Store the source username,
-resolved user ID, extraction ID, and collection time. Record any `resultsLimit`
-beside the downloaded file. Compare unique exported rows with the completed job
-result. Profile counts can change while extraction runs. Never treat a
-displayed follower count as a fixed reconciliation total. Save rejected CRM
-rows and the final file path. Use paginated JSON for larger custom syncs.
+Use `follower_explorer` to export a list of Twitter followers. Choose CSV for
+CRM imports and Excel-compatible XLSX for analyst review. Choose JSON for
+queues, warehouses, or apps.
+
+<Accordion title="CSV, Excel & CRM Mapping">
+Map `User ID` to the CRM's unique profile field.
+Keep username, follower count, following count, verification, and bio as
+mutable values. Store the source account and extraction ID. Record every row
+cap beside the file. Save rejected import rows. Use paginated JSON when a
+custom sync needs larger lists.
+</Accordion>
 
 ### Can I Export Twitter Followers to a Spreadsheet Automatically?
 
-Yes. Schedule estimate, create, poll, and export steps with an SDK or CLI. Use
-HTTP tasks when a no-code workflow can store the extraction ID. Download CSV
-for CRM imports. Use Excel-compatible XLSX for analyst review. Store the
-follower source username, user ID, cursor, and row cap. Also store the output
-path and import result. Retry `429`
-responses after the documented delay. Never start a second extraction during an
-uncertain create retry. Use the
-[n8n workflow guide](https://docs.xquik.com/guides/n8n) for scheduled handoffs.
-Do not put the API key inside spreadsheet cells. Do not assume a free tier.
-Estimate credits before every large scheduled export. Name every output with
-the source account and collection time.
+Schedule estimate, create, poll, and export steps with an SDK or CLI. A no-code
+workflow must store the extraction ID. Use the
+[n8n workflow guide](https://docs.xquik.com/guides/n8n) for scheduled follower
+lists.
+
+<Accordion title="Spreadsheet Automation Safety">
+Download CSV or XLSX for review. Keep each
+API key outside spreadsheet cells. Handle every returned rate limit. Never
+duplicate an uncertain create request. Store the source username, user ID,
+cursor, row cap, output path, and import result. Never assume a free tier.
+</Accordion>
 
 ### Can I Scrape Twitter Followers With Python Scripts?
 
-Yes. Use Python `requests` with the documented Xquik endpoints. Call the live
-followers route when the script can persist opaque cursors. Call extraction
-endpoints when the script needs saved CSV, JSON, or XLSX files. Compared with
-browser web scrapers, this workflow needs no customer cookies. Xquik is not an
-official API or the official Twitter API. It is an independent third-party
-service. Honor `pageSize`, `resultsLimit`, credits, and rate limits. Handle
-`402`, `424`, `429`, and `502` responses before retrying. Treat every cursor as
-opaque. Write normalized follower profiles as JSON Lines when queues need
-streaming ingestion. Keep API keys outside source files and exported rows.
+Use Python `requests` with documented Xquik follower endpoints. Call the live
+API when the script can persist every opaque cursor. Call extraction routes for
+saved CSV, JSON, or XLSX exports.
+
+<Accordion title="Python Error & Output Handling">
+This flow needs no customer cookies. Keep the API key outside source files.
+Check `402`, `424`, `429`, and `502` before retrying. Normalize each profile by
+user ID. Write one
+follower per JSON Lines record. Store the username, list source, and collection
+time.
+</Accordion>
 
 ### What Are the Risks of Twitter Follower Scraping Tools?
 
-Main risks include false completeness, duplicate rows, stale usernames,
-repeated cursors, and exposed credentials. Private accounts do not expose
-private followers. Rate limits can interrupt a run. Credit boundaries can
-shorten paid pages. Profile counts can change during collection. Treat scraped
-data as individual public follower profile rows. Do not infer interests,
-demographics, or consent from a bio. Store stable user IDs beside mutable
-usernames. Label every partial export with its cap or interruption. Encrypt API
-keys outside the export file. Review outgoing CRM columns before each import.
-Delete rejected files according to the receiving system's retention policy.
+Risks include partial follower pages, duplicate profiles, and exposed API keys.
+Repeated cursors can also create incomplete lists. Treat scraped data as public
+follower profile rows.
+
+<Accordion title="Follower Scraper Risk Controls">
+Never infer consent from a bio. A private account never exposes private
+followers. Do not infer inactive
+accounts from missing pages or unchanged follower counts.
+Store each user ID beside its
+mutable username. Mark rate-limit, credit, or result boundaries. Review export
+columns before every CRM import.
+</Accordion>
 
 ### How Do I Get Public Follower Lists Responsibly?
 
-Public data here means public follower profiles and documented profile fields.
-It never includes private followers. For social media research, collect only
-fields required by the workflow. Review the
-[X Terms of Service](https://x.com/en/tos) and applicable laws before use. This
-technical guide is not legal advice. Xquik is an independent third-party
-service. Not affiliated with X Corp. "Twitter" and "X" are trademarks of X
-Corp. Do not promise access without limits. Respect rate limits, private
-accounts, retention rules, and deletion requirements. Store numeric user IDs
-for audit. Restrict CRM exports to the intended reviewers. Record the source
-account, collection time, and documented boundary for every file.
+Public data means public follower profiles and documented fields. Collect only
+fields required by the social media workflow. Review the
+[X Terms of Service](https://x.com/en/tos) at `https://x.com`.
+
+<Accordion title="Responsible Export Checklist">
+Follow applicable laws, retention rules, and deletion requests. Restrict every follower export to
+its intended reviewers. Store the source profile, user ID, username, cursor,
+collection time, and documented boundary. This technical guide is not legal
+advice. Xquik is an independent third-party service. Not affiliated with X
+Corp. "Twitter" and "X" are trademarks of X Corp.
+</Accordion>
 
 ### Can I Download My Own X Archive Instead?
 
-X's Help Center provides an archive setting. It is named Download an archive of
-your data. That signed-in archive can include your profile, posts, Direct
-Messages, and media.
-It can also include followers, following, Lists, and inferred interests. Use it
-for a first-party account backup. Use Xquik when repeatable public follower
-exports need cursors, row caps, or CRM fields. The X archive returns HTML and
-JSON inside a ZIP file.
-It is not a cursor-paginated API or CRM-ready CSV/Excel export. Follow the
-[official X archive instructions](https://help.x.com/en/managing-your-account/how-to-download-your-x-archive).
-Do not request another account's private archive. Choose Xquik files only for
-public follower profiles. Record which source produced each downstream file.
+X calls its signed-in setting Download an archive of your data. Follow the
+[official X archive instructions](https://help.x.com/en/managing-your-account/how-to-download-your-x-archive)
+for a first-party backup.
+
+<Accordion title="X Archive vs. Follower Export">
+The ZIP can include profile details, posts, media, followers, following, and
+Lists. It contains HTML and JSON, not a cursor-based
+API or CRM-ready CSV export. Use Xquik for repeatable public follower lists with
+row caps. Keep the source user ID and username. Never request another account's
+private archive. Record which source produced every downstream file.
+</Accordion>
 
 ## Outcome
 
@@ -317,14 +300,17 @@ Store one checkpoint that carries the follower target through estimate, job crea
 
 ### Live follower page handoff
 
-Use `GET /x/users/{id}/followers` when a CRM enrichment job, queue worker, audience sync, or agent needs the newest follower page without creating a saved extraction.
+Use `GET /x/users/{id}/followers` for the newest follower page. Use this page
+for a CRM enrichment job, queue worker, audience sync, or agent.
 
 ```bash cURL
 curl "https://xquik.com/api/v1/x/users/44196397/followers?pageSize=200&cursor=DAACCgACGRElMJcAAA" \
   -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 ```
 
-The response returns `users`, `has_next_page`, and `next_cursor`. Treat `next_cursor` as opaque, store it with the import checkpoint, and pass it back as `cursor` only when `has_next_page` is true.
+The response returns `users`, `has_next_page`, and `next_cursor`.
+Treat `next_cursor` as opaque. Store it with the import checkpoint. When
+`has_next_page` equals `true`, pass the cursor back unchanged.
 
 Map direct API fields before import:
 
@@ -474,7 +460,9 @@ const extractionHandoff = {
 ```
 </CodeGroup>
 
-Store `extractionHandoff` in your job table. Poll by `extraction_id`, keep `source_username` and `results_limit` for audit, and replace `status` with the value returned by `GET /extractions/{id}`.
+Store `extractionHandoff` in your job table. Poll by `extraction_id`. Keep
+`source_username` and `results_limit` for audit. Replace `status` with each
+value returned by `GET /extractions/{id}`.
 
 ```json
 {
@@ -493,11 +481,13 @@ curl -s "https://xquik.com/api/v1/extractions/77777?limit=1000" \
   -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 ```
 
-The job is ready for file export when `status` is `completed`.
+Export files after the API returns `status: completed`.
 
 ### Paginated JSON handoff
 
-Use `GET /extractions/{id}` when a custom CRM sync, warehouse load, queue, or agent needs rows before a file export. The API returns camelCase JSON fields. Only `id` and `xUserId` are guaranteed on every result; optional profile and enrichment fields are omitted when unavailable.
+Use `GET /extractions/{id}` when an integration needs rows before file export.
+The API returns camelCase JSON fields. Every result guarantees `id` and
+`xUserId`. The API omits optional profile and enrichment fields when absent.
 
 ```json
 {
@@ -537,7 +527,10 @@ Use `GET /extractions/{id}` when a custom CRM sync, warehouse load, queue, or ag
 }
 ```
 
-Use `limit` up to `1000` and pass `nextCursor` as `after` until `hasMore` is `false`. For CRM or warehouse rows, map `xUserId` to `x_user_id`, `xUsername` to `x_username`, `xDisplayName` to `display_name`, `xFollowersCount` to `followers_count`, `xVerified` to `verified`, and `enrichmentData.user.description` or `enrichmentData.user.location` to optional enrichment columns.
+Use `limit` up to `1000`. Pass `nextCursor` as `after` until `hasMore` becomes
+`false`. Map `xUserId` to `x_user_id`. Map usernames, names, follower counts,
+and verification to the CRM columns shown below. Add description and location
+when needed.
 
 Normalize each follower row before sending it downstream:
 
@@ -655,7 +648,9 @@ Map each user profile by stable X ID. Keep verification status with the mutable 
 
 ## Import and upsert rules
 
-Use the CRM's own unique field rules. HubSpot's official import docs say update or dedupe imports need a unique identifier, and supported import files include CSV, XLSX, and XLS. Salesforce Bulk API 2.0 upserts use CSV data and require an external ID field for upsert jobs.
+Follow the CRM's unique-field rules. HubSpot accepts CSV, XLSX, and XLS imports.
+Updates and deduplication need a unique identifier. Salesforce Bulk API 2.0
+upserts use CSV data and an external ID field.
 
 <CardGroup cols={2}>
   <Card title="HubSpot import docs" icon="external-link" href="https://knowledge.hubspot.com/import-and-export/set-up-your-import-file">
@@ -671,7 +666,7 @@ Use the CRM's own unique field rules. HubSpot's official import docs say update 
 Use this handoff when the export runs on a schedule:
 
 1. Store the Xquik extraction ID and source username in your job table.
-2. Poll `GET /extractions/{id}` until `status` is `completed`.
+2. Poll `GET /extractions/{id}` until the API returns `completed`.
 3. Download `format=json` for code pipelines or `format=csv` for CRM import tools.
 4. Upsert by `x_user_id`, not by display name or username.
 5. Save the Xquik job ID, export format, export file path, row count, and import result for audit.
