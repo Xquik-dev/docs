@@ -4036,9 +4036,18 @@ const REQUIRED_X_TRENDS_API_HANDOFF_SNIPPETS = [
   '"region_woeid": data["woeid"]',
   '"returned_count": data["count"]',
   '"detected_at": detected_at',
-  'one JSON line per trend',
+  'one JSON record for every returned trend',
   '`trend_name`, `rank`, `description`,',
   '`detected_at`',
+  'A Twitter API trending workflow should preserve each snapshot before searching.',
+  '## Twitter Trends API Questions',
+  '### How Do I Get Twitter Trends Programmatically?',
+  '### Can I Track Trending Hashtags by Region?',
+  '### How Do I Authenticate to the Twitter Trends API?',
+  '### How Much Does a Trends Request Cost?',
+  '### How Do I Build Trend Tracking Into an App?',
+  '### Does This Replace X\'s Official API?',
+  'Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns 502.',
 ] as const;
 
 const FORBIDDEN_X_TRENDS_API_RAW_OUTPUT_SNIPPETS = [
