@@ -210,8 +210,7 @@ saved tweets from the authenticated account. The examples write JSON Lines rows
 with bookmark source, folder ID, tweet ID, tweet URL, text, author ID,
 username, display name, follower count, verified state, profile image URL,
 engagement counts, media URLs, and cursor fields. Store the last saved
-`next_cursor` per folder so each bookmark export can resume without duplicating
-earlier rows.
+`next_cursor` per folder. Resume each bookmark export from that checkpoint.
 
 <CardGroup cols={2}>
   <Card title="All saved tweets" icon="bookmark">
@@ -236,19 +235,19 @@ earlier rows.
 
 ### How Do I Export Twitter Bookmarks?
 
-Run the Node.js or Python example for each cursor page. Both examples write one
-JSON Lines row per saved tweet. Each row keeps tweet text, authors, likes,
+Run the Node.js or Python example for each cursor page. Both examples create a
+structured JSON Lines record for every saved tweet. Each row keeps tweet text, authors, likes,
 replies, reposts, views, media URLs, and folder context.
 
 Convert the completed rows to a CSV file after collection. Use `tweet_id` as
-the stable key. Map explicit columns before importing rows into Notion
-databases, spreadsheets, CRMs, or research queues.
+the stable key. Create a bookmarks page in a spreadsheet or research tool.
+Map explicit columns before importing rows into Notion databases or CRMs.
 
 ### How Does Bookmark Authentication Work?
 
-Connect the X account that owns the saved tweets. Send its Xquik API key with
-each request. The endpoint never accepts a username for another account's
-bookmarks.
+Connect the X account that owns the saved tweets. Include that account's Xquik
+API key in every request. The endpoint never accepts another username. This
+matches the Twitter developer privacy model.
 
 ### Can I Export Another User's Bookmarks?
 
@@ -259,19 +258,20 @@ to that account. Do not publish saved tweets or private folder names.
 
 Call [Get bookmark folders](/api-reference/x/bookmark-folders) first. Pass the
 returned `folder_id` as `folderId`. Omit `folderId` to request all visible
-bookmarks. Store one `next_cursor` checkpoint per folder.
+bookmarks from the connected account. Store one `next_cursor` checkpoint per
+folder. Preserve `folder_id` when importing records into Notion databases.
 
 ### What Limits a Bookmark Export?
 
-The endpoint returns bookmarks currently visible to the connected account. A
-low balance can shorten a page. A `429` response includes retry guidance. A
-`424` or `502` response means the read service failed temporarily.
+You receive the bookmarks that the connected account can view. A low balance
+can shorten a page. A `429` response includes retry guidance. A `424` or `502`
+response means the read service failed temporarily.
 
 ### How Should I Store a Bookmark Export?
 
-Store the connected account ID beside each row. Deduplicate by account, folder,
-and tweet ID. Keep private folder names out of public logs. Delete temporary
-files after the approved handoff finishes.
+Store the connected account ID beside each row. Use the account ID, folder ID,
+and tweet ID as the unique row key. Keep private folder names out of public logs.
+Delete temporary files after the approved handoff finishes.
 
 ## Query parameters
 
