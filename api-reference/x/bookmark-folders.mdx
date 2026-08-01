@@ -147,7 +147,7 @@ folder.
 
 Call `GET /x/bookmarks/folders` with the connected account's Xquik API key. The
 response lists folders already visible to that account. This read route does
-not create, rename, move, or delete bookmark folders.
+not support folder creation, renaming, movement, or deletion.
 
 An empty `folders` array means no folder rows were returned. It does not expose
 another user's folders. Keep the connected account ID beside the response.
@@ -171,36 +171,76 @@ when a CSV file, spreadsheet, CRM, or research queue combines several exports.
 
 ### 4. Resume and Audit the Export
 
-The current folder-list route returns `has_next_page: false` and an empty
-`next_cursor`. The bookmarked-tweet route can paginate independently for each
-folder. Store its latest `next_cursor` with that folder's export checkpoint.
+The folder-list response sets `has_next_page` to `false`. No folder-level
+continuation token is available. The bookmarked-tweet route can paginate
+independently for each folder. Store its latest `next_cursor` with that folder's
+export checkpoint.
 
 Record the collection time and connected account ID. These values show which
 account and snapshot produced every folder-to-tweet relationship.
 
+## Plan a Reliable Twitter Bookmark Folder Export
+
+Treat every folder-list response as an account-specific snapshot. Record its
+collection timestamp and authenticated account ID before requesting saved
+tweets. Compare returned folder IDs with the preceding snapshot. Match a renamed
+folder by ID when both snapshots preserve that identifier.
+
+A missing folder ID means only that the current response omitted it. Retain
+earlier export history until your retention policy authorizes deletion. This
+rule prevents one incomplete snapshot from erasing a valid bookmark archive.
+
+### Store One Checkpoint per Folder
+
+Create an independent export checkpoint for every folder. Store its folder ID,
+latest bookmark cursor, completion state, and collection timestamp. Resume only
+the incomplete folder after a temporary read failure. Completed folder exports
+do not need to restart.
+
+Keep checkpoints separate from exported tweet rows. This separation lets a
+worker replace cursor state without rewriting saved tweet records. It also
+supports precise retries after `424`, `429`, or `502` responses.
+
+Commit each page's tweet rows and updated cursor atomically. If the destination
+cannot provide atomic writes, upsert every row by a stable identifier. Build
+that identifier from the authenticated account, folder, and tweet IDs. Advance
+the cursor only after every row is durably stored.
+
+### Define Folder Export Records
+
+Store folder identity beside each saved tweet. Useful CSV columns include
+`account_id`, `folder_id`, `folder_name`, `tweet_id`, `tweet_text`, `author_id`,
+`username`, `created_at`, `like_count`, `reply_count`, `repost_count`,
+`view_count`, `media_url`, and `collected_at`.
+
+Add `source_cursor` when an audit must reproduce page boundaries. Never use
+`folder_name` as the only join key because names can change. Keep private names
+out of public object paths, logs, and alerts. Validate required IDs before
+sending records to a spreadsheet, CRM, research queue, or storage system.
+
 ## Twitter Bookmark Folder Questions
 
-### Does Twitter Bookmarks Have Folders?
+### Do Twitter Bookmarks Have Folders?
 
 The connected account can have named bookmark folders. This endpoint lists the
-folders that X returns for that account. It never reveals another user's saved
-tweet folders.
+folders that X returns for that account. Folder visibility remains restricted
+to the authenticated account.
 
 ### Can This API Create or Rename Bookmark Folders?
 
-No. This route only reads folder IDs and names. It does not create, rename,
-move, or delete folders. Keep those actions outside this read workflow.
+No. This route only reads folder IDs and names. Folder creation, renaming,
+movement, and deletion remain outside this read contract.
 
 ### Can I Access Folders from Mobile and Desktop?
 
-The API is not tied to a device. It reads the connected account's current
-folder list. Mobile and desktop clients may present those folders differently.
+The API is not tied to a device. The response reflects folders available to the
+authenticated account. Mobile and desktop clients may present them differently.
 
 ### How Do I Back Up Twitter Bookmark Folders?
 
 Save the folder index as JSON Lines or CSV. Then export each folder's tweets.
-Join both files by `folder_id`. Preserve the connected account ID and collection
-time in the backup.
+Join both files by `folder_id`. Include the authenticated account ID and
+collection timestamp in backup metadata.
 
 ### What Errors Can Stop a Folder Export?
 
