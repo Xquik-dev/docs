@@ -61,7 +61,7 @@ describe('Mintlify accessibility overrides', (): void => {
   });
 
   it('keeps API method badges above WCAG AA contrast', (): void => {
-    expect.assertions(7);
+    expect.assertions(9);
 
     const source = readFileSync('custom.css', 'utf8');
 
@@ -69,9 +69,11 @@ describe('Mintlify accessibility overrides', (): void => {
     expect(source).toContain('span[class*="bg-[#CB3A32]"]');
     expect(source).toContain('span[class*="bg-[#2AB673]"]');
     expect(source).toContain('span[class*="bg-[#DA622B]"]');
+    expect(source).toContain('span[class*="bg-[#C28C30]"]');
     expect(source).toContain('color: #ffffff !important;');
     expect(source).toContain('background-color: #147a4b !important;');
     expect(source).toContain('background-color: #a9471b !important;');
+    expect(source).toContain('background-color: #855d12 !important;');
   });
 
   it('reserves related API link accordions before hydration', (): void => {
