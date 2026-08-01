@@ -60,10 +60,10 @@ timestamps, webhook delivery, and replay results.
 
 Use real time Twitter monitoring for campaign and support queries. Keep each
 keyword and hashtag in a separate monitor. Test every Boolean search before
-activation. Keep historical data from tweet-search backfills separate from live
-monitor events. Analyze data from matched tweets by Tweet ID, author ID,
-timestamp, and query. Run sentiment analysis against the preserved tweet text
-downstream.
+activation. Store historical data from tweet-search backfills separately. Keep
+live monitor events in their own stream. Analyze data from matched tweets by
+Tweet ID, author ID, timestamp, and query. Classify the preserved tweet text
+after collection.
 
 Create a temporary product launch monitor for its name and branded hashtag.
 Connect verified events to an AI powered tweet triage service when needed.
@@ -100,10 +100,11 @@ Keep automated classification downstream from Xquik's original tweet payload.
 Choose an API that stores the exact query and stable event IDs. Test one query
 for a brand, handle, hashtag, product, or campaign. The
 Twitter keyword monitor checks for matching tweets every 1 second. Review each Tweet ID, author ID,
-text, timestamp, media, and matched keyword. Send matching events through a
-signed webhook. Queue each event before acknowledging delivery. Replay stored
-events after receiver downtime. Use one query to compare missed tweet counts
-across tools. Compare duplicate alert counts before choosing a tool.
+text, timestamp, media, and matched keyword. Sign every webhook event before
+sending it to the receiver. Queue each event before acknowledging delivery.
+Replay stored events after receiver downtime. Compare missed tweet counts for
+the same query in each tool. Compare duplicate alert counts before choosing a
+tool.
 
 ### How Do I Monitor a Keyword on Twitter in Real Time?
 
@@ -118,8 +119,8 @@ after the assigned campaign concludes.
 ### Track Keywords Twitter API
 
 Use `POST /api/v1/monitors/keywords` for continuous keyword checks. Separate
-brand handles, products, support phrases, campaign hashtags, and competitor
-terms. Save the monitor ID, query, owner, event types, and enabled state. Test
+competitor names and handles from product, support, and campaign queries. Save
+the monitor ID, query, owner, event types, and enabled state. Test
 matching tweets before enabling the monitor. Store each Tweet ID and author ID.
 Deduplicate webhook deliveries by event ID. Put rate-limit or receiver failures
 into the normal retry path. Never create a changed monitor during those retries.
@@ -174,7 +175,7 @@ Create one signed webhook for the monitor events your application handles.
 Verify `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce`. Reject any
 request with a stale timestamp or reused nonce. Queue the payload, then return
 `2xx`. Use `streamEventId` for event identity. Use `deliveryId` for each receiver
-attempt.
+retry or initial delivery.
 Store monitor ID, keyword, event type, Tweet ID, and author ID. Record the queue
 result without logging secrets. Replay stored events after webhook or queue
 failures. Deduplicate every retried delivery before alerting reviewers during
@@ -189,7 +190,7 @@ and active state. Deduplicate each
 delivery by event ID. Keep Tweet IDs for post events. Pause accounts after they
 leave the monitored set. Use keyword monitors for terms spanning many profiles.
 Each account-monitor workflow should track one relevant profile. Review each
-profile change.
+profile change before updating downstream records.
 
 ### How Do I Get Real-Time Twitter Alerts via Webhook?
 
@@ -214,14 +215,15 @@ automatic reply without account approval.
 
 ### How Do I Monitor Competitor Activity on Twitter?
 
-Create separate keyword monitors for each competitor name, handle, product, and
-campaign phrase. Use account monitors when every post from one profile matters. Test
+Create separate keyword monitors for each competitor name and handle. Add
+focused monitors for each product and active campaign phrase during research.
+Use account monitors when every post from one profile matters. Test
 each keyword with tweet search before continuous monitoring. Review replies,
 reposts, authors, media, and recurring false matches. Route each event to the
 assigned research queue. Store the query, monitor ID, Tweet ID, and event ID for
 each research alert. Compare unique tweets across equal collection windows.
-Label paused or incomplete periods before reporting changes. Record every query
-revision.
+Mark each paused or incomplete collection window in the report. Record every
+query revision.
 
 ### How Do I Integrate Twitter Monitoring Into a Dashboard?
 
@@ -238,8 +240,8 @@ replies, reposts, profiles, and media beside each tweet.
 
 Prepare focused keyword monitors before an incident. Include exact handles,
 products, campaign terms, and known misspellings. Assign one incident owner and
-one verified webhook receiver. Put matching tweets and replies in the incident
-priority queue. Keep Tweet ID, author ID, query, timestamp, and event ID. Review
+one verified webhook receiver. Give matching crisis tweets and replies priority
+during review. Keep Tweet ID, author ID, query, timestamp, and event ID. Review
 the full conversation before any public response. Never infer urgency from one
 keyword alone. Replay stored events after outages. Pause temporary monitors
 after the incident review ends. Record each monitor change.
@@ -340,7 +342,7 @@ curl "https://xquik.com/api/v1/events?keywordMonitorId=21&eventType=tweet.new&li
 ```
 
 Store `hasMore` and `nextCursor`. Continue pagination while `hasMore` remains
-true. Send `nextCursor` as `after` for the next request.
+true by sending `nextCursor` as `after` for the next request.
 
 ## Add Search Backfill
 
@@ -366,13 +368,14 @@ events from keyword events. Deduplicate by `streamEventId`.
 
 Xquik does not return a calculated share of voice.
 Build Twitter analytics downstream from unique tweet IDs and event windows.
-Keep social media management approvals outside this monitor pipeline. For share
-of voice, divide one brand's unique tweets by all compared brands' tweets.
+Let the social media management team approve posts in its publishing workflow.
+For share of voice, divide one brand's unique tweets by all compared brands'
+tweets.
 
-### Run Sentiment Analysis Downstream
+### Analyze Tweet Sentiment Downstream
 
-Classify sentiment after collection. Store the classifier version beside the
-original tweet text.
+Classify sentiment after collection. Preserve the original tweet text beside
+its classifier version.
 
 ### Report Delivery Health
 
