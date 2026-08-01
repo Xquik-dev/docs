@@ -1,9 +1,9 @@
 ---
-title: "Twitter Home Timeline API for Tweets & Media"
+title: "Twitter Timeline API for Home Feed Tweets & Media"
 sidebarTitle: "Get timeline"
-description: "Retrieve a connected X account's Twitter home timeline with cursor pagination, tweet authors, replies, reposts, likes, quotes, and media. See examples."
+description: "Use the Twitter timeline API to get a connected account's home feed. Paginate tweets, authors, replies, reposts, likes, views, media, and cursors safely."
 api: "GET /x/timeline"
-keywords: ["Twitter timeline API", "X timeline API", "Twitter home timeline", "home feed API", "timeline", "tweets", "replies", "reposts", "likes", "media"]
+keywords: ["Twitter timeline API", "Twitter API timeline", "X timeline API", "Twitter home timeline", "Twitter API timeline pagination", "home feed API", "timeline tweets", "replies", "reposts", "likes", "media"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -206,13 +206,21 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
 
 ## Home timeline handoff
 
-Use `GET /x/timeline` when an inbox, CRM, monitor seed job, or agent needs the
-authenticated account's home feed. The examples write JSON Lines rows with
-home timeline source, tweet ID, URL, text, author ID, username, display name,
-follower count, verified state, profile image URL, reply context, engagement
-counts, media URLs, `seenTweetIds`, and cursor fields. Store processed tweet
-IDs and pass them as `seenTweetIds` with the last saved `next_cursor` to reduce
-duplicates.
+Use `GET /x/timeline` for the authenticated account's home feed.
+The examples write JSON Lines rows.
+They include author ID, username, display name, and tweet text.
+Rows include follower count, verified state, profile image URL, `seenTweetIds`, and cursor fields.
+Store processed tweet IDs.
+Then pass them as `seenTweetIds` with the last saved `next_cursor`.
+
+This home timeline Twitter API workflow supports inboxes and CRM routing. A
+Twitter API timeline also supports approved monitoring. Store the connected
+account ID and collection time with each page.
+
+Preserve tweet IDs, authors, text, engagement counts, replies, media, and
+cursors. X controls ranking and source availability. Do not treat the response
+as a complete public archive. [X explains its home and user timeline
+feeds](https://docs.x.com/x-api/posts/timelines/introduction).
 
 <CardGroup cols={2}>
   <Card title="Home feed rows" icon="house">
@@ -232,59 +240,60 @@ duplicates.
   </Card>
 </CardGroup>
 
-## Process the home timeline as a feed
-
-Use this route for tweets visible in the authenticated account’s home
-timeline. Keep the acting account and collection time beside every page.
-
-Feed rows should preserve tweet ID, author, text, creation time, engagement
-counts, media, and cursor. New tweets can change the first page between
-requests.
-
-Use timeline pages for inbox review, topic routing, or approved monitoring.
-Do not describe the feed as a complete public archive. Ranking and source
-availability affect what appears.
-
-Deduplicate rows by tweet ID. Save each completed page before storing its next
-cursor. Stop when the response has no next page.
-
-Use bookmarks for saved tweets. Use user tweets for one profile’s public
-timeline. Use tweet search for keyword, author, date, or media filters.
-
-## Route timeline tweets by purpose
-
-Apply explicit rules after collection. Route mentions to support review.
-Route selected keywords to research. Route media tweets to asset review.
-
-Keep the rule name and tweet ID with every decision. Do not replace the
-original tweet text with a generated summary.
-
-Reprocess a tweet only when its routing rule changes. This prevents repeated
-notifications from overlapping timeline polls.
-
 | Home timeline column | Response source | Feed use |
 | --- | --- | --- |
-| `account_id` | Connected account context | Keep one home feed isolated from every other connected account. |
-| `tweet_id` | `tweets[].id` | De-duplicate timeline rows and build tweet URLs. |
-| `tweet_url` | `tweets[].url` | Open the original tweet during inbox or CRM review. |
-| `text` | `tweets[].text` | Apply support, research, campaign, or moderation rules. |
-| `author_id` | `tweets[].author.id` | Keep a stable author key when usernames change. |
-| `author_username` | `tweets[].author.username` | Display the current X handle. |
-| `created_at` | `tweets[].createdAt` | Sort new home timeline tweets by creation time. |
-| `in_reply_to_id` | `tweets[].inReplyToId` | Route tweet replies with their parent context. |
-| `conversation_id` | `tweets[].conversationId` | Group tweets from the same conversation. |
-| `media_urls` | `tweets[].media[].mediaUrl` | Send image and video tweets to asset review. |
-| `page_cursor` | Request `cursor` | Prove which home timeline page produced the row. |
-| `next_cursor` | Response `next_cursor` | Resume only after the current page is stored. |
+| `tweet_id` | `tweets[].id` | Deduplicate rows and build tweet URLs. |
+| `author_id` | `tweets[].author.id` | Keep stable author identity when usernames change. |
+| `page_cursor` | Request `cursor` | Trace the page that produced each row. |
+| `next_cursor` | Response `next_cursor` | Resume after storing the current page. |
+
+## Twitter API Timeline Pagination
+
+Deduplicate timeline tweets with `tweets[].id`. Save each page before advancing
+its cursor. Keep the prior cursor until validating its replacement.
+
+Send the last `next_cursor` as `cursor` after storing the full page. Pass
+processed tweet IDs through `seenTweetIds` to reduce repeat rows. Stop when
+`has_next_page` is false or `next_cursor` is empty.
+
+Respect `Retry-After` after a `429` response. Retry `424` or `502` from the
+saved cursor. Never advance a checkpoint after a failed destination write.
+
+## Route Home Timeline Tweets
 
 | Routing rule | Concrete match | Destination |
 | --- | --- | --- |
-| Support reply | `isReply` plus an approved support account or keyword | Support review queue |
+| Support reply | Approved account or keyword | Support review queue |
 | Campaign mention | Campaign phrase in `text` | Campaign verification queue |
-| Media review | Non-empty `media` | Image or video asset review |
-| High-engagement tweet | Approved threshold on likes, replies, reposts, or views | Priority research queue |
-| Saved author | `author.id` in an approved watchlist | CRM or analyst review |
+| Media review | Non-empty `media` | Image or video review |
+| High engagement | Approved likes, replies, reposts, or views | Priority research queue |
 | No rule match | No approved condition matches | Store without generating a notification |
+
+Keep each rule name beside its tweet ID. Preserve the original tweet text.
+Reprocess a tweet only after its routing rule changes.
+
+## Twitter Timeline API Questions
+
+### How Do You Authenticate Timeline Requests?
+
+Send an Xquik API key through the `x-api-key` header. Keep keys server-side.
+Never expose a key in a browser, mobile bundle, or public repository.
+
+### Can You Filter Home Timeline Tweets by Hashtag?
+
+No. `GET /x/timeline` returns the connected account's ranked home feed. Use
+[tweet search](/api-reference/x/search-tweets) for keyword, author, date, or media
+filters.
+
+### Can You Display Timeline Tweets in an App?
+
+Yes. Render `tweets[]` with the returned text, author, media, and tweet URL.
+Store tweet IDs for deduplication. Refresh from the last confirmed cursor.
+
+### How Should Timeline API Errors Be Retried?
+
+Fix the API key after `401`. Add credits after `402`. Respect `Retry-After`
+after `429`. Resume from the saved cursor after `424` or `502`.
 
 ## Query parameters
 
