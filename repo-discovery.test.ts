@@ -6487,12 +6487,14 @@ const FORBIDDEN_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
 ] as const;
 
 const REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
+  'title: "Twitter Media Downloader API for Photos & Video"',
   'Download media',
-  'Use this endpoint to turn one tweet, or up to 50 tweet URLs or IDs, into a',
-  'saved media gallery.',
+  'Use this Twitter media downloader API with 1-50 tweet IDs or URLs.',
+  'download Twitter media',
+  'This endpoint creates a saved media gallery from 1-50 tweet URLs or IDs.',
   'The response gives a `galleryUrl` plus cache or bulk',
-  'it does not return per-file downloads, file metadata, or an uploaded',
-  '`mediaId`.',
+  'It does not return',
+  'per-file downloads, file metadata, or an uploaded `mediaId`.',
   '## Media download handoff',
   'Use this endpoint when your agent needs a saved gallery for tweet images, videos, or GIFs.',
   'const singleResult = await single.json();',
@@ -6529,6 +6531,13 @@ const REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
   '[Upload Media](/api-reference/x-write/upload-media)',
   'Fresh downloads cost 1 credit per tweet processed with media.',
   'Bulk responses do not return `freshCount`',
+  'You can also authenticate with an OAuth bearer token.',
+  'Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns 502.',
+  '## Twitter Media Downloader Questions',
+  'The gallery can',
+  'contain Twitter videos and GIFs plus images.',
+  'This Twitter video downloader route creates a gallery.',
+  'Send 1-50 tweet IDs through `tweetIds`.',
 ] as const;
 
 const FORBIDDEN_DOWNLOAD_MEDIA_RAW_OUTPUT_SNIPPETS = [
