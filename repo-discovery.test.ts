@@ -5030,7 +5030,7 @@ const REQUIRED_BOOKMARK_FOLDERS_API_HANDOFF_SNIPPETS = [
   '### Store One Checkpoint per Folder',
   '### Define Folder Export Records',
   '## Twitter Bookmark Folder Questions',
-  '### Does Twitter Bookmarks Have Folders?',
+  '### Do Twitter Bookmarks Have Folders?',
   '### Can This API Create or Rename Bookmark Folders?',
   '### Can I Access Folders from Mobile and Desktop?',
   '### How Do I Back Up Twitter Bookmark Folders?',

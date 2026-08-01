@@ -201,6 +201,11 @@ Keep checkpoints separate from exported tweet rows. This separation lets a
 worker replace cursor state without rewriting saved tweet records. It also
 supports precise retries after `424`, `429`, or `502` responses.
 
+Commit each page's tweet rows and updated cursor atomically. If the destination
+cannot provide atomic writes, upsert every row by a stable identifier. Build
+that identifier from the authenticated account, folder, and tweet IDs. Advance
+the cursor only after every row is durably stored.
+
 ### Define Folder Export Records
 
 Store folder identity beside each saved tweet. Useful CSV columns include
@@ -215,7 +220,7 @@ sending records to a spreadsheet, CRM, research queue, or storage system.
 
 ## Twitter Bookmark Folder Questions
 
-### Does Twitter Bookmarks Have Folders?
+### Do Twitter Bookmarks Have Folders?
 
 The connected account can have named bookmark folders. This endpoint lists the
 folders that X returns for that account. Folder visibility remains restricted
