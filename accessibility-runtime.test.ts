@@ -49,13 +49,15 @@ describe('Mintlify accessibility overrides', (): void => {
   });
 
   it('reserves intrinsic logo dimensions without late CSS resizing', (): void => {
-    expect.assertions(3);
+    expect.assertions(4);
 
     const source = readFileSync('custom.css', 'utf8');
     const lightLogo = readFileSync('logo/light.svg', 'utf8');
     const darkLogo = readFileSync('logo/dark.svg', 'utf8');
+    const logoRule = source.match(/\.nav-logo\s*\{([^}]*)\}/u)?.[1] ?? '';
 
-    expect(source).not.toMatch(/\.nav-logo\s*\{/u);
+    expect(logoRule).toContain('aspect-ratio: 64 / 29;');
+    expect(logoRule).not.toMatch(/\b(?:block-size|height|inline-size|width)\s*:/u);
     expect(lightLogo).toContain('width="64" height="29"');
     expect(darkLogo).toContain('width="64" height="29"');
   });
