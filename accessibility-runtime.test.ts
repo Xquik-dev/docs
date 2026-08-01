@@ -62,6 +62,23 @@ describe('Mintlify accessibility overrides', (): void => {
     expect(darkLogo).toContain('width="64" height="29"');
   });
 
+  it('marks comparison table columns and rows as headers', (): void => {
+    expect.assertions(6);
+
+    const comparisonTables = [
+      ['guides/composio-migration.mdx', 6],
+      ['mpp/machine-payments-protocol.mdx', 7],
+    ] as const;
+
+    for (const [file, rowHeaderCount] of comparisonTables) {
+      const source = readFileSync(file, 'utf8');
+
+      expect(source).toContain('<caption className="sr-only">');
+      expect(source).toContain('<th scope="col">Capability</th>');
+      expect(source.match(/<th scope="row">/gu)).toHaveLength(rowHeaderCount);
+    }
+  });
+
   it('keeps API method badges above WCAG AA contrast', (): void => {
     expect.assertions(9);
 
