@@ -171,7 +171,7 @@ describe('SEO metadata', (): void => {
       description: SITE_DESCRIPTION,
       indexing: 'all',
       openGraphDescription: SITE_DESCRIPTION,
-      searchPrompt: 'Search documentation...',
+      searchPrompt: 'Search docs',
       timestamps: true,
     });
   });
@@ -180,5 +180,13 @@ describe('SEO metadata', (): void => {
     expect.assertions(1);
 
     expect(collectMetadataFindings()).toStrictEqual([]);
+  });
+
+  it('keeps the Go SDK navigation link descriptive', (): void => {
+    expect.assertions(1);
+
+    expect(readFileSync('sdks/go.mdx', 'utf8')).toContain(
+      'sidebarTitle: "Go SDK"',
+    );
   });
 });

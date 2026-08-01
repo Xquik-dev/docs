@@ -29,11 +29,10 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 </Info>
 
 <Warning>
-  Reply visibility can be incomplete. Use `mode=complete` for bounded,
-  maximum-coverage collection. Xquik combines authenticated rankings, forward
-  cursors, hidden-content branches, and search. It returns
-  `424 replies_incomplete` below 80% direct-reply coverage. Never treat that
-  response as proof that a user did not reply.
+  Reply visibility depends on X. An unfiltered first page can return
+  `424 replies_incomplete` when X reports more replies than it exposes. Use
+  tweet search with a `conversation_id:{id}` query as the broader fallback.
+  Never treat missing rows as proof that a user did not reply.
 </Warning>
 
 See [Tweet, Profile, Media & Reply API Fields](/guides/tweet-profile-api-fields) for reply coverage and
@@ -56,10 +55,9 @@ every optional tweet field.
     --data-urlencode "untilTime=1777478400" \
     -H "x-api-key: xq_your_api_key_here" | jq
 
-  # Merge every complete-mode strategy
+  # Request the largest supported reply page
   curl -G "https://xquik.com/api/v1/x/tweets/1893456789012345678/replies" \
-    --data-urlencode "mode=complete" \
-    --data-urlencode "limit=25000" \
+    --data-urlencode "pageSize=100" \
     -H "x-api-key: xq_your_api_key_here" | jq
   ```
 
@@ -171,9 +169,9 @@ thread joins, engagement counts, media URLs, and cursor fields. Each line
 represents one reply for a single tweet, so a worker can resume from the last
 saved `next_cursor`.
 
-Use `mode=complete` when completeness matters. It already includes direct-reply
-collection and conversation search. A `424 replies_incomplete` response still
-includes safe partial rows. Inspect `diagnostic.recommendedFallback` before retrying.
+When the route returns `424 replies_incomplete`, stop exhaustive verification.
+Search tweets with `conversation_id:<tweet_id>` as the broader fallback. Filter
+exact `inReplyToId` values when the workflow accepts only direct replies.
 
 Use [`reply_extractor`](/guides/tweet-replies-export) instead when a team needs
 an estimate, durable extraction ID, stored result pages, or CSV, JSON, and XLSX
@@ -219,7 +217,7 @@ downloads after completion.
 
 `sinceTime` and `untilTime` are Unix timestamps in seconds. Use them to bound moderation windows, campaign periods, or giveaway audit ranges. Direct replies calls use the default paid page size; use `reply_extractor` with `resultsLimit` when you need a predictable file export cap.
 
-Direct replies cost 1 credit per tweet returned. Low credit balances can return fewer replies than a full page; zero affordable results return `402 insufficient_credits`. Retry `429` with the `Retry-After` header. Retry `424 x_api_unavailable` or `502` after a short backoff. For `424 replies_incomplete`, follow `diagnostic.recommendedFallback`.
+Direct replies cost 1 credit per tweet returned. Low credit balances can return fewer replies than a full page; zero affordable results return `402 insufficient_credits`. Retry `429` with the `Retry-After` header. Retry `502 x_api_unavailable` after a short backoff. For `424 replies_incomplete`, use tweet search with `conversation_id:<tweet_id>`.
 
 ## Build a reply moderation table
 
@@ -246,10 +244,9 @@ the thread.
 | --- | --- | --- |
 | Page identity | `page_index` and `page_cursor` | Save both before writing the next reply page. |
 | Resume cursor | `next_cursor` | Send it as `cursor` only when `has_next_page` is `true`. |
-| Collection mode | `mode` | Keep `complete` runs separate from paginated direct-reply runs. |
 | Time window | `sinceTime` and `untilTime` | Reuse the same Unix-second bounds after a safe retry. |
 | Completion state | `has_next_page` plus the terminal cursor | Mark the export complete only after the final page. |
-| Partial coverage | `diagnostic` from `424 replies_incomplete` | Store safe rows and follow `recommendedFallback`. |
+| Incomplete first page | `424 replies_incomplete` | Stop exhaustive verification and search the conversation ID. |
 
 ## Which replies endpoint?
 
@@ -266,15 +263,9 @@ the thread.
 
 ## Query parameters
 
-<ParamField query="mode" type="string">
-  Set `complete` for maximum-coverage collection. Complete mode accepts only
-  `limit`. Remove `cursor`, `pageSize`, `count`, time ranges, and tweet filters.
-</ParamField>
-
-<ParamField query="limit" type="number" default="25000">
-  With `mode=complete`, this limits combined direct and nested rows from `1` to
-  `25000`. Without complete mode, it is the deprecated `pageSize` alias and uses
-  the normal `1` to `100` page range.
+<ParamField query="pageSize" type="number" default="20">
+  Maximum replies requested from this page. Use a value from `1` to `100`.
+  Deprecated `limit` and `count` aliases remain accepted.
 </ParamField>
 
 <ParamField query="cursor" type="string">
@@ -312,214 +303,132 @@ filters can return fewer rows than an unfiltered page.
 
 ## Response
 
-<Tabs>
-  <Tab title="200 OK">
-    <ResponseField name="tweets" type="object[]">
-      Array of reply tweets.
-      <Expandable title="Tweet object fields">
-        <ResponseField name="id" type="string">Tweet ID.</ResponseField>
-        <ResponseField name="text" type="string">Tweet text.</ResponseField>
-        <ResponseField name="type" type="string">Tweet type. Omitted if unavailable.</ResponseField>
-        <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
-        <ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet. Omitted if unavailable.</ResponseField>
-        <ResponseField name="isReply" type="boolean">Whether the tweet is a reply.</ResponseField>
-        <ResponseField name="inReplyToId" type="string">ID of the tweet being replied to.</ResponseField>
-        <ResponseField name="inReplyToUserId" type="string">User ID being replied to. Omitted if unavailable.</ResponseField>
-        <ResponseField name="inReplyToUsername" type="string">Username being replied to. Omitted if unavailable.</ResponseField>
-        <ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
-        <ResponseField name="likeCount" type="number">Like count. Omitted if unavailable.</ResponseField>
-        <ResponseField name="retweetCount" type="number">Retweet count. Omitted if unavailable.</ResponseField>
-        <ResponseField name="replyCount" type="number">Reply count. Omitted if unavailable.</ResponseField>
-        <ResponseField name="quoteCount" type="number">Quote tweet count. Omitted if unavailable.</ResponseField>
-        <ResponseField name="viewCount" type="number">View count. Omitted if unavailable.</ResponseField>
-        <ResponseField name="bookmarkCount" type="number">Bookmark count. Omitted if unavailable.</ResponseField>
-        <ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
-        <ResponseField name="lang" type="string">Tweet language code. Omitted if unavailable.</ResponseField>
-        <ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
-        <ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
-        <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
-        <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
-        <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
-        <ResponseField name="contentDisclosure" type="object">Disclosure metadata for paid partnership and AI-generated media labels. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them. Omitted if unavailable.</ResponseField>
-        <ResponseField name="author" type="object">
-          Tweet author profile. Omitted if unavailable.
-          <Expandable title="Author object fields">
-            <ResponseField name="id" type="string">Author user ID.</ResponseField>
-            <ResponseField name="username" type="string">Author handle without `@`.</ResponseField>
-            <ResponseField name="name" type="string">Author display name.</ResponseField>
-            <ResponseField name="followers" type="number">Follower count. Omitted if unavailable.</ResponseField>
-            <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
-            <ResponseField name="profilePicture" type="string">Author profile image URL. Omitted if unavailable.</ResponseField>
-          </Expandable>
-        </ResponseField>
-        <ResponseField name="media" type="object[]">
-          Media attachments. Omitted when the tweet has no media.
-          <Expandable title="Media object fields">
-            <ResponseField name="mediaUrl" type="string">Direct media URL.</ResponseField>
-            <ResponseField name="videoVariants" type="object[]">Available video renditions with bitrate, content type, and URL. Omitted for images.</ResponseField>
-            <ResponseField name="type" type="string">Media type.</ResponseField>
-            <ResponseField name="url" type="string">Shortened URL from the tweet text.</ResponseField>
-          </Expandable>
-        </ResponseField>
-        <ResponseField name="quoted_tweet" type="object">Embedded quoted tweet. Omitted if not a quote tweet.</ResponseField>
-        <ResponseField name="retweeted_tweet" type="object">Original retweeted tweet. Omitted if not a retweet.</ResponseField>
+### 200 OK
+
+<ResponseField name="tweets" type="object[]">
+  Array of reply tweets.
+  <Expandable title="Tweet object fields">
+    <ResponseField name="id" type="string">Tweet ID.</ResponseField>
+    <ResponseField name="text" type="string">Tweet text.</ResponseField>
+    <ResponseField name="type" type="string">Tweet type. Omitted if unavailable.</ResponseField>
+    <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
+    <ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet. Omitted if unavailable.</ResponseField>
+    <ResponseField name="isReply" type="boolean">Whether the tweet is a reply.</ResponseField>
+    <ResponseField name="inReplyToId" type="string">ID of the tweet being replied to.</ResponseField>
+    <ResponseField name="inReplyToUserId" type="string">User ID being replied to. Omitted if unavailable.</ResponseField>
+    <ResponseField name="inReplyToUsername" type="string">Username being replied to. Omitted if unavailable.</ResponseField>
+    <ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
+    <ResponseField name="likeCount" type="number">Like count. Omitted if unavailable.</ResponseField>
+    <ResponseField name="retweetCount" type="number">Retweet count. Omitted if unavailable.</ResponseField>
+    <ResponseField name="replyCount" type="number">Reply count. Omitted if unavailable.</ResponseField>
+    <ResponseField name="quoteCount" type="number">Quote tweet count. Omitted if unavailable.</ResponseField>
+    <ResponseField name="viewCount" type="number">View count. Omitted if unavailable.</ResponseField>
+    <ResponseField name="bookmarkCount" type="number">Bookmark count. Omitted if unavailable.</ResponseField>
+    <ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
+    <ResponseField name="lang" type="string">Tweet language code. Omitted if unavailable.</ResponseField>
+    <ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
+    <ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
+    <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
+    <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
+    <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
+    <ResponseField name="contentDisclosure" type="object">Disclosure metadata for paid partnership and AI-generated media labels. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them. Omitted if unavailable.</ResponseField>
+    <ResponseField name="author" type="object">
+      Tweet author profile. Omitted if unavailable.
+      <Expandable title="Author object fields">
+        <ResponseField name="id" type="string">Author user ID.</ResponseField>
+        <ResponseField name="username" type="string">Author handle without `@`.</ResponseField>
+        <ResponseField name="name" type="string">Author display name.</ResponseField>
+        <ResponseField name="followers" type="number">Follower count. Omitted if unavailable.</ResponseField>
+        <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
+        <ResponseField name="profilePicture" type="string">Author profile image URL. Omitted if unavailable.</ResponseField>
       </Expandable>
     </ResponseField>
-    <ResponseField name="nested_replies" type="object[]">
-      Replies to other replies in the same conversation. Complete mode returns
-      them separately. They never count toward direct-reply coverage.
+    <ResponseField name="media" type="object[]">
+      Media attachments. Omitted when the tweet has no media.
+      <Expandable title="Media object fields">
+        <ResponseField name="mediaUrl" type="string">Direct media URL.</ResponseField>
+        <ResponseField name="videoVariants" type="object[]">Available video renditions with bitrate, content type, and URL. Omitted for images.</ResponseField>
+        <ResponseField name="type" type="string">Media type.</ResponseField>
+        <ResponseField name="url" type="string">Shortened URL from the tweet text.</ResponseField>
+      </Expandable>
     </ResponseField>
-    <ResponseField name="diagnostic" type="object">
-      Complete-mode coverage evidence. It includes reported and retrieved
-      counts, coverage, pages, strategies, cursor failures, missing fields,
-      richness counts, and the recommended fallback.
-    </ResponseField>
-    <ResponseField name="has_next_page" type="boolean">Whether more results are available.</ResponseField>
-    <ResponseField name="next_cursor" type="string">Cursor for the next page.</ResponseField>
+    <ResponseField name="quoted_tweet" type="object">Embedded quoted tweet. Omitted if not a quote tweet.</ResponseField>
+    <ResponseField name="retweeted_tweet" type="object">Original retweeted tweet. Omitted if not a retweet.</ResponseField>
+  </Expandable>
+</ResponseField>
+<ResponseField name="has_next_page" type="boolean">Whether more results are available.</ResponseField>
+<ResponseField name="next_cursor" type="string">Cursor for the next page.</ResponseField>
 
-    ```json
+```json
+{
+  "tweets": [
     {
-      "tweets": [
-        {
-          "id": "1893456789012345679",
-          "text": "I agree with this!",
-          "createdAt": "2026-03-27T11:00:00.000Z",
-          "isReply": true,
-          "inReplyToId": "1893456789012345678",
-          "author": {
-            "id": "44196397",
-            "username": "username",
-            "name": "Xquik",
-            "followers": 1200,
-            "verified": true,
-            "profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"
-          }
-        }
-      ],
-      "has_next_page": true,
-      "next_cursor": "DAACCgACGE..."
-    }
-    ```
-  </Tab>
-  <Tab title="400 Invalid tweet ID">
-    ```json
-    { "error": "invalid_tweet_id" }
-    ```
-  </Tab>
-  <Tab title="401 Unauthenticated">
-    Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
-    ```json
-    { "error": "unauthenticated" }
-    ```
-  </Tab>
-  <Tab title="402 Payment required">
-    Account keys get account options; guest keys get guest top-up only.
-    No checkout starts automatically. Confirm any payment action.
-  </Tab>
-  <Tab title="502 X API unavailable">
-    ```json
-    { "error": "x_api_unavailable" }
-    ```
-    The read service returned an error. Retry after a short delay.
-  </Tab>
-  <Tab title="429 Rate Limit Exceeded">
-    ```json
-    { "error": "rate_limit_exceeded", "retryAfter": 60 }
-    ```
-    Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
-  </Tab>
-  <Tab title="503 Complete Collection Busy">
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "Complete reply extraction is busy. Retry shortly."
-    }
-    ```
-    Wait for the `Retry-After` header, then retry complete mode.
-  </Tab>
-  <Tab title="424 Replies Incomplete">
-    ```json
-    {
-      "error": "replies_incomplete",
-      "message": "Replies are incomplete. Retry complete mode later.",
-      "tweets": [
-        {
-          "id": "1893456789012345680",
-          "text": "A visible direct reply",
-          "conversationId": "1893456789012345678",
-          "inReplyToId": "1893456789012345678",
-          "retweetCount": 0,
-          "replyCount": 1,
-          "likeCount": 2,
-          "quoteCount": 0,
-          "viewCount": 30,
-          "bookmarkCount": 0
-        }
-      ],
-      "nested_replies": [
-        {
-          "id": "1893456789012345681",
-          "text": "A visible nested reply",
-          "conversationId": "1893456789012345678",
-          "inReplyToId": "1893456789012345680",
-          "retweetCount": 0,
-          "replyCount": 0,
-          "likeCount": 1,
-          "quoteCount": 0,
-          "viewCount": 12,
-          "bookmarkCount": 0
-        }
-      ],
-      "has_next_page": false,
-      "next_cursor": "",
-      "diagnostic": {
-        "complete": false,
-        "reportedReplyCount": 500,
-        "targetDirectReplies": 400,
-        "uniqueDirectReplies": 1,
-        "coveragePercentage": 0.2,
-        "nestedReplyCount": 1,
-        "pagesAttempted": 4,
-        "strategiesAttempted": [
-          {
-            "name": "tweet_detail_bottom_relevance",
-            "pagesAttempted": 4,
-            "newDirectReplies": 1,
-            "newNestedReplies": 1,
-            "stopReason": "empty_pages"
-          }
-        ],
-        "duplicateCount": 0,
-        "cursorFailures": 0,
-        "repeatedCursorCount": 0,
-        "emptyFalseProgressPages": 3,
-        "malformedCount": 0,
-        "unrelatedCount": 0,
-        "missingResponseModulesOrFields": [],
-        "recommendedFallback": "Retry complete mode later. X did not expose enough direct replies.",
-        "richness": {
-          "totalReplies": 1,
-          "text": 1,
-          "author": 0,
-          "createdAt": 0,
-          "language": 0,
-          "url": 0,
-          "entities": 0,
-          "media": 0,
-          "article": 0,
-          "card": 0,
-          "communityNote": 0,
-          "quotedOrRepostedTweet": 0,
-          "engagementCounts": 1
-        },
-        "responseTruncated": false
+      "id": "1893456789012345679",
+      "text": "I agree with this!",
+      "createdAt": "2026-03-27T11:00:00.000Z",
+      "isReply": true,
+      "inReplyToId": "1893456789012345678",
+      "author": {
+        "id": "44196397",
+        "username": "username",
+        "name": "Xquik",
+        "followers": 1200,
+        "verified": true,
+        "profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"
       }
     }
-    ```
-    Complete mode finished below 80% direct-reply coverage. Keep `tweets` and
-    `nested_replies` separate. Follow `recommendedFallback`.
-  </Tab>
-</Tabs>
+  ],
+  "has_next_page": true,
+  "next_cursor": "DAACCgACGE..."
+}
+```
+
+### 400 Invalid Tweet ID
+
+```json
+{ "error": "invalid_tweet_id" }
+```
+
+### 401 Unauthenticated
+
+Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
+```json
+{ "error": "unauthenticated" }
+```
+
+### 402 Payment Required
+
+Account keys get account options; guest keys get guest top-up only.
+No checkout starts automatically. Confirm any payment action.
+
+### 502 X API Unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service returned an error. Retry after a short delay.
+
+### 429 Rate Limit Exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+
+Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
+
+### 424 Replies Incomplete
+
+```json
+{
+  "error": "replies_incomplete",
+  "message": "Replies are incomplete. Use tweet search with a conversation_id filter."
+}
+```
+
+X reports more replies than the terminal first page exposes. Use tweet search
+with a `conversation_id:{id}` query. Disclose that coverage depends on X.
 
 <Note>
   **Related:** [Tweet Replies Export Workflow](/guides/tweet-replies-export) when you need saved CSV, JSON, or XLSX files, [Tweet Quotes](/api-reference/x/tweet-quotes), [Tweet Thread](/api-reference/x/tweet-thread), [Retweeters](/api-reference/x/retweeters), and [Favoriters](/api-reference/x/favoriters).

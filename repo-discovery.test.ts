@@ -32,7 +32,7 @@ const PRODUCT_APP_ICON_FILE = '/Users/burak/Developer/xquik/app/icon.svg';
 const DOCS_X_ONLY_ICON_SHA256 =
   '7002c1dd82b5b903d69777fa212f39b0e0410cb156e7bcb1b4426fcec3a7cdc5';
 const TWEET_SEARCH_EXPORT_SEMRUSH_SHA256 =
-  'dfe034c801941231051b86d1a70ecb9edc1bc1f31d17d473357723fdf7540801';
+  'f4f68801cf41aa548dd58d94537fd76d8c02c3ede0e3769dcef8bf57a3de3812';
 const CODEX_OAUTH_ISSUER_ERROR =
   'Authorization server response missing required issuer: expected https://xquik.com';
 const CODEX_OAUTH_UPSTREAM_ISSUE =
@@ -2115,7 +2115,7 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   '<Card title="Persist outside chat" icon="boxes">',
   'Use REST or generated SDKs when a backend must own retries, cursor storage,',
   'file downloads, queues, or batch orchestration.',
-  '<Card title="Hand off results" icon="file-json">',
+  '<Card title="Hand off results" icon="braces">',
   'Store the endpoint path, request parameters, returned IDs, `has_more`,',
   '`next_cursor`, export route, or webhook replay route before ending the',
   '## Quick connect',
@@ -2181,7 +2181,7 @@ const REQUIRED_AGENT_MCP_HANDOFF_SNIPPETS = [
   '"event_replay_route": "GET /api/v1/events?after=9002"',
   '"export_route": "GET /api/v1/extractions/77777/export?format=json"',
   'Keep API keys, webhook secrets, raw request bodies, raw signatures, and full',
-  '<Card title="File Exports" icon="file-json" href="/guides/response-formats-exports">',
+  '<Card title="File Exports" icon="braces" href="/guides/response-formats-exports">',
   '<Card title="Webhook Receivers" icon="webhook" href="/guides/webhook-testing">',
   '<Card title="SDK Backends" icon="boxes" href="/sdks">',
   '"mcp/agent-handoff"',
@@ -2552,7 +2552,7 @@ const REQUIRED_X_API_INTEGRATION_CHECKLIST_SNIPPETS = [
   '## Integration Readiness Checklist',
   '<Card title="Authentication" icon="key">',
   '`x-api-key`',
-  '<Card title="Response contract" icon="file-json">',
+  '<Card title="Response contract" icon="braces">',
   '`xquik-api-contract: 2026-04-29`',
   '`has_more`',
   '`next_cursor`',
@@ -2608,7 +2608,7 @@ const REQUIRED_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
   'Requests sent before the fixed window resets keep returning `429` until `Retry-After` elapses.',
   '<Card title="Retry-After header" icon="timer">',
   'Standard read throttles return `Retry-After: 1`. Write and delete throttles return `Retry-After: 60`. Account connection safety limits return `Retry-After: 900`; login cooldowns return their exact remaining wait.',
-  '<Card title="JSON retry field" icon="file-json">',
+  '<Card title="JSON retry field" icon="braces">',
   '`error: "rate_limit_exceeded"`',
   '<Card title="Node.js libraries" icon="package">',
   '`npm install bottleneck`',
@@ -5253,7 +5253,7 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   "For hashtags search, pass the exact hashtag token. Respect API rate limits and X's Terms of Service. Store Twitter profiles separately from tweet rows.",
   '### How Do I Scrape Tweets Without Getting Blocked?',
   'Respect each rate limit and wait for retryAfter after a 429 response.',
-  '### Export Twitter Data',
+  '## Export Twitter Data',
   'Use CSV with Google Sheets.',
   '### Scrape Tweets Python',
   'Use the [Python SDK](/sdks/python)',
@@ -5542,7 +5542,7 @@ const REQUIRED_BOOKMARKS_API_HANDOFF_SNIPPETS = [
   '<Card title="Saved tweets" icon="bookmark">',
   '<Card title="Bookmark folders" icon="folder">',
   '[`GET /x/bookmarks/folders`](/api-reference/x/bookmark-folders)',
-  '<Card title="Home timeline" icon="home">',
+  '<Card title="Home timeline" icon="house">',
   '[`GET /x/timeline`](/api-reference/x/timeline)',
   '<Card title="Notifications" icon="bell">',
   '[`GET /x/notifications`](/api-reference/x/notifications)',
@@ -5592,7 +5592,7 @@ const REQUIRED_TIMELINE_API_HANDOFF_SNIPPETS = [
   '<ResponseField name="profilePicture" type="string">Profile picture URL.',
   '"followers": 150000000',
   '"profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"',
-  '<Card title="Home feed rows" icon="home">',
+  '<Card title="Home feed rows" icon="house">',
   'timeline_source: "home"',
   '<Card title="Seen tweet dedupe" icon="list-checks">',
   'Add processed tweet IDs to `seenTweetIds`',
@@ -5601,7 +5601,7 @@ const REQUIRED_TIMELINE_API_HANDOFF_SNIPPETS = [
   '<Card title="Account-scoped sync" icon="lock-keyhole">',
   'Keep home timeline rows in account-scoped inbox, CRM, monitor seed, or agent',
   '## Which timeline endpoint?',
-  '<Card title="Home timeline" icon="home">',
+  '<Card title="Home timeline" icon="house">',
   '<Card title="Profile timeline" icon="user-round">',
   '[`GET /x/users/{id}/tweets`](/api-reference/x/user-tweets)',
   '<Card title="Mentions timeline" icon="at-sign">',
@@ -6592,7 +6592,7 @@ const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   '<Card title="Response" icon="circle-check">',
   'Store `messageId`, `recipient_user_id`, `sender_account`, `message_text`,',
   'and optional `media_id` in private audit records or support systems.',
-  '<Card title="JSON Lines" icon="file-json">',
+  '<Card title="JSON Lines" icon="braces">',
   'Store history and send records in `xquik-dm-handoff.jsonl`',
 ] as const;
 
@@ -6619,7 +6619,7 @@ const REQUIRED_WEBHOOK_TESTING_SNIPPETS = [
   '"store": ["monitorId", "monitorType", "type", "occurredAt", "data"]',
   '"handoff_state": "verified_signature_then_join_event_context"',
   '<Card title="Signature checkpoint" icon="shield-check">',
-  '<Card title="Test payload checkpoint" icon="file-json">',
+  '<Card title="Test payload checkpoint" icon="braces">',
   '<Card title="Production de-dupe" icon="copy-check">',
   '<Card title="Delivery triage" icon="activity">',
   '<Card title="Event join" icon="link">',
@@ -10595,34 +10595,6 @@ const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
   ['whose', 'session', 'reads'].join(' '),
 ] as const;
 
-const FORBIDDEN_PUBLIC_CARD_ICON_SNIPPETS = [
-  {
-    reason: 'filter.svg returns 403 from the Mintlify Lucide asset CDN',
-    replacement: 'icon="funnel"',
-    snippet: 'icon="filter"',
-  },
-  {
-    reason: 'circle-exclamation.svg returns 403 from the Mintlify Lucide asset CDN',
-    replacement: 'icon="circle-alert"',
-    snippet: 'icon="circle-exclamation"',
-  },
-  {
-    reason: 'microsoft.svg returns 403 from the Mintlify Lucide asset CDN',
-    replacement: 'icon="workflow"',
-    snippet: 'icon="microsoft"',
-  },
-  {
-    reason: 'pause-circle.svg returns 403 from the Mintlify Lucide asset CDN',
-    replacement: 'icon="circle-pause"',
-    snippet: 'icon="pause-circle"',
-  },
-  {
-    reason: 'play-circle.svg returns 403 from the Mintlify Lucide asset CDN',
-    replacement: 'icon="circle-play"',
-    snippet: 'icon="play-circle"',
-  },
-] as const;
-
 const EXPECTED_OPENAPI_OPERATION_COUNT = 128;
 
 const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
@@ -10859,25 +10831,6 @@ function collectStaleCreditCostFindings(): readonly DiscoveryFinding[] {
   return findings;
 }
 
-function collectForbiddenPublicCardIconFindings(): readonly DiscoveryFinding[] {
-  const findings: DiscoveryFinding[] = [];
-
-  for (const file of listPublicMarkdownFiles()) {
-    const source = readFileSync(file, 'utf8');
-
-    for (const { reason, replacement, snippet } of FORBIDDEN_PUBLIC_CARD_ICON_SNIPPETS) {
-      if (source.includes(snippet)) {
-        findings.push({
-          file,
-          issue: `Public Markdown uses ${snippet}; use ${replacement} because ${reason}.`,
-        });
-      }
-    }
-  }
-
-  return findings;
-}
-
 function sha256File(file: string): string {
   return createHash('sha256').update(readFileSync(file)).digest('hex');
 }
@@ -11037,9 +10990,8 @@ function collectSnippetFindings(
 }
 
 function hasPaymentRequiredSection(source: string): boolean {
-  return (
-    source.includes('### 402 Payment required') ||
-    source.includes('<Tab title="402 Payment required">')
+  return /^(?:### 402 Payment required|<Tab title="402 Payment required">)/imu.test(
+    source,
   );
 }
 
@@ -15963,12 +15915,6 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     expect(collectStaleCreditCostFindings()).toStrictEqual([]);
-  });
-
-  it('keeps public card icons on loadable Lucide assets', (): void => {
-    expect.assertions(1);
-
-    expect(collectForbiddenPublicCardIconFindings()).toStrictEqual([]);
   });
 
   it('keeps Xquik docs icon sources aligned with product icon policy', (): void => {

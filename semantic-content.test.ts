@@ -28,7 +28,7 @@ const REQUIRED_OPERATIONAL_TABLES = [
     file: 'api-reference/x/tweet-replies.mdx',
     snippets: [
       '| Reply column | Response source | Review use |',
-      '| Partial coverage | `diagnostic` from `424 replies_incomplete` |',
+      '| Incomplete first page | `424 replies_incomplete` |',
     ],
   },
   {
