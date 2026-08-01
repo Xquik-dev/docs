@@ -555,7 +555,7 @@ const REQUIRED_COMMUNITY_TIMELINE_CONTENT = [
 ] as const;
 
 const REQUIRED_QUICK_TOPUP_CONTENT = [
-  'title: "Twitter API billing: instant X API credit top-up"',
+  'title: "Twitter API Billing: Instant X API Credit Top-up"',
   'X API credits',
   'Twitter API billing',
 ] as const;

@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-const MIN_DESCRIPTION_LENGTH = 120;
-const MAX_DESCRIPTION_LENGTH = 170;
-const MIN_RENDERED_TITLE_LENGTH = 30;
-const MAX_RENDERED_TITLE_LENGTH = 70;
+const MIN_DESCRIPTION_LENGTH = 150;
+const MAX_DESCRIPTION_LENGTH = 160;
+const MIN_RENDERED_TITLE_LENGTH = 50;
+const MAX_RENDERED_TITLE_LENGTH = 60;
 const TITLE_SUFFIX = ' - Xquik';
 const SITE_DESCRIPTION =
   'Search tweets, export followers and replies, retrieve profiles and timelines, monitor accounts, post tweets, and use webhooks, SDKs & MCP. Not affiliated with X Corp.';
