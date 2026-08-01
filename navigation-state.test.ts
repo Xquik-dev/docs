@@ -118,20 +118,20 @@ describe('navigation default state', (): void => {
     expect(bannerContent).not.toContain('trademarks of X Corp.');
   });
 
-  it('keeps X API endpoint sections complete and collapsed by default', (): void => {
+  it('keeps every X API endpoint section complete and expanded', (): void => {
     expect.assertions(2);
 
     const apiReferenceTab = findTab(docsConfig(), 'API Reference');
     const xApiGroup = findGroup(apiReferenceTab, 'X API');
     const xApiSubgroups = objectItems(xApiGroup.pages);
-    const expandedGroups = xApiSubgroups
-      .filter((group): boolean => group.expanded === true)
+    const collapsedGroups = xApiSubgroups
+      .filter((group): boolean => group.expanded !== true)
       .map((group): string => group.group ?? '(unnamed)');
 
     expect(xApiSubgroups.map((group): string | undefined => group.group)).toStrictEqual([
       ...X_API_GROUPS,
     ]);
-    expect(expandedGroups).toStrictEqual([]);
+    expect(collapsedGroups).toStrictEqual([]);
   });
 
   it('keeps MDX API snippets pointed at the public API origin', (): void => {
