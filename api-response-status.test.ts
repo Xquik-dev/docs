@@ -11,132 +11,9 @@ const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
 );
 const WRITE_ACTION_DIR = join(PROJECT_ROOT, 'api-reference/x-write');
 const FRONTMATTER_API_PATTERN = /^api:\s*"([A-Z]+) ([^"]+)"/mu;
-const RESPONSE_STATUS_PATTERN = /(?:<Tab title="|^### )(\d{3})\b/gmu;
+const RESPONSE_STATUS_PATTERN =
+  /(?:<Tab title="|^### |^  ```(?:json|text) )(\d{3})\b/gmu;
 const STATUS_CODE_PATTERN = /^\d{3}$/u;
-const FULL_STATUS_AUDITED_OPERATIONS = new Set([
-  'DELETE /api-keys/{id}',
-  'DELETE /drafts/{id}',
-  'DELETE /monitors/{id}',
-  'DELETE /monitors/keywords/{id}',
-  'DELETE /styles/{id}',
-  'DELETE /webhooks/{id}',
-  'DELETE /x/accounts/{id}',
-  'DELETE /x/tweets/{id}',
-  'DELETE /x/tweets/{id}/like',
-  'DELETE /x/tweets/{id}/retweet',
-  'DELETE /x/users/{id}/follow',
-  'DELETE /x/communities/{id}',
-  'DELETE /x/communities/{id}/join',
-  'GET /account',
-  'GET /api-keys',
-  'GET /credits',
-  'GET /credits/topup/status',
-  'GET /drafts',
-  'GET /drafts/{id}',
-  'GET /draws',
-  'GET /draws/{id}',
-  'GET /draws/{id}/export',
-  'GET /events',
-  'GET /events/{id}',
-  'GET /extractions',
-  'GET /extractions/{id}',
-  'GET /extractions/{id}/export',
-  'GET /monitors',
-  'GET /monitors/{id}',
-  'GET /monitors/keywords',
-  'GET /monitors/keywords/{id}',
-  'GET /radar',
-  'GET /styles',
-  'GET /styles/{id}',
-  'GET /styles/{id}/performance',
-  'GET /styles/compare',
-  'GET /support/tickets',
-  'GET /support/tickets/{id}',
-  'GET /trends',
-  'GET /webhooks',
-  'GET /webhooks/{id}/deliveries',
-  'GET /x/followers/check',
-  'GET /x/articles/{tweetId}',
-  'GET /x/accounts',
-  'GET /x/account-connection-attempts/{id}',
-  'GET /x/accounts/{id}',
-  'GET /x/bookmarks',
-  'GET /x/bookmarks/folders',
-  'GET /x/communities/search',
-  'GET /x/communities/tweets',
-  'GET /x/communities/{id}/info',
-  'GET /x/communities/{id}/members',
-  'GET /x/communities/{id}/moderators',
-  'GET /x/communities/{id}/tweets',
-  'GET /x/dm/{userId}/history',
-  'GET /x/lists/{id}/followers',
-  'GET /x/lists/{id}/members',
-  'GET /x/lists/{id}/tweets',
-  'GET /x/notifications',
-  'GET /x/timeline',
-  'GET /x/trends',
-  'GET /x/tweets',
-  'GET /x/tweets/search',
-  'GET /x/tweets/{id}',
-  'GET /x/tweets/{id}/favoriters',
-  'GET /x/tweets/{id}/quotes',
-  'GET /x/tweets/{id}/replies',
-  'GET /x/tweets/{id}/retweeters',
-  'GET /x/tweets/{id}/thread',
-  'GET /x/users/batch',
-  'GET /x/users/search',
-  'GET /x/users/{id}',
-  'GET /x/users/{id}/followers',
-  'GET /x/users/{id}/followers-you-know',
-  'GET /x/users/{id}/following',
-  'GET /x/users/{id}/likes',
-  'GET /x/users/{id}/media',
-  'GET /x/users/{id}/mentions',
-  'GET /x/users/{id}/replies',
-  'GET /x/users/{id}/tweets',
-  'GET /x/users/{id}/verified-followers',
-  'PATCH /account',
-  'PATCH /monitors/{id}',
-  'PATCH /monitors/keywords/{id}',
-  'PATCH /support/tickets/{id}',
-  'PATCH /webhooks/{id}',
-  'POST /api-keys',
-  'POST /compose',
-  'POST /subscribe',
-  'POST /credits/quick-topup',
-  'POST /credits/topup',
-  'POST /drafts',
-  'POST /draws',
-  'POST /extractions',
-  'POST /extractions/estimate',
-  'POST /monitors',
-  'POST /monitors/keywords',
-  'POST /styles',
-  'POST /support/tickets',
-  'POST /support/tickets/{id}/messages',
-  'POST /webhooks',
-  'POST /webhooks/{id}/test',
-  'POST /x/account-connection-challenges/{id}/submit',
-  'POST /x/accounts',
-  'POST /x/accounts/{id}/reauth',
-  'POST /x/accounts/bulk-retry',
-  'POST /x/communities',
-  'POST /x/communities/{id}/join',
-  'POST /x/dm/{userId}',
-  'POST /x/media/download',
-  'POST /x/media',
-  'POST /x/tweets',
-  'POST /x/tweets/{id}/like',
-  'POST /x/tweets/{id}/retweet',
-  'POST /x/users/{id}/follow',
-  'POST /x/users/{id}/remove-follower',
-  'PUT /account/x-identity',
-  'PATCH /x/profile',
-  'PATCH /x/profile/avatar',
-  'PATCH /x/profile/banner',
-  'PUT /styles/{id}',
-]);
-
 interface ApiDoc {
   readonly file: string;
   readonly method: string;
@@ -266,8 +143,6 @@ function collectAuditedResponseStatusFindings(
   return collectStatusFindings({
     docsStatusProvider: documentedResponseStatuses,
     issuePrefix: '',
-    operationFilter: (apiDoc): boolean =>
-      FULL_STATUS_AUDITED_OPERATIONS.has(operationKey(apiDoc)),
     spec,
     statusProvider: responseStatuses,
   });
@@ -276,22 +151,17 @@ function collectAuditedResponseStatusFindings(
 function collectStatusFindings({
   docsStatusProvider,
   issuePrefix,
-  operationFilter = (): boolean => true,
   spec,
   statusProvider,
 }: {
   readonly docsStatusProvider: (source: string) => readonly string[];
   readonly issuePrefix: string;
-  readonly operationFilter?: (apiDoc: ApiDoc) => boolean;
   readonly spec: OpenApiSpec;
   readonly statusProvider: (operation: OpenApiOperation) => readonly string[];
 }): readonly ResponseStatusFinding[] {
   const findings: ResponseStatusFinding[] = [];
 
   for (const apiDoc of readApiDocs()) {
-    if (!operationFilter(apiDoc)) {
-      continue;
-    }
     const operation = getOperation(spec, apiDoc);
     if (operation === undefined) {
       findings.push({

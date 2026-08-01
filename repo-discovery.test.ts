@@ -4,6 +4,10 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import {
+  stripGeneratedResponseExamples,
+} from './scripts/lib/generated-response-examples';
+
 interface DiscoveryFinding {
   readonly file?: string;
   readonly issue: string;
@@ -12375,7 +12379,9 @@ describe('repository discovery', (): void => {
   it('keeps quick top-up examples aligned with PAYG credit conversion', (): void => {
     expect.assertions(1);
 
-    const quickTopupPage = readFileSync(CREDITS_QUICK_TOPUP_PAGE, 'utf8');
+    const quickTopupPage = stripGeneratedResponseExamples(
+      readFileSync(CREDITS_QUICK_TOPUP_PAGE, 'utf8'),
+    );
     const billing = readFileSync('guides/billing.mdx', 'utf8');
 
     expect(
@@ -13396,7 +13402,9 @@ describe('repository discovery', (): void => {
   it('keeps the search tweets API handoff concrete', (): void => {
     expect.assertions(2);
 
-    const source = readFileSync('api-reference/x/search-tweets.mdx', 'utf8');
+    const source = stripGeneratedResponseExamples(
+      readFileSync('api-reference/x/search-tweets.mdx', 'utf8'),
+    );
 
     expect(
       [
@@ -14772,9 +14780,8 @@ describe('repository discovery', (): void => {
   it('keeps the keyword monitor API handoff concrete', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync(
-      'api-reference/monitors/create-keyword.mdx',
-      'utf8',
+    const source = stripGeneratedResponseExamples(
+      readFileSync('api-reference/monitors/create-keyword.mdx', 'utf8'),
     );
 
     expect(
@@ -14879,9 +14886,8 @@ describe('repository discovery', (): void => {
   it('keeps the keyword monitor update API handoff concrete', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync(
-      'api-reference/monitors/update-keyword.mdx',
-      'utf8',
+    const source = stripGeneratedResponseExamples(
+      readFileSync('api-reference/monitors/update-keyword.mdx', 'utf8'),
     );
 
     expect(
