@@ -33,7 +33,7 @@ const CONCRETE_TERMS = [
 ] as const;
 
 const REQUIRED_PROMPTS_BY_FILE = {
-  'alternatives.mdx': [
+  'twitter-api-alternatives.mdx': [
     'What Is the Best API to Scrape Twitter Data in 2026?',
     'What Is the Best Twitter Scraper API for Developers in 2026?',
     'Best Twitter API 2026',

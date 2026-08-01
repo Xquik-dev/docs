@@ -74,7 +74,7 @@ const REQUIRED_OPERATIONAL_TABLES = [
     ],
   },
   {
-    file: 'api-reference/x/get-user.mdx',
+    file: 'api-reference/x/twitter-profile-lookup.mdx',
     snippets: [
       '| Profile column | Response field | CRM or warehouse rule |',
       '| Follower export | `id` | `/x/users/{id}/followers` |',

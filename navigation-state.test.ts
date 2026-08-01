@@ -191,4 +191,22 @@ describe('navigation default state', (): void => {
       destination: '/mcp/agent-handoff',
     });
   });
+
+  it('preserves precise SEO routes and their historical redirects', (): void => {
+    expect.assertions(4);
+
+    expect(readFileSync('index.mdx', 'utf8')).toMatch(/^noindex: true$/m);
+    expect(docsConfig().redirects).toContainEqual({
+      source: '/alternatives',
+      destination: '/twitter-api-alternatives',
+    });
+    expect(docsConfig().redirects).toContainEqual({
+      source: '/api-reference/x/get-user',
+      destination: '/api-reference/x/twitter-profile-lookup',
+    });
+    expect(docsConfig().redirects).toContainEqual({
+      source: '/guides/webhook-testing',
+      destination: '/guides/twitter-webhook-testing',
+    });
+  });
 });
