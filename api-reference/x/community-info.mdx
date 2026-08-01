@@ -81,7 +81,7 @@ Use the X communities API to resolve one community. Then read its members, moder
 
 ## Validate an X Community Before Extraction
 
-Start with community details when a user supplies only a numeric community ID.
+Start with community details for each supplied numeric community ID.
 Confirm the community name, description, creator, join policy, rules, and
 banner before requesting members or tweets. This prevents exports from using
 the wrong X community.
@@ -96,8 +96,8 @@ moderator profiles, or community tweets.
 
 After validation, choose the smallest matching route. Fetch member profiles
 for audience review. Fetch moderators for governance review. Fetch recent
-tweets for timeline analysis. Use saved extraction jobs for CSV, JSON, or XLSX
-files.
+tweets to review posts and engagement. Use saved extraction jobs to produce
+CSV, JSON, or XLSX output.
 
 ## Choose the Right Twitter Community API
 
@@ -120,11 +120,11 @@ Start with community details when the numeric ID needs validation. Then choose t
     Retrieve the smaller moderator roster without treating every member as a moderator.
   </Card>
   <Card title="Saved exports" icon="file-spreadsheet" href="/api-reference/extractions/create">
-    Run a community extraction when you need saved CSV, JSON, or XLSX files.
+    Run a community extraction to save CSV, JSON, or XLSX output.
   </Card>
 </CardGroup>
 
-Use member routes for profile rows. Use tweet routes for posts and engagement counts. Use extraction jobs for downloadable files.
+Use member routes for profile rows. Use tweet routes for posts and engagement counts. Use extraction jobs to save CSV, JSON, or XLSX output.
 
 ## Choose Community Metadata
 
@@ -213,7 +213,7 @@ enrichment. Store `community_id`, `community_name`, `description`,
 Read community metadata before starting a member or tweet export. This check
 prevents a copied community ID from sending results into the wrong project.
 
-Confirm `community.id` and `community.name` first. Preserve both values in the
+Confirm `community.id` and `community.name` first. Add both values to each
 collection manifest. Names can change, while the numeric ID anchors later
 member and tweet pages.
 
@@ -221,7 +221,7 @@ Review `description` and `primary_topic` for research relevance. Keep this
 classification separate from tweet text. Community metadata describes the
 space, while tweet routes return individual posts.
 
-Inspect `join_policy` and `invites_policy` before designing membership flows.
+Check `join_policy` and `invites_policy` before planning member collection.
 Do not infer either policy from member counts. Store the returned values
 exactly, including missing values.
 
@@ -232,9 +232,8 @@ routes.
 Check `is_member` and `role` when viewer context matters. These fields describe
 the authenticated viewer. They do not assign roles to exported profiles.
 
-Review `is_nsfw` before sending banners, descriptions, or tweets into shared
-analyst tools. Apply the receiving system's content rules without changing
-the API response.
+Review `is_nsfw` before sharing banners, descriptions, or tweets. Follow the
+receiving system's content rules. Keep API responses unchanged.
 
 Capture every community rule with its ID, name, and description. Preserve the
 returned order. Do not merge several rules into one undocumented summary.
@@ -246,8 +245,8 @@ Finish the qualification record with these decisions:
 - Require a reviewer before handling sensitive community content.
 - Refresh metadata later because a required field is unavailable.
 
-This route creates the qualification record. Collection routes create the
-profile and tweet rows that follow.
+This route creates the qualification record. Collection routes create later
+profile and tweet rows.
 
 ## Create a Community Qualification Manifest
 
@@ -256,32 +255,33 @@ Use the returned community ID as its stable key.
 
 Record these community facts:
 
-- Community name and description.
-- Member count and moderator count.
-- Join policy and invitation policy.
-- Viewer membership state and viewer role.
-- Primary topic and content-sensitivity state.
-- Creator profile and banner URL when returned.
-- Every rule ID, rule name, and rule description.
+- Record the community name and description.
+- Record member and moderator counts.
+- Record join and invitation policies.
+- Record viewer membership state and role.
+- Record primary topic and content-sensitivity state.
+- Record the creator profile and banner URL when returned.
+- Record every rule ID, name, and description.
 
-Add a retrieval timestamp in UTC. Community names, counts, rules, and policies
-can change. The timestamp explains which metadata guided later collection.
+Add a retrieval timestamp in UTC. Expect community names, counts, rules, and
+policies to change. The timestamp explains which metadata guided later collection.
 
 Keep planned collection work in a separate manifest section. Name the exact
 routes for members, moderators, unfiltered tweets, or keyword matches. Include
 the intended page size, search query, and output format when applicable.
 
-Do not copy member profiles into this metadata record. Do not copy tweets into
-it either. Link later exports by community ID and manifest ID.
+Do not copy member profiles into this metadata record. Keep tweets out of this
+metadata record. Link later exports by community ID and manifest ID.
 
-Reject a collection request when the returned community ID differs. Require a
+Stop when the returned community ID differs. Require a
 review when the name or topic conflicts with the project brief. Record the
 decision instead of silently selecting another community.
 
 ## Use Community Metadata to Choose the Next Route
 
-Use [Community Members](/api-reference/x/community-members) for paginated
-profile rows. The member count only estimates the expected roster size.
+The member route returns paginated profile rows. See
+[Community Members](/api-reference/x/community-members). The member count only
+estimates the expected roster size.
 
 Use [Community Moderators](/api-reference/x/community-moderators) for moderator
 profiles. The moderator count does not expose those usernames or user IDs.
@@ -292,19 +292,19 @@ community timeline. Preserve community ID and cursor with every page.
 Use [Community Search](/api-reference/x/community-search) for matching tweets.
 Preserve the exact keyword expression and sort mode with every result.
 
-Use the creator object only for community ownership context. Do not add that
-profile to member or moderator exports without route evidence.
+Keep the creator object for ownership context. Require route evidence before
+exporting that profile as a member or moderator.
 
 ## Detect Community Metadata Drift
 
 Compare manifests by stable community ID. Never join them by community name.
 
 Report name, description, topic, policy, rule, and sensitivity changes
-separately. A member-count change does not prove a policy change. A rule change
-does not prove that existing tweets changed.
+separately. A member-count change does not prove a policy change. Rule changes
+do not imply tweet changes.
 
-Store both retrieval times and both returned values. Keep missing fields as
-missing. Never convert absent policies or counts into invented defaults.
+Store both retrieval times and both returned values. Preserve absent fields.
+Never invent policy or count defaults.
 
 Refresh this endpoint before long-running exports. Attach the newest manifest
 ID to every new collection job. Keep earlier manifests immutable for audits.
@@ -336,7 +336,7 @@ ID to every new collection job. Keep earlier manifests immutable for audits.
     <ResponseField name="name" type="string">Community name. Omitted if unavailable.</ResponseField>
     <ResponseField name="description" type="string">Community description. Omitted if empty.</ResponseField>
     <ResponseField name="member_count" type="number">Total member count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="moderator_count" type="number">Moderator count. Omitted if unavailable.</ResponseField>
+    <ResponseField name="moderator_count" type="number">Total moderators. Omitted if unavailable.</ResponseField>
     <ResponseField name="join_policy" type="string">Join policy (e.g. `Open`). Omitted if unavailable.</ResponseField>
     <ResponseField name="invites_policy" type="string">Invitation policy. Omitted if unavailable.</ResponseField>
     <ResponseField name="is_member" type="boolean">Whether the authenticated viewer belongs to the community. Omitted without viewer context.</ResponseField>
@@ -385,7 +385,8 @@ Missing or invalid API key.
 ### 402 Payment required
 
 Account keys get account options; guest keys get guest top-up only.
-Anonymous calls receive a direct MPP `WWW-Authenticate: Payment` challenge plus a guest wallet creation action.
+Anonymous calls get a direct MPP `WWW-Authenticate: Payment` challenge.
+They also get a guest wallet creation action.
 No checkout starts automatically. Confirm any payment action.
 
 ### 404 Community not found
@@ -414,7 +415,7 @@ Your tier rate limit was exceeded. Wait for the `Retry-After` header before retr
 ```json
 { "error": "x_api_unavailable" }
 ```
-The normalized v1 response contract can return 424 when the read service is unavailable.
+Opted-in normalized v1 calls return 424 when the read service fails.
 
 <Note>
   **Next steps:** [Community Members](/api-reference/x/community-members) to list members, or [Community Tweets](/api-reference/x/community-tweets) to browse posts.
