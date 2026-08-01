@@ -4225,6 +4225,7 @@ const FORBIDDEN_TWEET_THREAD_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_RETWEETERS_API_HANDOFF_SNIPPETS = [
+  'title: "See Who Retweeted My Tweet with Twitter API"',
   '`GET /x/tweets/{id}/retweeters`',
   '`GET /api/v1/x/tweets/{id}/retweeters`',
   'tweet retweeters API',
@@ -4253,9 +4254,16 @@ const REQUIRED_RETWEETERS_API_HANDOFF_SNIPPETS = [
   'checkpoint = {"source_tweet_id": tweet_id, "next_cursor": next_cursor}',
   '## Direct retweeter handoff',
   'workflow needs one row per',
-  '`source_tweet_id`, `retweeter_id`,',
-  '`username`, `display_name`, `follower_count`,',
-  '`verified`, `verified_type`, `profile_image_url`,',
+  'Store `source_tweet_id`,',
+  '`retweeter_id`, `username`, `display_name`, `follower_count`,',
+  '`following_count`, `verified`, `verified_type`, and `profile_image_url`',
+  '## Retweeter Questions',
+  '### Can I See Who Retweeted My Tweet?',
+  '### Why Can\'t I See Every Retweeter?',
+  '### Do Retweeters Include Quote Tweets?',
+  '### How Do I Export Retweeters?',
+  '### How Can I Analyze Retweeters?',
+  'https://docs.x.com/x-api/posts/get-reposted-by',
   '<Card title="Retweeters" icon="repeat-2">',
   '[`GET /x/tweets/{id}/favoriters`](/api-reference/x/favoriters)',
   '[`GET /x/tweets/{id}/quotes`](/api-reference/x/tweet-quotes)',
