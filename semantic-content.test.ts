@@ -105,7 +105,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: 'api-reference/x/download-media.mdx',
     snippets: [
       '| Manifest column | Response or request source | Reconciliation rule |',
-      '| Partial bulk result | `totalTweets` below valid input count |',
+      '- If `totalTweets` is below the valid input count, review skipped Tweet IDs.',
     ],
   },
   {
