@@ -1,9 +1,9 @@
 ---
-title: "Twitter Bookmarks API & Saved Tweet Export"
+title: "Export Twitter Bookmarks with Twitter Bookmarks API"
 sidebarTitle: "Get bookmarks"
-description: "Retrieve bookmarked tweets from an authenticated X account by folder, with authors, text, engagement counts, media, and cursor pages. See request fields."
+description: "Export Twitter bookmarks with tweet text, authors, replies, likes, reposts, views, media, folders, CSV rows & cursor checkpoints from one connected account."
 api: "GET /x/bookmarks"
-keywords: ["Twitter bookmarks API", "Twitter saved tweets", "bookmark export", "saved tweet export", "X bookmarks API", "bookmark folders"]
+keywords: ["export Twitter bookmarks", "Twitter bookmarks API", "Twitter API get bookmarks", "Twitter saved tweets", "bookmark export", "CSV file", "bookmark folders"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -66,6 +66,13 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 <ConnectedAccountApiLinks />
+
+<Info>
+  Export Twitter bookmarks from one connected account. This Twitter bookmarks
+  API returns saved tweets, authors, likes, replies, reposts, views, media, and
+  cursor checkpoints. [The Twitter developer reference defines bookmarks as
+  private, authenticated-user content.](https://docs.x.com/x-api/posts/bookmarks/introduction)
+</Info>
 
 <Note>
   Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
@@ -225,57 +232,46 @@ earlier rows.
   </Card>
 </CardGroup>
 
-## Organize a bookmark export
+## Twitter Bookmark API Questions
 
-Use bookmarks for tweets saved by the authenticated account. Keep the account
-identity and collection time with every tweet.
+### How Do I Export Twitter Bookmarks?
 
-Export tweet ID, text, author, creation time, engagement counts, and media
-URLs. Preserve the folder context when the response supplies it.
+Run the Node.js or Python example for each cursor page. Both examples write one
+JSON Lines row per saved tweet. Each row keeps tweet text, authors, likes,
+replies, reposts, views, media URLs, and folder context.
 
-Bookmarks can support research queues, reading lists, or approved archives.
-They are different from public likes. Do not expose saved tweets to another
-user without authorization.
+Convert the completed rows to a CSV file after collection. Use `tweet_id` as
+the stable key. Map explicit columns before importing rows into Notion
+databases, spreadsheets, CRMs, or research queues.
 
-Paginate in cursor order. Save each page before advancing. Deduplicate resumed
-exports by account and tweet ID.
+### How Does Bookmark Authentication Work?
 
-Use bookmark folders to discover folder structure. Use the home timeline for
-the account’s feed. These routes represent different collections.
+Connect the X account that owns the saved tweets. Send its Xquik API key with
+each request. The endpoint never accepts a username for another account's
+bookmarks.
 
-## Preserve bookmark privacy
+### Can I Export Another User's Bookmarks?
 
-Treat saved tweets as account-scoped content. Limit exports to the authorized
-workflow and intended reviewers.
+No. Bookmarks are private to the connected account. Keep every export scoped
+to that account. Do not publish saved tweets or private folder names.
 
-Store the account identifier outside shared filenames. Avoid placing private
-folder names in public logs or URLs.
+### How Do Bookmark Folders Work?
 
-Delete temporary files after the approved handoff completes. Keep only the
-records required by the workflow.
+Call [Get bookmark folders](/api-reference/x/bookmark-folders) first. Pass the
+returned `folder_id` as `folderId`. Omit `folderId` to request all visible
+bookmarks. Store one `next_cursor` checkpoint per folder.
 
-| Bookmark library column | Response source | Account-scoped rule |
-| --- | --- | --- |
-| `connected_account_id` | Authenticated account context | Keep bookmarks isolated from every other connected account. |
-| `folder_id` | Requested `folderId` | Preserve the bookmark folder when one was requested. |
-| `tweet_id` | `tweets[].id` | De-duplicate saved tweets inside the same account and folder. |
-| `tweet_url` | `tweets[].url` | Open the original tweet during approved review. |
-| `text` | `tweets[].text` | Preserve the saved tweet body without reviewer edits. |
-| `author_id` | `tweets[].author.id` | Keep a stable original-author key. |
-| `author_username` | `tweets[].author.username` | Display the author handle observed during collection. |
-| `created_at` | `tweets[].createdAt` | Preserve when the tweet was published. |
-| `media_urls` | `tweets[].media[].mediaUrl` | Keep image and video context beside the saved tweet. |
-| `page_cursor` | Request `cursor` | Prove which bookmark page produced the row. |
-| `next_cursor` | Response `next_cursor` | Resume only after the current bookmark page is stored. |
-| `collected_at` | Integration timestamp | Audit when the authorized export observed the bookmark. |
+### What Limits a Bookmark Export?
 
-| Privacy control | Required scope | Safe handling |
-| --- | --- | --- |
-| Export owner | Connected account ID | Reject a handoff that targets another account. |
-| Folder label | Authorized account and folder ID | Keep private folder names out of public logs and URLs. |
-| Temporary file | One approved review or import | Delete it after the handoff completes. |
-| Shared storage | Explicit authorized reviewers | Store only required bookmark fields and access controls. |
-| Public output | None by default | Do not publish account bookmarks or folder names. |
+The endpoint returns bookmarks currently visible to the connected account. A
+low balance can shorten a page. A `429` response includes retry guidance. A
+`424` or `502` response means the read service failed temporarily.
+
+### How Should I Store a Bookmark Export?
+
+Store the connected account ID beside each row. Deduplicate by account, folder,
+and tweet ID. Keep private folder names out of public logs. Delete temporary
+files after the approved handoff finishes.
 
 ## Query parameters
 
@@ -284,7 +280,8 @@ records required by the workflow.
 </ParamField>
 
 <ParamField query="cursor" type="string">
-  Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
+  Pass the previous response's `next_cursor` to fetch another page. Omit it on
+  the initial request.
 </ParamField>
 
 ## Which saved-feed endpoint?
@@ -320,52 +317,52 @@ records required by the workflow.
 <ResponseField name="tweets" type="object[]">
   Array of bookmarked tweets.
   **Tweet object fields:**
-    <ResponseField name="id" type="string">Tweet ID.</ResponseField>
-    <ResponseField name="text" type="string">Tweet text content.</ResponseField>
-    <ResponseField name="type" type="string">Tweet type. Omitted if unavailable.</ResponseField>
-    <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet (long-form post). Omitted if unavailable.</ResponseField>
-    <ResponseField name="likeCount" type="number">Like count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="retweetCount" type="number">Retweet count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="replyCount" type="number">Reply count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="quoteCount" type="number">Quote tweet count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="viewCount" type="number">View count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="bookmarkCount" type="number">Bookmark count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
-    <ResponseField name="lang" type="string">Tweet language code. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isReply" type="boolean">Whether the tweet is a reply. Omitted if unavailable.</ResponseField>
-    <ResponseField name="inReplyToId" type="string">Tweet ID being replied to. Omitted if not a reply.</ResponseField>
-    <ResponseField name="inReplyToUserId" type="string">User ID being replied to. Omitted if not a reply.</ResponseField>
-    <ResponseField name="inReplyToUsername" type="string">Username being replied to. Omitted if not a reply.</ResponseField>
-    <ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
-    <ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
-    <ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
-    <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
-    <ResponseField name="contentDisclosure" type="object">Disclosure metadata for paid partnership and AI-generated media labels. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them. Omitted if unavailable.</ResponseField>
+    <ResponseField name="id" type="string">This value contains the tweet ID.</ResponseField>
+    <ResponseField name="text" type="string">This value contains the tweet text.</ResponseField>
+    <ResponseField name="type" type="string">This value identifies the tweet type. X may omit it.</ResponseField>
+    <ResponseField name="createdAt" type="string">This value contains the ISO 8601 creation time. X may omit it.</ResponseField>
+    <ResponseField name="isNoteTweet" type="boolean">X sets this flag for long-form Note Tweets. X may omit it.</ResponseField>
+    <ResponseField name="likeCount" type="number">This value records the like count. X may omit it.</ResponseField>
+    <ResponseField name="retweetCount" type="number">This value records the repost count. X may omit it.</ResponseField>
+    <ResponseField name="replyCount" type="number">This value records the reply count. X may omit it.</ResponseField>
+    <ResponseField name="quoteCount" type="number">This value records the quote count. X may omit it.</ResponseField>
+    <ResponseField name="viewCount" type="number">This value records the view count. X may omit it.</ResponseField>
+    <ResponseField name="bookmarkCount" type="number">This value records the bookmark count. X may omit it.</ResponseField>
+    <ResponseField name="url" type="string">This value contains the tweet URL. X may omit it.</ResponseField>
+    <ResponseField name="lang" type="string">This value contains the tweet language code. X may omit it.</ResponseField>
+    <ResponseField name="isReply" type="boolean">X sets this flag for replies. X may omit it.</ResponseField>
+    <ResponseField name="inReplyToId" type="string">This value identifies the replied-to tweet. X may omit it.</ResponseField>
+    <ResponseField name="inReplyToUserId" type="string">This value identifies the replied-to user. X may omit it.</ResponseField>
+    <ResponseField name="inReplyToUsername" type="string">This value identifies the replied-to username. X may omit it.</ResponseField>
+    <ResponseField name="conversationId" type="string">This value contains the conversation ID. X may omit it.</ResponseField>
+    <ResponseField name="source" type="string">This value identifies the posting client. X may omit it.</ResponseField>
+    <ResponseField name="displayTextRange" type="number[]">This array contains the rendered text offsets. X may omit it.</ResponseField>
+    <ResponseField name="isLimitedReply" type="boolean">X sets this flag when replies are limited. X may omit it.</ResponseField>
+    <ResponseField name="isQuoteStatus" type="boolean">X sets this flag for quote tweets. X may omit it.</ResponseField>
+    <ResponseField name="entities" type="object">This object contains parsed tweet entities. X may omit it.</ResponseField>
+    <ResponseField name="contentDisclosure" type="object">This object contains paid partnership and AI media labels. X may omit it.</ResponseField>
     <ResponseField name="author" type="object">
-      Tweet author profile. Omitted if unavailable.
+      This object contains the tweet author profile. X may omit it.
       **Author object fields:**
         <ResponseField name="id" type="string">Author user ID.</ResponseField>
         <ResponseField name="username" type="string">Author X username.</ResponseField>
         <ResponseField name="name" type="string">Author display name.</ResponseField>
-        <ResponseField name="followers" type="number">Follower count. Omitted if unavailable.</ResponseField>
-        <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
-        <ResponseField name="profilePicture" type="string">Profile picture URL. Omitted if unavailable.</ResponseField>
+        <ResponseField name="followers" type="number">This value records the follower count. X may omit it.</ResponseField>
+        <ResponseField name="verified" type="boolean">X sets this flag for verified authors. X may omit it.</ResponseField>
+        <ResponseField name="profilePicture" type="string">This value contains the profile picture URL. X may omit it.</ResponseField>
 
     </ResponseField>
     <ResponseField name="media" type="object[]">
-      Media attachments. Omitted if unavailable.
+      This array contains media attachments. X may omit it.
       **Media item fields:**
         <ResponseField name="mediaUrl" type="string">Direct media URL.</ResponseField>
-        <ResponseField name="videoVariants" type="object[]">Available video renditions with bitrate, content type, and URL. Omitted for images.</ResponseField>
+        <ResponseField name="videoVariants" type="object[]">This array contains video URLs, bitrates, and content types. X omits it for images.</ResponseField>
         <ResponseField name="type" type="string">Media type.</ResponseField>
         <ResponseField name="url" type="string">Shortened URL from the tweet text.</ResponseField>
 
     </ResponseField>
-    <ResponseField name="quoted_tweet" type="object">Embedded quoted tweet. Omitted if not a quote tweet.</ResponseField>
-    <ResponseField name="retweeted_tweet" type="object">Original retweeted tweet. Omitted if not a retweet.</ResponseField>
+    <ResponseField name="quoted_tweet" type="object">This object contains the quoted tweet. X may omit it.</ResponseField>
+    <ResponseField name="retweeted_tweet" type="object">This object contains the original repost. X may omit it.</ResponseField>
 
 </ResponseField>
 <ResponseField name="has_next_page" type="boolean">
@@ -374,71 +371,6 @@ records required by the workflow.
 <ResponseField name="next_cursor" type="string">
   Opaque cursor for the next page. Empty string when no more results.
 </ResponseField>
-
-```json
-{
-  "tweets": [
-    {
-      "id": "1893456789012345678",
-      "text": "Bookmarked tweet content",
-      "createdAt": "2026-02-24T10:00:00.000Z",
-      "likeCount": 150,
-      "retweetCount": 42,
-      "replyCount": 10,
-      "url": "https://x.com/user/status/1893456789012345678",
-      "author": {
-        "id": "44196397",
-        "username": "elonmusk",
-        "name": "Elon Musk",
-        "followers": 150000000,
-        "verified": true,
-        "profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"
-      }
-    }
-  ],
-  "has_next_page": true,
-  "next_cursor": "DAADDAABCgABF..."
-}
-```
-
-### 401 Unauthenticated
-
-```json
-{ "error": "unauthenticated" }
-```
-Missing or invalid API key.
-
-### 402 Insufficient credits
-
-```json
-{ "error": "insufficient_credits" }
-```
-Metered access requires enough available credits. Possible error values include `no_subscription`, `subscription_inactive`, `no_credits`, and `insufficient_credits`.
-
-### 429 Rate Limit Exceeded
-
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 60
-}
-```
-The API key, user, or plan tier is sending requests too quickly. Respect the `Retry-After` header before retrying.
-
-### 502 X API unavailable
-
-```json
-{ "error": "x_api_unavailable" }
-```
-The read service returned an error. Retry after a short delay.
-
-### 424 Dependency Failed
-
-```json
-{ "error": "x_api_unavailable" }
-```
-Returned when you opt into the normalized v1 response contract and the read service is unavailable.
 
 <Note>
   **Related:** [Bookmark Folders](/api-reference/x/bookmark-folders) · [Timeline](/api-reference/x/timeline)

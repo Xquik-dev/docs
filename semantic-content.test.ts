@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-const REQUIRED_OPERATIONAL_TABLES = [
+const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'api-reference/account/get.mdx',
     snippets: [
@@ -90,8 +90,8 @@ const REQUIRED_OPERATIONAL_TABLES = [
   {
     file: 'api-reference/x/bookmarks.mdx',
     snippets: [
-      '| Bookmark library column | Response source | Account-scoped rule |',
-      '| Public output | None by default |',
+      '### How Do I Export Twitter Bookmarks?',
+      'Keep private folder names out of public logs.',
     ],
   },
   {
@@ -576,13 +576,13 @@ const REQUIRED_APIFY_COMPARISON_CONTENT = [
   'Before production use, open the current Actor page.',
 ] as const;
 
-describe('operational content tables', (): void => {
+describe('operational content structure', (): void => {
   it('keeps audited API pages specific and structurally useful', (): void => {
     expect.assertions(1);
 
     const findings: string[] = [];
 
-    for (const requirement of REQUIRED_OPERATIONAL_TABLES) {
+    for (const requirement of REQUIRED_OPERATIONAL_CONTENT) {
       const source = readFileSync(requirement.file, 'utf8');
 
       for (const snippet of requirement.snippets) {
