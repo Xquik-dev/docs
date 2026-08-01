@@ -63,7 +63,7 @@ describe('Mintlify accessibility overrides', (): void => {
   });
 
   it('marks comparison table columns and rows as headers', (): void => {
-    expect.assertions(6);
+    expect.assertions(8);
 
     const comparisonTables = [
       ['guides/composio-migration.mdx', 6],
@@ -77,6 +77,15 @@ describe('Mintlify accessibility overrides', (): void => {
       expect(source).toContain('<th scope="col">Capability</th>');
       expect(source.match(/<th scope="row">/gu)).toHaveLength(rowHeaderCount);
     }
+
+    const composioGuide = readFileSync('guides/composio-migration.mdx', 'utf8');
+
+    expect(composioGuide).toContain(
+      '<a href="https://xquik.com/mcp">Xquik API MCP server</a>',
+    );
+    expect(composioGuide).not.toContain(
+      '<code>https://xquik.com/mcp</code>',
+    );
   });
 
   it('keeps API method badges above WCAG AA contrast', (): void => {
