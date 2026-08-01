@@ -63,10 +63,19 @@ function initializeAccessibilityRepairs() {
   });
 }
 
+function scheduleAccessibilityInitialization() {
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(initializeAccessibilityRepairs);
+    return;
+  }
+
+  window.setTimeout(initializeAccessibilityRepairs, 1000);
+}
+
 if (document.readyState === 'complete') {
-  window.setTimeout(initializeAccessibilityRepairs, 0);
+  scheduleAccessibilityInitialization();
 } else {
-  window.addEventListener('load', initializeAccessibilityRepairs, {
+  window.addEventListener('load', scheduleAccessibilityInitialization, {
     once: true,
   });
 }
