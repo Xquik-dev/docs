@@ -105,7 +105,7 @@ function escapeRegExp(value: string): string {
 
 function extractAnswer(source: string, heading: string): string | undefined {
   const pattern = new RegExp(
-    `^### ${escapeRegExp(heading)}\\n([\\s\\S]*?)(?=^#{1,3} |(?![\\s\\S]))`,
+    `^#{2,3} ${escapeRegExp(heading)}\\n([\\s\\S]*?)(?=^#{1,3} |(?![\\s\\S]))`,
     'mu',
   );
   return pattern.exec(source)?.[1]?.trim();

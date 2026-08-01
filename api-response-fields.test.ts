@@ -235,6 +235,7 @@ const PAGINATED_TWEET_PAGES = [
   'api-reference/x/timeline.mdx',
   'api-reference/x/tweet-quotes.mdx',
   'api-reference/x/tweet-thread.mdx',
+  'api-reference/x/tweet-replies.mdx',
   'api-reference/x/list-tweets.mdx',
   'api-reference/x/community-tweets.mdx',
   'api-reference/x/community-search.mdx',
@@ -1357,10 +1358,6 @@ function prefixedFields(
 
 function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const paginatedTweets = schemaPropertyNames(spec, 'PaginatedTweets');
-  const tweetReplies = responseFieldNamesFromSchema(
-    spec,
-    schemaByName(spec, 'TweetReplies'),
-  );
   const paginatedUsers = schemaPropertyNames(spec, 'PaginatedUsers');
   const searchTweet = schemaPropertyNames(spec, 'SearchTweet');
   const userProfile = schemaPropertyNames(spec, 'UserProfile');
@@ -1560,16 +1557,6 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
 
   return [
     ...paginatedTweetContracts,
-    {
-      allowedFields: uniqueSorted([
-        ...tweetReplies,
-        ...searchTweet,
-        ...userProfile,
-        ...searchTweetMedia,
-      ]),
-      page: 'api-reference/x/tweet-replies.mdx',
-      requiredFields: paginatedTweetRequired,
-    },
     ...paginatedUserContracts,
     {
       allowedFields: uniqueSorted([

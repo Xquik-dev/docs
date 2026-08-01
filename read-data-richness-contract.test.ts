@@ -9,6 +9,7 @@ interface OpenApiSchema {
 }
 
 interface OpenApiParameter {
+  readonly $ref?: string;
   readonly name?: string;
   readonly schema?: OpenApiSchema;
 }
@@ -63,14 +64,21 @@ const TWEET_FIELDS = [
   'displayTextRange',
   'contentDisclosure',
   'article',
+  'bookmarked',
   'card',
   'communityNote',
   'edit',
+  'favorited',
+  'grokAnalysisButton',
+  'grokImageEditable',
   'isTranslatable',
   'noteTweet',
   'place',
   'possiblySensitive',
+  'possiblySensitiveEditable',
   'previousCounts',
+  'quickPromoteEligibility',
+  'retweeted',
   'viewState',
   'entities',
   'quoted_tweet',
@@ -102,6 +110,7 @@ const PROFILE_FIELDS = [
   'createdAt',
   'statusesCount',
   'mediaCount',
+  'canDm',
   'protected',
   'url',
   'favouritesCount',
@@ -117,12 +126,15 @@ const PROFILE_FIELDS = [
   'verifiedType',
   'affiliatesHighlightedLabel',
   'businessAccountAffiliatesCount',
+  'canMediaTag',
   'creatorSubscriptionsCount',
+  'followRequestSent',
   'hasGraduatedAccess',
   'hasHiddenSubscriptionsOnProfile',
   'highlightsInfo',
   'identityVerification',
   'isProfileTranslatable',
+  'notificationsEnabled',
   'parodyCommentaryFanLabel',
   'profileDescriptionLanguage',
   'profileImageShape',
@@ -130,7 +142,15 @@ const PROFILE_FIELDS = [
   'profileSortEnabled',
   'profileTranslatorType',
   'superFollowEligible',
+  'superFollowedBy',
+  'superFollowing',
   'communityRole',
+  'viewerBlockedBy',
+  'viewerBlocking',
+  'viewerFollowedBy',
+  'viewerFollowing',
+  'viewerLiveFollowing',
+  'viewerMuting',
   'profile_bio',
 ] as const;
 
@@ -222,7 +242,7 @@ describe('read data richness documentation', (): void => {
     expect(GUIDE).toContain('Xquik omits unavailable optional fields');
     expect(GUIDE).toContain('coverage depends on X');
     expect(GUIDE).toContain(
-      'Viewer-specific relationship and action state is excluded',
+      'Viewer-specific relationship fields appear only when X supplies them',
     );
     expect(DOCS_CONFIG).toContain('"guides/tweet-profile-api-fields"');
     expect(LLMS_INDEX).toContain(
@@ -230,23 +250,28 @@ describe('read data richness documentation', (): void => {
     );
   });
 
-  it('documents complete direct-reply coverage on every public surface', (): void => {
-    expect.assertions(8);
+  it('documents visible reply coverage on every public surface', (): void => {
+    expect.assertions(10);
     const operation =
       PARSED_OPENAPI.paths?.['/x/tweets/{id}/replies']?.get;
-    const limit = operation?.parameters?.find(
-      (parameter) => parameter.name === 'limit',
+    const parameterNames = operation?.parameters?.flatMap((parameter) =>
+      parameter.name === undefined ? [] : [parameter.name],
+    );
+    const parameterRefs = operation?.parameters?.flatMap((parameter) =>
+      parameter.$ref === undefined ? [] : [parameter.$ref],
     );
 
-    expect(limit?.schema?.maximum).toBe(25_000);
-    expect(
-      PARSED_OPENAPI.components?.schemas?.['ReplyCoverageDiagnostic'],
-    ).toBeDefined();
-    expect(operation?.description).toContain('labeled hidden-content branches');
-    expect(GUIDE).toContain('mode=complete&limit=25000');
-    expect(GUIDE).toContain('Nested conversation replies');
-    expect(MCP_TOOLS).toContain('mode=complete&limit=25000');
-    expect(MCP_TOOLS).toContain('nested_replies');
-    expect(TWEET_REPLIES).toContain('diagnostic.recommendedFallback');
+    expect(operation?.description).toContain('terminal page');
+    expect(operation?.description).toContain('conversation_id:{id}');
+    expect(parameterNames).toContain('cursor');
+    expect(parameterNames).not.toContain('mode');
+    expect(parameterRefs).toContain('#/components/parameters/ResultPageSize');
+    expect(GUIDE).toContain('pageSize=100');
+    expect(GUIDE).toContain('conversation_id:<tweet_id>');
+    expect(MCP_TOOLS).toContain('pageSize=100');
+    expect(MCP_TOOLS).toContain('conversation_id:<tweet_id>');
+    expect(TWEET_REPLIES).toContain(
+      '`conversation_id:{id}` query as the broader fallback',
+    );
   });
 });
