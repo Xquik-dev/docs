@@ -1,9 +1,9 @@
 ---
-title: "Twitter Quote Tweets API, Authors & Export Cursors"
+title: "View Quote Tweets With Twitter API & Author Fields"
 sidebarTitle: "Get quote tweets"
-description: "Retrieve quote tweets for one source tweet with authors, text, media, likes, reposts, replies, views, filters, and cursor checkpoints. See API fields."
+description: "View quote tweets for an original tweet with a Twitter API, author profiles, commentary, media, engagement counts, filters, cursors, alerts & error responses."
 api: "GET /x/tweets/{id}/quotes"
-keywords: ["get quote tweets", "quote tweets API", "tweet quotes API", "Twitter quote tweets API", "X quote tweets API", "quoted posts", "conversation analysis", "CSV export"]
+keywords: ["quote tweets", "view quote tweets", "get quote tweets", "quote tweets API", "tweet quotes API", "Twitter quote tweets API", "X quote tweets API", "quoted posts", "conversation analysis", "CSV export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -84,10 +84,9 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 </Callout>
 
 <Info>
-  Get quote tweets returns tweet rows that quote one source tweet. It is also
-  useful as a quote tweets API, tweet quotes API, X quote tweets API, Twitter
-  quote tweets API, or quoted posts endpoint. The canonical endpoint remains
-  `GET /api/v1/x/tweets/{id}/quotes`.
+  Use this Twitter API to view quote tweets for one original tweet. Each row
+  contains the quoting tweet's commentary, author, engagement, and media. The
+  canonical route remains `GET /api/v1/x/tweets/{id}/quotes`.
 </Info>
 
 <CodeGroup>
@@ -265,23 +264,40 @@ webhook deliveries.
   </Card>
 </CardGroup>
 
-## Preserve quote-tweet commentary
+## Quote Tweet Questions
 
-Use this route when added commentary matters. Keep the quoted source tweet ID
-with every quote tweet.
+### What Are Quote Tweets?
 
-Store the quote tweet’s ID, text, author, creation time, engagement counts,
-media, cursor, and collection time. Also preserve the relationship to the
-source tweet.
+A quote tweet is a new tweet containing commentary about an original tweet.
+X calls this format a [Quote Post](https://docs.x.com/x-api/posts/quote-tweets/introduction).
+This endpoint returns the quoting tweet, its author, and visible engagement.
+It never changes the original tweet.
 
-Quote tweets can support reaction research, campaign review, or moderation.
-Do not merge the quoting author’s text with the source tweet text.
+### How Does a Twitter API View Quote Tweets?
 
-Deduplicate by source tweet ID and quote tweet ID. Save each page before
-advancing the cursor.
+Pass the original tweet's numeric ID through the path. Store every returned
+`quote_id` before requesting `next_cursor`. Keep the original tweet ID beside
+each row for attribution, deduplication, and campaign analysis.
 
-Use retweeters when no added commentary is required. Use tweet replies for the
-direct conversation. Use tweet thread for connected posts in one thread.
+### Why Are Some Quote Tweets Not Showing?
+
+X controls which quote tweets each request exposes. Deleted, protected,
+withheld, blocked, or unavailable tweets may not appear. Filters can also
+remove otherwise visible rows. Never treat a missing row as proof that no
+quote tweet exists.
+
+### How Do Quote Tweets Differ From Replies and Reposts?
+
+A quote tweet adds its author's commentary and references the original tweet.
+A repost shares the original without added commentary. A reply joins the
+tweet's conversation. Use retweeters for reposting profiles and replies for
+conversation rows.
+
+### How Can Teams Analyze Quote Tweets?
+
+Store the quote tweet's text, author, creation time, engagement counts, and
+media. Keep the source relationship separate. Deduplicate by source tweet ID
+and quote tweet ID. Use monitors and signed webhooks for future quote alerts.
 
 ## Path parameters
 
@@ -362,43 +378,43 @@ filters can return fewer rows than an unfiltered page.
 <ResponseField name="tweets" type="object[]">
   Array of quote tweets.
   **Tweet object fields:**
-    <ResponseField name="id" type="string">Tweet ID.</ResponseField>
-    <ResponseField name="text" type="string">Tweet text.</ResponseField>
-    <ResponseField name="type" type="string">Tweet type. Omitted if unavailable.</ResponseField>
-    <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
+    <ResponseField name="id" type="string">This value is the tweet ID.</ResponseField>
+    <ResponseField name="text" type="string">This value contains the tweet text.</ResponseField>
+    <ResponseField name="type" type="string">This value identifies the tweet type when available.</ResponseField>
+    <ResponseField name="createdAt" type="string">This value contains the ISO 8601 creation timestamp.</ResponseField>
     <ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet. Omitted if unavailable.</ResponseField>
     <ResponseField name="isReply" type="boolean">Whether the tweet is a reply. Omitted if unavailable.</ResponseField>
-    <ResponseField name="inReplyToId" type="string">Tweet ID being replied to. Omitted if not a reply.</ResponseField>
+    <ResponseField name="inReplyToId" type="string">This ID identifies the tweet receiving the reply.</ResponseField>
     <ResponseField name="inReplyToUserId" type="string">User ID being replied to. Omitted if unavailable.</ResponseField>
     <ResponseField name="inReplyToUsername" type="string">Username being replied to. Omitted if unavailable.</ResponseField>
     <ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
-    <ResponseField name="likeCount" type="number">Like count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="retweetCount" type="number">Retweet count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="replyCount" type="number">Reply count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="quoteCount" type="number">Quote tweet count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="viewCount" type="number">View count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="bookmarkCount" type="number">Bookmark count. Omitted if unavailable.</ResponseField>
+    <ResponseField name="likeCount" type="number">This value records the like count when available.</ResponseField>
+    <ResponseField name="retweetCount" type="number">This value records the repost count when available.</ResponseField>
+    <ResponseField name="replyCount" type="number">This value records the reply count when available.</ResponseField>
+    <ResponseField name="quoteCount" type="number">This value records the quote tweet count when available.</ResponseField>
+    <ResponseField name="viewCount" type="number">This value records the view count when available.</ResponseField>
+    <ResponseField name="bookmarkCount" type="number">This value records the bookmark count when available.</ResponseField>
     <ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
-    <ResponseField name="lang" type="string">Tweet language code. Omitted if unavailable.</ResponseField>
+    <ResponseField name="lang" type="string">The tweet's language code appears here when X returns it.</ResponseField>
     <ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
     <ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
     <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
     <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
     <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
-    <ResponseField name="contentDisclosure" type="object">Disclosure metadata for paid partnership and AI-generated media labels. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them. Omitted if unavailable.</ResponseField>
+    <ResponseField name="contentDisclosure" type="object">X can return paid partnership and AI-generated media labels here. Paid partnership state appears in `advertising.isPaidPromotion`. AI media state appears in `aiGenerated.hasAiGeneratedMedia`. X may omit this object.</ResponseField>
     <ResponseField name="author" type="object">
       Tweet author profile. Omitted if unavailable.
       **Author object fields:**
         <ResponseField name="id" type="string">Author user ID.</ResponseField>
         <ResponseField name="username" type="string">Author handle without `@`.</ResponseField>
         <ResponseField name="name" type="string">Author display name.</ResponseField>
-        <ResponseField name="followers" type="number">Follower count. Omitted if unavailable.</ResponseField>
+        <ResponseField name="followers" type="number">This value records the author's follower count when available.</ResponseField>
         <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
         <ResponseField name="profilePicture" type="string">Author profile image URL. Omitted if unavailable.</ResponseField>
 
     </ResponseField>
     <ResponseField name="media" type="object[]">
-      Media attachments. Omitted when the tweet has no media.
+      This array contains media attachments when available.
       **Media object fields:**
         <ResponseField name="mediaUrl" type="string">Direct media URL.</ResponseField>
         <ResponseField name="videoVariants" type="object[]">Available video renditions with bitrate, content type, and URL. Omitted for images.</ResponseField>

@@ -3767,12 +3767,18 @@ const FORBIDDEN_TWEET_REPLIES_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWEET_QUOTES_API_HANDOFF_SNIPPETS = [
+  'title: "View Quote Tweets With Twitter API & Author Fields"',
+  '## Quote Tweet Questions',
+  '### What Are Quote Tweets?',
+  '### How Does a Twitter API View Quote Tweets?',
+  '### Why Are Some Quote Tweets Not Showing?',
+  'https://docs.x.com/x-api/posts/quote-tweets/introduction',
   '## Direct quote tweet handoff',
   '`GET /x/tweets/{id}/quotes`',
   '`GET /api/v1/x/tweets/{id}/quotes`',
   'quote tweets API',
   'tweet quotes API',
-  'quoted posts endpoint',
+  'Use this Twitter API to view quote tweets',
   '```bash First page',
   '```bash Next page with filters',
   '--data-urlencode "includeReplies=false"',
@@ -3827,7 +3833,7 @@ const REQUIRED_TWEET_QUOTES_API_HANDOFF_SNIPPETS = [
   '<ResponseField name="id" type="string">Author user ID.',
   '<ResponseField name="username" type="string">Author handle without `@`.',
   '<ResponseField name="name" type="string">Author display name.',
-  '<ResponseField name="followers" type="number">Follower count.',
+  '<ResponseField name="followers" type="number">This value records the author\'s follower count when available.',
   '<ResponseField name="verified" type="boolean">Whether the author is verified.',
   '<ResponseField name="profilePicture" type="string">Author profile image URL.',
   '`sinceTime`, `untilTime`, `includeReplies`, and tweet result',
