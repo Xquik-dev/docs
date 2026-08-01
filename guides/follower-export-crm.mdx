@@ -12,7 +12,7 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 
 Download a Twitter follower list as CSV, XLSX, or JSON. Keep stable user IDs,
 usernames, bios, verification, profile images, and audience counts. Import the
-rows into a CRM, spreadsheet, queue, or warehouse.
+follower rows into a CRM, spreadsheet, queue, or warehouse.
 
 <AudienceCommunityApiLinks />
 
@@ -74,7 +74,7 @@ Follower totals may change during collection.
 
 ### Twitter Followers Scraper
 
-Use the saved Twitter followers scraper for cost estimates and reusable files.
+Choose the saved Twitter followers scraper for estimates and reusable files.
 Use it as a Twitter follower tracker for repeatable account snapshots. Choose
 the live follower API for low-latency profile pages.
 
@@ -134,7 +134,8 @@ API when the script can persist every opaque cursor. Call extraction routes for
 saved CSV, JSON, or XLSX exports.
 
 <Accordion title="Python Error & Output Handling">
-This flow needs no customer cookies. Keep the API key outside source files.
+Browser web scrapers may need cookies. Xquik is not an official API or the
+official Twitter API. Keep the API key outside source files.
 Check `402`, `424`, `429`, and `502` before retrying. Normalize each profile by
 user ID. Write one
 follower per JSON Lines record. Store the username, list source, and collection
@@ -158,8 +159,8 @@ columns before every CRM import.
 
 ### How Do I Get Public Follower Lists Responsibly?
 
-Public data means public follower profiles and documented fields. Collect only
-fields required by the social media workflow. Review the
+Here, public data covers public follower profiles and documented fields.
+Collect only fields required by the social media workflow. Review the
 [X Terms of Service](https://x.com/en/tos) at `https://x.com`.
 
 <Accordion title="Responsible Export Checklist">
@@ -174,14 +175,14 @@ Corp. "Twitter" and "X" are trademarks of X Corp.
 
 X calls its signed-in setting Download an archive of your data. Follow the
 [official X archive instructions](https://help.x.com/en/managing-your-account/how-to-download-your-x-archive)
-for a first-party backup.
+to create your account backup.
 
 <Accordion title="X Archive vs. Follower Export">
 The ZIP can include profile details, posts, media, followers, following, and
 Lists. It contains HTML and JSON, not a cursor-based
-API or CRM-ready CSV export. Use Xquik for repeatable public follower lists with
-row caps. Keep the source user ID and username. Never request another account's
-private archive. Record which source produced every downstream file.
+API or CRM-ready CSV export. Use Xquik for repeatable public follower exports
+with defined row limits. Keep the source user ID and username. Never request
+another account's private archive. Record each downstream file's source.
 </Accordion>
 
 ## Outcome
@@ -198,6 +199,8 @@ private archive. Record which source produced every downstream file.
   </Card>
   <Card title="4. Export" icon="download">
     Call `GET /extractions/{id}/export?format=csv`, `format=json`, or `format=xlsx` for CRM files; `md`, `md-document`, `pdf`, and `txt` are also supported.
+    Exports are free and capped at 100,000 rows per extraction. PDF supports up
+    to 10,000 rows.
   </Card>
   <Card title="5. Import" icon="database">
     Map `User ID` to a CRM unique field for imports, upserts, segments, or warehouse loads.
@@ -215,17 +218,14 @@ private archive. Record which source produced every downstream file.
   </Card>
   <Card title="Live follower page" icon="zap">
     Use `GET /x/users/{id}/followers?pageSize=200&cursor={next_cursor}` when you need the current follower page without creating an extraction job.
+    Use it for a CRM enrichment job, queue worker, audience sync, or agent.
   </Card>
   <Card title="Shell or SDK handoff" icon="terminal">
     Use [CLI](/sdks/cli), [TypeScript](/sdks/typescript), [Python](/sdks/python), or [Go SDK](/sdks/go) when scheduled imports need code-owned JSON Lines, CSV, or XLSX files.
   </Card>
 </CardGroup>
 
-Use extraction jobs for repeatable exports, cost preview, audit trails, and file downloads. Use the Twitter API followers route for low-latency pages and small app handoffs. Respect read rate limits, scope API access, and persist each opaque cursor.
-
 ## End-to-end follower export handoff
-
-Store one checkpoint that carries the follower target through estimate, job creation, JSON pagination, file export, and CRM upsert:
 
 ```json
 {
@@ -286,35 +286,35 @@ Store one checkpoint that carries the follower target through estimate, job crea
     Keep `estimatedResults`, `creditsRequired`, `creditsAvailable`, `allowed`,
     `source`, and `resolvedXUserId`; `source` is `followers` unless
     `resultsLimit` is lower than the follower count.
+    When the account has fewer followers than `resultsLimit`, the estimate keeps `source: "followers"` and uses the smaller follower count.
   </Card>
   <Card title="Job checkpoint" icon="clipboard-check">
     Store the returned job `id`, `status`, and `poll_path`; do not expect follower rows in the create response.
+    Store `extractionHandoff` in your job table. Poll by `extraction_id`. Keep
+    `source_username` and `results_limit` for audit.
   </Card>
   <Card title="Cursor checkpoint" icon="shuffle">
-    Store `page_cursor`, `next_cursor`, and `has_more` for saved JSON page loops, then pass `nextCursor` back as `after`.
+    Every result guarantees `id` and `xUserId`. The API omits optional profile and enrichment fields when absent. Use `limit` up to `1000`.
+    Pass `nextCursor` as `after` until `hasMore` becomes `false`.
   </Card>
   <Card title="CRM checkpoint" icon="database">
-    Store the CSV, JSON, or XLSX `export_paths`, `unique_field`, and normalized follower row fields used for the upsert.
+    Map `xUserId` to `x_user_id`. Store CSV, JSON, or XLSX `export_paths` and the CRM `unique_field`.
+    Use the local `-o` path, `exportFilePath`, or `export_file_path` as the durable handoff value.
   </Card>
 </CardGroup>
 
 ### Live follower page handoff
-
-Use `GET /x/users/{id}/followers` for the newest follower page. Use this page
-for a CRM enrichment job, queue worker, audience sync, or agent.
 
 ```bash cURL
 curl "https://xquik.com/api/v1/x/users/44196397/followers?pageSize=200&cursor=DAACCgACGRElMJcAAA" \
   -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 ```
 
-The response returns `users`, `has_next_page`, and `next_cursor`.
-Treat `next_cursor` as opaque. Store it with the import checkpoint. When
-`has_next_page` equals `true`, pass the cursor back unchanged.
-
-Map direct API fields before import:
-
 <CardGroup cols={2}>
+  <Card title="Page checkpoint" icon="shuffle">
+    The response returns `users`, `has_next_page`, and `next_cursor`. Treat
+    `next_cursor` as opaque. Never treat `cursor` as a stable follower ID.
+  </Card>
   <Card title="Identity" icon="fingerprint">
     Map `users[].id` to `x_user_id`, `users[].username` to `x_username`, and `users[].name` to `display_name`.
   </Card>
@@ -322,14 +322,13 @@ Map direct API fields before import:
     Map optional `followers`, `following`, `statusesCount`, `verified`, and `verifiedType` for scoring or segments.
   </Card>
   <Card title="Profile context" icon="file-text">
-    Map optional `description`, `location`, `url`, `profilePicture`, `coverPicture`, and `createdAt` for enrichment and review queues.
+    Map optional `description`, `location`, `url`, `profilePicture`, and
+    `coverPicture`. Map `users[].createdAt` to `account_created_at` when returned.
   </Card>
   <Card title="Credit-aware pages" icon="coins">
     `pageSize` accepts `20` to `200`, but paid calls can return fewer users when remaining credits are lower than the requested page. If no result can be afforded, the endpoint returns `402 insufficient_credits`; lower `pageSize` or add credits before retrying.
   </Card>
 </CardGroup>
-
-For scheduled direct pulls, store one page checkpoint per import attempt. Never treat `cursor` as a stable follower ID; it only resumes the next page.
 
 ```json
 {
@@ -345,11 +344,7 @@ For scheduled direct pulls, store one page checkpoint per import attempt. Never 
 }
 ```
 
-For CRM or warehouse rows, map `users[].createdAt` to `account_created_at` when returned.
-
 ## Step 1: Estimate cost
-
-Enter the username for the source Twitter profile. Estimate first so the workflow can stop before spending credits.
 
 <CodeGroup>
 ```bash cURL
@@ -415,14 +410,7 @@ if not estimate["allowed"]:
 }
 ```
 
-`resultsLimit` caps both the estimate and the extraction. Use it for first
-imports, test segments, and nightly syncs. When the account has fewer followers
-than `resultsLimit`, the estimate keeps `source: "followers"` and uses the
-smaller follower count.
-
 ## Step 2: Start the extraction
-
-Run the same request against `POST /extractions`.
 
 <CodeGroup>
 ```bash cURL
@@ -460,10 +448,6 @@ const extractionHandoff = {
 ```
 </CodeGroup>
 
-Store `extractionHandoff` in your job table. Poll by `extraction_id`. Keep
-`source_username` and `results_limit` for audit. Replace `status` with each
-value returned by `GET /extractions/{id}`.
-
 ```json
 {
   "id": "77777",
@@ -474,20 +458,12 @@ value returned by `GET /extractions/{id}`.
 
 ## Step 3: Poll until complete
 
-Poll the job before exporting. Use the paginated endpoint when your pipeline wants JSON rows instead of a file.
-
 ```bash cURL
 curl -s "https://xquik.com/api/v1/extractions/77777?limit=1000" \
   -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 ```
 
-Export files after the API returns `status: completed`.
-
 ### Paginated JSON handoff
-
-Use `GET /extractions/{id}` when an integration needs rows before file export.
-The API returns camelCase JSON fields. Every result guarantees `id` and
-`xUserId`. The API omits optional profile and enrichment fields when absent.
 
 ```json
 {
@@ -527,11 +503,6 @@ The API returns camelCase JSON fields. Every result guarantees `id` and
 }
 ```
 
-Use `limit` up to `1000`. Pass `nextCursor` as `after` until `hasMore` becomes
-`false`. Map `xUserId` to `x_user_id`. Map usernames, names, follower counts,
-and verification to the CRM columns shown below. Add description and location
-when needed.
-
 Normalize each follower row before sending it downstream:
 
 ```json
@@ -552,8 +523,6 @@ Normalize each follower row before sending it downstream:
 ```
 
 ## Step 4: Export Twitter Follower List in CSV Format
-
-Use CSV for most CRM imports, XLSX for analyst review, or JSON for API ingestion.
 
 <CodeGroup>
 ```bash cURL
@@ -604,10 +573,6 @@ with open(export_file_path, "wb") as file:
 ```
 </CodeGroup>
 
-Use the local `-o` path, `exportFilePath`, or `export_file_path` as the durable
-handoff value. Read `Content-Disposition` only when you need the server filename
-for audit.
-
 ```json
 {
   "job": "follower_export_file",
@@ -619,11 +584,7 @@ for audit.
 }
 ```
 
-Exports are free and capped at 100,000 rows per extraction, with a 10,000-row cap for PDF. Use paginated JSON for larger custom syncs.
-
 ## CRM field mapping
-
-Map each user profile by stable X ID. Keep verification status with the mutable profile fields. Names, bios, and locations can change.
 
 <CardGroup cols={2}>
   <Card title="Stable account key" icon="fingerprint">
@@ -647,10 +608,6 @@ Map each user profile by stable X ID. Keep verification status with the mutable 
 </CardGroup>
 
 ## Import and upsert rules
-
-Follow the CRM's unique-field rules. HubSpot accepts CSV, XLSX, and XLS imports.
-Updates and deduplication need a unique identifier. Salesforce Bulk API 2.0
-upserts use CSV data and an external ID field.
 
 <CardGroup cols={2}>
   <Card title="HubSpot import docs" icon="external-link" href="https://knowledge.hubspot.com/import-and-export/set-up-your-import-file">
