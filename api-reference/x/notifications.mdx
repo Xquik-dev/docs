@@ -183,8 +183,8 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
   ```
 </CodeGroup>
 
-The Node.js and Python snippets normalize each page into notification triage
-rows. Keep full message text in private systems. Use `notification_id`,
+The Node.js and Python snippets normalize each page for notification triage.
+Keep full message text in private systems. Use `notification_id`,
 `notification_type`, `created_at`, `inbox_type`, and `page_next_cursor` for
 private support dashboards, CRM queues, and agent workflows.
 
@@ -193,7 +193,7 @@ private support dashboards, CRM queues, and agent workflows.
 Use `GET /api/v1/x/notifications` when a support inbox, CRM workflow, or agent
 queue needs account-level activity for a connected X account. The endpoint
 returns notification IDs, types, message previews, and timestamps. It omits
-complete tweet and DM objects.
+full tweet and direct-message payloads.
 
 <CardGroup cols={2}>
   <Card title="Mention queue" icon="at-sign">
@@ -252,8 +252,8 @@ updating the saved cursor.
 
 When the destination supports transactions, save the page and cursor together.
 Otherwise, upsert by notification ID. Update the cursor after the destination
-confirms storage. Keep the preceding cursor until confirming the new
-checkpoint. This order prevents skipped notifications after a worker failure.
+writes the full page. Keep the preceding cursor until validating its
+replacement.
 
 ### Choose Polling or Webhook Delivery
 
@@ -283,8 +283,8 @@ remove the notification from X or another connected client.
 ### What Happens When a Notification Request Fails?
 
 `401` means the connected account needs a valid key. `402` means the account
-needs more credits. Wait for `Retry-After` after `429`. After `424` or `502`,
-retry from the saved cursor.
+needs more credits. Wait for `Retry-After` after `429`. Resume from the saved
+cursor after `424` or `502`.
 
 ## Query parameters
 
