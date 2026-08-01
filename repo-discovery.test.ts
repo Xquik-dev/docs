@@ -7948,7 +7948,7 @@ const REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS = [
   '## Measure Brand Monitoring Coverage',
   'does not return a calculated share of voice.',
   'Build Twitter analytics downstream from unique tweet IDs and event windows.',
-  'Keep social media management approvals outside this monitor pipeline.',
+  'Let the social media management team approve posts in its publishing workflow.',
   'Classify sentiment after collection.',
   '## Receiver Row',
   '"brand_monitor_id": "brand-xquik-q2"',
