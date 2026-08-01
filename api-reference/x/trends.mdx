@@ -3,7 +3,7 @@ title: "Twitter Trends API by Region, WOEID & Search"
 sidebarTitle: "Get X trends"
 description: "Get Twitter and X trends by WOEID region. Return ranked topics, hashtags, search queries, descriptions, tweet volume, and result counts. See examples."
 api: "GET /x/trends"
-keywords: ["Twitter trends API", "Twitter trending API", "X trends API", "Twitter trends", "trending topics", "hashtags", "WOEID", "regional trends"]
+keywords: ["Twitter trends API", "Twitter API trending", "Twitter trending API", "X trends API", "Twitter API trends", "trending topics", "trending hashtags", "WOEID", "regional trends"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -130,18 +130,21 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
   ```
 </CodeGroup>
 
-Use `GET /x/trends` when a workflow needs ranked regional topics for content
-planning, monitor seeding, search jobs, or alert routing. The examples write
-one JSON line per trend. Store `trend_name`, `rank`, `description`,
-`search_query`, `region_woeid`, `returned_count`, and your own `detected_at`
-timestamp, then pass
-`search_query` to [Search Tweets](/api-reference/x/search-tweets) when a job
-needs matching tweets.
+Use `GET /x/trends` to retrieve ranked regional topics.
+This Twitter trends API supports planning, monitor seeding, search jobs, and alerts.
+Each example emits one JSON record for every returned trend.
+Store `trend_name` for every result.
+Preserve `rank`, `description`, and `query` when the response includes them.
+Leave omitted fields unset. Use the trend name when `query` is missing.
+Also store `region_woeid`, `returned_count`, and your own `detected_at` timestamp.
+Pass `search_query` to [Search Tweets](/api-reference/x/search-tweets) for matching tweets.
+A Twitter API trending workflow should preserve each snapshot before searching.
 
-## Build a regional trend monitor
+## Build a Regional Trend Monitor
 
-Poll one WOEID on a consistent schedule. Store every trend name, rank, search
-query, tweet volume, and detection time.
+Poll one WOEID on a consistent schedule.
+Store every trend name and returned optional field.
+Keep missing values unset. Preserve `tweetVolume` as null when X returns null.
 
 Compare ranks within the same region. Do not mix worldwide and country results
 inside one ranking. Keep the WOEID on every row.
@@ -166,11 +169,11 @@ that field for some trends.
 ## Headers
 
 <ParamField header="x-api-key" type="string">
-  Full account key. Sessions and OAuth also work.
+  Send a full Xquik account API key.
 </ParamField>
 
 <ParamField header="Authorization" type="string">
-  `Bearer xq_your_guest_key_here` authenticates `paid_reads` guest keys. Direct MPP uses the `Payment ...` credential. Get it from the `WWW-Authenticate: Payment` challenge.
+  `Bearer xq_your_guest_key_here` authenticates `paid_reads` guest keys through the API-key scheme's Bearer alias. Direct MPP uses the `Payment ...` credential from the `WWW-Authenticate: Payment` challenge.
 </ParamField>
 
 ## Response
@@ -219,9 +222,10 @@ Missing or invalid API key.
 
 ### 402 Payment required
 
-Account keys get account options; guest keys get guest top-up only.
-Anonymous calls receive a direct MPP `WWW-Authenticate: Payment` challenge plus a guest wallet creation action.
-No checkout starts automatically. Confirm any payment action.
+Account keys receive account payment options.
+Guest keys receive only the guest top-up action.
+Anonymous calls receive `WWW-Authenticate: Payment` plus a guest wallet action.
+Failed requests never create checkout. Confirm a payment option first.
 
 ### 502 X API unavailable
 
@@ -235,14 +239,52 @@ The read service returned an error. Retry after a short delay.
 ```json
 { "error": "rate_limit_exceeded", "retryAfter": 60 }
 ```
-Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
+The Xquik tier limit blocked the request.
+Use `Retry-After` when present. Otherwise, use the JSON `retryAfter` field.
 
 ### 424 Dependency Failed
 
 ```json
 { "error": "x_api_unavailable" }
 ```
-The normalized v1 response contract can return 424 when the read service is unavailable.
+The opt-in normalized contract returns 424 when the read service fails.
+Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns 502.
+
+## Twitter Trends API Questions
+
+### How Do I Get Twitter Trends Programmatically?
+
+Call `GET /x/trends` with a regional `woeid` and a result `count`.
+Read each trend's name, rank, query, description, and available tweet volume.
+
+### Can I Track Trending Hashtags by Region?
+
+Yes. Poll the same WOEID on a stable schedule.
+Compare ranks only within that region and preserve every detection time.
+Use `query` to search tweets related to each trending hashtag.
+Use the trend name when the response omits `query`.
+
+### How Do I Authenticate to the Twitter Trends API?
+
+Send an Xquik API key or OAuth bearer token.
+A `paid_reads` guest key can use the API-key scheme's Bearer alias.
+Anonymous direct MPP calls return a payment challenge before execution.
+
+### How Much Does a Trends Request Cost?
+
+The pricing callout above shows the current credit and direct MPP cost.
+Failed requests return a documented error without creating checkout.
+
+### How Do I Build Trend Tracking Into an App?
+
+Schedule one regional request, then store each returned snapshot.
+Compare the latest ranks with the previous snapshot.
+Send meaningful changes to a dashboard, monitor, or alert queue.
+
+### Does This Replace X's Official API?
+
+No. This page documents Xquik, an independent third-party service.
+It does not document X's official API.
 
 <Note>
   This endpoint returns trends directly from X. For broader Radar topic discovery, use [List Radar Items](/api-reference/radar/list).
