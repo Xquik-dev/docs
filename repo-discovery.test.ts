@@ -3637,7 +3637,7 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
   'next_cursor: page.next_cursor',
   'has_next_page: page.has_next_page',
   'process.stdout.write(JSON.stringify(row) + "\\n");',
-  'Choose the extraction workflow for stored files, cost estimates, or hard `resultsLimit` caps.',
+  'Use extraction jobs for saved files, credit estimates, or fixed `resultsLimit` caps.',
   '## Choose the right reply output',
   'Store each reply tweet ID and remove duplicate IDs downstream.',
   'Never advance the checkpoint before storing its reply rows.',
