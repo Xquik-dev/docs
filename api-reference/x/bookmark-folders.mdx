@@ -1,9 +1,9 @@
 ---
-title: "Twitter Bookmark Folders API & Saved Posts"
+title: "Twitter Bookmark Folders API & Saved Tweet Export"
 sidebarTitle: "Get bookmark folders"
-description: "List bookmark folders from an authenticated X account. Use folder IDs to filter bookmarked tweets and continue through cursor pages. See request fields."
+description: "List Twitter bookmark folders by ID and name. Export each folder's saved tweets with authors, replies, likes, reposts, views, media & cursor checkpoints."
 api: "GET /x/bookmarks/folders"
-keywords: ["bookmarks", "folders", "x api"]
+keywords: ["Twitter bookmarks folders", "Twitter bookmark folders", "bookmark folders API", "saved tweet folders", "export Twitter bookmarks by folder", "bookmark folder IDs"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -63,6 +63,12 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 <ConnectedAccountApiLinks />
+
+<Info>
+  List Twitter bookmark folders for one connected account. Each row contains a
+  folder ID and name for a saved tweet export. [X documents bookmark folders as
+  private, authenticated-user content.](https://docs.x.com/x-api/posts/bookmarks/introduction)
+</Info>
 
 <Callout icon="coins" color="#5c3327">
   **1 credit per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
@@ -135,6 +141,73 @@ with `has_next_page: false` and `next_cursor: ""`; use each `folder_id` with
 [Bookmarks](/api-reference/x/bookmarks) to fetch the saved tweets inside that
 folder.
 
+## Twitter Bookmark Folder Workflow
+
+### 1. Discover Existing Folders
+
+Call `GET /x/bookmarks/folders` with the connected account's Xquik API key. The
+response lists folders already visible to that account. This read route does
+not create, rename, move, or delete bookmark folders.
+
+An empty `folders` array means no folder rows were returned. It does not expose
+another user's folders. Keep the connected account ID beside the response.
+
+### 2. Build a Folder Index
+
+Store `folder_id`, `folder_name`, and the collection time. Use `folder_id` as
+the stable join key. Folder names can change and may repeat across accounts.
+
+Keep folder names out of public logs, URLs, and shared filenames. Store the
+folder index with the same access controls as saved tweets.
+
+### 3. Export Saved Tweets by Folder
+
+Pass each `folder_id` to `GET /x/bookmarks?folderId=...`. That route returns the
+saved tweets inside the selected folder. Its rows can include tweet text,
+authors, likes, replies, reposts, views, media, and cursor fields.
+
+Write the folder ID beside every tweet row. This preserves folder membership
+when a CSV file, spreadsheet, CRM, or research queue combines several exports.
+
+### 4. Resume and Audit the Export
+
+The current folder-list route returns `has_next_page: false` and an empty
+`next_cursor`. The bookmarked-tweet route can paginate independently for each
+folder. Store its latest `next_cursor` with that folder's export checkpoint.
+
+Record the collection time and connected account ID. These values show which
+account and snapshot produced every folder-to-tweet relationship.
+
+## Twitter Bookmark Folder Questions
+
+### Does Twitter Bookmarks Have Folders?
+
+The connected account can have named bookmark folders. This endpoint lists the
+folders that X returns for that account. It never reveals another user's saved
+tweet folders.
+
+### Can This API Create or Rename Bookmark Folders?
+
+No. This route only reads folder IDs and names. It does not create, rename,
+move, or delete folders. Keep those actions outside this read workflow.
+
+### Can I Access Folders from Mobile and Desktop?
+
+The API is not tied to a device. It reads the connected account's current
+folder list. Mobile and desktop clients may present those folders differently.
+
+### How Do I Back Up Twitter Bookmark Folders?
+
+Save the folder index as JSON Lines or CSV. Then export each folder's tweets.
+Join both files by `folder_id`. Preserve the connected account ID and collection
+time in the backup.
+
+### What Errors Can Stop a Folder Export?
+
+A `401` response means the key cannot access the connected account. A `402`
+response requires more credits. Respect retry guidance in a `429` response.
+Retry temporary `424` or `502` read failures later.
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
@@ -148,8 +221,8 @@ folder.
 <ResponseField name="folders" type="object[]">
   Array of bookmark folders.
   **Folder object fields:**
-    <ResponseField name="id" type="string">Folder ID.</ResponseField>
-    <ResponseField name="name" type="string">Folder name.</ResponseField>
+    <ResponseField name="id" type="string">This value contains the folder ID.</ResponseField>
+    <ResponseField name="name" type="string">This value contains the folder name.</ResponseField>
 
 </ResponseField>
 <ResponseField name="has_next_page" type="boolean">
@@ -158,56 +231,6 @@ folder.
 <ResponseField name="next_cursor" type="string">
   Always an empty string for the current bookmark folder route.
 </ResponseField>
-
-```json
-{
-  "folders": [
-    { "id": "1234567890", "name": "Tech" },
-    { "id": "1234567891", "name": "Design" }
-  ],
-  "has_next_page": false,
-  "next_cursor": ""
-}
-```
-
-### 401 Unauthenticated
-
-```json
-{ "error": "unauthenticated" }
-```
-Missing or invalid API key.
-
-### 402 Insufficient credits
-
-```json
-{ "error": "insufficient_credits" }
-```
-Metered access requires enough available credits. Possible error values include `no_subscription`, `subscription_inactive`, `no_credits`, and `insufficient_credits`.
-
-### 429 Rate Limit Exceeded
-
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 60
-}
-```
-The API key, user, or plan tier is sending requests too quickly. Respect the `Retry-After` header before retrying.
-
-### 502 X API unavailable
-
-```json
-{ "error": "x_api_unavailable" }
-```
-The read service returned an error. Retry after a short delay.
-
-### 424 Dependency Failed
-
-```json
-{ "error": "x_api_unavailable" }
-```
-Returned when you opt into the normalized v1 response contract and the read service is unavailable.
 
 <Note>
   **Related:** [Bookmarks](/api-reference/x/bookmarks) · [Timeline](/api-reference/x/timeline)

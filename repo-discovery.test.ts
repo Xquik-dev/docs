@@ -4998,6 +4998,7 @@ const FORBIDDEN_BATCH_USERS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_BOOKMARK_FOLDERS_API_HANDOFF_SNIPPETS = [
+  'title: "Twitter Bookmark Folders API & Saved Tweet Export"',
   '## Direct bookmark folder handoff',
   '`GET /x/bookmarks/folders`',
   'saved-tweet workflow, CRM enrichment job,',
@@ -5020,6 +5021,18 @@ const REQUIRED_BOOKMARK_FOLDERS_API_HANDOFF_SNIPPETS = [
   'shape durable bookmark folder rows instead of',
   '`folderRows` or `folder_rows`',
   'pass `folder_id` into `GET /x/bookmarks?folderId=...`',
+  '## Twitter Bookmark Folder Workflow',
+  '### 1. Discover Existing Folders',
+  '### 2. Build a Folder Index',
+  '### 3. Export Saved Tweets by Folder',
+  '### 4. Resume and Audit the Export',
+  '## Twitter Bookmark Folder Questions',
+  '### Does Twitter Bookmarks Have Folders?',
+  '### Can This API Create or Rename Bookmark Folders?',
+  '### Can I Access Folders from Mobile and Desktop?',
+  '### How Do I Back Up Twitter Bookmark Folders?',
+  '### What Errors Can Stop a Folder Export?',
+  'https://docs.x.com/x-api/posts/bookmarks/introduction',
 ] as const;
 
 const FORBIDDEN_BOOKMARK_FOLDERS_API_RAW_OUTPUT_SNIPPETS = [
