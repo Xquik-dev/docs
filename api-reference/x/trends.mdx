@@ -133,7 +133,9 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 Use `GET /x/trends` to retrieve ranked regional topics.
 This Twitter trends API supports planning, monitor seeding, search jobs, and alerts.
 Each example emits one JSON record for every returned trend.
-Store `trend_name`, `rank`, `description`, and `search_query`.
+Store `trend_name` for every result.
+Preserve `rank`, `description`, and `query` when the response includes them.
+Leave omitted fields unset. Use the trend name when `query` is missing.
 Also store `region_woeid`, `returned_count`, and your own `detected_at` timestamp.
 Pass `search_query` to [Search Tweets](/api-reference/x/search-tweets) for matching tweets.
 A Twitter API trending workflow should preserve each snapshot before searching.
@@ -141,7 +143,8 @@ A Twitter API trending workflow should preserve each snapshot before searching.
 ## Build a Regional Trend Monitor
 
 Poll one WOEID on a consistent schedule.
-Store every trend name, rank, search query, tweet volume, and detection time.
+Store every trend name and returned optional field.
+Keep missing values unset. Preserve `tweetVolume` as null when X returns null.
 
 Compare ranks within the same region. Do not mix worldwide and country results
 inside one ranking. Keep the WOEID on every row.
@@ -170,7 +173,7 @@ that field for some trends.
 </ParamField>
 
 <ParamField header="Authorization" type="string">
-  Send an OAuth bearer token or `paid_reads` guest key. Direct MPP uses the `Payment ...` credential from the `WWW-Authenticate: Payment` challenge.
+  `Bearer xq_your_guest_key_here` authenticates `paid_reads` guest keys through the API-key scheme's Bearer alias. Direct MPP uses the `Payment ...` credential from the `WWW-Authenticate: Payment` challenge.
 </ParamField>
 
 ## Response
@@ -237,7 +240,7 @@ The read service returned an error. Retry after a short delay.
 { "error": "rate_limit_exceeded", "retryAfter": 60 }
 ```
 The Xquik tier limit blocked the request.
-Wait for the `Retry-After` header before retrying.
+Use `Retry-After` when present. Otherwise, use the JSON `retryAfter` field.
 
 ### 424 Dependency Failed
 
@@ -259,11 +262,12 @@ Read each trend's name, rank, query, description, and available tweet volume.
 Yes. Poll the same WOEID on a stable schedule.
 Compare ranks only within that region and preserve every detection time.
 Use `query` to search tweets related to each trending hashtag.
+Use the trend name when the response omits `query`.
 
 ### How Do I Authenticate to the Twitter Trends API?
 
 Send an Xquik API key or OAuth bearer token.
-A `paid_reads` guest key also works.
+A `paid_reads` guest key can use the API-key scheme's Bearer alias.
 Anonymous direct MPP calls return a payment challenge before execution.
 
 ### How Much Does a Trends Request Cost?
