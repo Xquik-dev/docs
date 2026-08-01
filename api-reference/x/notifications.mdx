@@ -186,13 +186,14 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
 The Node.js and Python snippets normalize each page into notification triage
 rows. Keep full message text in private systems. Use `notification_id`,
 `notification_type`, `created_at`, `inbox_type`, and `page_next_cursor` for
-shared dashboards, queues, and agent handoffs.
+private support dashboards, CRM queues, and agent workflows.
 
 ## Notification triage handoff
 
 Use `GET /api/v1/x/notifications` when a support inbox, CRM workflow, or agent
 queue needs account-level activity for a connected X account. The endpoint
-returns compact notification rows, not full tweet or DM objects.
+returns notification IDs, types, message previews, and timestamps. It omits
+complete tweet and DM objects.
 
 <CardGroup cols={2}>
   <Card title="Mention queue" icon="at-sign">
@@ -246,13 +247,13 @@ user.](https://docs.x.com/x-api/posts/timelines/introduction)
 ### Resume Notification Pages Safely
 
 Treat every response as one inbox page. Store `next_cursor` only when
-`has_next_page` is true. Commit the page's notification rows before advancing
-the checkpoint.
+`has_next_page` equals `true`. Save the page's notification rows before
+updating the saved cursor.
 
-Use an atomic commit when the destination supports transactions. Otherwise,
-upsert rows by notification ID and update the cursor after durable writes
-finish. Keep the preceding cursor until the new checkpoint is confirmed. This
-sequence prevents skipped notifications after a worker failure.
+When the destination supports transactions, save the page and cursor together.
+Otherwise, upsert by notification ID. Update the cursor after the destination
+confirms storage. Keep the preceding cursor until confirming the new
+checkpoint. This order prevents skipped notifications after a worker failure.
 
 ### Choose Polling or Webhook Delivery
 
@@ -262,9 +263,9 @@ cursor, and stop when `has_next_page` is false.
 
 Use [Xquik webhooks](/webhooks/overview) when an Xquik monitor should push
 captured events to your HTTPS endpoint. X also offers a separate Account
-Activity API for real-time account events. [Its official documentation covers
-mentions, replies, reposts, likes, follows, and direct messages delivered by
-webhook.](https://docs.x.com/x-api/account-activity/introduction)
+Activity API for real-time account events. [Its documentation lists mentions,
+replies, reposts, likes, follows, and direct
+messages.](https://docs.x.com/x-api/account-activity/introduction)
 
 ## Twitter Notification API Questions
 
@@ -276,14 +277,14 @@ pages are not mistaken for missing notifications.
 
 ### Can I Delete or Clear Notifications with This Route?
 
-No. `GET /x/notifications` is read-only. Deleting a local triage row does not
+No. This route only reads notifications. Deleting a local triage row does not
 remove the notification from X or another connected client.
 
 ### What Happens When a Notification Request Fails?
 
-A `401` response requires a valid key for the connected account. A `402`
-response requires more credits. Respect `Retry-After` guidance for `429`.
-Retry temporary `424` and `502` failures without advancing the saved cursor.
+`401` means the connected account needs a valid key. `402` means the account
+needs more credits. Wait for `Retry-After` after `429`. After `424` or `502`,
+retry from the saved cursor.
 
 ## Query parameters
 
