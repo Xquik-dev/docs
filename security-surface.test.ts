@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
@@ -117,5 +117,19 @@ describe('public security surface', (): void => {
         },
       ]),
     );
+  });
+
+  it('renders alternatives icons without decorative image elements', (): void => {
+    expect.assertions(3);
+
+    const alternatives = readdirSync('alternatives')
+      .filter((file): boolean => file.endsWith('.mdx'))
+      .map((file): string => readFileSync(`alternatives/${file}`, 'utf8'))
+      .join('\n');
+    const overview = readFileSync('twitter-api-alternatives.mdx', 'utf8');
+
+    expect(JSON.stringify(docsConfig())).not.toContain('/logo/x-only.svg');
+    expect(overview).not.toContain('icon="/logo/x-only.svg"');
+    expect(alternatives).not.toContain('icon="/logo/x-only.svg"');
   });
 });
