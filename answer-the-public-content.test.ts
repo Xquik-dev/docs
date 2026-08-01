@@ -75,6 +75,10 @@ const REQUIRED_PROMPTS_BY_FILE = {
     'Twitter Webhook Alerts',
     'Twitter Account Monitor API',
     'How Do I Get Real-Time Twitter Alerts via Webhook?',
+    'How Do Businesses Use Twitter Monitoring for Customer Service?',
+    'How Do I Monitor Competitor Activity on Twitter?',
+    'How Do I Integrate Twitter Monitoring Into a Dashboard?',
+    'What Are Best Practices for Twitter Monitoring in Crisis Management?',
   ],
   'api-reference/x/community-members.mdx': [
     'Scrape X Community Members',
