@@ -32,6 +32,9 @@ interface DocsConfig {
   readonly seo: {
     readonly indexing: string;
   };
+  readonly styling: {
+    readonly latex: boolean;
+  };
 }
 
 interface MetadataFinding {
@@ -164,11 +167,13 @@ describe('SEO metadata', (): void => {
     expect({
       description: config.description,
       indexing: config.seo.indexing,
+      latex: config.styling.latex,
       openGraphDescription: config.metadata['og:description'],
       searchPrompt: config.search.prompt,
     }).toStrictEqual({
       description: SITE_DESCRIPTION,
       indexing: 'all',
+      latex: false,
       openGraphDescription: SITE_DESCRIPTION,
       searchPrompt: 'Search docs',
     });
