@@ -328,6 +328,28 @@ do {
 
 Use the extraction workflow instead when the job needs a durable export file, a cost estimate before scraping, or a hard `resultsLimit`.
 
+## Choose the right reply output
+
+### When should I use the live replies API?
+
+Use the Twitter reply API when an application needs the latest cursor page. It returns reply tweets, authors, engagement counts, media, and the next cursor. Continue until `has_next_page` is `false`. New replies can arrive during pagination. Store each reply tweet ID and remove duplicate IDs downstream.
+
+### When should I run a saved reply extraction?
+
+Use `reply_extractor` when a team needs a durable file or reviewable job. Estimate the parent tweet first. Then create one capped or uncapped extraction. Poll the returned job ID until completion. Export that job without spending additional credits on file conversion.
+
+### Which file format should I choose?
+
+Choose CSV for CRM imports and spreadsheet filters. Choose XLSX for analyst handoffs that require workbook tools. Choose JSON for applications that preserve nested reply fields. Convert JSON to JSON Lines when queues or warehouses need one reply per record.
+
+### How do I resume an interrupted reply export?
+
+Persist the target tweet ID, extraction ID, current cursor, next cursor, and page index. Resume a saved job through `GET /extractions/{id}`. Resume live pagination with the last confirmed `next_cursor`. Never advance the checkpoint before storing its reply rows.
+
+### How should I validate exported replies?
+
+Check that every row has a reply tweet ID and parent tweet ID. Preserve author IDs separately from usernames because usernames can change. Keep tweet creation times in UTC. Compare the returned rows with the estimate only for planning. The parent `replyCount` can change and does not guarantee the final export size.
+
 ## Cost and failure handling
 
 Estimate is free. A `reply_extractor` job costs 1 credit per result. Direct `GET /x/tweets/{id}/replies` calls cost 1 credit per returned tweet. Available credits can reduce the returned page size. Exports are free after the extraction job exists.
@@ -371,6 +393,8 @@ Handle common errors before retrying:
   </Card>
 </CardGroup>
 
-<Note>
-  **Related:** [Extraction workflow](/guides/extraction-workflow) &middot; [Create extraction](/api-reference/extractions/create) &middot; [Get tweet replies](/api-reference/x/tweet-replies)
-</Note>
+## Related reply APIs
+
+- [Plan saved tweet and reply exports](/guides/extraction-workflow)
+- [Create a reply extraction job](/api-reference/extractions/create)
+- [Fetch live tweet reply pages](/api-reference/x/tweet-replies)
