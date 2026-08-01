@@ -75,16 +75,17 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
 <TweetReadApiLinks />
 <ConnectedAccountApiLinks />
 
-Use this Twitter media downloader API with 1-50 tweet IDs or URLs. Download photos, videos, or GIFs. The response includes a review gallery and download metadata.
+Use this Twitter media downloader API with 1-50 tweet IDs or URLs. It downloads
+photos, videos, and GIFs into a review gallery. Use it to download Twitter media
+from one tweet or a 50-tweet batch. Each response includes gallery metadata.
 
 <Callout icon="coins" color="#5c3327">
   **1 credit per fresh tweet processed with media** · cache hits are free · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 </Callout>
 
-Use this endpoint to turn one tweet, or up to 50 tweet URLs or IDs, into a
-saved media gallery. The response gives a `galleryUrl` plus cache or bulk
-counts; it does not return per-file downloads, file metadata, or an uploaded
-`mediaId`.
+This endpoint creates a saved media gallery from 1-50 tweet URLs or IDs.
+The response gives a `galleryUrl` plus cache or bulk counts. It does not return
+per-file downloads, file metadata, or an uploaded `mediaId`.
 
 <CodeGroup>
   ```bash cURL (single)
@@ -261,7 +262,7 @@ counts; it does not return per-file downloads, file metadata, or an uploaded
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported.
+  Your API key. You can also authenticate with an OAuth bearer token.
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
@@ -277,15 +278,15 @@ Use `tweetIds` for bulk downloads. If `tweetIds` is present with at least 1 stri
 </ParamField>
 
 <ParamField body="tweetId" type="string">
-  Numeric tweet ID alias for `tweetInput`. Used when `tweetInput` is not provided.
+  Numeric tweet ID alias for `tweetInput`. Use it when `tweetInput` is absent.
 </ParamField>
 
 <ParamField body="tweetUrl" type="string">
-  Tweet URL alias for `tweetInput`. Used when `tweetInput` and `tweetId` are not provided.
+  Tweet URL alias for `tweetInput`. Use it when both earlier fields are absent.
 </ParamField>
 
 <ParamField body="tweetIds" type="string[]">
-  Array of tweet URLs or IDs for bulk download. Maximum 50 string items. Invalid IDs are skipped; the request fails only when no valid tweet IDs remain.
+  Array of tweet URLs or IDs for bulk download. Maximum 50 string items. The route skips invalid IDs. It fails only when no valid tweet IDs remain.
 </ParamField>
 
 ## Media download handoff
@@ -319,11 +320,11 @@ URL.
 ## Store a tweet media download manifest
 
 Keep one manifest row per single or bulk request. A gallery URL represents the
-download result. It is not an uploaded media ID and is not a direct asset URL.
+download result. A gallery URL is neither an uploaded media ID nor a direct asset URL.
 
 | Manifest column | Response or request source | Reconciliation rule |
 | --- | --- | --- |
-| `download_request_id` | Integration value | Correlate the selected tweet inputs with one gallery result. |
+| `download_request_id` | Integration value | Link the selected tweet inputs to one gallery. |
 | `input_mode` | Presence of non-empty `tweetIds` | Store `single` or `bulk`. |
 | `requested_tweet_ids` | Normalized request inputs | Preserve every valid ID submitted to the download route. |
 | `tweet_id` | Single response `tweetId` | Store the resolved Tweet ID for single mode. |
@@ -332,16 +333,16 @@ download result. It is not an uploaded media ID and is not a direct asset URL.
 | `successful_tweet_count` | Bulk response `totalTweets` | Count only successful tweets that contained media. |
 | `media_item_count` | Bulk response `totalMedia` | Reconcile the number of downloaded images, videos, and GIFs. |
 | `requested_at` | Integration timestamp | Audit when the download request started. |
-| `completed_at` | Integration timestamp | Audit when the gallery result was stored. |
+| `completed_at` | Integration timestamp | Record when your integration stores the gallery. |
 
 | Download outcome | Evidence | Next action |
 | --- | --- | --- |
 | Cached single result | `cacheHit: true` and `galleryUrl` | Store the free cached gallery result. |
 | Fresh single result | `cacheHit: false` and `galleryUrl` | Reconcile 1 processed tweet with media. |
-| Partial bulk result | `totalTweets` below valid input count | Store successes and review skipped or failed Tweet IDs. |
+| Partial bulk result | `totalTweets` below valid input count | Store successes and review the skipped Tweet IDs. |
 | No media | `400 no_media` | Keep the Tweet ID and choose another source tweet. |
-| Invalid bulk items | Valid IDs remain after normalization | Continue with valid IDs and preserve the rejected inputs. |
-| More than 50 items | Request list exceeds the route limit | Split the backfill into batches of 50 or fewer. |
+| Invalid bulk items | Valid IDs remain | Continue with valid IDs and preserve rejected inputs. |
+| More than 50 items | Request exceeds the limit | Split the backfill into groups of 50 or fewer. |
 
 Fresh downloads cost 1 credit per tweet processed with media. Cached single downloads return `cacheHit: true` and are free. Bulk responses do not return `freshCount`; store the request IDs with `totalTweets` and `totalMedia` for reconciliation.
 
@@ -350,13 +351,13 @@ Fresh downloads cost 1 credit per tweet processed with media. Cached single down
 ### 200 OK (single)
 
 <ResponseField name="tweetId" type="string">
-  Resolved tweet ID.
+  Identifies the resolved tweet.
 </ResponseField>
 <ResponseField name="galleryUrl" type="string">
-  Shareable gallery page URL with all downloaded media.
+  Links the shareable gallery containing all downloaded media.
 </ResponseField>
 <ResponseField name="cacheHit" type="boolean">
-  `true` if media was served from cache (no usage consumed).
+  Shows whether the cache supplied the media. Cached requests consume no credits.
 </ResponseField>
 
 ```json
@@ -370,13 +371,13 @@ Fresh downloads cost 1 credit per tweet processed with media. Cached single down
 ### 200 OK (bulk)
 
 <ResponseField name="galleryUrl" type="string">
-  Combined gallery page URL containing media from all tweets.
+  Links the combined gallery containing media from all tweets.
 </ResponseField>
 <ResponseField name="totalTweets" type="number">
-  Number of tweets processed.
+  Counts processed tweets with media.
 </ResponseField>
 <ResponseField name="totalMedia" type="number">
-  Total media items downloaded across all tweets.
+  Counts downloaded images, videos, and GIFs.
 </ResponseField>
 
 ```json
@@ -420,7 +421,7 @@ The tweet does not contain any images, videos, or GIFs.
 ```json
 { "error": "unauthenticated", "message": "Missing or invalid API key" }
 ```
-Missing or invalid API key / session cookie.
+Supply a valid API key or OAuth bearer token.
 
 ### 402 Insufficient Credits
 
@@ -452,21 +453,48 @@ The API key, user, or plan tier is sending requests too quickly. Respect the `Re
 ```json
 { "error": "x_api_unavailable" }
 ```
-The read service returned an error. Retry after a short delay.
+The read service failed. Retry after a short delay.
 
 ### 424 Dependency Failed
 
 ```json
 { "error": "x_api_unavailable" }
 ```
-Returned when you opt into the normalized v1 response contract and the read service is unavailable.
+The opt-in normalized contract returns 424 when the read service fails.
+Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns 502.
+
+## Twitter Media Downloader Questions
+
+### How Do I Download Twitter Media?
+
+Copy the tweet link or numeric ID. Send it through `tweetInput`. The gallery can
+contain Twitter videos and GIFs plus images.
+
+### Can I Save Twitter Videos or GIFs on a Phone?
+
+Yes. Open the returned `galleryUrl` in a web browser. The API does not return
+direct per-file URLs.
+
+### Does This Work Like a Browser Extension?
+
+No. This is a server-side API. Keep the API key or bearer token server-side.
+
+### Can I Download Twitter Video Files Directly?
+
+No. This Twitter video downloader route creates a gallery. It does not expose
+per-file downloads or resolution controls.
+
+### Can I Download Media From Many Tweets?
+
+Yes. Send 1-50 tweet IDs through `tweetIds`. The response returns one combined
+gallery with tweet and media counts.
 
 <Info>
   First download is metered and counts toward your monthly credit allowance. Subsequent requests for the same tweet return cached URLs at no cost (`cacheHit: true`). All downloads are saved to your gallery at `https://xquik.com/gallery`.
 </Info>
 
 <Note>
-  This endpoint supports **dual authentication**: API key (`x-api-key` header) or session cookie from the dashboard.
+  This endpoint accepts an API key or OAuth bearer token. Keep either credential server-side.
 
   **Related:** [Get Tweet](/api-reference/x/get-tweet) to look up tweet details and metrics, or use the `xquik` [MCP tool](/mcp/tools#xquik) for AI agent access.
 </Note>
