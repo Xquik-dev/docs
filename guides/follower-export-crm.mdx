@@ -22,12 +22,13 @@ Import the follower rows into a CRM, spreadsheet, queue, or warehouse.
 
 Run `follower_explorer` when you need a saved follower export. Use it as a
 Twitter follower tracker for repeatable account snapshots. Estimate credits
-before starting. Keep the source username and resolved user ID. Poll the job
-until completion.
+before starting. Keep the source username and resolved user ID while polling
+the job to completion.
 
 <Accordion title="File Formats & Follower Fields">
 Download CSV for CRM lists or spreadsheet imports. Choose
-XLSX for analyst review and JSON for queues. Store one profile per user ID.
+XLSX for analyst review and JSON for queues. Use the user ID as each stored
+profile's deduplication key.
 Keep follower counts, following counts, verification, collection time, and the
 applied result limit. Mark any interrupted export as bounded.
 </Accordion>
@@ -44,21 +45,23 @@ returns `users`, `has_next_page`, and `next_cursor`.
 Treat `next_cursor` as opaque. Persist every follower page before saving its
 cursor. Scope API access to the worker that owns each cursor. Keep the API key
 outside exported lists. Handle each documented rate limit and error status.
-Deduplicate retries by user ID. Store a timestamp for each collected page.
+Use the user ID to deduplicate retries. Store a timestamp for each collected
+page.
 </Accordion>
 
 ### What API Can I Use to Get Someone’s Twitter Followers?
 
-Each public profile has a stable user ID. Then use the
-[live Followers API contract](https://docs.xquik.com/api-reference/x/followers)
-for current follower pages. Use `follower_explorer` for a saved export or list.
+Resolve the public profile's stable ID before calling the
+[live Followers API contract](https://docs.xquik.com/api-reference/x/followers).
+Use `follower_explorer` for a saved export or list.
 
 <Accordion title="Public Profile Boundaries">
 A private account does not make its followers public. Confirm the Twitter
 profile is public before requesting follower pages. A missing page does not
-prove that a profile is private. Save each username, user ID, cursor, and
-collection time. Request another page only after the current profiles become
-durable. Respect API key scope, credits, and every returned rate limit.
+prove that a profile is private. Save each username, stable ID, and cursor.
+Record when each page was collected. Request another page only after the
+current profiles become durable. Respect API key scope, credits, and every
+returned rate limit.
 </Accordion>
 
 ### How Do I Export All Followers of a Twitter Account?
@@ -97,17 +100,18 @@ XLSX.
 
 <Accordion title="Specific Account Checkpoints">
 Use the live API for current profile pages. Persist each
-list before its opaque cursor. Deduplicate retries by numeric user ID. Store the
-mutable username, bio, follower count, following count, and verification. Stop
-at a documented limit. Never infer private followers from an incomplete page.
-The final checkpoint stores the completion timestamp.
+list before its opaque cursor. Use numeric user IDs to deduplicate retries.
+Store the mutable username, bio, follower count, following count, and
+verification. Stop at a documented limit. Never infer private followers from
+an incomplete page.
+The final checkpoint records when the export completed.
 </Accordion>
 
 ### Export List of Twitter Followers to CSV or Excel
 
-Use `follower_explorer` to export a list of Twitter followers. Choose CSV for
-CRM imports and Excel-compatible XLSX for analyst review. Choose JSON for
-queue, warehouse, or application ingestion.
+Use `follower_explorer` when exporting a Twitter follower list. Choose CSV for
+CRM imports and Excel-compatible XLSX for analyst review. Choose JSON for queue,
+warehouse, or application ingestion.
 
 <Accordion title="CSV, Excel & CRM Mapping">
 Map `User ID` to the CRM's unique profile field.
@@ -138,23 +142,23 @@ API when the script can persist every opaque cursor. Call extraction routes for
 saved CSV, JSON, or XLSX exports.
 
 <Accordion title="Python Error & Output Handling">
-Browser web scrapers may need cookies. Xquik is an independent third-party API,
-not the official Twitter API. Keep the API key outside source files.
+Browser web scrapers may need cookies. Xquik operates independently from every
+official API documented by X. The official Twitter API and Xquik use separate
+contracts. Keep the API key outside source files.
 Check `402`, `424`, `429`, and `502` before retrying. Normalize each profile by
-user ID. Write one
-follower per JSON Lines record. Store the username, list source, and collection
-timestamp.
+its stable numeric ID. Write one follower per JSON Lines record. Store the
+username, list source, and UTC collection value.
 </Accordion>
 
 ### What Are the Risks of Twitter Follower Scraping Tools?
 
 Risks include partial follower pages, duplicate profiles, and exposed API keys.
-Repeated cursors produce incomplete result sets. Scraped rows represent public
-follower profiles.
+A repeated cursor indicates an incomplete result set. Scraped data represents
+public follower profiles within the requested page boundaries.
 
 <Accordion title="Follower Scraper Risk Controls">
-Never infer consent from a bio. A private account never exposes private
-followers. Do not infer inactive
+Never infer consent from a bio. Private accounts do not expose follower lists.
+Do not infer inactive
 accounts from missing pages or unchanged follower counts.
 Store each user ID beside its
 mutable username. Mark rate-limit, credit, or result boundaries. Review export
@@ -163,8 +167,9 @@ columns before every CRM import.
 
 ### How Do I Get Public Follower Lists Responsibly?
 
-This guide covers documented fields from public follower profiles. Limit each
-export to fields required by its social media workflow. Review the
+Public data includes documented profile fields from the requested public
+accounts. Limit each export to fields required by its social media workflow.
+Review the
 [X Terms of Service](https://x.com/en/tos) at `https://x.com`.
 
 <Accordion title="Responsible Export Checklist">
