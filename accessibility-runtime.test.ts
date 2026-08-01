@@ -16,7 +16,7 @@ describe('Mintlify accessibility overrides', (): void => {
   });
 
   it('leaves linked card semantics to the nested anchor', (): void => {
-    expect.assertions(9);
+    expect.assertions(11);
 
     const source = readFileSync('accessibility.js', 'utf8');
 
@@ -28,8 +28,10 @@ describe('Mintlify accessibility overrides', (): void => {
     expect(source).toContain("anchor.setAttribute('tabindex', '0')");
     expect(source).toContain('new MutationObserver(scheduleAccessibilityUpdate)');
     expect(source).toContain(
-      "window.addEventListener('load', initializeAccessibilityRepairs",
+      "window.addEventListener('load', scheduleAccessibilityInitialization",
     );
+    expect(source).toContain("typeof window.requestIdleCallback === 'function'");
+    expect(source).toContain('window.setTimeout(initializeAccessibilityRepairs, 1000)');
     expect(source).not.toMatch(/https?:\/\//u);
   });
 
