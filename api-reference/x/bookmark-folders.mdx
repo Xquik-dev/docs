@@ -127,120 +127,82 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
 </CodeGroup>
 
 The Node.js and Python snippets shape durable bookmark folder rows instead of
-printing the full response page. Persist `folderRows` or `folder_rows` so a
-worker can pass `folder_id` into `GET /x/bookmarks?folderId=...`.
+printing the full response. Persist `folderRows` or `folder_rows`.
+Then pass `folder_id` into `GET /x/bookmarks?folderId=...`.
 
 ## Direct bookmark folder handoff
 
-Use `GET /x/bookmarks/folders` when a saved-tweet workflow, CRM enrichment job,
-research queue, or agent needs the current bookmark folder IDs for the
-authenticated X account.
-
-Store `folder_id` and `folder_name`. The current route returns one folder page
-with `has_next_page: false` and `next_cursor: ""`; use each `folder_id` with
-[Bookmarks](/api-reference/x/bookmarks) to fetch the saved tweets inside that
-folder.
+Use `GET /x/bookmarks/folders` for an authenticated X account. It serves a
+saved-tweet workflow, CRM enrichment job, research queue, or agent.
+Store `folder_id` and `folder_name` with the connected account ID.
+The route returns one folder page with `has_next_page: false` and
+`next_cursor: ""`. Use each folder ID with
+[Bookmarks](/api-reference/x/bookmarks) to fetch its saved tweets.
 
 ## Twitter Bookmark Folder Workflow
 
 ### 1. Discover Existing Folders
 
-Call `GET /x/bookmarks/folders` with the connected account's Xquik API key. The
-response lists folders already visible to that account. This read route does
-not support folder creation, renaming, movement, or deletion.
-
-An empty `folders` array means no folder rows were returned. It does not expose
-another user's folders. Keep the connected account ID beside the response.
+Call the route with the connected account's Xquik API key. It lists that
+account's private folders. It cannot create, rename, move, or delete folders.
+An empty `folders` array means the account returned no folders.
 
 ### 2. Build a Folder Index
 
-Store `folder_id`, `folder_name`, and the collection time. Use `folder_id` as
-the stable join key. Folder names can change and may repeat across accounts.
-
-Keep folder names out of public logs, URLs, and shared filenames. Store the
-folder index with the same access controls as saved tweets.
+Use `folder_id` as the stable join key. Folder names can change or repeat.
+Protect folder names like saved tweets. Exclude them from public logs, URLs,
+and shared filenames.
 
 ### 3. Export Saved Tweets by Folder
 
-Pass each `folder_id` to `GET /x/bookmarks?folderId=...`. That route returns the
-saved tweets inside the selected folder. Its rows can include tweet text,
-authors, likes, replies, reposts, views, media, and cursor fields.
-
-Write the folder ID beside every tweet row. This preserves folder membership
-when a CSV file, spreadsheet, CRM, or research queue combines several exports.
+Pass each folder ID to `GET /x/bookmarks?folderId=...`. Saved tweet rows can
+include text, authors, likes, replies, reposts, views, media, and cursors. Write
+the folder ID beside every row to preserve folder membership.
 
 ### 4. Resume and Audit the Export
 
-The folder-list response sets `has_next_page` to `false`. No folder-level
-continuation token is available. The bookmarked-tweet route can paginate
-independently for each folder. Store its latest `next_cursor` with that folder's
-export checkpoint.
-
-Record the collection time and connected account ID. These values show which
-account and snapshot produced every folder-to-tweet relationship.
+The folder list has no next page. The bookmarked-tweet route paginates per
+folder. Store its `next_cursor`, collection time, and connected account ID.
 
 ## Plan a Reliable Twitter Bookmark Folder Export
 
-Treat every folder-list response as an account-specific snapshot. Record its
-collection timestamp and authenticated account ID before starting the saved
-tweet export. Compare returned folder IDs with the preceding snapshot. Match a
-renamed folder by ID when both snapshots preserve that identifier.
-
-A missing folder ID means only that the current response omitted it. Retain
-prior exports until the current snapshot is verified. This rule prevents one
-incomplete snapshot from erasing a valid bookmark archive.
+Treat every folder list as an account-specific snapshot. Compare folder IDs
+with the preceding snapshot. Match renamed folders by ID. A missing ID only
+means the current snapshot omitted it. Keep prior exports until verification.
 
 ### Store One Checkpoint per Folder
 
-Create an independent export checkpoint for every folder. Store its folder ID,
-latest bookmark cursor, completion state, and collection timestamp. Resume only
-the incomplete folder after a temporary read failure.
-
-Keep checkpoints separate from exported tweet rows. This separation lets a
-worker replace cursor state without rewriting saved tweet records. It also
-supports precise retries after `424`, `429`, or `502` responses.
-
-Commit each page's tweet rows and updated cursor atomically. If the destination
-cannot provide atomic writes, upsert every row by a stable identifier. Build
-that identifier from the authenticated account, folder, and tweet IDs. Advance
-the cursor only after every row is durably stored.
+Store the folder ID, bookmark cursor, completion state, and collection time.
+Retry only the incomplete folder after `424`, `429`, or `502` responses.
+Upsert rows by account, folder, and tweet IDs. Save every row before advancing
+the cursor.
 
 ### Define Folder Export Records
 
-Store folder identity beside each saved tweet. Use `account_id`, `folder_id`,
-and `folder_name` for folder scope. Use `tweet_id`, `tweet_text`, `author_id`,
-and `username` for tweet identity. Preserve `like_count`, `reply_count`,
-`repost_count`, and `view_count` to compare tweet engagement. Store attachment
-locations in `media_url`. Keep `created_at` and `collected_at` as timestamps.
-
-Store `source_cursor` beside each page for later audits. Use `folder_id` as the
-join key; folder names are mutable labels. Protect private folder names from
-public storage paths and application telemetry. Validate required IDs before
-sending records to a spreadsheet, CRM, research queue, or storage system.
+Store `account_id`, `folder_id`, and `folder_name` beside each saved tweet.
+Preserve tweet, author, engagement, media, and timestamp fields. Store
+`source_cursor` beside each page. Validate IDs before exporting to a
+spreadsheet, CRM, research queue, or storage system.
 
 ## Twitter Bookmark Folder Questions
 
 ### Do Twitter Bookmarks Have Folders?
 
-The connected account can have named bookmark folders. This endpoint lists the
-folders that X returns for that account. Folder visibility remains restricted
-to the authenticated account.
+Yes. This endpoint lists the named folders visible to the connected account.
 
 ### Can This API Create or Rename Bookmark Folders?
 
-No. This route only reads folder IDs and names. Folder creation, renaming,
-movement, and deletion remain outside this read contract.
+No. This route only reads folder IDs and names.
 
 ### Can I Access Folders from Mobile and Desktop?
 
-The API is not tied to a device. The response reflects folders available to the
-authenticated account. Mobile and desktop clients may present them differently.
+Yes. The endpoint works independently of the device. It returns folders
+available to the connected account.
 
 ### How Do I Back Up Twitter Bookmark Folders?
 
-Save the folder index as JSON Lines or CSV. Export the saved tweets associated
-with every returned folder. Join both files by `folder_id`. Include the
-authenticated account ID and collection timestamp in backup metadata.
+Save the folder index as JSON Lines or CSV. Export each folder's saved tweets.
+Join both files by `folder_id`. Include the account ID and collection time.
 
 ### What Errors Can Stop a Folder Export?
 
