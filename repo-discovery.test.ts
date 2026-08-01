@@ -3664,7 +3664,7 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
-  'title: "Twitter Reply Scraper, Replies Export & Authors"',
+  'title: "Twitter API Get Replies to a Tweet & Author Fields"',
   'Get tweet replies returns reply tweets for one X post by numeric tweet ID.',
   'conversation analysis, support queues, moderation review, giveaway',
   '`GET /api/v1/x/tweets/{id}/replies`',
@@ -3738,7 +3738,7 @@ const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   '<ResponseField name="id" type="string">Author user ID.',
   '<ResponseField name="username" type="string">Author handle without `@`.',
   '<ResponseField name="name" type="string">Author display name.',
-  '<ResponseField name="followers" type="number">Follower count.',
+  '<ResponseField name="followers" type="number">This value records the author\'s follower count when available.',
   '<ResponseField name="verified" type="boolean">Whether the author is verified.',
   '<ResponseField name="profilePicture" type="string">Author profile image URL.',
   '`resultsLimit`',

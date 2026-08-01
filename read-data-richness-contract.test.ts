@@ -270,8 +270,6 @@ describe('read data richness documentation', (): void => {
     expect(GUIDE).toContain('conversation_id:<tweet_id>');
     expect(MCP_TOOLS).toContain('pageSize=100');
     expect(MCP_TOOLS).toContain('conversation_id:<tweet_id>');
-    expect(TWEET_REPLIES).toContain(
-      '`conversation_id:{id}` query as the broader fallback',
-    );
+    expect(TWEET_REPLIES).toContain('Set `conversation_id:{id}` before');
   });
 });

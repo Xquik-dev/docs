@@ -1,9 +1,9 @@
 ---
-title: "Twitter Reply Scraper, Replies Export & Authors"
+title: "Twitter API Get Replies to a Tweet & Author Fields"
 sidebarTitle: "Get tweet replies"
-description: "Retrieve replies for one X tweet with cursor pagination, Unix timestamp windows, author fields, engagement metrics, media, and export handoffs. See costs."
+description: "Use a Twitter API to get replies to a tweet with cursors, author profiles, engagement metrics, media, time filters, moderation rows, and every error response."
 api: "GET /x/tweets/{id}/replies"
-keywords: ["get tweet replies", "tweet replies API", "Twitter replies API", "X replies API", "tweet comments", "reply export", "JSON export", "CSV export", "moderation queue"]
+keywords: ["Twitter API get replies", "Twitter API get replies to a tweet", "get tweet replies", "tweet replies API", "Twitter replies API", "X replies API", "tweet comments", "reply export", "JSON export", "CSV export", "moderation queue"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -93,12 +93,63 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 <Warning>
   Reply visibility depends on X. An unfiltered first page can return
   `424 replies_incomplete` when X reports more replies than it exposes. Use
-  tweet search with a `conversation_id:{id}` query as the broader fallback.
+  tweet search as the broader fallback. Set `conversation_id:{id}` before
+  collecting fallback rows.
   Never treat missing rows as proof that a user did not reply.
 </Warning>
 
-See [Tweet, Profile, Media & Reply API Fields](/guides/tweet-profile-api-fields) for reply coverage and
-every optional tweet field.
+The [tweet, profile, media, and reply field guide](/guides/tweet-profile-api-fields)
+lists reply coverage and every optional field.
+
+## Twitter API Reply Questions
+
+### How Does the Twitter API Get Replies to a Tweet?
+
+Start with the original tweet's numeric ID. Request the first reply page with
+`GET /api/v1/x/tweets/{id}/replies`. Set `pageSize` from `1` through `100`.
+The response contains reply tweets, author profiles, and engagement counts.
+Store `next_cursor` after writing every page. Continue only while
+`has_next_page` remains `true`.
+
+### How Complete Is a Tweet Reply Collection?
+
+X controls which public replies each page exposes. Protected, deleted, hidden,
+or unavailable replies may not appear. A `424 replies_incomplete` response
+marks the first page as incomplete. Search the same `conversation_id` for
+broader coverage. Filter `inReplyToId` when only direct replies belong in the
+result. Never promise a complete set without a terminal cursor.
+
+### How Can a Team Analyze or Moderate Replies?
+
+Store the reply ID, text, author ID, username, and creation time. Keep likes,
+reposts, quotes, views, bookmarks, and attached media. Build a moderation table
+with one row per reply. Send uncertain rows to human reviewers. Add sentiment
+or spam labels with your own classifier. Xquik does not return a sentiment
+verdict.
+
+### How Can Support Teams Receive New Reply Alerts?
+
+Create an [account monitor](/api-reference/monitors/create) for the relevant
+profile. Select `tweet.reply` events on the monitor and webhook. Verify every
+webhook signature before processing its reply payload. Store the event ID
+before updating a support ticket. Use the events API to replay missed
+deliveries. Keep polling this endpoint for conversation-specific backfills.
+
+### Which Reply Fields Should Applications Preserve?
+
+Keep the stable author ID separately from the mutable username. Save
+`conversationId` and `inReplyToId` for thread joins. Preserve media URLs and
+visible engagement counts when X returns them. Store `pageSize`, time filters,
+and both cursor values with every checkpoint. These fields support audits,
+deduplication, retries, and downstream updates.
+
+### How Can Applications Control Reply API Costs?
+
+Each returned reply costs 1 credit. Request only the page size your workflow
+can store safely. Use `sinceTime` and `untilTime` for bounded support periods.
+Save every completed page before requesting another cursor. Handle `402`
+before retrying. Use `reply_extractor` when a fixed `resultsLimit` and saved
+file matter more than current reply pages.
 
 <CodeGroup>
   ```bash cURL
@@ -229,11 +280,11 @@ JSON Lines rows with `parent_tweet_id`, `reply_id`, `text`, author ID,
 username, display name, follower count, verified state, profile image URL,
 thread joins, engagement counts, media URLs, and cursor fields. Each line
 represents one reply for a single tweet, so a worker can resume from the last
-saved `next_cursor`.
+cursor checkpoint.
 
-When the route returns `424 replies_incomplete`, stop exhaustive verification.
-Search tweets with `conversation_id:<tweet_id>` as the broader fallback. Filter
-exact `inReplyToId` values when the workflow accepts only direct replies.
+A `424 replies_incomplete` response means the first page is not exhaustive.
+Search tweets with `conversation_id:<tweet_id>` as the broader fallback. Keep
+only rows whose `inReplyToId` matches the requested tweet when needed.
 
 Use [`reply_extractor`](/guides/tweet-replies-export) instead when a team needs
 an estimate, durable extraction ID, stored result pages, or CSV, JSON, and XLSX
@@ -285,7 +336,7 @@ Direct replies cost 1 credit per tweet returned. Low credit balances can return 
 
 Store one row per reply. Keep the parent Tweet ID and conversation ID beside
 the reply so support, moderation, campaign, and giveaway reviews can reconstruct
-the thread.
+each conversation branch.
 
 | Reply column | Response source | Review use |
 | --- | --- | --- |
@@ -306,7 +357,7 @@ the thread.
 | --- | --- | --- |
 | Page identity | `page_index` and `page_cursor` | Save both before writing the next reply page. |
 | Resume cursor | `next_cursor` | Send it as `cursor` only when `has_next_page` is `true`. |
-| Time window | `sinceTime` and `untilTime` | Reuse the same Unix-second bounds after a safe retry. |
+| Time window | `sinceTime` and `untilTime` | Reuse identical Unix-second bounds after a retry. |
 | Completion state | `has_next_page` plus the terminal cursor | Mark the export complete only after the final page. |
 | Incomplete first page | `424 replies_incomplete` | Stop exhaustive verification and search the conversation ID. |
 
@@ -370,43 +421,43 @@ filters can return fewer rows than an unfiltered page.
 <ResponseField name="tweets" type="object[]">
   Array of reply tweets.
   <Expandable title="Tweet object fields">
-    <ResponseField name="id" type="string">Tweet ID.</ResponseField>
-    <ResponseField name="text" type="string">Tweet text.</ResponseField>
-    <ResponseField name="type" type="string">Tweet type. Omitted if unavailable.</ResponseField>
-    <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
+    <ResponseField name="id" type="string">This value is the tweet ID.</ResponseField>
+    <ResponseField name="text" type="string">This value contains the tweet text.</ResponseField>
+    <ResponseField name="type" type="string">This value identifies the tweet type when available.</ResponseField>
+    <ResponseField name="createdAt" type="string">This value contains the ISO 8601 creation timestamp.</ResponseField>
     <ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet. Omitted if unavailable.</ResponseField>
     <ResponseField name="isReply" type="boolean">Whether the tweet is a reply.</ResponseField>
-    <ResponseField name="inReplyToId" type="string">ID of the tweet being replied to.</ResponseField>
+    <ResponseField name="inReplyToId" type="string">This ID identifies the tweet receiving the reply.</ResponseField>
     <ResponseField name="inReplyToUserId" type="string">User ID being replied to. Omitted if unavailable.</ResponseField>
     <ResponseField name="inReplyToUsername" type="string">Username being replied to. Omitted if unavailable.</ResponseField>
     <ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
-    <ResponseField name="likeCount" type="number">Like count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="retweetCount" type="number">Retweet count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="replyCount" type="number">Reply count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="quoteCount" type="number">Quote tweet count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="viewCount" type="number">View count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="bookmarkCount" type="number">Bookmark count. Omitted if unavailable.</ResponseField>
+    <ResponseField name="likeCount" type="number">This value records the like count when available.</ResponseField>
+    <ResponseField name="retweetCount" type="number">This value records the repost count when available.</ResponseField>
+    <ResponseField name="replyCount" type="number">This value records the reply count when available.</ResponseField>
+    <ResponseField name="quoteCount" type="number">This value records the quote tweet count when available.</ResponseField>
+    <ResponseField name="viewCount" type="number">This value records the view count when available.</ResponseField>
+    <ResponseField name="bookmarkCount" type="number">This value records the bookmark count when available.</ResponseField>
     <ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
-    <ResponseField name="lang" type="string">Tweet language code. Omitted if unavailable.</ResponseField>
+    <ResponseField name="lang" type="string">This value contains the tweet language code when available.</ResponseField>
     <ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
     <ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
     <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
     <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
     <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
-    <ResponseField name="contentDisclosure" type="object">Disclosure metadata for paid partnership and AI-generated media labels. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them. Omitted if unavailable.</ResponseField>
+    <ResponseField name="contentDisclosure" type="object">This object contains disclosure labels. It can include `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia`. X may omit this object.</ResponseField>
     <ResponseField name="author" type="object">
       Tweet author profile. Omitted if unavailable.
       <Expandable title="Author object fields">
         <ResponseField name="id" type="string">Author user ID.</ResponseField>
         <ResponseField name="username" type="string">Author handle without `@`.</ResponseField>
         <ResponseField name="name" type="string">Author display name.</ResponseField>
-        <ResponseField name="followers" type="number">Follower count. Omitted if unavailable.</ResponseField>
+        <ResponseField name="followers" type="number">This value records the author's follower count when available.</ResponseField>
         <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
         <ResponseField name="profilePicture" type="string">Author profile image URL. Omitted if unavailable.</ResponseField>
       </Expandable>
     </ResponseField>
     <ResponseField name="media" type="object[]">
-      Media attachments. Omitted when the tweet has no media.
+      This array contains media attachments when available.
       <Expandable title="Media object fields">
         <ResponseField name="mediaUrl" type="string">Direct media URL.</ResponseField>
         <ResponseField name="videoVariants" type="object[]">Available video renditions with bitrate, content type, and URL. Omitted for images.</ResponseField>
@@ -490,7 +541,7 @@ Your tier rate limit was exceeded. Wait for the `Retry-After` header before retr
 ```
 
 X reports more replies than the terminal first page exposes. Use tweet search
-with a `conversation_id:{id}` query. Disclose that coverage depends on X.
+with the same conversation ID. Disclose that coverage depends on X.
 
 <Note>
   **Related:** [Tweet Replies Export Workflow](/guides/tweet-replies-export) when you need saved CSV, JSON, or XLSX files, [Tweet Quotes](/api-reference/x/tweet-quotes), [Tweet Thread](/api-reference/x/tweet-thread), [Retweeters](/api-reference/x/retweeters), and [Favoriters](/api-reference/x/favoriters).
