@@ -237,11 +237,11 @@ Xquik returns the normalized message fields listed below.
   ```
 </CodeGroup>
 
-The examples normalize each page into private `dm_history` rows. Store
-`message_id`, `sender_id`, `receiver_id`, `message_text`, `created_at`,
-optional `media_url`, `conversation_user_id`, `sender_account`, and
-`page_next_cursor`. Keep `message_text` only in private systems. Use IDs,
-timestamps, media URLs, and job status in shared logs.
+These examples turn each page into private `dm_history` rows. Store
+`message_id`, `sender_id`, `receiver_id`, `message_text`, and `created_at`.
+Also store optional `media_url`, `conversation_user_id`, `sender_account`, and
+`page_next_cursor` for each page. Keep `message_text` only in private systems.
+Use IDs, timestamps, media URLs, and job status in shared logs.
 
 ## Path parameters
 
@@ -256,7 +256,7 @@ timestamps, media URLs, and job status in shared logs.
 </ParamField>
 
 <ParamField query="cursor" type="string">
-  Pagination cursor. Pass the `next_cursor` value from the previous response to fetch older messages.
+  Pagination cursor. Use the previous response's `next_cursor` to fetch older messages.
 </ParamField>
 
 <ParamField query="maxId" type="string">
@@ -390,22 +390,46 @@ The read service failed. Retry after a short delay.
 ### Can I Retrieve DM History?
 
 Yes. Call `GET /x/dm/{userId}/history` with a participating connected account.
+Store each message ID before requesting the next page. Keep message text private.
 
 ### Can I Send a Reply Through This Endpoint?
 
-No. Use [Send DM](/api-reference/x-write/send-dm). This endpoint reads history only.
+No. This endpoint reads history only. Use [Send DM](/api-reference/x-write/send-dm)
+for replies. Store its `messageId` beside the source DM ID.
 
 ### Does This Endpoint Create Direct Message Webhooks?
 
 No. It reads participant-scoped history when called. It does not register webhooks.
+Poll from the last stored cursor when your workflow needs newer context.
 
 ### How Do I Authenticate?
 
-Send an API key or OAuth bearer token.
+Send an Xquik API key or OAuth bearer token. Keep the credential server-side.
+Pass a connected participant handle through `account`.
 
 ### How Do I Handle a Rate Limit?
 
-Wait for `Retry-After`, then retry the same page.
+Wait for `Retry-After`, then retry the same page. Do not advance its cursor.
+
+### Do I Need an X Developer Account?
+
+No official X developer account is required for this Xquik endpoint. Create an
+Xquik API key and connect a participating X account. Xquik is an independent
+third-party service. Not affiliated with X Corp. "Twitter" and "X" are
+trademarks of X Corp.
+
+### Can I Automate Customer Support Replies?
+
+Yes. Read participant-scoped history and deduplicate messages by ID. Route new
+DMs into a private support queue. Require approval when your policy needs it.
+Then reply through [Send DM](/api-reference/x-write/send-dm). Store the returned
+`messageId` beside the source DM ID.
+
+### How Does This Differ From X's Official DM API?
+
+This page documents Xquik's normalized Twitter DM API. It does not document
+X's official API. Compare source concepts with
+[X's Direct Messages lookup guide](https://docs.x.com/x-api/direct-messages/lookup/introduction).
 
 ## History sync handoff
 
