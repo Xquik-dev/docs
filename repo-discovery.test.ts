@@ -7949,7 +7949,7 @@ const REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS = [
   'does not return a calculated share of voice.',
   'Build Twitter analytics downstream from unique tweet IDs and event windows.',
   'Keep social media management approvals outside the monitor receiver.',
-  'Treat sentiment analysis as a separate classification step.',
+  'Classify sentiment after collection.',
   '## Receiver Row',
   '"brand_monitor_id": "brand-xquik-q2"',
   '"monitor_type": "keyword"',
