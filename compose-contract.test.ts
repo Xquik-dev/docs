@@ -3,13 +3,19 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import {
+  stripGeneratedResponseExamples,
+} from './scripts/lib/generated-response-examples';
+
 const ROOT = process.cwd();
 
 function read(relativePath: string): string {
   return readFileSync(join(ROOT, relativePath), 'utf8');
 }
 
-const COMPOSE_PAGE = read('api-reference/compose/create.mdx');
+const COMPOSE_PAGE = stripGeneratedResponseExamples(
+  read('api-reference/compose/create.mdx'),
+);
 const OPENAPI = read('openapi.yaml');
 const RELATED_GUIDES = [
   read('index.mdx'),
