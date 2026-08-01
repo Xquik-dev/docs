@@ -191,7 +191,7 @@ handoff can resume from the last completed page without duplicate rows.
 
 Use `GET /api/v1/x/tweets/{id}/quotes` when a support, campaign, moderation,
 research, or agent workflow needs quote tweets as JSON rows. It returns one row
-for each quote of the requested tweet. Store `quoted_tweet_id`, `quote_id`,
+for every quote tweet in the response. Store `quoted_tweet_id`, `quote_id`,
 `text`, `author_id`, `author_username`, `author_name`, `author_followers`,
 `author_verified`, `author_profile_picture`, `created_at`, engagement counts,
 media URLs, and a separate `next_cursor` checkpoint. Use `sinceTime`,
@@ -283,15 +283,15 @@ each row for attribution, deduplication, and campaign reporting.
 
 X controls which quote tweets each request exposes. Deleted, protected,
 withheld, blocked, or unavailable tweets may not appear. Filters can also
-remove otherwise visible rows. A missing row does not prove that nobody quoted
-the tweet.
+remove otherwise visible rows. A missing row cannot confirm zero quote
+activity.
 
 ### How Do Quote Tweets Differ From Replies and Reposts?
 
 A quote tweet adds its author's commentary and references the original tweet.
-A repost shares the original without added commentary. Replies belong to the
-original tweet's conversation. Use retweeters for reposting profiles. Use the
-replies endpoint to retrieve conversation members.
+A repost shares the original without added commentary. The replies endpoint
+returns tweets from the original conversation. Use retweeters for reposting
+profiles.
 
 ### How Can Teams Analyze Quote Tweets?
 
@@ -429,67 +429,14 @@ filters can return fewer rows than an unfiltered page.
 <ResponseField name="has_next_page" type="boolean">Whether more results are available.</ResponseField>
 <ResponseField name="next_cursor" type="string">Cursor for the next page.</ResponseField>
 
-```json
-{
-  "tweets": [
-    {
-      "id": "1893456789012345679",
-      "text": "Great point! RT @user: ...",
-      "createdAt": "2026-03-27T11:00:00.000Z",
-      "likeCount": 10,
-      "author": {
-        "id": "44196397",
-        "username": "username",
-        "name": "Xquik",
-        "followers": 1200,
-        "verified": true,
-        "profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"
-      }
-    }
-  ],
-  "has_next_page": true,
-  "next_cursor": "DAACCgACGE..."
-}
-```
-
-### 400 Invalid tweet ID
-
-```json
-{ "error": "invalid_tweet_id" }
-```
-
 ### 401 Unauthenticated
 
-Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
-```json
-{ "error": "unauthenticated" }
-```
+Anonymous requests receive `WWW-Authenticate: Bearer`. This is not a Payment challenge.
 
 ### 402 Payment required
 
-Account keys get account options; guest keys get guest top-up only.
-No checkout starts automatically. Confirm any payment action.
-
-### 502 X API unavailable
-
-```json
-{ "error": "x_api_unavailable" }
-```
-The read service returned an error. Retry after a short delay.
-
-### 429 Rate Limit Exceeded
-
-```json
-{ "error": "rate_limit_exceeded", "retryAfter": 60 }
-```
-Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
-
-### 424 Dependency Failed
-
-```json
-{ "error": "x_api_unavailable" }
-```
-Status `424` means the read service did not return quote tweets. Retry later.
+Account keys receive account options. A guest wallet receives a checkout option.
+Confirm any payment action.
 
 <Note>
   **Related:** [Tweet replies](/api-reference/x/tweet-replies) · [Tweet thread](/api-reference/x/tweet-thread) · [Retweeters](/api-reference/x/retweeters) · [Tweet favoriters](/api-reference/x/favoriters)
