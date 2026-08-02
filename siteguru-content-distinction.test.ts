@@ -98,6 +98,9 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
       'Join Communities in Controlled Batches',
       'Verify Visible Membership',
       'Recover From Join Failures',
+      'Find Twitter Communities Before Joining',
+      'Explain Community Post Visibility',
+      'How to Join a Twitter Community with Xquik?',
     ],
   },
   {

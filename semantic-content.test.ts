@@ -390,6 +390,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       'How to Delete a Community on Twitter via API',
       '## How to Delete a Twitter Community Through REST',
       '## How to Delete Twitter Community Records Safely',
+      'This route explains how to delete a Twitter Community through one tracked',
+      'It also shows how to delete Twitter Community records safely.',
       'Send its exact `community_name` as a confirmation safeguard.',
       'X says Community posts remain after their Community is deleted.',
       'OAuth bearer authentication is also supported.',
@@ -409,6 +411,13 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'api-reference/x-write/join-community.mdx',
     snippets: [
+      'How to Join a Community on Twitter via API',
+      '## Understand Open, Restricted, and Invited Membership',
+      '## Find Twitter Communities Before Joining',
+      "X Communities' member lists are visible through direct Community URLs.",
+      'Community posts are not private group messages.',
+      '### Is Community Notes the Same as X Communities?',
+      'OAuth bearer authentication is also supported.',
       '| Community join record | Request or response source | Membership rule |',
       '| Posting permission | Separate approval | Never infer permission from membership. |',
     ],
