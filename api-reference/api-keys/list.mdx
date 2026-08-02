@@ -1,9 +1,9 @@
 ---
-title: "Xquik API Key List & Access Management Tools"
+title: "X API Key Management: List Active Xquik Keys"
 sidebarTitle: "List API keys"
-description: "List account API keys with names, prefixes, scopes, active states, creation times, last-used times, expiration, and revocation status. See API fields."
+description: "List Xquik API keys for X API authentication. Review each key ID, name, safe prefix, active state, creation time & last use before rotation or revocation."
 api: "GET /api-keys"
-keywords: ["api key", "list", "manage", "status"]
+keywords: ["X API key", "Twitter API key", "API key management", "list API keys", "API key authentication", "Xquik API key"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -42,6 +42,22 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
+## Audit Xquik API Keys Before X Automation
+
+List every Xquik key registered to the signed-in account. Review keys before
+running tweet searches, follower exports, webhooks, monitors, or X writes.
+
+This endpoint returns key inventory metadata. It never returns a complete API
+key. Use `id` for revocation and `prefix` for safe identification.
+
+The key list answers 5 operational questions:
+
+- Which named Xquik keys exist on this account?
+- Which keys are active or revoked?
+- When was each key created?
+- When did each key last authenticate a request?
+- Which key ID should a rotation workflow revoke?
+
 <Callout icon="circle-check" color="#16a34a">
   **Free** - does not consume credits
 </Callout>
@@ -56,8 +72,17 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   const response = await fetch("https://xquik.com/api/v1/api-keys", {
     headers: { "Cookie": "session_token=YOUR_SESSION_TOKEN" },
   });
-  const data = await response.json();
-  console.log(data.keys);
+  const result = await response.json();
+  if (!response.ok) throw new Error(JSON.stringify(result));
+
+  const keyInventory = result.keys.map((key) => ({
+    id: key.id,
+    name: key.name,
+    safePrefix: key.prefix,
+    active: key.isActive,
+    createdAt: key.createdAt,
+    lastUsedAt: key.lastUsedAt ?? null,
+  }));
   ```
 
   ```python Python
@@ -67,8 +92,20 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "https://xquik.com/api/v1/api-keys",
       cookies={"session_token": "YOUR_SESSION_TOKEN"},
   )
-  data = response.json()
-  print(data["keys"])
+  result = response.json()
+  response.raise_for_status()
+
+  key_inventory = [
+      {
+          "id": key["id"],
+          "name": key["name"],
+          "safe_prefix": key["prefix"],
+          "active": key["isActive"],
+          "created_at": key["createdAt"],
+          "last_used_at": key.get("lastUsedAt"),
+      }
+      for key in result["keys"]
+  ]
   ```
 
   ```go Go
@@ -102,6 +139,93 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   }
   ```
 </CodeGroup>
+
+## Read the API Key Inventory
+
+Treat the response as an account credential inventory. Never treat it as a
+secret recovery endpoint.
+
+| Inventory check | Response field | Management decision |
+| --- | --- | --- |
+| Stable key record | `id` | Pass this ID to the revoke endpoint. |
+| Workload label | `name` | Match the key to its service or environment. |
+| Safe identifier | `prefix` | Compare deployments without exposing the full key. |
+| Current state | `isActive` | Accept requests only when this value is `true`. |
+| Credential age | `createdAt` | Review old keys against your rotation policy. |
+| Last authentication | `lastUsedAt` | Investigate stale or unexpectedly active keys. |
+
+`lastUsedAt` is optional. Its absence means no authenticated use was recorded.
+It does not prove that a deployment no longer needs the key.
+
+Check scheduled jobs before revoking a quiet key. A monthly follower export
+can remain valid without recent requests. Confirm the owner and workload first.
+
+## Distinguish Xquik Keys From Official X Credentials
+
+An Xquik API key starts with `xq_`. It authenticates requests to Xquik routes.
+It is not an official Twitter API key or X developer bearer token.
+
+| Credential | Purpose | Where to manage it |
+| --- | --- | --- |
+| Xquik API key | Authenticate Xquik tweet, follower, monitor, webhook, and write routes. | Xquik API key pages. |
+| Official X API key | Identify an application on the X developer platform. | X developer console. |
+| Xquik dashboard session | Authorize Xquik API key management. | Signed-in Xquik dashboard. |
+
+Official X documentation separates application keys from bearer tokens. Read
+its [authentication overview](https://docs.x.com/fundamentals/authentication/oauth-1-0a/api-key-and-secret)
+when integrating directly with the X developer platform.
+
+Use [Xquik authentication](/api-reference/authentication) for Xquik request
+headers. Use this list endpoint only for Xquik credential inventory.
+
+## Rotate an Xquik API Key Safely
+
+Create the replacement before revoking the current key. This overlap prevents
+failed tweet, follower, webhook, and monitor requests.
+
+1. List keys and record the current `id`, `name`, and `prefix`.
+2. [Create a replacement key](/api-reference/api-keys/create) with a clear name.
+3. Store the returned `fullKey` in an approved secret manager.
+4. Update one deployment without logging the replacement value.
+5. Send a planned Xquik request from that deployment.
+6. List keys and verify the replacement `lastUsedAt` value.
+7. [Revoke the old key](/api-reference/api-keys/revoke) by its exact `id`.
+8. List keys again and confirm the old key is inactive.
+
+OWASP treats creation, rotation, revocation, and expiration as a secret
+lifecycle. Review its [secrets management guidance](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html)
+when defining your organization policy.
+
+The Xquik list response does not expose scopes or expiration fields. Do not
+invent those controls from names or prefixes. Use `isActive` as the documented
+key state.
+
+## Answer Common X API Key Questions
+
+### Can I Recover My Full Xquik API Key?
+
+No. `GET /api-keys` returns only a safe prefix. The creation response returns
+`fullKey` once. Create a replacement when the stored secret is unavailable.
+
+### Can an API Key List Other Xquik Keys?
+
+No. This management endpoint requires a same-origin dashboard session. An
+`x-api-key` header or OAuth bearer token cannot authorize the request.
+
+### How Do I Check Which Xquik Key Is Active?
+
+Match the deployed key prefix with `prefix`. Then check `isActive`. Never print
+the complete deployed key during this comparison.
+
+### What Does a Missing Last-Used Time Mean?
+
+The key has no recorded authenticated request. It may be new or unused. Check
+the intended workload before revocation.
+
+### Does This Endpoint List Official Twitter API Keys?
+
+No. It lists Xquik keys for Xquik endpoints. Manage official X developer
+credentials in the X developer console.
 
 ## Headers
 
