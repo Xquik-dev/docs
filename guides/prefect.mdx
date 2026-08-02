@@ -51,24 +51,28 @@ python -m pip install \
   "prefect-xquik @ https://github.com/Xquik-dev/prefect-xquik/archive/refs/tags/v0.1.7.tar.gz"
 ```
 
-PyPI does not currently publish a `prefect-xquik` distribution. Tag `v0.1.7` supports published Prefect 3 releases. It also uses the canonical Xquik API base URL. Tag `v0.1.8` only changes package maintenance. It also requires newer Prefect releases.
+PyPI publishes `prefect-xquik` 0.1.8 and earlier releases, including 0.1.7. The verified `v0.1.7` source pin supports published Prefect 3 releases. It also uses the canonical Xquik API base URL. Tag `v0.1.8` only changes package maintenance. It also requires newer Prefect releases.
 
 The explicit `importlib-metadata` pin fixes Prefect's clean Python 3.12 CLI import. Prefect documents the upstream issue in [#22011](https://github.com/PrefectHQ/prefect/issues/22011) and [#22137](https://github.com/PrefectHQ/prefect/issues/22137).
 
-Register the credentials block after installation.
+Use the tested pins above for production. Use a separate sandbox for compatibility checks.
 
 ```bash
-prefect block register -m prefect_xquik
-```
-
-Use the standard upgrade command only inside a separate compatibility sandbox.
-
-```bash
-python -m pip install -U prefect
+python -m venv .venv-prefect-compat
+source .venv-prefect-compat/bin/activate
+python -m pip install -U prefect prefect-xquik
 prefect server start
 ```
 
-Run `pip install -U prefect` only for that sandbox. Run `prefect server start` for a local Prefect server.
+Keep the server running. Open another shell and activate the same environment.
+
+```bash
+source .venv-prefect-compat/bin/activate
+prefect config set PREFECT_API_URL="http://127.0.0.1:4200/api"
+prefect block register -m prefect_xquik
+```
+
+PowerShell users should activate `.venv-prefect-compat\Scripts\Activate.ps1` instead. Run `pip install -U prefect` only inside this sandbox. Run `prefect server start` before registering the block.
 
 Keep the tested pins above for this integration. Treat Prefect and the collection as separate Python packages.
 
@@ -94,7 +98,7 @@ Never place API keys in deployment YAML, flow parameters, logs, or repositories.
 
 ## Understand the Prefect Python Runtime
 
-Prefect runs ordinary Python functions. The `@flow` decorator creates a tracked flow run. The `@task` decorator creates a task with retries and state.
+Prefect runs ordinary Python functions. The `@flow` decorator creates a tracked flow run. The `@task` decorator creates task state with optional retries. Configure retries per task or through a nonzero global default.
 
 The `from prefect import flow, task` statement imports both decorators.
 
@@ -391,7 +395,25 @@ These statuses cover all six collection endpoints. Do not add undocumented statu
 
 ## Control Concurrency and Rate Limits
 
-Multiple schedules can overlap and share one API key. Apply a Prefect concurrency limit to the Xquik task tag or work queue. Keep retry policies aligned with [Xquik rate-limit guidance](/guides/rate-limits).
+Multiple schedules can overlap and share one API key. Create one global rate limit with slot decay.
+
+```bash
+prefect gcl create xquik-read-rate --limit 300 --slot-decay-per-second 300
+```
+
+Acquire one shared slot before every Xquik read.
+
+```python
+from prefect.concurrency.asyncio import rate_limit
+
+
+async def acquire_xquik_read_slot() -> None:
+    await rate_limit("xquik-read-rate", occupy=1, strict=True)
+```
+
+Await this helper before `search_tweets`, `get_tweet`, and `search_users`. Also await it before `get_user`, `get_user_tweets`, and `get_trends`.
+
+Use a separate Prefect concurrency limit for in-flight task runs. Concurrency limits do not enforce request frequency. Keep retry policies aligned with [Xquik rate-limit guidance](/guides/rate-limits).
 
 Read endpoints share a 300 per 1s user bucket. Treat this as one shared capacity limit.
 
@@ -505,11 +527,11 @@ No. The six tasks are read-only. Use Xquik REST, SDK, or MCP routes for approved
 
 ### How Do I Handle Twitter API Rate Limits in Prefect?
 
-Retry `429` with jittered delays and a hard attempt cap. Apply shared concurrency limits across Xquik tasks.
+Await the shared rate limiter before all six tasks. Retry `429` with jittered delays and a hard attempt cap. Keep concurrency limits separate.
 
 ### How Do I Prevent Duplicate Tweets Across Scheduled Runs?
 
-Store one row per tweet ID. Save time windows and cursors after each committed page.
+Enforce a unique tweet ID constraint. Upsert rows or ignore conflicts during overlapping runs. Save time windows and cursors after each committed page.
 
 ### Should I Use Prefect or Cron for Twitter Automation?
 
@@ -523,6 +545,7 @@ Store it in an `XquikCredentials` block. Never pass it as a flow parameter.
 
 - [prefect-xquik source](https://github.com/Xquik-dev/prefect-xquik)
 - [prefect-xquik v0.1.7](https://github.com/Xquik-dev/prefect-xquik/releases/tag/v0.1.7)
+- [prefect-xquik on PyPI](https://pypi.org/project/prefect-xquik/)
 - [Prefect schedules](https://docs.prefect.io/v3/concepts/schedules)
 - [Prefect task retries](https://docs.prefect.io/v3/how-to-guides/workflows/retries)
 - [Tweet Search API](/api-reference/x/search-tweets)
