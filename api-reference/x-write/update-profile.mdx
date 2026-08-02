@@ -280,6 +280,37 @@ A 200 response contains a completed action. A 202 response needs polling
 through `statusUrl`. Wait for `terminal: true` before reporting success. Never
 submit another update while the first action remains nonterminal.
 
+## Verify the Saved Twitter Profile
+
+Retrieve the connected account after the write becomes terminal. Use
+[Twitter Profile Lookup](/api-reference/x/twitter-profile-lookup) with the
+account's username or numeric ID. Compare the returned name, description,
+location, and website against the approved request.
+
+Treat the write action as the lifecycle record. Treat the later profile lookup
+as public proof. Store both timestamps when profile changes need an audit
+trail. Record only public changes, including user profile fields and action
+IDs. Never copy authentication tokens into that record.
+
+This endpoint never edits posts, tweets, followers, following, replies, or
+likes. Those resources remain separate from the profile text. A lookup may
+show their counts, but this update cannot change those counts.
+
+## Sequence Updates Across User Profiles
+
+Send one approved request for each connected X account. Give each request a
+key for its exact account and field set. Every worker handling that update must
+reuse the same key. Different updates require different keys. Wait for one
+account's terminal result before starting its next profile change.
+
+For a campaign, store the approved previous and replacement values. Apply the
+replacement at launch. Verify the public profile, then restore the earlier
+text with a new key. This sequence makes recurring profile changes reversible.
+
+Use separate API keys when your application separates environments or teams.
+Do not share credentials between unrelated workflows. The request's `account`
+field still selects which connected profile receives the change.
+
 ## Fix Twitter Profile Update Failures
 
 Fix rejected fields after 400. Replace invalid authentication after 401. Add
@@ -303,10 +334,26 @@ not change the account's `@username`.
 Yes. Send the new bio as `description`. Keep it within 160 characters. Send an
 empty string when the approved workflow should clear the bio.
 
+### Can I automate recurring Twitter bio changes?
+
+Yes. Require approval for every replacement value. Use a new idempotency key
+for each scheduled change. Poll the action, verify the profile, and keep the
+previous bio for rollback.
+
 ### Can this endpoint update a profile picture or banner?
 
 No. Use the dedicated avatar or banner route. Those endpoints validate image
 type and size separately.
+
+### How do I confirm that a profile update finished?
+
+Wait for a terminal write action. Then retrieve the public profile and compare
+each requested field. Do not treat a 202 response as finished.
+
+### Does a profile update change existing tweets or followers?
+
+No. It changes only the submitted profile fields. Existing tweets, replies,
+followers, following, lists, and communities remain unchanged.
 
 ### Which authentication works with this Twitter API route?
 

@@ -434,6 +434,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       '| Changed fields | Exact request keys | Leave unrelated profile fields absent. |',
       'This route does not change a username, avatar, banner, or birth date.',
       'OAuth bearer authentication is also supported.',
+      '## Verify the Saved Twitter Profile',
+      '### Can I automate recurring Twitter bio changes?',
     ],
   },
   {
