@@ -263,13 +263,14 @@ No monitor exists with this ID, or it belongs to a different account.
 ```json
 { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
 ```
-Too many requests. Wait for the `Retry-After` header before retrying.
+Too many requests. Follow the `Retry-After` interval before another request.
 
 ## Does This Delete the X Account or Its Tweets?
 
-No. This route deletes an Xquik account monitor only. It does not deactivate an
-X account. It does not remove tweets, followers, following, replies, likes,
-reposts, media, lists, communities, or profile details.
+No. This route deletes an Xquik account monitor only. This route cannot
+deactivate X accounts. It does not remove tweets, followers, following,
+replies, or likes. It also keeps reposts, media, lists, communities, and
+profile details.
 
 The tracked X account remains unchanged. Its public activity remains available
 through the applicable X API endpoints. Only Xquik's saved monitor and related
@@ -334,7 +335,7 @@ which records your team must keep before sending `DELETE`.
 
 Export required tweet events, profile events, and relationship events first. Keep
 each event's `id`, `type`, `monitorId`, `username`, and `occurredAt`. Preserve
-the complete `data` object when downstream analysis needs its details.
+the complete `data` object for downstream tweet or profile processing.
 
 Support teams may also need webhook delivery evidence. Save delivery status,
 attempt counts, receiver responses, errors, and timestamps before deletion.
@@ -352,7 +353,7 @@ Use [List Monitors](/api-reference/monitors/list) when the monitor ID is
 unknown. Then use [Get Monitor](/api-reference/monitors/twitter-account-monitor-status)
 to confirm the selected record. Record the final identity beside the approval.
 
-Account monitors and keyword monitors use different deletion routes. Use
+Delete account monitors and keyword monitors through their matching routes. Use
 [Delete Keyword Monitor](/api-reference/monitors/delete-keyword) for a keyword
 query. Never send a keyword monitor ID to this account monitor endpoint.
 
@@ -362,15 +363,15 @@ boundary prevents an account name from selecting several monitor records.
 ## Preserve Tweet and Profile Events
 
 Call [List Events](/api-reference/events/list) with the selected `monitorId`.
-Follow every cursor until `hasMore` becomes `false`. An incomplete cursor walk
-can omit older tweet, follower, or profile events.
+Follow every cursor until `hasMore` becomes `false`. Complete every cursor page
+to include older tweet and profile events.
 
 Use [Get Event](/api-reference/events/get) for every event needing full detail.
 Keep `event.id` as the stable Xquik event identifier. Keep `event.type` to
 separate tweets, followers, profile changes, and relationship changes.
 
-Store `occurredAt` with each event payload. It represents the observed event
-time. Keep the monitor ID with every exported row. This association supports
+Store `occurredAt` with each event payload. It records when Xquik observed the
+event. Keep the monitor ID with every exported row. This association supports
 later reconciliation after the monitor record disappears.
 
 Validate the export before deletion. Compare exported IDs with the final list
@@ -400,17 +401,17 @@ A `200` response confirms the deletion. Require `success: true` before closing
 the workflow. Store the monitor ID beside that receipt.
 
 A `400` response means the ID format is invalid. Correct the path value before
-retrying. Do not substitute an X username for the monitor ID.
+another request. Do not substitute an X username for the monitor ID.
 
 A `401` response means authentication failed. Replace the invalid API key or
 session. Never expose that credential in logs or support tickets.
 
-A `404` response means the monitor is unavailable. It may already be deleted.
-It may also belong to another account. Verify the account context before taking
-another action.
+Treat a `404` response as an unavailable monitor. It may already be deleted.
+It may also belong to another account. Verify the account context before
+proceeding.
 
 A `429` response means the rate limit blocked the request. Read
-`Retry-After`, wait for that interval, and verify the monitor before retrying.
+`Retry-After`, wait for that interval, and check the monitor again.
 
 ## Resolve an Unknown Delete Result
 
