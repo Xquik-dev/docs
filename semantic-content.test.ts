@@ -435,6 +435,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       '## Prepare Twitter Profile Banner Dimensions',
       '1500 × 500 pixels',
       '1500 x 500 pixels',
+      'header dimensions',
       'social media platform',
       'support animated GIFs',
       'OAuth bearer authentication is also supported.',
