@@ -1,9 +1,9 @@
 ---
-title: "List Tweet Writing Styles & Analyzed Profiles"
+title: "List Cached Twitter Writing Style Profiles"
 sidebarTitle: "List styles"
-description: "List cached tweet writing-style profiles with usernames, analyzed tweet counts, tone signals, creation times, and update times. Includes API examples."
+description: "List cached Twitter writing-style profiles for one Xquik account. Read every X username, analyzed tweet count, ownership flag, and cache fetch timestamp."
 api: "GET /styles"
-keywords: ["style", "list", "all styles", "cached"]
+keywords: ["list Twitter writing styles", "tweet style cache", "writing-style profiles", "analyzed tweet count"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -102,6 +102,71 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   }
   ```
 </CodeGroup>
+
+## List Cached Twitter Writing Styles
+
+Call this endpoint to inventory the writing-style profiles in one Xquik
+account. Each item summarizes one cached X username. The list does not include
+tweet text, tone analysis, vocabulary, or engagement metrics.
+
+An empty response is valid:
+
+```json
+{
+  "styles": []
+}
+```
+
+An empty `styles` array means this Xquik account has no cached profiles. Use
+[Analyze & Cache Style](/api-reference/styles/analyze) to create one.
+
+## Read Each Writing Style Summary
+
+| Field | Meaning | Integration use |
+| --- | --- | --- |
+| `xUsername` | Normalized X username for the cached profile | Build Get, Delete, Compare, or Performance requests. |
+| `tweetCount` | Number of tweet samples stored in this profile | Show the analysis sample size. |
+| `isOwnAccount` | Whether the profile represents the authenticated user's X account | Label owned and external profile samples. |
+| `fetchedAt` | ISO 8601 time when the tweet samples were fetched | Decide whether to refresh the cache. |
+
+Do not interpret `tweetCount` as the X profile's lifetime tweet total. It only
+counts the tweet samples stored for this writing-style profile.
+
+`fetchedAt` records the cache fetch time. It is not a tweet publication time,
+profile update time, or writing-style creation timestamp.
+
+## Route a Twitter Writing Style Workflow
+
+Use the summary fields to choose the next endpoint:
+
+| Goal | Next request | Input from this response |
+| --- | --- | --- |
+| Inspect sampled tweet text | [Get Style](/api-reference/styles/get) | Pass `xUsername` in `{id}`. |
+| Refresh stale samples | [Analyze & Cache Style](/api-reference/styles/analyze) | Send `xUsername` as `username`. |
+| Compare two account voices | [Compare Styles](/api-reference/styles/compare) | Send 2 cached usernames. |
+| Refresh likes, replies, reposts, and views | [Analyze Performance](/api-reference/styles/performance) | Pass `xUsername` in `{id}`. |
+| Remove a cached profile | [Delete Style](/api-reference/styles/delete) | Pass `xUsername` in `{id}`. |
+
+The response contains no pagination cursor. Do not invent `nextCursor`, `page`,
+or `total` fields. Process only the summaries returned in `styles`.
+
+## Handle List Style Errors
+
+| Status | Meaning | Recovery |
+| --- | --- | --- |
+| `200` | The style summary list is available | Read `styles`, including an empty array. |
+| `401` | Authentication failed | Replace the missing or invalid credential. |
+| `429` | The request exceeded the rate limit | Wait for `Retry-After`, then retry once. |
+
+### Does List Styles Return the Analyzed Tweets?
+
+No. This endpoint returns summaries only. Use [Get Style](/api-reference/styles/get)
+to retrieve the stored tweet samples for one username.
+
+### Why Is the Twitter Writing Style List Empty?
+
+The authenticated Xquik account has no cached profiles. Analyze an X username
+first, then call this endpoint again with the same Xquik credentials.
 
 ## Headers
 
