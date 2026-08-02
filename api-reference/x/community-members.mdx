@@ -91,7 +91,7 @@ bio, location, and verification. Add follower count, following count, profile
 image, page cursor, and collection time when available.
 
 Save the page before advancing its opaque cursor. Request another page only
-when `has_next_page` is true. Pass `next_cursor` back unchanged. Deduplicate a
+if `has_next_page` equals `true`. Reuse the exact `next_cursor`. Deduplicate a
 resumed page by community ID and user ID. Mark a credit-bounded, failed, or
 interrupted run as partial. Use the moderators route for role-specific
 profiles. The members route returns the complete roster.
@@ -116,12 +116,13 @@ Call `GET /api/v1/x/communities/{id}/members` with the numeric community ID.
 Store each user ID, username, profile name, bio, and verification state. Add
 the follower count and page cursor.
 
-Request the next page only when `has_next_page` is true. Pass `next_cursor`
-back unchanged. Save each profile page before advancing its cursor.
+Stop when `has_next_page` is false. Until then, send `next_cursor` without
+modification. Save each profile page before advancing its cursor.
 
-Deduplicate resumed pages by stable user ID. Preserve the community ID on
-every row. Record the collection time because usernames, bios, verification,
-and audience counts can change. Do not infer moderator status from membership.
+Deduplicate resumed pages by stable user ID. Write the community ID into each
+exported profile row. Record the collection time because usernames, bios,
+verification, and audience counts can change. Do not infer moderator status
+from membership.
 Use the dedicated moderators route for that role. Mark an interrupted or
 credit-bounded export as partial.
 
@@ -143,8 +144,9 @@ scope, credits, page limits, and rate limits.
 Complete every cursor page before comparing snapshots. Mark interrupted runs
 as partial. Use community ID plus user ID as the comparison key.
 
-Report newly observed and missing members separately. Do not infer why a user
-joined or left. Refresh a profile when later work needs current counts or bio.
+Report newly observed and missing members separately. Never assign a reason
+for an addition or removal. Refresh a profile when later work needs current
+counts or bio.
 
 <Note>
   Requested result counts are upper bounds for paid authenticated calls. Low
@@ -219,11 +221,32 @@ audience review, or moderator handoff. It creates one row per community member.
 Store `community_id`, `member_id`, `username`, `display_name`, `bio`,
 `follower_count`, `verified`, `profile_image_url`, and `next_cursor`.
 
-## Build a community membership roster
+## Build a Community Member Export
+
+Finish cursor pagination before declaring the community member export complete.
+Save each profile page before advancing its cursor. Mark credit-bounded,
+failed, and interrupted runs as partial membership snapshots. Mark the export
+complete only after `has_next_page` is `false`.
+
+Community membership shows roster inclusion. It does not prove posting
+activity. Use [Community Tweets](/api-reference/x/community-tweets) for recent
+posts. Use [Community Search](/api-reference/x/community-search) for posts that
+match a keyword. Join those posts to member profiles by `manifest_id`,
+`community_id`, and stable user ID.
+
+Use [Community Moderators](/api-reference/x/community-moderators) for
+role-specific profiles. Verification and follower counts do not prove a
+moderator role.
+
+X Lists use different IDs and membership rules. Review X's official
+[List Members Lookup](https://docs.x.com/x-api/lists/list-members/quickstart/list-members-lookup)
+before migrating a List workflow. Store `source_type` and its source ID. Use
+`community_id` for Community rows and `list_id` for List rows. Join and
+deduplicate with the source ID plus `member_id`.
 
 Use this route to enumerate profiles that belong to one community. Keep the
-community ID on every exported row. A username alone does not preserve the
-membership source.
+community ID on every exported row. A username alone cannot identify its
+source community.
 
 Choose columns that support the next task:
 
@@ -232,18 +255,20 @@ Choose columns that support the next task:
 - Follower and following counts.
 - Community ID, page cursor, and collection time.
 
-Use the roster for member directories, CRM enrichment, or moderation review.
+Build member directories, enrich CRM contacts, or review moderators with this
+roster.
 Do not label every member as a moderator. Use the moderators route for that
-smaller role-specific group.
+smaller group.
 
-Paginate until no next cursor remains. Persist each page before saving its
-cursor. Deduplicate by user ID when a resumed job repeats the previous page.
+Request another page only when `has_next_page` is exactly `true`. Pass
+`next_cursor` without modification. Persist each page before saving its cursor.
+Deduplicate by user ID when a resumed job repeats the previous page.
 
-Profile fields can change after collection. Record the collection time beside
-the row. Refresh the profile through user lookup when a later workflow needs
-current biography, counts, or avatar details.
+Profile fields can change after collection. Stamp each profile row with the
+collection time. Refresh the profile through user lookup when current bios,
+counts, or avatars matter.
 
-## Compare community membership snapshots
+## Compare Community Membership Snapshots
 
 Collect every cursor page before comparing membership. Mark interrupted runs
 as partial.
@@ -258,16 +283,16 @@ export.
 Store membership notes outside returned profile fields. Never place private
 moderation notes inside a public username or biography column.
 
-Use a separate role column when another process joins moderator status onto
-the member roster.
+When another process adds moderator status, store it in a separate
+`community_role` column.
 
-## Path parameters
+## Path Parameters
 
 <ParamField path="id" type="string" required>
   Community ID (numeric string).
 </ParamField>
 
-## Query parameters
+## Query Parameters
 
 <ParamField query="cursor" type="string">
   Pagination cursor from a previous response. Omit for the first page.
@@ -298,7 +323,7 @@ the member roster.
     <ResponseField name="username" type="string">X username.</ResponseField>
     <ResponseField name="name" type="string">Display name.</ResponseField>
     <ResponseField name="description" type="string">Profile bio.</ResponseField>
-    <ResponseField name="followers" type="number">Follower count.</ResponseField>
+    <ResponseField name="followers" type="number">Reports the profile's follower count.</ResponseField>
     <ResponseField name="following" type="number">Following count.</ResponseField>
     <ResponseField name="verified" type="boolean">Verified status.</ResponseField>
     <ResponseField name="profilePicture" type="string">Profile image URL.</ResponseField>
@@ -313,7 +338,7 @@ the member roster.
     <ResponseField name="isTranslator" type="boolean">Whether the user is an X translator. Omitted if unavailable.</ResponseField>
     <ResponseField name="withheldInCountries" type="string[]">Country codes where the account is withheld. Omitted if empty.</ResponseField>
     <ResponseField name="possiblySensitive" type="boolean">Whether the account is flagged as possibly sensitive. Omitted if unavailable.</ResponseField>
-    <ResponseField name="pinnedTweetIds" type="string[]">IDs of pinned tweets. Omitted if none.</ResponseField>
+    <ResponseField name="pinnedTweetIds" type="string[]">Lists pinned Tweet IDs. Omitted if none.</ResponseField>
     <ResponseField name="isAutomated" type="boolean">Whether the account is marked as automated. Omitted if unavailable.</ResponseField>
     <ResponseField name="automatedBy" type="string">Username of the account operator if automated. Omitted if not automated.</ResponseField>
     <ResponseField name="unavailable" type="boolean">Whether the account is unavailable. Omitted if available.</ResponseField>
@@ -393,7 +418,8 @@ Your tier rate limit was exceeded. Wait for the `Retry-After` header before retr
 ```json
 { "error": "x_api_unavailable" }
 ```
-The normalized v1 response contract can return 424 when the read service is unavailable.
+Send `xquik-api-contract: 2026-04-29` to opt in to HTTP 424. Default v1 returns
+HTTP 502 with `x_api_unavailable`.
 
 <Note>
   **Next steps:** [Community Info](/api-reference/x/community-info) for community details, or [Community Moderators](/api-reference/x/community-moderators) to list moderators.
