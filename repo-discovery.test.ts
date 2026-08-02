@@ -4428,7 +4428,7 @@ const FORBIDDEN_X_TRENDS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TRENDS_API_HANDOFF_SNIPPETS = [
-  '## Direct trends handoff',
+  '## Build a Regional Twitter Trending Monitor',
   '`GET /trends`',
   'dashboard, alerting job, content queue, warehouse, or',
   'const regionWoeid = "23424977";',
@@ -4457,10 +4457,21 @@ const REQUIRED_TRENDS_API_HANDOFF_SNIPPETS = [
   'searchQuery := trend.Name',
   'encoder.Encode(TrendRow{',
   'one JSON line per trend',
-  '`trend_name`, `rank`, `description`,',
-  '`requested_count`, and `returned_total`',
+  'Store `trend_name`, `rank`, `description`, and `search_query`.',
+  'Also store `region_woeid`, `requested_count`, and `returned_total`.',
   'Derive `returned_total` from `trends.length`.',
   'number of valid trends available before `count` slicing',
+  'A Twitter API trends client should save each snapshot before starting that search.',
+  'A Twitter API trending workflow creates history by storing those snapshots.',
+  'Keep missing optional fields unset. Preserve `tweetVolume` as null when returned.',
+  '## Twitter Trends API Questions',
+  '### How Do I Get Twitter Trends Programmatically?',
+  '### Can I Get Location-Based Trending Topics?',
+  '### Does The API Return Historical Twitter Trends?',
+  '### How Do I Authenticate to the Twitter Trends API?',
+  '### Is the Twitter Trends API Free?',
+  '### Does This Replace X\'s Official API?',
+  'Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns 502.',
 ] as const;
 
 const FORBIDDEN_TRENDS_API_RAW_OUTPUT_SNIPPETS = [
