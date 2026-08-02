@@ -3217,6 +3217,45 @@ const FORBIDDEN_UNFOLLOW_TWITTER_API_SNIPPETS = [
   '## Review a Following-Cleanup Batch',
 ] as const;
 
+const REQUIRED_REMOVE_FOLLOWER_API_SNIPPETS = [
+  'title: "How Do You Remove a Twitter Follower? Xquik API"',
+  '"how do you remove a Twitter follower"',
+  '"how to remove followers on Twitter"',
+  '"how do you remove a follower from Twitter"',
+  '[manual follower removal](https://help.x.com/en/using-x/following-faqs)',
+  '**20 requests per minute** and **400 per day**',
+  '**120 requests per minute**',
+  'const removalReceipt = await response.json();',
+  'removal_receipt = response.json()',
+  'var removalReceipt map[string]interface{}',
+  '## Resolve the Follower and Connected Account',
+  '## Remove Followers on Twitter Safely',
+  '## Poll and Verify the Removal',
+  '## Choose Remove Follower, Unfollow, or Block',
+  '## Review Bots, Private Accounts, and Bulk Queues',
+  '## Handle Remove Follower API Errors',
+  '## Twitter Follower Removal Questions',
+  '### How to Remove Followers on Twitter with an API?',
+  '### How Do You Remove a Follower from Twitter Without Blocking?',
+  '### Can I Remove All Followers or Bot Followers at Once?',
+  '### Does X Notify a Removed Follower?',
+  'This route accepts 1 follower ID per request.',
+  'This endpoint lets you remove a follower without blocking them.',
+  '<ParamField header="Authorization" type="string">',
+  '<WriteActionLifecycleResponse />',
+] as const;
+
+const FORBIDDEN_REMOVE_FOLLOWER_API_SNIPPETS = [
+  'const data = await response.json();',
+  'data = response.json()',
+  'var data map[string]interface{}',
+  'fmt.Println(data)',
+  'Session cookie authentication is also supported.',
+  'title: "Twitter Follower Removal API & Account Control"',
+  '## Remove one follower intentionally',
+  '| Follower removal record | Request or response source | Moderation rule |',
+] as const;
+
 const FORBIDDEN_PUBLIC_TWEET_MEDIA_ID_SNIPPETS = [
   'Pass returned `mediaId` in the `media` array on `POST /x/tweets`',
   'Pass `mediaId` to `POST /x/tweets`',
@@ -15113,6 +15152,28 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(
       FORBIDDEN_UNFOLLOW_TWITTER_API_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the remove follower API page specific and recoverable', (): void => {
+    expect.assertions(2);
+
+    const source = `${readFileSync(
+      'api-reference/x-write/remove-follower.mdx',
+      'utf8',
+    )}\n${readFileSync(WRITE_ACTION_LIFECYCLE_SNIPPET_PATH, 'utf8')}`;
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Remove Follower API docs',
+        REQUIRED_REMOVE_FOLLOWER_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_REMOVE_FOLLOWER_API_SNIPPETS.filter((snippet) =>
         source.includes(snippet),
       ),
     ).toStrictEqual([]);

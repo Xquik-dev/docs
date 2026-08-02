@@ -1,9 +1,9 @@
 ---
-title: "Twitter Follower Removal API & Account Control"
+title: "How Do You Remove a Twitter Follower? Xquik API"
 sidebarTitle: "Remove follower"
-description: "Remove a follower by user ID from a connected X account. Confirm the changed follower relationship in the action response. Includes exact API examples."
+description: "Remove one unwanted Twitter follower by X user ID. Approve the connected account, poll the durable action, verify the inbound relationship, and handle errors."
 api: "POST /x/users/{id}/remove-follower"
-keywords: ["remove follower", "x user", "write", "action", "connected account"]
+keywords: ["how do you remove a Twitter follower", "how to remove followers on Twitter", "how do you remove a follower from Twitter", "Twitter remove follower API", "remove follower without blocking"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -120,15 +120,29 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
+## How Do You Remove a Twitter Follower?
+
+Use this endpoint to remove 1 follower from a connected X account.
+Put the follower's numeric X user ID in the path.
+Name the connected account in the JSON body.
+Then approve, poll, and verify the inbound relationship change.
+
+X also documents [manual follower removal](https://help.x.com/en/using-x/following-faqs).
+Its help page explains that a removed account may follow again.
+
 <Callout icon="coins" color="#5c3327">
   **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 </Callout>
+
+<Warning>
+  **Action-specific rate limit:** Remove Follower shares **20 requests per minute** and **400 per day** with follow actions. The POST tier also allows **120 requests per minute**. A breached limit returns `429 Too Many Requests`.
+</Warning>
 
 <CodeGroup>
   ```bash cURL
   curl -X POST https://xquik.com/api/v1/x/users/44196397/remove-follower \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
-    -H "Idempotency-Key: remove-follower-44196397" \
+    -H "Idempotency-Key: remove-follower-myxaccount-44196397-1895432178065391234" \
     -H "Content-Type: application/json" \
     -d '{
       "account": "myxaccount"
@@ -140,14 +154,17 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
     method: "POST",
     headers: {
       "x-api-key": "xq_YOUR_KEY_HERE",
-      "Idempotency-Key": "remove-follower-44196397",
+      "Idempotency-Key": "remove-follower-myxaccount-44196397-1895432178065391234",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
       account: "myxaccount",
     }),
   });
-  const data = await response.json();
+  const removalReceipt = await response.json();
+  if (!response.ok) {
+    throw new Error(JSON.stringify(removalReceipt));
+  }
   ```
 
   ```python Python
@@ -157,13 +174,14 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
       "https://xquik.com/api/v1/x/users/44196397/remove-follower",
       headers={
           "x-api-key": "xq_YOUR_KEY_HERE",
-          "Idempotency-Key": "remove-follower-44196397",
+          "Idempotency-Key": "remove-follower-myxaccount-44196397-1895432178065391234",
       },
       json={
           "account": "myxaccount",
       },
   )
-  data = response.json()
+  removal_receipt = response.json()
+  response.raise_for_status()
   ```
 
   ```go Go
@@ -186,7 +204,7 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
           panic(err)
       }
       req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-      req.Header.Set("Idempotency-Key", "remove-follower-44196397")
+      req.Header.Set("Idempotency-Key", "remove-follower-myxaccount-44196397-1895432178065391234")
       req.Header.Set("Content-Type", "application/json")
 
       resp, err := http.DefaultClient.Do(req)
@@ -195,49 +213,150 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      var removalReceipt map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&removalReceipt); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      fmt.Println(removalReceipt)
   }
   ```
 </CodeGroup>
 
-## Remove one follower intentionally
+## Resolve the Follower and Connected Account
 
-Use this route to remove a specific follower from a connected account. Resolve
-the target user ID before approval. Display the username and profile name for
-human confirmation. Usernames can change, while numeric IDs remain stable.
+Read [Followers](/api-reference/x/followers) before choosing a target.
+Resolve the current username to a stable numeric X user ID.
+Usernames and profile names can change.
+The numeric ID keeps the moderation record tied to one account.
 
-Create one idempotency key for this removal. Reuse it only for the same target,
-account, and retry. Store the action ID with both account IDs.
+Show the follower ID, username, profile name, and acting account.
+Also show the moderation reason before approval.
+The path `{id}` identifies the follower you will remove.
+The body field `account` identifies whose follower list will change.
 
-Follower-removal workflows often cover:
+Never infer spam from a username, avatar, or missing profile field.
+Use an approved moderation rule to identify and remove an unwanted follower.
+Store the reviewer, reason, and evidence outside this public request.
 
-- Removing an unwanted follower after moderation review.
-- Enforcing an account-specific access policy.
-- Cleaning a follower list from an approved case queue.
-- Recording the moderator and reason outside the public request.
+## Remove Followers on Twitter Safely
 
-This action does not represent an unfollow. It changes who follows the acting
-account. Use the unfollow route when the acting account follows the target.
+Create 1 idempotency key for each intended removal.
+Reuse that key only after an interrupted network request.
+Never reuse it for another follower or connected account.
 
-| Follower removal record | Request or response source | Moderation rule |
-| --- | --- | --- |
-| Removed follower ID | Path `{id}` | Resolve the stable X user ID first. |
-| Acting X account | Request `account` | Confirm whose follower list changes. |
-| Follower username | Pre-removal profile lookup | Display it during human approval. |
-| Idempotency key | Request header | Reuse it only for the same account and target. |
-| Write action ID | Response `id` | Poll the matching lifecycle record. |
-| Lifecycle state | Response `status` and `terminal` | Stop only after a terminal state. |
-| Relationship result | Response `result` | Confirm the desired follower state. |
-| Unfollow distinction | `DELETE /x/users/{id}/follow` | Use that route for outgoing follows. |
+This route accepts 1 follower ID per request.
+It provides no bulk body for mass follower removal.
+Queue approved follower IDs as separate write actions instead.
+Each row needs its own reason, approval, and idempotency key.
+
+A social media team can review the queue before dispatch.
+Use the queue to manage your Twitter account safely.
+Do not let a temporary failure erase successful removals.
+Store each returned action ID beside its target follower ID.
+
+## Poll and Verify the Removal
+
+Store `id`, `request.hash`, `billing`, and `statusUrl` immediately.
+An HTTP `200` response represents a terminal write action.
+An HTTP `202` response represents an active write action.
+Poll the same `statusUrl` while `terminal` remains `false`.
+
+Never submit another removal just because the first action is active.
+The second request could create an unwanted duplicate workflow.
+Keep the original idempotency key for an exact network replay.
+
+Read [Followers](/api-reference/x/followers) after the action becomes terminal.
+You can also call [Check Follower](/api-reference/x/check-follower).
+Set the removed account as the source relationship participant.
+Set the connected account as the target participant.
+Confirm the inbound follower relationship is absent.
+
+## Choose Remove Follower, Unfollow, or Block
+
+Remove Follower ends one inbound relationship.
+The selected account stops following your connected X account.
+It does not make your connected account unfollow the selected account.
+
+Use [Unfollow](/api-reference/x-write/unfollow) for that outbound relationship.
+Keep both actions separate in every moderation workflow.
+One account may follow the other without a mutual relationship.
+
+Follower removal is also different from blocking.
+Removal does not prevent the same account from following again.
+Use X's blocking controls when future follow prevention is required.
+This endpoint lets you remove a follower without blocking them.
+
+## Review Bots, Private Accounts, and Bulk Queues
+
+This endpoint does not detect bots, spam, or inactive accounts.
+Review profile facts and follower relationships before approving a removal.
+Never treat a protected profile as proof of abusive behavior.
+
+Private and public accounts use the same Xquik request shape.
+However, X controls whether the removed account can follow again.
+Protected accounts may receive another follow request.
+Public accounts may receive another follow immediately.
+
+Do not promise a permanent audience restriction from this write.
+Store the terminal result, then verify the live follower relationship.
+For multiple targets, process one approved queue row at a time.
+Throttle the queue to every documented rate limit.
+
+## Handle Remove Follower API Errors
+
+Fix the follower ID or connected account after `400`.
+Replace Xquik authentication after `401`.
+Add credits after `402`; reconnect the account after `403`.
+Keep the original action after an idempotency conflict at `409`.
+Fix rejected input after `422`.
+Honor `Retry-After` after `429`.
+After `500` or `503`, inspect `safeToRetry` before retrying.
+
+## Twitter Follower Removal Questions
+
+### How to Remove Followers on Twitter with an API?
+
+Resolve each follower to a numeric ID.
+Send one approved request per follower, then poll every action.
+
+### How Do You Remove a Follower from Twitter Without Blocking?
+
+Call this endpoint for the inbound relationship.
+The removed account may still follow the connected account again.
+
+### Can I Remove All Followers or Bot Followers at Once?
+
+No batch body is available.
+Review suspected bots first, then queue one approved target per request.
+
+### Does X Notify a Removed Follower?
+
+The action response contains no notification-delivery field.
+Confirm only the follower relationship returned by your verification step.
+
+### Can I Unfollow Accounts with This Endpoint?
+
+No. Use Unfollow when the connected account follows another account.
+Use Remove Follower when another account follows the connected account.
+
+### Does This Work for Mobile, Desktop, or Private Accounts?
+
+The REST request works from any HTTP client.
+It does not depend on X's mobile or desktop interface.
+
+### How Do I Get an API Key?
+
+Create an Xquik API key in the dashboard.
+You can also send an OAuth 2.1 bearer token.
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+<ParamField header="x-api-key" type="string">
+  Send your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.
 </ParamField>
 
 <ParamField header="Idempotency-Key" type="string" required>
