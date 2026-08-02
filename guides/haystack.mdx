@@ -23,9 +23,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Haystack is an open source framework for building AI applications with modular pipelines. Use [`xquik-haystack`](https://github.com/Xquik-dev/xquik-haystack) for fresh X context in Haystack. This Haystack AI framework converts public tweets into typed Haystack `Document` objects. Each document includes tweet text, author fields, timestamps, metrics, and citation URLs.
+Haystack is an open source framework for Python AI applications. Use [`xquik-haystack`](https://github.com/Xquik-dev/xquik-haystack) for fresh X context in Haystack. This Haystack AI framework converts public tweets into typed Haystack `Document` objects. Each document includes tweet text, author fields, timestamps, metrics, and citation URLs.
 
-This Haystack AI API integration supports RAG pipelines and agent workflows. It supplies cited tweets to large language models (LLMs) without granting write access. This guide covers building AI applications with Haystack and current public tweets.
+This Haystack AI API integration supports RAG pipelines and agent workflows. It supplies cited tweets to large language models (LLMs) without granting write access. Use this guide when building AI applications with Haystack and current public tweets.
 
 The integration provides two read-only components:
 
@@ -56,7 +56,7 @@ Use Python 3.10 or newer. Pin both packages for repeatable pipeline builds.
 python -m pip install "xquik-haystack==0.1.3" "haystack-ai==3.0.0"
 ```
 
-Run the `pip install` command inside the AI application's virtual environment. Release `0.1.3` is published on PyPI. Haystack `3.0.0` uses one `Pipeline` class for synchronous and asynchronous runs.
+Run `pip install` inside the AI application's virtual environment. Release `0.1.3` is published on PyPI. Haystack `3.0.0` uses one `Pipeline` class for synchronous and asynchronous runs.
 
 Create an [Xquik API key](/x-api-quickstart), then export it locally.
 
@@ -165,7 +165,7 @@ result = timeline.run(user_id="deepset_ai")
 documents = result["documents"]
 ```
 
-Set `include_replies=True` for the account's replies. Enable `include_parent_tweet=True` only when the workflow needs reply context.
+Set `include_replies=True` for the account's replies. Turn on `include_parent_tweet=True` only for workflows needing reply context.
 
 Choose tweet search for topics spanning many accounts. Choose timelines for one account's recent tweets. Choose REST for filters the components do not expose.
 
@@ -222,7 +222,7 @@ Ask generators to cite only supplied URLs. Reject citations absent from the retr
 
 ### Treat Tweet Text as Untrusted Context
 
-Tweets can contain prompt injection, misleading instructions, and unsafe URLs. Never treat tweet text as a system instruction. Delimit retrieved tweets as quoted evidence. Separate system instructions and tool permissions from retrieved tweets.
+Tweets can contain prompt injection, misleading instructions, and unsafe URLs. Never treat tweet text as a system instruction. Delimit retrieved tweets as quoted evidence. Never mix retrieved tweets with system instructions or tool permissions.
 
 Apply these controls before generation:
 
@@ -250,6 +250,8 @@ Choose the pipeline pattern that matches freshness requirements.
     Query the index first. Search newer windows when stored context is stale.
   </Card>
 </CardGroup>
+
+These modes return current searches without promising real time delivery. Choose a bounded window for reproducible results.
 
 For indexed corpora, separate tweet records from embeddings. This lets you refresh metrics without rebuilding every embedding. Use `meta.id` as the primary deduplication key.
 
@@ -317,7 +319,7 @@ The integration raises `httpx.HTTPStatusError` after unsuccessful HTTP responses
 | ------ | ----------------------------- | ----------------------------- | ---------------------------------------- |
 | `400`  | Missing or invalid query      | Invalid timeline input        | Fix the request. Do not retry unchanged. |
 | `401`  | API key missing or invalid    | API key missing or invalid    | Add a valid API key.                     |
-| `402`  | Payment or credits needed     | Payment or credits needed     | Resolve account billing.                 |
+| `402`  | Credits or payment needed     | Credits or payment needed     | Check the account balance.               |
 | `404`  | Not documented                | User not found                | Check the username or user ID.           |
 | `424`  | X retrieval dependency failed | X retrieval dependency failed | Retry with bounded backoff.              |
 | `429`  | Rate limit exceeded           | Rate limit exceeded           | Back off before retrying.                |
@@ -374,7 +376,7 @@ Keep `document_rows`, `citation_rows`, and `pagination_checkpoints` separate fro
 
 ## Haystack Component or Direct REST API
 
-Choose the Haystack components when the next step expects `Document` objects. They normalize tweet text, metadata, URLs, and pagination.
+Haystack components fit workflows that expect `Document` objects. They normalize tweet text, metadata, URLs, and pagination.
 
 Use the direct Xquik REST API when you need:
 
@@ -392,13 +394,13 @@ Haystack 3 replaces `AsyncPipeline` with one `Pipeline` class. Change `AsyncPipe
 
 Haystack 3 also produces deterministic `Document.id` values from canonical metadata. Continue using `meta.id` as the tweet identity. Tweet IDs remain stable across embedding and metadata changes.
 
-Pin `haystack-ai==3.0.0` while validating your existing generators, stores, and custom components. Review the [official Haystack 3 migration guide](https://docs.haystack.deepset.ai/docs/migration) for other changes.
+Pin `haystack-ai==3.0.0` while validating your existing generators, stores, and custom components. Check the [official Haystack 3 migration guide](https://docs.haystack.deepset.ai/docs/migration) for other changes.
 
 ## Common Haystack Twitter API Questions
 
 ### What Is Haystack AI?
 
-Haystack is a modular Python framework for building search, RAG, and AI agent applications. Components connect retrieval, processing, generation, storage, and evaluation steps inside explicit pipelines.
+Haystack organizes search, RAG, and AI agents inside Python pipelines. A pipeline connects retrieval, processing, generation, storage, and evaluation.
 
 ### How Does the Twitter API Search Tweets?
 
@@ -418,15 +420,19 @@ Pass keywords, phrases, hashtags, account operators, or structured filters. Use 
 
 ### Haystack AI vs LangChain: Which Fits Twitter RAG?
 
-Choose Haystack when pipelines should exchange typed `Document` objects. Choose LangChain when an existing application already uses its retrievers and tools. Both frameworks for building AI applications need citation, pagination, and error controls.
+Choose Haystack when pipelines should exchange typed `Document` objects. LangChain fits applications already using its retrievers and tools. Both are frameworks for building AI applications with cited tweets.
 
 ### Where Is the Haystack AI GitHub Integration?
 
-The [Xquik Haystack repository](https://github.com/Xquik-dev/xquik-haystack) contains the package and offline tests. The package exports two read-only components, not an autonomous tool called by default.
+The [Xquik Haystack repository](https://github.com/Xquik-dev/xquik-haystack) contains the package and offline tests. You get two read-only components. The package never starts a tool called by a model.
 
 ### Can a Haystack AI Agent Publish Tweets?
 
-No. This integration only reads tweet searches and user timelines. Use the separate write API with explicit approval for publishing actions.
+No. This integration only reads tweet searches and user timelines. Send approved publishing requests through the separate write API.
+
+### Does This Require a Haystack Enterprise Platform?
+
+No. The integration runs inside open-source Haystack pipelines. Deploy those pipelines through your existing Haystack environment.
 
 ### How Many Tweets Can One Search Return?
 
@@ -458,7 +464,7 @@ No. The package exposes tweet search and user timeline components. Use the dedic
 
 ### Can I Use Tweet Text as Trusted Instructions for an Agent?
 
-No. Treat tweet text as untrusted evidence. Keep system instructions and tool permissions outside retrieved content.
+No. Treat tweet text as untrusted evidence. Never mix it with system instructions or tool permissions.
 
 ## Source and Contracts
 
