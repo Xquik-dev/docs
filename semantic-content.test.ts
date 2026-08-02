@@ -382,10 +382,11 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'api-reference/x-write/delete-tweet.mdx',
     snippets: [
-      '| Tweet deletion record | Request or response source | Completion rule |',
-      '| Tweet text | Pre-deletion lookup | Save the approved post content first. |',
+      '## Save Tweet Deletion Evidence',
+      '- Store `targetId` for the confirmed Tweet ID.',
       '| Cleanup intent | API route | What changes |',
-      '## Preserve Tweet Deletion Evidence',
+      '## Run Bulk or Scheduled Tweet Cleanup',
+      '## Verify Tweet Deletion',
     ],
   },
   {

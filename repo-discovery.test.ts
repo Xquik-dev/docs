@@ -2923,6 +2923,46 @@ const FORBIDDEN_CREATE_TWEET_API_SNIPPETS = [
   'fmt.Println(data)',
 ] as const;
 
+const REQUIRED_DELETE_TWEET_API_SNIPPETS = [
+  'title: "Twitter API Delete Tweet: Remove an Owned Post by ID"',
+  '"Twitter API delete tweet"',
+  'Use this Twitter API delete tweet route to remove 1 owned post by ID.',
+  '[Delete Post endpoint](https://docs.x.com/x-api/posts/delete-post)',
+  'const deletionRecord =',
+  'request_hash: result.request.hash',
+  'requested_tweet_id: tweetId',
+  'result.result?.id ?? result.tweetId ?? result.targetId ?? null',
+  'process.stdout.write(`${JSON.stringify(deletionRecord)}\\n`);',
+  'deletion_record = {',
+  '"request_hash": result["request"]["hash"]',
+  'response.raise_for_status()',
+  'type DeleteTweetResponse struct',
+  'SafeToRetry bool `json:"safeToRetry"`',
+  '## Delete One Owned Tweet by ID',
+  "You cannot delete another account's tweet with this route.",
+  '## Authenticate the Tweet Owner',
+  'The request never accepts an X password or session cookie.',
+  '## Run Bulk or Scheduled Tweet Cleanup',
+  'It does not provide a bulk-delete operation.',
+  'After HTTP `429`, wait for `Retry-After` before continuing.',
+  '## Verify Tweet Deletion',
+  '## Handle Delete Tweet Errors',
+  '## Twitter API Delete Tweet Questions',
+  '### Can the API delete another user\'s tweet?',
+  '### Can the API delete all tweets at once?',
+  '### Can I schedule a tweet deletion?',
+  '<ParamField header="Authorization" type="string">',
+  '<WriteActionLifecycleResponse />',
+] as const;
+
+const FORBIDDEN_DELETE_TWEET_API_SNIPPETS = [
+  'const data = await response.json();',
+  'data = response.json()',
+  'var data map[string]interface{}',
+  'fmt.Println(data)',
+  'Session cookie authentication is also supported.',
+] as const;
+
 const FORBIDDEN_PUBLIC_TWEET_MEDIA_ID_SNIPPETS = [
   'Pass returned `mediaId` in the `media` array on `POST /x/tweets`',
   'Pass `mediaId` to `POST /x/tweets`',
@@ -14665,6 +14705,28 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(
       FORBIDDEN_CREATE_TWEET_API_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the delete tweet API page safe for owned-post cleanup', (): void => {
+    expect.assertions(2);
+
+    const source = `${readFileSync(
+      'api-reference/x-write/delete-tweet.mdx',
+      'utf8',
+    )}\n${readFileSync(WRITE_ACTION_LIFECYCLE_SNIPPET_PATH, 'utf8')}`;
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Delete tweet API docs',
+        REQUIRED_DELETE_TWEET_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_DELETE_TWEET_API_SNIPPETS.filter((snippet) =>
         source.includes(snippet),
       ),
     ).toStrictEqual([]);
