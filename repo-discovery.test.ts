@@ -9140,8 +9140,8 @@ const REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS = [
   'sentiment.',
   '## How Do Twitter Analytics Tools Differ From Monitor Status?',
   'Those values are engagement metrics.',
-  'This endpoint only reports',
-  'monitor configuration.',
+  'This endpoint reports the saved',
+  'profile, filters, and polling status.',
   'Check monitor status before investigating account activity.',
   'Paused monitors do',
   'not capture additional account events.',
@@ -9152,7 +9152,7 @@ const REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS = [
   'Read the response `Retry-After`',
   'header and pause for the supplied duration before retrying.',
   'Preserve both snapshots',
-  'with the approved request.',
+  'with the approved change ticket.',
 ] as const;
 
 const FORBIDDEN_ACCOUNT_MONITOR_GET_RAW_OUTPUT_SNIPPETS = [
