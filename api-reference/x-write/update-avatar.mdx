@@ -1,9 +1,9 @@
 ---
-title: "Update X/Twitter Profile Avatar Image API Guide"
+title: "Twitter Profile Picture API: Update Avatar Images"
 sidebarTitle: "Update avatar"
-description: "Upload a new avatar image for a connected X profile. Send supported image bytes and inspect the updated profile image response. Includes API examples."
+description: "Use the Twitter profile picture API to update an X avatar. Upload a JPEG or PNG file, or provide an HTTPS image URL, with authentication and polling examples."
 api: "PATCH /x/profile/avatar"
-keywords: ["avatar", "profile picture", "upload", "image", "write", "connected account"]
+keywords: ["twitter profile picture api", "twitter api profile image", "twitter api update profile image", "avatar upload", "x profile picture"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -127,9 +127,16 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-## Choose Avatar Updates
+Use this Twitter profile picture API to update one connected account's avatar.
+Upload a JPEG or PNG file, or provide a fetchable HTTPS image URL. Keep the
+image at 700 KB or smaller. X recommends a 400 × 400 pixel profile picture.
 
-Use this route only for the connected account's profile image. Use update-banner for the header image. Use update-profile for text fields such as name, bio, location, or website.
+## Update a Twitter Profile Picture Through the API
+
+Call `PATCH /x/profile/avatar` to replace the square profile image. Use
+[Update Banner](/api-reference/x-write/update-banner) for the header image.
+Use [Update Profile](/api-reference/x-write/update-profile) for names, bios,
+locations, or websites. This route never retrieves another user's avatar.
 
 <Callout icon="coins" color="#5c3327">
   **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
@@ -246,45 +253,71 @@ Use this route only for the connected account's profile image. Use update-banner
   ```
 </CodeGroup>
 
-## Prepare a profile avatar
+## Prepare a Twitter Avatar Image
 
-Use the avatar route for the square profile image. Choose either a direct file
-or a fetchable HTTPS URL. Do not send both sources.
+Choose one direct file or one fetchable HTTPS URL. Never send both sources.
+Accept only JPEG or PNG images. Reject GIF, WebP, and files above 700 KB.
+Review the square crop before approval. Keep faces and important marks near
+the center. Use only images you own or may publish. Read X's
+[profile image guidance](https://help.x.com/articles/166743) before uploading.
 
-Inspect the final crop before approval. Small avatars can hide edge details.
-Keep important marks near the image center. Confirm the file is JPEG or PNG
-and no larger than 700 KB.
+## Automate a Safe Profile Picture Update
 
-Create one idempotency key for the selected image. Generate a new key whenever
-the image changes. Record the connected account, redacted source reference,
-action ID, and lifecycle state. Remove query parameters before retaining a
-source URL.
+Create one idempotency key for the selected account and image. Reuse it only
+after an exact network interruption. Generate a new key after changing the
+image or account. A 200 response is terminal. Poll `statusUrl` after 202 until
+`terminal` becomes true. Never start another avatar update before that result.
 
-Avatar workflows commonly include:
+## Verify the Updated Twitter Profile Image
 
-- Applying an approved brand mark to one account.
-- Reverting to a previously reviewed profile image.
-- Updating campaign artwork after a visual checkpoint.
-- Preventing two workers from uploading competing avatars.
-
-Use the banner route for the wide header image. Use profile update for name,
-biography, location, or website changes.
+After a terminal write, use
+[Twitter Profile Lookup](/api-reference/x/twitter-profile-lookup). Open its
+`profilePicture` URL. Compare the rendered avatar with the approved source.
+Review the public square crop. Keep the action ID and verification timestamp.
 
 | Profile avatar update column | Request or response source | Review rule |
 | --- | --- | --- |
-| Acting X account | Request `account` | Confirm the profile receiving the image. |
+| Acting X account | Request `account` | Confirm the intended profile. |
 | Uploaded file | Request `file` | Accept JPEG or PNG up to 700 KB. |
 | Image URL | Request `url` | Use one fetchable HTTPS source. |
 | Source choice | `file` or `url` | Send exactly one image source. |
-| Idempotency key | Request header | Create a new key after any image change. |
+| Idempotency key | Request header | Change it after editing the image. |
 | Write action ID | Response `id` | Poll the matching lifecycle record. |
-| Media result | Response `mediaUrl` or `media` | Store the confirmed avatar result. |
-| Visual proof | Updated profile lookup | Review the final square crop. |
+| Profile result | Later profile lookup | Confirm the public avatar URL. |
+
+## Fix Twitter Profile Picture API Errors
+
+Fix invalid image fields after 400. Replace authentication after 401. Add
+credits after 402. Reconnect after 403. Connect a missing account after 404.
+Keep the original action after 409. Replace rejected media after 422. Honor
+`Retry-After` after 429. Check `safeToRetry` after 500 or 503.
+
+## Twitter Profile Picture API Questions
+
+### How do I authenticate an avatar update?
+
+Send an `x-api-key` header or OAuth bearer token. The `account` field selects
+the connected profile. Never place credentials inside an image URL.
+
+### Can I update several Twitter profile pictures in one request?
+
+No. Each request updates one connected account. Send separate requests with
+separate idempotency keys. Wait for each account's terminal result.
+
+### Can I update a Twitter profile image with Python or an SDK?
+
+Yes. Call the REST API with `import requests`, as shown above. Generated SDKs
+can send the same multipart file, account, API key, and idempotency key.
+
+### Does this route retrieve Twitter profile pictures?
+
+No. It changes one connected account's avatar. Use Twitter Profile Lookup to
+retrieve a public `profilePicture` URL.
 
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+  Your API key. OAuth bearer authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
 <ParamField header="Idempotency-Key" type="string" required>
