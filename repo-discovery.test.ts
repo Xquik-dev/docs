@@ -3110,7 +3110,7 @@ const REQUIRED_UNRETWEET_TWEET_API_SNIPPETS = [
   '"how to undo a retweet on Twitter"',
   '"Twitter undo retweet"',
   '"Twitter API undo retweet"',
-  'Use this Twitter undo retweet endpoint to remove 1 repost by Tweet ID.',
+  'Use this Twitter API undo retweet workflow for 1 repost by Tweet ID.',
   '[Unrepost Post endpoint](https://docs.x.com/x-api/users/unrepost-post)',
   'const unretweetReceipt = await response.json();',
   'unretweet_receipt = response.json()',
