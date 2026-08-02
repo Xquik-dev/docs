@@ -1,9 +1,9 @@
 ---
-title: "Update X Profile Bio, Location & Website API"
+title: "Twitter Profile Update API: Name, Bio, Location, URL"
 sidebarTitle: "Update profile"
-description: "Update a connected X profile's display name, bio, location, or website. Inspect the saved profile fields in the response. Includes exact API examples."
+description: "Update a Twitter profile bio, display name, location, or website safely through Xquik. Send exact fields, poll write actions, and handle every API response."
 api: "PATCH /x/profile"
-keywords: ["profile", "update", "name", "bio", "description", "location", "url", "write"]
+keywords: ["twitter profile update", "twitter api update profile", "display name", "bio", "location", "website", "write"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -127,9 +127,24 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-## Choose Profile Text Updates
+Use this Twitter profile update API for public profile text. Change a display
+name, bio, location, or website in one request. Send only the fields that need
+new values. Omitted fields remain unchanged. The connected account receives
+every approved change.
 
-Choose this route for profile name, bio, location, website, or birth date changes. Use dedicated avatar and banner routes for images. Use relationship and community routes for follows, reposts, or membership changes. This route only changes the selected connected account's profile fields.
+This route does not change a username, avatar, banner, or birth date. Use
+[Update Avatar](/api-reference/x-write/update-avatar) or
+[Update Banner](/api-reference/x-write/update-banner) for profile images.
+Read X's [profile customization guide](https://help.x.com/articles/166743)
+before updating profile text.
+
+## Update Twitter Profile Text
+
+Call `PATCH /x/profile` to update Twitter profile fields programmatically.
+Provide the connected account plus at least one supported field. The `name`
+field changes the display name, not the `@username`. The `description` field
+changes the public bio. The `location` and `url` fields change their matching
+public labels.
 
 <Callout icon="coins" color="#5c3327">
   **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
@@ -231,44 +246,78 @@ Choose this route for profile name, bio, location, website, or birth date change
   ```
 </CodeGroup>
 
-## Review profile text before publishing
+## Review Every Profile Field
 
-Use this route for profile fields owned by the connected account. Send only
-the fields that should change. Leave unrelated fields absent.
+Show the exact display name, bio, location, and website during approval. Check
+each link and spelling choice. Save previous values when your workflow needs a
+rollback. Never place private notes, API keys, or credentials in public user
+profiles.
 
-Present the final name, biography, location, and website during approval.
-Check links and spelling before submission. Keep a copy of the previous values
-when your workflow supports rollback.
-
-Create one idempotency key for the exact field set. Generate a new key after
-editing any value. Store the acting account, changed field names, action ID,
-and lifecycle state.
-
-Profile workflows may include:
-
-- Updating a biography for an approved launch.
-- Changing a website after link verification.
-- Applying a reviewed location or display name.
-- Restoring earlier text after a campaign ends.
-
-Use the avatar and banner routes for images. Do not place private notes or
-credentials in public profile fields.
+Respect the route limits before submission. Names must contain 1 to 50
+characters. Bios may contain up to 160 characters. Locations may contain up to
+30 characters. Website values must be valid URLs. Send a blank `description`
+or `location` to clear that field. A blank `name` or invalid URL returns 400.
 
 | X profile text update column | Request or response source | Review rule |
 | --- | --- | --- |
-| Acting X account | Request `account` | Confirm the profile receiving the changes. |
-| Display name | Request `name` | Review the final 50-character value. |
-| Profile bio | Request `description` | Review the final 160-character value. |
-| Location | Request `location` | Review the final 30-character value. |
-| Website | Request `url` | Validate the public destination before submission. |
+| Acting X account | Request `account` | Check which profile receives the change. |
+| Display name | Request `name` | Check the final 1-to-50-character name. |
+| Profile bio | Request `description` | Check the final bio within 160 characters. |
+| Location | Request `location` | Check the final location within 30 characters. |
+| Website | Request `url` | Open and verify the public destination. |
 | Changed fields | Exact request keys | Leave unrelated profile fields absent. |
-| Idempotency key | Request header | Create a new key after any text change. |
+| Idempotency key | Request header | Change the key after editing any value. |
 | Write action ID | Response `id` | Poll the matching lifecycle record. |
+
+## Automate a Safe Profile Update
+
+Create one idempotency key for the exact account and field set. Reuse that key
+only after a network interruption. Change it after editing any value. Store the
+account, changed field names, request hash, write action ID, and lifecycle
+state.
+
+A 200 response contains a completed action. A 202 response needs polling
+through `statusUrl`. Wait for `terminal: true` before reporting success. Never
+submit another update while the first action remains nonterminal.
+
+## Fix Twitter Profile Update Failures
+
+Fix rejected fields after 400. Replace invalid authentication after 401. Add
+credits after 402. Reconnect the X account after 403. Connect a missing account
+after 404. Keep the original action after a 409 idempotency conflict. Honor
+`Retry-After` after 429. Check `safeToRetry` after 500 or 503.
+
+X may reject profile text containing a fake verification mark or harmful URL.
+Remove the flagged content before retrying. X documents more causes in its
+[profile save troubleshooting guide](https://help.x.com/en/managing-your-account/cant-save-changes-to-my-account).
+
+## Twitter API Update Profile Questions
+
+### What endpoint changes a Twitter display name?
+
+Send `name` to `PATCH /x/profile`. This changes the display name only. It does
+not change the account's `@username`.
+
+### Can I update a Twitter bio through the API?
+
+Yes. Send the new bio as `description`. Keep it within 160 characters. Send an
+empty string when the approved workflow should clear the bio.
+
+### Can this endpoint update a profile picture or banner?
+
+No. Use the dedicated avatar or banner route. Those endpoints validate image
+type and size separately.
+
+### Which authentication works with this Twitter API route?
+
+Use an `x-api-key` header or an OAuth bearer token. The chosen connected X
+account supplies the profile identity. Generated SDKs can send the same fields
+and headers.
 
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+  Your API key. OAuth bearer authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
 <ParamField header="Idempotency-Key" type="string" required>
