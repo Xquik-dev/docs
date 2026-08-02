@@ -4501,7 +4501,7 @@ const REQUIRED_COMMUNITY_TWEETS_API_HANDOFF_SNIPPETS = [
   'next_cursor = data.get("next_cursor") if data.get("has_next_page") else None',
   '"has_next_page": data.get("has_next_page", False)',
   'one row per community tweet',
-  'Keep one record for each Tweet ID.',
+  'Store each Tweet ID in its own record.',
   'creation time, engagement counts, media, and cursor checkpoint.',
   '<ResponseField name="profilePicture" type="string">Profile picture URL.',
   '"profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"',
