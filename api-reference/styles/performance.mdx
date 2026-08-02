@@ -1,9 +1,9 @@
 ---
-title: "Analyze Tweet Performance & Writing Patterns"
+title: "Tweet Analytics API for Likes, Replies & Reposts"
 sidebarTitle: "Analyze performance"
-description: "Refresh likes, reposts, quotes, replies, bookmarks, and views for cached tweets. Compare current metrics with saved style records. See request fields."
+description: "Refresh tweet analytics for cached X posts. Retrieve likes, replies, reposts, quotes, bookmarks, views, post text, IDs, tweet count, and snapshot guidance."
 api: "GET /styles/{id}/performance"
-keywords: ["style", "performance", "engagement", "metrics", "likes", "retweets", "views"]
+keywords: ["twitter analytics", "x analytics", "tweet analytics", "twitter tweet analytics", "twitter analytics for another account"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -70,55 +70,70 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
+<Callout icon="coins" color="#5c3327">
+  **1 credit per tweet returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+</Callout>
+
 ## Refresh Tweet Engagement for a Cached Style
 
-Use this route after style analysis stores tweets for one profile. It refreshes
-likes, reposts, quotes, replies, bookmarks, and views for those cached posts.
-The result supports performance reviews without rebuilding the writing-style
-profile.
+Call this endpoint to refresh public engagement counts for cached tweets. Xquik
+looks up each stored Tweet ID and returns current cumulative metrics.
 
-Compare each returned tweet with its saved style record. Keep the tweet ID,
-text, current engagement counts, and measurement time together. This makes
-later comparisons reproducible when likes or replies continue changing.
+Start with [Analyze & Cache Style](/api-reference/styles/analyze). Then pass its
+returned `xUsername` as `{id}`. The lookup stays inside the authenticated
+Xquik account.
 
-The route charges per cached tweet. Check the cached tweet count before large
-reviews. Use [Get Style](/api-reference/styles/get) for a free cache read when
-fresh engagement metrics are unnecessary.
-
-Use performance results to compare patterns, not to promise future reach. A
-high-performing post can inform length, structure, or topic review. It does not
-guarantee the next tweet will receive similar engagement.
-
-<Callout icon="coins" color="#5c3327">
-  **1 credit per tweet** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
-</Callout>
+This route contacts X on every request. It does not return saved analytics,
+historical deltas, or a precomputed engagement rate.
 
 <CodeGroup>
   ```bash cURL
-  curl -X GET https://xquik.com/api/v1/styles/elonmusk/performance \
+  curl -X GET https://xquik.com/api/v1/styles/xquik/performance \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
   ```javascript Node.js
-  const username = "elonmusk";
-  const response = await fetch(`https://xquik.com/api/v1/styles/${username}/performance`, {
+  const username = "xquik";
+  const endpoint = `https://xquik.com/api/v1/styles/${encodeURIComponent(username)}/performance`;
+  const response = await fetch(endpoint, {
     method: "GET",
     headers: {
       "x-api-key": "xq_YOUR_KEY_HERE",
     },
   });
-  const data = await response.json();
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(`${result.error}: ${result.message}`);
+  }
+  const snapshot = {
+    measuredAt: new Date().toISOString(),
+    ...result,
+  };
   ```
 
   ```python Python
+  from datetime import UTC, datetime
+  from urllib.parse import quote
+
   import requests
 
-  username = "elonmusk"
-  response = requests.get(
-      f"https://xquik.com/api/v1/styles/{username}/performance",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+  username = "xquik"
+  endpoint = (
+      "https://xquik.com/api/v1/styles/"
+      f"{quote(username, safe='')}/performance"
   )
-  data = response.json()
+  response = requests.get(
+      endpoint,
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      timeout=30,
+  )
+  response.raise_for_status()
+  result = response.json()
+  snapshot = {
+      "measuredAt": datetime.now(UTC).isoformat(),
+      **result,
+  }
   ```
 
   ```go Go
@@ -128,11 +143,15 @@ guarantee the next tweet will receive similar engagement.
       "encoding/json"
       "fmt"
       "net/http"
+      "net/url"
+      "time"
   )
 
   func main() {
-      username := "elonmusk"
-      req, err := http.NewRequest("GET", "https://xquik.com/api/v1/styles/"+username+"/performance", nil)
+      username := "xquik"
+      endpoint := "https://xquik.com/api/v1/styles/" +
+          url.PathEscape(username) + "/performance"
+      req, err := http.NewRequest(http.MethodGet, endpoint, nil)
       if err != nil {
           panic(err)
       }
@@ -144,61 +163,223 @@ guarantee the next tweet will receive similar engagement.
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      var result map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      if resp.StatusCode != http.StatusOK {
+          panic(fmt.Sprintf("tweet analytics failed: %v", result))
+      }
+      result["measuredAt"] = time.Now().UTC().Format(time.RFC3339)
+      fmt.Println(result)
   }
   ```
 </CodeGroup>
 
-## Path parameters
+## Use an Analyzed X Username
+
+The `{id}` name comes from a shared style path. This handler uses it as a
+lowercase cache key, not a numeric database ID.
+
+Use an analyzed X username whose samples contain live Tweet IDs. A custom style
+saved from supplied text contains local sample IDs. Those IDs cannot produce X
+tweet analytics.
+
+| Profile source | Performance result |
+| --- | --- |
+| Analyzed public X username | Refreshes public metrics for cached Tweet IDs |
+| Saved custom style label | Local sample IDs cannot resolve as X Tweets |
+| Numeric database ID | Unsupported lookup key |
+| Another customer's cache | Inaccessible to this credential |
+
+The route processes at most 100 cached Tweet records. Use
+[Get Style](/api-reference/styles/get) to inspect the stored sample count first.
+
+## Read Every Tweet Analytics Field
+
+The response returns one row per refreshed Tweet. Each count is cumulative at
+request time.
+
+| Field | Meaning | Analytics use |
+| --- | --- | --- |
+| `id` | Live Tweet ID | Join snapshots without numeric conversion. |
+| `text` | Current Tweet text | Preserve the measured post with its counts. |
+| `likeCount` | Likes | Measure explicit appreciation. |
+| `replyCount` | Replies | Measure conversation activity. |
+| `retweetCount` | Reposts without comments | Measure direct redistribution. |
+| `quoteCount` | Quote posts with comments | Measure annotated redistribution. |
+| `bookmarkCount` | Bookmarks | Measure private saves as an aggregate count. |
+| `viewCount` | Public view or impression count | Use as exposure, not unique people. |
+
+Reposts and quote posts are separate counts. Do not add quotes into
+`retweetCount` twice.
+
+`viewCount` is not a unique-audience field. Repeat exposure can increase the
+count. See the [X public metric definitions](https://docs.x.com/x-api/fundamentals/metrics).
+
+## Store Reproducible Tweet Analytics Snapshots
+
+The response does not provide a measurement timestamp or historical baseline.
+Record the client request time beside every successful response.
+Keep each Tweet ID, metric row, and measurement time together.
+
+Use this snapshot key:
+
+| Snapshot column | Source |
+| --- | --- |
+| Profile key | `xUsername` |
+| Tweet key | `tweets[].id` |
+| Measurement time | Client UTC timestamp |
+| Tweet text | `tweets[].text` |
+| Public counts | All 6 count fields |
+
+Do not overwrite an earlier snapshot. Store each request separately. Calculate
+deltas only between snapshots for the same Tweet ID.
+
+```json
+{
+  "measuredAt": "2026-08-02T12:00:00.000Z",
+  "xUsername": "xquik",
+  "tweetId": "1950882898740914261",
+  "likeCount": 420,
+  "replyCount": 18,
+  "retweetCount": 54,
+  "quoteCount": 11,
+  "bookmarkCount": 87,
+  "viewCount": 28000
+}
+```
+
+## Calculate Useful Tweet Engagement Rates
+
+Xquik returns counts. Your application can derive rates for consistent
+comparisons. Label them as application metrics, not fields returned by Xquik.
+
+Let `views` equal `viewCount`. Use `null` when `views` equals zero.
+
+| Derived metric | Formula | Interpretation |
+| --- | --- | --- |
+| Public interactions | `likes + replies + reposts + quotes + bookmarks` | Total counted interaction actions |
+| Interaction rate | `public interactions / views` | Counted actions per view |
+| Conversation rate | `replies / views` | Replies per view |
+| Amplification rate | `(reposts + quotes) / views` | Redistributing posts per view |
+| Save rate | `bookmarks / views` | Bookmarks per view |
+| Like rate | `likes / views` | Likes per view |
+
+Do not include `viewCount` in the interaction numerator. A view is the
+denominator for these derived rates.
+
+Use medians when comparing several tweets. One viral post can distort an
+average. Keep raw counts beside every derived rate.
+
+## Compare Current and Earlier Tweet Metrics
+
+For 2 snapshots, subtract earlier counts from later counts. Reject negative
+deltas until you confirm both snapshots used the same Tweet and field meaning.
+
+| Delta | Formula |
+| --- | --- |
+| New likes | `later.likeCount - earlier.likeCount` |
+| New replies | `later.replyCount - earlier.replyCount` |
+| New reposts | `later.retweetCount - earlier.retweetCount` |
+| New quotes | `later.quoteCount - earlier.quoteCount` |
+| New bookmarks | `later.bookmarkCount - earlier.bookmarkCount` |
+| New views | `later.viewCount - earlier.viewCount` |
+
+Counts can change after publication. Avoid comparing posts measured at
+different ages without labeling that difference.
+
+## Separate Tweet Analytics from Account Analytics
+
+This route measures only the cached tweets in one style profile. It does not
+return follower growth, following changes, profile visits, link clicks,
+audience demographics, or an account-wide Twitter analytics report.
+
+You can analyze another public X account after caching its username. The
+result covers cached public Tweets only. It does not expose private analytics.
+
+Use [Compare Styles](/api-reference/styles/compare) for 2 writing sample sets.
+That route does not fetch live engagement metrics.
+
+## Budget a Tweet Analytics Refresh
+
+Each returned Tweet costs 1 credit. Check `tweetCount` through Get Style before
+requesting a refresh. The route can process up to 100 cached Tweets.
+
+Store the returned `tweetCount` with billing reconciliation. It counts metric
+rows returned by this request, not the profile's lifetime Tweet total.
+
+## Handle Unavailable Cached Tweets
+
+Every cached ID must still resolve as a live X Tweet. Deleted, protected, or
+otherwise unavailable Tweets cannot produce a metric row.
+
+Re-analyze the username when the cache contains stale Tweet IDs. Never replace
+an unavailable Tweet ID with another post during snapshot reconciliation.
+
+## Handle Tweet Analytics Errors
+
+| Status | Error | Meaning | Recovery |
+| --- | --- | --- | --- |
+| `200` | None | Current metrics are available | Store counts with a client timestamp. |
+| `401` | `unauthenticated` | The credential is missing or invalid | Replace the API key or bearer token. |
+| `402` | `insufficient_credits` | The balance cannot fund the request | Top up, then retry intentionally. |
+| `404` | `style_not_found` | No valid cached profile matches `{id}` | Analyze the username first. |
+| `429` | `rate_limit_exceeded` | The request exceeded the rate limit | Wait for `Retry-After`, then retry once. |
+
+The response widget includes every status in the canonical OpenAPI contract.
+Do not invent partial-success or asynchronous job responses.
+
+## Path Parameters
 
 <ParamField path="id" type="string" required>
-  Style profile ID or X username whose cached tweets to analyze. Must have been cached with [Analyze & Cache Style](/api-reference/styles/analyze) first.
+  Analyzed X username whose cache contains live Tweet IDs. Xquik lowercases the
+  value before an account-scoped lookup. It is not a numeric database ID.
 </ParamField>
 
 ## Headers
 
+Send `x-api-key` with an Xquik API key. OAuth clients can send a bearer token
+through the `Authorization` header instead.
+
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+  Your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="xUsername" type="string">Normalized X username (lowercase, no `@` prefix).</ResponseField>
-<ResponseField name="tweetCount" type="number">Number of tweets with engagement data.</ResponseField>
+<ResponseField name="xUsername" type="string">Lowercase analyzed X username.</ResponseField>
+<ResponseField name="tweetCount" type="number">Number of Tweet metric rows returned.</ResponseField>
 <ResponseField name="tweets" type="object[]">
-  Array of tweets with engagement metrics.
-  **Tweet object fields:**
-    <ResponseField name="id" type="string">Tweet ID.</ResponseField>
-    <ResponseField name="text" type="string">Tweet text content.</ResponseField>
-    <ResponseField name="bookmarkCount" type="number">Number of bookmarks.</ResponseField>
-    <ResponseField name="likeCount" type="number">Number of likes.</ResponseField>
-    <ResponseField name="quoteCount" type="number">Number of quote tweets.</ResponseField>
-    <ResponseField name="replyCount" type="number">Number of replies.</ResponseField>
-    <ResponseField name="retweetCount" type="number">Number of retweets.</ResponseField>
-    <ResponseField name="viewCount" type="number">Number of views.</ResponseField>
-
+  Current Tweet text and public engagement counts.
+  <Expandable title="Tweet analytics fields">
+    <ResponseField name="id" type="string">Live Tweet ID.</ResponseField>
+    <ResponseField name="text" type="string">Current Tweet text.</ResponseField>
+    <ResponseField name="bookmarkCount" type="number">Current bookmark count.</ResponseField>
+    <ResponseField name="likeCount" type="number">Current like count.</ResponseField>
+    <ResponseField name="quoteCount" type="number">Current quote-post count.</ResponseField>
+    <ResponseField name="replyCount" type="number">Current reply count.</ResponseField>
+    <ResponseField name="retweetCount" type="number">Current repost count, excluding quotes.</ResponseField>
+    <ResponseField name="viewCount" type="number">Current public view or impression count.</ResponseField>
+  </Expandable>
 </ResponseField>
 
 ```json
 {
-  "xUsername": "elonmusk",
-  "tweetCount": 20,
+  "xUsername": "xquik",
+  "tweetCount": 1,
   "tweets": [
     {
-      "id": "1893456789012345678",
-      "text": "The future is now.",
-      "bookmarkCount": 2340,
-      "likeCount": 15420,
-      "quoteCount": 1280,
-      "replyCount": 890,
-      "retweetCount": 3210,
-      "viewCount": 1250000
+      "id": "1950882898740914261",
+      "text": "Export tweet replies to JSON or CSV.",
+      "bookmarkCount": 87,
+      "likeCount": 420,
+      "quoteCount": 11,
+      "replyCount": 18,
+      "retweetCount": 54,
+      "viewCount": 28000
     }
   ]
 }
@@ -209,37 +390,61 @@ guarantee the next tweet will receive similar engagement.
 ```json
 { "error": "unauthenticated", "message": "Missing or invalid API key" }
 ```
-Missing or invalid API key.
+
+Authentication failed. Replace the missing or invalid credential.
 
 ### 402 Insufficient Credits
-
-Possible error codes:
-
-- `insufficient_credits` - Insufficient credits
 
 ```json
 { "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }
 ```
-Top up or subscribe from the [dashboard billing page](https://dashboard.xquik.com/en/account?tab=subscription).
 
-### 404 Not Found
+The balance cannot fund the request. Top up through the
+[billing page](https://dashboard.xquik.com/en/account?tab=subscription).
+
+### 404 Style Not Found
 
 ```json
 { "error": "style_not_found", "message": "No cached style found for this username" }
 ```
-No cached style exists for this username. Use [Analyze & Cache Style](/api-reference/styles/analyze) to fetch and cache tweets first.
+
+No analyzed profile exists for this username and Xquik account. Analyze it
+first.
 
 ### 429 Rate Limited
 
 ```json
 { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
 ```
-Too many requests. Wait for the `Retry-After` header before retrying.
 
-<Info>
-  Engagement metrics are fetched live from X at request time. Results may vary between calls as tweets gain interactions.
-</Info>
+Too many requests. Wait for `Retry-After`, then retry once.
+
+### How Do I Check Tweet Analytics Through the API?
+
+Analyze an X username, then call this route with its returned `xUsername`.
+Store each response with your own UTC measurement timestamp.
+
+### Does This Return Live Twitter Analytics?
+
+Yes. Each request refreshes current public counts for cached Tweet IDs. It
+does not return private metrics or historical deltas.
+
+### Can I Check Twitter Analytics for Another Account?
+
+Yes, for public Tweets cached by your Xquik account. The response excludes
+private account analytics, follower growth, profile visits, and link clicks.
+
+### Is `viewCount` a Unique Viewer Count?
+
+No. Treat it as exposure, not unique people. Repeat views can increase the
+count.
+
+### Why Does Tweet Analytics Return 404?
+
+The Xquik account has no analyzed profile for that lowercase username. Call
+Analyze Style, then retry with the returned `xUsername`.
 
 <Note>
-  **Related:** [Analyze & Cache Style](/api-reference/styles/analyze) to cache tweets before fetching metrics, [Get Style](/api-reference/styles/get) to view the cached tweet text, or [Compare Styles](/api-reference/styles/compare) to compare two accounts.
+  **Related:** [Get Style](/api-reference/styles/get) inspects cached Tweet IDs.
+  [List Styles](/api-reference/styles/list) inventories analyzed profiles.
 </Note>
