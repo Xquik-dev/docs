@@ -114,7 +114,14 @@ function documentedResponseStatuses(source: string): readonly string[] {
     .sort();
 }
 
-function generatedResponseTabLabels(source: string): readonly string[] {
+interface GeneratedResponseTab {
+  readonly id: string;
+  readonly title: string;
+}
+
+function generatedResponseTabs(
+  source: string,
+): readonly GeneratedResponseTab[] {
   const start = source.indexOf(GENERATED_RESPONSE_EXAMPLES_START);
   const end = source.indexOf(GENERATED_RESPONSE_EXAMPLES_END);
   if (start === -1 || end === -1 || end < start) {
@@ -124,8 +131,13 @@ function generatedResponseTabLabels(source: string): readonly string[] {
   return [
     ...source
       .slice(start, end)
-      .matchAll(/^  ```(?:json|text) ([^\r\n]+)$/gmu),
-  ].map((match): string => match[1] ?? '');
+      .matchAll(/^  <Tab title="(\d{3})" id="([^"]+)">$/gmu),
+  ].map(
+    (match): GeneratedResponseTab => ({
+      id: match[2] ?? '',
+      title: match[1] ?? '',
+    }),
+  );
 }
 
 function operationKey(apiDoc: ApiDoc): string {
@@ -236,33 +248,41 @@ describe('API success response status documentation', (): void => {
     expect(collectAuditedResponseStatusFindings(spec)).toStrictEqual([]);
   });
 
-  it('keeps persisted response selections local to one API page', (): void => {
-    expect.assertions(2);
+  it('keeps response tabs independent and success-first', (): void => {
+    expect.assertions(3);
 
-    const labels: string[] = [];
+    const ids: string[] = [];
     const findings = readApiDocs().flatMap((apiDoc): readonly string[] => {
-      const pageLabels = generatedResponseTabLabels(apiDoc.source);
+      const tabs = generatedResponseTabs(apiDoc.source);
       const scope = apiDoc.file
         .replace(/^api-reference\//u, '')
         .replace(/\.mdx$/u, '');
-      labels.push(...pageLabels.slice(1));
+      ids.push(...tabs.map((tab): string => tab.id));
 
       return [
-        ...(pageLabels[0]?.startsWith('2') === true
+        ...(apiDoc.source.includes(
+          '<Panel>\n<Tabs defaultTabIndex={0} sync={false}>',
+        )
+          ? []
+          : [`${apiDoc.file}: response panel tabs are not independent.`]),
+        ...(tabs[0]?.title.startsWith('2') === true
           ? []
           : [`${apiDoc.file}: first response tab is not a success status.`]),
-        ...pageLabels
-          .slice(1)
-          .filter((label): boolean => !label.endsWith(` · ${scope}`))
+        ...tabs
+          .filter(
+            (tab): boolean =>
+              tab.id !== `response-${scope.replaceAll('/', '-')}-${tab.title}`,
+          )
           .map(
-            (label): string =>
-              `${apiDoc.file}: response tab is not page-scoped: ${label}`,
+            (tab): string =>
+              `${apiDoc.file}: response tab is not page-scoped: ${tab.id}`,
           ),
       ];
     });
 
     expect(findings).toStrictEqual([]);
-    expect(new Set(labels).size).toBe(labels.length);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toHaveLength(828);
   });
 
   it('keeps every write page idempotent and lifecycle-aware', (): void => {

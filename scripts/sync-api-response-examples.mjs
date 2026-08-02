@@ -226,21 +226,27 @@ function formatValue(language, value) {
 }
 
 function responseExampleBlock(document, responses, scope) {
-  const codeBlocks = Object.entries(responses).map(([status, rawResponse], index) => {
+  const tabs = Object.entries(responses).map(([status, rawResponse]) => {
     const example = responseExample(document, rawResponse, status);
-    const tabLabel = index === 0 ? status : `${status} · ${scope}`;
+    const tabId = `response-${scope.replaceAll('/', '-')}-${status}`;
     const value = formatValue(example.language, example.value)
       .split('\n')
-      .map((line) => `  ${line}`)
+      .map((line) => `    ${line}`)
       .join('\n');
-    return `  \`\`\`${example.language} ${tabLabel}\n${value}\n  \`\`\``;
+    return [
+      `  <Tab title="${status}" id="${tabId}">`,
+      `    \`\`\`${example.language}\n${value}\n    \`\`\``,
+      '  </Tab>',
+    ].join('\n');
   });
 
   return [
     START_MARKER,
-    '<ResponseExample>',
-    ...codeBlocks.flatMap((block, index) => (index === 0 ? [block] : ['', block])),
-    '</ResponseExample>',
+    '<Panel>',
+    '<Tabs defaultTabIndex={0} sync={false}>',
+    ...tabs.flatMap((tab, index) => (index === 0 ? [tab] : ['', tab])),
+    '</Tabs>',
+    '</Panel>',
     END_MARKER,
   ].join('\n');
 }
