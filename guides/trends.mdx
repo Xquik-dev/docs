@@ -13,6 +13,20 @@ Xquik returns ranked X trends for 12 supported WOEID regions. Use each trend's
 `query` with [Search Tweets](/api-reference/x/search-tweets) to collect matching
 posts.
 
+Use this Twitter trends guide for regional topic discovery and monitoring.
+Each call returns one current snapshot. Store snapshots to build trend history.
+
+## Choose the Trends Endpoint
+
+Use `GET /api/v1/trends` for the top-level Twitter Trends API response.
+It returns `trends`, `total`, and `woeid`.
+
+Use `GET /api/v1/x/trends` for the equivalent X API route.
+It returns `trends`, `count`, and `woeid`.
+
+Keep one response shape throughout each client. This prevents `total` and
+`count` from becoming competing fields in stored snapshots.
+
 ## Regions
 
 Use these WOEIDs in `woeid` for `GET /trends` or `GET /x/trends`. Omit
@@ -39,13 +53,22 @@ Use these WOEIDs in `woeid` for `GET /trends` or `GET /x/trends`. Omit
   </Card>
 </CardGroup>
 
-## How it works
+## Read a Regional Trends Snapshot
 
 When you call `GET /api/v1/trends`, Xquik fetches the latest trending topics
 for the requested WOEID. Results are cached briefly to keep responses fast.
 
 Each trend includes a `name`, optional `description`, optional `rank`, and
-optional `query` string you can pass directly to [Search Tweets](/api-reference/x/search-tweets).
+optional `query` string. Rich responses can also include `promotedContent`,
+`tweetVolume`, and `url`.
+
+Use `name` as the visible topic or hashtag. Use `rank` for regional ordering.
+Use `query` for a follow-up tweet search. Fall back to `name` when `query` is
+missing.
+
+Treat `tweetVolume` as an optional estimate. Preserve `null` and missing
+values. Never replace them with zero. A missing estimate does not mean nobody
+posted about the topic.
 
 **Response:**
 
@@ -67,7 +90,54 @@ optional `query` string you can pass directly to [Search Tweets](/api-reference/
 The `count` query parameter controls how many trends to return. Defaults to
 `30`; valid values are `1` through `50`.
 
-## Combine trends with search
+## Compare Twitter Topic Trends Over Time
+
+The trends endpoints return current snapshots. They do not return stored
+history. Create history by saving each regional response on your schedule.
+
+Store these fields for every snapshot:
+
+- `captured_at`: your UTC collection timestamp
+- `woeid`: the requested region
+- `name`: the visible topic or hashtag
+- `query`: the recommended tweet-search expression
+- `rank`: the current regional position
+- `description`: the optional topic context
+- `tweetVolume`: the optional public-post estimate
+- `promotedContent`: the optional promotion identifier
+
+Compare normalized `name` values within the same WOEID. Track `first_seen`,
+`last_seen`, `current_rank`, `previous_rank`, and `best_rank`. Keep every
+snapshot immutable. Derived movement can change when late jobs arrive.
+
+An absent topic only left the requested result slice. It may still appear
+below your selected `count`. Increase `count` before treating absence as a
+meaningful change.
+
+## Build a Multi-Region Twitter Trends Monitor
+
+Choose only the regions that match your market. Poll each WOEID independently.
+Store the WOEID beside every trend row. Never compare ranks across regions as
+if they share one list.
+
+Use `woeid=1` for a worldwide snapshot. Use country WOEIDs for regional
+comparisons. Xquik supports the 12 WOEIDs listed above. Unsupported country or
+city identifiers return `400 invalid_input`.
+
+A practical monitor follows this sequence:
+
+1. Request the same `count` for each chosen WOEID.
+2. Save the raw regional snapshot before enrichment.
+3. Compare each topic with its previous regional rank.
+4. Filter topics against your campaign or research scope.
+5. Search tweets only for relevant topic queries.
+6. Store matching tweets with the originating WOEID and rank.
+7. Alert only after your movement or relevance rule passes.
+
+This sequence keeps unrelated trends out of tweet searches. It also preserves
+why every topic entered a dashboard, alert, or AI summary.
+
+## Search Tweets Behind a Trend
 
 Fetch the top trend for a region, then search for tweets about it:
 
@@ -185,7 +255,78 @@ Fetch the top trend for a region, then search for tweets about it:
   ```
 </CodeGroup>
 
-## Next steps
+The trend response supplies a raw search expression such as `#AI`.
+`--data-urlencode` and `URLSearchParams` encode that expression once. Do not
+manually encode it before using these examples.
+
+Search results provide the tweets behind a selected topic. Preserve each
+tweet's ID, author, text, metrics, and creation time. Store the originating
+trend name, WOEID, rank, and collection timestamp beside those tweets.
+
+Use cursor pagination when you need more than one search page. Stop when the
+response has no next cursor. Also stop when a cursor repeats.
+
+## Handle Trend Request Failures
+
+Handle each documented status before scheduling another regional request.
+
+- `400`: Use one of the 12 supported WOEIDs.
+- `401`: Replace the missing or invalid credential.
+- `402`: Top up credits or use an eligible paid read.
+- `424`: Retry the temporary read-service dependency failure.
+- `429`: Wait for `Retry-After` before retrying.
+- `502`: Retry the temporary read-service failure later.
+
+Use capped exponential backoff for `424`, `429`, and `502` responses. Do not
+retry `400`, `401`, or `402` without changing the request or account state.
+
+## Twitter Trends API Questions
+
+### What Is a WOEID in the Twitter Trends API?
+
+WOEID means Where On Earth ID. It selects one supported geographic trend list.
+Use `1` for Worldwide. Use a listed country code for regional trends.
+
+### How Do I Get Twitter Trends by Country?
+
+Call either trends endpoint with that country's supported WOEID. Save the
+returned WOEID with every rank. This prevents regional rows from mixing.
+
+### Can I Get Historical Twitter Trends?
+
+The endpoint returns one current snapshot. Poll it and store timestamped
+responses to build history. Keep the requested `count` with each snapshot.
+
+### How Do I Find Tweets Behind a Trending Topic?
+
+Pass the trend's `query` to [Search Tweets](/api-reference/x/search-tweets).
+Use `name` only when `query` is missing. Paginate the matching tweet results.
+
+### Does Every Trend Include a Public-Post Estimate?
+
+No. `tweetVolume` can be missing or `null`. Preserve that state in storage.
+Use rank movement as a separate regional signal.
+
+### Can I Request City-Level Twitter Trends?
+
+No. Xquik currently accepts Worldwide and 11 listed country WOEIDs. An
+unsupported city WOEID returns `400 invalid_input`.
+
+### How Many Trending Topics Can I Request?
+
+Request `1` through `50` topics. The default is `30`.
+
+### Which Endpoint Should a New Client Use?
+
+Choose the response shape your client already uses. `/trends` returns `total`.
+`/x/trends` returns `count`. Both return ranked trends for one WOEID.
+
+### Is Xquik the Official X Trends API?
+
+No. Xquik is an independent third-party service. It is not affiliated with X
+Corp. This guide documents Xquik endpoints and response fields.
+
+## Next Steps
 
 <CardGroup cols={2}>
   <Card title="Trends API Reference" icon="trending-up" href="/api-reference/trends/list">

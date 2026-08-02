@@ -6473,6 +6473,18 @@ const REQUIRED_TRENDS_GUIDE_COPY_SNIPPETS = [
   'optional `query` string',
   'Defaults to',
   '`30`; valid values are `1` through `50`.',
+  '## Compare Twitter Topic Trends Over Time',
+  '`captured_at`: your UTC collection timestamp',
+  '`current_rank`, `previous_rank`, and `best_rank`',
+  '## Build a Multi-Region Twitter Trends Monitor',
+  'city identifiers return `400 invalid_input`.',
+  '## Search Tweets Behind a Trend',
+  'manually encode it before using these examples.',
+  'Use cursor pagination when you need more than one search page.',
+  '## Handle Trend Request Failures',
+  '### Can I Get Historical Twitter Trends?',
+  '### Can I Request City-Level Twitter Trends?',
+  '### Is Xquik the Official X Trends API?',
 ] as const;
 
 const FORBIDDEN_TRENDS_REGION_SNIPPETS = [
