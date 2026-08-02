@@ -9144,6 +9144,8 @@ const REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS = [
   '## What Should a Twitter Account Activity Audit Store?',
   'This chain distinguishes a',
   'missing event from a failed receiver.',
+  'Read the response `Retry-After`',
+  'header and pause for the supplied duration before retrying.',
 ] as const;
 
 const FORBIDDEN_ACCOUNT_MONITOR_GET_RAW_OUTPUT_SNIPPETS = [
