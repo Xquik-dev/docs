@@ -48,8 +48,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Build a social media monitoring feed from ranked public topics. Radar covers
 Reddit, GitHub, technology news, search trends, Wikipedia, prediction markets,
-and startup growth records. Filter those records by source, category, region,
-and time window.
+and startup growth records. Choose a source, category, region, and time window
+for each request.
 
 Authenticate every Radar request. You need no active subscription. Radar
 consumes no credits.
@@ -62,18 +62,23 @@ endpoint. Each response uses structured JSON and stable field names.
 
 Radar combines several public topic sources. It does not mirror every social
 network. It also does not return X tweets, replies, followers, or timelines.
-Use [Search Tweets](/api-reference/x/search-tweets) for X brand mentions,
-hashtags, replies, and keyword searches.
+[Search Tweets](/api-reference/x/search-tweets) finds X brand mentions and
+hashtags. It also finds replies and keyword matches.
 
 Radar differs from broad platform APIs. It normalizes every source into one
 `RadarItem` shape. You can compare titles, regions, timestamps, and scores
 without building separate source adapters.
 
+Radar is not a social listening API for every major social platform. It does
+not replace platform APIs for unsupported social platforms. This API access
+returns ranked topics, not full social listening data. The API endpoint
+provides no keyword search volume or long-term history. Use `hours` for
+1-72-hour windows.
+
 ## Build a Trending Topics API Feed
 
 Use Radar as a trending topics API for dashboards, alerts, and research queues.
-Start with a narrow time window. Then request only the source or category you
-need.
+Start with a narrow time window. Then select one source or category.
 
 1. Call `GET /radar` with your API key.
 2. Filter one source when the request names a platform.
@@ -88,29 +93,27 @@ access keeps one integration path across every supported feed.
 
 ## Is Radar a Real-Time Monitoring API?
 
-Radar returns recently indexed topics. It does not promise a streaming
-firehose. Read `publishedAt` for the source timestamp. Read `createdAt` for the
-index timestamp.
+Radar returns recently indexed topics. It does not stream every new event.
+Read `publishedAt` for the source timestamp. Read `createdAt` for the index
+timestamp.
 
 Poll the monitoring API on a schedule that fits your workflow. Keep the latest
-item ID and cursor. Respect every `429` rate limit response before polling
-again. This pattern supports current trend analysis without inventing a fixed
+item ID and cursor. Respect every `429` rate limit response. Wait before the
+next poll. This pattern supports trend analysis without promising a fixed
 delivery delay.
 
 ## Can Radar Track Brand Mentions and Sentiment?
 
-Radar has no keyword query. It is not a complete brand monitoring index.
-Client applications can compare returned titles and descriptions with known
-brand names. That comparison covers only the current Radar feed.
+Radar has no keyword query. Radar does not provide a complete brand monitoring
+index. Compare returned titles and descriptions against a saved brand
+dictionary. That comparison covers only the current Radar feed.
 
-Radar also has no sentiment analysis field. The `score` value measures
-relevance, not sentiment. Do not classify a high score as positive or negative
-sentiment.
+Radar does not analyze sentiment. The `score` value measures relevance, not
+sentiment. Do not classify a high score as positive or negative sentiment.
 
-Use [Search Tweets](/api-reference/x/search-tweets) for searchable X brand
-mentions. Use Radar when ranked cross-source topics matter more than an exact
-mention search. This split prevents false assumptions about social listening
-data.
+Use [Search Tweets](/api-reference/x/search-tweets) for exact X mention
+searches. Use Radar for ranked cross-source topics. This split prevents false
+assumptions about social listening data.
 
 ## Integrate Radar Into a Monitoring Dashboard
 
@@ -118,9 +121,8 @@ Keep the dashboard pipeline simple. Request one page, validate the response,
 and render each `RadarItem`. Save the item ID, source, source ID, score, region,
 and timestamps.
 
-Group rows by `source` for a multi-feed view. Sort by `score` for a ranked
-view. Filter by `publishedAt` for a freshness view. Open `url` only when the
-source provides it.
+Group rows by `source` for a multi-feed dashboard. Sort rows by `score`. Filter
+rows by `publishedAt`. Open `url` only when the source provides it.
 
 Use `hasMore` and `nextCursor` for background ingestion. Never construct a
 cursor. Keep each cursor with its matching filters. Changing `source`,
