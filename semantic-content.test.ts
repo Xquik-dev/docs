@@ -427,7 +427,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       '## Choose the Correct X Relationship',
       '## Plan Post-Join Reading and Publishing',
       'The steps below explain how to join Twitter Community membership through Xquik.',
-      'Anyone with the URL can see this social media membership.',
+      "Anyone on X with the direct Community URL can see the Community's member list.",
       'Never infer posting permission from membership.',
     ],
   },
