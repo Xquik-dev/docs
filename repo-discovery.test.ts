@@ -10395,35 +10395,53 @@ const FORBIDDEN_LANGCHAIN_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_MASTRA_GUIDE_SNIPPETS = [
-  'Build a Mastra agent in TypeScript that can search tweets, hand off IDs and cursors, post tweets, replay stored monitor events, and run extraction jobs',
-  'Node.js 22.13+',
+  'title: "Mastra Twitter MCP Agent Guide for TypeScript"',
+  'Build a Mastra Twitter MCP agent through Xquik\'s remote MCP server.',
+  'Node.js 22.13 or later',
+  'npm install "@mastra/core@^1.55" "@mastra/mcp@^1.15" zod',
   'import { writeFile } from "node:fs/promises";',
-  'query, route_used, tweets[{tweet_id,text,author_username,created_at}]',
+  'import { z } from "zod";',
+  'route_used: z.literal("GET /api/v1/x/tweets/search")',
+  'created: z.number().int().nullable()',
+  '{ structuredOutput: { schema: handoffSchema } }',
+  'JSON.stringify(result.object, null, 2)',
+  '`listTools()` suits',
+  '`listToolsets()` groups tools by server for each call.',
+  'The client tries Streamable HTTP for URL servers.',
+  'The MCP runtime returns normalized snake_case fields through',
+  '`xquik.request()`.',
+  'It normalizes `createdAt` to the Unix-second field',
+  'requireToolApproval: ({ toolName }) => toolName === "xquik"',
+  '`agent.approveToolCallGenerate()`',
+  'Never treat MCP annotations as an authorization boundary.',
+  '<Card title="Tweet Search Rows" icon="search">',
+  'Store `tweet_id`, `text`, `author_username`, `created`, `url`, `has_more`, `next_cursor`, and the original `q`.',
+  '<Card title="Follower Exports" icon="users">',
+  '<Card title="Monitor Events" icon="radio">',
+  '<Card title="Extraction Jobs" icon="database">',
+  '<Card title="Approved X Actions" icon="send">',
+  '| `400` | The search query is missing or invalid |',
+  '| `401` | Guest authentication cannot complete this request |',
+  '| `402` | The account lacks credits |',
+  '| `424` | The upstream X dependency failed |',
+  '| `429` | The Twitter API rate limit applies |',
+  '| `502` | The X dependency returned an invalid response |',
+  '| `@mastra/core` | 1.55.0 | `>=1.55,<2` |',
+  '| `@mastra/mcp` | 1.15.0 | `>=1.15,<2` |',
+  '### How Do I Search Tweets With TypeScript?',
+  '### Can a Mastra Agent Export Twitter Followers?',
+  '### How Should a Mastra Agent Handle Twitter Rate Limits?',
+] as const;
+
+const FORBIDDEN_MASTRA_GUIDE_SNIPPETS = [
+  'title: "Mastra Twitter Agent Guide | X API Tutorial"',
+  'created_at',
+  'tweets[{tweet_id,text,author_username,created_at}]',
   'await writeFile("xquik-mastra-handoff.json", result.text, "utf8");',
-  "Mastra's `MCPClient` loads tools with `listTools()` for agent setup and `listToolsets()` for per-call tools.",
-  'tries Streamable HTTP from the URL',
-  'The MCP runtime returns normalized snake_case fields through `xquik.request()`',
-  '## Handoff Checklist',
-  '<Card title="Tweet search rows" icon="search">',
-  'Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.',
-  '<Card title="User profile rows" icon="users">',
-  'Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profile_picture`, `has_more`, `next_cursor`, and the source lookup or search query.',
-  '<Card title="Trend rows" icon="trending-up">',
-  'Store each trend `name`, `rank`, `query`, and `description`. Keep response `count`, `woeid`, and the requested region with the run checkpoint.',
-  '<Card title="Monitor and webhook setup" icon="radio">',
-  'Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager.',
-  'On production deliveries, store `delivery_id` for receiver retry de-dupe and `stream_event_id` when one monitor event should process once across endpoint changes.',
-  '<Card title="Stored event replay" icon="activity">',
-  'Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, `next_cursor`, and the `after` query for the next page.',
-  '<Card title="Extraction jobs" icon="database">',
-  'Store `extraction_id`, `status`, `poll`, and `export_after_complete`',
-  '<Card title="Writes" icon="send">',
-  'Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, `charged_credits`, and `poll`; do not resend pending writes.',
-  '<Card title="Media attachments" icon="image">',
-  'For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`.',
-  'For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.',
-  'await writeFile("xquik-mastra-stream-handoff.json", handoff, "utf8");',
-  'await writeFile("xquik-mastra-user-handoff.json", response.text, "utf8");',
+  '119 MCP-compatible',
+  '| `@mastra/mcp` | 1.14.0 |',
+  '| `@mastra/core` | 1.51.0 |',
+  '| `@modelcontextprotocol/sdk` | 1.29.0 |',
 ] as const;
 
 const REQUIRED_N8N_ALTERNATIVE_SNIPPETS = [
@@ -16476,7 +16494,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Mastra guide handoff concrete', (): void => {
-    expect.assertions(4);
+    expect.assertions(5);
 
     const source = readFileSync('guides/mastra.mdx', 'utf8');
 
@@ -16490,6 +16508,11 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('console.log(result.text);');
     expect(source).not.toContain('process.stdout.write(chunk);');
     expect(source).not.toContain('Return raw data.');
+    expect(
+      FORBIDDEN_MASTRA_GUIDE_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps the alternatives workflow shortlist concrete', (): void => {
