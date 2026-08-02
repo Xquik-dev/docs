@@ -1,9 +1,9 @@
 ---
-title: "List Xquik Support Tickets & Message Counts"
+title: "Support Ticket API: List Xquik Tickets & Status"
 sidebarTitle: "List tickets"
-description: "List support tickets with subjects, open or resolved status, message and attachment counts, creation times, and latest update timestamps. See examples."
+description: "List up to 200 Xquik support tickets in recent-update order. Review each ticket ID, subject, status, message count, creation time & latest update timestamp."
 api: "GET /support/tickets"
-keywords: ["support", "ticket", "list"]
+keywords: ["support ticket API", "list support tickets", "support ticket status", "API support tickets", "Xquik support", "ticket history"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -50,12 +50,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
+## List Support Tickets for Xquik Workflows
+
+List the signed-in account's Xquik support tickets. Review connection failures,
+tweet write errors, follower exports, monitor alerts, webhooks, or billing cases.
+
+This endpoint returns the documented ticket summary fields. Fetch
+[Get Ticket](/api-reference/support/get) when you need message bodies or
+attachment metadata.
+
 <Callout icon="circle-check" color="#16a34a">
   **Free** - does not consume credits
 </Callout>
-<Info>
-  Support tickets are free for all authenticated users.
-</Info>
 
 <CodeGroup>
   ```bash cURL
@@ -70,7 +76,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "x-api-key": "xq_YOUR_KEY_HERE",
     },
   });
-  const data = await response.json();
+  const result = await response.json();
+  if (!response.ok) throw new Error(JSON.stringify(result));
+
+  const activeTickets = result.tickets.filter((ticket) =>
+    ["open", "in_progress"].includes(ticket.status),
+  );
   ```
 
   ```python Python
@@ -80,7 +91,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "https://xquik.com/api/v1/support/tickets",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
-  data = response.json()
+  result = response.json()
+  response.raise_for_status()
+
+  active_tickets = [
+      ticket
+      for ticket in result["tickets"]
+      if ticket["status"] in {"open", "in_progress"}
+  ]
   ```
 
   ```go Go
@@ -114,10 +132,117 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 </CodeGroup>
 
+## Read the Support Ticket Inventory
+
+Use the list as a compact support queue. Store ticket IDs and timestamps before
+requesting any detailed history.
+
+| Support queue column | Response field | Review rule |
+| --- | --- | --- |
+| Ticket ID | `publicId` | Use this stable ID for details, replies, and status changes. |
+| Reported issue | `subject` | Keep the affected Xquik workflow visible. |
+| Current state | `status` | Route open, in-progress, resolved, and closed cases. |
+| Conversation size | `messageCount` | Compare with the previously stored count. |
+| Opened time | `createdAt` | Measure the ticket's age. |
+| Latest activity | `updatedAt` | Process recently changed tickets first. |
+
+The endpoint returns up to 200 tickets. It sorts the newest `updatedAt` value
+first. The request has no pagination, search, or status query parameter. Ask
+[support](mailto:support@xquik.com) when you need an older ticket.
+
+Filter the returned array locally. Match `publicId`, `subject`, or `status`
+without sending another list request.
+
+## Interpret Support Ticket Status
+
+The support ticket API returns 4 status values. Listing tickets never changes
+any status.
+
+| Status | Meaning | Next action |
+| --- | --- | --- |
+| `open` | A new ticket or user reply needs review. | Read the complete message history. |
+| `in_progress` | Support has responded or continues the investigation. | Check the newest support message. |
+| `resolved` | The reported workflow has a proposed resolution. | Verify the fix before reopening. |
+| `closed` | The conversation is complete. | Keep the ticket ID for future reference. |
+
+Users can set `open`, `resolved`, or `closed` through the update route. Support
+sets `in_progress`. Do not invent another state in client code.
+
+## Build a Support Ticket Review Queue
+
+1. Call `GET /support/tickets` with one Xquik API key.
+2. Save the returned `publicId` and `updatedAt` values.
+3. Keep the response order for a recent-activity queue.
+4. Compare each `messageCount` with your previous inventory.
+5. Fetch ticket details when the count or timestamp changes.
+6. Read each message and attachment status before replying.
+7. Update the ticket only after confirming the intended state.
+
+Use [Reply to Ticket](/api-reference/support/reply) for new investigation
+details. Use [Update Ticket Status](/api-reference/support/update) for workflow
+state changes. These routes preserve the existing ticket ID.
+
+Do not create a duplicate ticket for every retry. Reuse the original
+`publicId` while the subject describes the same problem.
+
+## Triage X API and Twitter Scraper Problems
+
+Keep ticket subjects specific. Name the affected tweet, follower, monitor,
+webhook, X account, or billing workflow.
+
+Useful local queue categories include:
+
+- X account connection or reauthentication.
+- Tweet creation, deletion, reply, like, or repost actions.
+- Follower, following, timeline, reply, or media exports.
+- Keyword monitors, account monitors, and webhook deliveries.
+- API key authentication, credits, subscription checkout, or top-ups.
+
+The list response does not explain the failure. Fetch the matching ticket
+before making a product decision.
+
+For a `429` response, wait for `Retry-After`. Reuse the last successful
+inventory during that pause.
+
+## Answer Support Ticket API Questions
+
+### Does the List Include Ticket Messages?
+
+The current response returns `messageCount`, not message text. Fetch the ticket
+by `publicId` to read its chronological conversation.
+
+### Does the List Include Attachments?
+
+The current response omits attachment filenames, types, sizes, states, and
+download URLs. Fetch the detailed ticket to inspect attachments.
+
+### Can I Search Support Tickets by Subject?
+
+The endpoint accepts no search query. Filter the returned ticket summaries by
+`subject` in your client.
+
+### Can I Filter Tickets by Status?
+
+The endpoint accepts no status query. Filter `open`, `in_progress`, `resolved`,
+or `closed` after receiving the list.
+
+### Which Ticket Should I Read First?
+
+Start with the first changed ticket. Results already use descending
+`updatedAt` order.
+
+### Does Listing Tickets Consume Xquik Credits?
+
+No. Listing support tickets is free for authenticated accounts.
+
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+<ParamField header="x-api-key" type="string">
+  Your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-api-key`, not both.
 </ParamField>
 
 ## Response
@@ -160,10 +285,6 @@ Missing or invalid API key.
 { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
 ```
 Wait for the `Retry-After` value before listing tickets again.
-
-<Info>
-  Returns up to 200 tickets ordered by most recently updated. There is no pagination. [Contact support](mailto:support@xquik.com) if you need more.
-</Info>
 
 <Note>
   **Related:** [Create Ticket](/api-reference/support/create) to open a new ticket, or [Get Ticket](/api-reference/support/get) to fetch details and message history for a specific ticket.
