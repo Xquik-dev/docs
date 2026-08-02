@@ -153,43 +153,38 @@ Store `next_cursor` after writing every page. Continue only while
 ### How Complete Is a Tweet Reply Collection?
 
 X controls which public replies each request exposes. Protected, deleted,
-hidden, or unavailable replies may not appear. Set `mode=complete` for maximum
-coverage. This mode combines timelines, rankings, cursors, hidden branches,
-parent windows, and search. Direct replies match `inReplyToId` to the source
-tweet. Keep `nested_replies` outside direct coverage. Trust `diagnostic.complete`,
-not the reported count alone.
+hidden, or unavailable replies may not appear. `mode=complete` combines
+timelines, rankings, cursors, hidden branches, parent windows, and search.
+Direct replies match `inReplyToId` to the source tweet. Exclude
+`nested_replies` from direct coverage. Trust `diagnostic.complete`.
 
 ### How Can a Team Analyze or Moderate Replies?
 
-Store the reply ID, text, author ID, username, and creation time. Keep likes,
-reposts, quotes, views, bookmarks, and attached media. Create one
-moderation-table row for each reply. Send uncertain rows to human reviewers.
-Add sentiment or spam labels with your own classifier. Xquik does not return a
-sentiment verdict.
+Store each reply ID, text, author ID, username, creation time, likes, reposts,
+quotes, views, bookmarks, and media. Create one moderation row per reply. Apply
+sentiment or spam labels with your classifier. Send uncertain rows to human
+reviewers. Xquik does not infer sentiment.
 
 ### How Can Support Teams Receive New Reply Alerts?
 
 Create an [account monitor](/api-reference/monitors/create) for the relevant
 profile. Select `tweet.reply` events on the monitor and webhook. Verify every
-webhook signature before processing its reply payload. Store the event ID
-before updating a support ticket. Use the events API to replay missed
-deliveries. Keep polling this endpoint for conversation-specific backfills.
+webhook signature. Store each event ID before updating a support ticket. Replay
+missed events through the events API. Poll this endpoint for conversation
+backfills.
 
 ### Which Reply Fields Should Applications Preserve?
 
-Keep the stable author ID separately from the mutable username. Save
-`conversationId` and `inReplyToId` for thread joins. Preserve media URLs and
-visible engagement counts when X returns them. Store `pageSize`, time filters,
-and both cursor values with every checkpoint. These fields support audits,
-deduplication, retries, and downstream updates.
+Keep stable author IDs separately from mutable usernames. Save `conversationId`
+and `inReplyToId` for thread joins. Store media URLs, likes, reposts, quotes,
+views, bookmarks, time filters, page size, and cursors for audits and retries.
 
 ### How Can Applications Control Reply API Costs?
 
 Each returned reply costs 1 credit. Select a page size that fits your storage
-process. Use `sinceTime` and `untilTime` for bounded support periods. Save every
-completed page before requesting another cursor. Fix the reported billing
-problem before the next request. Use `reply_extractor` when a fixed
-`resultsLimit` and saved file matter more than current reply pages.
+process. Bound support periods with `sinceTime` and `untilTime`. Save each page
+before requesting another cursor. Use `reply_extractor` for fixed
+`resultsLimit` exports.
 
 <CodeGroup>
   ```bash cURL
