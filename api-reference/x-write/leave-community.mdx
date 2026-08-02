@@ -1,9 +1,9 @@
 ---
-title: "Leave X Community API & Membership Workflow"
+title: "How to Leave a Community on Twitter via API"
 sidebarTitle: "Leave community"
-description: "Leave an X community by ID with a connected account, track the write lifecycle, and verify the membership change when required. Includes API examples."
+description: "Learn how to leave a Twitter Community by ID with one connected account. Track every API response, keep existing posts, and verify membership removal safely."
 api: "DELETE /x/communities/{id}/join"
-keywords: ["community", "leave", "unsubscribe", "remove member"]
+keywords: ["how to leave a community on twitter", "how to leave a twitter community", "how to leave twitter community", "Twitter Community API", "remove Twitter Community membership"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -127,21 +127,18 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-## Leave Membership Without Deleting the Community
+## How to Leave a Community on Twitter via API
 
-This endpoint removes one connected account from a community membership. The
-community remains available to its other members. It requires no name match.
+Call `DELETE /x/communities/{id}/join` to remove one connected account's
+membership. The Community remains available to its other members. Xquik tracks
+the departure as a write action.
 
-| Departure check | Exact evidence | Membership outcome |
-| --- | --- | --- |
-| Departing profile | Body `account` | The intended connected account leaves. |
-| Community target | Path `{id}` | The request addresses the reviewed group. |
-| Current membership | Pre-departure member lookup | The account belongs to the target community. |
-| Departure request | New `Idempotency-Key` | The key differs from the earlier join action. |
-| Verification | Community member pages | The account no longer appears when confirmation matters. |
+This route does not delete the Community. It does not delete the connected
+Twitter account. It also does not remove Community posts or replies.
 
-This route does not disband the group. Use community deletion only for an
-owned community that should cease to exist.
+Use [Delete Community](/api-reference/x-write/delete-community) only for an
+owned Community that should close. Use [Delete Tweet](/api-reference/x-write/delete-tweet)
+for an owned post that should disappear.
 
 <Callout icon="coins" color="#5c3327">
   **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
@@ -230,83 +227,173 @@ owned community that should cease to exist.
   ```
 </CodeGroup>
 
-## Leave a community with context
+## How to Leave a Twitter Community with Xquik
 
-Use this route after confirming the current community membership. Resolve the
-numeric community ID and connected account independently. Save the community
-name and approval reference before leaving.
+Resolve the numeric Community ID before submitting the departure. Call
+[Community Info](/api-reference/x/community-info) to confirm its name, rules,
+creator, and description.
 
-Generate a dedicated idempotency key for this departure. Do not reuse the
-earlier join key. Reuse the departure key only for an exact retry.
-
-Community departure workflows often include:
-
-- Leaving a completed event or campaign community.
-- Applying a reviewed membership-cleanup request.
-- Correcting membership from the wrong connected account.
-- Recording the departure time in an account ledger.
-
-Store the action ID and lifecycle state. Keep a failed departure separate from
-a confirmed result. Query community members afterward only when independent
-verification is required.
-
-| Community departure record | Request or response source | Membership rule |
-| --- | --- | --- |
-| Community ID | Path `{id}` | Confirm the exact group before leaving. |
-| Acting X account | Request `account` | Preserve the departing profile. |
-| Community name | Pre-departure lookup | Save the reviewed group name. |
-| Idempotency key | Request header | Never reuse the earlier join key. |
-| Write action ID | Response `id` | Poll the matching lifecycle record. |
-| Lifecycle state | Response `status` and `terminal` | Stop only after a terminal state. |
-| Existing tweets | Community tweet archive | Preserve required posts before departure. |
-| Departure proof | Community member pages | Confirm the account is absent when required. |
-
-## How to Leave a Twitter Community Through the API
-
-Resolve the numeric community ID before submitting the leave request. Use
-[Community Info](/api-reference/x/community-info) to confirm the community
-name. Save the connected account that should leave.
+Show the selected connected account beside those details. A Community has its
+own ID. The connected account has a separate stable account ID.
 
 Check [Community Members](/api-reference/x/community-members) when current
-membership must be proven. Follow every cursor page before declaring the
-account absent. A missing profile on one partial page proves nothing.
+membership needs proof. Follow every cursor before declaring the account
+absent. One partial page proves nothing.
 
-Send `DELETE /x/communities/{id}/join` with the connected account. Create a
-new idempotency key for this departure. Store the returned action ID before
-polling its write status.
+Record these values before the write:
 
-After terminal success, read the member roster again when verification matters.
-Record the verification time and completed cursor. Do not delete the community
-to remove one account.
+- Numeric Community ID and verified name.
+- Connected username and stable account ID.
+- Departure reason and approval reference.
+- New idempotency key for this request.
+- Pre-departure roster time and cursor coverage.
+
+Never reuse the earlier join key. Joining and leaving are separate actions.
+
+## Archive Community Posts Before Leaving
+
+Leaving does not erase earlier Community posts or replies. X says those posts
+continue to exist after a member leaves. They can remain visible on the
+Community page, profiles, timelines, and search.
+
+Archive required posts before removing membership. Follow every
+[Community Tweets](/api-reference/x/community-tweets) cursor. Save Tweet IDs,
+authors, text, timestamps, media URLs, replies, reposts, likes, and cursors.
+
+Use [Community Search](/api-reference/x/community-search) for keyword matches
+inside the known Community. That route cannot archive every post unless the
+query covers them. Use the unfiltered timeline for a complete export.
+
+The leave request has no notification field. Notify members through a separate
+approved workflow when a handoff requires notice. Never claim that this API
+sends a farewell post, direct message, or moderator alert.
+
+## How to Leave Twitter Community Membership Safely
+
+Create one idempotency key for this departure. Send the Community ID in the
+path. Send the connected username through `account`.
+
+Use this sequence:
+
+1. Verify the Community and connected account.
+2. Archive required Community posts and member evidence.
+3. Approve one membership-removal request.
+4. Submit `DELETE /x/communities/{id}/join` once.
+5. Store the returned action ID immediately.
+6. Poll until `terminal` becomes `true`.
+7. Verify the account no longer appears as a member.
+
+A `202` response confirms accepted processing. It does not confirm departure.
+Do not create another key during a timeout. Inspect the existing action first.
+
+## Verify the Twitter Community Departure
+
+Read [Community Members](/api-reference/x/community-members) after terminal
+success. Follow every cursor required for the account search. Store the final
+cursor, lookup time, username, and account ID.
+
+Keep the write receipt separate from later roster snapshots. The receipt shows
+the requested action. The roster shows membership observed later.
+
+If the account remains, refresh the complete roster once. Preserve the result
+and request ID. Do not submit parallel departures with different keys.
 
 | Membership task | Correct route | Expected result |
 | --- | --- | --- |
-| Confirm the community | `GET /x/communities/{id}/info` | Name, rules, creator, and policies |
-| Confirm current membership | `GET /x/communities/{id}/members` | Connected account appears in a complete roster |
-| Leave the community | `DELETE /x/communities/{id}/join` | One connected account leaves |
-| Rejoin later | `POST /x/communities/{id}/join` | The connected account requests membership again |
-| Delete an owned community | `DELETE /x/communities/{id}` | The entire community is removed |
+| Confirm the Community | `GET /x/communities/{id}/info` | Review its name, rules, creator, and policies. |
+| Confirm membership | `GET /x/communities/{id}/members` | Find the account in a complete roster. |
+| Leave the Community | `DELETE /x/communities/{id}/join` | Remove one connected account's membership. |
+| Rejoin later | `POST /x/communities/{id}/join` | Submit a new membership action. |
+| Delete the Community | `DELETE /x/communities/{id}` | Remove the entire owned Community. |
 
-Use this community membership API for one account. It preserves the group,
-its other members, rules, moderators, and tweet timeline.
+## Leave a Twitter Community on PC or Phone
 
-## Reconcile Community Membership After Leaving
+For a manual departure, X says to open the Community page. Select the Joined
+button, then choose Leave the community. X currently documents that flow for
+its Community interface.
 
-Keep the leave receipt separate from later roster snapshots. The receipt
-records the requested action. The roster records membership observed later.
+Use the API for software workflows. The request stays the same across server,
+desktop, iOS, and Android clients. Do not automate screen labels when the REST
+route fits the workflow.
 
-Store the community ID, connected account, action ID, terminal state, and
-verification timestamp. A later rejoin creates a new action and idempotency
-key. Never overwrite the earlier departure record.
+Read the official [X Communities guide](https://help.x.com/en/using-x/communities)
+for current interface behavior. X can change its buttons without changing
+Xquik's documented request.
 
-If the account still appears after terminal success, refresh the complete
-roster once. Preserve the unexpected result and request ID. Do not submit
-parallel leave requests with different keys.
+## Answer Common Community Departure Questions
+
+### Do My Community Posts Disappear After I Leave?
+
+No. X says Community posts and replies remain after their author leaves. Use
+Delete Tweet for an owned post that should be removed.
+
+### Can I Rejoin the Community Later?
+
+Yes, when X permits membership. X says the original invitation can support a
+later rejoin. Open and restricted Communities can follow different approval
+flows.
+
+Create a new join action and idempotency key. Never replay the earlier leave
+request to rejoin.
+
+### Can This API Cancel a Pending Join Request?
+
+No. This route removes existing membership. The canonical API has no
+cancel-pending-request field or separate cancellation endpoint.
+
+### Does Leaving Delete the Community?
+
+No. Other members, moderators, rules, and Community posts remain. Use Delete
+Community only when an authorized owner intends to remove the whole group.
+
+### Is a Twitter Group Chat the Same as a Community?
+
+No. Group direct messages use a different X feature. This endpoint changes
+Community membership and does not remove someone from a group conversation.
+
+### Can an Admin Transfer Ownership Before Leaving?
+
+This request has no ownership-transfer field. Complete any supported transfer
+inside X first. Verify the new admin before removing the original account.
+
+### What Are the Privacy Effects of Leaving?
+
+The departing account stops appearing as a current member after success.
+Earlier posts can remain public. Saved exports and third-party copies also
+remain outside this membership action.
+
+### Is Community Notes the Same as X Communities?
+
+No. Community Notes is a separate feature for adding context to posts. This
+endpoint cannot leave or change Community Notes participation.
+
+### Do Twitter Communities Still Exist?
+
+Yes. X still publishes current Communities guidance. X controls interface
+availability, membership modes, invitations, moderation, and search.
+
+## Recover From Leave Community Failures
+
+Fix malformed IDs or bodies after `400`. Replace invalid credentials after
+`401`. Restore credits after `402`. Reconnect the selected account after `403`.
+
+Check both the account and Community after `404`. A missing account differs
+from a missing Community. Preserve that distinction in operator messages.
+
+For `409`, compare the saved account, Community ID, and request body. Reuse the
+key only when every value still matches. Different inputs require new approval.
+
+Preserve `422` rejection details. Do not delete the Community as a fallback.
+Honor `Retry-After` after `429` without changing the approved departure.
+
+After `500` or `503`, inspect `safeToRetry` and the existing lifecycle. Never
+infer failure from a dropped connection. Verification prevents duplicate
+membership writes.
 
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+  Your API key. OAuth bearer authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
 <ParamField header="Idempotency-Key" type="string" required>

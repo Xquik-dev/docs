@@ -165,9 +165,10 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: 'api-reference/x-write/leave-community.mdx',
     phrases: [
-      'Leave Membership Without Deleting the Community',
-      'Departure check',
-      'This route does not disband the group.',
+      'Archive Community Posts Before Leaving',
+      'Verify the Twitter Community Departure',
+      'Leave a Twitter Community on PC or Phone',
+      'Recover From Leave Community Failures',
     ],
   },
   {
