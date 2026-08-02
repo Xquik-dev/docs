@@ -2964,6 +2964,57 @@ const FORBIDDEN_DELETE_TWEET_API_SNIPPETS = [
   'Session cookie authentication is also supported.',
 ] as const;
 
+const REQUIRED_LIKE_TWEET_API_SNIPPETS = [
+  'title: "Twitter Like API: Like a Tweet by ID With Status"',
+  '"Twitter Like API"',
+  '"Twitter API like Tweet"',
+  'Use this Twitter Like API to like 1 tweet by ID.',
+  'This Twitter API like Tweet request uses 1 connected X account.',
+  '[Like Post endpoint](https://docs.x.com/x-api/users/like-post)',
+  '[Developer Guidelines](https://docs.x.com/developer-guidelines)',
+  'Keep every like user-initiated.',
+  'const likeRecord =',
+  'request_hash: result.request.hash',
+  'requested_tweet_id: tweetId',
+  'result.result?.id ?? result.tweetId ?? result.targetId ?? null',
+  'process.stdout.write(`${JSON.stringify(likeRecord)}\\n`);',
+  'like_record = {',
+  '"request_hash": result["request"]["hash"]',
+  'response.raise_for_status()',
+  'type LikeTweetResponse struct',
+  'SafeToRetry bool `json:"safeToRetry"`',
+  '## Like One Tweet by ID',
+  '## Keep Every Like User-Initiated',
+  'Do not build auto-like, bulk-like, or purchased-like workflows.',
+  'This endpoint accepts 1 Tweet ID per request.',
+  '## Authenticate the Connected X Account',
+  'The request never accepts an X password or session cookie.',
+  '## Save a Durable Like Receipt',
+  '| Like action column | Source | Engagement rule |',
+  '## Poll Pending Likes and Verify Completion',
+  '| Already liked | Converged terminal result |',
+  '## Prevent Duplicate Tweet Likes',
+  '## Handle Twitter Like API Errors',
+  '## Choose Like, Unlike, or Read Likes',
+  '## Twitter Like API Questions',
+  '### Can an API like a tweet by ID?',
+  '### Does this endpoint bulk-like tweets?',
+  '### How does Twitter Like API authentication work?',
+  '### How should a Twitter API like Tweet retry work?',
+  '<ParamField header="Authorization" type="string">',
+  '<WriteActionLifecycleResponse />',
+] as const;
+
+const FORBIDDEN_LIKE_TWEET_API_SNIPPETS = [
+  'const data = await response.json();',
+  'data = response.json()',
+  'var data map[string]interface{}',
+  'fmt.Println(data)',
+  'Session cookie authentication is also supported.',
+  'Liking replies that match a verified support rule.',
+  'Link the like to its human or automated rule.',
+] as const;
+
 const FORBIDDEN_PUBLIC_TWEET_MEDIA_ID_SNIPPETS = [
   'Pass returned `mediaId` in the `media` array on `POST /x/tweets`',
   'Pass `mediaId` to `POST /x/tweets`',
@@ -14728,6 +14779,28 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(
       FORBIDDEN_DELETE_TWEET_API_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the like tweet API page user-initiated and auditable', (): void => {
+    expect.assertions(2);
+
+    const source = `${readFileSync(
+      'api-reference/x-write/like.mdx',
+      'utf8',
+    )}\n${readFileSync(WRITE_ACTION_LIFECYCLE_SNIPPET_PATH, 'utf8')}`;
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Like tweet API docs',
+        REQUIRED_LIKE_TWEET_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_LIKE_TWEET_API_SNIPPETS.filter((snippet) =>
         source.includes(snippet),
       ),
     ).toStrictEqual([]);
