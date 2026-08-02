@@ -1,9 +1,9 @@
 ---
-title: "List Tweet Drafts, Saved Posts & Content Ideas"
+title: "List Xquik Tweet Drafts with Cursor-Based Pagination"
 sidebarTitle: "List drafts"
-description: "List saved tweet and thread drafts with text, media attachments, reply targets, creation times, and cursor-based pagination. Includes response fields."
+description: "List Xquik tweet drafts with exact text, optional topic and goal, timestamps, stable cursor pagination, authentication, and clear 401 or 429 recovery."
 api: "GET /drafts"
-keywords: ["draft", "list", "all drafts", "pagination", "cursor"]
+keywords: ["list tweet drafts", "tweet draft API", "saved tweet drafts", "draft pagination", "draft inventory"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -43,14 +43,27 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
+## List Saved Tweet Drafts
+
+List tweet drafts stored in your authenticated Xquik account. Each result
+contains saved text, an optional topic, an optional goal, and timestamps.
+
+Use this route to build a draft inventory or review queue. It returns drafts
+newest first and supports cursor pagination. The route never publishes draft
+text or sends it to followers.
+
+Xquik drafts are separate from [X's native Unsent posts](https://help.x.com/en/using-x/how-to-post).
+This API cannot list drafts saved inside the X compose interface.
+
 <Callout icon="circle-check" color="#16a34a">
   **Free** - does not consume credits
 </Callout>
 
 <CodeGroup>
   ```bash cURL
-  curl "https://xquik.com/api/v1/drafts?limit=20" \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+  curl --fail-with-body \
+    "https://xquik.com/api/v1/drafts?limit=20" \
+    --header "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
   ```javascript Node.js
@@ -59,7 +72,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "x-api-key": "xq_YOUR_KEY_HERE",
     },
   });
-  const data = await response.json();
+  const page = await response.json();
+  if (!response.ok) {
+    throw new Error(`${response.status} ${page.error}: ${page.message}`);
+  }
+
+  for (const draft of page.drafts) {
+    console.log(draft.id, draft.text, draft.createdAt);
+  }
   ```
 
   ```python Python
@@ -70,7 +90,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
       params={"limit": 20},
   )
-  data = response.json()
+  page = response.json()
+  if response.status_code != 200:
+      raise RuntimeError(
+          f'{response.status_code} {page["error"]}: {page["message"]}'
+      )
+
+  for draft in page["drafts"]:
+      print(draft["id"], draft["text"], draft["createdAt"])
   ```
 
   ```go Go
@@ -95,44 +122,203 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      var page map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      if resp.StatusCode != http.StatusOK {
+          panic(fmt.Sprintf("%d %v: %v", resp.StatusCode, page["error"], page["message"]))
+      }
+
+      fmt.Println(page["drafts"], page["hasMore"])
   }
   ```
 </CodeGroup>
 
-## Query parameters
+## Understand the Tweet Draft List
+
+The response contains one `drafts` array and pagination fields. An empty array
+is a successful result. It means the account currently has no saved drafts.
+
+Drafts use descending creation order. A newer `createdAt` value appears first.
+The draft ID breaks ties between equal creation times. This order stays
+predictable while clients follow returned cursors.
+
+The list contains Xquik draft records only. It excludes published tweets,
+scheduled posts, native X drafts, and drafts owned by another account.
+
+Each draft contains one saved text string. The canonical draft object contains
+no thread order, media attachment, reply target, or public tweet ID.
+
+## Paginate Through Every Draft
+
+Request up to 50 drafts per page. The default and maximum `limit` are both 50.
+A smaller value helps clients process short review batches.
+
+Follow this cursor workflow:
+
+1. Request the first page without `afterCursor`.
+2. Process every draft in the returned order.
+3. Check `hasMore` after processing the page.
+4. Copy `nextCursor` when `hasMore` is `true`.
+5. Send that value as the next `afterCursor`.
+6. Stop when `hasMore` becomes `false`.
+
+Treat `nextCursor` as an opaque value. Never decode, edit, or construct it.
+Keep only the latest cursor after a page succeeds.
+
+The final page omits `nextCursor`. Do not expect an empty string or `null`.
+Use `hasMore` as the loop condition.
+
+This route exposes no topic, goal, text, date, or status filter. Filter the
+returned draft objects inside your client when a smaller review set is needed.
+
+Do not paginate with timestamps or guessed draft IDs. Those values cannot
+replace the returned cursor. A cursor from another account also cannot select
+that account's drafts.
+
+## Read the Draft Inventory Fields
+
+Optional fields are omitted when they were not supplied during draft creation.
+Check for `topic` and `goal` before reading them.
+
+| Field | Meaning | Inventory use |
+| --- | --- | --- |
+| `drafts[].id` | Stable Xquik draft ID | Retrieve or delete the exact draft. |
+| `drafts[].text` | Exact saved tweet text | Review the proposed post copy. |
+| `drafts[].topic` | Optional composition topic | Group drafts by intended subject. |
+| `drafts[].goal` | Optional composition goal | Review engagement, followers, authority, or conversation intent. |
+| `drafts[].createdAt` | ISO 8601 creation timestamp | Sort or record intake time. |
+| `drafts[].updatedAt` | ISO 8601 update timestamp | Compare a result with a cached copy. |
+| `hasMore` | Whether another page exists | Continue or stop pagination. |
+| `nextCursor` | Opaque cursor for the next page | Pass it through unchanged. |
+
+The `text` field can contain up to 25,000 characters. The optional `topic`
+field can contain up to 500 characters. A `goal` can be `engagement`,
+`followers`, `authority`, or `conversation`.
+
+## Build a Tweet Draft Review Queue
+
+Use list pagination before retrieval, publishing, or cleanup.
+
+1. List the newest Xquik tweet drafts.
+2. Store each returned draft ID once.
+3. Review its text, topic, goal, and timestamps.
+4. Retrieve one draft again before final approval.
+5. Publish approved text through a separate X write route.
+6. Delete obsolete drafts after required review.
+7. Continue until `hasMore` is `false`.
+
+Listing a draft does not reserve, approve, publish, or delete it. Your client
+must record those workflow states separately.
+
+The list response provides no draft count across every page. Count processed
+IDs locally when an inventory total matters. Deduplicate by `id` during long
+runs where drafts can be created or deleted concurrently.
+
+Use [Get Draft](/api-reference/drafts/get) before destructive cleanup. Use
+[Create Tweet](/api-reference/x-write/create-tweet) only after content approval.
+
+## Keep Native X Drafts Separate
+
+Native X drafts appear under Unsent posts inside the compose interface. Native
+thread drafts may contain several connected posts. Native drafts may also
+contain photos, GIFs, or video.
+
+An Xquik draft stores one text value and optional composition context. It does
+not mirror the native X draft collection.
+
+| Draft source | Listed here? | Correct action |
+| --- | --- | --- |
+| Xquik Create Draft API | Yes | Paginate this endpoint. |
+| Xquik Get Draft API | Yes | Match the same Xquik draft ID. |
+| X Unsent posts | No | Open the native X compose interface. |
+| Published tweet or thread | No | Use an X tweet read endpoint. |
+| Scheduled post | No | Use the matching scheduling workflow. |
+
+Do not send a public tweet ID as `afterCursor`. Public tweet IDs and draft
+cursors identify different resources.
+
+## Recover From Draft List Errors
+
+| Status | Error | Cause | Fix |
+| --- | --- | --- | --- |
+| `200` | Draft page | The authenticated request succeeded | Process `drafts`, then inspect `hasMore`. |
+| `401` | `unauthenticated` | The credential is missing or invalid | Replace the API key or bearer token. |
+| `429` | `rate_limit_exceeded` | Too many requests reached the route | Wait for `Retry-After`, then retry once. |
+
+An empty `drafts` array is not a `404`. It is a valid `200` response.
+
+Never retry `401` without replacing the credential. Retry `429` only after the
+server's delay. Preserve the last successful cursor before retrying a page.
+
+## Answer Tweet Draft List Questions
+
+### How Can I List My Saved Tweet Drafts?
+
+Call `GET /drafts` with an API key or OAuth bearer token. The response lists
+drafts owned by that authenticated Xquik account.
+
+### Does This API List Native Twitter or X Drafts?
+
+No. Native drafts remain under Unsent posts. This route lists records created
+through the Xquik draft API.
+
+### How Many Tweet Drafts Can One Page Return?
+
+One page returns at most 50 drafts. Use `nextCursor` when `hasMore` is `true`.
+
+### Can I Search Draft Text or Filter by Topic?
+
+No server-side search or filter parameter exists. Paginate, then filter fields
+inside your client.
+
+### Does One Draft Include a Thread or Media?
+
+No. One result contains a text string and optional composition context. It
+contains no thread sequence, media collection, or reply target.
+
+### Are Deleted Drafts Included?
+
+No. Deleted drafts are absent. Xquik provides no deleted-draft restore route.
+
+### Does Listing Tweet Drafts Consume Credits?
+
+No. This authenticated list request is free and consumes no Xquik credits.
+
+## Query Parameters
 
 <ParamField query="limit" type="number">
-  Results per page. Default `50`, max `50`.
+  Results per page. Default `50`, maximum `50`.
 </ParamField>
 
 <ParamField query="afterCursor" type="string">
-  Pagination cursor from a previous response. Pass the `nextCursor` value to fetch the next page.
+  Opaque cursor from `nextCursor`. Pass it unchanged to fetch the next page.
 </ParamField>
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+<ParamField header="x-api-key" type="string">
+  Your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-api-key`, not both.
 </ParamField>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="drafts" type="object[]">Array of draft objects, ordered by creation date (newest first).</ResponseField>
-<ResponseField name="drafts[].id" type="string">Unique draft ID.</ResponseField>
-<ResponseField name="drafts[].text" type="string">The draft tweet text.</ResponseField>
-<ResponseField name="drafts[].topic" type="string">Topic the tweet is about. Omitted if not set.</ResponseField>
-<ResponseField name="drafts[].goal" type="string">Optimization goal. Omitted if not set.</ResponseField>
+<ResponseField name="drafts" type="object[]">Draft objects ordered by creation time, newest first.</ResponseField>
+<ResponseField name="drafts[].id" type="string">Unique Xquik draft ID.</ResponseField>
+<ResponseField name="drafts[].text" type="string">Exact saved tweet text.</ResponseField>
+<ResponseField name="drafts[].topic" type="string">Optional draft topic. Omitted when unset.</ResponseField>
+<ResponseField name="drafts[].goal" type="string">Optional composition goal. Omitted when unset.</ResponseField>
 <ResponseField name="drafts[].createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
-<ResponseField name="drafts[].updatedAt" type="string">ISO 8601 last update timestamp.</ResponseField>
-<ResponseField name="hasMore" type="boolean">`true` if additional pages exist beyond this result set.</ResponseField>
-<ResponseField name="nextCursor" type="string">Pagination cursor. Pass as the `afterCursor` query parameter to fetch the next page. Present only when `hasMore` is `true`.</ResponseField>
+<ResponseField name="drafts[].updatedAt" type="string">ISO 8601 update timestamp.</ResponseField>
+<ResponseField name="hasMore" type="boolean">Whether another page exists.</ResponseField>
+<ResponseField name="nextCursor" type="string">Opaque next-page cursor. Present only when `hasMore` is `true`.</ResponseField>
 
 ```json
 {
@@ -147,7 +333,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     },
     {
       "id": "38",
-      "text": "3 things I learned building a real-time data platform:",
+      "text": "Three lessons from building a real-time API.",
       "goal": "authority",
       "createdAt": "2026-02-23T16:15:00.000Z",
       "updatedAt": "2026-02-23T16:15:00.000Z"
@@ -161,17 +347,17 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 ### 401 Unauthenticated
 
 ```json
-{ "error": "unauthenticated" }
+{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }
 ```
-Missing or invalid API key.
+Authentication is missing or invalid. Replace the credential before retrying.
 
 ### 429 Rate Limited
 
 ```json
 { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
 ```
-Too many requests. Wait for the `Retry-After` header before retrying.
+Too many requests reached the route. Wait for `Retry-After` before retrying.
 
 <Note>
-  **Related:** [Create Draft](/api-reference/drafts/create) to save a new draft, [Get Draft](/api-reference/drafts/get) to fetch a specific draft, or [Delete Draft](/api-reference/drafts/delete) to remove one.
+  **Related:** [Create Draft](/api-reference/drafts/create) to save tweet text, [Get Draft](/api-reference/drafts/get) to retrieve one record, or [Delete Draft](/api-reference/drafts/delete) to remove it.
 </Note>
