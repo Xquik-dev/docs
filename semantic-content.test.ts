@@ -432,6 +432,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     snippets: [
       '| X profile text update column | Request or response source | Review rule |',
       '| Changed fields | Exact request keys | Leave unrelated profile fields absent. |',
+      'This route does not change a username, avatar, banner, or birth date.',
+      'OAuth bearer authentication is also supported.',
     ],
   },
   {
@@ -595,6 +597,19 @@ describe('operational content structure', (): void => {
     }
 
     expect(findings).toStrictEqual([]);
+  });
+});
+
+describe('update profile contract copy', (): void => {
+  it('does not advertise unsupported session authentication', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x-write/update-profile.mdx',
+      'utf8',
+    );
+
+    expect(source).not.toContain('Session cookie authentication');
   });
 });
 
