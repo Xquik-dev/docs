@@ -298,13 +298,13 @@ response returns only the selected filters.
 Followers and following are not monitor event types. Account relationship
 changes are not monitor events either. For follower growth, compare complete
 [follower snapshots](/api-reference/x/followers) at approved intervals. Use the
-[follower export guide](/guides/follower-export-crm) for controlled follower
-CSV archives.
+[follower export guide](/guides/follower-export-crm) to create controlled
+follower CSV snapshots.
 
 Read `isActive` as the polling state. Active monitors capture selected future
-account changes. Pausing retains the profile and filters but stops future
-checks. Read `nextBillingAt` as the next scheduled charge. It does not prove
-that an event or webhook delivery succeeded.
+account changes. Pausing retains the profile and filters while disabling future
+monitoring. Read `nextBillingAt` as the next scheduled charge. It does not
+prove that an event or webhook delivery succeeded.
 
 ## How Do I Check Whether Twitter Account Activity Alerts Are Active?
 
@@ -332,8 +332,8 @@ independent during diagnosis.
 ## How Do I Track Mentions and Replies for One Account?
 
 Confirm that `eventTypes` contains `tweet.mention` for mentions. For reply
-alerts, require the `tweet.reply` event type. Either filter can operate alone or
-alongside the other. The
+alerts, require the `tweet.reply` event type. Configure either event type
+independently or enable both together. The
 status route shows the stored selection. It does not return the matching tweets.
 
 Use [List Events](/api-reference/events/list) with `monitorId` after confirming
@@ -352,10 +352,10 @@ No. This endpoint returns one monitor configuration. It does not calculate
 engagement rate, follower growth, posting frequency, reach, impressions, or
 sentiment. It also does not backfill a native X analytics report.
 
-Use stored monitor events for activity captured after monitor creation.
-[List Events](/api-reference/events/list) returns stored event rows with cursor
-pagination. Use [X user tweets](/api-reference/x/user-tweets) to retrieve recent
-posts from the profile. Use an extraction job for follower CSV exports.
+Monitor event history begins after monitor creation.
+[List Events](/api-reference/events/list) returns cursor-based pages of stored
+event records. Call [X user tweets](/api-reference/x/user-tweets) when an audit
+requires recent profile posts. Use an extraction job for follower CSV exports.
 
 Keep these outputs distinct. A monitor status snapshot explains configuration.
 An event record proves one matched change. A delivery record proves one
@@ -366,8 +366,8 @@ None of those outputs is an engagement analytics dashboard.
 
 Twitter analytics tools usually calculate performance from posts and account
 metrics. They may summarize likes, replies, reposts, views, or follower
-changes. Those values are engagement metrics. This endpoint only reports
-monitor configuration.
+changes. Those values are engagement metrics. This endpoint reports the saved
+profile, filters, and polling status.
 
 The response describes one saved monitor. It identifies the tracked account
 and selected event filters. It also reports whether monitoring continues. The
@@ -387,19 +387,19 @@ reporting.
 
 Do not compare an empty event list with a complete analytics report. Event
 history begins when the monitor captures a selected change. Paused monitors do
-not capture additional account events. An omitted filter also prevents that
-event from being stored. Record both conditions before drawing activity
+not capture additional account events. Omitted filters cannot produce
+corresponding event records. Record both conditions before drawing activity
 conclusions.
 
 ## What Should a Twitter Account Activity Audit Store?
 
 Start an audit with the monitor response. Store `id`, `username`, and
-`xUserId`. Add `eventTypes`, `isActive`, `createdAt`, and `nextBillingAt`. These
-fields describe the approved monitor configuration during the request.
+`xUserId`. Add `eventTypes`, `isActive`, `createdAt`, and `nextBillingAt`.
+Together, these fields form one reproducible monitor snapshot.
 
-Store the request time beside the response. The API does not return a snapshot
-time. Your request time identifies when the audit observed this configuration.
-Keep the HTTP status and monitor ID with that entry.
+Record the request timestamp beside the response. The endpoint returns monitor
+creation time, not the audit observation time. Keep the HTTP status and monitor
+ID with that entry.
 
 Record the intended event beside the stored filters. For a reply alert, record
 the `tweet.reply` type. For a profile-name change, record `profile.name`. This
@@ -412,7 +412,8 @@ missing event from a failed receiver.
 
 Repeat the status request after each approved update. Compare the account,
 filters, polling status, and next scheduled charge. Preserve both snapshots
-with the approved request. Reject the update when `xUserId` unexpectedly changes.
+with the approved change ticket. Reject the update when `xUserId` unexpectedly
+changes.
 
 Treat `404` as an ownership or existence failure. Never infer previous monitor
 states from that response. Before continuing, confirm the authenticated account
@@ -424,7 +425,7 @@ audit conclusion.
 
 Fetch the monitor immediately before an approved update. Store its monitor ID,
 username, and stable X user ID. Add event types, active state, and billing
-time. This snapshot becomes the change baseline.
+schedule. This snapshot becomes the change baseline.
 
 Confirm the target profile first. Usernames can change. The stable `xUserId`
 prevents a renamed profile from looking like another account. Stop when the
@@ -440,7 +441,7 @@ the previous state before toggling it.
 
 After the update, fetch the same monitor ID again. Compare its target, event
 types, active state, and `nextBillingAt`. Keep both snapshots with the approved
-request. This proves the exact account-monitor change.
+change ticket. This proves the exact account-monitor change.
 
 ## Trace One Missing Profile Alert
 
