@@ -1,9 +1,9 @@
 ---
-title: "Twitter Follow API for User & Audience Connections"
+title: "Twitter Follow API: Follow One X User by ID"
 sidebarTitle: "Follow user"
-description: "Follow an X profile by user ID from a connected account. Confirm the new following relationship and account identity in the response. See action fields."
+description: "Use the Twitter Follow API to follow one user by ID. Approve the connected account, poll the write action, handle limits, and verify the relationship."
 api: "POST /x/users/{id}/follow"
-keywords: ["follow", "x user", "write", "action", "connected account"]
+keywords: ["Twitter API follow", "Twitter API follow user", "Twitter Follow API", "follow a user Twitter API", "follow user by ID"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -120,9 +120,13 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-## Choose Follow
+## Follow One Twitter User by ID
 
-Use this route to create one following relationship from a connected account. It has follow-specific minute and daily limits. Use profile-image routes only for account appearance changes.
+Use this Twitter API follow endpoint for 1 target user ID.
+Each Twitter API follow user request names 1 connected X account.
+Confirm the target and approve the acting account before sending the action.
+
+Compare X's separate [Follow User endpoint](https://docs.x.com/x-api/users/follow-user).
 
 <Callout icon="coins" color="#5c3327">
   **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
@@ -155,7 +159,10 @@ Use this route to create one following relationship from a connected account. It
       account: "myxaccount",
     }),
   });
-  const data = await response.json();
+  const followReceipt = await response.json();
+  if (!response.ok) {
+    throw new Error(JSON.stringify(followReceipt));
+  }
   ```
 
   ```python Python
@@ -171,7 +178,8 @@ Use this route to create one following relationship from a connected account. It
           "account": "myxaccount",
       },
   )
-  data = response.json()
+  follow_receipt = response.json()
+  response.raise_for_status()
   ```
 
   ```go Go
@@ -203,70 +211,77 @@ Use this route to create one following relationship from a connected account. It
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      var followReceipt map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&followReceipt); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      fmt.Println(followReceipt)
   }
   ```
 </CodeGroup>
 
-## Follow a verified profile
+## Authenticate and Approve the Follow
 
-Use this route after resolving the intended profile. Prefer the numeric user
-ID when your workflow already has it. Show the current username, profile name,
-and follower context before approval.
+Send an Xquik API key or OAuth 2.1 bearer token.
+Never send an X password or session cookie.
+Show the target user ID, username, profile name, and acting account.
 
-Assign a unique idempotency key to the follow decision. Reuse it only for an
-exact network replay. Store the target ID, acting account, action ID, and
-lifecycle state.
+The Python sample uses `import requests` with this request URL:
+`https://xquik.com/api/v1/x/users/{id}/follow`.
 
-Follow workflows can support:
+## Verify the Twitter Follow API Result
 
-- Following a reviewed partner or customer account.
-- Applying an approved list of profiles to one account.
-- Recording relationship changes in a CRM activity stream.
-- Preventing duplicate follows across concurrent workers.
+Store the target ID, acting account, action ID, and request hash.
+Poll `statusUrl` until `terminal` becomes `true`.
+Close already-followed results without another request.
 
-Do not use this route for follower collection. Use the followers endpoint to
-retrieve profile rows. Use the following endpoint to inspect existing outbound
-relationships.
+Use [Check Follower](/api-reference/x/check-follower) when current proof matters.
+Use [Following](/api-reference/x/following) to read outbound relationships.
+Use [Unfollow User](/api-reference/x-write/unfollow) to reverse approval.
 
-## Verify a Follow Before Dependent Workflows
+## Handle Twitter Follow API Errors
 
-Store the target user ID and connected account ID. Record the action ID, request time, and idempotency key.
+Fix the user ID or account after `400`.
+Replace Xquik authentication after `401`; reconnect after `403`.
+Add credits after `402`; review rejected input after `422`.
+Honor `Retry-After` after `429`.
+After `500` or `503`, check `safeToRetry` before retrying.
 
-Poll the write status until it reaches a terminal state. A queued response never proves the account followed the profile.
+## Twitter API Follow Questions
 
-After success, use follower check when current relationship proof is required. An already-followed result confirms convergence. Do not submit a second follow.
+### How Do I Follow a User Programmatically?
 
-On failure, preserve the generic error and request ID. Retry the same target with the same idempotency key.
+Approve the target user ID and connected account.
+Send this POST request; poll the returned action until terminal.
 
-| Follow decision column | Source | Audit rule |
-| --- | --- | --- |
-| `acting_account` | Request `account` | Keep the connected account separate from the target profile. |
-| `target_user_id` | Path `id` | Use the stable numeric target ID. |
-| `target_username` | Review context | Store as a readable label, not the relationship key. |
-| `approval_reference` | Workflow value | Prove who or what approved the follow. |
-| `idempotency_key` | Request header | Reuse only for the identical follow request. |
-| `write_action_id` | Response `id` | Poll and reconcile the durable follow action. |
-| `status` | Response `status` | Keep queued, completed, and failed states distinct. |
-| `terminal` | Response `terminal` | Report completion only when this value is `true`. |
-| `safe_to_retry` | Response `safeToRetry` | Retry only when the lifecycle response permits it. |
+### Can I Follow a Protected X Account?
 
-| Follow outcome | Evidence | Next action |
-| --- | --- | --- |
-| Queued | `terminal: false` | Poll `statusUrl`; do not claim the relationship changed. |
-| Completed | Terminal success | Store the completion time and optional relationship proof. |
-| Already followed | Converged terminal result | Complete the job without a second follow request. |
-| Failed and retryable | `safeToRetry: true` | Follow lifecycle guidance and preserve the original receipt. |
-| Failed and final | Terminal failure | Store the error and stop automatic retries. |
+X may create a pending follow request for a protected profile.
+Verify the relationship before dependent work begins.
+
+### Can I Bulk Follow Twitter Users?
+
+No bulk request exists here.
+Send 1 approved target ID per action and respect both limits above.
+
+### Do I Need a Twitter Follow SDK?
+
+No. Use any HTTP client or the cURL, Node.js, Python, and Go examples.
+A third-party app still needs an approved connected account.
+
+### How Do I Check or Undo a Follow?
+
+Use Check Follower for current proof.
+Use Unfollow User with new approval and a new idempotency key.
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+<ParamField header="x-api-key" type="string">
+  Send your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.
 </ParamField>
 
 <ParamField header="Idempotency-Key" type="string" required>

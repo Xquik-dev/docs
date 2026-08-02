@@ -177,7 +177,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   },
   {
     file: 'api-reference/x-write/follow.mdx',
-    phrases: ['Verify a Follow Before Dependent Workflows'],
+    phrases: ['Verify the Twitter Follow API Result'],
   },
   {
     file: 'api-reference/x/followers-you-know.mdx',

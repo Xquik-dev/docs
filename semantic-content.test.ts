@@ -133,8 +133,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'api-reference/x-write/follow.mdx',
     snippets: [
-      '| Follow decision column | Source | Audit rule |',
-      '| Already followed | Converged terminal result |',
+      'Store the target ID, acting account, action ID, and request hash.',
+      'Close already-followed results without another request.',
     ],
   },
   {
