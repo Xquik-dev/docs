@@ -1,12 +1,14 @@
 ---
-title: "Target Audience Discovery with Follower Exports"
+title: "Twitter Audience Discovery with Follower Exports"
 sidebarTitle: "Audience discovery"
-description: "Find X audience segments with user search, follower exports, following pages, verified followers, batch enrichment, and CSV or JSON handoff. Follow exact steps."
+description: "Find Twitter audience segments with user search, follower exports, following pages, verified followers, batch enrichment, and CSV or JSON handoff steps."
 keywords:
   [
     "target audience discovery",
     "X audience discovery",
     "Twitter audience discovery",
+    "Twitter audience insights",
+    "Twitter lead generation",
     "follower export",
     "following export",
     "verified followers",
@@ -25,7 +27,29 @@ with a topic, brand, creator, or competitor account and needs a scored audience
 list. Keep every row keyed by X user ID so exports, CRMs, agents, and warehouse
 loads can dedupe later.
 
+This workflow produces public profile and relationship evidence. It does not
+create an X Ads custom audience. It also does not return private emails,
+purchase behavior, age, or gender.
+
 <AudienceCommunityApiLinks />
+
+## Define the Audience Question
+
+Start with one decision your audience list must support. Examples include
+finding relevant creators, qualifying public profiles, or comparing follower
+communities. Keep the question beside every exported row.
+
+Choose a source that matches that decision:
+
+- User search finds public profiles matching a name, handle, or topic.
+- Followers show who follows a selected public account.
+- Following shows which accounts a selected profile follows.
+- Verified followers isolate returned profiles with X verification.
+- Tweet search confirms public conversation around a selected topic.
+
+Do not treat every follower as a qualified prospect. A follower relationship
+proves one public connection. It does not prove role, budget, intent, or
+permission to contact that person.
 
 ## Pick the Discovery Path
 
@@ -69,6 +93,12 @@ per request before expanding the graph.
 curl "https://xquik.com/api/v1/x/users/batch?ids=44196397,987654321" \
   -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 ```
+
+Prefer numeric X user IDs as stable keys. Usernames and display names can
+change. Store the latest username as an attribute, not the CRM primary key.
+
+Keep `seed_query`, `seed_user_id`, `seed_username`, and `seed_rank` together.
+That evidence explains why each follower or following row entered the audience.
 
 ## Expand the Audience
 
@@ -140,6 +170,43 @@ curl "https://xquik.com/api/v1/x/users/44196397/verified-followers" \
 Store `has_next_page` and `next_cursor` with the seed account and route. Pass
 `next_cursor` back as `cursor` only when `has_next_page` is true.
 
+Save a checkpoint after every completed page. Include the route, seed user ID,
+input cursor, next cursor, page size, and collection time. Retry from the last
+saved next cursor after a worker restart.
+
+Stop when `has_next_page` is false or `next_cursor` is empty. Also stop when a
+cursor repeats. Never share one cursor between followers and following routes.
+
+## Combine Audience Sources
+
+Union sources when broad discovery matters. Intersect sources when stronger
+relationship evidence matters. Always join on numeric X user ID.
+
+Useful source combinations include:
+
+- Followers of several relevant creators reveal shared audience members.
+- Following lists reveal accounts your seed profiles actively chose.
+- User search plus followers validates a topic match and relationship.
+- Verified followers plus tweet search validates verification and activity.
+- Batch user enrichment refreshes profile fields before CRM upserts.
+
+Store one evidence row per source relationship. Build one normalized candidate
+row after collection. This preserves multiple reasons for the same candidate.
+
+```json
+{
+  "candidate_user_id": "987654321",
+  "source_count": 3,
+  "sources": [
+    "followers:44196397",
+    "followers:123456789",
+    "search:ai founder"
+  ],
+  "matched_queries": ["ai founder"],
+  "matching_tweet_ids": ["1893704267862470862"]
+}
+```
+
 ## Score Rows
 
 Create one normalized row per candidate before enrichment or outreach.
@@ -168,7 +235,32 @@ Create one normalized row per candidate before enrichment or outreach.
 
 Score with fields Xquik already returns: follower count, following count,
 verification state, verification type, bio, location, profile image, account
-creation date, media count, and whether the profile accepts DMs when returned.
+creation date, media count, website URL, and protected-account state.
+
+Use transparent, task-specific qualification rules. Store every rule result
+beside the final decision. Avoid one unexplained audience score.
+
+<CardGroup cols={2}>
+  <Card title="Relationship Evidence" icon="network">
+    Count distinct seed accounts, source routes, and matched search queries.
+  </Card>
+
+  <Card title="Profile Evidence" icon="contact">
+    Evaluate returned bio, location, verification, and public profile counts.
+  </Card>
+
+  <Card title="Conversation Evidence" icon="messages-square">
+    Keep matching tweet IDs, creation times, replies, reposts, and likes.
+  </Card>
+
+  <Card title="Qualification Decision" icon="list-checks">
+    Store `qualified`, `qualification_reasons`, and the ruleset version.
+  </Card>
+</CardGroup>
+
+Do not invent missing profile attributes. A blank location is unknown, not a
+failed location match. A missing verification type is not a personal account
+classification. A large follower count does not prove topical relevance.
 
 ## Validate Active Conversation
 
@@ -182,6 +274,120 @@ curl "https://xquik.com/api/v1/x/tweets/search?q=ai%20founder%20min_faves%3A10&v
 
 Store tweet IDs separately from audience rows. Do not overwrite the candidate
 profile row with the latest matching tweet.
+
+Use returned tweet fields for public conversation evidence. Store tweet text,
+author ID, creation time, reply count, repost count, like count, and quote
+count when returned. Keep the search query and cursor beside each page.
+
+Separate profile qualification from tweet qualification. A profile can match
+your audience even when no recent tweet matches. A matching tweet can also come
+from a profile that fails your audience rules.
+
+## Build a Twitter Lead Generation Handoff
+
+Treat the exported file as a public-profile research list. Apply your consent,
+privacy, and outreach rules before contacting anyone. Xquik does not supply
+private email addresses or private messages through this workflow.
+
+Use numeric X user ID for CRM upserts. Keep these concrete columns:
+
+- `x_user_id`
+- `x_username`
+- `display_name`
+- `bio`
+- `location`
+- `follower_count`
+- `following_count`
+- `verified`
+- `verified_type`
+- `source_count`
+- `source_seed_ids`
+- `matched_queries`
+- `matching_tweet_ids`
+- `qualified`
+- `qualification_reasons`
+- `collected_at`
+- `ruleset_version`
+
+Keep public profile facts separate from your internal sales fields. Do not
+overwrite `bio`, `location`, or follower counts with CRM notes. Refresh public
+fields by X user ID and preserve prior collection timestamps.
+
+## Measure Twitter Audience Insights
+
+Calculate insights only from collected public profiles and tweets. Report the
+sample size, collection time, seed accounts, query, and missing-field counts.
+
+Useful measurements include:
+
+- Shared followers across selected seed accounts
+- Followers versus following source counts
+- Verified and unverified profile counts
+- Returned profile locations without inferred geography
+- Bio terms found in returned descriptions
+- Recent matching authors and tweet counts
+- Reply, repost, like, and quote totals for matching tweets
+
+These measurements describe the collected sample. They do not represent every
+X user or private demographic attribute. Keep that limitation in dashboards,
+AI summaries, and client reports.
+
+## Handle Audience Collection Failures
+
+- `400`: Correct the query, user ID, username, or page parameter.
+- `401`: Replace the missing or invalid credential.
+- `402`: Top up credits before resuming the saved cursor.
+- `404`: Verify the seed account or requested profile still resolves.
+- `424`: Retry the temporary read-service dependency failure.
+- `429`: Wait for `Retry-After` before requesting another page.
+- `502`: Retry the temporary read-service failure later.
+
+Retry `424`, `429`, and `502` with capped backoff. Do not restart from page one.
+Resume from the last committed cursor. Do not retry `400`, `401`, `402`, or
+`404` without changing the request or account state.
+
+## Twitter Audience Discovery Questions
+
+### How Do I Find My Target Audience on Twitter?
+
+Start with topic searches or relevant seed accounts. Expand their followers or
+following lists. Then qualify profiles with returned fields and matching tweets.
+
+### How Do I Analyze a Competitor's Twitter Followers?
+
+Export that public account's followers. Keep the competitor's numeric X user ID
+as the seed. Dedupe candidates by their own numeric X user IDs.
+
+### Can I Export Twitter Followers to CSV?
+
+Yes. Run a `follower_explorer` extraction, wait for completion, then export CSV.
+Use direct JSON pages when your application owns pagination and checkpoints.
+
+### What Is the Difference Between Followers and Following?
+
+Followers chose to follow the seed account. Following lists accounts the seed
+profile chose. Keep these relationship directions separate in every row.
+
+### Can Xquik Return Twitter Audience Demographics?
+
+No. This workflow returns documented public profile and tweet fields. Do not
+infer private age, gender, email, purchase behavior, or other demographics.
+
+### How Do I Build a Twitter Lead List?
+
+Collect public profiles, preserve source evidence, and apply explicit
+qualification rules. Export only the fields your CRM needs. Apply consent and
+outreach requirements outside this collection workflow.
+
+### How Do I Prevent Duplicate Audience Profiles?
+
+Use numeric X user ID as the unique key. Store usernames as mutable profile
+fields. Preserve every source relationship in separate evidence rows.
+
+### How Do I Keep Audience Exports Current?
+
+Refresh profile fields by numeric X user ID. Keep `collected_at` on every
+snapshot. Never overwrite historical evidence without retaining its timestamp.
 
 ## Cost and Retry Notes
 
