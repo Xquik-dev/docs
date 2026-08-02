@@ -1,9 +1,9 @@
 ---
-title: "Twitter DM API for Direct Messages & Media Uploads"
+title: "Twitter DM API: Send Direct Messages with Media"
 sidebarTitle: "Send DM"
-description: "Send an X direct message from a connected account. Store its messageId, attach up to 1 uploaded media ID, and poll the write-action status. See action fields."
+description: "Send text or one media attachment through the Twitter DM API. Authenticate the connected X account, poll the durable action, and handle every response."
 api: "POST /x/dm/{userId}"
-keywords: ["send direct messages", "Twitter DM API", "X direct message API", "send DM", "send DM with media", "DM history", "messageId", "media_ids", "connected account"]
+keywords: ["Twitter DM API", "Twitter API DM", "Twitter API send DM", "send direct messages", "X direct message API", "send DM with media", "DM history", "messageId", "media_ids"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -121,10 +121,18 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 <LlmsDirective />
 
 <Callout icon="coins" color="#5c3327">
-  **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+  **10 credits per send** · [Compare plans](https://xquik.com/#pricing)
 </Callout>
 
-Send a text DM from one connected X account to the recipient `userId`. For media DMs, upload first with `POST /x/media`, pass the returned `mediaId` as the only `media_ids` item, and store the returned `messageId`. Use public media URLs with `POST /x/tweets`; this DM endpoint accepts one uploaded media ID instead.
+## Send Direct Messages with the Twitter DM API
+
+Use this Twitter DM API for approved, one-to-one messages.
+The Twitter API DM route sends text or one uploaded media attachment.
+This Twitter API send DM workflow supports SDKs, support tools, and server jobs.
+
+Choose the connected X account and the recipient's numeric user ID.
+Use [Twitter profile lookup](/api-reference/x/twitter-profile-lookup) when you only know a username.
+Follow [X's Direct Message rules](https://docs.x.com/x-api/direct-messages/manage/integrate) for every message.
 
 <CodeGroup>
   ```bash cURL
@@ -134,308 +142,134 @@ Send a text DM from one connected X account to the recipient `userId`. For media
     -H "Content-Type: application/json" \
     -d '{
       "account": "myxaccount",
-      "text": "Hello from Xquik!"
+      "text": "Your requested account update is ready."
     }' | jq
   ```
 
   ```javascript Node.js
   const recipientUserId = "44196397";
-  const account = "myxaccount";
-  const uploadedMediaId = "1893726451023847424";
-  const mediaIds = [uploadedMediaId];
-
-  const response = await fetch("https://xquik.com/api/v1/x/dm/44196397", {
-    method: "POST",
-    headers: {
-      "x-api-key": "xq_YOUR_KEY_HERE",
-      "Idempotency-Key": "dm-44196397-1895432178065391234",
-      "Content-Type": "application/json",
+  const dmResponse = await fetch(
+    `https://xquik.com/api/v1/x/dm/${recipientUserId}`,
+    {
+      method: "POST",
+      headers: {
+        "x-api-key": "xq_YOUR_KEY_HERE",
+        "Idempotency-Key": "dm-44196397-1895432178065391234",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        account: "myxaccount",
+        text: "Your requested account update is ready.",
+      }),
     },
-    body: JSON.stringify({
-      account,
-      text: "Hello from Xquik!",
-      media_ids: mediaIds,
-    }),
-  });
-  const result = await response.json();
+  );
 
-  const dmHandoff = {
-    message_id: result.messageId,
-    user_id: recipientUserId,
-    account,
-    send_status: result.success ? "sent" : "unknown",
-    media_ids: mediaIds,
-    media_id: uploadedMediaId,
-    source_endpoint: `/api/v1/x/dm/${recipientUserId}`,
-  };
-
-  process.stdout.write(`${JSON.stringify(dmHandoff)}\n`);
-  ```
-
-  ```python Python
-  import json
-  import requests
-
-  recipient_user_id = "44196397"
-  account = "myxaccount"
-  uploaded_media_id = "1893726451023847424"
-  media_ids = [uploaded_media_id]
-
-  response = requests.post(
-      f"https://xquik.com/api/v1/x/dm/{recipient_user_id}",
-      headers={
-          "x-api-key": "xq_YOUR_KEY_HERE",
-          "Idempotency-Key": "dm-44196397-1895432178065391234",
-      },
-      json={
-          "account": account,
-          "text": "Hello from Xquik!",
-          "media_ids": media_ids,
-      },
-  )
-  result = response.json()
-
-  dm_handoff = {
-      "message_id": result["messageId"],
-      "user_id": recipient_user_id,
-      "account": account,
-      "send_status": "sent" if result["success"] else "unknown",
-      "media_ids": media_ids,
-      "media_id": uploaded_media_id,
-      "source_endpoint": f"/api/v1/x/dm/{recipient_user_id}",
+  const dmAction = await dmResponse.json();
+  if (!dmResponse.ok) {
+    throw new Error(dmAction.message);
   }
 
-  print(json.dumps(dm_handoff))
-  ```
-
-  ```go Go
-  package main
-
-  import (
-      "bytes"
-      "encoding/json"
-      "log"
-      "net/http"
-      "os"
-  )
-
-  type SendDmRequest struct {
-      Account  string   `json:"account"`
-      Text     string   `json:"text"`
-      MediaIDs []string `json:"media_ids,omitempty"`
-  }
-
-  type SendDmResult struct {
-      MessageID string `json:"messageId"`
-      Success   bool   `json:"success"`
-  }
-
-  type DmHandoff struct {
-      MessageID      string  `json:"message_id"`
-      UserID         string  `json:"user_id"`
-      Account        string  `json:"account"`
-      SendStatus     string  `json:"send_status"`
-      MediaIDs       []string `json:"media_ids"`
-      MediaID        string  `json:"media_id"`
-      SourceEndpoint string  `json:"source_endpoint"`
-  }
-
-  func sendStatus(success bool) string {
-      if success {
-          return "sent"
-      }
-      return "unknown"
-  }
-
-  func main() {
-      recipientUserID := "44196397"
-      account := "myxaccount"
-      uploadedMediaID := "1893726451023847424"
-      uploadedMediaIDs := []string{uploadedMediaID}
-
-      body, err := json.Marshal(SendDmRequest{
-          Account:  account,
-          Text:     "Hello from Xquik!",
-          MediaIDs: uploadedMediaIDs,
-      })
-      if err != nil {
-          log.Fatal(err)
-      }
-
-      req, err := http.NewRequest(
-          "POST",
-          "https://xquik.com/api/v1/x/dm/"+recipientUserID,
-          bytes.NewReader(body),
-      )
-      if err != nil {
-          log.Fatal(err)
-      }
-      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-      req.Header.Set("Idempotency-Key", "dm-44196397-1895432178065391234")
-      req.Header.Set("Content-Type", "application/json")
-
-      resp, err := http.DefaultClient.Do(req)
-      if err != nil {
-          log.Fatal(err)
-      }
-      defer resp.Body.Close()
-
-      var result SendDmResult
-      if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-          log.Fatal(err)
-      }
-
-      handoff := DmHandoff{
-          MessageID:      result.MessageID,
-          UserID:         recipientUserID,
-          Account:        account,
-          SendStatus:     sendStatus(result.Success),
-          MediaIDs:       uploadedMediaIDs,
-          MediaID:        uploadedMediaID,
-          SourceEndpoint: "/api/v1/x/dm/" + recipientUserID,
-      }
-
-      if err := json.NewEncoder(os.Stdout).Encode(handoff); err != nil {
-          log.Fatal(err)
-      }
-  }
+  process.stdout.write(`${JSON.stringify(dmAction)}\n`);
   ```
 </CodeGroup>
 
-The Node.js, Python, and Go examples convert the response into one DM send row.
-Store `message_id`, `user_id`, `account`, `send_status`, optional `media_id`,
-`media_ids`, and `source_endpoint`. For media DMs, keep `media_ids` as the
-one-item request array and set `media_id` to the uploaded media ID that you
-passed as that single item.
+## Authenticate and Select the Recipient
 
-## Send with media
+Authenticate with an `x-api-key` header or an OAuth bearer token.
+The connected X account sends the message on the user's behalf.
+The path `userId` identifies the recipient, not the sender.
 
-Upload media first with [Upload Media](/api-reference/x-write/upload-media), then pass the returned `mediaId` as the only `media_ids` item.
+Send only messages approved by your workflow.
+Honor recipient privacy, consent, and opt-out decisions.
+Read [DM history](/api-reference/x/dm-history) only for approved conversation context.
 
-```bash
-curl -X POST https://xquik.com/api/v1/x/dm/44196397 \
-  -H "x-api-key: xq_YOUR_KEY_HERE" \
-  -H "Idempotency-Key: dm-media-44196397-1895432178065391234" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "account": "myxaccount",
-    "text": "Here is the requested image.",
-    "media_ids": ["1893726451023847424"]
-  }' | jq
-```
+## Send Text or One Media Attachment
 
-<Tip>
-  `media_ids` must contain exactly one uploaded media ID. Empty arrays, multiple IDs, and `reply_to_message_id` return `400 invalid_input`.
-</Tip>
+Provide non-empty `text` for every direct message.
+Upload media first with [Upload Media](/api-reference/x-write/upload-media).
+Place its `mediaId` inside a one-item `media_ids` array.
+The upload costs another 10 credits.
 
-Generated SDKs can expose `reply_to_message_id` while the REST route rejects it.
-Leave it unset. Pass exactly one uploaded media ID in `media_ids`, then store
-the returned `messageId` with that media ID.
+Empty or multi-item arrays return `400 invalid_input`.
+This route also rejects `reply_to_message_id`.
+It does not send group messages or accept public media URLs.
 
-### Media DM result handoff
+## Poll and Verify the Direct Message
 
-After the media DM send returns `200 OK`, store the returned `messageId` with the uploaded media ID and recipient user ID so support logs, CRM records, queues, or agent memory can reconcile the attachment with the sent message.
+A `200` response contains a terminal write action.
+A `202` response requires polling through `statusUrl`.
+Wait for `terminal: true` before closing the send job.
+Store `writeActionId`, recipient ID, account, request hash, and `messageId`.
 
-```json
-{
-  "record_type": "dm_media_send",
-  "message_id": "1893726451029384192",
-  "user_id": "44196397",
-  "account": "myxaccount",
-  "media_ids": ["1893726451023847424"],
-  "media_id": "1893726451023847424",
-  "send_status": "sent",
-  "handoff_format": "jsonl"
-}
-```
+Reuse an idempotency key only after an interrupted network request.
+Never create another write while the first action remains nonterminal.
+The Xquik POST limit is 120 requests per minute.
 
-Keep `media_ids` as a one-item array in the request, keep `media_id` as the original `POST /x/media` result, and use `message_id` as the external DM identifier after the send succeeds.
+## Handle Every Twitter DM API Response
 
-## Direct message handoff
+Fix request fields after `400`.
+Replace authentication after `401`, then add credits after `402`.
+Reconnect the X account after `403`.
+Keep the original request after a `409` idempotency conflict.
 
-Use `POST /x/dm/{userId}` when a support, sales, community, CRM, or agent workflow needs to send an auditable direct message from a connected X account. If you only have a username, look up the recipient first with [`GET /x/users/{id}`](/api-reference/x/twitter-profile-lookup). If the workflow needs conversation context, read the latest messages with [`GET /x/dm/{userId}/history`](/api-reference/x/dm-history) before sending.
+For `422 x_dm_not_allowed`, use an account permitted to message the recipient.
+Honor `Retry-After` after `429`.
+After `500` or `503`, inspect `safeToRetry` before retrying.
 
-<CardGroup cols={2}>
-  <Card title="messageId" icon="mail-check">
-    Store `messageId` as the external message ID for support logs, CRM records, queues, or agent memory.
-  </Card>
-  <Card title="success" icon="circle-check">
-    Mark the send job complete after a `200 OK` response.
-  </Card>
-  <Card title="userId" icon="user">
-    Keep the recipient X user ID from the path with the send job.
-  </Card>
-  <Card title="account" icon="at-sign">
-    Store the connected X account that sent the DM.
-  </Card>
-  <Card title="text" icon="message-square">
-    Store the exact message text sent. Add your own `sent_at` timestamp when downstream systems need it.
-  </Card>
-  <Card title="media_ids[0]" icon="paperclip">
-    Store the uploaded media ID when the DM includes one attachment from [`POST /x/media`](/api-reference/x-write/upload-media).
-  </Card>
-</CardGroup>
+## Twitter DM API Questions
 
-This endpoint costs 10 credits per send. Uploading media first with `POST /x/media` is a separate 10-credit call. `x_dm_not_allowed` means the recipient may not accept messages from this connected account; do not retry unchanged. Do not retry `422 x_dm_not_allowed` unchanged. Use another permitted connected account or ask the recipient to allow messages.
+### Can I automate customer support direct messages?
 
-Open the [Direct Message Workflow](/guides/direct-message-workflow) for queue design. Use [Get DM History](/api-reference/x/dm-history) for approved conversation context. Use [Upload Media](/api-reference/x-write/upload-media) to create the one `mediaId` allowed in `media_ids`.
+Yes. Queue approved replies and preserve the exact sent text.
+Avoid unsolicited bulk messaging and honor every opt-out.
 
-## Store a direct message send record
+### Can I send images or video through the API?
 
-| DM record column | Request or response source | Audit rule |
-| --- | --- | --- |
-| `message_id` | Response `messageId` | Use as the external identifier after a successful send. |
-| `recipient_user_id` | Path `userId` | Keep the numeric recipient ID with every message. |
-| `sender_account` | Request `account` | Prove which connected X account sent the DM. |
-| `text` | Request `text` | Preserve the exact approved message body. |
-| `media_id` | Request `media_ids[0]` | Store the one uploaded attachment ID when present. |
-| `idempotency_key` | Request header | Reuse only for an exact interrupted network replay. |
-| `send_status` | HTTP and response outcome | Mark `sent` only after `200 OK`. |
-| `sent_at` | Integration timestamp | Keep the downstream send time separate from DM history times. |
-| `approval_reference` | Integration value | Link the send to its support, sales, community, or CRM decision. |
+Upload the file first, then send its single `mediaId`.
+This endpoint accepts one attachment per message.
 
-| DM outcome | Evidence | Recovery |
-| --- | --- | --- |
-| Sent text DM | `200 OK` and `messageId` | Store the message ID and complete the send job. |
-| Sent media DM | `200 OK`, `messageId`, and one `media_id` | Reconcile the uploaded attachment with the sent message. |
-| Recipient disallows DMs | `422 x_dm_not_allowed` | Do not retry unchanged. Use a permitted account or request access. |
-| Invalid attachment array | Empty or multiple `media_ids` | Upload or select exactly one media ID. |
-| Unsupported reply field | `reply_to_message_id` supplied | Remove the field; the REST route does not accept DM replies. |
-| Ambiguous network result | No terminal response | Reuse the same idempotency key for the exact request only. |
+### Does this endpoint retrieve message history or create webhooks?
+
+No. Use [Get DM History](/api-reference/x/dm-history) for prior messages.
+This send route does not configure incoming-DM notifications.
+
+### Can third-party tools and generated SDKs call this route?
+
+Yes. Use the documented REST fields and authentication.
+Leave `reply_to_message_id` unset when a generated SDK exposes it.
 
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+  Your API key. OAuth bearer authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
 <ParamField header="Idempotency-Key" type="string" required>
-  Unique key for this intended write. Reuse it only for an exact network replay.
+  Unique key for this intended send. Reuse it only for an exact network replay.
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
   Must be `application/json`.
 </ParamField>
 
-## Path parameters
+## Path Parameters
 
 <ParamField path="userId" type="string" required>
-  The X user ID of the recipient.
+  Numeric X user ID of the direct message recipient.
 </ParamField>
 
 ## Body
 
 <ParamField body="account" type="string" required>
-  X username or account ID of your connected account to act as.
+  X username or account ID of your connected sender account.
 </ParamField>
 
 <ParamField body="text" type="string" required>
-  Non-empty message text to send. If X rejects oversized content, the API
-  returns `422 x_content_too_long`.
+  Non-empty direct message text.
 </ParamField>
 
 <ParamField body="media_ids" type="string[]">
-  Optional one-item array containing an uploaded media ID. Upload media first with [Upload Media](/api-reference/x-write/upload-media), then pass the returned `mediaId` as the only array item. Empty arrays and multiple IDs are rejected.
+  Optional one-item array containing an uploaded media ID.
 </ParamField>
 
 ## Response

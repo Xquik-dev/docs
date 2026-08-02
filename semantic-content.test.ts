@@ -119,8 +119,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'api-reference/x-write/send-dm.mdx',
     snippets: [
-      '| DM record column | Request or response source | Audit rule |',
-      '| Recipient disallows DMs | `422 x_dm_not_allowed` |',
+      'Store `writeActionId`, recipient ID, account, request hash, and `messageId`.',
+      'For `422 x_dm_not_allowed`, use an account permitted to message the recipient.',
     ],
   },
   {
