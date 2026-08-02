@@ -1,9 +1,9 @@
 ---
-title: "Create X Community API for Group Setup Workflow"
+title: "Create a Twitter Community with the X Community API"
 sidebarTitle: "Create community"
-description: "Create an X community under a connected account with an approved name and optional public description, then track the write lifecycle. See action fields."
+description: "Create an X community from one connected account. Submit its name and description, then track its community ID, admin account, and write lifecycle state."
 api: "POST /x/communities"
-keywords: ["community", "create", "x community", "group"]
+keywords: ["create a community on twitter", "create a twitter community", "how to create a community on twitter", "create twitter community", "X community API", "community admins", "community rules", "community members"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -127,9 +127,15 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-## Choose Community Creation
+## How to Create a Community on Twitter with Xquik
 
-Use this route only when the connected account must own a new community. It requires creation fields and starts a billable write lifecycle. Use join or leave for membership in an existing community.
+Call `POST /x/communities` to create a community on Twitter from one connected
+account. This create Twitter community workflow submits a name and optional
+description. Xquik then tracks the write until X returns a final result.
+
+Use this route only when the account should own a new community. Use join or
+leave routes for an existing community. This route does not add rules, members,
+moderators, invitations, posts, analytics, or membership settings.
 
 <Callout icon="coins" color="#5c3327">
   **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
@@ -223,7 +229,7 @@ Use this route only when the connected account must own a new community. It requ
   ```
 </CodeGroup>
 
-## Prepare a community creation request
+## Prepare a Community Creation Request
 
 Use this route after finalizing the community identity and purpose. Review the
 name, description, and rules before submission. Keep the connected owner
@@ -271,6 +277,110 @@ Store these creation inputs together:
 
 This record separates governance from transport recovery. A timeout can reuse
 the same key and body. An editorial change requires another approval and key.
+
+## Confirm the Community Admin Account
+
+Choose the connected account before review. X treats the original creator as
+the first admin. Community admins control names, descriptions, rules, and
+moderator assignments through X. Xquik sends the creation request only.
+
+X currently requires an eligible admin account. Its official moderator
+playbook lists these checks:
+
+- Keep the X account public.
+- Use an account that is at least 6 months old.
+- Verify an email address or phone number.
+- Keep the account compliant with the X Terms of Service.
+
+X enforces these requirements and can change them. The request has no
+eligibility override. It also has no Premium field. Confirm current eligibility
+inside X before approval. Preserve any rejection reason for the operator.
+
+Review the [X Communities moderator playbook](https://help.x.com/en/using-x/communities-moderator-playbook)
+before assigning the owner. It explains creator, admin, moderator, and member
+responsibilities. Store the chosen account with the approved community brief.
+
+## Plan Community Rules and Membership
+
+Define community rules before creating the container. Rules should describe
+the topic, allowed behavior, and moderation response. Do not place temporary
+campaign instructions in the public description. Keep the full rule set in
+the team's approved moderation record.
+
+X supports open communities and restricted membership workflows. Open
+communities show a Join button at the top of the community page. Restricted
+communities can let a person request to join. A moderator then accepts or
+denies that request. X may also allow member invitations.
+
+This endpoint does not choose a membership type. It does not add community
+members or moderators. Configure those settings after creation through the
+current X interface. Record the selected mode beside the returned community ID.
+
+Read the [X Communities guide](https://help.x.com/en/using-x/communities) before
+opening membership. It covers visibility, roles, invitations, and moderation.
+Use the guide as the source for current X behavior. Use this page for Xquik's
+API contract.
+
+## Prepare a Brand or Product Community
+
+Use a specific name that explains the shared topic. Write a description that
+identifies the intended community members. State who operates the community.
+Avoid names that imply an unsupported partnership or endorsement.
+
+Prepare the first discussion topics before launch. Assign community admins and
+moderators before invitations begin. Decide who reviews reports and removes
+disruptive members. Keep escalation rules outside the public description.
+
+This route cannot publish welcome posts or schedule discussions. It cannot
+promote or monetize the community. Use separately documented routes for later
+posts. Keep unsupported launch actions in your own workflow.
+
+## Connect the Community to a Website or App
+
+The request has no website, app, rules, or invitation field. Store those links
+in your application after X confirms creation. Associate them with the returned
+community ID, owner account, approval, and lifecycle record.
+
+After success, open the community page and verify its public identity. Search
+for communities by name, description, or creator through X when available.
+X notes that not every community appears in search results. Do not treat search
+visibility as proof of creation.
+
+Use the community ID as the stable integration key. Do not key integrations by
+the editable display name. Store a verified community URL only after the read
+route confirms the new ID.
+
+## Answer Common Community Creation Questions
+
+### Do X Communities Still Exist?
+
+Yes. X still publishes current Communities and moderator guidance. This API
+creates an X Community through a connected account. X controls feature
+availability and account eligibility.
+
+### Do You Need X Premium to Create a Community?
+
+The Xquik request does not accept a Premium setting. X decides whether the
+connected account can create the community. Check current X eligibility before
+submitting a billable write.
+
+### Can the API Add Rules, Members, or Moderators?
+
+No. The canonical request accepts `account`, `name`, and `description`. Set
+community rules, membership type, invitations, and moderator roles after
+creation. Never send undocumented fields.
+
+### Can the API Schedule, Grow, or Monetize a Community?
+
+No. This route creates the community and tracks that write. It does not
+schedule posts, invite initial members, run promotions, provide analytics, or
+configure monetization.
+
+### How Should Software Handle Community Creation?
+
+Require an approved brief and one idempotency key. Store the action ID
+immediately. Poll the lifecycle, verify the new community ID, and then start
+separate membership or publishing workflows.
 
 ## Validate the New Community
 
@@ -327,7 +437,7 @@ costly than a delayed verification read.
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+  Your API key. OAuth bearer authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
 <ParamField header="Idempotency-Key" type="string" required>
