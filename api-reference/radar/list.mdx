@@ -1,9 +1,9 @@
 ---
-title: "Twitter Trend Radar & Topic Monitoring Feed"
+title: "Social Media Monitoring API for Trending Topics"
 sidebarTitle: "List radar items"
-description: "List free Radar items for trending X topics with category, region, score, timestamps, filters, and cursor-based pagination. Includes costs and errors."
+description: "Monitor Reddit, GitHub, search trends, technology news, Wikipedia, prediction markets, and startup topics through one social media monitoring API with filters."
 api: "GET /radar"
-keywords: ["radar", "trending", "news", "topics", "signals"]
+keywords: ["social media monitoring api", "trending topics api", "social listening api", "trend analysis", "reddit trends", "github trending", "news monitoring"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -46,14 +46,94 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **Free** - does not consume credits
 </Callout>
 
-Get trending topics and news from Xquik's own infrastructure. Filter by source identifier, category, region, and time window.
+Build a social media monitoring feed from ranked public topics. Radar covers
+Reddit, GitHub, technology news, search trends, Wikipedia, prediction markets,
+and startup growth records. Filter those records by source, category, region,
+and time window.
 
-Radar is authenticated but free. It does not require an active subscription and does not consume credits.
+Authenticate every Radar request. You need no active subscription. Radar
+consumes no credits.
+
+## What Is a Social Media Monitoring API?
+
+A social media monitoring API turns public posts and trend signals into
+application-ready records. Radar exposes those records through one REST API
+endpoint. Each response uses structured JSON and stable field names.
+
+Radar combines several public topic sources. It does not mirror every social
+network. It also does not return X tweets, replies, followers, or timelines.
+Use [Search Tweets](/api-reference/x/search-tweets) for X brand mentions,
+hashtags, replies, and keyword searches.
+
+Radar differs from broad platform APIs. It normalizes every source into one
+`RadarItem` shape. You can compare titles, regions, timestamps, and scores
+without building separate source adapters.
+
+## Build a Trending Topics API Feed
+
+Use Radar as a trending topics API for dashboards, alerts, and research queues.
+Start with a narrow time window. Then request only the source or category you
+need.
+
+1. Call `GET /radar` with your API key.
+2. Filter one source when the request names a platform.
+3. Limit the region when location affects the result.
+4. Sort or filter records by `score` in your application.
+5. Store each `id` to prevent duplicate dashboard rows.
+6. Continue with `nextCursor` while `hasMore` stays `true`.
+
+Use `source=reddit` for Reddit posts. Use `source=github` for trending
+repositories. Other source identifiers follow the same pattern. This API
+access keeps one integration path across every supported feed.
+
+## Is Radar a Real-Time Monitoring API?
+
+Radar returns recently indexed topics. It does not promise a streaming
+firehose. Read `publishedAt` for the source timestamp. Read `createdAt` for the
+index timestamp.
+
+Poll the monitoring API on a schedule that fits your workflow. Keep the latest
+item ID and cursor. Respect every `429` rate limit response before polling
+again. This pattern supports current trend analysis without inventing a fixed
+delivery delay.
+
+## Can Radar Track Brand Mentions and Sentiment?
+
+Radar has no keyword query. It is not a complete brand monitoring index.
+Client applications can compare returned titles and descriptions with known
+brand names. That comparison covers only the current Radar feed.
+
+Radar also has no sentiment analysis field. The `score` value measures
+relevance, not sentiment. Do not classify a high score as positive or negative
+sentiment.
+
+Use [Search Tweets](/api-reference/x/search-tweets) for searchable X brand
+mentions. Use Radar when ranked cross-source topics matter more than an exact
+mention search. This split prevents false assumptions about social listening
+data.
+
+## Integrate Radar Into a Monitoring Dashboard
+
+Keep the dashboard pipeline simple. Request one page, validate the response,
+and render each `RadarItem`. Save the item ID, source, source ID, score, region,
+and timestamps.
+
+Group rows by `source` for a multi-feed view. Sort by `score` for a ranked
+view. Filter by `publishedAt` for a freshness view. Open `url` only when the
+source provides it.
+
+Use `hasMore` and `nextCursor` for background ingestion. Never construct a
+cursor. Keep each cursor with its matching filters. Changing `source`,
+`category`, `region`, or `hours` starts a different result set.
+
+Choose a searchable news API when you need exact keyword or domain matching.
+Choose Radar when you need normalized topic discovery across its documented
+sources. This distinction keeps the dashboard accurate and easy to integrate.
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+<ParamField header="x-api-key" type="string">
+  Your API key. Xquik also accepts session cookie authentication. Generate a key from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
 ## Query parameters
@@ -65,7 +145,7 @@ Radar is authenticated but free. It does not require an active subscription and 
 </ParamField>
 
 <ParamField query="category" type="string">
-  Filter by category. One of: `general`, `tech`, `dev`, `science`, `culture`, `politics`, `business`, `entertainment`. Omit to return all categories. Categories are assigned automatically based on source and content.
+  Filter by category. One of: `general`, `tech`, `dev`, `science`, `culture`, `politics`, `business`, `entertainment`. Omit to return all categories. Xquik assigns categories from each source and item.
 </ParamField>
 
 <ParamField query="hours" type="integer" default="6">
@@ -81,19 +161,19 @@ Radar is authenticated but free. It does not require an active subscription and 
 </ParamField>
 
 <ParamField query="after" type="string">
-  Cursor for pagination. Use the `nextCursor` value from the previous response. Cursors are opaque base64 strings and should not be constructed manually.
+  Cursor for pagination. Pass `nextCursor` from the previous response. Treat cursors as opaque base64 strings. Do not construct them.
 </ParamField>
 
 | Radar monitoring column | Response source | Queue rule |
 | --- | --- | --- |
 | Item ID | `items[].id` | Deduplicate one indexed Radar item. |
-| Source record | `items[].source` and `sourceId` | Preserve the original stream identity. |
+| Source record | `items[].source` and `items[].sourceId` | Preserve the original stream identity. |
 | Topic | `items[].title` | Display the concrete trend or discussion. |
 | Category | `items[].category` | Route technology, business, culture, or other topics. |
 | Region | `items[].region` | Keep the market with every queue row. |
 | Trend score | `items[].score` | Sort higher-scoring items first. |
 | Published at | `items[].publishedAt` | Measure source freshness. |
-| Source metrics | `items[].metadata` | Read only fields defined for that source. |
+| Source metrics | `items[].metadata` | Read-only fields defined for that source. |
 | Next page | `nextCursor` | Continue only when `hasMore` is `true`. |
 
 ## Response
@@ -121,20 +201,20 @@ Radar is authenticated but free. It does not require an active subscription and 
 </ResponseField>
 
 <ResponseField name="description" type="string">
-  Item description. Omitted when unavailable.
+  Item description. The API omits this field when the source provides no value.
 </ResponseField>
 
 <ResponseField name="url" type="string">
-  Link to the original source. Omitted when unavailable.
+  Link to the original source. The API omits this field when no link exists.
 </ResponseField>
 
 <ResponseField name="imageUrl" type="string">
-  Source image URL. Startup growth items return the logo here. Omitted when
-  unavailable.
+  Source image URL. Startup growth items return the logo here. The API omits
+  this field when no image exists.
 </ResponseField>
 
 <ResponseField name="source" type="string" required>
-  Radar source identifier. Pass this value as the `source` query parameter to filter future pages to the same stream.
+  Radar source identifier. Reuse this value in `source` to request the same stream.
 </ResponseField>
 
 <ResponseField name="sourceId" type="string" required>
@@ -214,8 +294,8 @@ Startup growth items always include `mrr`, `growthPercent`, `last30Days`,
 | `rank` | Source revenue rank |
 
 Radar orders these items by reported 30-day revenue growth. `metadata.rank` is
-the source's revenue rank. It can differ from the result position. The top-level
-`imageUrl` contains the startup logo when available.
+the source's revenue rank. Do not expect it to match the result position. The
+top-level `imageUrl` contains the startup logo when available.
 
 ### Other Sources
 
@@ -321,7 +401,7 @@ for _, item := range data.Items {
     ```json
     { "error": "invalid_input" }
     ```
-    Invalid `source` or `category` value. Numeric `hours` and `limit` values are clamped to the accepted range; non-numeric values fall back to defaults.
+    Invalid `source` or `category` value. Xquik clips numeric `hours` and `limit` values to the accepted range. Non-numeric values use defaults.
   </Tab>
   <Tab title="401 Unauthenticated">
     ```json
@@ -339,7 +419,7 @@ for _, item := range data.Items {
 
 ## Pagination
 
-Radar uses cursor-based pagination. When `hasMore` is `true`, pass the `nextCursor` value as the `after` query parameter to fetch the next page.
+Radar uses cursor-based pagination. When `hasMore` is `true`, pass `nextCursor` as `after` to fetch the next page.
 
 <CodeGroup>
 
