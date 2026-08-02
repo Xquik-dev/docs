@@ -1,9 +1,9 @@
 ---
-title: "X Community Tweet Search API & Keyword Results"
+title: "Twitter Community Search API & Keyword Tweet Results"
 sidebarTitle: Search community posts
-description: "Search tweets inside one X community by keyword. Use either supported REST path for authors, replies, reposts, likes, media, and cursor pages. See costs."
+description: "Search posts inside one known X (Twitter) community by keyword. Export matching tweets, authors, replies, reposts, likes, media, and cursor pages for reviews."
 api: "GET /x/communities/search"
-keywords: ["community", "search", "tweets", "x api"]
+keywords: ["twitter community search", "twitter search in community", "community tweets", "keyword tweet search", "community monitoring"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -74,8 +74,9 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 <LlmsDirective />
 <AudienceCommunityApiLinks />
 
-Search one X community without scanning unrelated timelines. Store tweet IDs,
-authors, engagement counts, media, and cursors for exports.
+Use Twitter community search to filter posts inside one known Community. Run a
+Twitter search in community posts with a numeric Community ID and query. Store
+Tweet IDs, authors, engagement counts, media, and cursors for exports.
 
 ## Filter One Community by Query
 
@@ -92,6 +93,42 @@ of returning the unfiltered feed. Keep the query beside every saved row.
 | Saved export | `community_search` extraction | Produce CSV, JSON, or XLSX query results. |
 
 Use the community tweets endpoint when no keyword filter is required.
+
+## Twitter Community Search Questions
+
+### Does This Endpoint Find Communities to Join?
+
+No. This endpoint searches posts after you provide a numeric Community ID. It
+does not discover Communities, join them, or change membership.
+
+Use X's Communities interface to discover groups and confirm participation
+rules. Read the official [X Communities guide](https://help.x.com/en/using-x/communities)
+for current discovery, visibility, and membership behavior.
+
+### How Do I Search Community Posts by Keyword?
+
+Send `communityId`, `q`, and one `queryType`. Use `Latest` for recent matches.
+Use `Top` for relevance-ranked matches.
+
+Keep each cursor tied to the same values. Start a new search when the query
+changes. Store the query beside every returned Tweet ID.
+
+### Why Does Twitter Community Search Return No Results?
+
+First, verify the Community ID, query, and read visibility. An empty match set
+differs from authentication, credit, dependency, rate-limit, or request errors.
+
+Use the [Community Tweets API](/api-reference/x/community-tweets) to inspect the
+visible, unfiltered feed. Zero matches do not prove an inactive Community.
+
+### Can I Find Active Authors in Matching Tweets?
+
+Group matching posts by stable author ID. Count matches, replies, reposts,
+likes, quotes, and views separately. Store follower counts with collection
+times when returned.
+
+These measures describe captured matches. They do not prove influence,
+audience reach, Community membership, or total posting activity.
 
 <Note>
   `GET /x/communities/search` and `GET /x/communities/tweets` accept the same
@@ -230,7 +267,7 @@ tweet instead of printing the full response page. Persist the final
 `next_cursor` row when `has_next_page` is true, then pass it back as `cursor`
 with the same `communityId`, `q`, `queryType`, and `pageSize`.
 
-## Direct community search handoff
+## Direct Community Search Handoff
 
 Use `GET /x/communities/search` when a monitoring job, research queue,
 moderation review, social listening workflow, or agent needs matching tweets
@@ -265,7 +302,7 @@ relevance-ranked review.
   </Card>
 </CardGroup>
 
-## Plan a community search export
+## Plan a Community Search Export
 
 Choose this route for repeatable research across one known community. Define
 the question before choosing the query. A focused query produces cleaner tweet
@@ -295,7 +332,7 @@ Stop when `has_next_page` becomes false. Store the final checkpoint with the
 row count. Deduplicate resumed exports by tweet ID. This protects downstream
 spreadsheets when a worker retries the last completed page.
 
-## Write precise community queries
+## Write Precise Community Queries
 
 Use concrete terms that match the research question. Combine keywords with
 supported search operators when required. Test the first page before starting
@@ -308,7 +345,7 @@ record the chosen sort order and collection time.
 Avoid changing `q` after receiving a cursor. Start a new search instead. This
 keeps each cursor tied to one understandable result set.
 
-## Validate a completed research file
+## Validate a Completed Research File
 
 Count unique tweet IDs after the final page. Compare that count with the
 written row count. Any difference reveals repeated rows.
@@ -325,7 +362,7 @@ When a run stops early, label it partial. Preserve the last durable cursor for
 resumption. Do not present a partial export as the community’s complete search
 result.
 
-## Schedule independent searches
+## Schedule Independent Searches
 
 Give every community-and-query pair its own checkpoint. Never share cursors
 between two terms.
@@ -380,7 +417,7 @@ Validate each dataset before comparison:
 Use the combined view for research prioritization. Preserve the independent
 exports for reproducibility and later audits.
 
-## Query parameters
+## Query Parameters
 
 <ParamField query="communityId" type="string" required>
   Numeric ID of the community whose tweets you want to search.
@@ -402,7 +439,7 @@ exports for reproducibility and later audits.
   Upper bound for tweets per page. Range: 1-100. Default: `20`.
 </ParamField>
 
-## Which community search route?
+## Which Community Search Route?
 
 <CardGroup cols={2}>
   <Card title="Community search route" icon="list-filter">
@@ -531,46 +568,46 @@ combine both result sets under one unrecorded query label.
   Array of matching community tweets.
   **Tweet object fields:**
     <ResponseField name="id" type="string">Tweet ID.</ResponseField>
-    <ResponseField name="text" type="string">Tweet text.</ResponseField>
-    <ResponseField name="type" type="string">Tweet type. Omitted if unavailable.</ResponseField>
+    <ResponseField name="text" type="string">Contains the complete Tweet text.</ResponseField>
+    <ResponseField name="type" type="string">Classifies the Tweet when X returns a type.</ResponseField>
     <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
     <ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet. Omitted if unavailable.</ResponseField>
-    <ResponseField name="likeCount" type="number">Like count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="retweetCount" type="number">Retweet count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="replyCount" type="number">Reply count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="quoteCount" type="number">Quote tweet count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="viewCount" type="number">View count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="bookmarkCount" type="number">Bookmark count. Omitted if unavailable.</ResponseField>
+    <ResponseField name="likeCount" type="number">Reports the number of likes when available.</ResponseField>
+    <ResponseField name="retweetCount" type="number">Reports the number of reposts when available.</ResponseField>
+    <ResponseField name="replyCount" type="number">Reports the number of replies when available.</ResponseField>
+    <ResponseField name="quoteCount" type="number">Reports the number of quotes when available.</ResponseField>
+    <ResponseField name="viewCount" type="number">Reports the number of views when available.</ResponseField>
+    <ResponseField name="bookmarkCount" type="number">Reports the number of bookmarks when available.</ResponseField>
     <ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
-    <ResponseField name="lang" type="string">Tweet language code. Omitted if unavailable.</ResponseField>
+    <ResponseField name="lang" type="string">Reports the Tweet language code when available.</ResponseField>
     <ResponseField name="isReply" type="boolean">Whether the tweet is a reply. Omitted if unavailable.</ResponseField>
     <ResponseField name="inReplyToId" type="string">Tweet ID being replied to. Omitted if not a reply.</ResponseField>
-    <ResponseField name="inReplyToUserId" type="string">User ID being replied to. Omitted if unavailable.</ResponseField>
-    <ResponseField name="inReplyToUsername" type="string">Username being replied to. Omitted if unavailable.</ResponseField>
+    <ResponseField name="inReplyToUserId" type="string">Identifies the replied-to user when available.</ResponseField>
+    <ResponseField name="inReplyToUsername" type="string">Reports the replied-to username when available.</ResponseField>
     <ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
     <ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
     <ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
     <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
     <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
     <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
-    <ResponseField name="contentDisclosure" type="object">Disclosure metadata for paid partnership and AI-generated media labels. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them. Omitted if unavailable.</ResponseField>
+    <ResponseField name="contentDisclosure" type="object">Returns paid-promotion and AI-generated-media labels when available. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia`.</ResponseField>
     <ResponseField name="author" type="object">
       Tweet author profile. Omitted if unavailable.
       **Author object fields:**
         <ResponseField name="id" type="string">Author user ID.</ResponseField>
-        <ResponseField name="username" type="string">Author handle without `@`.</ResponseField>
-        <ResponseField name="name" type="string">Author display name. Omitted if unavailable.</ResponseField>
-        <ResponseField name="followers" type="number">Follower count. Omitted if unavailable.</ResponseField>
+        <ResponseField name="username" type="string">Author X username.</ResponseField>
+        <ResponseField name="name" type="string">Author display name.</ResponseField>
+        <ResponseField name="followers" type="number">Reports the author's follower count when available.</ResponseField>
         <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
-        <ResponseField name="profilePicture" type="string">Author profile image URL. Omitted if unavailable.</ResponseField>
+        <ResponseField name="profilePicture" type="string">Profile picture URL. Omitted if unavailable.</ResponseField>
 
     </ResponseField>
     <ResponseField name="media" type="object[]">
-      Media attachments. Omitted when the tweet has no media.
+      Lists media items attached to the Tweet. Omitted when none exist.
       **Media object fields:**
-        <ResponseField name="mediaUrl" type="string">Direct media URL.</ResponseField>
-        <ResponseField name="videoVariants" type="object[]">Available video renditions with bitrate, content type, and URL. Omitted for images.</ResponseField>
-        <ResponseField name="type" type="string">Media type.</ResponseField>
+        <ResponseField name="mediaUrl" type="string">Provides the direct media URL.</ResponseField>
+        <ResponseField name="videoVariants" type="object[]">Lists available video renditions and playback details. Omitted for images.</ResponseField>
+        <ResponseField name="type" type="string">Identifies the attached media type.</ResponseField>
         <ResponseField name="url" type="string">Shortened URL from the tweet text.</ResponseField>
 
     </ResponseField>

@@ -4528,7 +4528,16 @@ const FORBIDDEN_COMMUNITY_TWEETS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_COMMUNITY_SEARCH_API_HANDOFF_SNIPPETS = [
-  '## Direct community search handoff',
+  'title: "Twitter Community Search API & Keyword Tweet Results"',
+  'Use Twitter community search to filter posts inside one known Community.',
+  'Twitter search in community posts with a numeric Community ID and query.',
+  '## Twitter Community Search Questions',
+  '### Does This Endpoint Find Communities to Join?',
+  '[X Communities guide](https://help.x.com/en/using-x/communities)',
+  '### Why Does Twitter Community Search Return No Results?',
+  '### Can I Find Active Authors in Matching Tweets?',
+  'They do not prove influence,',
+  '## Direct Community Search Handoff',
   '`GET /x/communities/search`',
   'monitoring job, research queue,',
   'social listening workflow, or agent needs matching tweets',
@@ -4580,7 +4589,7 @@ const REQUIRED_COMMUNITY_SEARCH_API_HANDOFF_SNIPPETS = [
   '<Card title="Saved export" icon="file-spreadsheet">',
   'Request 1 to 100 tweets with `pageSize`. The default is 20.',
   'Use `community_search` with `targetCommunityId` and `searchQuery`',
-  '## Which community search route?',
+  '## Which Community Search Route?',
   '<Card title="Community search route" icon="list-filter">',
   '<Card title="Equivalent scoped route" icon="search">',
   '`GET /x/communities/tweets` when your integration already uses that',
