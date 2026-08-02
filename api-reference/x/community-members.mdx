@@ -87,22 +87,22 @@ Scrape X community members into explicit profile rows. Store the community and u
 
 Call `GET /api/v1/x/communities/{id}/members` with the numeric community ID.
 Store the community ID and stable user ID. Keep the username, profile name,
-bio, location, and verification. Add follower count, following count, profile
-image, page cursor, and collection time when available.
+bio, location, and verification. Record each available follower count,
+following count, profile image, page cursor, and collection timestamp.
 
 Save the page before advancing its opaque cursor. Request another page only
-if `has_next_page` equals `true`. Reuse the exact `next_cursor`. Deduplicate a
+when `has_next_page` is exactly `true`. Reuse the exact `next_cursor`. Deduplicate a
 resumed page by community ID and user ID. Mark a credit-bounded, failed, or
 interrupted run as partial. Use the moderators route for role-specific
-profiles. The members route returns the complete roster.
+profiles. The members route returns the complete member roster.
 
 ### What Is the Best Way to Extract Data From a Twitter Community?
 
 Replace “data” with the community records the workflow needs. Use the info
 route for the community name and description. Use the members route for user
 IDs and profile fields. Use the moderators route for role-specific profiles.
-Use the tweets route for recent community posts. Use community search for
-posts matching a keyword.
+Retrieve recent Community posts through the tweets route. Search Community
+posts for a keyword through Community Search.
 
 Keep community profiles and tweets in separate tables. Join them with stable
 community and user IDs. Save page cursors, collection times, row counts, and
@@ -145,8 +145,8 @@ Complete every cursor page before comparing snapshots. Mark interrupted runs
 as partial. Use community ID plus user ID as the comparison key.
 
 Report newly observed and missing members separately. Never assign a reason
-for an addition or removal. Refresh a profile when later work needs current
-counts or bio.
+for an addition or removal. Refresh a profile only when later work requires
+current follower counts, following counts, or biographies.
 
 <Note>
   Requested result counts are upper bounds for paid authenticated calls. Low
@@ -223,15 +223,15 @@ Store `community_id`, `member_id`, `username`, `display_name`, `bio`,
 
 ## Build a Community Member Export
 
-Finish cursor pagination before declaring the community member export complete.
+Complete every cursor page before marking the community member export complete.
 Save each profile page before advancing its cursor. Mark credit-bounded,
 failed, and interrupted runs as partial membership snapshots. Mark the export
 complete only after `has_next_page` is `false`.
 
 Community membership shows roster inclusion. It does not prove posting
 activity. Use [Community Tweets](/api-reference/x/community-tweets) for recent
-posts. Use [Community Search](/api-reference/x/community-search) for posts that
-match a keyword. Join those posts to member profiles by `manifest_id`,
+posts. Use [Community Search](/api-reference/x/community-search) for Community
+posts that contain a keyword. Join those posts to member profiles by `manifest_id`,
 `community_id`, and stable user ID.
 
 Use [Community Moderators](/api-reference/x/community-moderators) for
@@ -253,20 +253,20 @@ Choose columns that support the next task:
 - User ID, username, and profile name.
 - Biography, location, and verification state.
 - Follower and following counts.
-- Community ID, page cursor, and collection time.
+- Record the Community ID, page cursor, and collection timestamp.
 
-Build member directories, enrich CRM contacts, or review moderators with this
-roster.
+Build member directories, enrich CRM contacts, or review moderators from this
+Community member roster.
 Do not label every member as a moderator. Use the moderators route for that
-smaller group.
+role-specific moderator roster.
 
 Request another page only when `has_next_page` is exactly `true`. Pass
 `next_cursor` without modification. Persist each page before saving its cursor.
 Deduplicate by user ID when a resumed job repeats the previous page.
 
-Profile fields can change after collection. Stamp each profile row with the
-collection time. Refresh the profile through user lookup when current bios,
-counts, or avatars matter.
+Profile fields can change after collection. Stamp each profile row with its
+collection timestamp. Refresh the profile through user lookup when the
+workflow requires current bios, follower counts, following counts, or avatars.
 
 ## Compare Community Membership Snapshots
 
