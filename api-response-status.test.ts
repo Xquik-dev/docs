@@ -285,6 +285,24 @@ describe('API success response status documentation', (): void => {
     expect(ids).toHaveLength(828);
   });
 
+  it('renders every 204 response as an empty body', (): void => {
+    expect.assertions(2);
+
+    const noContentPages = readApiDocs().filter((apiDoc): boolean =>
+      apiDoc.source.includes('<Tab title="204"'),
+    );
+    const findings = noContentPages.flatMap((apiDoc): readonly string[] =>
+      /<Tab title="204"[^>]*>\s+```text\s+No response body\.\s+```/u.test(
+        apiDoc.source,
+      )
+        ? []
+        : [`${apiDoc.file}: 204 tab implies a response body.`],
+    );
+
+    expect(noContentPages).toHaveLength(2);
+    expect(findings).toStrictEqual([]);
+  });
+
   it('keeps every write page idempotent and lifecycle-aware', (): void => {
     expect.assertions(2);
 
