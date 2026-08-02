@@ -285,8 +285,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'api-reference/drafts/create.mdx',
     snippets: [
-      '| Tweet draft column | Request or response source | Publishing rule |',
-      '| Published tweet ID | None | Create a tweet separately after approval. |',
+      '| Field | Meaning | Next action |',
+      '| `id` | Stable Xquik draft ID | Store it for retrieval or deletion. |',
     ],
   },
   {
