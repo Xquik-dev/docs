@@ -1,9 +1,9 @@
 ---
-title: "Twitter Unlike API for Engagement Removal Actions"
+title: "Remove Twitter Likes API: Unlike a Tweet by ID"
 sidebarTitle: "Unlike tweet"
-description: "Remove a like from a tweet by ID through a connected X account. Confirm the unliked state and account identity in the action response. See action fields."
+description: "Use the Remove Twitter Likes API to unlike one tweet by ID. Store the acting account, durable action, terminal result, billed credits, and retry decision."
 api: "DELETE /x/tweets/{id}/like"
-keywords: ["tweet", "unlike", "remove like", "unfavorite", "x account"]
+keywords: ["remove Twitter likes", "how to remove a like on Twitter", "Twitter unlike API", "unlike tweet by ID", "delete Twitter likes", "clear Twitter likes"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -123,6 +123,17 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
   **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 </Callout>
 
+Use this Remove Twitter Likes API to unlike 1 tweet by ID.
+This route changes 1 connected X account's like.
+It does not delete the tweet or another account's likes.
+Save the approved Tweet ID before sending the request.
+Create a unique `Idempotency-Key` for the intended removal.
+Store the durable write action and poll `statusUrl` when needed.
+
+If you need to know how to remove a like on Twitter through REST, start here.
+X documents its separate [Unlike Post endpoint](https://docs.x.com/x-api/users/unlike-post).
+X also explains manual removal in its [Like a Post guide](https://help.x.com/en/using-x/liking-posts-and-moments).
+
 <CodeGroup>
   ```bash cURL
   curl -X DELETE https://xquik.com/api/v1/x/tweets/1895432178065391234/like \
@@ -131,7 +142,17 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
     -H "Content-Type: application/json" \
     -d '{
       "account": "elonmusk"
-    }' | jq
+    }' | jq '{
+      status,
+      terminal,
+      safe_to_retry: .safeToRetry,
+      write_action_id: .id,
+      request_hash: .request.hash,
+      requested_tweet_id: "1895432178065391234",
+      confirmed_tweet_id: (.result.id // .tweetId // .targetId),
+      charged_credits: .billing.chargedCredits,
+      poll_path: (if .terminal then null else .statusUrl end)
+    }'
   ```
 
   ```javascript Node.js
@@ -147,10 +168,28 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
       account: "elonmusk",
     }),
   });
-  const data = await response.json();
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(JSON.stringify(result));
+  }
+  const removalRecord = {
+    status: result.status,
+    terminal: result.terminal,
+    safe_to_retry: result.safeToRetry,
+    write_action_id: result.id,
+    request_hash: result.request.hash,
+    requested_tweet_id: tweetId,
+    confirmed_tweet_id:
+      result.result?.id ?? result.tweetId ?? result.targetId ?? null,
+    account: result.account,
+    charged_credits: result.billing.chargedCredits,
+    poll_path: result.terminal ? null : result.statusUrl,
+  };
+  process.stdout.write(`${JSON.stringify(removalRecord)}\n`);
   ```
 
   ```python Python
+  import json
   import requests
 
   tweet_id = "1895432178065391234"
@@ -164,7 +203,25 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
           "account": "elonmusk",
       },
   )
-  data = response.json()
+  result = response.json()
+  response.raise_for_status()
+  removal_record = {
+      "status": result["status"],
+      "terminal": result["terminal"],
+      "safe_to_retry": result["safeToRetry"],
+      "write_action_id": result["id"],
+      "request_hash": result["request"]["hash"],
+      "requested_tweet_id": tweet_id,
+      "confirmed_tweet_id": (
+          (result.get("result") or {}).get("id")
+          or result.get("tweetId")
+          or result.get("targetId")
+      ),
+      "account": result["account"],
+      "charged_credits": result["billing"]["chargedCredits"],
+      "poll_path": None if result["terminal"] else result["statusUrl"],
+  }
+  print(json.dumps(removal_record))
   ```
 
   ```go Go
@@ -174,16 +231,44 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
       "bytes"
       "encoding/json"
       "fmt"
+      "io"
       "net/http"
   )
 
+  type UnlikeTweetResponse struct {
+      ID string `json:"id"`
+      Status string `json:"status"`
+      Terminal bool `json:"terminal"`
+      SafeToRetry bool `json:"safeToRetry"`
+      StatusURL string `json:"statusUrl"`
+      TargetID *string `json:"targetId"`
+      TweetID *string `json:"tweetId"`
+      Request struct {
+          Hash string `json:"hash"`
+      } `json:"request"`
+      Account map[string]any `json:"account"`
+      Billing struct {
+          ChargedCredits string `json:"chargedCredits"`
+      } `json:"billing"`
+      Result *struct {
+          ID string `json:"id"`
+      } `json:"result"`
+  }
+
   func main() {
       tweetID := "1895432178065391234"
-      body, _ := json.Marshal(map[string]interface{}{
+      body, err := json.Marshal(map[string]string{
           "account": "elonmusk",
       })
+      if err != nil {
+          panic(err)
+      }
 
-      req, err := http.NewRequest("DELETE", "https://xquik.com/api/v1/x/tweets/"+tweetID+"/like", bytes.NewReader(body))
+      req, err := http.NewRequest(
+          "DELETE",
+          "https://xquik.com/api/v1/x/tweets/"+tweetID+"/like",
+          bytes.NewReader(body),
+      )
       if err != nil {
           panic(err)
       }
@@ -196,57 +281,130 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
           panic(err)
       }
       defer resp.Body.Close()
+      if resp.StatusCode >= 400 {
+          responseBody, _ := io.ReadAll(resp.Body)
+          panic(string(responseBody))
+      }
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      var result UnlikeTweetResponse
+      if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      var confirmedTweetID any
+      if result.Result != nil && result.Result.ID != "" {
+          confirmedTweetID = result.Result.ID
+      } else if result.TweetID != nil {
+          confirmedTweetID = *result.TweetID
+      } else if result.TargetID != nil {
+          confirmedTweetID = *result.TargetID
+      }
+      var pollPath any
+      if !result.Terminal {
+          pollPath = result.StatusURL
+      }
+      removalRecord := map[string]any{
+          "status": result.Status,
+          "terminal": result.Terminal,
+          "safe_to_retry": result.SafeToRetry,
+          "write_action_id": result.ID,
+          "request_hash": result.Request.Hash,
+          "requested_tweet_id": tweetID,
+          "confirmed_tweet_id": confirmedTweetID,
+          "account": result.Account,
+          "charged_credits": result.Billing.ChargedCredits,
+          "poll_path": pollPath,
+      }
+      encoded, err := json.Marshal(removalRecord)
+      if err != nil {
+          panic(err)
+      }
+      fmt.Println(string(encoded))
   }
   ```
 </CodeGroup>
 
-## Remove a like safely
+## Remove One Twitter Like by ID
 
-Use this route when a connected account must reverse an existing like. Verify
-the tweet ID against your engagement ledger first. Also verify the connected
-account that created the original like. Those checks prevent unrelated
-engagement from being removed.
+Put the exact Tweet ID in the request path.
+Put the connected X account username or ID in the body.
+That account must own the like you want to remove.
 
-Create one idempotency key for the intended unlike. Reuse it after transport
-failures only. Never share that key with the earlier like request. Confirm the
-returned action state before updating your local record.
+Copy Tweet IDs as strings.
+JavaScript numbers cannot safely represent every X identifier.
+Keep the selected Tweet ID beside its removal reason.
 
-Useful unlike workflows include:
+This endpoint accepts 1 Tweet ID per request.
+It does not delete the tweet or its author.
+It does not remove likes created by other accounts.
 
-- Reversing an engagement decision after human review.
-- Removing a like when a campaign rule changes.
-- Reconciling a queue with the current liked state.
-- Recording who requested the removal and when.
+## Authenticate the Twitter Account
 
-Treat a missing or inaccessible tweet as a separate outcome. Preserve the
-tweet ID, account identity, response status, and action ID for investigation.
+Send an Xquik API key or OAuth 2.1 bearer token.
+Then identify the connected X account with `account`.
+The request never accepts an X password or session cookie.
 
-## Confirm Like Removal
+Keep credentials in server-side code.
+Do not expose them in browser bundles or mobile apps.
+Reconnect that X account when you receive `account_needs_reauth`.
 
-Store the Tweet ID, connected account ID, action ID, and request time. Keep the idempotency key. Poll the write status until it reaches a terminal state.
+The official X endpoint uses a user access token.
+Its authentication differs from the Xquik contract.
+Read X's [Unlike Post guide](https://docs.x.com/x-api/users/unlike-post) for that endpoint.
 
-A queued response does not prove removal. An already-unliked result means the like state converged.
+## Approve the Exact Like Removal
 
-Refresh the liked-tweets view only when downstream work requires current proof. Keep read time separate from action time.
+Show the tweet text, author, and Tweet ID during review.
+Also show the connected account that created the like.
+Store the approver, approval time, and removal reason.
 
-Preserve generic errors and request IDs. Then retry the same Tweet. This operation does not change reposts, replies, follows, or bookmarks.
+Keep separate approval records for separate Twitter accounts.
+One account cannot remove another account's like.
+Never place several acting accounts in one request.
+
+Treat a deleted, protected, or unavailable tweet as a separate outcome.
+Preserve its Tweet ID and action receipt for investigation.
+Do not replace an approved ID with a different tweet.
+
+## Save a Durable Unlike Receipt
+
+Save the action before changing your local like record.
+Keep request and response identities together.
+Store the original like time separately when available.
 
 | Unlike action column | Source | Removal rule |
 | --- | --- | --- |
 | `acting_account` | Request `account` | Match the account that owns the original like. |
 | `tweet_id` | Path `id` | Match the exact liked Tweet ID. |
-| `removal_reason` | Workflow value | Preserve why the like should be removed. |
+| `removal_reason` | Workflow value | Record why the user removed this like. |
 | `idempotency_key` | Request header | Use a new key, separate from the original like. |
 | `write_action_id` | Response `id` | Store the durable removal action. |
 | `status` | Response `status` | Keep pending, completed, and failed removals distinct. |
 | `terminal` | Response `terminal` | Update the local ledger only when `true`. |
 | `requested_at` | Integration timestamp | Keep removal time separate from original like time. |
+
+Persist these response fields:
+
+- Store `id` as the durable write action ID.
+- Store `request.hash` for exact request matching.
+- Store `account` for the acting Twitter account.
+- Store `targetId` or `result.id` for the unliked Tweet ID.
+- Store `status`, `terminal`, and `statusUrl` for polling.
+- Store `billing.chargedCredits` for the settled charge.
+- Store `safeToRetry` before considering another request.
+
+## Confirm Like Removal
+
+A `200` response contains a terminal action.
+A `202` response means the unlike remains active.
+Poll `statusUrl` until `terminal` becomes `true`.
+
+Do not submit another unlike while the action remains active.
+After success, confirm the result matches the requested Tweet ID.
+An already-unliked result means the desired state already exists.
+
+Use [User Likes](/api-reference/x/user-likes) when current read proof matters.
+Store its read time separately from the removal time.
+Tweet visibility can limit independent read verification.
 
 | Unlike outcome | Evidence | Ledger update |
 | --- | --- | --- |
@@ -256,10 +414,130 @@ Preserve generic errors and request IDs. Then retry the same Tweet. This operati
 | Tweet unavailable | Terminal lookup or action outcome | Preserve the Tweet ID and investigate separately. |
 | Final failure | Terminal failure | Store the error and keep the previous like record. |
 
+## Remove Twitter Likes in a Controlled Queue
+
+This route has no mass-delete request.
+It accepts one approved Tweet ID and one acting account.
+Do not send an array of Tweet IDs.
+
+To remove Twitter likes from an approved list, process each ID separately.
+Create a unique `Idempotency-Key` for every account and Tweet ID.
+Store every action before the next removal.
+
+Use [User Likes](/api-reference/x/user-likes) to collect available candidate IDs.
+Follow every cursor before treating that list as complete.
+Freeze the candidate set before approval.
+
+After HTTP `429`, wait for `Retry-After`.
+Do not bypass limits by rotating connected accounts.
+X publishes separate limits for its [Unlike Post endpoint](https://docs.x.com/x-api/fundamentals/rate-limits).
+
+This endpoint does not schedule future removal.
+Your scheduler can call it at an approved time.
+Keep the scheduled Tweet ID, account, and policy reference together.
+
+## Prevent Duplicate Unlike Requests
+
+Create one idempotency key for the intended account and Tweet ID.
+Reuse that key only after an interrupted response.
+Never reuse the earlier like request's key.
+
+An HTTP `409` means the key protects another payload.
+Keep the original action and inspect its request hash.
+Create a new key only for a new removal intent.
+
+Idempotency does not replace approval or terminal polling.
+Still verify the acting account and Tweet ID.
+
+## Handle Remove Twitter Likes Errors
+
+Never infer failure from a client timeout.
+Poll a returned action before sending another request.
+Follow `safeToRetry` for ambiguous write outcomes.
+
+- For `400`, correct the Tweet ID or account value.
+- For `401`, replace invalid Xquik authentication.
+- For `402`, add credits before another unlike.
+- For `403`, reconnect the selected X account.
+- For `409`, keep the original action and payload.
+- For `422`, review the X rejection before retrying.
+- For `429`, wait for `Retry-After`.
+- For `500` or `503`, follow `safeToRetry` and `terminal`.
+
+Keep the status, error code, request ID, and action ID.
+Do not send a different Tweet ID as an automatic fallback.
+
+## Choose Unlike, Delete, or Unretweet
+
+Use this route only to remove one account's like.
+Choose a different route for a tweet or repost.
+
+| Removal intent | API route | Result |
+| --- | --- | --- |
+| Remove one like | `DELETE /x/tweets/{id}/like` | Removes the connected account's like. |
+| Add the like again | `POST /x/tweets/{id}/like` | Creates a new user-approved like action. |
+| Delete an owned tweet | `DELETE /x/tweets/{id}` | Removes the connected account's own tweet. |
+| Remove one repost | `DELETE /x/tweets/{id}/retweet` | Removes the connected account's repost. |
+| Read available liked tweets | `GET /x/users/{id}/likes` | Returns the account's available liked tweets. |
+
+Unlike does not delete replies, follows, bookmarks, or the Twitter account.
+Record the exact intended state before choosing the route.
+
+## Remove Twitter Likes Questions
+
+### How to remove a like on Twitter with an API?
+
+Send the Tweet ID in this route's path.
+Send the connected acting account in the JSON body.
+Poll the durable action until it becomes terminal.
+
+### Can I remove all Twitter likes at once?
+
+No bulk request exists here.
+Review candidate Tweet IDs, then process each approved ID separately.
+Store one idempotency key and action per removal.
+
+### Can I remove likes for multiple Twitter accounts?
+
+Yes, but each request names one connected account.
+Keep separate approvals, keys, and receipts for each account.
+Never combine account identities in one call.
+
+### What are the risks of third-party like removal tools?
+
+Never give a service your X password or session cookie.
+Keep Xquik credentials in server-side code.
+Review every connected account and requested Tweet ID.
+
+### Can I schedule Twitter like removal?
+
+Use your own scheduler for approved Tweet IDs.
+This endpoint does not store a future schedule.
+Check account health and credits before the scheduled call.
+
+### Does unliking delete the original tweet?
+
+No. It changes only the connected account's like state.
+The tweet, replies, reposts, bookmarks, and author remain unchanged.
+
+### Can I restore a removed like?
+
+Yes. Call [Like Tweet](/api-reference/x-write/like) after new user approval.
+Use a new idempotency key and store the new action.
+
+### Does removing a like erase every historical record?
+
+No. It changes the current like state on X.
+Your earlier logs, exports, screenshots, or audit records may still exist.
+
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+<ParamField header="x-api-key" type="string">
+  Send your Xquik API key in this header. Alternatively, send an OAuth 2.1 bearer token.
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.
 </ParamField>
 
 <ParamField header="Idempotency-Key" type="string" required>
