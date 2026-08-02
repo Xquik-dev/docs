@@ -10324,6 +10324,7 @@ const REQUIRED_LANGCHAIN_GUIDE_SNIPPETS = [
   'response["structured_response"]',
   'Path("xquik-langchain-handoff.json").write_text(',
   'handoff.model_dump_json(indent=2)',
+  '## How to Use the Twitter API in Python With LangChain',
   'stateless by default.',
   '`createdAt` field becomes `created`, not `created_at`.',
   'MCP tool output has a 24,000-character limit.',
@@ -10341,7 +10342,10 @@ const REQUIRED_LANGCHAIN_GUIDE_SNIPPETS = [
   '| `langgraph` | 1.2.10 | Installed through LangChain constraints |',
   '### Can LangChain call the Twitter API?',
   '### Can LangChain scrape tweets with Python?',
+  '### How do I authenticate with the Twitter API using Python?',
   '### How do I prevent an agent from posting automatically?',
+  '### How do I post a tweet using Python with LangChain?',
+  '### How do I handle Twitter API rate limits in Python?',
 ] as const;
 
 const FORBIDDEN_LANGCHAIN_GUIDE_SNIPPETS = [
