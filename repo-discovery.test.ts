@@ -3177,6 +3177,46 @@ const FORBIDDEN_FOLLOW_TWITTER_API_SNIPPETS = [
   'title: "Twitter Follow API for User & Audience Connections"',
 ] as const;
 
+const REQUIRED_UNFOLLOW_TWITTER_API_SNIPPETS = [
+  'title: "Twitter Unfollow API: Unfollow One X User by ID"',
+  '"Twitter unfollow API"',
+  '"Twitter API unfollow"',
+  '"how to unfollow someone on Twitter"',
+  'Use this Twitter unfollow API endpoint for 1 target user ID.',
+  'Each Twitter API unfollow request names 1 connected X account.',
+  '[Unfollow User endpoint](https://docs.x.com/x-api/users/unfollow-user)',
+  '**20 requests per minute** and **400 per day**',
+  'const unfollowReceipt = await response.json();',
+  'unfollow_receipt = response.json()',
+  'var unfollowReceipt map[string]interface{}',
+  '## Authenticate and Select the Relationship',
+  '## Unfollow Twitter Accounts Safely',
+  '## Select Inactive Users Before Unfollowing',
+  '## Verify the Twitter Unfollow API Result',
+  '## Choose Unfollow or Remove Follower',
+  '## Handle Twitter API Unfollow Errors',
+  '## Twitter Unfollow API Questions',
+  '### How Do I Unfollow Someone on Twitter with an API?',
+  '### Can I Mass Unfollow or Schedule Unfollow Actions?',
+  '### Can I Unfollow Someone Without Them Knowing?',
+  '### Do I Need Unfollow Tools or Browser Extensions?',
+  '### How Do I Manage Several Connected Accounts?',
+  '### How Do I Get an API Key?',
+  'It exposes no mass unfollow body or bulk unfollow feature.',
+  '<ParamField header="Authorization" type="string">',
+  '<WriteActionLifecycleResponse />',
+] as const;
+
+const FORBIDDEN_UNFOLLOW_TWITTER_API_SNIPPETS = [
+  'const data = await response.json();',
+  'data = response.json()',
+  'var data map[string]interface{}',
+  'fmt.Println(data)',
+  'Session cookie authentication is also supported.',
+  'title: "Twitter Unfollow API for Following Cleanup"',
+  '## Review a Following-Cleanup Batch',
+] as const;
+
 const FORBIDDEN_PUBLIC_TWEET_MEDIA_ID_SNIPPETS = [
   'Pass returned `mediaId` in the `media` array on `POST /x/tweets`',
   'Pass `mediaId` to `POST /x/tweets`',
@@ -15051,6 +15091,28 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(
       FORBIDDEN_FOLLOW_TWITTER_API_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the unfollow API page focused and recoverable', (): void => {
+    expect.assertions(2);
+
+    const source = `${readFileSync(
+      'api-reference/x-write/unfollow.mdx',
+      'utf8',
+    )}\n${readFileSync(WRITE_ACTION_LIFECYCLE_SNIPPET_PATH, 'utf8')}`;
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Unfollow API docs',
+        REQUIRED_UNFOLLOW_TWITTER_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_UNFOLLOW_TWITTER_API_SNIPPETS.filter((snippet) =>
         source.includes(snippet),
       ),
     ).toStrictEqual([]);

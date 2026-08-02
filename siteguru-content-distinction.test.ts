@@ -149,7 +149,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   },
   {
     file: 'api-reference/x-write/unfollow.mdx',
-    phrases: ['Review a Following-Cleanup Batch'],
+    phrases: ['Verify the Twitter Unfollow API Result'],
   },
   {
     file: 'api-reference/x-write/delete-community.mdx',
