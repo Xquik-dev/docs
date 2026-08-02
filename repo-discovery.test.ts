@@ -3747,12 +3747,16 @@ const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   '1 credit per tweet returned',
   '`402 insufficient_credits`',
   '`Retry-After`',
+  '`mode=complete`',
+  '`diagnostic.complete`',
+  'These optional filters apply only in standard mode.',
+  'Remove every filter before requesting complete mode.',
   '## Which replies endpoint?',
   'Use `GET /api/v1/x/tweets/{id}/replies` for one tweet\'s replies as JSON rows.',
   'Use [`reply_extractor`](/guides/tweet-replies-export) when you need saved CSV, JSON, or XLSX exports.',
   'Use `GET /api/v1/x/tweets/search` when you need keyword, operator, structured-filter, or `queryType` search.',
   'Use `GET /api/v1/x/tweets/{id}/thread` when you need ordered thread context around a tweet.',
-  'Opaque pagination cursor for older reply pages.',
+  'Opaque cursor for standard mode.',
   'Pair with',
   '`sinceTime` for closed campaign, support, or audit windows.',
 ] as const;
@@ -5493,7 +5497,6 @@ const TWEET_LIST_FILTER_API_PAGES = [
   'api-reference/x/user-likes.mdx',
   'api-reference/x/user-media.mdx',
   'api-reference/x/user-mentions.mdx',
-  'api-reference/x/tweet-replies.mdx',
   'api-reference/x/tweet-quotes.mdx',
 ] as const;
 

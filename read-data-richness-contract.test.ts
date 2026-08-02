@@ -64,21 +64,14 @@ const TWEET_FIELDS = [
   'displayTextRange',
   'contentDisclosure',
   'article',
-  'bookmarked',
   'card',
   'communityNote',
   'edit',
-  'favorited',
-  'grokAnalysisButton',
-  'grokImageEditable',
   'isTranslatable',
   'noteTweet',
   'place',
   'possiblySensitive',
-  'possiblySensitiveEditable',
   'previousCounts',
-  'quickPromoteEligibility',
-  'retweeted',
   'viewState',
   'entities',
   'quoted_tweet',
@@ -110,7 +103,6 @@ const PROFILE_FIELDS = [
   'createdAt',
   'statusesCount',
   'mediaCount',
-  'canDm',
   'protected',
   'url',
   'favouritesCount',
@@ -126,15 +118,12 @@ const PROFILE_FIELDS = [
   'verifiedType',
   'affiliatesHighlightedLabel',
   'businessAccountAffiliatesCount',
-  'canMediaTag',
   'creatorSubscriptionsCount',
-  'followRequestSent',
   'hasGraduatedAccess',
   'hasHiddenSubscriptionsOnProfile',
   'highlightsInfo',
   'identityVerification',
   'isProfileTranslatable',
-  'notificationsEnabled',
   'parodyCommentaryFanLabel',
   'profileDescriptionLanguage',
   'profileImageShape',
@@ -142,15 +131,7 @@ const PROFILE_FIELDS = [
   'profileSortEnabled',
   'profileTranslatorType',
   'superFollowEligible',
-  'superFollowedBy',
-  'superFollowing',
   'communityRole',
-  'viewerBlockedBy',
-  'viewerBlocking',
-  'viewerFollowedBy',
-  'viewerFollowing',
-  'viewerLiveFollowing',
-  'viewerMuting',
   'profile_bio',
 ] as const;
 
@@ -237,12 +218,12 @@ describe('read data richness documentation', (): void => {
 
     expect(MCP_TOOLS).toContain('preserves every safe field');
     expect(MCP_TOOLS).toContain('replies_incomplete');
-    expect(MCP_TOOLS).toContain('conversation_id:<tweet_id>');
+    expect(MCP_TOOLS).toContain('mode=complete&limit=25000');
     expect(MCP_TOOLS).toContain('/guides/tweet-profile-api-fields');
     expect(GUIDE).toContain('Xquik omits unavailable optional fields');
     expect(GUIDE).toContain('coverage depends on X');
     expect(GUIDE).toContain(
-      'Viewer-specific relationship fields appear only when X supplies them',
+      'Xquik removes account-specific actions, permissions, and relationships',
     );
     expect(DOCS_CONFIG).toContain('"guides/tweet-profile-api-fields"');
     expect(LLMS_INDEX).toContain(
@@ -261,15 +242,15 @@ describe('read data richness documentation', (): void => {
       parameter.$ref === undefined ? [] : [parameter.$ref],
     );
 
-    expect(operation?.description).toContain('terminal page');
-    expect(operation?.description).toContain('conversation_id:{id}');
+    expect(operation?.description).toContain('Complete mode');
+    expect(operation?.description).toContain('80%');
     expect(parameterNames).toContain('cursor');
-    expect(parameterNames).not.toContain('mode');
-    expect(parameterRefs).toContain('#/components/parameters/ResultPageSize');
-    expect(GUIDE).toContain('pageSize=100');
-    expect(GUIDE).toContain('conversation_id:<tweet_id>');
-    expect(MCP_TOOLS).toContain('pageSize=100');
-    expect(MCP_TOOLS).toContain('conversation_id:<tweet_id>');
-    expect(TWEET_REPLIES).toContain('Set `conversation_id:{id}` before');
+    expect(parameterNames).toEqual(expect.arrayContaining(['mode', 'limit']));
+    expect(parameterRefs).toContain('#/components/parameters/ReplyPageSize');
+    expect(GUIDE).toContain('mode=complete&limit=25000');
+    expect(GUIDE).toContain('coveragePercentage');
+    expect(MCP_TOOLS).toContain('mode=complete&limit=25000');
+    expect(MCP_TOOLS).toContain('recommendedFallback');
+    expect(TWEET_REPLIES).toContain('Trust `diagnostic.complete`');
   });
 });

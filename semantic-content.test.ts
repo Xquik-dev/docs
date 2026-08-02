@@ -28,7 +28,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: 'api-reference/x/tweet-replies.mdx',
     snippets: [
       '| Reply column | Response source | Review use |',
-      '| Incomplete first page | `424 replies_incomplete` |',
+      '| Incomplete complete-mode run | `424 replies_incomplete` plus `diagnostic` |',
     ],
   },
   {

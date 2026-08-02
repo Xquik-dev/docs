@@ -79,7 +79,7 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 <LlmsDirective />
 <AudienceCommunityApiLinks />
 
-Scrape X community members into explicit profile rows. Store the community and user IDs with every page. Keep the username, bio, verification, follower count, and cursor.
+Scrape X community members into explicit profile rows. Store the community and user IDs with every cursor result. Keep the username, bio, verification, follower count, and cursor.
 
 ## X Community Member Scraping Questions
 
@@ -87,9 +87,9 @@ Scrape X community members into explicit profile rows. Store the community and u
 
 Call `GET /api/v1/x/communities/{id}/members` with the numeric community ID.
 Store the community ID and stable user ID. Keep the username, profile name,
-bio, location, and verification. Record an ISO 8601 collection time for every
-page. Keep each available follower count, following count, and profile image.
-Store the cursor used to fetch each profile page.
+bio, location, and verification. Record an ISO 8601 collection time before
+requesting another cursor. Keep each available follower count, following
+count, and profile image. Store the cursor returned with each profile batch.
 
 Save the page before advancing its opaque cursor. Use `has_next_page` as the
 only pagination guard. Send another request only for the boolean `true`. Reuse
@@ -233,8 +233,8 @@ complete only after `has_next_page` is `false`.
 Community membership shows roster inclusion. It does not prove posting
 activity. Retrieve recent Community posts through
 [Community Tweets](/api-reference/x/community-tweets). Use
-[Community Search](/api-reference/x/community-search) for posts that contain a
-keyword. Join those posts to member profiles by `manifest_id`, `community_id`,
+[Community Search](/api-reference/x/community-search) for posts matching a
+search term. Join those posts to member profiles by `manifest_id`, `community_id`,
 and stable user ID.
 
 Use [Community Moderators](/api-reference/x/community-moderators) for
@@ -299,11 +299,11 @@ When another process adds moderator status, store it in a separate
 ## Query Parameters
 
 <ParamField query="cursor" type="string">
-  Pagination cursor from a previous response. Omit for the first page.
+  Pagination cursor from a previous response. Omit for the initial request.
 </ParamField>
 
 <ParamField query="pageSize" type="number">
-  Results per page. Range: 20-200. Default: `20`.
+  Results per request. Range: 20-200. Default: `20`.
 </ParamField>
 
 ## Headers
@@ -357,7 +357,7 @@ When another process adds moderator status, store it in a separate
 
 </ResponseField>
 <ResponseField name="has_next_page" type="boolean">Whether more results are available.</ResponseField>
-<ResponseField name="next_cursor" type="string">Cursor for the next page. Pass as the `cursor` query parameter.</ResponseField>
+<ResponseField name="next_cursor" type="string">Cursor for subsequent results. Pass as the `cursor` query parameter.</ResponseField>
 
 ```json
 {
