@@ -8571,6 +8571,67 @@ const REQUIRED_NO_CODE_WORKFLOW_HANDOFF_SNIPPETS = [
   '### Does No-Code Automation Bypass Twitter API Limits?',
 ] as const;
 
+const REQUIRED_TWEET_PROFILE_API_FIELDS_SNIPPETS = [
+  'title: "Tweet Metadata, Profile & Media API Field Guide"',
+  '"tweet metadata"',
+  '"Twitter profile API"',
+  '"Twitter media API"',
+  'Quick answer: treat IDs as strings.',
+  '## Choose the Object Before Mapping Fields',
+  '| Reply or thread relationship | Tweet | `conversationId` and `inReplyToId` |',
+  '| Quote context | `quoted_tweet` | Nested tweet `id` |',
+  '| Repost context | `retweeted_tweet` | Nested tweet `id` |',
+  '## Field Presence Rules',
+  '<Card title="Required Fields" icon="badge-check">',
+  '<Card title="Optional Fields" icon="circle-dashed">',
+  '<Card title="String IDs" icon="fingerprint">',
+  '<Card title="Count Snapshots" icon="chart-no-axes-column">',
+  'A zero tweet metric can mean X did not report that count.',
+  '## Tweet Fields',
+  '- Quote state: `isQuoteStatus` and `quoted_tweet`',
+  '- Publishing client: `source`',
+  '- Repost context: `retweeted_tweet`',
+  '- Counts: `retweetCount`, `replyCount`, `likeCount`, and `quoteCount`',
+  '### Tweet Metadata Example',
+  '"conversationId": "1893600000000000000"',
+  '"inReplyToId": "1893690000000000000"',
+  '### Map Replies, Quotes, and Reposts',
+  '<Card title="Note Tweet" icon="notebook-tabs">',
+  '### Interpret Tweet Engagement Fields',
+  '### Map Entities and Content Labels',
+  '## Profile Fields',
+  '- Verification: `verified`, `isVerified`, `isBlueVerified`, and `verifiedType`',
+  '- Access: `protected`, `unavailable`, and `unavailableReason`',
+  '### Twitter Profile API Example',
+  '"verifiedType": "Business"',
+  '### Interpret Profile Counts',
+  '### Keep Verification Fields Separate',
+  '### Handle Protected or Unavailable Profiles',
+  '## Media Fields',
+  '### Map Photos, Videos, and GIFs',
+  '### Store a Media Join Row',
+  '"media_key": "3_1912345678901234567"',
+  '## Reply Coverage',
+  '`diagnostic.complete`',
+  '`coveragePercentage`',
+  '### Store Reply Relationships',
+  '## Pagination Fields',
+  'REST read pages commonly return `has_next_page` and `next_cursor`.',
+  'Extraction result pages return `hasMore` and `nextCursor`.',
+  '## Field Mapping Handoff',
+  '"optional_field_policy": "preserve_absence"',
+  '## Surface Mapping',
+  'REST `createdAt` becomes MCP `created`.',
+  '## Avoid Tweet Metadata Mapping Errors',
+  '## Tweet Metadata and Profile API Questions',
+  '### What Metadata Does a Tweet Include?',
+  '### What Is a Twitter Conversation ID?',
+  '### How Do Quotes Differ From Reposts?',
+  '### Does the Twitter Profile API Include Follower Counts?',
+  '### How Do I Get Tweet Media Metadata?',
+  '### Can I Export Tweet Metadata to CSV?',
+] as const;
+
 const REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS = [
   'title: "Request-efficient API Usage | X API Tutorial"',
   'Use this guide when you need fewer duplicate reads, cleaner checkpoints, and better downstream handoffs.',
@@ -15537,6 +15598,23 @@ describe('repository discovery', (): void => {
         source,
         'No-code workflow handoff',
         REQUIRED_NO_CODE_WORKFLOW_HANDOFF_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the tweet metadata field guide source-backed', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'guides/tweet-profile-api-fields.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Tweet metadata field guide',
+        REQUIRED_TWEET_PROFILE_API_FIELDS_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
