@@ -1,9 +1,9 @@
 ---
-title: "Delete Twitter Post API for Tweet Cleanup Tasks"
+title: "Twitter API Delete Tweet: Remove an Owned Post by ID"
 sidebarTitle: "Delete tweet"
-description: "Permanently delete a tweet by ID from a connected X account. Check ownership, send the request once, and confirm the deleted tweet ID. See action fields."
+description: "Use the Twitter API delete tweet workflow to remove one owned post by ID. Save approval evidence, track every response, and verify the deleted Tweet ID."
 api: "DELETE /x/tweets/{id}"
-keywords: ["tweet", "delete", "remove", "x account"]
+keywords: ["Twitter API delete tweet", "delete tweet API", "remove tweet by ID", "tweet deletion", "delete X post", "tweet cleanup automation"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -123,6 +123,15 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
   **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 </Callout>
 
+Use this Twitter API delete tweet route to remove 1 owned post by ID.
+Select the connected X account that published the tweet.
+Save approval evidence before sending the request.
+Send 1 unique `Idempotency-Key` for the intended deletion.
+Store the durable write action and poll `statusUrl` when needed.
+Confirm `targetId` matches the requested Tweet ID after terminal success.
+X also documents an official [Delete Post endpoint](https://docs.x.com/x-api/posts/delete-post).
+Xquik uses its own authentication and durable write response.
+
 <CodeGroup>
   ```bash cURL
   curl -X DELETE https://xquik.com/api/v1/x/tweets/1895432178065391234 \
@@ -131,7 +140,17 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
     -H "Content-Type: application/json" \
     -d '{
       "account": "elonmusk"
-    }' | jq
+    }' | jq '{
+      status,
+      terminal,
+      safe_to_retry: .safeToRetry,
+      write_action_id: .id,
+      request_hash: .request.hash,
+      requested_tweet_id: "1895432178065391234",
+      confirmed_tweet_id: (.result.id // .tweetId // .targetId),
+      charged_credits: .billing.chargedCredits,
+      poll_path: (if .terminal then null else .statusUrl end)
+    }'
   ```
 
   ```javascript Node.js
@@ -147,10 +166,28 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
       account: "elonmusk",
     }),
   });
-  const data = await response.json();
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(JSON.stringify(result));
+  }
+  const deletionRecord = {
+    status: result.status,
+    terminal: result.terminal,
+    safe_to_retry: result.safeToRetry,
+    write_action_id: result.id,
+    request_hash: result.request.hash,
+    requested_tweet_id: tweetId,
+    confirmed_tweet_id:
+      result.result?.id ?? result.tweetId ?? result.targetId ?? null,
+    account: result.account,
+    charged_credits: result.billing.chargedCredits,
+    poll_path: result.terminal ? null : result.statusUrl,
+  };
+  process.stdout.write(`${JSON.stringify(deletionRecord)}\n`);
   ```
 
   ```python Python
+  import json
   import requests
 
   tweet_id = "1895432178065391234"
@@ -164,7 +201,25 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
           "account": "elonmusk",
       },
   )
-  data = response.json()
+  result = response.json()
+  response.raise_for_status()
+  deletion_record = {
+      "status": result["status"],
+      "terminal": result["terminal"],
+      "safe_to_retry": result["safeToRetry"],
+      "write_action_id": result["id"],
+      "request_hash": result["request"]["hash"],
+      "requested_tweet_id": tweet_id,
+      "confirmed_tweet_id": (
+          (result.get("result") or {}).get("id")
+          or result.get("tweetId")
+          or result.get("targetId")
+      ),
+      "account": result["account"],
+      "charged_credits": result["billing"]["chargedCredits"],
+      "poll_path": None if result["terminal"] else result["statusUrl"],
+  }
+  print(json.dumps(deletion_record))
   ```
 
   ```go Go
@@ -174,16 +229,44 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
       "bytes"
       "encoding/json"
       "fmt"
+      "io"
       "net/http"
   )
 
+  type DeleteTweetResponse struct {
+      ID string `json:"id"`
+      Status string `json:"status"`
+      Terminal bool `json:"terminal"`
+      SafeToRetry bool `json:"safeToRetry"`
+      StatusURL string `json:"statusUrl"`
+      TargetID *string `json:"targetId"`
+      TweetID *string `json:"tweetId"`
+      Request struct {
+          Hash string `json:"hash"`
+      } `json:"request"`
+      Account map[string]any `json:"account"`
+      Billing struct {
+          ChargedCredits string `json:"chargedCredits"`
+      } `json:"billing"`
+      Result *struct {
+          ID string `json:"id"`
+      } `json:"result"`
+  }
+
   func main() {
       tweetID := "1895432178065391234"
-      body, _ := json.Marshal(map[string]interface{}{
+      body, err := json.Marshal(map[string]string{
           "account": "elonmusk",
       })
+      if err != nil {
+          panic(err)
+      }
 
-      req, err := http.NewRequest("DELETE", "https://xquik.com/api/v1/x/tweets/"+tweetID, bytes.NewReader(body))
+      req, err := http.NewRequest(
+          "DELETE",
+          "https://xquik.com/api/v1/x/tweets/"+tweetID,
+          bytes.NewReader(body),
+      )
       if err != nil {
           panic(err)
       }
@@ -196,46 +279,141 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
           panic(err)
       }
       defer resp.Body.Close()
+      if resp.StatusCode >= 400 {
+          responseBody, _ := io.ReadAll(resp.Body)
+          panic(string(responseBody))
+      }
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      var result DeleteTweetResponse
+      if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      var confirmedTweetID any
+      if result.Result != nil && result.Result.ID != "" {
+          confirmedTweetID = result.Result.ID
+      } else if result.TweetID != nil {
+          confirmedTweetID = *result.TweetID
+      } else if result.TargetID != nil {
+          confirmedTweetID = *result.TargetID
+      }
+      var pollPath any
+      if !result.Terminal {
+          pollPath = result.StatusURL
+      }
+      deletionRecord := map[string]any{
+          "status": result.Status,
+          "terminal": result.Terminal,
+          "safe_to_retry": result.SafeToRetry,
+          "write_action_id": result.ID,
+          "request_hash": result.Request.Hash,
+          "requested_tweet_id": tweetID,
+          "confirmed_tweet_id": confirmedTweetID,
+          "account": result.Account,
+          "charged_credits": result.Billing.ChargedCredits,
+          "poll_path": pollPath,
+      }
+      encoded, err := json.Marshal(deletionRecord)
+      if err != nil {
+          panic(err)
+      }
+      fmt.Println(string(encoded))
   }
   ```
 </CodeGroup>
 
-## Delete a tweet with an audit trail
+## Delete One Owned Tweet by ID
 
-Use this route only after identifying the exact published tweet. Save its
-tweet ID, author account, text, and approval reference before deletion. The
-tweet may become unavailable after the action succeeds.
+Send the exact Tweet ID in the path.
+Send its author account in the request body.
+The connected account must own the target tweet.
+You cannot delete another account's tweet with this route.
 
-Create a dedicated idempotency key for this deletion. Reuse that key only
-after an interrupted response. Never reuse a create-tweet key for deletion.
+A reply is also a tweet with its own ID.
+Delete the reply ID without deleting its parent tweet.
+Use [Get Tweet](/api-reference/x/get-tweet) before deletion.
+Save the returned author, text, creation time, media, and conversation ID.
 
-Deletion workflows should include:
+Create a dedicated idempotency key for each intended deletion.
+Reuse that key only after an interrupted response.
+Never reuse a create-tweet key for deletion.
 
-- Confirming the connected account owns the target tweet.
-- Showing the final tweet text during approval.
-- Saving any required compliance record before removal.
-- Recording the returned action ID and final lifecycle state.
+## Authenticate the Tweet Owner
 
-Treat deletion as irreversible within this API workflow. A replacement tweet
-receives a different tweet ID. Do not mark the original tweet deleted until
-the action response confirms completion.
+Send an Xquik API key or OAuth 2.1 bearer token.
+Then identify the connected X account with `account`.
+The request never accepts an X password or session cookie.
+Keep API keys on your server, not inside browser or mobile clients.
 
-| Tweet deletion record | Request or response source | Completion rule |
-| --- | --- | --- |
-| Tweet ID | Path `{id}` | Preserve the exact post identifier. |
-| Acting X account | Request `account` | Confirm tweet ownership before deletion. |
-| Tweet text | Pre-deletion lookup | Save the approved post content first. |
-| Idempotency key | Request header | Reuse it only for an exact replay. |
-| Write action ID | Response `id` | Poll the matching lifecycle record. |
-| Lifecycle state | Response `status` and `terminal` | Stop only after a terminal state. |
-| Deleted tweet | Response `tweetId` or `targetId` | Require the requested tweet ID. |
-| Removal proof | Tweet lookup after success | Confirm the post is unavailable. |
+The official X endpoint uses a user access token.
+Its permissions differ from Xquik authentication.
+Read X's [Manage Posts guide](https://docs.x.com/x-api/posts/manage-tweets/introduction) for that separate contract.
+
+## Save Tweet Deletion Evidence
+
+Treat deletion as irreversible within this API workflow.
+Show the final tweet text during approval.
+Save any required compliance record before removal.
+Keep the approver, approval time, and reason beside the Tweet ID.
+
+Persist these fields after sending the request:
+
+- Store `id` as the durable write action ID.
+- Store `request.hash` for exact request matching.
+- Store `account` for the connected tweet owner.
+- Store `targetId` for the confirmed Tweet ID.
+- Store `status`, `terminal`, and `statusUrl` for polling.
+- Store `billing.chargedCredits` for the deletion charge.
+- Store `safeToRetry` before considering another request.
+
+A replacement tweet receives a different Tweet ID.
+Keep the deleted ID in the audit record.
+This prevents incorrect joins with replies, analytics, or moderation records.
+
+## Run Bulk or Scheduled Tweet Cleanup
+
+This route deletes 1 tweet per request.
+It does not provide a bulk-delete operation.
+Feed approved Tweet IDs through the route individually.
+Create a unique `Idempotency-Key` for every Tweet ID.
+
+Limit concurrent deletions and retain every write action.
+After HTTP `429`, wait for `Retry-After` before continuing.
+X publishes separate limits for its [Delete Post endpoint](https://docs.x.com/x-api/fundamentals/rate-limits).
+Those limits do not replace Xquik's response headers.
+
+This endpoint does not schedule future deletion.
+Let your scheduler call it at the approved time.
+Keep each scheduled Tweet ID and approval reference together.
+
+## Verify Tweet Deletion
+
+A `202` response means the deletion is still active.
+Poll `statusUrl` until `terminal` becomes `true`.
+Never submit another deletion while the action remains active.
+
+After terminal success, require the requested ID in `targetId`, `tweetId`, or
+`result.id`. Then call [Get Tweet](/api-reference/x/get-tweet) with that ID.
+Store the lookup time and result beside the write action.
+
+An unavailable lookup supports the deletion record after confirmed success.
+It is not sufficient before the write reaches a terminal state.
+A missing tweet can also indicate another availability restriction.
+
+## Handle Delete Tweet Errors
+
+Never infer failure from a client timeout.
+Poll the returned action before sending another request.
+Use [Twitter API error handling](/api-reference/x-write/get-write-action-status)
+for every lifecycle field and retry rule.
+
+- For `400`, fix the Tweet ID or account value.
+- For `401`, replace invalid Xquik authentication.
+- For `402`, add credits before another deletion.
+- For `403`, reconnect the selected X account.
+- For `409`, keep the original action and payload.
+- For `422`, review the rejection before retrying.
+- For `429`, wait for `Retry-After`.
+- For `500` or `503`, trust `safeToRetry` and `terminal`.
 
 ## Choose Tweet Deletion, Unlike, or Unretweet
 
@@ -256,24 +434,45 @@ repost. Both actions preserve the source tweet.
 Never delete the source tweet when a campaign only needs engagement cleanup.
 Confirm the route and intended state during approval.
 
-## Preserve Tweet Deletion Evidence
+## Twitter API Delete Tweet Questions
 
-Read [Get Tweet](/api-reference/x/get-tweet) before deletion. Save the tweet
-ID, author ID, text, creation time, media, and conversation ID when returned.
-Keep the approval reference beside this snapshot.
+### Can the API delete another user's tweet?
 
-After terminal success, request the same tweet ID again. Store the lookup time
-and result. Do not treat a client timeout as deletion proof. Poll the original
-write action before replaying the request.
+No. The connected account must own the target tweet.
+Use the author's own connected account and exact Tweet ID.
 
-A replacement post receives another tweet ID. Keep the deleted ID in the
-audit record. This prevents incorrect joins with the replacement. It protects
-analytics, reply archives, and moderation queues.
+### Can the API delete all tweets at once?
+
+No bulk route exists here.
+Submit 1 approved Tweet ID per request.
+Preserve each deletion's key, write action, and terminal result.
+
+### Can I schedule a tweet deletion?
+
+Yes, through your own scheduler.
+Call this endpoint at the approved time.
+The endpoint itself does not store a future schedule.
+
+### Which libraries can delete a tweet?
+
+Any HTTP client can call this REST endpoint.
+The examples cover cURL, Node.js, Python, and Go.
+Keep credentials in server-side code.
+
+### How should recurring tweet cleanup work?
+
+Select owned Tweet IDs using an approved retention policy.
+Snapshot each tweet before deletion.
+Send one deletion, store its action, and verify its terminal result.
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+<ParamField header="x-api-key" type="string">
+  Send your Xquik API key in this header. Alternatively, send an OAuth 2.1 bearer token.
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.
 </ParamField>
 
 <ParamField header="Idempotency-Key" type="string" required>
