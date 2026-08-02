@@ -1601,6 +1601,7 @@ const FORBIDDEN_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
 const REQUIRED_LLMS_SNIPPETS = [
   '## Agent Entry Points',
   'https://context7.com/xquik-dev/xquik-docs',
+  '[Xquik Skill](https://docs.xquik.com/skill.md)',
   'Docs `https://docs.xquik.com/mcp` (docs, no auth)',
   'https://xquik.com/mcp',
   'npx skills add Xquik-dev/x-twitter-scraper',
