@@ -81,6 +81,68 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 <LlmsDirective />
 <TweetReadApiLinks />
 
+Use this Twitter Lists API to retrieve Twitter List tweets from one curated
+timeline. Export Tweet text, authors, replies, reposts, likes, quotes, media,
+and cursor pages. Provide the numeric List ID from its X URL.
+
+## Twitter List Tweets Questions
+
+### What Does the Twitter Lists API Return?
+
+The endpoint returns posts from accounts in one X List timeline. Each page can
+include Tweet text, author profiles, timestamps, engagement counts, media, and
+pagination fields.
+
+The response represents one observed timeline window. It does not prove a
+complete archive or permanent List membership.
+
+### How Do I Export Tweets From a Twitter List?
+
+Request the first page with the numeric List ID. Normalize each Tweet into one
+row. Store `has_next_page` beside `next_cursor` before requesting another page.
+
+Use `sinceTime` and `untilTime` for a bounded collection window. Use
+`list_post_extractor` for a saved CSV, JSON, or XLSX export.
+
+### Why Are Some Twitter List Tweets Missing?
+
+First, check `includeReplies`. The default excludes replies. Then verify any
+`sinceTime` and `untilTime` boundaries.
+
+Visibility also depends on the connected read context. X says protected posts
+remain visible only to approved followers. Private Lists owned by other
+accounts are not visible. Read X's official [Help with Lists](https://help.x.com/en/using-x/x-lists-not-working)
+for current visibility rules.
+
+Remaining credits can reduce a paid page. New posts can also shift a moving
+timeline between requests. A missing Tweet does not prove deletion.
+
+### Can This Endpoint Create or Edit a Twitter List?
+
+No. This route only reads List tweets. It cannot create a public List or
+private List. It cannot add members, remove members, follow Lists, or publish
+posts.
+
+Use X's [Lists guide](https://help.x.com/en/using-x/x-lists) to create and
+manage Lists. Use the [List Members endpoint](/api-reference/x/list-members)
+for the current profile roster.
+
+### How Do I Measure Activity in a Curated List Timeline?
+
+Group rows by stable author ID. Count Tweets, replies, reposts, likes, quotes,
+views, and media items separately. Store every count with its collection time.
+
+These measures describe captured List tweets. They do not expose unique
+viewers, link clicks, conversions, or audience sentiment.
+
+### Does the API Preserve List Tweet Order?
+
+Preserve the returned Tweet sequence in every page. Do not treat that order as
+permanent. New posts and membership changes can shift later requests.
+
+Record collection time, List ID, and cursor with every page. Deduplicate
+retries by stable Tweet ID without re-ranking the saved rows.
+
 <Note>
   Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
 </Note>
@@ -174,7 +236,7 @@ instead of printing the full response page. Persist the final `next_cursor`
 row when `has_next_page` is true, then pass it back as `cursor` for the next
 page.
 
-## Direct list tweet handoff
+## Direct List Tweet Handoff
 
 Use `GET /x/lists/{id}/tweets` when a CRM, warehouse, newsroom, monitoring
 job, or agent needs tweets from a curated X List.
@@ -214,7 +276,7 @@ Use `sinceTime` & `untilTime` for bounded backfills, and set
   </Card>
 </CardGroup>
 
-## Build a curated-list tweet feed
+## Build a Curated-List Tweet Feed
 
 Use list tweets when a list ID defines the source accounts. Keep the list ID
 and collection time with every tweet.
@@ -232,13 +294,13 @@ its cursor. New posts can shift the first page between runs.
 Use list members for the curated profile roster. Use list followers for the
 list’s audience. Use tweet search when keywords should define the result set.
 
-## Path parameters
+## Path Parameters
 
 <ParamField path="id" type="string" required>
   List ID (numeric string).
 </ParamField>
 
-## Query parameters
+## Query Parameters
 
 <ParamField query="cursor" type="string">
   Pagination cursor from a previous response. Omit for the first page.
@@ -256,7 +318,7 @@ list’s audience. Use tweet search when keywords should define the result set.
   Include reply tweets. Default: `false`.
 </ParamField>
 
-## Which list endpoint?
+## Which List Endpoint?
 
 <CardGroup cols={2}>
   <Card title="List tweets" icon="message-square-text">
@@ -295,46 +357,46 @@ list’s audience. Use tweet search when keywords should define the result set.
   Array of tweets from the list.
   **Tweet object fields:**
     <ResponseField name="id" type="string">Tweet ID.</ResponseField>
-    <ResponseField name="text" type="string">Tweet text.</ResponseField>
-    <ResponseField name="type" type="string">Tweet type. Omitted if unavailable.</ResponseField>
+    <ResponseField name="text" type="string">Contains the complete Tweet text.</ResponseField>
+    <ResponseField name="type" type="string">Classifies the Tweet when X returns a type.</ResponseField>
     <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
     <ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet. Omitted if unavailable.</ResponseField>
-    <ResponseField name="likeCount" type="number">Like count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="retweetCount" type="number">Retweet count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="replyCount" type="number">Reply count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="quoteCount" type="number">Quote tweet count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="viewCount" type="number">View count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="bookmarkCount" type="number">Bookmark count. Omitted if unavailable.</ResponseField>
+    <ResponseField name="likeCount" type="number">Reports the number of likes when available.</ResponseField>
+    <ResponseField name="retweetCount" type="number">Reports the number of reposts when available.</ResponseField>
+    <ResponseField name="replyCount" type="number">Reports the number of replies when available.</ResponseField>
+    <ResponseField name="quoteCount" type="number">Reports the number of quotes when available.</ResponseField>
+    <ResponseField name="viewCount" type="number">Reports the number of views when available.</ResponseField>
+    <ResponseField name="bookmarkCount" type="number">Reports the number of bookmarks when available.</ResponseField>
     <ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
-    <ResponseField name="lang" type="string">Tweet language code. Omitted if unavailable.</ResponseField>
+    <ResponseField name="lang" type="string">Reports the Tweet language code when available.</ResponseField>
     <ResponseField name="isReply" type="boolean">Whether the tweet is a reply. Omitted if unavailable.</ResponseField>
     <ResponseField name="inReplyToId" type="string">Tweet ID being replied to. Omitted if not a reply.</ResponseField>
-    <ResponseField name="inReplyToUserId" type="string">User ID being replied to. Omitted if unavailable.</ResponseField>
-    <ResponseField name="inReplyToUsername" type="string">Username being replied to. Omitted if unavailable.</ResponseField>
+    <ResponseField name="inReplyToUserId" type="string">Identifies the replied-to user when available.</ResponseField>
+    <ResponseField name="inReplyToUsername" type="string">Reports the replied-to username when available.</ResponseField>
     <ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
     <ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
     <ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
     <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
     <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
     <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
-    <ResponseField name="contentDisclosure" type="object">Disclosure metadata for paid partnership and AI-generated media labels. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them. Omitted if unavailable.</ResponseField>
+    <ResponseField name="contentDisclosure" type="object">Returns paid-promotion and AI-generated-media labels when available. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia`.</ResponseField>
     <ResponseField name="author" type="object">
       Tweet author profile. Omitted if unavailable.
       **Author object fields:**
         <ResponseField name="id" type="string">Author user ID.</ResponseField>
         <ResponseField name="username" type="string">Author X username.</ResponseField>
         <ResponseField name="name" type="string">Author display name.</ResponseField>
-        <ResponseField name="followers" type="number">Follower count. Omitted if unavailable.</ResponseField>
+        <ResponseField name="followers" type="number">Reports the author's follower count when available.</ResponseField>
         <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
         <ResponseField name="profilePicture" type="string">Profile picture URL. Omitted if unavailable.</ResponseField>
 
     </ResponseField>
     <ResponseField name="media" type="object[]">
-      Media attachments. Omitted when the tweet has no media.
+      Lists media items attached to the Tweet. Omitted when none exist.
       **Media object fields:**
-        <ResponseField name="mediaUrl" type="string">Direct media URL.</ResponseField>
-        <ResponseField name="videoVariants" type="object[]">Available video renditions with bitrate, content type, and URL. Omitted for images.</ResponseField>
-        <ResponseField name="type" type="string">Media type.</ResponseField>
+        <ResponseField name="mediaUrl" type="string">Provides the direct media URL.</ResponseField>
+        <ResponseField name="videoVariants" type="object[]">Lists available video renditions and playback details. Omitted for images.</ResponseField>
+        <ResponseField name="type" type="string">Identifies the attached media type.</ResponseField>
         <ResponseField name="url" type="string">Shortened URL from the tweet text.</ResponseField>
 
     </ResponseField>
