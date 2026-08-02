@@ -1,9 +1,9 @@
 ---
-title: "Tweet Draft API for Saved Post Creation & Review"
+title: "Create a Tweet Draft for Review with the Xquik API"
 sidebarTitle: "Create draft"
-description: "Save a tweet draft with text, an optional topic, and an optimization goal for later review, editing, or publishing without posting to X. See examples."
+description: "Save one Xquik tweet draft with text, optional topic and goal, 25,000-character validation, API authentication, and clear 400, 401 or 429 recovery steps."
 api: "POST /drafts"
-keywords: ["draft", "create", "save", "tweet", "compose"]
+keywords: ["tweet draft", "create tweet draft", "save tweet draft", "tweet draft API", "draft review workflow"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -58,20 +58,15 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 ## Save a Tweet Draft Before Publishing
 
-Use this route to store tweet text without posting it to X. Add a topic and
-goal when later review needs the draft's purpose. Keep the returned draft ID
-for retrieval, editing, deletion, or a separate publishing workflow.
+Create one private tweet draft inside your authenticated Xquik account. Supply
+the proposed text and optional composition context. The response returns a
+stable Xquik draft ID for review or deletion.
 
-A saved draft differs from a published tweet. Draft creation does not return a
-public tweet ID. It does not send text to followers or create engagement
-metrics. Use the tweet write route only after the final text is approved.
+This request does not publish a tweet. It sends nothing to followers and
+creates no replies, reposts, likes, impressions, or public tweet ID.
 
-This route stores one text draft. It does not store thread order, media, or a
-reply target. Keep those publishing details in your workflow record.
-
-Use one draft ID as the workflow checkpoint. Fetch that exact draft before
-editing or approval. List drafts only when a person must browse several saved
-posts.
+Xquik drafts are separate from [X's native Unsent posts](https://help.x.com/en/using-x/how-to-post).
+Creating a record here does not add anything to the X compose interface.
 
 <Callout icon="circle-check" color="#16a34a">
   **Free** - does not consume credits
@@ -79,10 +74,11 @@ posts.
 
 <CodeGroup>
   ```bash cURL
-  curl -X POST https://xquik.com/api/v1/drafts \
-    -H "x-api-key: xq_YOUR_KEY_HERE" \
-    -H "Content-Type: application/json" \
-    -d '{
+  curl --fail-with-body \
+    --request POST https://xquik.com/api/v1/drafts \
+    --header "x-api-key: xq_YOUR_KEY_HERE" \
+    --header "Content-Type: application/json" \
+    --data '{
       "text": "Just shipped dark mode. What feature should we build next?",
       "topic": "product update",
       "goal": "conversation"
@@ -102,7 +98,12 @@ posts.
       goal: "conversation",
     }),
   });
-  const data = await response.json();
+  const draft = await response.json();
+  if (!response.ok) {
+    throw new Error(`${response.status} ${draft.error}: ${draft.message}`);
+  }
+
+  console.log(draft.id, draft.text, draft.createdAt);
   ```
 
   ```python Python
@@ -117,7 +118,13 @@ posts.
           "goal": "conversation",
       },
   )
-  data = response.json()
+  draft = response.json()
+  if response.status_code != 201:
+      raise RuntimeError(
+          f'{response.status_code} {draft["error"]}: {draft["message"]}'
+      )
+
+  print(draft["id"], draft["text"], draft["createdAt"])
   ```
 
   ```go Go
@@ -131,11 +138,14 @@ posts.
   )
 
   func main() {
-      body, _ := json.Marshal(map[string]interface{}{
+      body, err := json.Marshal(map[string]interface{}{
           "text":  "Just shipped dark mode. What feature should we build next?",
           "topic": "product update",
           "goal":  "conversation",
       })
+      if err != nil {
+          panic(err)
+      }
 
       req, err := http.NewRequest("POST", "https://xquik.com/api/v1/drafts", bytes.NewReader(body))
       if err != nil {
@@ -150,29 +160,166 @@ posts.
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      var draft map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&draft); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      if resp.StatusCode != http.StatusCreated {
+          panic(fmt.Sprintf("%d %v: %v", resp.StatusCode, draft["error"], draft["message"]))
+      }
+
+      fmt.Println(draft["id"], draft["text"], draft["createdAt"])
   }
   ```
 </CodeGroup>
 
-| Tweet draft column | Request or response source | Publishing rule |
+## Choose the Tweet Draft Fields
+
+Send a JSON object with one required field and two optional fields.
+
+| Field | Requirement | Draft use |
 | --- | --- | --- |
-| Draft ID | Response `id` | Use this ID for retrieval or deletion. |
-| Tweet text | Request and response `text` | Review the exact saved copy before publishing. |
-| Topic | Response `topic` | Keep the composition context with the draft. |
-| Goal | Response `goal` | Preserve engagement, followers, authority, or conversation intent. |
-| Creation time | Response `createdAt` | Record when drafting began. |
-| Last update | Response `updatedAt` | Reject stale review copies before publishing. |
-| Published tweet ID | None | Create a tweet separately after approval. |
+| `text` | Required string with 1 to 25,000 characters | Store the exact proposed tweet text. |
+| `topic` | Optional string, stored up to 500 characters | Record the intended subject. |
+| `goal` | Optional supported enum value | Record the intended composition outcome. |
+
+The supported `goal` values are `engagement`, `followers`, `authority`, and
+`conversation`. Match the lowercase value exactly.
+
+An unsupported `goal` is silently omitted. A non-string goal is also omitted.
+Validate this field before sending the request.
+
+A topic longer than 500 characters is silently truncated. A non-string topic
+is omitted. Trim and validate the topic inside your client.
+
+The `text` field behaves differently. Missing, empty, non-string, or oversized
+text returns `400 invalid_input`. Xquik never silently truncates draft text.
+
+The 25,000-character storage limit is not a publishing guarantee. Confirm the
+connected account's X posting rules before a separate write request.
+
+## Read the Created Draft
+
+A successful request returns `201 Created` and one canonical draft object.
+
+| Field | Meaning | Next action |
+| --- | --- | --- |
+| `id` | Stable Xquik draft ID | Store it for retrieval or deletion. |
+| `text` | Exact accepted text | Compare it with the submitted copy. |
+| `topic` | Accepted optional topic | Confirm any truncation was acceptable. |
+| `goal` | Accepted optional goal | Confirm the requested value was supported. |
+| `createdAt` | ISO 8601 creation timestamp | Record when review began. |
+| `updatedAt` | ISO 8601 update timestamp | Compare later retrieval with this response. |
+
+Optional `topic` and `goal` fields are omitted when unset or invalid. Do not
+expect those keys to contain `null`.
+
+The response contains no thread order, media attachment, reply target,
+schedule, publishing status, or public tweet ID.
+
+## Build a Tweet Draft Review Workflow
+
+Draft creation supports a human or agent approval checkpoint.
+
+1. Prepare one exact tweet text string.
+2. Add a short topic when reviewers need context.
+3. Choose one supported composition goal.
+4. Create the Xquik draft once.
+5. Store the returned draft ID.
+6. Retrieve that ID before final approval.
+7. Compare text, context, and timestamps.
+8. Publish approved text through a separate X write route.
+9. Delete the saved draft after retention requirements allow it.
+
+This route provides no edit operation. Create a replacement draft when text
+must change. Keep the old ID until reviewers approve the replacement.
+
+This route also provides no idempotency key. Repeating the same successful
+request creates another draft record. Persist every `201` before creating
+again. After a lost response, list and reconcile drafts before retrying.
+
+Use [List Drafts](/api-reference/drafts/list) to reconcile duplicate records.
+Use [Get Draft](/api-reference/drafts/get) before publishing or deleting one.
+
+## Keep Xquik and Native X Drafts Separate
+
+Native X drafts appear under Unsent posts in the X compose interface. Native
+thread drafts can contain several connected posts. Native drafts can also
+carry photos, GIFs, or video.
+
+An Xquik draft stores one text string plus optional composition context. It
+does not mirror native draft features or publish automatically.
+
+| Draft capability | Xquik Create Draft | Native X draft |
+| --- | --- | --- |
+| Store one text string through an API | Yes | No through this endpoint |
+| Store optional topic and goal | Yes | Not represented here |
+| Appear under X Unsent posts | No | Yes |
+| Preserve a native thread sequence | No | Supported by native X workflows |
+| Preserve native media attachments | No | Supported by native X workflows |
+| Publish during draft creation | No | No |
+
+Keep thread items, media IDs, reply targets, and scheduling instructions in
+your publishing workflow. Do not assume the draft response contains them.
+
+## Recover From Draft Creation Errors
+
+| Status | Error | Cause | Fix |
+| --- | --- | --- | --- |
+| `201` | Draft object | Xquik stored the draft | Save the returned ID. |
+| `400` | `invalid_input` | `text` is missing, empty, non-string, or oversized | Send 1 to 25,000 characters. |
+| `401` | `unauthenticated` | The credential is missing or invalid | Replace the API key or bearer token. |
+| `429` | `rate_limit_exceeded` | Too many requests reached the route | Wait for `Retry-After`, then retry carefully. |
+
+Never retry `400` without changing the body. Never retry `401` without
+replacing the credential.
+
+After `429`, preserve the submitted text. Retry only after the server's delay.
+Reconcile the list when the original request may have succeeded.
+
+## Answer Tweet Draft Creation Questions
+
+### How Can I Save a Tweet Draft Through an API?
+
+Send `POST /drafts` with a JSON `text` string. Authenticate with an Xquik API
+key or OAuth bearer token.
+
+### Does Creating a Draft Publish the Tweet?
+
+No. The request stores private Xquik text only. Publish through a separate
+write route after approval.
+
+### Does the Draft Appear in X Unsent Posts?
+
+No. Xquik draft records and native X drafts are separate collections.
+
+### Can One Draft Store a Twitter Thread?
+
+No. One draft stores one text string. Create and preserve thread structure in
+your publishing workflow.
+
+### Can I Attach Media or a Reply Target?
+
+No. The canonical draft fields contain no media or reply target. Add those
+details during a separate publishing request.
+
+### Can I Update a Saved Tweet Draft?
+
+No update route exists. Create a replacement, approve it, then delete the old
+record when safe.
+
+### Does Creating a Tweet Draft Consume Credits?
+
+No. This authenticated draft creation request is free.
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+<ParamField header="x-api-key" type="string">
+  Your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-api-key`, not both.
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
@@ -182,27 +329,27 @@ posts.
 ## Body
 
 <ParamField body="text" type="string" required>
-  The draft tweet text. Must be non-empty. Maximum 25,000 characters.
+  Exact draft text. Send 1 to 25,000 characters. Oversized text returns `400`.
 </ParamField>
 
 <ParamField body="topic" type="string">
-  Topic the tweet is about. Used for composition guidance. Maximum 500 characters (silently truncated if longer).
+  Optional composition topic. Values longer than 500 characters are silently truncated.
 </ParamField>
 
 <ParamField body="goal" type="string">
-  Optimization goal. One of: `engagement`, `followers`, `authority`, `conversation`. Invalid values are silently ignored.
+  Optional goal: `engagement`, `followers`, `authority`, or `conversation`. Other values are silently omitted.
 </ParamField>
 
 ## Response
 
 ### 201 Created
 
-<ResponseField name="id" type="string">Unique draft ID.</ResponseField>
-<ResponseField name="text" type="string">The draft tweet text.</ResponseField>
-<ResponseField name="topic" type="string">Topic the tweet is about. Omitted if not set.</ResponseField>
-<ResponseField name="goal" type="string">Optimization goal. Omitted if not set.</ResponseField>
+<ResponseField name="id" type="string">Unique Xquik draft ID.</ResponseField>
+<ResponseField name="text" type="string">Exact accepted tweet text.</ResponseField>
+<ResponseField name="topic" type="string">Optional accepted topic. Omitted when unset.</ResponseField>
+<ResponseField name="goal" type="string">Optional accepted goal. Omitted when unset.</ResponseField>
 <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
-<ResponseField name="updatedAt" type="string">ISO 8601 last update timestamp.</ResponseField>
+<ResponseField name="updatedAt" type="string">ISO 8601 update timestamp.</ResponseField>
 
 ```json
 {
@@ -218,24 +365,24 @@ posts.
 ### 400 Invalid Input
 
 ```json
-{ "error": "invalid_input" }
+{ "error": "invalid_input", "message": "Invalid input. Check the request body." }
 ```
-Missing or empty `text` field.
+The `text` field is missing, empty, non-string, or longer than 25,000 characters.
 
 ### 401 Unauthenticated
 
 ```json
-{ "error": "unauthenticated" }
+{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }
 ```
-Missing or invalid API key.
+Authentication is missing or invalid. Replace the credential before retrying.
 
 ### 429 Rate Limited
 
 ```json
 { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
 ```
-Too many requests. Wait for the `Retry-After` header before retrying.
+Too many requests reached the route. Wait for `Retry-After` before retrying.
 
 <Note>
-  **Next steps:** [List Drafts](/api-reference/drafts/list) to see all your drafts, [Get Draft](/api-reference/drafts/get) to fetch a specific draft, or [Delete Draft](/api-reference/drafts/delete) to remove one.
+  **Next steps:** [List Drafts](/api-reference/drafts/list) to inventory saved text, [Get Draft](/api-reference/drafts/get) to retrieve one record, or [Delete Draft](/api-reference/drafts/delete) to remove it.
 </Note>
