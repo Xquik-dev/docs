@@ -8697,24 +8697,62 @@ const REQUIRED_TWEET_PROFILE_API_FIELDS_SNIPPETS = [
 ] as const;
 
 const REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS = [
-  'title: "Request-efficient API Usage | X API Tutorial"',
-  'Use this guide when you need fewer duplicate reads, cleaner checkpoints, and better downstream handoffs.',
-  'Quick answer: batch known IDs, use profile timelines for one user, use tweet search for keywords, use home timeline for the connected account feed, and use extraction jobs for saved CSV/JSON/XLSX files.',
+  'title: "Twitter API Pagination, Batching & Tweet Exports"',
+  'sidebarTitle: "Efficient API Usage"',
+  '"Twitter API pagination"',
+  '"Twitter cursor pagination"',
+  '"Twitter API usage"',
+  '"Twitter search tweets"',
+  'Use this Twitter API pagination guide for tweets, profiles, followers, and exports.',
+  'Resume that checkpoint instead of repeating completed pages.',
+  '## Choose the Smallest Twitter API Route',
   'Use `GET /api/v1/x/tweets?ids=...` for up to 100 comma-separated tweet IDs in one request.',
   'Use `GET /api/v1/x/users/batch?ids=...` for up to 100 comma-separated user IDs in one request.',
   'Use `GET /api/v1/x/users/{id}/tweets` for one user\'s profile timeline.',
   'Use `GET /api/v1/x/tweets/search` for keywords, hashtags, operators, date filters, and advanced search pages.',
   'Use `GET /api/v1/x/timeline` for the connected account\'s home timeline.',
-  'Use `/x/users/{id}/tweets` for one user\'s profile timeline.',
-  'Use `/x/tweets/search` for keyword or advanced search.',
-  'Use `/x/timeline` for the authenticated home timeline.',
-  'Call `POST /api/v1/extractions/estimate` with the same target and `resultsLimit` you plan to run.',
-  'Call `GET /api/v1/extractions/{id}/export?format=csv`, `format=json`, or `format=xlsx` for file handoff.',
-  'For tweet, profile, follower, reply, timeline, community, and list pages, pass `next_cursor` back as `cursor`.',
-  'For stored extraction JSON pages, pass `nextCursor` as `after`.',
-  'Do not decode or construct cursors manually.',
-  'For tweet posts, pass public image URLs or one public MP4 URL in `media` on `POST /api/v1/x/tweets`.',
-  'Use `POST /api/v1/x/media` when you need an uploaded `mediaId` for the one-item `media_ids` array on `POST /api/v1/x/dm/{userId}`.',
+  'Inspect `requested_count`, `processed_count`, and `returned_count`.',
+  'Batch lookups are single-page requests.',
+  '## Match Twitter Search, Timeline & Feed Intent',
+  'Use `/x/users/{id}/tweets` for one account\'s posts.',
+  'Use `/x/tweets/search` for keywords, hashtags, operators, dates, or',
+  'Use `/x/timeline` for one connected account\'s ranked home feed.',
+  '## Use the Correct Page-Size Parameter',
+  '| Tweet search | `limit` | Up to 200 tweets; the server can paginate internally |',
+  '| User tweets and replies | `pageSize` | 1 to 100; default 20 |',
+  '| Followers and following | `pageSize` | 20 to 200; default 200 |',
+  '| Extraction results | `limit` | 1 to 1,000 stored rows; default 100 |',
+  '## Use Extraction Jobs for Saved Files',
+  'Pass `nextCursor` back through `after` for more stored rows.',
+  '## Store Cursor Checkpoints',
+  'Treat each cursor as an opaque string.',
+  'Write the rows and checkpoint in one database transaction.',
+  '## Implement a Bounded Tweet Search Loop',
+  'async function collectTweetSearch(',
+  '(nextCursor === cursor || seenCursors.has(nextCursor))',
+  'complete: false,',
+  'next_cursor: cursor,',
+  '## Guard High-Volume Twitter API Pagination',
+  'One large timeline should not starve every other target.',
+  '## Resume Recurring Tweet Collection',
+  'Never reuse a cursor after changing its query.',
+  'https://docs.x.com/x-api/fundamentals/pagination',
+  '## Recover Without Losing the Cursor',
+  '| `429` | A request bucket or cooldown was exceeded | Wait for `Retry-After`. Retry the same cursor. |',
+  '## Control Credits, Requests & Memory',
+  '## Twitter API Pagination Questions',
+  '### How Do I Paginate Twitter API Tweets?',
+  '### How Do I Get Tweets by One User Efficiently?',
+  '### How Do I Prevent Duplicate Tweets Across Pages?',
+  '## Efficient Twitter API Usage Checklist',
+] as const;
+
+const FORBIDDEN_REQUEST_EFFICIENT_API_USAGE_SNIPPETS = [
+  'title: "Request-efficient API Usage | X API Tutorial"',
+  'A short page means pagination finished.',
+  'Decode the cursor',
+  'Use `limit` for every endpoint',
+  'Retry every error unchanged',
 ] as const;
 
 const REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS = [
@@ -15748,11 +15786,23 @@ describe('repository discovery', (): void => {
     const source = readFileSync('guides/request-efficient-api-usage.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'Request-efficient API usage guide',
-        REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS,
-      ),
+      [
+        ...collectSnippetFindings(
+          source,
+          'Request-efficient API usage guide',
+          REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS,
+        ),
+        ...FORBIDDEN_REQUEST_EFFICIENT_API_USAGE_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Request-efficient API usage guide contains stale wording "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 

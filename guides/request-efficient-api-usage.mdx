@@ -1,8 +1,8 @@
 ---
-title: "Request-efficient API Usage | X API Tutorial"
+title: "Twitter API Pagination, Batching & Tweet Exports"
 sidebarTitle: "Efficient API Usage"
-description: Choose the smallest Xquik API route for batch lookups, user timelines, tweet search, home timeline, exports, cursors, tweet media, and DM media handoffs.
-keywords: ["X API request efficiency", "Twitter API pagination", "batch tweets", "batch users", "user timeline API", "tweet search API", "CSV export", "JSON export", "XLSX export"]
+description: "Paginate Twitter API tweets, timelines, followers, and searches. Batch IDs, prevent duplicates, resume cursors, manage retries, and export CSV, JSON, or XLSX."
+keywords: ["Twitter API pagination", "X API pagination", "Twitter cursor pagination", "Twitter API usage", "Twitter API endpoints", "Twitter search tweets", "get tweets by user API", "batch tweet lookup", "tweet scraper API", "Twitter API export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -11,16 +11,35 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
 
 <LlmsDirective />
 
-Use this guide when you need fewer duplicate reads, cleaner checkpoints, and better downstream handoffs. Pick the route that matches the job, store returned IDs and cursors, then reuse those checkpoints instead of repeating the same lookup.
+Use this Twitter API pagination guide for tweets, profiles, followers, and exports.
+Choose one matching route. Save every returned ID and cursor.
+Resume that checkpoint instead of repeating completed pages.
 
 <TweetReadApiLinks />
 <ConnectedAccountApiLinks />
 
 <Note>
-  Quick answer: batch known IDs, use profile timelines for one user, use tweet search for keywords, use home timeline for the connected account feed, and use extraction jobs for saved CSV/JSON/XLSX files.
+  Quick answer: batch known IDs. Use profile timelines for one account.
+  Search tweets for keywords. Use extractions for saved CSV, JSON, or XLSX.
 </Note>
 
-## Choose the smallest route
+## Choose the Smallest Twitter API Route
+
+The smallest matching route reduces duplicate tweets and unnecessary requests.
+Do not force every job through Twitter advanced search.
+
+| Collection job | Route | Page control | Required account |
+| --- | --- | --- | --- |
+| Fetch known tweet IDs | `GET /x/tweets` | Up to 100 IDs | No connected X account |
+| Fetch known user IDs | `GET /x/users/batch` | Up to 100 IDs | No connected X account |
+| Get tweets by one user | `GET /x/users/{id}/tweets` | `pageSize` and `cursor` | No connected X account |
+| Search tweets by keyword | `GET /x/tweets/search` | `limit` and `cursor` | No connected X account |
+| Export followers or following | `GET /x/users/{id}/followers` or `/following` | `pageSize` and `cursor` | No connected X account |
+| Read the home feed | `GET /x/timeline` | `cursor` and `seenTweetIds` | Connected X account |
+| Save a durable file | `POST /extractions` | `resultsLimit`, then `after` | Depends on the selected tool |
+
+Check each route before reusing a parameter name.
+Twitter API endpoints do not share one page-size parameter.
 
 <CardGroup cols={2}>
   <Card title="Known tweet IDs" icon="hash">
@@ -43,9 +62,11 @@ Use this guide when you need fewer duplicate reads, cleaner checkpoints, and bet
   </Card>
 </CardGroup>
 
-## Batch known IDs before looping
+## Batch Known Tweet or Profile IDs
 
-If your app already has tweet IDs or user IDs, batch them first. Store the IDs that return successfully, then request only missing records later.
+Batch known IDs before starting a cursor loop.
+One batch accepts up to 100 comma-separated IDs.
+Duplicate user IDs preserve only their first position.
 
 <CodeGroup>
 
@@ -61,98 +82,425 @@ curl "https://xquik.com/api/v1/x/users/batch?ids=44196397,783214" \
 
 </CodeGroup>
 
-Use returned row counts for downstream budgets. Do not assume every requested ID exists or returns data.
+Keep the submitted ID list beside each response.
+Match returned tweets or profiles by their stable string IDs.
+Retry only IDs missing from the completed response.
 
-## Match timeline intent
+Batch profile responses expose reconciliation fields.
+Inspect `requested_count`, `processed_count`, and `returned_count`.
+Also inspect `unavailable_ids` and `unprocessed_ids`.
+Do not treat an unavailable profile as a transient pagination failure.
+
+Batch lookups are single-page requests.
+Do not send an empty `next_cursor` into another batch request.
+
+## Match Twitter Search, Timeline & Feed Intent
+
+These routes can return similar tweet objects.
+Their collection intent remains different.
 
 <CardGroup cols={3}>
-  <Card title="Profile timeline" icon="user-round">
-    `GET /api/v1/x/users/{id}/tweets` returns one user's profile timeline. Use `cursor`, `includeReplies`, and `includeParentTweet` to control pages and reply context.
+  <Card title="Profile Timeline" icon="user-round">
+    Use `/x/users/{id}/tweets` for one account's posts. Add `includeReplies`
+    when replies belong in the result.
   </Card>
-  <Card title="Tweet search" icon="search">
-    `GET /api/v1/x/tweets/search` returns matching public posts. Use `q`, `queryType`, `cursor`, and `limit` for direct API pages.
+  <Card title="Tweet Search" icon="search">
+    Use `/x/tweets/search` for keywords, hashtags, operators, dates, or
+    engagement filters.
   </Card>
-  <Card title="Home timeline" icon="house">
-    `GET /api/v1/x/timeline` returns the authenticated account's home timeline. Use it for feed-style reads, not keyword search.
+  <Card title="Home Timeline" icon="house">
+    Use `/x/timeline` for one connected account's ranked home feed.
+    It is not a keyword search route.
   </Card>
 </CardGroup>
 
-Use `/x/users/{id}/tweets` for one user's profile timeline. Use `/x/tweets/search` for keyword or advanced search. Use `/x/timeline` for the authenticated home timeline.
+Use profile timelines for complete account-oriented collection.
+Use tweet search when the query meaning matters most.
+Use home timelines for feed-style inboxes or routing.
 
-## Use extraction jobs for files
+Plain `from:username` date searches can use timeline-oriented collection.
+Add keywords when ranked search semantics matter more.
+Keep `q`, filters, dates, and `queryType` unchanged across pages.
 
-Use extraction jobs when a workflow needs saved results, repeatable export paths, or analyst-ready files.
+## Use the Correct Page-Size Parameter
+
+Page-size names vary across Xquik routes.
+Copy the parameter from that endpoint's API reference.
+
+| Route family | Request parameter | Current range or behavior |
+| --- | --- | --- |
+| Tweet search | `limit` | Up to 200 tweets; the server can paginate internally |
+| User tweets and replies | `pageSize` | 1 to 100; default 20 |
+| Followers and following | `pageSize` | 20 to 200; default 200 |
+| Home timeline | None | The source controls each page size |
+| Extraction results | `limit` | 1 to 1,000 stored rows; default 100 |
+
+A requested size is an upper bound.
+Filters, source availability, or credits can reduce returned rows.
+Continue while the response says another page exists.
+
+Larger pages reduce HTTP calls.
+Smaller pages reduce memory and checkpoint loss after failures.
+Choose the largest size your worker can safely store atomically.
+
+## Use Extraction Jobs for Saved Files
+
+Use extractions for durable Twitter scraper API jobs.
+They support saved results and repeatable file handoffs.
 
 <Steps>
   <Step title="Estimate">
-    Call `POST /api/v1/extractions/estimate` with the same target and `resultsLimit` you plan to run.
+    Send the planned tool, target, and `resultsLimit`.
+    Review the estimate before creating the job.
   </Step>
   <Step title="Create">
-    Call `POST /api/v1/extractions`, then store the returned job `id`, `status`, and poll path.
+    Call `POST /api/v1/extractions`.
+    Store its job `id`, `status`, and poll path.
   </Step>
   <Step title="Poll JSON">
-    Call `GET /api/v1/extractions/{id}` until the job is complete. Store `hasMore` and `nextCursor`.
+    Poll `GET /api/v1/extractions/{id}` until completion.
+    Pass `nextCursor` back through `after` for more stored rows.
   </Step>
   <Step title="Export">
-    Call `GET /api/v1/extractions/{id}/export?format=csv`, `format=json`, or `format=xlsx` for file handoff.
+    Download CSV, JSON, XLSX, JSONL, Markdown, XML, or PDF.
+    Check the export page's row and format limits first.
   </Step>
 </Steps>
 
-For live app pages, call the direct API route. For durable exports, create an extraction job and store the export URL with the run checkpoint.
+Direct routes suit live application pages.
+Extractions suit durable exports, analysts, and asynchronous workflows.
 
-## Store cursor checkpoints
+| Need | Prefer direct API | Prefer extraction |
+| --- | --- | --- |
+| Show one live page | Yes | No |
+| Resume a short cursor loop | Yes | Optional |
+| Download CSV or XLSX | No | Yes |
+| Save a durable job record | No | Yes |
+| Stream more rows than a file cap | Yes, or stored result pages | Use stored result pages |
 
-Store the route, query, cursor, and returned page state together. Treat every cursor as opaque.
+Store the export format, job ID, row count, and completion state.
+Do not call the export route before the job completes.
+
+## Store Cursor Checkpoints
+
+Store the request and response cursor together.
+Treat each cursor as an opaque string.
+Never decode, trim, or construct one.
 
 ```json
 {
   "route": "/api/v1/x/tweets/search",
   "query": "from:username webhook OR SDK",
+  "query_type": "Latest",
+  "limit": 100,
   "cursor_sent": null,
   "has_next_page": true,
   "next_cursor": "DAACCgACGRElMJcAAA",
-  "next_request": "/api/v1/x/tweets/search?q=from:username%20webhook%20OR%20SDK&cursor=DAACCgACGRElMJcAAA"
+  "unique_tweet_count": 93,
+  "last_saved_tweet_id": "1893710452812718080",
+  "collected_at": "2026-08-02T20:30:00Z"
 }
 ```
 
-For tweet, profile, follower, reply, timeline, community, and list pages, pass `next_cursor` back as `cursor`. For stored extraction JSON pages, pass `nextCursor` as `after`. Do not decode or construct cursors manually. The normalized REST contract and API MCP use `has_more` and `next_cursor`, but each endpoint keeps its request cursor name. Use `cursor` for most X reads, `after` for events, draws, extractions, and Radar, and `afterCursor` for drafts.
+Most X reads return `next_cursor` and accept `cursor`.
+Stored extraction pages return `nextCursor` and accept `after`.
+Events, draws, and Radar also accept `after`.
+Drafts accept `afterCursor`.
 
-## Guard high-volume page loops
+The normalized REST contract uses `has_more` and `next_cursor`.
+Each route still preserves its documented request parameter.
 
-High-volume clients must bound work and detect stalled pagination. A page-size parameter is an upper bound, not a completion guarantee.
+Write the rows and checkpoint in one database transaction.
+Advance only after the row write succeeds.
+Keep the previous checkpoint until validating its replacement.
+
+## Implement a Bounded Tweet Search Loop
+
+This TypeScript example preserves query intent across cursor pages.
+It also stops repeated cursors and duplicate tweet rows.
+
+```typescript
+type Tweet = {
+  id: string;
+  text?: string;
+};
+
+type TweetPage = {
+  tweets: Tweet[];
+  has_next_page: boolean;
+  next_cursor?: string;
+};
+
+type SearchCheckpoint = {
+  cursor_sent: string | null;
+  next_cursor: string | null;
+  page_number: number;
+  unique_tweet_count: number;
+};
+
+type SearchCollectionResult = {
+  complete: boolean;
+  next_cursor: string | null;
+  unique_tweet_count: number;
+};
+
+async function collectTweetSearch(
+  apiKey: string,
+  query: string,
+  savePage: (tweets: Tweet[], checkpoint: SearchCheckpoint) => Promise<void>,
+): Promise<SearchCollectionResult> {
+  const seenTweetIds = new Set<string>();
+  const seenCursors = new Set<string>();
+  let cursor = "";
+
+  for (let pageNumber = 1; pageNumber <= 50; pageNumber += 1) {
+    const params = new URLSearchParams({
+      limit: "100",
+      q: query,
+      queryType: "Latest",
+    });
+    if (cursor !== "") {
+      params.set("cursor", cursor);
+    }
+
+    const response = await fetch(
+      `https://xquik.com/api/v1/x/tweets/search?${params}`,
+      { headers: { "x-api-key": apiKey } },
+    );
+    if (!response.ok) {
+      throw new Error(`Tweet search failed with ${response.status}`);
+    }
+
+    const page = (await response.json()) as TweetPage;
+    const uniqueTweets = page.tweets.filter((tweet) => {
+      if (seenTweetIds.has(tweet.id)) {
+        return false;
+      }
+      seenTweetIds.add(tweet.id);
+      return true;
+    });
+
+    const nextCursor = page.next_cursor || null;
+    if (
+      page.has_next_page &&
+      nextCursor !== null &&
+      (nextCursor === cursor || seenCursors.has(nextCursor))
+    ) {
+      throw new Error("Pagination stopped because the cursor repeated");
+    }
+
+    await savePage(uniqueTweets, {
+      cursor_sent: cursor || null,
+      next_cursor: nextCursor,
+      page_number: pageNumber,
+      unique_tweet_count: seenTweetIds.size,
+    });
+
+    if (!page.has_next_page) {
+      return {
+        complete: true,
+        next_cursor: null,
+        unique_tweet_count: seenTweetIds.size,
+      };
+    }
+
+    if (nextCursor === null) {
+      return {
+        complete: false,
+        next_cursor: null,
+        unique_tweet_count: seenTweetIds.size,
+      };
+    }
+
+    seenCursors.add(nextCursor);
+    cursor = nextCursor;
+  }
+
+  return {
+    complete: false,
+    next_cursor: cursor,
+    unique_tweet_count: seenTweetIds.size,
+  };
+}
+```
+
+Move status-specific recovery outside this collection function.
+Resume only after correcting the failed condition.
+
+## Guard High-Volume Twitter API Pagination
+
+Bound every high-volume tweet scraper loop.
+A filter can produce an empty page before later matches.
+An empty page does not prove pagination finished.
 
 <Steps>
   <Step title="Bound the run">
-    Set a maximum row count, page count, and elapsed time before the first request.
+    Set maximum rows, pages, elapsed time, and expected credits.
   </Step>
   <Step title="De-duplicate rows">
-    Store each tweet or user by stable `id`. Count unique rows, not array length across pages.
+    Store tweets by tweet ID. Store profiles by user ID.
   </Step>
   <Step title="Follow advancing cursors">
-    Continue while the response says more data exists, even when a filtered page is empty.
+    Continue while the response reports more pages.
+    Permit empty filtered pages when the cursor advances.
   </Step>
   <Step title="Stop stalled pagination">
-    Stop with a clear partial-result status if the next cursor is empty, unchanged, or already seen.
+    Stop when the next cursor is missing, unchanged, or previously seen.
   </Step>
   <Step title="Persist after each page">
-    Save the request cursor, next cursor, unique row count, and last stable ID before continuing.
+    Save both cursors, unique rows, and the last stable ID.
   </Step>
 </Steps>
 
-For agent calls, return counts, aggregates, or a bounded field projection. API MCP tool output is limited to 24,000 characters. Use REST, generated SDKs, or extraction exports when downstream systems need every full row.
+Schedule multiple accounts or searches fairly.
+Fetch one bounded page slice from each stream.
+Then resume deeper cursors in later rounds.
+One large timeline should not starve every other target.
 
-## Avoid unnecessary media work
+For agent calls, return counts or bounded field projections.
+API MCP output is limited to 24,000 characters.
+Use REST, SDKs, or exports for every complete row.
 
-For tweet posts, pass public image URLs or one public MP4 URL in `media` on `POST /api/v1/x/tweets`. Do not call `POST /api/v1/x/media` first when the tweet media is already public.
+## Resume Recurring Tweet Collection
 
-Use `POST /api/v1/x/media` when you need an uploaded `mediaId` for the one-item `media_ids` array on `POST /api/v1/x/dm/{userId}`.
+Do not restart recurring searches from their first page.
+Save the last accepted tweet timestamp and stable ID.
 
-## Checklist
+For time-based searches, pass `sinceTime` and `untilTime`.
+Use a small overlap between runs.
+Then deduplicate overlapping tweets by tweet ID.
 
-- Batch known tweet or user IDs before looping over single lookups.
-- Store returned IDs, row counts, `has_next_page`, `next_cursor`, and export paths.
-- Stop when a cursor is missing or repeats while the response still reports more data.
-- Continue through empty filtered pages when the cursor advances.
-- Use `resultsLimit` on extraction estimates and create requests for bounded jobs.
-- Use monitors and signed webhooks when recurring checks should push events instead of polling every page.
-- Keep public tweet media URLs and uploaded DM media IDs in separate handoffs.
+For recurring account or keyword checks, consider monitors.
+Signed webhooks push matching tweet or profile events.
+The events API supports replay and reconciliation.
+
+Keep separate checkpoints for each route and query.
+Changing filters creates a different result stream.
+Never reuse a cursor after changing its query.
+
+The [official X pagination guide](https://docs.x.com/x-api/fundamentals/pagination)
+confirms two durable principles.
+Pagination tokens are opaque. Short pages can still have successors.
+Xquik exposes those principles through its documented cursor fields.
+
+## Recover Without Losing the Cursor
+
+Use the HTTP status before deciding whether to retry.
+
+| Status | Meaning for this workflow | Correct next action |
+| --- | --- | --- |
+| `400` | A parameter or query is invalid | Fix the request. Do not retry unchanged. |
+| `401` | Authentication failed | Replace or correct the credential. |
+| `402` | Credits cannot fund the requested work | Add credits or reduce future work. Resume the saved cursor. |
+| `404` | The requested user, tweet, or job is unavailable | Record the missing target. Stop that stream. |
+| `424` | An upstream dependency failed | Retry the same saved cursor with bounded backoff. |
+| `429` | A request bucket or cooldown was exceeded | Wait for `Retry-After`. Retry the same cursor. |
+| `502` | The X read dependency failed | Retry the same cursor with capped exponential backoff. |
+
+Never advance the checkpoint after a failed response.
+Never charge a failed page to the unique-row count.
+Record partial completion when a retry budget expires.
+
+## Control Credits, Requests & Memory
+
+Estimate work before starting large exports.
+Multiply expected unique rows by the route's documented result cost.
+Keep rate-limit budgets separate from credit budgets.
+
+Requested rows can exceed affordable rows.
+A paid endpoint can return a smaller page.
+Zero affordable paid results return `402 insufficient_credits`.
+
+Use these controls before every large run:
+
+- Maximum unique tweets or profiles.
+- Maximum cursor pages.
+- Maximum elapsed time.
+- Maximum expected credits.
+- Maximum retry attempts per cursor.
+- Maximum in-memory rows before flushing.
+
+See [Twitter API rate limits](/guides/rate-limits) for request pacing.
+See [pricing and billing](/guides/billing) for metered result rules.
+
+## Avoid Unnecessary Media Work
+
+Pass public media URLs directly when creating tweets.
+One public MP4 URL can also use the `media` field.
+Do not upload already public tweet media first.
+
+Upload media when a direct message needs a `mediaId`.
+DM writes accept one item in `media_ids`.
+
+Keep tweet media URLs separate from DM media IDs.
+
+## Twitter API Pagination Questions
+
+### How Do I Paginate Twitter API Tweets?
+
+Read `has_next_page` and save `next_cursor`.
+Send that value as the next request's `cursor`.
+Stop only when the response reports no next page.
+
+### Can I Get Every Tweet in One API Request?
+
+No. Collection routes return bounded pages.
+Tweet search can request up to 200 results through `limit`.
+Larger collections still require cursors or extraction jobs.
+
+### Why Did the API Return Fewer Tweets Than Requested?
+
+Page size is an upper bound.
+Filters, source availability, and remaining credits can reduce results.
+Continue whenever `has_next_page` remains true.
+
+### How Do I Get Tweets by One User Efficiently?
+
+Use `GET /x/users/{id}/tweets` with `pageSize` and `cursor`.
+Add `includeReplies=true` only when replies belong in scope.
+Use search when keywords or advanced filters define the job.
+
+### Should I Use a Cursor or a Timestamp?
+
+Use cursors within one continuous collection run.
+Use timestamps to define windows between recurring runs.
+Apply a small overlap and deduplicate by tweet ID.
+
+### How Do I Prevent Duplicate Tweets Across Pages?
+
+Store every tweet ID in a unique index.
+Track cursors separately from tweet IDs.
+Reject repeated cursors before requesting another page.
+
+### Should I Use Direct API Pages or a Twitter Export?
+
+Use direct pages for live application responses.
+Use extractions for durable CSV, JSON, or XLSX handoffs.
+Use stored extraction pages when streaming beyond file limits.
+
+## Efficient Twitter API Usage Checklist
+
+- Choose the route matching IDs, users, search, feed, or export intent.
+- Batch up to 100 known tweet or user IDs.
+- Preserve exact filters throughout every cursor run.
+- Store rows and checkpoints atomically.
+- Count unique IDs instead of raw array lengths.
+- Continue through short or empty pages when cursors advance.
+- Stop missing, unchanged, or repeated cursors.
+- Bound pages, rows, time, credits, retries, and memory.
+- Use `resultsLimit` for extraction estimates and jobs.
+- Resume the same cursor after recoverable errors.
+- Use monitors and webhooks for recurring checks.
+- Keep tweet media URLs separate from uploaded DM media IDs.
+
+<CardGroup cols={3}>
+  <Card title="Tweet Search API" icon="search" href="/api-reference/x/search-tweets">
+    Search tweets by keywords, dates, authors, media, or engagement.
+  </Card>
+  <Card title="Extraction Workflow" icon="download" href="/guides/extraction-workflow">
+    Estimate, create, poll, paginate, and export durable jobs.
+  </Card>
+  <Card title="Rate Limits" icon="gauge" href="/guides/rate-limits">
+    Pace requests and recover from `429` responses safely.
+  </Card>
+</CardGroup>
