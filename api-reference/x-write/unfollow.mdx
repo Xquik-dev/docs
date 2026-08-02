@@ -236,7 +236,7 @@ This endpoint supports an approved Twitter management workflow.
 
 ## Unfollow Twitter Accounts Safely
 
-Generate a fresh idempotency key for every intended relationship change.
+Create a new idempotency key whenever the relationship changes.
 Never reuse the key from an earlier follow action.
 Reuse the unfollow key only after an interrupted network request.
 
@@ -252,6 +252,9 @@ Each row needs its own target, reason, approval, and idempotency key.
 Separate rows isolate failures across multiple Twitter accounts.
 A failed row must not erase successful unfollow actions.
 Batch queues save time while preserving individual approvals.
+Review unfollowing accounts before sending any write.
+A social media team can stage approved rows for later processing.
+For accounts on Twitter, store each acting account and target ID separately.
 
 Respect X's terms of service and every returned rate limit.
 Unfollow people only after a clear user or workflow decision.
@@ -264,7 +267,7 @@ Define inactivity from an approved timestamp or business rule.
 Never infer inactivity from a missing profile or stale export.
 
 Store the selection rule with the target user ID.
-Keep the acting account separate from the selected profile.
+Review the acting account and target as separate fields.
 Then send 1 approved unfollow action for each relationship.
 
 ## Verify the Twitter Unfollow API Result
@@ -272,9 +275,9 @@ Then send 1 approved unfollow action for each relationship.
 Poll `statusUrl` until the durable action becomes terminal.
 Store the final status, billing fields, and request identifiers.
 Use [Check Follower](/api-reference/x/check-follower) when current proof matters.
-Use Following to confirm the outbound relationship is absent.
+Check Following to confirm the target disappeared from the outbound list.
 
-The response includes no notification-delivery state.
+No response field says whether X sent a notification.
 Do not claim whether X notified the target account.
 Verify the relationship instead of inferring client behavior.
 
@@ -286,7 +289,7 @@ Use Remove Follower when someone should stop following the connected account.
 
 Unretweet removes one repost but preserves every follow relationship.
 Delete Tweet removes one post but preserves follower relationships.
-Keep these write actions separate in every management tool.
+Don't mix these write actions in one management tool flow.
 
 ## Handle Twitter API Unfollow Errors
 
@@ -311,17 +314,18 @@ Throttle the queue to both documented limits above.
 
 ### Can I Unfollow Someone Without Them Knowing?
 
-The action response does not report X notification delivery.
+Xquik cannot confirm whether X sends a notification.
 Confirm only the outbound relationship change.
 
 ### Do I Need Unfollow Tools or Browser Extensions?
 
 No. Use any HTTP client or the cURL, Node.js, Python, and Go examples.
 A third-party service still needs an approved connected account.
+Some HTTP clients offer free plans, but Xquik credits still apply.
 
 ### How Do I Manage Several Connected Accounts?
 
-Create a separate approval and request for each acting account.
+Repeat approval for each acting account.
 Never reuse one action ID across accounts.
 
 ### How Do I Get an API Key?
