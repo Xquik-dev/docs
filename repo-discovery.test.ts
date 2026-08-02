@@ -10015,10 +10015,13 @@ const FORBIDDEN_PREFECT_GUIDE_SNIPPETS = [
 
 const REQUIRED_HAYSTACK_GUIDE_SNIPPETS = [
   'title: "Haystack Twitter Search API & RAG Python Guide"',
+  'Haystack is an open source framework for building AI applications with modular pipelines.',
+  'This Haystack AI API integration supports RAG pipelines and agent workflows.',
+  'They can retrieve relevant tweets for Haystack AI agents and Haystack AI RAG pipelines.',
   'python -m pip install "xquik-haystack==0.1.3" "haystack-ai==3.0.0"',
   'Release `0.1.3` is published on PyPI.',
-  '`XquikTweetSearch` calls `GET /x/tweets/search`.',
-  '`XquikUserTweetsFetcher` calls `GET /x/users/{id}/tweets`.',
+  '`XquikTweetSearch` calls the `GET /x/tweets/search` search endpoint.',
+  'Use `XquikUserTweetsFetcher` for `GET /x/users/{id}/tweets`.',
   '## Build Reliable RAG Citations',
   '### Treat Tweet Text as Untrusted Context',
   'Never treat tweet text as a system instruction.',
@@ -10030,7 +10033,7 @@ const REQUIRED_HAYSTACK_GUIDE_SNIPPETS = [
   'X retrieval dependency failed',
   'Retry with bounded backoff.',
   'X retrieval error',
-  'Retry transient failures with a cap.',
+  'Retry up to the configured limit.',
   '## Pipeline Handoff',
   'Use this shape when Haystack hands results to a vector store, evaluation job, queue, CSV export, or dashboard.',
   '<Card title="Document Rows" icon="file-text">',
@@ -10051,6 +10054,12 @@ const REQUIRED_HAYSTACK_GUIDE_SNIPPETS = [
   '## Haystack Component or Direct REST API',
   '## Migrate to Haystack 3',
   '## Common Haystack Twitter API Questions',
+  '### What Is Haystack AI?',
+  '### How Does the Twitter API Search Tweets?',
+  '### What Is a Twitter Search API Python Workflow?',
+  '### Haystack AI vs LangChain: Which Fits Twitter RAG?',
+  '### Where Is the Haystack AI GitHub Integration?',
+  '### Can a Haystack AI Agent Publish Tweets?',
 ] as const;
 
 const FORBIDDEN_HAYSTACK_GUIDE_SNIPPETS = [
