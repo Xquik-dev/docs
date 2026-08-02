@@ -120,19 +120,25 @@ interface GeneratedResponseTab {
   readonly title: string;
 }
 
-function generatedResponseTabs(
-  source: string,
-): readonly GeneratedResponseTab[] {
+function generatedResponseBlock(source: string): string | undefined {
   const start = source.indexOf(GENERATED_RESPONSE_EXAMPLES_START);
   const end = source.indexOf(GENERATED_RESPONSE_EXAMPLES_END);
   if (start === -1 || end === -1 || end < start) {
-    return [];
+    return undefined;
   }
+  return source.slice(start, end);
+}
+
+function generatedResponseTabs(
+  source: string,
+): readonly GeneratedResponseTab[] {
+  const generated = generatedResponseBlock(source);
+  if (generated === undefined) return [];
 
   return [
-    ...source
-      .slice(start, end)
-      .matchAll(/^  <Tab title="(\d{3})" id="([^"]+)">$/gmu),
+    ...generated.matchAll(
+      /^  <Tab title="(\d{3})" id="([^"]+)">$/gmu,
+    ),
   ].map(
     (match): GeneratedResponseTab => ({
       id: match[2] ?? '',
@@ -145,17 +151,20 @@ function generatedJsonResponse(
   source: string,
   status: string,
 ): Readonly<Record<string, unknown>> | undefined {
-  const tabStart = source.indexOf(`<Tab title="${status}"`);
+  const generated = generatedResponseBlock(source);
+  if (generated === undefined) return undefined;
+
+  const tabStart = generated.indexOf(`<Tab title="${status}"`);
   if (tabStart === -1) return undefined;
 
   const fence = '```json\n';
-  const fenceStart = source.indexOf(fence, tabStart);
+  const fenceStart = generated.indexOf(fence, tabStart);
   if (fenceStart === -1) return undefined;
 
-  const fenceEnd = source.indexOf('\n    ```', fenceStart + fence.length);
+  const fenceEnd = generated.indexOf('\n    ```', fenceStart + fence.length);
   if (fenceEnd === -1) return undefined;
 
-  const json = source
+  const json = generated
     .slice(fenceStart + fence.length, fenceEnd)
     .split('\n')
     .map((line): string => line.replace(/^    /u, ''))
