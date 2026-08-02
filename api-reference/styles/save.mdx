@@ -1,9 +1,9 @@
 ---
-title: "Save Custom Tweet Styles & Writing Rules for Posts"
+title: "Save Tweet Writing Samples for a Reusable X Style"
 sidebarTitle: "Save custom style"
-description: "Save a custom tweet writing-style profile from supplied post text. Reuse its tone, vocabulary, and sentence patterns during composition. See examples."
+description: "Save 1-100 approved tweet examples as a reusable writing profile. Preserve wording, labels, timestamps, local IDs, replacement behavior, and account scope."
 api: "PUT /styles/{id}"
-keywords: ["style", "save", "custom", "tweets", "writing style", "profile"]
+keywords: ["tweet writing", "save tweet style", "Twitter writing style", "X brand voice", "tweet writing samples", "social media style guide", "tweet examples", "custom tweet style API"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -14,14 +14,16 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   <Tab title="200" id="response-styles-save-200">
     ```json
     {
-      "xUsername": "elonmusk",
+      "xUsername": "professional voice",
       "tweetCount": 1,
-      "isOwnAccount": true,
-      "fetchedAt": "2025-01-15T12:00:00Z",
+      "isOwnAccount": false,
+      "fetchedAt": "2026-08-02T18:30:00.000Z",
       "tweets": [
         {
-          "id": "1234567890",
-          "text": "Excited to share our latest research findings."
+          "id": "0",
+          "text": "Excited to share our latest research findings.",
+          "authorUsername": "professional voice",
+          "createdAt": "2026-08-02T18:30:00.000Z"
         }
       ]
     }
@@ -63,58 +65,189 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <Callout icon="circle-check" color="#16a34a">
   **Free** - does not consume credits
 </Callout>
-<Info>This endpoint does not consume usage credits. No subscription required.</Info>
+
+Save approved Tweet text as a reusable, account-scoped writing profile.
+Xquik preserves each example instead of generating subjective style labels.
+
+The endpoint stores 1-100 Tweet objects under one lowercase label. It trims
+outer whitespace from every example. Internal punctuation, casing, links, and
+line breaks remain available for later review.
+
+It does not infer tone, vocabulary, sentiment, readability, or engagement.
+It also does not fetch likes, replies, reposts, quotes, views, or followers.
+
+## Save Approved Tweet Writing Samples
+
+Use this endpoint when you already have reviewed examples. Those examples can
+come from approved drafts, published Tweets, or internal writing guidelines.
+
+| Tweet style profile column | Request or response source | Reuse rule |
+| --- | --- | --- |
+| Profile key | Body `label` | Reuse the returned lowercase key. |
+| Source tweets | Request `tweets[].text` | Review every supplied post before saving. |
+| Sample ID | Response `tweets[].id` | Treat it as a local array position. |
+| Sample author | Response `tweets[].authorUsername` | Expect the normalized label. |
+| Sample timestamp | Response `tweets[].createdAt` | Record the style save time. |
+| Profile timestamp | Response `fetchedAt` | Detect later replacements. |
+| Ownership flag | Response `isOwnAccount` | Expect `false` for custom samples. |
+
+These local sample IDs are not X Tweet IDs. Do not send them to Tweet lookup
+or Tweet analytics endpoints.
+
+## Choose Representative Tweet Examples
+
+A useful Tweet writing profile needs intentional examples. Save posts that
+demonstrate the patterns you want future drafts to follow.
+
+| Writing feature | Include when relevant | Review before saving |
+| --- | --- | --- |
+| Opening structure | Questions, statements, or short hooks | Remove accidental clickbait |
+| Sentence length | Short posts and longer explanations | Keep the intended pacing |
+| Formatting | Paragraphs, lists, or single lines | Preserve meaningful line breaks |
+| Punctuation | Colons, parentheses, or exclamation marks | Remove unapproved habits |
+| Calls to action | Replies, links, or product prompts | Keep claims accurate |
+| X vocabulary | Product names and audience terms | Remove internal jargon |
+| Emoji and hashtags | Only approved usage | Avoid one-off campaign tags |
+| Replies | Useful support or community responses | Exclude private customer details |
+
+Do not treat every published Tweet as a good example. Remove crisis posts,
+temporary promotions, outdated claims, and accidental wording.
+
+The endpoint stores text exactly after trimming outer whitespace. It does not
+decide whether an example fits your Twitter writing style.
+
+## Keep the Path and Label Aligned
+
+The body `label` controls the stored profile key. Xquik trims it and converts
+it to lowercase before saving.
+
+The current PUT route does not reconcile `{id}` with `label`. Send the same
+value in both places. This keeps request URLs, logs, and response keys clear.
+
+```text
+PUT /api/v1/styles/product-updates
+body.label = "product-updates"
+response.xUsername = "product-updates"
+```
+
+Spaces are valid inside `label`. Encode them when using the same path value.
+A simple hyphenated label avoids confusing URLs.
+
+## Replace an Existing Tweet Style
+
+Profiles belong to the authenticated Xquik account. The normalized body label
+forms the account-scoped storage key.
+
+Sending the same label replaces the entire saved Tweet array. It also resets
+every local sample ID and save timestamp.
+
+Send the complete approved set during every replacement. Omitting an old
+example removes it from the saved profile.
+
+Changing only the path `{id}` does not rename a profile. Change `label` to
+create or replace another normalized key. Delete the old key separately.
+
+## Reuse Saved Tweet Examples
+
+Use the returned `xUsername` value as the profile key. The name remains
+`xUsername` for both analyzed accounts and custom labels.
+
+| Next operation | Key to send | Purpose |
+| --- | --- | --- |
+| [Get Style](/api-reference/styles/get) | Path `{id}` | Retrieve all saved examples |
+| [List Styles](/api-reference/styles/list) | None | Review available labels and counts |
+| [Compare Styles](/api-reference/styles/compare) | `username1` or `username2` | Load 2 sample sets side by side |
+| [Build a Post Draft](/api-reference/compose/create) | `styleUsername` | Return matched examples as `styleTweets` |
+| [Delete Style](/api-reference/styles/delete) | Path `{id}` | Remove the profile |
+
+Custom samples contain local sequential IDs. Therefore, they cannot provide
+live likes, replies, reposts, quotes, bookmarks, or view counts.
+
+## Request Examples
 
 <CodeGroup>
   ```bash cURL
-  curl -X PUT https://xquik.com/api/v1/styles/casual \
+  curl -X PUT https://xquik.com/api/v1/styles/product-updates \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
     -H "Content-Type: application/json" \
     -d '{
-      "label": "casual",
+      "label": "product-updates",
       "tweets": [
-        { "text": "just shipped a new feature, feels good" },
-        { "text": "hot take: tabs > spaces and I will die on this hill" },
-        { "text": "debugging at 2am hits different when the fix is a missing comma" }
+        {"text": "Shipped faster follower exports today. CSV files now preserve profile IDs."},
+        {"text": "New: filter Tweet replies before sending results to your webhook."},
+        {"text": "Building an X monitor? Start with one profile and verify every event."}
       ]
     }' | jq
   ```
 
   ```javascript Node.js
-  const response = await fetch("https://xquik.com/api/v1/styles/casual", {
-    method: "PUT",
-    headers: {
-      "x-api-key": "xq_YOUR_KEY_HERE",
-      "Content-Type": "application/json",
+  const response = await fetch(
+    "https://xquik.com/api/v1/styles/product-updates",
+    {
+      method: "PUT",
+      headers: {
+        "x-api-key": "xq_YOUR_KEY_HERE",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        label: "product-updates",
+        tweets: [
+          {
+            text: "Shipped faster follower exports today. CSV files now preserve profile IDs.",
+          },
+          {
+            text: "New: filter Tweet replies before sending results to your webhook.",
+          },
+          {
+            text: "Building an X monitor? Start with one profile and verify every event.",
+          },
+        ],
+      }),
     },
-    body: JSON.stringify({
-      label: "casual",
-      tweets: [
-        { text: "just shipped a new feature, feels good" },
-        { text: "hot take: tabs > spaces and I will die on this hill" },
-        { text: "debugging at 2am hits different when the fix is a missing comma" },
-      ],
-    }),
-  });
-  const data = await response.json();
+  );
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(`${response.status}: ${result.message}`);
+  }
+
+  console.log(result.xUsername, result.tweetCount);
   ```
 
   ```python Python
   import requests
 
   response = requests.put(
-      "https://xquik.com/api/v1/styles/casual",
+      "https://xquik.com/api/v1/styles/product-updates",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
       json={
-          "label": "casual",
+          "label": "product-updates",
           "tweets": [
-              {"text": "just shipped a new feature, feels good"},
-              {"text": "hot take: tabs > spaces and I will die on this hill"},
-              {"text": "debugging at 2am hits different when the fix is a missing comma"},
+              {
+                  "text": (
+                      "Shipped faster follower exports today. "
+                      "CSV files now preserve profile IDs."
+                  )
+              },
+              {
+                  "text": (
+                      "New: filter Tweet replies before sending results "
+                      "to your webhook."
+                  )
+              },
+              {
+                  "text": (
+                      "Building an X monitor? Start with one profile "
+                      "and verify every event."
+                  )
+              },
           ],
       },
+      timeout=30,
   )
-  data = response.json()
+  response.raise_for_status()
+  result = response.json()
+  print(result["xUsername"], result["tweetCount"])
   ```
 
   ```go Go
@@ -128,57 +261,61 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   )
 
   func main() {
-      body, _ := json.Marshal(map[string]interface{}{
-          "label": "casual",
+      body, err := json.Marshal(map[string]interface{}{
+          "label": "product-updates",
           "tweets": []map[string]string{
-              {"text": "just shipped a new feature, feels good"},
-              {"text": "hot take: tabs > spaces and I will die on this hill"},
-              {"text": "debugging at 2am hits different when the fix is a missing comma"},
+              {"text": "Shipped faster follower exports today. CSV files now preserve profile IDs."},
+              {"text": "New: filter Tweet replies before sending results to your webhook."},
+              {"text": "Building an X monitor? Start with one profile and verify every event."},
           },
       })
-
-      req, err := http.NewRequest("PUT", "https://xquik.com/api/v1/styles/casual", bytes.NewReader(body))
       if err != nil {
           panic(err)
       }
-      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-      req.Header.Set("Content-Type", "application/json")
 
-      resp, err := http.DefaultClient.Do(req)
+      request, err := http.NewRequest(
+          http.MethodPut,
+          "https://xquik.com/api/v1/styles/product-updates",
+          bytes.NewReader(body),
+      )
       if err != nil {
           panic(err)
       }
-      defer resp.Body.Close()
+      request.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      request.Header.Set("Content-Type", "application/json")
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      response, err := http.DefaultClient.Do(request)
+      if err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      defer response.Body.Close()
+
+      var result map[string]interface{}
+      if err := json.NewDecoder(response.Body).Decode(&result); err != nil {
+          panic(err)
+      }
+      if response.StatusCode != http.StatusOK {
+          panic(fmt.Sprintf("style save failed: %v", result))
+      }
+      fmt.Println(result["xUsername"], result["tweetCount"])
   }
   ```
 </CodeGroup>
 
-| Tweet style profile column | Request or response source | Reuse rule |
-| --- | --- | --- |
-| Style ID | Path `{id}` | Use the same label for later retrieval. |
-| Style label | Request `label` | Keep the human-readable writing profile name. |
-| Source tweets | Request `tweets[].text` | Review every supplied post before saving. |
-| Normalized key | Response `xUsername` | Use this lowercase value for profile lookup. |
-| Saved tweet count | Response `tweetCount` | Confirm every intended example was stored. |
-| Custom profile | Response `isOwnAccount` | Expect `false` for supplied tweet examples. |
-| Saved at | Response `fetchedAt` | Record the style-profile refresh time. |
-
-## Path parameters
+## Path Parameters
 
 <ParamField path="id" type="string" required>
-  Style label used as the identifier. 1-50 characters. Must start with a letter or number. Allows letters, numbers, spaces, dots, hyphens, and apostrophes. This becomes the key for retrieving the style later.
+  Route identifier. Keep it equal to the body `label`. The body label controls
+  the stored profile key for PUT requests.
 </ParamField>
 
 ## Headers
 
+Send `x-api-key` with an Xquik API key. OAuth clients can send a bearer token
+through the `Authorization` header instead.
+
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+  Your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
@@ -188,14 +325,16 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 ## Body
 
 <ParamField body="label" type="string" required>
-  Style label (e.g. "Professional", "Casual", "My Style"). Used to identify the style profile.
+  Profile label containing 1-50 characters. It must start with a letter,
+  number, or underscore. It accepts letters, numbers, spaces, dots, hyphens,
+  apostrophes, and underscores. Xquik trims and lowercases this value.
 </ParamField>
 
 <ParamField body="tweets" type="object[]" required>
-  Array of tweet objects (1-100) that define the writing style. Each object must have a `text` field.
+  Complete array of 1-100 approved Tweet examples.
   <Expandable title="Tweet object">
     <ParamField body="text" type="string" required>
-      The tweet text content.
+      Non-empty Tweet text. Xquik trims outer whitespace before storage.
     </ParamField>
   </Expandable>
 </ParamField>
@@ -204,66 +343,186 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 ### 200 OK
 
-<ResponseField name="xUsername" type="string">Style label (normalized to lowercase).</ResponseField>
-<ResponseField name="tweetCount" type="number">Number of tweets saved in the style profile.</ResponseField>
-<ResponseField name="isOwnAccount" type="boolean">Always `false` for custom styles.</ResponseField>
-<ResponseField name="fetchedAt" type="string">ISO 8601 timestamp when the style was saved.</ResponseField>
-<ResponseField name="tweets" type="object[]">Array of saved tweets.</ResponseField>
+Returns the complete saved profile after insertion or replacement.
+
+<ResponseField name="xUsername" type="string">
+  Normalized lowercase value from the body `label`.
+</ResponseField>
+
+<ResponseField name="tweetCount" type="number">
+  Number of saved examples. Matches the submitted array length.
+</ResponseField>
+
+<ResponseField name="isOwnAccount" type="boolean">
+  Always `false` for a custom profile created from supplied text.
+</ResponseField>
+
+<ResponseField name="fetchedAt" type="string">
+  ISO 8601 save timestamp shared by every returned sample.
+</ResponseField>
+
+<ResponseField name="tweets" type="object[]">
+  Complete saved Tweet sample array.
+  <Expandable title="Saved Tweet sample">
+    <ResponseField name="id" type="string">
+      Local zero-based array position. This is not an X Tweet ID.
+    </ResponseField>
+    <ResponseField name="text" type="string">
+      Submitted Tweet text after trimming outer whitespace.
+    </ResponseField>
+    <ResponseField name="authorUsername" type="string">
+      Normalized custom profile label, not an X account lookup.
+    </ResponseField>
+    <ResponseField name="createdAt" type="string">
+      ISO 8601 save timestamp, not an X publication time.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
 
 ```json
 {
-  "xUsername": "casual",
+  "xUsername": "product-updates",
   "tweetCount": 3,
   "isOwnAccount": false,
-  "fetchedAt": "2026-02-24T10:30:00.000Z",
+  "fetchedAt": "2026-08-02T18:30:00.000Z",
   "tweets": [
     {
       "id": "0",
-      "text": "just shipped a new feature, feels good",
-      "authorUsername": "casual",
-      "createdAt": "2026-02-24T10:30:00.000Z"
+      "text": "Shipped faster follower exports today. CSV files now preserve profile IDs.",
+      "authorUsername": "product-updates",
+      "createdAt": "2026-08-02T18:30:00.000Z"
     },
     {
       "id": "1",
-      "text": "hot take: tabs > spaces and I will die on this hill",
-      "authorUsername": "casual",
-      "createdAt": "2026-02-24T10:30:00.000Z"
+      "text": "New: filter Tweet replies before sending results to your webhook.",
+      "authorUsername": "product-updates",
+      "createdAt": "2026-08-02T18:30:00.000Z"
     },
     {
       "id": "2",
-      "text": "debugging at 2am hits different when the fix is a missing comma",
-      "authorUsername": "casual",
-      "createdAt": "2026-02-24T10:30:00.000Z"
+      "text": "Building an X monitor? Start with one profile and verify every event.",
+      "authorUsername": "product-updates",
+      "createdAt": "2026-08-02T18:30:00.000Z"
     }
   ]
 }
 ```
 
+## Handle Save-Style Errors
+
+| Status | Error | Cause | Fix |
+| --- | --- | --- | --- |
+| `200` | None | Profile saved or replaced | Store `xUsername` for later requests. |
+| `400` | `invalid_input` | Label or Tweet array failed validation | Correct the rejected field. |
+| `401` | `unauthenticated` | Credential is missing or invalid | Replace the API key or bearer token. |
+| `429` | `rate_limit_exceeded` | Request exceeded the rate limit | Wait for `Retry-After`, then retry once. |
+
+The response widget includes every status in the canonical OpenAPI contract.
+
 ### 400 Invalid Input
 
+A request returns `400` when any required input fails validation.
+
+| Invalid input | Required correction |
+| --- | --- |
+| Missing or non-string `label` | Send one label string. |
+| Blank `label` | Add at least one visible character. |
+| Label longer than 50 characters | Shorten the label. |
+| Unsupported label character | Use letters, numbers, spaces, dots, hyphens, apostrophes, or underscores. |
+| Missing or non-array `tweets` | Send an array of Tweet objects. |
+| Empty `tweets` array | Add at least one example. |
+| More than 100 Tweet objects | Split or reduce the sample set. |
+| Missing, non-string, or blank `text` | Send non-empty text for every object. |
+
+Label validation can return a specific message. Other body failures use the
+general invalid-input response.
+
 ```json
-{ "error": "invalid_input", "message": "Invalid or missing label/tweets" }
+{
+  "error": "invalid_input",
+  "message": "Label can only contain letters, numbers, spaces, dots, hyphens, and apostrophes."
+}
 ```
-Invalid or missing label/tweets. Provide a valid label and 1-100 tweet objects with non-empty `text` fields.
+
+The validator also accepts underscores. Its current message omits that
+character even though the public validator accepts it.
 
 ### 401 Unauthenticated
 
 ```json
-{ "error": "unauthenticated", "message": "Missing or invalid API key" }
+{
+  "error": "unauthenticated",
+  "message": "Authentication required. Provide a valid API key or bearer token."
+}
 ```
-Missing or invalid API key.
+
+Replace the credential before retrying. Do not retry invalid credentials in a
+loop.
 
 ### 429 Rate Limited
 
 ```json
-{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Try again later.",
+  "retryAfter": 60
+}
 ```
-Too many requests. Wait for the `Retry-After` header before retrying.
 
-<Info>
-  If a style with this label already exists, it will be replaced with the new data.
-</Info>
+Wait for the `Retry-After` header. Then retry the complete replacement body.
+
+## Tweet Style Save Checklist
+
+- Review every Tweet example before sending it.
+- Remove customer names, private replies, and temporary claims.
+- Keep the path `{id}` aligned with the body `label`.
+- Send 1-100 objects with non-empty `text` strings.
+- Store the returned lowercase `xUsername` key.
+- Confirm `tweetCount` matches the intended sample count.
+- Expect `isOwnAccount` to remain `false`.
+- Treat returned sample IDs as local positions.
+- Preserve the full array before replacing an existing profile.
+- Handle `400`, `401`, and `429` explicitly.
+
+## Tweet Writing Style Questions
+
+### What Does Save Style Analyze?
+
+Nothing. Save Style stores the supplied Tweet text and profile metadata. It
+does not calculate tone, vocabulary, sentiment, or performance.
+
+### How Many Tweet Examples Can I Save?
+
+Send between 1 and 100 Tweet objects. Prefer examples that demonstrate
+repeatable wording, structure, replies, links, and calls to action.
+
+### Can I Update an Existing Twitter Writing Style?
+
+Yes. Send the same normalized body label with the complete replacement array.
+The operation replaces every stored example under that account-scoped key.
+
+### Does the Path ID Rename a Tweet Style?
+
+No. The body label controls the stored key. Keep both values aligned, and
+delete the old key after creating a new label.
+
+### Can Saved Tweet Samples Provide Engagement Analytics?
+
+No. Custom samples use local sequential IDs. Use cached live Tweet samples for
+likes, replies, reposts, quotes, bookmarks, and view counts.
+
+### Can Another Xquik Account Read My Saved Style?
+
+No. Retrieval uses both the authenticated user and normalized profile key.
+Another Xquik account has a separate style namespace.
+
+### How Do I Use the Style in a Post Draft?
+
+Pass the returned `xUsername` as `styleUsername` to [Build a Post Draft](/api-reference/compose/create).
+The response can include the matched examples in `styleTweets`.
 
 <Note>
-  **Next steps:** [List Styles](/api-reference/styles/list) to see all saved styles, [Get Style](/api-reference/styles/get) to retrieve a specific style, or [Compare Styles](/api-reference/styles/compare) to compare two styles side by side.
+  Compare [Analyze Style](/api-reference/styles/analyze) before saving custom
+  examples. Analyze Style caches Tweets from one X username. Save Style stores
+  only the text you supply.
 </Note>
