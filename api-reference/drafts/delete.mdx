@@ -1,9 +1,9 @@
 ---
-title: "Delete Tweet Drafts & Remove Saved Post Ideas"
+title: "Delete Tweet Drafts Safely with the Xquik API"
 sidebarTitle: "Delete draft"
-description: "Permanently delete a saved tweet or thread draft by ID. Confirm the draft identity because its text and media references cannot be restored. See costs."
+description: "Delete one Xquik tweet draft by ID without deleting a published post or native X draft. Handle empty 204 responses and 400, 401, 404 & 429 API errors safely."
 api: "DELETE /drafts/{id}"
-keywords: ["draft", "delete", "remove"]
+keywords: ["tweet draft", "delete tweet draft", "remove saved post", "draft deletion API", "Twitter draft"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -58,14 +58,34 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
+## Delete One Saved Tweet Draft
+
+Delete one tweet draft from your Xquik account. The request removes its saved
+text, optional topic, optional goal, and timestamps. It does not publish the
+draft or call an X write route.
+
+This endpoint manages Xquik draft records only. It does not manage drafts under
+[X's native Unsent posts](https://help.x.com/en/using-x/how-to-post). It also
+does not delete published tweets, scheduled posts, or connected X accounts.
+
+Use the draft ID returned by [Create Draft](/api-reference/drafts/create) or
+[List Drafts](/api-reference/drafts/list). Fetch the draft before deletion when
+its text must receive human approval.
+
+<Warning>
+  Deletion is permanent. Xquik provides no restore endpoint for deleted tweet
+  drafts. Confirm the saved text and draft ID before sending this request.
+</Warning>
+
 <Callout icon="circle-check" color="#16a34a">
   **Free** - does not consume credits
 </Callout>
 
 <CodeGroup>
   ```bash cURL
-  curl -X DELETE https://xquik.com/api/v1/drafts/42 \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+  curl --include --request DELETE \
+    https://xquik.com/api/v1/drafts/42 \
+    --header "x-api-key: xq_YOUR_KEY_HERE"
   ```
 
   ```javascript Node.js
@@ -76,7 +96,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "x-api-key": "xq_YOUR_KEY_HERE",
     },
   });
-  const data = await response.json();
+
+  if (response.status !== 204) {
+    const problem = await response.json();
+    throw new Error(`${response.status} ${problem.error}: ${problem.message}`);
+  }
+
+  console.log(`Deleted tweet draft ${draftId}`);
   ```
 
   ```python Python
@@ -87,7 +113,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       f"https://xquik.com/api/v1/drafts/{draft_id}",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
-  data = response.json()
+
+  if response.status_code != 204:
+      problem = response.json()
+      raise RuntimeError(
+          f'{response.status_code} {problem["error"]}: {problem["message"]}'
+      )
+
+  print(f"Deleted tweet draft {draft_id}")
   ```
 
   ```go Go
@@ -113,48 +146,154 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-          panic(err)
+      if resp.StatusCode != http.StatusNoContent {
+          var problem struct {
+              Error   string `json:"error"`
+              Message string `json:"message"`
+          }
+          if err := json.NewDecoder(resp.Body).Decode(&problem); err != nil {
+              panic(err)
+          }
+          panic(fmt.Sprintf("%d %s: %s", resp.StatusCode, problem.Error, problem.Message))
       }
-      fmt.Println(data)
+
+      fmt.Printf("Deleted tweet draft %s\n", draftID)
   }
   ```
 </CodeGroup>
 
-## Path parameters
+## Handle 204 No Content
+
+A successful tweet draft deletion returns `204 No Content`. The response has no
+JSON, text, or deletion object. Check the status before parsing the body.
+
+Calling `response.json()` after a successful deletion throws an end-of-input
+error. Parse JSON only for `400`, `401`, `404`, or `429` responses.
+
+The `204` status confirms that Xquik deleted the matching draft record. It does
+not return the deleted text. Fetch and store any needed review copy first.
+
+## Confirm the Correct Tweet Draft
+
+Use a read-before-delete flow for dashboards, agents, and scheduled cleanup
+jobs.
+
+1. Fetch the draft through `GET /drafts/{id}`.
+2. Compare its `id`, `text`, `topic`, `goal`, and timestamps.
+3. Ask for confirmation when a person owns the draft.
+4. Send `DELETE /drafts/{id}` once.
+5. Accept only `204` as a successful deletion.
+6. Remove the draft from your local queue.
+7. List drafts again when reconciliation matters.
+
+Do not guess draft IDs. Use an ID returned to the authenticated account. A
+numeric ID owned by another account returns `404` without exposing ownership.
+
+## Understand What Deletion Changes
+
+| Resource | Result | Reason |
+| --- | --- | --- |
+| Matching Xquik draft | Deleted permanently | This route targets one stored draft ID. |
+| Draft text, topic, and goal | Deleted with the draft | These fields belong to that record. |
+| Native X or Twitter draft | Unchanged | Xquik cannot edit the X compose box. |
+| Published tweet or thread | Unchanged | Use a separate X write route for live posts. |
+| Scheduled post | Unchanged | Draft deletion does not cancel a schedule. |
+| Connected X account | Unchanged | The request changes no account connection. |
+
+A saved Xquik tweet draft is not a published tweet. It has an Xquik draft ID,
+not a public tweet ID. Deleting one cannot remove replies, reposts, likes, or
+media attached to a published post.
+
+## Recover From Draft Deletion Errors
+
+| Status | Error | Cause | Fix |
+| --- | --- | --- | --- |
+| `204` | No body | Xquik deleted the draft | Stop. Do not parse JSON. |
+| `400` | `invalid_id` | The path value is not a parseable draft ID | Copy an ID from Create Draft or List Drafts. |
+| `401` | `unauthenticated` | The credential is missing or invalid | Replace the API key or bearer token. |
+| `404` | `draft_not_found` | The draft is absent or belongs to another account | Verify the ID and authenticated account. |
+| `429` | `rate_limit_exceeded` | Too many requests reached the route | Wait for `Retry-After`, then retry once. |
+
+A second deletion of the same ID returns `404`. The first request already
+removed the record. Treat that result as already absent only when your workflow
+permits that interpretation.
+
+Never retry `400`, `401`, or `404` without changing the request. Retrying the
+same invalid input creates noise and cannot restore a deleted draft.
+
+## Answer Tweet Draft Deletion Questions
+
+### Does This Delete a Published Tweet?
+
+No. This route deletes one saved Xquik draft. Use the documented tweet deletion
+route for a live post owned by the connected account.
+
+### Does This Delete My Native X Draft?
+
+No. Native X drafts appear under Unsent posts. Xquik draft IDs identify separate
+records stored for API composition workflows.
+
+### Can I Restore a Deleted Tweet Draft?
+
+No restore route exists. Save an approved copy before deletion when retention
+rules require one.
+
+### Can I Delete Every Draft in One Request?
+
+No bulk deletion route exists. List drafts, confirm each target, and delete each
+ID separately. Apply your own concurrency and rate-limit controls.
+
+### Why Does a Successful Delete Return No JSON?
+
+HTTP `204` means the deletion succeeded without response content. Check the
+status code instead of parsing a body.
+
+### Why Does a Retry Return 404?
+
+The first successful request removed the draft. Later requests cannot find the
+same account-owned record.
+
+### Does Deleting a Draft Consume Credits?
+
+No. This authenticated route is free and consumes no Xquik credits.
+
+## Path Parameters
 
 <ParamField path="id" type="string" required>
-  The unique draft ID. Returned when you [create a draft](/api-reference/drafts/create) or [list drafts](/api-reference/drafts/list).
+  The unique Xquik draft ID. Copy it from [Create Draft](/api-reference/drafts/create) or [List Drafts](/api-reference/drafts/list).
 </ParamField>
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+<ParamField header="x-api-key" type="string">
+  Your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-api-key`, not both.
 </ParamField>
 
 ## Response
 
 <Tabs>
   <Tab title="204 No Content">
-    Empty response body. The draft was successfully deleted.
+    The draft was deleted. Do not parse a response body.
   </Tab>
   <Tab title="400 Invalid ID">
     ```json
-    { "error": "invalid_id" }
+    { "error": "invalid_id", "message": "Invalid ID format." }
     ```
     The provided draft ID is not a valid format.
   </Tab>
   <Tab title="401 Unauthenticated">
     ```json
-    { "error": "unauthenticated" }
+    { "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }
     ```
     Missing or invalid API key.
   </Tab>
   <Tab title="404 Not Found">
     ```json
-    { "error": "draft_not_found" }
+    { "error": "draft_not_found", "message": "Draft not found." }
     ```
     No draft exists with this ID, or it belongs to a different account.
   </Tab>
@@ -165,10 +304,6 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     Too many requests. Wait for the `Retry-After` header before retrying.
   </Tab>
 </Tabs>
-
-<Info>
-  Deletion is permanent. There is no way to recover a deleted draft.
-</Info>
 
 <Note>
   **Related:** [List Drafts](/api-reference/drafts/list) to verify the draft was removed, or [Create Draft](/api-reference/drafts/create) to save a new one.
