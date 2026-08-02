@@ -170,8 +170,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'api-reference/x-write/unretweet.mdx',
     snippets: [
-      '| Repost removal column | Source | Cleanup rule |',
-      '| Already removed | Converged terminal result |',
+      'Store the account, source Tweet ID, request hash, billing, and both action IDs.',
+      'Close already-removed actions without another request.',
     ],
   },
   {
