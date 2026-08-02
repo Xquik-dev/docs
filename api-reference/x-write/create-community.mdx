@@ -137,8 +137,9 @@ Use this route only when the account should own a new community. Use join or
 leave routes for an existing community. This route does not add rules, members,
 moderators, invitations, posts, analytics, or membership settings.
 
-Each community gives one topic a dedicated space on X. People can search for
-communities, then join a community later. Each member of the community follows
+Each community gives one topic a dedicated space on X.
+People can search for communities by name, description, or creator.
+They can join a community later. Each member of the community follows
 the chosen membership type and community rules. This X social media workflow
 creates the community container only.
 
@@ -279,8 +280,8 @@ Store these creation inputs together:
 - Idempotency key for this exact submission.
 - Returned action ID and lifecycle state.
 
-This record separates approval from network recovery. A timeout permits an
-identical replay. Changed text needs a new approval and key.
+This record separates approval from network recovery. Repeat the unchanged
+request only after a network timeout. Changed text needs a new approval and key.
 
 ## Confirm the Community Admin Account
 
@@ -336,8 +337,8 @@ moderators before invitations begin. Decide who reviews reports and removes
 disruptive members. Keep escalation rules outside the public description.
 
 This route cannot publish welcome posts or schedule discussions. It cannot
-promote or monetize the community. Use separately documented routes for later
-posts. Keep unsupported launch actions in your own workflow.
+promote or monetize the community. Publish later discussions through the
+documented tweet route. Keep unsupported launch actions in your own workflow.
 
 ## Connect the Community to a Website or App
 
@@ -393,8 +394,8 @@ Wait for the write lifecycle to finish before announcing the community. A
 that X completed community creation. Follow the returned lifecycle state until
 the action reaches its final result.
 
-Capture the new community ID from the confirmed result. Then request
-[`GET /x/communities/{id}/info`](/api-reference/x/community-info). Compare its
+Capture the new community ID from the confirmed result. Then call
+[Community Info](/api-reference/x/community-info). Compare its
 name and description with the approved brief. Save the returned community ID
 beside the owner account and action ID.
 
@@ -406,8 +407,8 @@ Run these checks before inviting members:
 4. Confirm the intended owner account remains connected.
 5. Record the final write state and verification time.
 
-Repeat the information request after a temporary read failure. Reuse the key
-only for an identical network replay.
+Repeat the information request after a temporary read failure. Keep the same
+key only when every input remains unchanged.
 
 ## Handle Creation Failures Safely
 
@@ -415,7 +416,7 @@ Treat each response by its actual cause. Fix invalid names or missing accounts
 before sending another write. Restore credits before retrying a `402` response.
 Reconnect the owner after `403`.
 
-A `409` response identifies an `Idempotency-Key` conflict. Compare both request
+A `409` means the key already identifies another request. Compare both request
 bodies. Reuse the key only when every creation input matches.
 Generate a new key after any approved field changes.
 
@@ -423,8 +424,8 @@ For `422`, preserve the rejected request and returned reason. Do not rewrite
 the community brief automatically. Return it to the operator for review. For
 `429`, respect the retry guidance and keep the same approved intent.
 
-After `503`, check the write lifecycle before retrying. Never assume failure
-from a lost connection. Duplicate creation costs more than delayed verification.
+After `503`, check the write lifecycle before retrying. A disconnected client
+does not prove failure. Duplicate creation costs more than delayed verification.
 
 | Community creation record | Request or response source | Completion rule |
 | --- | --- | --- |
