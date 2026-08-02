@@ -58,8 +58,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Build a social media monitoring feed from ranked public topics. Radar covers
 Reddit, GitHub, technology news, search trends, Wikipedia, prediction markets,
-and startup growth records. Choose a source, category, region, and time window
-on every call.
+and startup growth records. Apply the relevant source, category, region, and
+time window to each request.
 
 Authenticate every Radar request. You need no active subscription. Radar
 consumes no credits.
@@ -70,20 +70,25 @@ A social media monitoring API turns public posts and trend signals into
 application-ready records. Radar exposes those records through one REST API
 endpoint. Each response uses structured JSON and stable field names.
 
+Radar indexes supported public sources into one normalized `RadarItem` shape.
+`GET /radar` filters those indexed items by source, category, region, and age.
+The response ranks recent topics. It is not an exhaustive archive of every
+source record.
+
 Radar combines several public topic sources. It does not mirror every social
 network. It also does not return X tweets, replies, followers, or timelines.
-[Search Tweets](/api-reference/x/search-tweets) finds X brand mentions,
-hashtags, replies, and keyword matches.
+For X-specific monitoring, [Search Tweets](/api-reference/x/search-tweets)
+finds brand mentions and matching hashtags. It also returns replies or keyword
+matches.
 
-Radar differs from broad platform APIs. It normalizes every source into one
-`RadarItem` shape. You can compare titles, regions, timestamps, and scores
-without building separate source adapters.
+Use stable fields to compare titles, regions, timestamps, and scores. Avoid
+building separate source adapters.
 
 Radar is not a social listening API for every major social platform. It does
 not replace platform APIs for unsupported social platforms. This API access
-returns ranked topics, not full social listening data. The API endpoint
-provides no keyword search volume or long-term history. Use `hours` for
-1-72-hour windows.
+returns ranked topics, not complete post, comment, or brand-mention records.
+The API endpoint provides no keyword search volume or long-term history. Use
+`hours` for 1-72-hour windows.
 
 ## Build a Trending Topics API Feed
 
@@ -102,7 +107,7 @@ Use `source=reddit` for Reddit posts. Use `source=github` for trending
 repositories. Other source identifiers follow the same pattern. This API
 access keeps one integration path across every supported feed.
 
-## Is Radar a Real-Time Monitoring API for Trend Analysis?
+## Is Radar Real-Time for Monitoring Trending Topics?
 
 Radar returns recently indexed topics. It does not stream every new event.
 Use `publishedAt` for source timing. Use `createdAt` for indexing timing.
@@ -126,7 +131,23 @@ sentiment. Do not classify a high score as positive or negative sentiment.
 
 Use [Search Tweets](/api-reference/x/search-tweets) to query exact X mentions.
 Use Radar for ranked cross-source topics. This split prevents false
-assumptions about social listening data.
+assumptions about brand-mention coverage.
+
+## How Do You Evaluate Radar Topic Accuracy?
+
+Evaluate each item against the source fields. Do not treat a high trend score
+as proof that a claim is correct or popular everywhere.
+
+1. Match `source` and `sourceId` to the intended feed.
+2. Open `url` when present. Compare its title and description with the item.
+3. Compare `publishedAt` with `createdAt` to separate publication from indexing.
+4. Confirm `region`, `category`, and `language` match the intended alert.
+5. Interpret `metadata` with the source-specific fields documented below.
+6. Deduplicate by `id`, then retain the score used for that polling run.
+
+Radar does not guarantee complete source coverage or independent fact
+verification. Review the original source before publishing an alert, report,
+or customer-facing dashboard entry.
 
 ## Integrate Radar Into a Monitoring Dashboard
 
@@ -135,8 +156,8 @@ and render each `RadarItem`. Save the item ID, source, source ID, score, region,
 and timestamps.
 
 Group rows by `source` for a multi-feed dashboard. Order dashboard rows by
-`score`. Filter rows by `publishedAt`. Open `url` only when the source provides
-it.
+`score`. Filter rows by `publishedAt`. Open a source URL only when the response
+includes `url`.
 
 Use `hasMore` and `nextCursor` for background ingestion. Never construct a
 cursor. Keep it with matching filters during one pagination run. Changing
@@ -155,9 +176,9 @@ sources. This distinction keeps the dashboard accurate and easy to integrate.
 ## Query parameters
 
 <ParamField query="source" type="string">
-  Filter by Radar source identifier: `reddit`, `github`, `trustmrr`,
-  `hacker_news`, `google_trends`, `wikipedia`, or `polymarket`. Omit to return
-  all available streams.
+  Filter with one source identifier. Supported values are `reddit`, `github`,
+  `trustmrr`, `hacker_news`, `google_trends`, `wikipedia`, and `polymarket`.
+  Omit this filter to return every available stream.
 </ParamField>
 
 <ParamField query="category" type="string">
@@ -189,7 +210,7 @@ sources. This distinction keeps the dashboard accurate and easy to integrate.
 | Region | `items[].region` | Keep the market with every queue row. |
 | Trend score | `items[].score` | Sort higher-scoring items first. |
 | Published at | `items[].publishedAt` | Measure source freshness. |
-| Source metrics | `items[].metadata` | Read-only fields defined for that source. |
+| Source fields | `items[].metadata` | Interpret the fields documented below for that source. |
 | Next page | `nextCursor` | Continue only when `hasMore` is `true`. |
 
 ## Response
@@ -246,16 +267,17 @@ sources. This distinction keeps the dashboard accurate and easy to integrate.
 </ResponseField>
 
 <ResponseField name="language" type="string" required>
-  BCP-47 language code (e.g. `en`, `tr`, `ja`). `und` means the source did not
-  identify a language.
+  The `language` value uses a BCP-47 code such as `en`, `tr`, or `ja`. The value
+  `und` means the source did not identify a language.
 </ResponseField>
 
 <ResponseField name="score" type="number" required>
-  Relevance score (0-10,000). Higher is more trending.
+  This 0-10,000 relevance score ranks trending items. Higher values indicate a
+  stronger trend signal within the result set.
 </ResponseField>
 
 <ResponseField name="metadata" type="object" required>
-  Stream-specific data. Fields vary by item.
+  This object contains the source-specific fields described below.
 </ResponseField>
 
 <ResponseField name="publishedAt" type="string" required>
@@ -274,7 +296,7 @@ default REST response and snake_case through API MCP.
 ### Reddit
 
 Every Reddit item identifies `author`, `subreddit`, and `sourceFormat`. Current
-items combine public listing discovery with server-rendered post data. They
+items combine public listing discovery with server-rendered post fields. They
 include available post content, media, and engagement signals. Legacy rows can
 still identify `sourceFormat` as `json` or `rss`.
 
@@ -307,21 +329,21 @@ Startup growth items always include `mrr`, `growthPercent`, `last30Days`,
 | `askingPrice`, `multiple`, `paymentProvider` | Available sale and payment details |
 | `growthMrrPercent`, `profitMarginLast30Days`, `revenuePerVisitor` | Available reported growth and efficiency metrics |
 | `googleSearchImpressionsLast30Days`, `visitorsLast30Days` | Available 30-day acquisition metrics |
-| `rank` | Source revenue rank |
+| `rank` | Revenue rank reported by the source |
 
 Radar orders these items by reported 30-day revenue growth. `metadata.rank` is
-the source's revenue rank. Do not expect it to match the result position. The
-top-level `imageUrl` contains the startup logo when available.
+the revenue rank reported by the source. It does not equal the result position.
+The top-level `imageUrl` contains the startup logo when available.
 
 ### Other Sources
 
 | Source | Metadata |
 |--------|----------|
-| `github` | `starsToday` |
-| `hacker_news` | `points`, `numberComments` |
-| `google_trends` | `approxTraffic` |
-| `polymarket` | `volume24hr` |
-| `wikipedia` | `views` |
+| GitHub (`github`) | Stars added today in `starsToday` |
+| Technology news (`hacker_news`) | Public points and comment count in `points` and `numberComments` |
+| Search trends (`google_trends`) | Approximate traffic in `approxTraffic` |
+| Polymarket (`polymarket`) | Reported 24-hour volume in `volume24hr` |
+| Wikipedia (`wikipedia`) | Public page views in `views` |
 
 ## Examples
 
