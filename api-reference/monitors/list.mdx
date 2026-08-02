@@ -77,7 +77,7 @@ Store each returned `id` as the stable monitor key. Keep `xUserId` beside the
 username because an account can change its username.
 
 This inventory supports Twitter account monitoring across many tracked
-profiles. Filter rows by `isActive` before estimating active-monitor costs.
+profiles. Use `isActive` to filter rows before estimating costs.
 Group active rows by owner, workflow, or webhook receiver. Keep paused rows in
 the same inventory because their configuration still exists.
 
@@ -85,18 +85,18 @@ Use [List Events](/api-reference/events/list) to retrieve stored events for one
 monitor. Pass the returned monitor ID as `monitorId`. Use
 [List Webhooks](/api-reference/webhooks/list) to inspect receivers. Use
 [List Deliveries](/api-reference/webhooks/deliveries) to audit each delivery.
-The list route returns configurations, not the event payloads themselves.
+This route lists monitor settings, not stored events.
 
 ## What Does the Monitor Inventory Include?
 
-Each monitor row contains its monitor ID, normalized username, and stable X
-user ID. The `eventTypes` array defines which tweet and profile changes matter.
+Each row shows the monitor ID, username, and stable X user ID for account joins.
+The `eventTypes` array defines which tweet and profile changes matter.
 The `isActive` field separates running monitors from paused configurations.
 The timestamps show when Xquik created the monitor and its next billing point.
 
 Tweet filters cover new posts, replies, quotes, reposts, media, and links. They
 also cover polls, mentions, hashtags, and long-form posts. Profile filters
-cover the avatar, banner, name, username, biography, and location. They also
+include the avatar, banner, name, username, biography, and location. They also
 cover URL, verification, protection, pinned tweets, and account availability.
 Read `eventTypes` from every row. Do not assume every monitor uses identical
 filters.
@@ -111,8 +111,7 @@ response as the complete server result for that request.
 No. `GET /monitors` returns account-monitor configurations. It does not return
 tweet timelines, engagement totals, audience reports, or sentiment scores.
 Use [List Events](/api-reference/events/list) for stored tweet and profile
-events. Use [Get Event](/api-reference/events/get) for one complete event
-payload.
+events. Use [Get Event](/api-reference/events/get) to inspect one stored event.
 
 The route also does not publish or schedule posts. Use the
 [X Write API](/api-reference/x-write/create-tweet) for publishing workflows.
@@ -128,21 +127,20 @@ several profiles send similar events.
 
 Re-list monitors after every create, update, pause, or delete operation. Check
 that the intended row exists and has the expected `eventTypes`. Confirm
-`isActive` before waiting for a new alert. A paused monitor retains its setup
-but does not poll for new events.
+`isActive` before waiting for a new alert. Paused monitors retain their
+settings. They stop polling until reactivated.
 
 Audit webhook deliveries separately. Join a delivery to its stored event with
 the documented event ID. Do not infer success from the monitor's active state.
-The active state describes polling, while delivery status describes one
-webhook attempt.
+Polling state and webhook delivery status are separate.
 
 ## How Should Teams Manage Many Tracked Profiles?
 
-Managing multiple Twitter accounts requires one named owner per monitor. Store
-that owner outside the API response. Save the monitor ID, X user ID, selected
-event types, and active state. Add the owner and review date.
+Assign one owner when managing multiple Twitter accounts. Store that owner
+outside the API response. Save the monitor ID, X user ID, selected event types,
+and active state. Add the owner and review date.
 
-Assign ownership by workflow. Support teams can own reply and mention events.
+Assign ownership by workflow. Support teams can process replies and mentions.
 Research teams can own new posts, quotes, or media events. Account teams can
 own profile-name, biography, verification, or availability changes. Match each
 assignment to the exact `eventTypes` returned for that monitor.
@@ -155,9 +153,8 @@ client cleanup from changing another client's monitor.
 ## Is Listing Twitter Account Monitors Free?
 
 Yes. This `GET` request consumes no credits. Active monitors cost 21 credits
-per monitor-hour. A paused monitor remains listed but does not incur the active
-monitor charge. Review `isActive` and `nextBillingAt` before enabling more
-profiles.
+per monitor-hour. Paused monitors stay listed and stop active-monitor billing.
+Review `isActive` and `nextBillingAt` before enabling more profiles.
 
 Do not use a quiet event window as a cost signal. A valid monitor may receive
 no matching event during that period. Confirm its owner and selected filters
@@ -358,9 +355,8 @@ by creation time and a `total` count for the returned set.
   </Card>
   <Card title="Event Backfill" icon="database">
     Use `id` as `monitorId` with [List Events](/api-reference/events/list) to
-    audit stored account monitor events. Use returned event IDs with
-    [Get Event](/api-reference/events/get) when a workflow needs the full tweet
-    payload.
+    audit stored account monitor events. Open one returned ID with
+    [Get Event](/api-reference/events/get) to inspect the complete stored event.
   </Card>
   <Card title="Delivery Audit" icon="link">
     Use [List Deliveries](/api-reference/webhooks/deliveries) for each webhook
