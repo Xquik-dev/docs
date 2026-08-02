@@ -154,9 +154,9 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: 'api-reference/x-write/delete-community.mdx',
     phrases: [
-      'Delete an Owned Community, Not a Membership',
-      'Deletion gate',
-      'This route does not leave a community membership.',
+      'How to Delete a Twitter Community Through REST',
+      'route removes the community, not the connected X account.',
+      'Use [Leave Community](/api-reference/x-write/leave-community) to remove one',
     ],
   },
   {

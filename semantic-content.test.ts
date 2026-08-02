@@ -387,9 +387,12 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'api-reference/x-write/delete-community.mdx',
     snippets: [
-      '| Community deletion record | Request or response source | Completion rule |',
-      '| Community name | Request `community_name` | Require the confirmation safeguard. |',
-      '| Community archive | API route | Required checkpoint |',
+      'How to Delete a Community on Twitter via API',
+      '## How to Delete a Twitter Community Through REST',
+      '## How to Delete Twitter Community Records Safely',
+      'Send its exact `community_name` as a confirmation safeguard.',
+      'X says Community posts remain after their Community is deleted.',
+      'OAuth bearer authentication is also supported.',
       '## Verify Permanent Community Deletion',
     ],
   },
@@ -692,6 +695,19 @@ describe('create community contract copy', (): void => {
 
     const source = readFileSync(
       'api-reference/x-write/create-community.mdx',
+      'utf8',
+    );
+
+    expect(source).not.toContain('Session cookie authentication');
+  });
+});
+
+describe('delete community contract copy', (): void => {
+  it('does not advertise unsupported session authentication', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x-write/delete-community.mdx',
       'utf8',
     );
 

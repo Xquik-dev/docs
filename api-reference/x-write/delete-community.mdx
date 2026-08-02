@@ -1,9 +1,9 @@
 ---
-title: "Delete X Community API for Group Cleanup Workflow"
+title: "How to Delete a Community on Twitter via API"
 sidebarTitle: "Delete community"
-description: "Permanently delete an owned X community by ID and confirmed name, then track the write lifecycle before reporting completion. Includes request fields."
+description: "Delete an owned X community by ID and confirmed name. Archive its tweets, members, moderators, and rules, then verify the final write lifecycle state."
 api: "DELETE /x/communities/{id}"
-keywords: ["community", "delete", "remove", "disband"]
+keywords: ["how to delete a community on twitter", "how to delete a twitter community", "how to delete twitter community", "delete X community", "archive Twitter community", "leave Twitter community"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -127,21 +127,15 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-## Delete an Owned Community, Not a Membership
+## How to Delete a Twitter Community Through REST
 
-This endpoint removes the community itself. It requires the community ID and
-exact name. Use the leave endpoint to remove only one connected account.
+Call `DELETE /x/communities/{id}` for one community owned by a connected
+account. Send its exact `community_name` as a confirmation safeguard. This
+route removes the community, not the connected X account.
 
-| Deletion gate | Exact evidence | Approval condition |
-| --- | --- | --- |
-| Community owner | Body `account` | The connected account owns the target community. |
-| Community identity | Path `{id}` and body `community_name` | Both values match the reviewed group. |
-| Preservation | Community info, rules, and required tweets | The owner saved every required record. |
-| Deletion request | Unique `Idempotency-Key` | The key identifies this deletion only. |
-| Completion | Response `id`, `status`, and `terminal` | The write action reaches a terminal success state. |
-
-This route does not leave a community membership. It removes the owned group.
-Keep the deletion approval separate from member cleanup requests.
+Use [Leave Community](/api-reference/x-write/leave-community) to remove one
+account's membership. Use [Delete Tweet](/api-reference/x-write/delete-tweet)
+to remove one owned Community post.
 
 <Callout icon="coins" color="#5c3327">
   **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
@@ -234,83 +228,69 @@ Keep the deletion approval separate from member cleanup requests.
   ```
 </CodeGroup>
 
-## Delete a community cautiously
+## How to Delete Twitter Community Records Safely
 
-Use this route only for a community managed by the connected account. Confirm
-the numeric community ID before approval. Save the community name,
-description, rules, and required records first.
+Confirm the community ID, owner, exact name, reason, and approver. Create one
+`Idempotency-Key` for that deletion. Reuse it only for an unchanged network
+replay. Treat this API action as permanent because Xquik has no restore route.
 
-Create a unique idempotency key for this deletion. Reuse it only after a
-transport failure. Never share it with a membership or settings action.
+Archive required records before approval:
 
-Require explicit review for:
+- Save the name, description, rules, creator, and policies from [Community Info](/api-reference/x/community-info).
+- Follow every [Community Tweets](/api-reference/x/community-tweets) cursor. Store tweet IDs, authors, text, timestamps, media URLs, replies, reposts, and likes.
+- Follow every [Community Members](/api-reference/x/community-members) cursor. Store stable user IDs and the final `hasMore` value.
+- Export [Community Moderators](/api-reference/x/community-moderators) separately. Member rows do not prove moderator roles.
 
-- Removing a test community after validation.
-- Retiring a community that has completed its purpose.
-- Correcting a community created from the wrong account.
-- Recording the owner, reason, and approval reference.
-
-Treat the deletion as irreversible within this API workflow. Do not report
-success from the request alone. Store the returned action ID and lifecycle
-state. Poll the status route when processing remains asynchronous.
-
-| Community deletion record | Request or response source | Completion rule |
-| --- | --- | --- |
-| Community ID | Path `{id}` | Confirm the exact group before approval. |
-| Acting X account | Request `account` | Confirm the connected community owner. |
-| Community name | Request `community_name` | Require the confirmation safeguard. |
-| Idempotency key | Request header | Reuse it only for an exact replay. |
-| Write action ID | Response `id` | Poll the matching lifecycle record. |
-| Lifecycle state | Response `status` and `terminal` | Stop only after a terminal state. |
-| Stored archive | Community info, tweets, and rules | Preserve required records before deletion. |
-| Removal proof | Community info lookup | Expect the community to become unavailable. |
-
-## Archive a Community Before Permanent Removal
-
-Collect each required community record before deletion. Start with
-[Community Info](/api-reference/x/community-info). Save the community name,
-description, rules, creator, policies, banner, and member count.
-
-Archive community posts with
-[Community Tweets](/api-reference/x/community-tweets). Follow every cursor when
-the archive requires the complete timeline. Store each tweet ID, author ID,
-text, timestamp, and media URL. Also store reply, repost, and like counts.
-
-Export the current roster with
-[Community Members](/api-reference/x/community-members). Export moderators
-separately with
-[Community Moderators](/api-reference/x/community-moderators). Member rows do
-not prove moderator roles. Keep both snapshots beside the deletion approval.
-
-| Community archive | API route | Required checkpoint |
-| --- | --- | --- |
-| Identity and rules | `GET /x/communities/{id}/info` | Community ID, name, creator, rules, and policies |
-| Tweet timeline | `GET /x/communities/{id}/tweets` | Every saved cursor page and tweet ID |
-| Member roster | `GET /x/communities/{id}/members` | Every saved member page and stable user ID |
-| Moderator roster | `GET /x/communities/{id}/moderators` | Moderator user IDs and snapshot time |
-| Deletion approval | Internal workflow record | Owner, reason, approver, and community name |
-
-Do not infer a complete archive from one page. Record the final `hasMore`
-state for every cursor-based request. Store archive timestamps separately from
-the deletion time. Community membership and tweets can change between reads.
+X says Community posts remain after their Community is deleted. Review the
+[X Communities guide](https://help.x.com/en/using-x/communities) before
+removal. Keep your archive even when those posts remain visible elsewhere.
 
 ## Verify Permanent Community Deletion
 
-Wait for a terminal write result before checking the community. Preserve the
-returned action ID, requested community ID, acting account, and final status.
+Store the action ID after `200` or `202`. Poll while `terminal` is `false`.
+After terminal success, call [Community Info](/api-reference/x/community-info).
+An unavailable community confirms removal. A temporary read failure does not.
+Repeat the read before sending another delete request.
 
-Request the community info route after successful deletion. An unavailable
-community confirms removal for this workflow. A temporary read failure does
-not prove deletion. Retry the read before sending another write request.
+## Fix Twitter Community Deletion Errors
 
-Keep deletion distinct from leaving. Leaving removes one connected account.
-Deleting removes the owned community for every member. Never use deletion for
-routine membership cleanup.
+Fix invalid fields after `400`. Replace credentials after `401`. Add credits
+after `402`. Reconnect the owner after `403`. Verify the account and community
+after `404`. Resolve key conflicts after `409`. Review rejected requests after
+`422`. Honor `Retry-After` after `429`. Check `safeToRetry` after `500` or `503`.
+
+## Delete Twitter Community Questions
+
+### Can You Delete a Twitter Community?
+
+Yes. The connected owner can submit the community ID and exact name. Xquik
+then returns a tracked write action.
+
+### Does Deletion Affect the Owner's X Profile?
+
+No profile field appears in this request. The route targets one community ID.
+It does not disconnect or delete the owner's X account.
+
+### Can a Deleted Community Be Restored?
+
+Xquik documents no restore endpoint. Archive first and treat deletion as
+permanent within this API workflow.
+
+### Can I Transfer Ownership Instead?
+
+This route has no ownership-transfer field. Complete any supported transfer in
+X before deletion, then verify the intended owner.
+
+### What Happens to Members and Community Posts?
+
+Deletion removes the shared community for its members. X says existing
+Community posts are not deleted with the Community. Archive required posts
+before removal and use Delete Tweet for an owned post.
 
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+  Your API key. OAuth bearer authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
 <ParamField header="Idempotency-Key" type="string" required>
