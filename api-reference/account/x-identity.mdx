@@ -1,9 +1,9 @@
 ---
-title: "Connected X Identity for Owned Tweet Workflows"
+title: "Set a Twitter Handle for Xquik Tweet Style Analysis"
 sidebarTitle: "Set X identity"
-description: "Link an X username to your Xquik account for own-profile detection, owned tweet reads, pricing rules, and account-specific workflows. See request fields."
+description: "Store your lowercase X or Twitter handle for own-account tweet style analysis. Validate username format, replace a handle, and recover from 400, 401 or 429."
 api: "PUT /account/x-identity"
-keywords: ["account", "x identity", "username", "link", "profile"]
+keywords: ["twitter handle", "X username", "set Twitter username", "tweet style analysis", "Twitter user ID"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -52,18 +52,30 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
+## Store Your X or Twitter Handle
+
+Store one X username on your authenticated Xquik account. Send the handle
+without its leading `@`. Xquik validates the syntax and stores lowercase text.
+
+This identity helps [Analyze Style](/api-reference/styles/analyze) recognize
+when the requested username matches your stored account username. That match
+supports own-account tweet style analysis.
+
+This route does not look up an X profile. It does not verify username
+availability, account existence, or ownership. It also does not connect an X
+account or authorize tweet, reply, like, follow, or Direct Message actions.
+
 <Callout icon="circle-check" color="#16a34a">
   **Free** - does not consume credits
 </Callout>
 
 <CodeGroup>
   ```bash cURL
-  curl -X PUT https://xquik.com/api/v1/account/x-identity \
-    -H "x-api-key: xq_YOUR_KEY_HERE" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "username": "elonmusk"
-    }' | jq
+  curl --fail-with-body \
+    --request PUT https://xquik.com/api/v1/account/x-identity \
+    --header "x-api-key: xq_YOUR_KEY_HERE" \
+    --header "Content-Type: application/json" \
+    --data '{"username":"elonmusk"}' | jq
   ```
 
   ```javascript Node.js
@@ -73,11 +85,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "x-api-key": "xq_YOUR_KEY_HERE",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      username: "elonmusk",
-    }),
+    body: JSON.stringify({ username: "elonmusk" }),
   });
-  const data = await response.json();
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(`${response.status} ${result.error}: ${result.message}`);
+  }
+
+  console.log(result.xUsername);
   ```
 
   ```python Python
@@ -88,7 +103,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
       json={"username": "elonmusk"},
   )
-  data = response.json()
+  result = response.json()
+  if response.status_code != 200:
+      raise RuntimeError(
+          f'{response.status_code} {result["error"]}: {result["message"]}'
+      )
+
+  print(result["xUsername"])
   ```
 
   ```go Go
@@ -102,9 +123,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   )
 
   func main() {
-      body, _ := json.Marshal(map[string]interface{}{
+      body, err := json.Marshal(map[string]string{
           "username": "elonmusk",
       })
+      if err != nil {
+          panic(err)
+      }
 
       req, err := http.NewRequest("PUT", "https://xquik.com/api/v1/account/x-identity", bytes.NewReader(body))
       if err != nil {
@@ -119,19 +143,166 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      var result map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      if resp.StatusCode != http.StatusOK {
+          panic(fmt.Sprintf("%d %v: %v", resp.StatusCode, result["error"], result["message"]))
+      }
+
+      fmt.Println(result["xUsername"])
   }
   ```
 </CodeGroup>
 
+## Format the X Username Correctly
+
+Send one `username` string. Remove the `@` prefix first.
+
+The Xquik route accepts 1 to 15 characters. Every character must be a letter,
+number, or underscore. Spaces, periods, hyphens, emoji, and `@` are rejected.
+
+| Input | Result | Reason |
+| --- | --- | --- |
+| `XDevelopers` | Stored as `xdevelopers` | Uppercase letters are normalized. |
+| `xquik_api` | Stored as `xquik_api` | Letters and underscores are accepted. |
+| `@xquik` | `400 invalid_username` | Remove the leading `@`. |
+| `xquik-api` | `400 invalid_username` | Hyphens are not accepted. |
+| `xquik api` | `400 invalid_username` | Spaces are not accepted. |
+| Empty string | `400 invalid_input` | A username is required. |
+
+Xquik does not trim whitespace. Remove surrounding spaces before sending the
+body. Store the lowercase response value as your canonical Xquik copy.
+
+[X's username guidance](https://help.x.com/en/managing-your-account/change-x-handle)
+describes a handle as the unique name shown after `@`. Native X rules and
+availability checks can be stricter than this route's syntax validation.
+
+Passing the Xquik pattern does not prove that X currently allows the handle.
+It also does not prove that the handle belongs to you.
+
+## Understand Handle, Display Name, and User ID
+
+An X username is also called a Twitter handle or X handle. It appears after
+`@` and inside the profile URL. This endpoint stores that username only.
+
+| Identifier | Example | Stored here? | Can it change? |
+| --- | --- | --- | --- |
+| X or Twitter handle | `@xquik` | Yes, without `@` | Yes, the X account can rename it. |
+| Display name | `Xquik` | No | Yes |
+| Numeric X user ID | `123456789` | No | Normally treated as the stable profile ID. |
+
+Do not send a numeric Twitter user ID unless it is actually the account's
+username text. This route does not convert a Twitter ID to a username.
+
+Use [Twitter Profile Lookup](/api-reference/x/twitter-profile-lookup) when you
+need profile fields from a known username or user ID. Use
+[Search Users](/api-reference/x/search-users) when you need username search.
+
+## Apply the Identity to Tweet Style Analysis
+
+Set the handle before analyzing your own posting style. The style route
+compares its requested username with this stored lowercase value.
+
+Use this workflow:
+
+1. Find the exact current X username.
+2. Remove the leading `@` symbol.
+3. Send the username through this route.
+4. Save the returned lowercase `xUsername`.
+5. Call Analyze Style for that same username.
+6. Review the style result for the intended account.
+7. Update this identity after an X username change.
+
+Case does not affect the stored match. `XDevelopers` becomes `xdevelopers`.
+Sending the same normalized username again keeps the same stored value.
+
+Sending another valid username replaces the previous one. The response returns
+the new stored value. No username history appears in this response.
+
+This route provides no delete or clear operation. Replace the value with
+another valid username when your account identity changes.
+
+## Keep Identity Storage Separate From X Connection
+
+This endpoint changes one Xquik account field. It does not create an
+authenticated connection to X.
+
+| Action | Performed here? | Correct workflow |
+| --- | --- | --- |
+| Store a username for style matching | Yes | Call this route. |
+| Verify that an X profile exists | No | Call Twitter Profile Lookup. |
+| Search for a Twitter username | No | Call Search Users. |
+| Connect an X account for write actions | No | Use the X account connection flow. |
+| Rename the account on X | No | Change the username through X. |
+| Convert a Twitter user ID to username | No | Use a profile lookup endpoint. |
+| Read followers, replies, or tweets | No | Use the matching X read endpoint. |
+
+Use [List Connected X Accounts](/api-reference/x-accounts/list) to inspect
+login-backed X connections. A stored style identity and a connected X account
+serve different purposes.
+
+## Recover From X Identity Errors
+
+| Status | Error | Cause | Fix |
+| --- | --- | --- | --- |
+| `200` | Success object | Xquik stored the lowercase username | Save `xUsername`. |
+| `400` | `invalid_input` | The body is non-object or `username` is missing, empty, or non-string | Send a non-empty string. |
+| `400` | `invalid_username` | The string breaks the 1-to-15-character pattern | Remove `@`, spaces, and unsupported symbols. |
+| `401` | `unauthenticated` | The credential is missing or invalid | Replace the API key or bearer token. |
+| `429` | `rate_limit_exceeded` | Too many requests reached the route | Wait for `Retry-After`, then retry once. |
+
+Never retry either `400` response without changing the body. Never retry `401`
+without replacing the credential.
+
+After `429`, keep the exact intended handle. Retry after the server's delay,
+then confirm the stored value through [Get Account](/api-reference/account/get).
+
+## Answer X Username Questions
+
+### What Is a Twitter Handle?
+
+A Twitter handle is the unique username displayed after `@`. X now calls it
+an X username or handle. It differs from the display name.
+
+### How Can I Find My Twitter Username?
+
+Open your X profile or account settings. Copy the handle shown after `@`, then
+send it here without that symbol.
+
+### Does This Endpoint Perform a Twitter Username Lookup?
+
+No. It stores supplied text after syntax validation. It does not fetch profile
+details or confirm that the username exists.
+
+### Does It Verify That I Own the X Account?
+
+No. The route does not perform an ownership challenge. Use the separate X
+account connection workflow for authenticated actions.
+
+### Is a Twitter User ID the Same as a Username?
+
+No. A username is the changeable handle. A user ID identifies the profile with
+a separate numeric value.
+
+### What Happens If My X Handle Changes?
+
+Call this route again with the new handle. The valid lowercase username
+replaces the previous value.
+
+### Does Setting an X Identity Consume Credits?
+
+No. This authenticated account update is free.
+
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+<ParamField header="x-api-key" type="string">
+  Your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-api-key`, not both.
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
@@ -141,15 +312,15 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 ## Body
 
 <ParamField body="username" type="string" required>
-  Your X username without the `@` prefix. 1-15 characters, alphanumeric and underscores only. Stored as lowercase.
+  X username without `@`. Send 1 to 15 letters, numbers, or underscores. The stored value becomes lowercase.
 </ParamField>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="success" type="boolean">Always `true` on successful update.</ResponseField>
-<ResponseField name="xUsername" type="string">The linked X username, lowercased.</ResponseField>
+<ResponseField name="success" type="boolean">Always `true` after a successful update.</ResponseField>
+<ResponseField name="xUsername" type="string">Stored lowercase X username without `@`.</ResponseField>
 
 ```json
 {
@@ -161,33 +332,29 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 ### 400 Invalid Input
 
 ```json
-{ "error": "invalid_input" }
+{ "error": "invalid_input", "message": "Invalid input. Check the request body." }
 ```
-Missing or empty `username` field.
+The body lacks a non-empty string `username`.
 
 ```json
-{ "error": "invalid_username" }
+{ "error": "invalid_username", "message": "Invalid username format." }
 ```
-Username does not match the required format (1-15 characters, alphanumeric and underscores only).
+The username breaks the 1-to-15-character letter, number, and underscore pattern.
 
 ### 401 Unauthenticated
 
 ```json
-{ "error": "unauthenticated" }
+{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }
 ```
-Missing or invalid API key.
+Authentication is missing or invalid. Replace the credential before retrying.
 
 ### 429 Rate Limited
 
 ```json
 { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
 ```
-Too many requests. Wait for the `Retry-After` header before retrying.
-
-<Info>
-  Your X identity is used for own-account detection in tweet style analysis. You can update it at any time by calling this endpoint again.
-</Info>
+Too many requests reached the route. Wait for `Retry-After` before retrying.
 
 <Note>
-  **Related:** [Get Account](/api-reference/account/get) to view your current account details, or [Analyze Style](/api-reference/styles/analyze) to cache tweets for style analysis.
+  **Related:** [Get Account](/api-reference/account/get) to confirm the stored handle, [Analyze Style](/api-reference/styles/analyze) to process tweet style, or [List Connected X Accounts](/api-reference/x-accounts/list) to inspect authenticated X connections.
 </Note>
