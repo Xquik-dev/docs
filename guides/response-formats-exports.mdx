@@ -102,8 +102,10 @@ replies, profiles, or media fields. Keep the documented endpoint cursor with
 the same request filters.
 
 Use saved extraction JSON pages when a worker needs incremental processing.
-Append each completed page to JSON Lines. Commit `nextCursor` only after the
-page reaches durable storage.
+Append each completed page to JSON Lines through an idempotent sink. Use the
+extraction ID and requested `after` cursor as the page key. Persist the page and
+its `nextCursor` in one atomic commit. A retry must replace or skip an existing
+page key instead of appending duplicate tweets, followers, or replies.
 
 Use a JSON file when an application needs one structured download. The export
 contains the documented columns for that extraction tool. Store the extraction
@@ -214,7 +216,8 @@ format later.
   "pagination": {
     "limit": 1000,
     "after": "990200",
-    "hasMore": true
+    "hasMore": true,
+    "nextCursor": "991200"
   },
   "download": {
     "requested_format": "csv",
