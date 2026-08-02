@@ -8,9 +8,16 @@ import {
 } from './scripts/lib/generated-response-examples';
 
 const ROOT = process.cwd();
+const PRODUCT_ROOT =
+  process.env['XQUIK_PRODUCT_ROOT'] ?? process.env['XQUIK_ROOT'];
 
 function read(relativePath: string): string {
   return readFileSync(join(ROOT, relativePath), 'utf8');
+}
+
+function readProductFile(relativePath: string): string | undefined {
+  if (PRODUCT_ROOT === undefined) return undefined;
+  return readFileSync(join(PRODUCT_ROOT, relativePath), 'utf8');
 }
 
 const COMPOSE_PAGE = stripGeneratedResponseExamples(
@@ -38,6 +45,29 @@ const REQUIRED_PAGE_COPY = [
   '"totalChecks": 9',
 ] as const;
 
+const FOCUSED_COMPOSER_COPY = [
+  'title: "Tweet Composer API, Writing Rules & 9 Draft Checks"',
+  '"tweet composer"',
+  '"how to write a good tweet"',
+  'OAuth bearer token using `Bearer YOUR_TOKEN`.',
+  'Uppercase letters are at most 30% of letters',
+  'The draft contains 50 through 280 characters',
+  'No run contains 4 consecutive `!` or `?` marks',
+  'At least 8 words remain after removing URLs, hashtags, and mentions',
+  'The endpoint has no\nper-check disable switch.',
+  '<ResponseField name="contentRules[].rule" type="string" required>',
+  '<ResponseField name="engagementMultipliers[].action" type="string" required>',
+  '<ResponseField name="scorerWeights[].weight" type="null" required>',
+  '<ResponseField name="examplePatterns[].pattern" type="string" required>',
+  '<ResponseField name="checklist[].suggestion" type="string">',
+  '<ResponseField name="passedCount" type="integer" required>',
+  'Missing style without available credits | 200 response with `styleNote`',
+  'Missing style with available credits | 400 `invalid_input`',
+  'Analyze the username with `POST /api/v1/styles`',
+  'It never returns finished Tweet text.',
+  'It cannot predict likes,\nreplies, reposts, bookmarks, profile visits, or follower growth.',
+] as const;
+
 const FORBIDDEN_COMPOSE_COPY = [
   'algorithm-optimized',
   'against X ranking factors',
@@ -50,6 +80,7 @@ const FORBIDDEN_COMPOSE_COPY = [
   'Conversation-driving CTA',
   '"factor": "Media attached"',
   'Optimal length (50-280 characters)',
+  'session cookie',
 ] as const;
 
 describe('compose documentation contract', (): void => {
@@ -71,6 +102,16 @@ describe('compose documentation contract', (): void => {
     }
   });
 
+  it('locks focused writing guidance and exact response details', (): void => {
+    expect.assertions(1);
+
+    expect(
+      FOCUSED_COMPOSER_COPY.filter(
+        (snippet: string): boolean => !COMPOSE_PAGE.includes(snippet),
+      ),
+    ).toEqual([]);
+  });
+
   it('locks the OpenAPI variants and exact check count', (): void => {
     expect.assertions(11);
 
@@ -89,5 +130,50 @@ describe('compose documentation contract', (): void => {
     );
     expect(OPENAPI).toContain('const: Production weight not published by X');
     expect(OPENAPI).toMatch(/ComposeScoreResult:[\s\S]*?const: 9/gu);
+  });
+
+  it('remains synchronized with compose scoring and style lookup', (): void => {
+    expect.assertions(1);
+
+    const handler = readProductFile('lib/compose/handler.ts');
+    const scorer = readProductFile('lib/mcp/tweet-composer/score.ts');
+
+    expect({
+      capsThreshold:
+        scorer === undefined || scorer.includes('const CAPS_THRESHOLD = 0.3;'),
+      characterRange:
+        scorer === undefined ||
+        (scorer.includes('const MIN_LENGTH = 50;') &&
+          scorer.includes('const MAX_LENGTH = 280;')),
+      punctuationThreshold:
+        scorer === undefined ||
+        scorer.includes(
+          'const EXCESSIVE_PUNCTUATION_PATTERN = /[!?]{4}/u;',
+        ),
+      substantiveWordMinimum:
+        scorer === undefined ||
+        scorer.includes('const MIN_SUBSTANTIVE_WORDS = 8;'),
+      styleFallbackReturns200:
+        handler === undefined ||
+        (handler.includes('...result,') && handler.includes('styleNote:')),
+      styleLookupCanReturn400:
+        handler === undefined ||
+        handler.includes(
+          'Call POST /api/v1/styles with the username to analyze first.',
+        ),
+      successfulStyleReturnsTweets:
+        handler === undefined ||
+        handler.includes(
+          'return { ...result, styleTweets: [...style.tweets] };',
+        ),
+    }).toStrictEqual({
+      capsThreshold: true,
+      characterRange: true,
+      punctuationThreshold: true,
+      substantiveWordMinimum: true,
+      styleFallbackReturns200: true,
+      styleLookupCanReturn400: true,
+      successfulStyleReturnsTweets: true,
+    });
   });
 });
