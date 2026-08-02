@@ -10281,12 +10281,17 @@ const REQUIRED_CREWAI_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_PYDANTIC_AI_GUIDE_SNIPPETS = [
-  'title: "Pydantic AI Twitter API Agent Guide with MCP"',
+  'title: "Pydantic AI MCP Twitter API Agent Guide for Python"',
   'Build a Pydantic AI Twitter API agent through Xquik',
   '## Why Use Pydantic AI With a Twitter API?',
   'Public X reads do not require X Developer credentials.',
+  'Do not send bearer tokens or access tokens.',
   '"pydantic-ai-slim[anthropic,mcp]>=2.22,<2.23"',
   '"fastmcp-slim>=3.3,<4"',
+  'This Pydantic AI MCP Streamable HTTP setup',
+  'This Pydantic AI MCP server connection uses the Xquik URL',
+  '## Build a Pydantic AI MCP Example for Tweet Search',
+  'Use type hints for every durable handoff field.',
   'from pydantic_ai.capabilities import MCP',
   'allowed_tools=["explore", "xquik"]',
   'capabilities=[xquik_mcp]',
@@ -10294,6 +10299,9 @@ const REQUIRED_PYDANTIC_AI_GUIDE_SNIPPETS = [
   'output_type=TweetSearchHandoff',
   'Path("xquik-pydantic-ai-handoff.json").write_text(',
   'result.output.model_dump_json(indent=2)',
+  'Model Context Protocol (MCP) turns Xquik routes into model-callable tools.',
+  'Pydantic builds JSON schemas from `output_type`.',
+  'Use explicit keyword arguments',
   '`createdAt` field becomes `created`, not `created_at`.',
   'MCP output has a 24,000-character limit.',
   '## Build a Typed Twitter Agent Handoff',
@@ -10307,7 +10315,8 @@ const REQUIRED_PYDANTIC_AI_GUIDE_SNIPPETS = [
   'DeferredToolResults(approvals=approvals)',
   'Do not use `approve_all=True` for X actions.',
   'Xquik exposes only two aggregate tools.',
-  '## Handle Twitter API Errors Deliberately',
+  '## Build Twitter API Error Handling',
+  'Treat error messages as typed error handling inputs.',
   '| `402` | Subscription or credit action required |',
   '| `424` | Dependency failure or incomplete replies |',
   '| `429` | Twitter API rate limit reached |',
@@ -10321,6 +10330,8 @@ const REQUIRED_PYDANTIC_AI_GUIDE_SNIPPETS = [
   '### What Is the Difference Between Pydantic AI Tools and MCP?',
   '### How Can I Use Pydantic With AI Model Validation Effectively?',
   '### How Do I Validate Twitter API JSON With Pydantic?',
+  '### How Do I Import Agent From Pydantic AI?',
+  'events are asynchronous, not real time.',
   '### How Do I Handle Twitter API Rate Limits in Python?',
 ] as const;
 
