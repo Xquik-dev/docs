@@ -21,7 +21,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Build a LangChain Twitter API agent through Xquik's MCP server. Search tweets,
 inspect profiles, export followers, replay monitor events, and review X actions.
-The Python examples preserve IDs, timestamps, cursors, and errors as typed values.
+This LangChain Twitter API integration preserves IDs, timestamps, cursors, and
+errors as typed values.
 
 ## Why Use LangChain With a Twitter API?
 
@@ -73,7 +74,7 @@ python -m pip install --upgrade \
 Model Context Protocol (MCP) powers LangChain MCP support.
 LangChain MCP support comes from `langchain-mcp-adapters`.
 This open-source adapter loads tool schemas from configured MCP server connections.
-MCP clients then translate model tool calls into authenticated HTTP requests.
+MCP clients turn model tool calls into authenticated HTTP requests.
 
 ### Separate MCP Clients, Servers, and Model Credentials
 
@@ -81,9 +82,9 @@ LangChain runs the MCP client. Xquik runs the MCP server. The client loads tool
 definitions before the first API call. The server validates each route, HTTP
 method, query, body, and Xquik API key.
 
-Your model provider may require an OpenAI API key or another model credential.
-Keep that credential separate from the Xquik key. Never send either credential
-through prompts, user context, tool arguments, or saved handoffs.
+Use an OpenAI API key only with a compatible model provider.
+Keep every model credential separate from the Xquik key. Never send either
+credential through prompts, user context, tool arguments, or saved handoffs.
 
 Store secrets outside source control.
 
@@ -162,7 +163,7 @@ async def main() -> None:
         ),
     )
 
-    response = await agent.ainvoke(
+    result = await agent.ainvoke(
         {
             "messages": [
                 {
@@ -176,7 +177,7 @@ async def main() -> None:
             ]
         }
     )
-    handoff = response["structured_response"]
+    handoff = result["structured_response"]
     Path("xquik-langchain-handoff.json").write_text(
         handoff.model_dump_json(indent=2),
         encoding="utf-8",
@@ -192,7 +193,7 @@ stateless by default. Save every cursor, job ID, and write status externally.
 The `xquik` tool executes a bounded sandbox function. That function calls
 `xquik.request(path, { method, body, query })`. Authentication is injected.
 Use `explore` first when the agent does not know a route or parameter.
-Every API call follows the documented Xquik route and response contract.
+Each call uses the documented Xquik route and response fields.
 
 ## Preserve the MCP Response Contract
 
@@ -268,6 +269,7 @@ Do not place private messages or full request bodies in shared traces.
 
 Do not let the model guess whether a failed request should retry.
 Match every HTTP status code before choosing the next action.
+A 400 Bad Request indicates invalid route parameters or unsupported fields.
 
 | Status | Meaning | LangChain agent decision |
 | --- | --- | --- |
@@ -345,7 +347,7 @@ Reject any action with an unexpected route, account, target, text, or media.
 
 A LangGraph Twitter agent should separate discovery, review, execution, and
 storage. Separating these stages prevents duplicate charged actions during
-retries.
+recovery.
 
 ```mermaid
 flowchart LR
