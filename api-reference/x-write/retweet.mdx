@@ -217,6 +217,29 @@ Compare X's separate [Repost Post endpoint](https://docs.x.com/x-api/users/repos
   ```
 </CodeGroup>
 
+## Authenticate and Approve the Reposting Account
+
+Send an Xquik API key or OAuth 2.1 bearer token.
+Name 1 connected X account in the request body.
+Connect that account before scheduling or approving a repost.
+Never send an X password or session cookie.
+
+Review the source tweet immediately before approval.
+Show its author, text, media, Tweet ID, and current availability.
+Also show the X account that will publish the repost.
+This review prevents accidental sharing from the wrong account.
+
+Store these approval fields with the request:
+
+| Approval field | Source | Purpose |
+| --- | --- | --- |
+| Acting account | Request `account` | Identify the account publishing the repost. |
+| Source Tweet ID | Path `id` | Preserve the approved tweet identifier. |
+| Source author | Tweet lookup | Keep original attribution in the review. |
+| Approval time | Workflow clock | Record when the user approved distribution. |
+| Approval owner | Workflow identity | Record who approved the repost. |
+| Idempotency key | Request header | Bind retries to this exact decision. |
+
 ## Publish One Repost by Tweet ID
 
 Resolve the Tweet ID before approval.
@@ -254,7 +277,7 @@ Poll the lifecycle state while the action remains active.
 | Queued | `terminal: false` | Poll `statusUrl`; do not count the repost yet. |
 | Completed | Terminal success | Record the account, source Tweet ID, and completion time. |
 | Already reposted | Converged terminal result | Complete without another repost request. |
-| Retry allowed | `safeToRetry: true` | Keep the receipt and follow the lifecycle response. |
+| Retry allowed | `safeToRetry: true` | Keep the receipt; follow `nextAction`. |
 | Final failure | Terminal failure | Store the error and exclude the repost from completed totals. |
 
 ## Choose a Repost or New Tweet
@@ -288,6 +311,83 @@ second repost.
 Use [Unretweet](/api-reference/x-write/unretweet) for an approved rollback.
 The rollback needs a new idempotency key. Preserve both action IDs so the
 campaign record shows distribution and later removal.
+
+## Schedule Retweets Without Duplicate Posts
+
+This endpoint starts the repost action when it receives the approved request.
+Use your scheduler when a repost must run later.
+Store the Tweet ID, account, time zone, and approval together.
+Recheck the source tweet before dispatch.
+
+Create the idempotency key when the schedule becomes immutable.
+Reuse that key after a network interruption.
+Never reuse it for another account, Tweet ID, or scheduled time.
+
+The endpoint accepts 1 Tweet ID per request.
+It has no bulk repost body.
+Queue several approved tweets as separate jobs.
+Store each action before starting the next job.
+
+After `429`, honor `Retry-After`.
+Do not rotate connected accounts to bypass a limit.
+Delay the existing job instead of creating a duplicate.
+
+## Verify Repost Completion and Attribution
+
+Store `id` as the durable write action ID.
+Store `request.hash` with the submitted account and Tweet ID.
+Keep `status`, `terminal`, `statusUrl`, and `safeToRetry` together.
+Store `billing.chargedCredits` after billing settles.
+
+Treat `202` as active work, not a completed repost.
+Poll the same `statusUrl` until `terminal` becomes `true`.
+Never send another repost while the action remains active.
+
+After success, compare the returned target with the approved Tweet ID.
+An already-reposted outcome satisfies the requested state.
+It does not create another timeline entry.
+
+The repost keeps the source tweet's original attribution.
+Use [Retweeters](/api-reference/x/retweeters) for available account-level evidence.
+Read visibility may differ from the completed write receipt.
+Keep read time separate from repost completion time.
+
+## Handle Twitter Retweet API Errors
+
+Keep every error beside the request hash and action ID.
+Never replace the approved Tweet ID as an automatic fallback.
+
+- `400`: Correct the Tweet ID or account value.
+- `401`: Replace invalid Xquik authentication.
+- `402`: Add credits before another repost request.
+- `403`: Reconnect the selected X account.
+- `409`: Keep the action protected by that idempotency key.
+- `422`: Review X's rejection before another attempt.
+- `429`: Honor `Retry-After` before polling or retrying.
+- `500`: Store the failure; contact support if it persists.
+- `503`: Retry only when `safeToRetry` is `true`.
+
+A client timeout does not prove the repost failed.
+Check any returned action before sending another write.
+Follow `nextAction` when the terminal response needs review.
+
+## Apply Repost Bot and Campaign Controls
+
+Require approval for the exact account and source tweet.
+Use campaign allowlists for authors, topics, or Tweet IDs.
+Set a per-campaign repost limit before dispatch begins.
+Keep separate limits for each connected account.
+
+Freeze the approved candidate list before processing it.
+Record skipped, active, completed, and failed jobs separately.
+Never count an accepted action as completed.
+
+Inspect unavailable tweets instead of substituting new content.
+Keep deleted or restricted source tweets as distinct outcomes.
+Do not convert a failed repost into an original tweet automatically.
+
+Store the approval, request, action, billing, and final result.
+These records support audits without exposing account credentials.
 
 ## Twitter Retweet API Questions
 
@@ -325,6 +425,31 @@ Approve and submit each Tweet ID separately.
 
 Poll this write action for completion.
 Use [Retweeters](/api-reference/x/retweeters) to read available reposting accounts.
+
+### Why Can a Twitter Retweet API Request Fail?
+
+The account may need reconnection, credits, or a later retry.
+The source tweet may also be unavailable or rejected by X.
+
+### Does a Repost Keep the Original Author?
+
+Yes. A repost references the source tweet and its author.
+This endpoint adds no replacement caption or attribution.
+
+### Can I Undo an API Retweet?
+
+Yes. Call [Unretweet](/api-reference/x-write/unretweet) after new approval.
+Use a new idempotency key for that removal.
+
+### Can a Bot Use This Retweet API?
+
+Yes. Keep credentials server-side and require clear account authorization.
+Apply approvals, limits, idempotency, and terminal polling to every job.
+
+### Do I Need a Twitter Retweet SDK?
+
+No. Call this REST endpoint with any HTTP client.
+Use the cURL, Node.js, Python, or Go examples above.
 
 ## Headers
 
