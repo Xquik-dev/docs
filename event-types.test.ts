@@ -210,24 +210,39 @@ function missingEventTypeMentions(
 }
 
 describe('documented event types', (): void => {
-  it('keeps account monitor metadata within supported event scope', (): void => {
+  it('keeps account monitor docs within supported event scope', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync(
-      join(PROJECT_ROOT, 'api-reference/monitors/create.mdx'),
-      'utf8',
-    );
-    const description = /^description:\s*"([^"]+)"$/mu.exec(source)?.[1] ?? '';
+    const createFile = 'api-reference/monitors/create.mdx';
+    const createSource = readFileSync(join(PROJECT_ROOT, createFile), 'utf8');
+    const createDescription =
+      /^description:\s*"([^"]+)"$/mu.exec(createSource)?.[1] ?? '';
+    const listFile = 'api-reference/monitors/list.mdx';
+    const listSource = readFileSync(join(PROJECT_ROOT, listFile), 'utf8');
+
+    const findings = [
+      { file: createFile, source: createDescription },
+      { file: listFile, source: listSource },
+    ].flatMap(({ file, source }): readonly Finding[] => {
+      return Array.from(
+        source.matchAll(
+          /\b(?:followers?|following|relationship (?:changes?|events?))\b/giu,
+        ),
+        (match): Finding => ({
+          eventType: match[0],
+          file,
+          issue: 'Account monitor docs describe an unsupported event scope.',
+          line: lineNumberForIndex(source, match.index ?? 0),
+        }),
+      );
+    });
 
     expect({
-      descriptionPresent: description.length > 0,
-      unsupportedClaims:
-        description.match(
-          /\b(?:followers?|following|relationship changes?)\b/giu,
-        ) ?? [],
+      createDescriptionPresent: createDescription.length > 0,
+      findings,
     }).toStrictEqual({
-      descriptionPresent: true,
-      unsupportedClaims: [],
+      createDescriptionPresent: true,
+      findings: [],
     });
   });
 
