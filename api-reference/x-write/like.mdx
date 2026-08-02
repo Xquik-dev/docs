@@ -131,7 +131,7 @@ Store the durable write action and poll `statusUrl` when needed.
 Confirm the returned target matches the requested Tweet ID.
 
 X documents its separate [Like Post endpoint](https://docs.x.com/x-api/users/like-post).
-X also prohibits auto-like and bulk-like behavior in its [Developer Guidelines](https://docs.x.com/developer-guidelines).
+X says not to auto-like or bulk-like Tweets in its [Developer Guidelines](https://docs.x.com/developer-guidelines).
 Keep every like user-initiated.
 
 <CodeGroup>
@@ -345,7 +345,7 @@ Store who approved the like and when.
 
 Do not build auto-like, bulk-like, or purchased-like workflows.
 Do not select scraped tweets and like them without user approval.
-X explicitly prohibits those patterns in its Developer Guidelines.
+Only send the like that your user picked.
 
 A review queue can prepare candidates without performing actions.
 Your user must choose the exact tweet before this endpoint runs.
@@ -359,7 +359,7 @@ The request never accepts an X password or session cookie.
 
 Keep Xquik credentials in server-side code.
 Do not expose them in mobile apps or browser bundles.
-Reconnect the selected X account after an `account_needs_reauth` response.
+Reconnect that X account when you receive `account_needs_reauth`.
 
 The official X endpoint uses a user access token.
 Its authentication differs from the Xquik contract.
@@ -368,20 +368,20 @@ Read X's [Like Post guide](https://docs.x.com/x-api/users/like-post) for that en
 ## Save a Durable Like Receipt
 
 Never treat a transport response as sufficient proof.
-Save the durable action before changing your engagement ledger.
+Save the action first. Then update your like record.
 Keep the request and response identities together.
 
 | Like action column | Source | Engagement rule |
 | --- | --- | --- |
 | `acting_account` | Request `account` | Keep the connected X account with the engagement. |
 | `tweet_id` | Path `id` | Use the stable Tweet ID selected by review. |
-| `approval_reference` | Workflow value | Link the like to its human approval record. |
+| `approval_reference` | Workflow value | Store the user's approval ID with this like. |
 | `idempotency_key` | Request header | Generate one key for this account and Tweet ID. |
 | `write_action_id` | Response `id` | Store the durable action before polling. |
 | `status` | Response `status` | Keep queued, completed, and failed likes distinct. |
 | `terminal` | Response `terminal` | Mark the like complete only when `true`. |
-| `safe_to_retry` | Response `safeToRetry` | Retry only when the lifecycle response permits it. |
-| `requested_at` | Integration timestamp | Audit when the engagement decision was submitted. |
+| `safe_to_retry` | Response `safeToRetry` | Retry only when the response marks it safe. |
+| `requested_at` | Integration timestamp | Record when the user approved this like. |
 
 Persist these response fields:
 
@@ -412,7 +412,7 @@ Read visibility can limit independent verification.
 | Queued | `terminal: false` | Keep the row pending and poll `statusUrl`. |
 | Completed | Terminal success | Record the completed like for this account and Tweet ID. |
 | Already liked | Converged terminal result | Complete without submitting another like. |
-| Retryable failure | `safeToRetry: true` | Preserve the action receipt and follow lifecycle guidance. |
+| Retryable failure | `safeToRetry: true` | Keep the receipt. Follow its retry fields. |
 | Final failure | Terminal failure | Store the error and keep the ledger unchanged. |
 
 ## Prevent Duplicate Tweet Likes
@@ -426,7 +426,7 @@ Keep the original action and inspect its request hash.
 Create a new key only for a new user-approved intent.
 
 Idempotency prevents duplicate submissions inside the Xquik workflow.
-It does not replace approval, terminal polling, or account verification.
+Still check approval, terminal status, and the acting account.
 
 ## Handle Twitter Like API Errors
 
