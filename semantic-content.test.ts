@@ -421,7 +421,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       '## Review Account Eligibility and Moderator Limits',
       "Admins and moderators enforce each Community's rules.",
       'The contract defines no separate community account.',
-      'Twitter Communities group members around shared topics.',
+      'Twitter Communities offer topic-focused spaces for members.',
       '## Choose the Correct X Relationship',
       '## Plan Post-Join Reading and Publishing',
       'Never infer posting permission from membership.',
