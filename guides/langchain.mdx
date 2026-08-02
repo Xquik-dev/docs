@@ -54,6 +54,10 @@ Public X reads do not require X Developer credentials. Authenticate with Xquik.
 Connect an X account only when the selected route requires it.
 This supplies a Twitter API for Python agents through one MCP connection.
 
+Authenticate this MCP server with an Xquik API key.
+Do not send OAuth 2.0 or an OAuth token.
+Keep credentials outside user context, prompts, and agent memory.
+
 ## Install the Python Packages
 
 Install compatible minor ranges. This avoids silent breaking changes.
@@ -65,6 +69,10 @@ python -m pip install --upgrade \
   langchain-anthropic \
   python-dotenv
 ```
+
+LangChain MCP support comes from `langchain-mcp-adapters`. The adapter is open
+source. It loads tool schemas from configured MCP server connections. MCP
+clients then translate model tool calls into authenticated HTTP requests.
 
 Store secrets outside source control.
 
@@ -83,7 +91,7 @@ xquik-*-handoff.json
 ## How to Use the Twitter API in Python With LangChain
 
 Use Pydantic for the final handoff. Do not rename a text response to `.json`.
-Validated output prevents missing tweet IDs or malformed cursors.
+Validated output rejects missing tweet IDs and malformed cursors.
 
 ```python
 import asyncio
@@ -173,6 +181,7 @@ stateless by default. Save every cursor, job ID, and write status externally.
 The `xquik` tool executes a bounded sandbox function. That function calls
 `xquik.request(path, { method, body, query })`. Authentication is injected.
 Use `explore` first when the agent does not know a route or parameter.
+Each API call still follows the documented Xquik route and response contract.
 
 ## Preserve the MCP Response Contract
 
@@ -199,7 +208,7 @@ An empty page can still have `has_more: true`. Continue when the cursor
 advances. De-duplicate tweets and users by their stable `id` values.
 
 MCP tool output has a 24,000-character limit. Project only the required fields.
-Use extraction exports when a workflow needs every complete row.
+Choose extraction exports for complete-row workflows.
 
 ## Keep a Resumable Twitter Agent Handoff
 
@@ -244,7 +253,7 @@ for retries, pagination, exports, and downstream tools.
 Keep API keys, webhook secrets, headers, and raw signatures outside agent state.
 Do not place private messages or full request bodies in shared traces.
 
-## Handle Twitter API Errors Deliberately
+## Build Twitter API Error Handling
 
 Do not let the model guess whether a failed request should retry.
 
@@ -255,7 +264,7 @@ Do not let the model guess whether a failed request should retry.
 | `402` | Subscription or credit action required | Report choices and request explicit confirmation |
 | `424` | Upstream dependency failure or incomplete replies | Preserve partial rows and inspect `error.retryable` |
 | `429` | Rate limit reached | Respect `error.retry_after`, then back off |
-| `502` | Temporary upstream failure | Retry safe reads with bounded backoff |
+| `502` | Temporary upstream failure | Apply bounded backoff to safe read retries |
 
 Errors contain `error.type`, `error.code`, and `error.message`. Some errors add
 `error.retryable` or `error.retry_after`. Store these fields with the job.
@@ -318,7 +327,7 @@ Reject any action with an unexpected route, account, target, text, or media.
 ## Build Durable LangGraph Twitter Workflows
 
 A LangGraph Twitter agent should separate discovery, review, execution, and
-storage. This separation keeps retries from repeating charged write actions.
+storage. This structure prevents duplicate charged write actions during retries.
 
 ```mermaid
 flowchart LR
@@ -340,6 +349,9 @@ Never retry a pending write by creating a new action. Poll its returned status.
 Retry safe reads only when the error contract permits it.
 
 ## Connect Multiple MCP Servers
+
+A LangChain MCP server entry defines its transport, URL, and headers. Name each
+server uniquely. This keeps multiple MCP servers distinct inside the agent.
 
 Prefix tool names when another MCP server exposes similar operations. This
 prevents the model from choosing the wrong search or publishing tool.
@@ -390,6 +402,12 @@ tweet, profile, follower, monitor, extraction, and X action routes.
 Yes. Call `GET /api/v1/x/tweets/search` through MCP. Preserve each tweet ID,
 text, author, `created` timestamp, URL, and pagination cursor.
 
+### What Does “Python API Twitter” Mean?
+
+It is a reversed search phrase for a Python Twitter API integration. Here,
+Python runs LangChain, and LangChain calls Xquik through MCP. The agent can
+search tweets, inspect profiles, export followers, and review X actions.
+
 ### What does LangChain MCP add to a Twitter agent?
 
 LangChain MCP converts remote operations into model-callable tools. Xquik adds
@@ -432,8 +450,8 @@ safe reads with bounded backoff. Never recreate a pending write.
 
 ### How should a Python Twitter API agent save results?
 
-Validate a Pydantic schema first. Save typed IDs, tweet fields, cursors, error
-fields, and job status. Never save conversational prose as JSON.
+Validate a Pydantic schema first. Persist typed tweet IDs, fields, cursors,
+errors, and job status. Never save conversational prose as JSON.
 
 ### Can a LangGraph agent export Twitter followers?
 
@@ -444,6 +462,7 @@ after completion. Store the source user and requested format together.
 
 Yes. Create a monitor and webhook, then store their IDs. Replay missed events
 through `GET /api/v1/events` using `after` pagination.
+Monitor events are asynchronous. They are not guaranteed real time.
 
 ## Next Steps
 
