@@ -10087,7 +10087,7 @@ const FORBIDDEN_PREFECT_GUIDE_SNIPPETS = [
 
 const REQUIRED_HAYSTACK_GUIDE_SNIPPETS = [
   'title: "Haystack Twitter Search API & RAG Python Guide"',
-  'Haystack is an open source framework for building AI applications with modular pipelines.',
+  'Haystack is an open source framework for Python AI applications.',
   'This Haystack AI API integration supports RAG pipelines and agent workflows.',
   'They can retrieve relevant tweets for Haystack AI agents and Haystack AI RAG pipelines.',
   'python -m pip install "xquik-haystack==0.1.3" "haystack-ai==3.0.0"',
@@ -10132,6 +10132,8 @@ const REQUIRED_HAYSTACK_GUIDE_SNIPPETS = [
   '### Haystack AI vs LangChain: Which Fits Twitter RAG?',
   '### Where Is the Haystack AI GitHub Integration?',
   '### Can a Haystack AI Agent Publish Tweets?',
+  '### Does This Require a Haystack Enterprise Platform?',
+  'These modes return current searches without promising real time delivery.',
 ] as const;
 
 const FORBIDDEN_HAYSTACK_GUIDE_SNIPPETS = [
