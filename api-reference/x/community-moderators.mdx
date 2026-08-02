@@ -79,8 +79,65 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 <LlmsDirective />
 <AudienceCommunityApiLinks />
 
-Export moderator profiles for one X community. Store user IDs for access
-reviews, audience analysis, or community monitoring.
+Export moderator profiles for one X community. Store stable user IDs for
+access reviews. Analyze visible profiles or monitor the moderator roster.
+
+## X Community Moderator API Questions
+
+### What Does an X Community Moderator Do?
+
+X's moderator playbook separates creators, admins, moderators, and members.
+The creator is also the first admin. Admins can change settings and manage
+moderator roles. Moderators review reported Community posts, manage members,
+and enforce Community rules.
+
+This route only reads profiles exposed by the visible moderator roster. It
+cannot assign roles, remove members, return reports, or expose private actions.
+Read X's official
+[Communities Moderator Playbook](https://help.x.com/en/using-x/communities-moderator-playbook)
+for current role responsibilities.
+
+Store `communityRole` only when the response supplies it. Never infer admin
+status from verification, follower counts, biographies, or profile images.
+
+### How Do I Find X Community Moderators?
+
+Open the Community page when one manual lookup is enough. X says direct
+Community URLs expose visible member and moderator lists. Review the official
+[Communities guide](https://help.x.com/en/using-x/communities) for that public
+view.
+
+Use this API for repeatable collection, pagination, exports, and snapshot
+review. Start with the numeric Community ID. Store that ID with every
+moderator ID. A username can change and cannot identify the source Community.
+
+Request another page only when `has_next_page` is exactly `true`. Reuse the
+exact `next_cursor`. Mark the roster complete only after `has_next_page` is
+`false`.
+
+### Which Tools Support X Community Moderation?
+
+Choose each endpoint by the record it returns:
+
+- Retrieve visible moderator profiles with this route.
+- Retrieve rules and counts with [Community Info](/api-reference/x/community-info).
+- Retrieve recent posts with [Community Tweets](/api-reference/x/community-tweets).
+- Search Community posts with [Community Search](/api-reference/x/community-search).
+- Review reports or change roles in X's own moderator interface.
+
+The moderator API does not return enforcement logs or reported-post queues.
+Keep those workflows separate from public profile exports. This boundary
+prevents a profile row from becoming an unsupported moderation decision.
+
+### Can AI Automate Community Moderation?
+
+Do not automate enforcement from a moderator profile snapshot. Verification,
+follower counts, biographies, and avatars do not prove behavior or permissions.
+
+Use automation to normalize rows, compare complete snapshots, and queue human
+review. An AI model may summarize an approved public change set. Keep private
+review notes outside the exported profile record. Require a human decision
+before any account action.
 
 <Note>
   Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
@@ -159,11 +216,12 @@ community moderator. Store `community_id`, `moderator_id`, `username`,
 `next_cursor`. Store `page_size` and `has_next_page` with the checkpoint when
 you paginate moderator audits or saved review queues.
 
-## Direct moderator handoff
+## Direct Moderator Handoff
 
-Use the first page with no `cursor`, then pass `next_cursor` back as `cursor`
-while `has_next_page` is true. Requested result counts are upper bounds, so use
-`page_size` to record how many moderators were returned on the current page.
+Use the first page with no `cursor`. Request the next page only when
+`has_next_page` is exactly `true`. Pass `next_cursor` back as `cursor` without
+modification. Requested result counts are upper bounds. Use `page_size` to
+record the returned moderator count for each page.
 
 <CardGroup cols={2}>
   <Card title="Moderator rows" icon="shield-check">
@@ -171,8 +229,7 @@ while `has_next_page` is true. Requested result counts are upper bounds, so use
     fields, verification, and follower count.
   </Card>
   <Card title="Next page" icon="arrow-right">
-    Store `has_next_page` and `next_cursor` before requesting the following
-    page.
+    Persist each page before its `has_next_page` flag and `next_cursor`.
   </Card>
   <Card title="Default page" icon="rows-3">
     Expect up to the default page size per call, reduced when the caller cannot
@@ -184,7 +241,37 @@ while `has_next_page` is true. Requested result counts are upper bounds, so use
   </Card>
 </CardGroup>
 
-## Audit a community moderation team
+## Build a Complete Moderator Roster
+
+Treat each response page as a durable checkpoint. Save every profile row
+before storing its cursor. Resume with the exact saved cursor after an
+interruption.
+
+Create a local `export_manifest_id` for each collection run. Store it with
+`community_id`, `moderator_id`, page number, cursor, and collection time. This
+key prevents one roster from mixing with another collection run.
+
+Classify credit-bounded, failed, and interrupted runs as partial moderator
+snapshots. Do not compare a partial roster with a completed baseline. A partial
+comparison can falsely report removed moderators.
+
+Deduplicate resumed pages with `community_id` and `moderator_id`. Keep the
+latest username as a label. Preserve the numeric user ID as the durable join
+key.
+
+Store these completion fields with the export manifest:
+
+- Requested Community ID.
+- Returned page count and profile count.
+- First and final cursor values.
+- Final `has_next_page` value.
+- Collection start and completion times.
+- Complete, partial, or failed status.
+
+These fields let a reviewer distinguish a real role change from an unfinished
+collection.
+
+## Audit a Community Moderation Team
 
 Use this route when the role matters more than general membership. Every
 returned profile represents a moderator visible for the selected community.
@@ -204,36 +291,53 @@ Do not combine moderator rows with the full member roster silently. Give each
 export a clear role column. This prevents downstream tools from granting
 moderator meaning to ordinary members.
 
-## Review moderator coverage
+Join the moderator roster to [Community Info](/api-reference/x/community-info)
+only when `community_id` and your local `export_manifest_id` match. Keep rules,
+member counts, and moderator profiles in separate tables. This preserves each
+endpoint's public response contract.
 
-Compare complete moderator snapshots by community ID and user ID. Record added
+The response may include `communityRole`. Store its returned value without
+normalizing it into a broader permission. An omitted role cannot prove admin,
+creator, or member permissions.
+
+## Review Moderator Coverage
+
+Compare complete moderator snapshots by Community ID and user ID. Record added
 and removed IDs without guessing the reason.
 
-Keep one row per visible moderator. Store the current username only as a
-label. Use the numeric user ID for durable joins.
+Use this review sequence:
 
-Escalate unexpected changes to a human reviewer. Do not trigger account
-actions from a roster difference alone.
+1. Confirm both exports ended with `has_next_page` set to `false`.
+2. Confirm both exports use the same numeric Community ID.
+3. Compare stable moderator IDs, not usernames or display names.
+4. Review added and missing IDs with an authorized human.
+5. Store the decision outside the public profile snapshot.
 
-Keep review outcomes separate from the public profile snapshot. Record the
-reviewer, decision time, and community ID in your own system.
+Keep one row per visible moderator. Store the username only as a mutable label.
+Use the numeric user ID for durable joins.
+
+Escalate unexpected changes to a human reviewer. Require human approval before
+any account action.
+
+Store each review outcome outside the public profile snapshot. Record the
+reviewer, decision time, and Community ID in your own system.
 
 Refresh a profile only when current biography or counts matter. Preserve the
 original moderator observation.
 
-## Path parameters
+## Path Parameters
 
 <ParamField path="id" type="string" required>
   Community ID (numeric string).
 </ParamField>
 
-## Query parameters
+## Query Parameters
 
 <ParamField query="cursor" type="string">
   Pagination cursor from a previous response. Omit for the first page.
 </ParamField>
 
-## Which community endpoint?
+## Which Community Endpoint?
 
 <CardGroup cols={2}>
   <Card title="Community moderators" icon="shield-check">
@@ -284,7 +388,7 @@ original moderator observation.
     <ResponseField name="username" type="string">X username.</ResponseField>
     <ResponseField name="name" type="string">Display name.</ResponseField>
     <ResponseField name="description" type="string">Profile bio.</ResponseField>
-    <ResponseField name="followers" type="number">Follower count.</ResponseField>
+    <ResponseField name="followers" type="number">Reports the profile's follower count.</ResponseField>
     <ResponseField name="following" type="number">Following count.</ResponseField>
     <ResponseField name="verified" type="boolean">Verified status.</ResponseField>
     <ResponseField name="profilePicture" type="string">Profile image URL.</ResponseField>
@@ -299,7 +403,7 @@ original moderator observation.
     <ResponseField name="isTranslator" type="boolean">Whether the user is an X translator. Omitted if unavailable.</ResponseField>
     <ResponseField name="withheldInCountries" type="string[]">Country codes where the account is withheld. Omitted if empty.</ResponseField>
     <ResponseField name="possiblySensitive" type="boolean">Whether the account is flagged as possibly sensitive. Omitted if unavailable.</ResponseField>
-    <ResponseField name="pinnedTweetIds" type="string[]">IDs of pinned tweets. Omitted if none.</ResponseField>
+    <ResponseField name="pinnedTweetIds" type="string[]">Lists pinned Tweet IDs. Omitted if none.</ResponseField>
     <ResponseField name="isAutomated" type="boolean">Whether the account is marked as automated. Omitted if unavailable.</ResponseField>
     <ResponseField name="automatedBy" type="string">Username of the account operator if automated. Omitted if not automated.</ResponseField>
     <ResponseField name="unavailable" type="boolean">Whether the account is unavailable. Omitted if available.</ResponseField>
@@ -378,7 +482,8 @@ Your tier rate limit was exceeded. Wait for the `Retry-After` header before retr
 ```json
 { "error": "x_api_unavailable" }
 ```
-The normalized v1 response contract can return 424 when the read service is unavailable.
+Send `xquik-api-contract: 2026-04-29` to opt in to HTTP 424. Default v1 returns
+HTTP 502 with `x_api_unavailable`.
 
 <Note>
   **Next steps:** [Community Members](/api-reference/x/community-members) for the full member list, or [Community Info](/api-reference/x/community-info) for community details.
