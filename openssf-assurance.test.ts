@@ -7,21 +7,36 @@ const INDEPENDENCE_NOTICE =
 
 describe('OpenSSF shared-site assurance', (): void => {
   it('records the repository applicability without claiming Gold', (): void => {
-    expect.assertions(7);
+    expect.assertions(19);
 
     const page = readFileSync('guides/open-source-assurance.mdx', 'utf8');
     const docsConfig = readFileSync('docs.json', 'utf8');
 
-    expect(page).toContain('17 standalone Xquik open-source projects');
-    expect(page).toContain('xquik-docs` has no separate badge entry');
-    expect(page).toContain(
+    const requiredSnippets = [
+      'title: "Xquik Open Source Docs, MIT License & OpenSSF"',
+      'Xquik publishes its API documentation source under the MIT License.',
+      'This license does not make the hosted Xquik platform open source.',
+      'It has no separate badge entry today.',
       'https://www.bestpractices.dev/en/criteria_discussion#terminology',
-    );
-    expect(page).toContain(
       'https://github.com/Xquik-dev/.github/blob/main/OPENSSF.md',
-    );
-    expect(page).toContain('Do not claim Gold');
-    expect(page).toContain(INDEPENDENCE_NOTICE);
+      'Passing does not mean Silver or Gold.',
+      'npm ci --ignore-scripts',
+      'npm run check:response-examples',
+      'reuse lint',
+      'The MIT License lets you use',
+      '### Is the Xquik API Open Source?',
+      'The hosted Xquik platform is not open source.',
+      'https://github.com/Xquik-dev/xquik-docs/security/advisories/new',
+      'Do not claim Gold until each project has verified public evidence.',
+      INDEPENDENCE_NOTICE,
+    ] as const;
+
+    for (const snippet of requiredSnippets) {
+      expect(page).toContain(snippet);
+    }
+
+    expect(page).not.toContain('17 standalone Xquik open-source projects');
+    expect(page).not.toContain('All 17');
     expect(docsConfig).toContain('guides/open-source-assurance');
   });
 
