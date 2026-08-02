@@ -331,8 +331,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'api-reference/trends/list.mdx',
     snippets: [
-      '| Regional trend column | Response source | Monitoring rule |',
-      '| Search query | `trends[].query` | Pass this value to tweet search. |',
+      '## Build a Regional Twitter Trending Monitor',
+      'Pass `search_query` to [Search Tweets](/api-reference/x/search-tweets).',
     ],
   },
   {
