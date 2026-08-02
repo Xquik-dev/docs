@@ -24,7 +24,7 @@ const REQUIRED_RADAR_PAGE_COPY = [
   'The `score` value measures relevance, not sentiment.',
   'Radar is not a social listening API for every major social platform.',
   'provides no keyword search volume or long-term history.',
-  'Apply source and category together or separately.',
+  'Apply the relevant source, category, region, and time window to each request.',
   '## Is Radar Real-Time for Monitoring Trending Topics?',
   'Start each scheduled poll without `after`.',
   'The contract guarantees neither cross-poll cursor lifetime nor snapshots.',
