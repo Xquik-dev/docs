@@ -381,7 +381,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       'The request has no website, app, rules, or invitation field.',
       'OAuth bearer authentication is also supported.',
       '| Community creation record | Request or response source | Completion rule |',
-      '| Community ID | Response `communityId` | Store the confirmed new community ID. |',
+      '| Community ID | Response `communityId` | Store it after success. |',
     ],
   },
   {

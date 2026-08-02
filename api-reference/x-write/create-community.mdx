@@ -137,6 +137,11 @@ Use this route only when the account should own a new community. Use join or
 leave routes for an existing community. This route does not add rules, members,
 moderators, invitations, posts, analytics, or membership settings.
 
+Each community gives one topic a dedicated space on X. People can search for
+communities, then join a community later. Each member of the community follows
+the chosen membership type and community rules. This X social media workflow
+creates the community container only.
+
 <Callout icon="coins" color="#5c3327">
   **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 </Callout>
@@ -231,13 +236,12 @@ moderators, invitations, posts, analytics, or membership settings.
 
 ## Prepare a Community Creation Request
 
-Use this route after finalizing the community identity and purpose. Review the
-name, description, and rules before submission. Keep the connected owner
-account visible during approval.
+Approve the community name, description, and rules before this call. Keep the
+connected owner in the approval record.
 
 Create one idempotency key for the intended community. Reuse it only when the
-same request needs network recovery. Generate a new key after changing any
-community field.
+same request needs network recovery. Use a new key after any approved input
+changes.
 
 Community creation workflows should include:
 
@@ -264,8 +268,8 @@ quickly and make later community discovery confusing.
 
 Choose one connected account as the accountable owner. Record its username and
 stable account ID when available. Confirm that the account appears in your
-connected-account inventory. Do not switch owner accounts during a network
-retry. A changed account represents a different write request.
+connected-account inventory. Keep the same owner during network recovery. A
+different owner means a different write request.
 
 Store these creation inputs together:
 
@@ -275,19 +279,19 @@ Store these creation inputs together:
 - Idempotency key for this exact submission.
 - Returned action ID and lifecycle state.
 
-This record separates governance from transport recovery. A timeout can reuse
-the same key and body. An editorial change requires another approval and key.
+This record separates approval from network recovery. A timeout permits an
+identical replay. Changed text needs a new approval and key.
 
 ## Confirm the Community Admin Account
 
-Choose the connected account before review. X treats the original creator as
-the first admin. Community admins control names, descriptions, rules, and
-moderator assignments through X. Xquik sends the creation request only.
+Choose the connected account before review. X assigns admin ownership to the
+original creator. Community admins manage names, descriptions, rules, and
+moderators in X. Xquik only sends the creation request.
 
 X currently requires an eligible admin account. Its official moderator
 playbook lists these checks:
 
-- Keep the X account public.
+- Use a public account.
 - Use an account that is at least 6 months old.
 - Verify an email address or phone number.
 - Keep the account compliant with the X Terms of Service.
@@ -307,7 +311,7 @@ the topic, allowed behavior, and moderation response. Do not place temporary
 campaign instructions in the public description. Keep the full rule set in
 the team's approved moderation record.
 
-X supports open communities and restricted membership workflows. Open
+X offers open communities and restricted membership. Open
 communities show a Join button at the top of the community page. Restricted
 communities can let a person request to join. A moderator then accepts or
 denies that request. X may also allow member invitations.
@@ -341,7 +345,7 @@ The request has no website, app, rules, or invitation field. Store those links
 in your application after X confirms creation. Associate them with the returned
 community ID, owner account, approval, and lifecycle record.
 
-After success, open the community page and verify its public identity. Search
+After success, verify the name on the community page. Search
 for communities by name, description, or creator through X when available.
 X notes that not every community appears in search results. Do not treat search
 visibility as proof of creation.
@@ -402,37 +406,36 @@ Run these checks before inviting members:
 4. Confirm the intended owner account remains connected.
 5. Record the final write state and verification time.
 
-Do not create another community when verification fails temporarily. Retry the
-read first. Reuse the original write key only for identical transport recovery.
+Repeat the information request after a temporary read failure. Reuse the key
+only for an identical network replay.
 
 ## Handle Creation Failures Safely
 
 Treat each response by its actual cause. Fix invalid names or missing accounts
 before sending another write. Restore credits before retrying a `402` response.
-Reconnect the owner account after an account authorization failure.
+Reconnect the owner after `403`.
 
-A `409` response can indicate an idempotency conflict. Compare the stored body
-with the proposed body. Reuse the key only when every creation field matches.
+A `409` response identifies an `Idempotency-Key` conflict. Compare both request
+bodies. Reuse the key only when every creation input matches.
 Generate a new key after any approved field changes.
 
 For `422`, preserve the rejected request and returned reason. Do not rewrite
 the community brief automatically. Return it to the operator for review. For
 `429`, respect the retry guidance and keep the same approved intent.
 
-For `503` or an uncertain network result, query the write lifecycle first.
-Never assume failure from a lost client connection. Duplicate creation is more
-costly than a delayed verification read.
+After `503`, check the write lifecycle before retrying. Never assume failure
+from a lost connection. Duplicate creation costs more than delayed verification.
 
 | Community creation record | Request or response source | Completion rule |
 | --- | --- | --- |
-| Acting X account | Request `account` | Confirm the connected community owner. |
-| Community name | Request `name` | Preserve the approved group name. |
-| Community purpose | Request `description` | Preserve the reviewed public description. |
-| Idempotency key | Request header | Reuse it only for an exact replay. |
-| Write action ID | Response `id` | Poll the matching lifecycle record. |
-| Lifecycle state | Response `status` and `terminal` | Stop only after a terminal state. |
-| Community ID | Response `communityId` | Store the confirmed new community ID. |
-| Verification route | `GET /x/communities/{id}/info` | Confirm the name and owner after success. |
+| Owner | Request `account` | Match the connected owner. |
+| Name | Request `name` | Keep the approved name. |
+| Purpose | Request `description` | Keep the approved description. |
+| Replay key | Request header | Reuse it for one exact replay. |
+| Action ID | Response `id` | Poll this lifecycle record. |
+| State | Response `status` and `terminal` | Stop after a terminal result. |
+| Community ID | Response `communityId` | Store it after success. |
+| Verification | `GET /x/communities/{id}/info` | Match the name and owner. |
 
 ## Headers
 
