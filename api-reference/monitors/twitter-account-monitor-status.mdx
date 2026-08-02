@@ -226,8 +226,8 @@ inventory.
   ```
 </CodeGroup>
 
-The Node.js, Python, and Go examples convert the fetched account monitor into
-one state snapshot row. Store `monitor_id`, `event_types`, `is_active`,
+The Node.js, Python, and Go examples produce one normalized monitor snapshot.
+Store `monitor_id`, `event_types`, `is_active`,
 `next_billing_at`, `update_endpoint`, `events_endpoint`,
 `event_detail_endpoint_pattern`, `webhooks_endpoint`, and
 `deliveries_endpoint_pattern` before changing filters, pausing alerts, or
@@ -289,8 +289,8 @@ The response proves which X profile one monitor targets. Confirm both
 This prevents a renamed profile from appearing as a different account.
 
 Read `eventTypes` as the monitor's current matching contract. Tweet filters
-cover new posts, replies, quotes, reposts, media, links, and polls. They also
-cover mentions, hashtags, and long-form posts. Profile filters cover avatar,
+include new posts, replies, quotes, reposts, media, links, and polls. Additional
+filters detect mentions, hashtags, and long-form posts. Profile filters cover avatar,
 banner, name, username, biography, location, and URL. They also cover
 verification, protection, pinned tweets, and account availability. The
 response returns only the selected filters.
@@ -298,12 +298,12 @@ response returns only the selected filters.
 Followers and following are not monitor event types. Account relationship
 changes are not monitor events either. For follower growth, compare complete
 [follower snapshots](/api-reference/x/followers) at approved intervals. Use the
-[follower export guide](/guides/follower-export-crm) for repeatable CSV or
-warehouse handoffs.
+[follower export guide](/guides/follower-export-crm) for controlled CSV exports
+and follower archives.
 
-Read `isActive` as the polling state. An active monitor can create future
-matching events. A paused monitor keeps its profile and filters without
-polling. Read `nextBillingAt` as the next active billing checkpoint. It does not
+Read `isActive` as the polling state. An active monitor can capture future
+events that match its filters. A paused monitor keeps its profile and filters
+without polling. Read `nextBillingAt` as the next active billing time. It does not
 prove that an event or webhook delivery succeeded.
 
 ## How Do I Check Whether Twitter Account Activity Alerts Are Active?
@@ -327,18 +327,19 @@ through `streamEventId`.
 Do not treat one active flag as complete health evidence. The monitor may poll
 correctly while a webhook fails. A webhook may also work while the monitor
 omits the expected event type. Keep configuration, event, and delivery checks
-separate.
+independent during diagnosis.
 
 ## How Do I Track Mentions and Replies for One Account?
 
-Confirm that `eventTypes` contains `tweet.mention` for mentions. Confirm
-`tweet.reply` for replies. The monitor can select either type or both. The
+Confirm that `eventTypes` contains `tweet.mention` for mentions. For reply
+alerts, require the `tweet.reply` event type. The monitor can select either
+type or both. The
 status route shows the stored selection. It does not return the matching tweets.
 
 Use [List Events](/api-reference/events/list) with `monitorId` after confirming
 the filters. Filter stored events by the required type and time window. Open
-one result with [Get Event](/api-reference/events/get). That payload contains
-the matching tweet evidence.
+the full event through [Get Event](/api-reference/events/get). The response
+contains the matched tweet payload.
 
 If the filter is absent, update the monitor before expecting new alerts. If the
 filter exists but the monitor is paused, resume it. If both checks pass, trace
@@ -351,21 +352,78 @@ No. This endpoint returns one monitor configuration. It does not calculate
 engagement rate, follower growth, posting frequency, reach, impressions, or
 sentiment. It also does not backfill a native X analytics report.
 
-Use stored monitor events for historical Twitter account activity that Xquik
-captured. Use [List Events](/api-reference/events/list) for a cursor-based event
-history. Use [X user tweets](/api-reference/x/user-tweets) for a profile's tweet
-timeline. Use follower snapshots or an extraction job for follower exports.
+Use stored monitor events for Twitter account activity captured after monitoring
+started. Use [List Events](/api-reference/events/list) for a cursor-based list
+of stored events. Use [X user tweets](/api-reference/x/user-tweets) for recent
+profile tweets. Use follower snapshots or an extraction job for follower exports.
 
 Keep these outputs distinct. A monitor status snapshot explains configuration.
 An event record proves one matched change. A delivery record proves one
-webhook attempt. A follower export records a follower list at one collection
-time. None of those outputs is an engagement analytics dashboard.
+webhook delivery attempt. A follower export records a follower list for one
+collection timestamp. None of those outputs is an engagement analytics dashboard.
+
+## How Do Twitter Analytics Tools Differ From Monitor Status?
+
+Twitter analytics tools usually calculate performance from posts and profile
+statistics. They may summarize likes, replies, reposts, views, or follower
+changes. Those values are engagement metrics. This status endpoint performs a
+different job.
+
+The response describes one saved monitor. It identifies the tracked account
+and selected event filters. It also reports whether future checks remain
+active. The response never calculates reach, impressions, engagement rates, or
+audience growth.
+
+Use the status response before investigating account activity. First, confirm
+the stable `xUserId`. Then inspect `eventTypes` and `isActive`. These fields
+prove whether Xquik could capture the expected change. They do not prove that
+the change occurred.
+
+Use [List Events](/api-reference/events/list) to find changes captured by the
+monitor. Open each event before making an activity claim. Use
+[webhook deliveries](/api-reference/webhooks/deliveries) to verify receiver
+attempts. This workflow separates monitor configuration from analytics
+reporting.
+
+Do not compare an empty event list with a complete analytics report. Event
+history starts when the monitor captures a selected change. A paused monitor
+creates no new records. An omitted filter also creates no record for that
+change. Document both conditions before interpreting account activity.
+
+## What Should a Twitter Account Activity Audit Store?
+
+Start an audit with the monitor response. Store `id`, `username`, and
+`xUserId`. Add `eventTypes`, `isActive`, `createdAt`, and `nextBillingAt`. These
+fields describe the approved monitor state at one timestamp.
+
+Store the request time beside the response. The API does not return a snapshot
+timestamp. Your request time identifies when the audit observed the current
+state. Keep the HTTP status and monitor ID with that entry.
+
+Record the intended event beside the stored filters. For a reply alert, record
+`tweet.reply`. For a profile-name change, record `profile.name`. This comparison
+shows whether the required filter existed during the review.
+
+When an event exists, store its event ID and `monitorId`. Open the event and
+confirm its type. Then connect delivery `streamEventId` values to that event
+ID. Store each `deliveryId` and delivery status. This chain distinguishes a
+missing event from a failed receiver.
+
+Repeat the status request after each approved update. Compare the account,
+filters, active state, and next billing time. Preserve both snapshots in the
+change log. Reject the update when `xUserId` unexpectedly changes.
+
+Treat `404` as an ownership or existence failure. Do not create replacement
+history from that response. Confirm the authenticated account and monitor ID
+first. Treat `429` as a temporary request limit. Read the response `Retry-After`
+header and pause for the supplied duration before retrying. Do not change the
+audit conclusion.
 
 ## Approve One Account Monitor Change
 
 Fetch the monitor immediately before an approved update. Store its monitor ID,
 username, and stable X user ID. Add event types, active state, and billing
-checkpoint. This snapshot becomes the change baseline.
+time. This snapshot becomes the change baseline.
 
 Confirm the target profile first. Usernames can change. The stable `xUserId`
 prevents a renamed profile from looking like another account. Stop when the
@@ -381,7 +439,7 @@ the previous state before toggling it.
 
 After the update, fetch the same monitor ID again. Compare its target, event
 types, active state, and `nextBillingAt`. Keep both snapshots with the approval
-record. This proves the exact account-monitor change.
+log. This proves the exact account-monitor change.
 
 ## Trace One Missing Profile Alert
 
