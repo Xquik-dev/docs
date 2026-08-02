@@ -158,10 +158,10 @@ Use X's Communities tab to join a Community or join Communities.
 
 ### What Rules Apply to Members Posting in Communities?
 
-Members posting in Communities follow each Community's current rules. X
-controls posting access, membership, visibility, and moderation. Community
-moderators manage roles through X. Xquik reads visible community content
-without changing those settings.
+Each Community sets its posting rules for members. X controls posting access,
+membership, visibility, and moderation. Community moderators manage roles
+through X. Xquik reads visible community content without changing those
+settings.
 
 ### Can This API Schedule or Moderate Community Posts?
 
@@ -212,7 +212,7 @@ partial.
     headers: { "x-api-key": "xq_your_api_key_here" },
   });
   const data = await response.json();
-  const nextCursor = data.has_next_page ? data.next_cursor : null;
+  const nextCursor = data.has_next_page && data.next_cursor ? data.next_cursor : null;
   const tweetRows = data.tweets.map((tweet) => ({
     community_id: communityId,
     tweet_id: tweet.id,
@@ -228,6 +228,7 @@ partial.
     reply_count: tweet.replyCount ?? null,
     retweet_count: tweet.retweetCount ?? null,
     media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
+    has_next_page: data.has_next_page,
     next_cursor: nextCursor,
   }));
 
@@ -244,7 +245,7 @@ partial.
       headers={"x-api-key": "xq_your_api_key_here"},
   )
   data = response.json()
-  next_cursor = data["next_cursor"] if data["has_next_page"] else None
+  next_cursor = data.get("next_cursor") if data.get("has_next_page") else None
   tweet_rows = [
       {
           "community_id": community_id,
@@ -263,6 +264,7 @@ partial.
           "media_urls": [
               item["mediaUrl"] for item in tweet.get("media", []) if item.get("mediaUrl")
           ],
+          "has_next_page": data.get("has_next_page", False),
           "next_cursor": next_cursor,
       }
       for tweet in data["tweets"]
@@ -285,8 +287,8 @@ creation time, engagement counts, media, and cursor checkpoint.
     counts with the tweet row for review queues and exports.
   </Card>
   <Card title="Next page" icon="arrow-right">
-    Save both pagination fields in one record. Request another page only when
-    `has_next_page` is `true`.
+    Save both pagination fields in one record. Continue only when
+    `has_next_page` is `true` and `next_cursor` is present.
   </Card>
   <Card title="Default page" icon="rows-3">
     Request 1 to 100 tweets with `pageSize`. The default is 20. Treat the value
@@ -304,9 +306,9 @@ Start each feed run with one numeric community ID. Record the request time and
 requested `pageSize`. Do not add a keyword to this route. Use community search
 when the workflow needs text matching.
 
-Save every response before advancing its cursor. Store `has_next_page` with
-`next_cursor`. Continue only when the response reports another page. Reuse
-`next_cursor` without modification.
+Save every response before advancing its cursor. Store both response fields in
+one record. Continue only when `has_next_page` is true and `next_cursor` is
+present. Reuse `next_cursor` without modification.
 
 Count returned rows and unique Tweet IDs after each page. A busy community can
 receive new posts during pagination. Deduplicate repeated Tweet IDs without
