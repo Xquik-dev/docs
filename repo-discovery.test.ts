@@ -3342,13 +3342,15 @@ const FORBIDDEN_WRITE_ACTION_STATUS_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS = [
-  'Use health before writes: healthy writes, recovering retries, temporaryIssue waits, needsReauth fixes TOTP or credentials, locked/suspended need X recovery',
+  'title: "Connected X Accounts API, Health & Write Readiness"',
+  'description: "List every connected X account, read its Xquik ID and username, inspect login health, and choose whether to write, reauthenticate, wait, or retry safely."',
   'Check `accounts[].health` before scheduling writes.',
   '`temporaryIssue` is still paused by a transient cooldown.',
   '`locked` and `suspended` stay blocked until the account is fixed on X.',
-  'Derived login/cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`.',
-  '## Account health',
-  'Use it before writes so your workflow proceeds, waits, or asks the operator to fix the account first.',
+  'Derived login/cookie health.',
+  '`recovering`, `suspended`, or `temporaryIssue`.',
+  '## Account Health',
+  'Your workflow can proceed, wait, or request an operator action.',
   '<Card title="healthy" icon="circle-check">',
   'Cookies are valid. Writes can proceed.',
   '<Card title="needsReauth" icon="refresh-cw">',
