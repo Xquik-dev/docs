@@ -10175,32 +10175,51 @@ const REQUIRED_TWEETCLAW_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS = [
-  'Build a Microsoft Agent Framework agent that can search tweets, hand off IDs and cursors, post tweets, replay stored monitor events, and run extraction jobs',
-  'from pathlib import Path',
-  'query, route_used, tweets[{tweet_id,text,author_username,created_at}]',
-  'Path("xquik-agent-handoff.json").write_text(response.text, encoding="utf-8")',
-  'The MCP runtime returns normalized snake_case fields through `xquik.request()`',
-  '## Handoff Checklist',
-  '<Card title="Tweet search rows" icon="search">',
-  'Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.',
-  '<Card title="User profile rows" icon="users">',
-  'Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profile_picture`, `has_more`, `next_cursor`, and the source lookup or search query.',
-  '<Card title="Trend rows" icon="trending-up">',
-  'Store each trend `name`, `rank`, `query`, and `description`. Keep response `count`, `woeid`, and the requested region with the run checkpoint.',
-  '<Card title="Monitor and webhook setup" icon="radio">',
-  'Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager.',
-  'On production deliveries, store `delivery_id` for receiver retry de-dupe and `stream_event_id` when one monitor event should process once across endpoint changes.',
-  '<Card title="Stored event replay" icon="activity">',
-  'Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, `next_cursor`, and the `after` query for the next page.',
-  '<Card title="Extraction jobs" icon="database">',
-  'Store `extraction_id`, `status`, `poll`, and `export_after_complete`',
-  '<Card title="Writes" icon="send">',
-  'Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, `charged_credits`, and `poll`; do not resend pending writes.',
-  '<Card title="Media attachments" icon="image">',
-  'For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`.',
-  'For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.',
-  'tweet_id, author_username, text, created_at, has_more, next_cursor,',
-  'Path("xquik-agent-workflow-handoff.json").write_text(',
+  'title: "Microsoft Agent Framework Twitter MCP Python Guide"',
+  'Build a Microsoft Agent Framework Twitter MCP agent through Xquik.',
+  'python -m pip install "agent-framework==1.13.0"',
+  'class TweetSearchHandoff(BaseModel):',
+  'route_used: Literal["GET /api/v1/x/tweets/search"]',
+  'created: int | None',
+  'allowed_tools=["explore", "xquik"]',
+  'options={"response_format": TweetSearchHandoff}',
+  'if not isinstance(result.value, TweetSearchHandoff):',
+  'result.value.model_dump_json(indent=2)',
+  '`createdAt` to the Unix-second field',
+  '"never_require_approval": ["explore"]',
+  '"always_require_approval": ["xquik"]',
+  'request.to_function_approval_response(',
+  'Message(role="user", contents=responses)',
+  'function_invocation_kwargs=run_context',
+  '## Expose Route Discovery Without Execution',
+  '## Keep Tenant Credentials Out of Agent State',
+  '## Handle Tweet Search Errors and Rate Limits',
+  '| `400` | The search query is missing or invalid',
+  '| `401` | Authentication cannot complete this request',
+  '| `402` | The account lacks credits',
+  '| `424` | The upstream X dependency failed',
+  '| `429` | The Twitter API rate limit applies',
+  '| `502` | The X dependency returned an invalid response',
+  '## Preserve Twitter Workflow Handoffs',
+  '<Card title="Tweet Search Rows" icon="search">',
+  '<Card title="Profile and Follower Rows" icon="users">',
+  '<Card title="Follower Export Jobs" icon="file-spreadsheet">',
+  '## Choose MCP or the Direct REST API',
+  '## Migrate Older Microsoft Agent Framework Code',
+  '| `agent-framework` | 1.13.0 | `==1.13.0` |',
+  '## Microsoft Agent Framework Twitter API Questions',
+  '### How Do I Handle Twitter API Rate Limits in Python?',
+  '### Can a Microsoft Agent Export Twitter Followers?',
+] as const;
+
+const FORBIDDEN_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS = [
+  'created_at',
+  '119 MCP-compatible',
+  'Path("xquik-agent-handoff.json").write_text(response.text',
+  'Prompt-only compact JSON',
+  '| `agent-framework` | 1.11.0+',
+  '| `mcp` | 1.24.0+ |',
+  'title: "Microsoft Agent Framework for Twitter API Workflows"',
 ] as const;
 
 const REQUIRED_GOOGLE_ADK_GUIDE_SNIPPETS = [
@@ -16448,7 +16467,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Microsoft Agent Framework guide handoff concrete', (): void => {
-    expect.assertions(5);
+    expect.assertions(6);
 
     const source = readFileSync('guides/microsoft-agent-framework.mdx', 'utf8');
 
@@ -16465,6 +16484,11 @@ describe('repository discovery', (): void => {
     expect(source).not.toMatch(
       /\bChatAgent\b|model_id=|chat_client=|run_stream\(|tool_resources=|AzureOpenAIChatClient/u,
     );
+    expect(
+      FORBIDDEN_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps the Google ADK guide handoff concrete', (): void => {
