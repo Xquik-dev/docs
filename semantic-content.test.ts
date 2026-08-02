@@ -8,6 +8,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     snippets: [
       '| Preflight question | Response field | Integration decision |',
       '| Credit balance | `creditInfo.balance` |',
+      'Funded pay-as-you-go requests can continue while `plan` is `inactive`.',
     ],
   },
   {

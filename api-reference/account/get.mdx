@@ -121,13 +121,17 @@ username.
 
 | Preflight question | Response field | Integration decision |
 | --- | --- | --- |
-| Is the subscription active? | `plan` | Start paid API work only when the value is `active`. |
+| Is the subscription active? | `plan` | Report subscription state. Check `creditInfo.balance` before metered work. |
 | How many credits remain? | `creditInfo.balance` | Compare the Bigint string with the estimated tweet, follower, or extraction cost. |
 | How many monitors are active? | `monitorsUsed` | Reconcile account and keyword monitors before enabling another one. |
 | What is the current hourly monitor charge? | `monitorBilling.activeHourlyBurn` | Include active monitors in the hourly credit budget. |
 | What is the estimated daily monitor charge? | `monitorBilling.activeDailyEstimate` | Add the rounded estimate to the daily operating forecast. |
 | Is automatic top-up enabled? | `creditInfo.autoTopupEnabled` | Confirm the account may replenish credits without a manual checkout. |
 | Which X identity is linked? | `xUsername` | Compare the username with the intended tweet, reply, or follower workflow. |
+
+Use `plan` to report subscription state. Do not use it as a credit gate.
+Funded pay-as-you-go requests can continue while `plan` is `inactive`.
+Treat missing `creditInfo` as no recorded balance, not numeric zero.
 
 Do not use `monitorsAllowed` as a capacity limit. The field is deprecated and
 always reports the maximum safe integer. Use `monitorsUsed` and the monitor
