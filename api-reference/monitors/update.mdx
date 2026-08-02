@@ -1,9 +1,9 @@
 ---
-title: "Twitter Monitoring Alerts & Account Alert Settings"
+title: "Twitter Monitoring Alerts: How to Set Twitter Alerts"
 sidebarTitle: "Update monitor"
 description: "Update Twitter account alert settings by replacing tweet and profile filters, pausing or resuming monitoring, and safely handling unavailable X profiles."
 api: "PATCH /monitors/{id}"
-keywords: ["Twitter monitoring alerts", "Twitter account alert settings", "Twitter monitor event filters", "pause Twitter monitoring", "resume Twitter monitor", "change Twitter alert rules"]
+keywords: ["Twitter monitoring alerts", "how to set Twitter alerts", "Twitter account alert settings", "Twitter monitor event filters", "pause Twitter monitoring", "resume Twitter monitor"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -81,14 +81,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **Free** - does not consume credits
 </Callout>
 
-Use this Twitter monitoring tool to change alerts for one saved X profile.
-Replace tweet and profile event filters, or pause and resume the same monitor.
-The response returns the complete resulting account monitor configuration.
+Learn how to set Twitter alerts for one saved X profile. This Twitter
+monitoring tool replaces tweet and profile filters. It can also pause or resume
+the same monitor. The response returns the resulting monitor settings.
 
-This route changes collection scope and active state. It cannot change the
-tracked profile, keyword queries, webhook destinations, alert thresholds, or
-sentiment rules. Manage webhook delivery separately from account alert
-settings.
+This route cannot change the profile, keyword query, webhook URL, alert
+threshold, or sentiment rule. Manage webhook delivery separately.
 
 <CodeGroup>
   ```bash cURL
@@ -305,25 +303,18 @@ At least 1 field is required.
   monitors do not consume hourly monitor credits.
 </ParamField>
 
-## How Do I Update Twitter Monitoring Alerts?
+## How to Set Twitter Alerts for an Existing Account Monitor
 
-Read the current monitor before changing its Twitter alert settings. Keep its
-`id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt` in a
-change record. This snapshot supports review and rollback.
+Read the monitor before changing its Twitter alert settings. Save its `id`,
+`username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`.
 
-Send the complete desired `eventTypes` array when alert coverage changes. The
-array replaces the saved filter. Do not send only the added tweet or profile
-event type. Omit `eventTypes` when only the active state changes.
+Send the complete `eventTypes` array when coverage changes. The array replaces
+the saved filter. Omit it when only `isActive` changes. Use `false` to pause
+checks and `true` to resume them.
 
-Send `isActive: false` to pause future checks. Send `isActive: true` to resume
-the saved event filter. An unavailable X profile blocks resumption with a
-`409 monitor_profile_unavailable` response. Wait until the profile is
-available, then read and update the same monitor again.
-
-Verify the returned account identity before accepting the update. Then compare
-the returned event filter and active state with the approved request. The PATCH
-response proves monitor configuration. It does not prove that an event matched
-or that a webhook reached its destination.
+An unavailable profile blocks resumption with `409 monitor_profile_unavailable`.
+Wait for profile recovery, then retry. Finally, compare the returned account,
+filter, and active state with the approved request.
 
 ## Which Twitter Alert Settings Can This Endpoint Change?
 
@@ -337,58 +328,42 @@ or that a webhook reached its destination.
 | Delivery channels | Cannot send Slack, CRM, email, or queue messages directly. | Process a signed webhook in your integration. |
 | Volume or sentiment threshold | No threshold or sentiment field exists in this contract. | Evaluate stored events in your own workflow. |
 
-This separation prevents a common alert configuration mistake. Account monitor
-filters decide which future tweet and profile changes become events. Webhook
-subscriptions decide which event types reach an HTTPS receiver. Your receiver
-decides whether to notify Slack, update a CRM, or enqueue downstream work.
+Account filters select future tweet and profile events. Webhook subscriptions
+select events for an HTTPS receiver. Your receiver can notify Slack, update a
+CRM, or enqueue work.
 
 ## How Do Twitter Account Alert Settings Work in This Twitter Monitoring Tool?
 
-Twitter account alert settings control account event capture. Use this Twitter
-monitoring tool endpoint to set up alerts for selected tweet and profile
-changes. API access requires a valid API key or bearer token.
+Twitter account alert settings choose captured tweet and profile changes. API
+access requires a valid API key or bearer token. To receive notifications,
+subscribe a webhook to the same event types.
 
-To receive notifications, subscribe a webhook to the same event types. Webhook
-notification settings control the HTTPS destination and subscribed event list.
-They do not change the monitor's account identity or saved event filter.
-
-Use keyword alerts for brand mentions, hashtags, products, or campaign phrases
-across unrelated X accounts. Create a keyword monitor for that workflow. This
-account PATCH cannot pause keyword monitoring. Use
-[Update Keyword Monitor](/api-reference/monitors/update-keyword) instead.
+Webhook notification settings choose the HTTPS receiver. They do not change
+the Twitter account or event filter. Use keyword alerts for brand mentions,
+hashtags, products, or campaign phrases. Manage keyword monitoring through
+[Update Keyword Monitor](/api-reference/monitors/update-keyword).
 
 ## How Do I Send Twitter Account Alerts to Slack or a CRM?
 
-First update the account monitor's event filter. Then compare that filter with
-[List Webhooks](/api-reference/webhooks/list). A webhook must subscribe to each
-event type your receiver expects.
+Update the account filter, then compare it with
+[List Webhooks](/api-reference/webhooks/list). Subscribe the receiver to every
+required event type. Run [Test Webhook](/api-reference/webhooks/test) before
+waiting for account activity.
 
-Create or update the HTTPS receiver through the webhook API. Run
-[Test Webhook](/api-reference/webhooks/test) before waiting for production
-events. Validate the signature, acknowledge valid requests promptly, and
-process slower Slack or CRM work asynchronously.
-
-Use [List Events](/api-reference/events/list) to confirm that Xquik stored a
-matching account event. Use [List Deliveries](/api-reference/webhooks/deliveries)
-to confirm that Xquik attempted webhook delivery. These records answer different
-questions. An empty delivery list does not prove that the account monitor was
-inactive.
+Validate each signature and acknowledge valid requests quickly. Process slower
+Slack or CRM work after acknowledgment. [List Events](/api-reference/events/list)
+confirms event storage. [List Deliveries](/api-reference/webhooks/deliveries)
+confirms delivery attempts.
 
 ## How Do I Reduce High-Volume Twitter Alert Noise?
 
-Choose only the tweet and profile event types required by the workflow. For
-example, use `tweet.mention` for account mentions and `tweet.reply` for replies.
-Add `tweet.retweet`, `tweet.quote`, `tweet.media`, or `tweet.link` only when the
-receiver handles those events.
+Select only required tweet and profile events. Use `tweet.mention` for mentions
+and `tweet.reply` for replies. Add repost, quote, media, or link events only
+when the receiver handles them.
 
-Use a keyword monitor when alert intent depends on words, hashtags, products,
-or campaign phrases. Account monitor event types do not express Boolean search
-rules, language filters, alert sensitivity, or sentiment thresholds.
-
-Keep webhook subscriptions aligned with the narrowed event filter. Route each
-stored event by `type`, preserve its event ID, and join delivery attempts by
-`streamEventId`. This design supports custom notifications without changing
-the account monitor contract.
+Use a keyword monitor for words, hashtags, products, or campaigns. Account monitor event types do not express Boolean search
+rules, languages, sensitivity, or sentiment. Keep webhook subscriptions aligned.
+Join delivery attempts to stored events with `streamEventId`.
 
 ## Update handoff
 
@@ -455,97 +430,32 @@ pause, or must resume without creating a new monitor ID.
 
 ## Change One Account Monitor Safely
 
-Treat the PATCH as a replacement of selected monitor settings. Read the
-current monitor before building the request. Preserve its ID and tracked
-account in the change record.
+Read the current monitor first. Send every approved `eventTypes` value. Use
+`isActive: false` for a temporary stop. Check credits before sending `true`.
+Then verify `id`, `username`, `xUserId`, `eventTypes`, and `nextBillingAt`.
 
-For an event-filter change, construct the complete desired `eventTypes` array.
-Do not send only the newly added type. The returned array becomes the active
-filter for future account activity.
-
-For a temporary stop, send `isActive: false`. Keep the monitor ID so the same
-configuration can resume later. Deletion serves permanent removal instead.
-
-Before resuming, check the credit balance and intended event scope. Send
-`isActive: true` only when the monitor should restart. Record the returned
-`nextBillingAt` for the next budget checkpoint.
-
-Use this verification sequence after every update:
-
-1. Confirm the returned `id` matches the requested monitor.
-2. Confirm `username` and `xUserId` still identify the intended profile.
-3. Compare returned `eventTypes` with the approved filter.
-4. Confirm `isActive` matches the requested operating state.
-5. Store `nextBillingAt` when the monitor is active.
-6. Refresh the monitor inventory.
-7. Align webhook subscriptions with the updated event types.
-
-Do not use PATCH to change the tracked profile. Create another account monitor
-for a different username or user ID. This avoids attaching historical events
-to a new account identity.
-
-An update changes future monitoring behavior. It does not rewrite existing
-events or completed webhook deliveries. Keep historical records under the
-same monitor ID and interpret them using their event timestamps.
+PATCH changes future monitoring only. It never rewrites stored events or past
+deliveries. Create another monitor when the tracked profile changes.
 
 ## Prepare a Reversible Account Monitor Change
 
-Write one change record before sending PATCH. Include the monitor ID, tracked
-username, current event types, active state, and next billing time.
+Record the current ID, username, events, active state, and billing time. Add the
+approved future values beside them. Send only supported PATCH fields.
 
-Add the requested future state beside that snapshot. Name every event type.
-Never describe the request as a generic settings update. Explicit values make
-review and rollback possible.
-
-Choose one change category:
-
-- Pause future tweet and profile alerts.
-- Resume an approved account monitor.
-- Replace the complete event filter.
-- Combine an active-state change with a complete event filter.
-
-Use a narrow request whenever possible. Send only supported PATCH fields.
-Omitted fields keep their current values. An `eventTypes` array replaces the
-saved filter, so send the complete approved array.
-
-Store the response before refreshing any dashboard. Verify the returned
-monitor ID and tracked account first. Then verify event types and active state.
-Record `nextBillingAt` when the response includes it.
-
-If verification fails, do not send an automatic inverse request. Read the
-monitor again first. Another approved change may have occurred meanwhile.
-Compare that fresh response with the pre-change snapshot.
-
-Resume only after checking credits and webhook subscriptions. A resumed
-monitor can create account events immediately after activation. Confirm that
-receivers accept every selected event type.
+If verification fails, read the monitor again. Do not send an automatic
+rollback. Another approved update may already exist.
 
 ## Separate Pausing, Filtering, and Deletion
 
-Pause with `isActive: false` when the same monitor may resume. The monitor ID
-and historical event relationships remain available.
-
-Replace `eventTypes` when future account activity needs a different scope.
-Existing events keep their historical meaning. Document the effective change
-time beside later incident reviews.
-
-Delete only when monitoring should stop permanently. Export required event and
-delivery evidence first. Deletion is not a substitute for a temporary pause.
-
-Create another monitor when the tracked account must change. PATCH does not
-reassign historical activity to another username or user ID.
+Pause when the monitor may resume. Replace `eventTypes` to change future scope.
+Delete only for permanent removal. Create another monitor for another profile.
+These actions preserve the meaning of stored account events.
 
 ## Verify the First Event After Resuming
 
-After resuming, read the monitor and confirm `isActive: true`. Keep its returned
-event types beside the verification note.
-
-Wait for relevant account activity through the normal workflow. Then list
-stored events using the same monitor ID. Check the first matching event's type
-and timestamp.
-
-Inspect webhook deliveries separately. Join `streamEventId` to the stored event
-ID. Do not treat a successful PATCH response as delivery proof.
+Read the monitor and confirm `isActive: true`. Then inspect the first matching
+event's type and timestamp. Check deliveries separately. A successful PATCH is
+not delivery proof.
 
 ## Response
 
