@@ -262,37 +262,48 @@ for current interface behavior.
 
 ## Find Twitter Communities Before Joining
 
-Search the X Communities page by name, creator, or handle.
+Existing members can open the Community tab on X.com or iOS. Search by name,
+description, creator, or handle.
 X warns that some Communities never appear in search results.
 
-Use a direct URL for an account's first Community.
-Confirm the specific Community name.
-Review its rules and moderators. Check its membership mode and recent posts.
-Match the numeric ID with
+Use a direct URL for an account's first Community. Ask an owner or moderator for
+the exact link when search omits it. Confirm the specific Community name,
+description, rules, moderators, membership mode, and recent posts. Never approve
+membership from a similar display name. Match the numeric ID with
 [Community Info](/api-reference/x/community-info).
 
 [Community Search](/api-reference/x/community-search) searches posts inside one
-known Community. It cannot find Community directories or topics.
+known Community. It cannot find Community directories or topic-based groups.
 
 ## Compare Manual and API Community Joining
 
-X handles invitations, rules, and moderator review. Use X for phone membership.
-Use Xquik for approved server workflows. The API cannot click controls, choose
-a membership mode, or bypass moderator approval.
+For manual membership, sign in to X and open the Community URL. Read its rules.
+Select Join or Ask to join. Then wait for any required moderator review.
+
+For an API workflow, validate the connected Twitter account and numeric ID.
+Capture approval before submission. Poll the returned action and verify the
+member roster afterward.
+
+X handles invitations, rules, and moderator review for both paths. The API
+cannot click controls, select a membership mode, or bypass moderator approval.
 
 ## Review Account Eligibility and Moderator Limits
 
-Make the X account public before joining.
-Admins and moderators enforce each Community's rules.
-They review restricted requests. Moderator blocks can stop membership.
-The API cannot override them.
+Confirm that the X account remains public and connected. Check existing
+membership and pending requests before submission. Reusing an existing action
+prevents duplicate membership requests.
+
+Admins and moderators enforce each Community's rules. They review restricted
+requests. A block between the account and a moderator can stop membership. The
+API cannot override that relationship.
 
 X says an admin account must have a verified email address or phone number.
 This verified-contact requirement applies only to admins.
 
 Twitter Communities offer topic-focused spaces for members.
 Members use a dedicated space for one shared topic.
-The contract defines no separate community account.
+The contract defines no separate community account. Store the connected account
+and Community ID as separate fields.
 
 ## Choose the Correct X Relationship
 
@@ -310,16 +321,29 @@ Joining adds one connected account to one social media Community. It does not
 create posts, invitations, or moderator changes.
 
 Read [Community Tweets](/api-reference/x/community-tweets) after confirmation.
-Store Tweet IDs, replies, reposts, likes, media, and cursors.
+Store Tweet IDs, replies, reposts, likes, media, and cursors. Use
+[Community Search](/api-reference/x/community-search) for keyword matches inside
+the reviewed Community ID.
 
-Membership never authorizes publishing.
+Read recent conversations before drafting a reply or media post. Membership
+never authorizes publishing.
 Approve separate Create Tweet actions for members posting after joining.
-Keep the reviewed rules with each approval.
+Keep the reviewed rules with each approval. Avoid repetitive promotions and
+unwanted invitations. Moderators can remove accounts that violate local rules.
 
 ## Resolve Membership Intent
 
 Use a numeric Community ID. Record its connected account, membership mode, and
 approval.
+
+Keep enough evidence to explain every membership request.
+
+| Approval evidence | Store | Purpose |
+| --- | --- | --- |
+| Intended Community | Numeric ID, display name, and direct URL | Prevent membership in a similarly named Community |
+| Connected account | Username, stable user ID, and connection status | Bind consent to one Twitter account |
+| Membership review | Mode, rules, and moderator status | Explain an open, pending, or rejected request |
+| API action | Idempotency key, action ID, status URL, and final status | Prevent duplicate writes and preserve recovery state |
 
 ## How to Join Twitter Community Membership Safely
 
@@ -335,10 +359,14 @@ The steps below explain how to join Twitter Community membership through Xquik.
 An HTTP `202` confirms processing, not membership. If a timeout occurs, keep
 polling the existing action. A changed account or Community needs new approval.
 
+Store the request hash, action ID, status URL, and final membership result. Keep
+the same `Idempotency-Key` only when every input remains identical. A changed
+account, Community ID, or approval requires a new key.
+
 ## Join Communities in Controlled Batches
 
-Assign one `Idempotency-Key` per approved pair. Process retries serially. Store
-each result in one ledger row. Pause only the affected account after errors.
+Assign one `Idempotency-Key` per approved pair. Process retries serially. Record
+one ledger row for every result. Pause only the affected account after errors.
 
 ## Verify Visible Membership
 
@@ -357,6 +385,10 @@ pages, profiles, timelines, and search.
 Anyone on X with the direct Community URL can see the Community's member list.
 Joining never publishes a post. Use
 [Create Tweet](/api-reference/x-write/create-tweet) after separate approval.
+
+Community membership is not a private audience. A Community post can appear on
+the Community page, its author's profile, timelines, and search. Review that
+visibility before approving a post.
 
 ## Answer Common Twitter Community Questions
 
@@ -434,8 +466,13 @@ Fix input after `400`. Replace credentials after `401`. Restore credits after
 same key only for identical input after `409`. Preserve `422` rejections. Honor
 `Retry-After` after `429`. Inspect `safeToRetry` after `500` or `503`.
 
-Store the action ID and final membership result. Never infer failure from a
-dropped connection. Never infer posting permission from membership.
+If a connection drops after submission, poll the existing action. Never create
+a replacement action from network uncertainty. Preserve the original action
+after `409`. Store X membership rejections after `422`. Wait for `Retry-After`
+after `429`.
+
+Store the action ID and final membership result.
+Never infer posting permission from membership.
 
 ## Headers
 

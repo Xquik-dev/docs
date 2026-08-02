@@ -439,6 +439,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       'For an invite-only Community, X still requires an invitation.',
       'Confirm you are logged in to your account on X.',
       'connected Twitter account',
+      'Community tab',
       'top of the page',
       'specific Community',
       'Members can reply after X confirms membership.',
@@ -676,7 +677,7 @@ describe('operational content structure', (): void => {
 });
 
 describe('join community writing budget', (): void => {
-  it('keeps the audited narrative within 1,100 source words', (): void => {
+  it('keeps the audited narrative within 1,350 to 1,500 source words', (): void => {
     expect.assertions(1);
 
     const source = readFileSync(
@@ -692,7 +693,7 @@ describe('join community writing budget', (): void => {
         ? source.slice(start, end).trim().split(/\s+/u).length
         : Number.POSITIVE_INFINITY;
 
-    expect(wordCount).toBeLessThanOrEqual(1_100);
+    expect(wordCount >= 1_350 && wordCount <= 1_500).toBe(true);
   });
 });
 
