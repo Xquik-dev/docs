@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -9,10 +9,7 @@ const PRODUCT_ROOT =
 const page = readFileSync('api-reference/support/list.mdx', 'utf8');
 const normalizedPage = page.replaceAll(/\s+/gu, ' ');
 const openapi = readFileSync('openapi.yaml', 'utf8');
-const ticketSource = readFileSync(
-  join(PRODUCT_ROOT, 'lib/support/tickets.ts'),
-  'utf8',
-);
+const TICKET_SOURCE_PATH = join(PRODUCT_ROOT, 'lib/support/tickets.ts');
 const listOperation = openapi.slice(
   openapi.indexOf('      operationId: listTickets'),
   openapi.indexOf('  /support/tickets/{id}:'),
@@ -80,13 +77,28 @@ describe('support ticket list documentation', (): void => {
       documentedOrder: normalizedPage.includes(
         'It sorts the newest `updatedAt` value first.',
       ),
+    }).toStrictEqual({
+      documentedLimit: true,
+      documentedOrder: true,
+    });
+  });
+
+  it('matches product ordering when product source is available', (): void => {
+    expect.assertions(1);
+
+    if (!existsSync(TICKET_SOURCE_PATH)) {
+      expect(existsSync(TICKET_SOURCE_PATH)).toBe(false);
+      return;
+    }
+
+    const ticketSource = readFileSync(TICKET_SOURCE_PATH, 'utf8');
+
+    expect({
       productLimit: ticketSource.includes('const MAX_TICKETS = 200;'),
       productOrder: ticketSource.includes(
         '.orderBy(desc(supportTickets.updatedAt))',
       ),
     }).toStrictEqual({
-      documentedLimit: true,
-      documentedOrder: true,
       productLimit: true,
       productOrder: true,
     });
