@@ -22,6 +22,7 @@ const REQUIRED_RADAR_PAGE_COPY = [
   '`items[].source` and `items[].sourceId`',
   'Read-only fields defined for that source.',
   'The `score` value measures relevance, not sentiment.',
+  '<ParamField header="x-api-key" type="string">',
   'server-rendered post data',
   '`html` for current rich items',
   '`json` and `rss` identify legacy rows',
