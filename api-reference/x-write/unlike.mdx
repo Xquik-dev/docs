@@ -140,39 +140,6 @@ Compare X's separate [Unlike Post endpoint](https://docs.x.com/x-api/users/unlik
     -H "Content-Type: application/json" \
     -d '{"account":"elonmusk"}' | jq
   ```
-
-  ```javascript Node.js
-  const tweetId = "1895432178065391234";
-  const response = await fetch(`https://xquik.com/api/v1/x/tweets/${tweetId}/like`, {
-    method: "DELETE",
-    headers: {
-      "x-api-key": "xq_YOUR_KEY_HERE",
-      "Idempotency-Key": "unlike-1895432178065391234",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      account: "elonmusk",
-    }),
-  });
-  const result = await response.json();
-  if (!response.ok) {
-    throw new Error(JSON.stringify(result));
-  }
-  const removalRecord = {
-    status: result.status,
-    terminal: result.terminal,
-    safe_to_retry: result.safeToRetry,
-    write_action_id: result.id,
-    request_hash: result.request.hash,
-    requested_tweet_id: tweetId,
-    confirmed_tweet_id:
-      result.result?.id ?? result.tweetId ?? result.targetId ?? null,
-    account: result.account,
-    charged_credits: result.billing.chargedCredits,
-    poll_path: result.terminal ? null : result.statusUrl,
-  };
-  process.stdout.write(`${JSON.stringify(removalRecord)}\n`);
-  ```
 </CodeGroup>
 
 ## Remove One Twitter Like by ID
@@ -203,12 +170,11 @@ Save the action before changing your local like record.
 | Unlike action column | Source | Removal rule |
 | --- | --- | --- |
 | `acting_account` | Request `account` | Match the account that owns the original like. |
-| `tweet_id` | Path `id` | Store the exact liked Tweet ID. |
+| Tweet ID | Path `id` | Preserve the exact liked Tweet ID. |
 | `removal_reason` | Workflow value | Record why the user removed the like. |
 | `idempotency_key` | Request header | Create a fresh removal key. |
 | `write_action_id` | Response `id` | Store the durable removal action. |
 | `terminal` | Response `terminal` | Change the local state only when `true`. |
-| `billing` | Response `billing` | Store the settled credit charge. |
 
 ## Confirm Like Removal
 
@@ -218,12 +184,9 @@ Never resend an active action.
 After success, match the returned and requested Tweet IDs.
 If X reports no existing like, mark the account as unliked.
 
-| Unlike outcome | Evidence | Ledger update |
-| --- | --- | --- |
-| Queued | `terminal: false` | Poll `statusUrl`; keep the previous state. |
-| Completed | Terminal success | Mark this account and Tweet ID as unliked. |
-| No like found | Terminal success | Close the task; send no second request. |
-| Failed | Terminal failure | Store the error and previous state. |
+Keep the prior state while `terminal` is `false`.
+Store the settled `billing` object after completion.
+Close already-unliked actions without another request.
 
 ## Remove Twitter Likes in a Controlled Queue
 
@@ -254,22 +217,17 @@ Poll the returned action before another request.
 - `403`: Reconnect the selected X account.
 - `409`: Keep the original action and payload.
 - `422`: Review X's rejection.
-- `429`: Wait for `Retry-After`.
+- `429`: Honor `Retry-After` before retrying.
 - `500` or `503`: Follow `safeToRetry` and `terminal`.
 
 ## Choose Unlike, Delete, or Unretweet
 
 Use this route only to remove one account's like.
 
-| Removal intent | API route | Result |
-| --- | --- | --- |
-| Remove one like | `DELETE /x/tweets/{id}/like` | Removes the connected account's like. |
-| Add the like again | `POST /x/tweets/{id}/like` | Creates a new user-approved like action. |
-| Delete an owned tweet | `DELETE /x/tweets/{id}` | Removes the connected account's own tweet. |
-| Remove one repost | `DELETE /x/tweets/{id}/retweet` | Removes the connected account's repost. |
-| Read available liked tweets | `GET /x/users/{id}/likes` | Returns the account's available liked tweets. |
-
-Unlike does not delete replies, follows, bookmarks, or the Twitter account.
+Use [Like Tweet](/api-reference/x-write/like) to restore a like.
+Use [Delete Tweet](/api-reference/x-write/delete-tweet) for an owned tweet.
+Use [Unretweet](/api-reference/x-write/unretweet) for a repost.
+Unlike never removes replies, follows, bookmarks, or accounts.
 
 ## Remove Twitter Likes Questions
 
@@ -310,6 +268,7 @@ Use a new key.
 ### Does removing a like erase every historical record?
 
 No. Earlier logs, exports, screenshots, or audits may remain.
+Do not treat a Twitter archive as proof of the current like state.
 
 ## Headers
 
