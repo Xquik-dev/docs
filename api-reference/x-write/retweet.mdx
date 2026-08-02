@@ -227,7 +227,7 @@ Never send an X password or session cookie.
 Review the source tweet immediately before approval.
 Show its author, text, media, Tweet ID, and current availability.
 Also show the X account that will publish the repost.
-This review prevents accidental sharing from the wrong account.
+Use this review to avoid sharing from the wrong account.
 
 Store these approval fields with the request:
 
@@ -304,9 +304,9 @@ Never replace that ID with a search-result position.
 Store one receipt per connected account and source tweet. This key prevents
 two workers from counting the same repost as separate campaign results.
 
-Keep queued, completed, already-reposted, and failed outcomes distinct. An
-already-reposted outcome satisfies the requested state. It does not create a
-second repost.
+Keep queued, completed, already-reposted, and failed outcomes distinct.
+Mark an already-reposted outcome complete.
+It does not create a second repost.
 
 Use [Unretweet](/api-reference/x-write/unretweet) for an approved rollback.
 The rollback needs a new idempotency key. Preserve both action IDs so the
@@ -344,12 +344,12 @@ Poll the same `statusUrl` until `terminal` becomes `true`.
 Never send another repost while the action remains active.
 
 After success, compare the returned target with the approved Tweet ID.
-An already-reposted outcome satisfies the requested state.
+Mark an already-reposted outcome complete.
 It does not create another timeline entry.
 
 The repost keeps the source tweet's original attribution.
 Use [Retweeters](/api-reference/x/retweeters) for available account-level evidence.
-Read visibility may differ from the completed write receipt.
+Timeline visibility can lag behind a completed write receipt.
 Keep read time separate from repost completion time.
 
 ## Handle Twitter Retweet API Errors
@@ -365,11 +365,11 @@ Never replace the approved Tweet ID as an automatic fallback.
 - `422`: Review X's rejection before another attempt.
 - `429`: Honor `Retry-After` before polling or retrying.
 - `500`: Store the failure; contact support if it persists.
-- `503`: Retry only when `safeToRetry` is `true`.
+- `503`: Check `safeToRetry` before retrying.
 
 A client timeout does not prove the repost failed.
 Check any returned action before sending another write.
-Follow `nextAction` when the terminal response needs review.
+Use `nextAction` to choose the next step.
 
 ## Apply Repost Bot and Campaign Controls
 
@@ -378,7 +378,7 @@ Use campaign allowlists for authors, topics, or Tweet IDs.
 Set a per-campaign repost limit before dispatch begins.
 Keep separate limits for each connected account.
 
-Freeze the approved candidate list before processing it.
+Lock the approved tweet list before processing.
 Record skipped, active, completed, and failed jobs separately.
 Never count an accepted action as completed.
 

@@ -78,9 +78,9 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: 'api-reference/x-write/unretweet.mdx',
     phrases: [
-      'Remove One Repost Without Changing Follows',
+      'Remove One Repost by Tweet ID',
       'quote tweets',
-      'Confirm Repost Removal',
+      'Verify Repost Removal and Timeline State',
     ],
   },
   {
