@@ -1,9 +1,9 @@
 ---
-title: "Twitter Repost API for Retweet Automation Workflows"
+title: "Twitter Retweet API: Repost One Tweet by ID"
 sidebarTitle: "Retweet"
-description: "Repost a tweet by ID from a connected X account. Confirm the new repost and account identity before continuing an engagement workflow. See action fields."
+description: "Repost a tweet by ID with the Twitter Retweet API. Approve the account, use an idempotency key, poll the action, then store billed credits and final result."
 api: "POST /x/tweets/{id}/retweet"
-keywords: ["tweet", "retweet", "share", "engage", "x account"]
+keywords: ["Twitter retweet API", "Twitter API retweet", "retweet a tweet by ID", "repost API", "automate retweets"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -123,6 +123,13 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
   **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 </Callout>
 
+Use this Twitter Retweet API to repost 1 tweet by ID.
+Each Twitter API retweet request names 1 connected X account.
+Review the source tweet before sending the write.
+Then store the action and poll `statusUrl` until `terminal` is `true`.
+
+Compare X's separate [Repost Post endpoint](https://docs.x.com/x-api/users/repost-post).
+
 <CodeGroup>
   ```bash cURL
   curl -X POST https://xquik.com/api/v1/x/tweets/1895432178065391234/retweet \
@@ -147,7 +154,10 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
       account: "elonmusk",
     }),
   });
-  const data = await response.json();
+  const repostReceipt = await response.json();
+  if (!response.ok) {
+    throw new Error(JSON.stringify(repostReceipt));
+  }
   ```
 
   ```python Python
@@ -164,7 +174,8 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
           "account": "elonmusk",
       },
   )
-  data = response.json()
+  repost_receipt = response.json()
+  response.raise_for_status()
   ```
 
   ```go Go
@@ -197,24 +208,24 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      var repostReceipt map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&repostReceipt); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      fmt.Println(repostReceipt)
   }
   ```
 </CodeGroup>
 
-## Publish a repost deliberately
+## Publish One Repost by Tweet ID
 
-Use this route to repost one known tweet from a connected account. Resolve the
-tweet ID before the approval step. Show the tweet text, author, and media to
-the reviewer. This gives the reviewer enough context before distribution.
+Resolve the Tweet ID before approval.
+Show the source tweet, author, media, and acting account.
+This endpoint preserves the original tweet and attribution.
 
-Assign a unique idempotency key to that repost decision. Reuse it only when
-the same network request needs recovery. Store the action ID with the source
-tweet ID and acting account.
+Assign a unique idempotency key to that repost decision.
+Reuse it only after an interrupted response.
+Store the action ID with the Tweet ID and acting account.
 
 Repost workflows often include:
 
@@ -223,8 +234,8 @@ Repost workflows often include:
 - Sharing a monitored tweet after a moderation checkpoint.
 - Preventing two workers from reposting the same tweet.
 
-Do not assume an accepted request already changed the account timeline. Read
-the lifecycle state. Poll the status endpoint when the action remains queued.
+An accepted action may not appear on the account timeline yet.
+Poll the lifecycle state while the action remains active.
 
 | Repost action column | Source | Distribution rule |
 | --- | --- | --- |
@@ -236,25 +247,23 @@ the lifecycle state. Poll the status endpoint when the action remains queued.
 | `write_action_id` | Response `id` | Store the durable repost action before polling. |
 | `status` | Response `status` | Keep queued, completed, and failed reposts distinct. |
 | `terminal` | Response `terminal` | Mark distribution complete only when `true`. |
-| `requested_at` | Integration timestamp | Audit when the repost request was submitted. |
+| Request time | Integration timestamp | Save when the repost request starts. |
 
 | Repost outcome | Evidence | Campaign action |
 | --- | --- | --- |
 | Queued | `terminal: false` | Poll `statusUrl`; do not count the repost yet. |
 | Completed | Terminal success | Record the account, source Tweet ID, and completion time. |
 | Already reposted | Converged terminal result | Complete without another repost request. |
-| Retryable failure | `safeToRetry: true` | Preserve the receipt and follow lifecycle guidance. |
+| Retry allowed | `safeToRetry: true` | Keep the receipt and follow the lifecycle response. |
 | Final failure | Terminal failure | Store the error and exclude the repost from completed totals. |
 
 ## Choose a Repost or New Tweet
 
-Use a repost when the account should share an existing tweet unchanged. The
-request needs the source tweet ID and connected account. It creates no new
-caption or reply text.
+Use a repost to share an existing tweet unchanged.
+The request adds no comment, caption, or reply text.
 
-Use [Create Tweet](/api-reference/x-write/create-tweet) for original posts,
-replies, or media captions. A reply needs `reply_to_tweet_id`. A repost uses
-this endpoint instead.
+Use [Create Tweet](/api-reference/x-write/create-tweet) for original posts and replies.
+A reply needs `reply_to_tweet_id`.
 
 | Publishing intent | API route | Required content |
 | --- | --- | --- |
@@ -263,9 +272,9 @@ this endpoint instead.
 | Reply to a tweet | `POST /x/tweets` | Reply text and `reply_to_tweet_id` |
 | Remove a repost | `DELETE /x/tweets/{id}/retweet` | Source tweet ID and connected account |
 
-Show the source tweet during approval. Include its author, text, media, and
-current availability. Do not substitute a search result's position for its
-stable tweet ID.
+Show the source tweet during approval.
+Preserve its author, text, media, and Tweet ID.
+Never replace that ID with a search-result position.
 
 ## Reconcile Retweet Automation
 
@@ -280,10 +289,51 @@ Use [Unretweet](/api-reference/x-write/unretweet) for an approved rollback.
 The rollback needs a new idempotency key. Preserve both action IDs so the
 campaign record shows distribution and later removal.
 
+## Twitter Retweet API Questions
+
+### How Do I Automate a Retweet Through an API?
+
+Approve the Tweet ID and connected account.
+Send this request, then poll the durable action until terminal.
+
+### How Do I Authenticate a Twitter API Retweet?
+
+Send an Xquik API key or OAuth 2.1 bearer token.
+Never send an X password or session cookie.
+
+### Can I Schedule a Retweet?
+
+Call this endpoint from your scheduler after approval.
+The endpoint stores no future schedule.
+
+### What Is the Retweet API Rate Limit?
+
+After `429`, honor `Retry-After` before another request.
+X publishes separate [Repost rate limits](https://docs.x.com/x-api/fundamentals/rate-limits).
+
+### Is a Retweet the Same as a Quote Tweet?
+
+No. This route reposts the existing tweet unchanged.
+It cannot add a quote comment or new media.
+
+### Can I Bulk Retweet Several Tweet IDs?
+
+No bulk request exists here.
+Approve and submit each Tweet ID separately.
+
+### How Do I Track Retweet Activity?
+
+Poll this write action for completion.
+Use [Retweeters](/api-reference/x/retweeters) to read available reposting accounts.
+
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+<ParamField header="x-api-key" type="string">
+  Send your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.
 </ParamField>
 
 <ParamField header="Idempotency-Key" type="string" required>
