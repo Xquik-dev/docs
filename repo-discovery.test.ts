@@ -10412,7 +10412,7 @@ const REQUIRED_LANGCHAIN_GUIDE_SNIPPETS = [
   'response_format=TweetSearchHandoff',
   'result = await agent.ainvoke(',
   'result["structured_response"]',
-  'Use the `result = await` assignment before reading `structured_response`.',
+  'Wait for `result = await`, then read `structured_response`.',
   'Path("xquik-langchain-handoff.json").write_text(',
   'handoff.model_dump_json(indent=2)',
   '## How to Use the Twitter API in Python With LangChain',
