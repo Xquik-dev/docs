@@ -10311,36 +10311,50 @@ const FORBIDDEN_PYDANTIC_AI_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_LANGCHAIN_GUIDE_SNIPPETS = [
-  'Build a LangChain agent that can search tweets, hand off IDs and cursors, post tweets, replay stored monitor events, and run extraction jobs',
+  'title: "LangChain Twitter API Agent with MCP & LangGraph"',
+  'Build a LangChain Twitter API agent through Xquik',
+  '## Why Use LangChain With a Twitter API?',
+  'Public X reads do not require X Developer credentials.',
+  '"langchain>=1.3,<1.4"',
+  '"langchain-mcp-adapters>=0.3,<0.4"',
   '"transport": "http"',
   'anthropic:claude-sonnet-4-6',
   'from pathlib import Path',
-  'query, route_used, tweets[{tweet_id,text,author_username,created_at}]',
+  'response_format=TweetSearchHandoff',
+  'response["structured_response"]',
   'Path("xquik-langchain-handoff.json").write_text(',
-  "LangChain's MCP adapter loads tools with `MultiServerMCPClient`.",
-  'The client is stateless by default, so persist returned IDs, cursors, and write-action status in your job state',
-  'The MCP runtime returns normalized snake_case fields through `xquik.request()`',
-  '## Handoff Checklist',
-  '<Card title="Tweet search rows" icon="search">',
-  'Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.',
-  '<Card title="User profile rows" icon="users">',
-  'Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profile_picture`, `has_more`, `next_cursor`, and the source lookup or search query.',
-  '<Card title="Trend rows" icon="trending-up">',
-  'Store each trend `name`, `rank`, `query`, and `description`. Keep response `count`, `woeid`, and the requested region with the run checkpoint.',
-  '<Card title="Monitor and webhook setup" icon="radio">',
-  'Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager.',
-  'On production deliveries, store `delivery_id` for receiver retry de-dupe and `stream_event_id` when one monitor event should process once across endpoint changes.',
-  '<Card title="Stored event replay" icon="activity">',
-  'Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, `next_cursor`, and the `after` query for the next page.',
-  '<Card title="Extraction jobs" icon="database">',
-  'Store `extraction_id`, `status`, `poll`, and `export_after_complete`',
-  '<Card title="Writes" icon="send">',
-  'Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, `charged_credits`, and `poll`; do not resend pending writes.',
-  '<Card title="Media attachments" icon="image">',
-  'For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`.',
-  'For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.',
-  'Path("xquik-langgraph-handoff.json").write_text(',
-  'username, name, user_id, description, followers_count, and route_used',
+  'handoff.model_dump_json(indent=2)',
+  '## How to Use the Twitter API in Python With LangChain',
+  'stateless by default.',
+  '`createdAt` field becomes `created`, not `created_at`.',
+  'MCP tool output has a 24,000-character limit.',
+  '## Keep a Resumable Twitter Agent Handoff',
+  '<Card title="Follower Exports" icon="download">',
+  '<Card title="Monitor Events" icon="radio">',
+  '## Handle Twitter API Errors Deliberately',
+  '| `402` | Subscription or credit action required |',
+  '| `424` | Upstream dependency failure or incomplete replies |',
+  '| `429` | Rate limit reached |',
+  'from langchain.agents.middleware import HumanInTheLoopMiddleware',
+  'interrupt_on={',
+  '`InMemorySaver` suits local development only.',
+  '| `langchain` | 1.3.14 | `>=1.3,<1.4` |',
+  '| `langgraph` | 1.2.10 | Installed through LangChain constraints |',
+  '### Can LangChain call the Twitter API?',
+  '### Can LangChain scrape tweets with Python?',
+  '### How do I authenticate with the Twitter API using Python?',
+  '### How do I prevent an agent from posting automatically?',
+  '### How do I post a tweet using Python with LangChain?',
+  '### How do I handle Twitter API rate limits in Python?',
+] as const;
+
+const FORBIDDEN_LANGCHAIN_GUIDE_SNIPPETS = [
+  'title: "LangChain X API Guide for Tweet Search & Agents"',
+  'tweets[{tweet_id,text,author_username,created_at}]',
+  'str(response["messages"][-1].content)',
+  'str(result["messages"][-1].content)',
+  '| `langchain` | 1.3.13 |',
+  '| `mcp` | 1.28.1 |',
 ] as const;
 
 const REQUIRED_MASTRA_GUIDE_SNIPPETS = [
@@ -16416,8 +16430,12 @@ describe('repository discovery', (): void => {
         REQUIRED_LANGCHAIN_GUIDE_SNIPPETS,
       ),
     ).toStrictEqual([]);
-    expect(source).not.toContain('print(response["messages"][-1].content)');
-    expect(source).not.toContain('print(result["messages"][-1].content)');
+    expect(
+      FORBIDDEN_LANGCHAIN_GUIDE_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
+    expect(source).not.toContain('print(');
   });
 
   it('keeps the Mastra guide handoff concrete', (): void => {
