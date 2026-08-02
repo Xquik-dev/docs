@@ -1,201 +1,348 @@
 ---
-title: "LangChain X API Guide for Tweet Search & Agents"
+title: "LangChain Twitter API Agent with MCP & LangGraph"
 sidebarTitle: "LangChain"
-description: "Connect LangChain agents to tweet search, profile lookup, follower export, monitors, webhooks, and X account actions through MCP. Includes exact API steps."
-keywords: ["langchain", "mcp", "agent", "twitter", "python", "langchain-mcp-adapters"]
+description: "Build LangChain and LangGraph Twitter API agents for tweet search, profiles, followers, monitors, exports, and reviewed X actions through MCP. See Python code."
+keywords:
+  [
+    "LangChain Twitter API",
+    "LangChain MCP",
+    "LangChain Twitter agent",
+    "Python Twitter API",
+    "LangGraph Twitter agent",
+    "tweet search agent",
+    "Twitter API MCP",
+    "langchain-mcp-adapters",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Build a LangChain agent that can search tweets, hand off IDs and cursors, post tweets, replay stored monitor events, and run extraction jobs - all through Xquik's MCP server.
+Build a LangChain Twitter API agent through Xquik's MCP server. Search tweets,
+inspect profiles, export followers, replay monitor events, and review X actions.
+The Python examples preserve IDs, timestamps, cursors, and errors as typed values.
 
-## Choose LangChain for composable tool flows
+## Why Use LangChain With a Twitter API?
 
-Use LangChain when tweet tools must join retrievers, prompts, and application
-services. Load the Xquik MCP tools once. Pass the resulting tools to the agent
-that needs them.
+LangChain connects Xquik tools to models, retrievers, databases, and application
+services. LangGraph adds durable state, resumable jobs, and human approval.
 
-Keep tool results outside conversational prose. Preserve tweet IDs, author
-usernames, media URLs, and pagination cursors as structured values. Feed only
-the relevant fields into later prompts.
+Choose a narrow route for each Twitter agent task.
 
-Use LangGraph when the workflow needs checkpoints or approval branches. Place
-tweet search before review. Place write actions after a human decision. Save
-the approved text, connected account, target ID, and idempotency key in graph
-state.
+| Agent task | Xquik route | Preserve for the next step |
+| --- | --- | --- |
+| Search tweets | `GET /api/v1/x/tweets/search` | Query, tweet IDs, authors, `created`, and cursor |
+| Inspect a profile | `GET /api/v1/x/users/{id}` | User ID, username, biography, and follower count |
+| Export followers | `POST /api/v1/extractions` | Extraction ID, status, poll URL, and export state |
+| Watch keywords | `POST /api/v1/monitors` | Monitor ID, event types, and next billing time |
+| Replay monitor events | `GET /api/v1/events` | Event IDs, `has_more`, and `next_cursor` |
+| Post or reply | The matching X write route | Tweet ID, action ID, status, and charged credits |
 
-Prefix tools when several MCP servers expose similar names. This prevents an
-agent from selecting the wrong search, profile, or publishing tool.
+Use LangChain for short tool-calling conversations. Use LangGraph when work must
+resume after failures, approvals, or process restarts. Both use the same MCP
+tools and normalized response contract.
 
-## Prerequisites
+## LangChain Twitter API Prerequisites
 
-- Python 3.10+
-- [Xquik API key](/x-api-quickstart) (`xq_...`)
-- An LLM API key (Anthropic, OpenAI, or any LangChain-supported provider)
+- Python 3.10 or later
+- An [Xquik API key](/x-api-quickstart) beginning with `xq_`
+- A LangChain-supported model with tool and structured-output support
+- A connected X account for private reads or write actions
 
-## Install
+Public X reads do not require X Developer credentials. Authenticate with Xquik.
+Connect an X account only when the selected route requires it.
+This supplies a Twitter API for Python agents through one MCP connection.
+
+## Install the Python Packages
+
+Install compatible minor ranges. This avoids silent breaking changes.
 
 ```bash
-pip install langchain-mcp-adapters langchain langchain-anthropic
+python -m pip install --upgrade \
+  "langchain>=1.3,<1.4" \
+  "langchain-mcp-adapters>=0.3,<0.4" \
+  langchain-anthropic \
+  python-dotenv
 ```
 
-## Full Example
-
-```python
-import asyncio
-from pathlib import Path
-from langchain_mcp_adapters.client import MultiServerMCPClient
-from langchain.agents import create_agent
-
-
-async def main():
-    client = MultiServerMCPClient({
-        "xquik": {
-            "transport": "http",
-            "url": "https://xquik.com/mcp",
-            "headers": {
-                "x-api-key": "xq_YOUR_KEY_HERE",
-            },
-        },
-    })
-
-    tools = await client.get_tools()
-
-    agent = create_agent(
-        "anthropic:claude-sonnet-4-6",
-        tools,
-        system_prompt="You help users interact with X (Twitter) via the Xquik API.",
-    )
-
-    prompt = (
-        "Search for the latest tweets about AI agents. Return compact JSON "
-        "with query, route_used, tweets[{tweet_id,text,author_username,created_at}], "
-        "has_more, next_cursor, and key influencers."
-    )
-    response = await agent.ainvoke({"messages": [{"role": "user", "content": prompt}]})
-
-    Path("xquik-langchain-handoff.json").write_text(
-        str(response["messages"][-1].content),
-        encoding="utf-8",
-    )
-
-
-asyncio.run(main())
-```
-
-The agent discovers `explore` and `xquik`, then can call 119 MCP-compatible JSON or text operations.
-
-LangChain's MCP adapter loads tools with `MultiServerMCPClient`. The client is stateless by default, so persist returned IDs, cursors, and write-action status in your job state instead of relying on the next tool call to remember them. The MCP runtime returns normalized snake_case fields through `xquik.request()`, so keep prompts aligned with `tweet_id`, `has_more`, `next_cursor`, and returned job IDs.
-
-## Handoff Checklist
-
-<CardGroup cols={2}>
-  <Card title="Tweet search rows" icon="search">
-    Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.
-  </Card>
-  <Card title="User profile rows" icon="users">
-    Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profile_picture`, `has_more`, `next_cursor`, and the source lookup or search query.
-  </Card>
-  <Card title="Trend rows" icon="trending-up">
-    Store each trend `name`, `rank`, `query`, and `description`. Keep response `count`, `woeid`, and the requested region with the run checkpoint.
-  </Card>
-  <Card title="Monitor and webhook setup" icon="radio">
-    Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager. On production deliveries, store `delivery_id` for receiver retry de-dupe and `stream_event_id` when one monitor event should process once across endpoint changes.
-  </Card>
-  <Card title="Stored event replay" icon="activity">
-    Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, `next_cursor`, and the `after` query for the next page.
-  </Card>
-  <Card title="Extraction jobs" icon="database">
-    Store `extraction_id`, `status`, `poll`, and `export_after_complete`; poll before loading CSV, JSON, or XLSX rows.
-  </Card>
-  <Card title="Writes" icon="send">
-    Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, `charged_credits`, and `poll`; do not resend pending writes.
-  </Card>
-  <Card title="Media attachments" icon="image">
-    For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`. For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.
-  </Card>
-</CardGroup>
-
-## Using LangGraph Directly
-
-If you prefer building the graph manually instead of using `create_agent`:
-
-```python
-import asyncio
-from pathlib import Path
-from langchain_mcp_adapters.client import MultiServerMCPClient
-from langchain.chat_models import init_chat_model
-from langgraph.graph import StateGraph, MessagesState, START
-from langgraph.prebuilt import ToolNode, tools_condition
-
-
-async def main():
-    model = init_chat_model("anthropic:claude-sonnet-4-6")
-
-    client = MultiServerMCPClient({
-        "xquik": {
-            "transport": "http",
-            "url": "https://xquik.com/mcp",
-            "headers": {"x-api-key": "xq_YOUR_KEY_HERE"},
-        },
-    })
-
-    tools = await client.get_tools()
-
-    def call_model(state: MessagesState):
-        return {"messages": model.bind_tools(tools).invoke(state["messages"])}
-
-    builder = StateGraph(MessagesState)
-    builder.add_node(call_model)
-    builder.add_node(ToolNode(tools))
-    builder.add_edge(START, "call_model")
-    builder.add_conditional_edges("call_model", tools_condition)
-    builder.add_edge("tools", "call_model")
-    graph = builder.compile()
-
-    prompt = (
-        "Look up @username's public profile. Return compact JSON with "
-        "username, name, user_id, description, followers_count, and route_used."
-    )
-    result = await graph.ainvoke({"messages": [{"role": "user", "content": prompt}]})
-    Path("xquik-langgraph-handoff.json").write_text(
-        str(result["messages"][-1].content),
-        encoding="utf-8",
-    )
-
-
-asyncio.run(main())
-```
-
-## Environment Variables
-
-Store your API key in a `.env` file instead of hardcoding it:
+Store secrets outside source control.
 
 ```bash .env
 XQUIK_API_KEY=xq_YOUR_KEY_HERE
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-```python
-import os
-from dotenv import load_dotenv
+Add `.env` and generated handoff files to `.gitignore`.
 
-load_dotenv()
-
-client = MultiServerMCPClient({
-    "xquik": {
-        "transport": "http",
-        "url": "https://xquik.com/mcp",
-        "headers": {"x-api-key": os.environ["XQUIK_API_KEY"]},
-    },
-})
+```text .gitignore
+.env
+xquik-*-handoff.json
 ```
 
-## Multiple MCP Servers
+## Build a Typed Tweet Search Agent
 
-Prefix tool names when connecting multiple servers to avoid collisions:
+Use Pydantic for the final handoff. Do not rename a text response to `.json`.
+Validated output prevents missing tweet IDs or malformed cursors.
+
+```python
+import asyncio
+import os
+from pathlib import Path
+from typing import Literal
+
+from dotenv import load_dotenv
+from langchain.agents import create_agent
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from pydantic import BaseModel
+
+
+class TweetRow(BaseModel):
+    tweet_id: str
+    text: str
+    author_username: str | None = None
+    created: int | None = None
+    url: str | None = None
+
+
+class TweetSearchHandoff(BaseModel):
+    query: str
+    route_used: str
+    tweets: list[TweetRow]
+    has_more: bool
+    next_cursor: str | None = None
+    stop_reason: Literal[
+        "complete",
+        "requested_limit",
+        "cursor_stalled",
+        "page_cap",
+    ]
+
+
+async def main() -> None:
+    load_dotenv()
+
+    client = MultiServerMCPClient(
+        {
+            "xquik": {
+                "transport": "http",
+                "url": "https://xquik.com/mcp",
+                "headers": {"x-api-key": os.environ["XQUIK_API_KEY"]},
+            },
+        }
+    )
+    tools = await client.get_tools()
+
+    agent = create_agent(
+        model="anthropic:claude-sonnet-4-6",
+        tools=tools,
+        response_format=TweetSearchHandoff,
+        system_prompt=(
+            "Use Xquik for Twitter API requests. Preserve exact IDs and cursors. "
+            "Use GET /api/v1/x/tweets/search. Never invent missing tweet fields."
+        ),
+    )
+
+    response = await agent.ainvoke(
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": (
+                        "Search 25 recent tweets about LangChain MCP. "
+                        "Return the query, route, tweet rows, cursor state, "
+                        "and an explicit stop reason."
+                    ),
+                }
+            ]
+        }
+    )
+    handoff = response["structured_response"]
+    Path("xquik-langchain-handoff.json").write_text(
+        handoff.model_dump_json(indent=2),
+        encoding="utf-8",
+    )
+
+
+asyncio.run(main())
+```
+
+`MultiServerMCPClient` loads the `explore` and `xquik` tools. The client is
+stateless by default. Save every cursor, job ID, and write status externally.
+
+The `xquik` tool executes a bounded sandbox function. That function calls
+`xquik.request(path, { method, body, query })`. Authentication is injected.
+Use `explore` first when the agent does not know a route or parameter.
+
+## Preserve the MCP Response Contract
+
+MCP returns normalized snake_case fields and Unix-second timestamps. A REST
+`createdAt` field becomes `created`, not `created_at`. Preserve source values
+before applying an application-specific schema.
+
+Search and list responses use `has_more` and `next_cursor`. Reuse the same
+query and filters on every page. Pass `next_cursor` as `cursor` for tweets,
+profiles, followers, replies, timelines, communities, and lists.
+
+Events, draws, extractions, and radar pages use `after`. Draft pages use
+`afterCursor`. Treat each cursor as opaque.
+
+Stop pagination when one condition becomes true:
+
+- The agent collects the requested total.
+- `has_more` becomes `false`.
+- `next_cursor` is missing.
+- `next_cursor` repeats.
+- The configured page cap is reached.
+
+An empty page can still have `has_more: true`. Continue when the cursor
+advances. De-duplicate tweets and users by their stable `id` values.
+
+MCP tool output has a 24,000-character limit. Project only the required fields.
+Use extraction exports when a workflow needs every complete row.
+
+## Keep a Resumable Twitter Agent Handoff
+
+Conversation history is not a reliable job database. Persist the values needed
+for retries, pagination, exports, and downstream tools.
+
+<CardGroup cols={2}>
+  <Card title="Tweet Search Rows" icon="search">
+    Store `tweet_id`, `text`, `author_username`, `created`, `url`, `has_more`,
+    `next_cursor`, and the original query.
+  </Card>
+  <Card title="User Profile Rows" icon="users">
+    Store source `id` as `user_id`. Keep `username`, `name`, `description`,
+    `followers`, `verified`, and `profile_picture`.
+  </Card>
+  <Card title="Follower Exports" icon="download">
+    Store the source user, extraction ID, status, poll URL, export state, and
+    requested file format.
+  </Card>
+  <Card title="Tweet Replies" icon="message-circle">
+    Store the root tweet ID, reply IDs, parent IDs, cursor state, and coverage
+    diagnostics. Keep nested replies separate.
+  </Card>
+  <Card title="Monitor Events" icon="radio">
+    Store `monitor_id`, `event_id`, `type`, `occurred_at`, `has_more`, and
+    `next_cursor`. Use the next cursor as `after`.
+  </Card>
+  <Card title="Webhook Delivery" icon="webhook">
+    Store `webhook_id`, `delivery_id`, and `stream_event_id`. Keep the one-time
+    webhook secret in a secret manager.
+  </Card>
+  <Card title="Write Actions" icon="send">
+    Store `tweet_id` or `write_action_id`. Keep `status`, `charged_credits`,
+    `poll`, and the idempotency key.
+  </Card>
+  <Card title="Media Attachments" icon="image">
+    Pass public image or video URLs in `media` for tweets. Use uploaded
+    `media_id` values only for direct messages.
+  </Card>
+</CardGroup>
+
+Keep API keys, webhook secrets, headers, and raw signatures outside agent state.
+Do not place private messages or full request bodies in shared traces.
+
+## Handle Twitter API Errors Deliberately
+
+Do not let the model guess whether a failed request should retry.
+
+| Status | Meaning | LangChain agent decision |
+| --- | --- | --- |
+| `400` | Invalid route parameters or unsupported fields | Fix the request before retrying |
+| `401` | Missing or invalid authentication | Stop and replace the Xquik credential |
+| `402` | Subscription or credit action required | Report choices and request explicit confirmation |
+| `424` | Upstream dependency failure or incomplete replies | Preserve partial rows and inspect `error.retryable` |
+| `429` | Rate limit reached | Respect `error.retry_after`, then back off |
+| `502` | Temporary upstream failure | Retry safe reads with bounded backoff |
+
+Errors contain `error.type`, `error.code`, and `error.message`. Some errors add
+`error.retryable` or `error.retry_after`. Store these fields with the job.
+
+A `402` never authorizes a purchase. Report available payment choices. Wait
+for an explicit decision before any supported account checkout action.
+
+## Add Human Approval to X Actions
+
+Read-only agents can search tweets and inspect public profiles automatically.
+Write-enabled agents need a review boundary before posting or replying.
+
+Xquik exposes reads and writes through one aggregate `xquik` tool. Therefore,
+interrupt every `xquik` call in a write-capable agent. Review the proposed call
+before approving it.
+
+```python
+from langchain.agents import create_agent
+from langchain.agents.middleware import HumanInTheLoopMiddleware
+from langgraph.checkpoint.memory import InMemorySaver
+
+agent = create_agent(
+    model="anthropic:claude-sonnet-4-6",
+    tools=tools,
+    middleware=[
+        HumanInTheLoopMiddleware(
+            interrupt_on={
+                "xquik": {
+                    "allowed_decisions": ["approve", "reject"],
+                }
+            }
+        )
+    ],
+    checkpointer=InMemorySaver(),
+)
+
+config = {
+    "configurable": {
+        "thread_id": "xquik-twitter-agent-job-001",
+    }
+}
+
+pending = await agent.ainvoke(
+    {
+        "messages": [
+            {
+                "role": "user",
+                "content": "Draft a reply, but never post without my approval.",
+            }
+        ]
+    },
+    config=config,
+)
+```
+
+`InMemorySaver` suits local development only. Use a persistent LangGraph
+checkpointer in production. Resume with the same `thread_id` after approval.
+Reject any action with an unexpected route, account, target, text, or media.
+
+## Build Durable LangGraph Twitter Workflows
+
+A LangGraph Twitter agent should separate discovery, review, execution, and
+storage. This separation keeps retries from repeating charged write actions.
+
+```mermaid
+flowchart LR
+  A["Explore the Twitter API route"] --> B["Search tweets or load a profile"]
+  B --> C["Validate IDs, fields, and cursor"]
+  C --> D{"Write action needed?"}
+  D -->|"No"| E["Persist the typed handoff"]
+  D -->|"Yes"| F["Request human approval"]
+  F -->|"Approve"| G["Execute once with idempotency"]
+  F -->|"Reject"| E
+  G --> E
+```
+
+Persist the graph after each external call. Store the last completed node,
+route, request fingerprint, response IDs, cursor, and retry count. Store write
+idempotency keys before execution.
+
+Never retry a pending write by creating a new action. Poll its returned status.
+Retry safe reads only when the error contract permits it.
+
+## Connect Multiple MCP Servers
+
+Prefix tool names when another MCP server exposes similar operations. This
+prevents the model from choosing the wrong search or publishing tool.
 
 ```python
 client = MultiServerMCPClient(
@@ -205,19 +352,96 @@ client = MultiServerMCPClient(
             "url": "https://xquik.com/mcp",
             "headers": {"x-api-key": os.environ["XQUIK_API_KEY"]},
         },
-        "other_server": {
+        "knowledge": {
             "transport": "http",
-            "url": "https://other-server.com/mcp",
+            "url": "https://knowledge.example.com/mcp",
         },
     },
     tool_name_prefix=True,
 )
 ```
 
-## Verified Package Versions
+Give the Xquik agent only the tools required for its current job. Smaller tool
+sets improve route selection and reduce accidental actions.
 
-| Package | Version |
-|---------|---------|
-| `langchain-mcp-adapters` | 0.3.0 |
-| `langchain` | 1.3.13 |
-| `mcp` | 1.28.1 |
+## Tested LangChain Compatibility
+
+These versions were checked on August 2, 2026.
+
+| Package | Checked version | Supported range in this guide |
+| --- | --- | --- |
+| Python | 3.10 or later | `>=3.10` |
+| `langchain-mcp-adapters` | 0.3.0 | `>=0.3,<0.4` |
+| `langchain` | 1.3.14 | `>=1.3,<1.4` |
+| `langgraph` | 1.2.10 | Installed through LangChain constraints |
+
+Pin exact versions in production lockfiles. Re-test structured output, approval,
+and checkpointer behavior before upgrading a minor range.
+
+## LangChain Twitter API Questions
+
+### Can LangChain call the Twitter API?
+
+Yes. Load Xquik through `langchain-mcp-adapters`. The agent can call eligible
+tweet, profile, follower, monitor, extraction, and X action routes.
+
+### Can LangChain scrape tweets with Python?
+
+Yes. Call `GET /api/v1/x/tweets/search` through MCP. Preserve each tweet ID,
+text, author, `created` timestamp, URL, and pagination cursor.
+
+### What does LangChain MCP add to a Twitter agent?
+
+LangChain MCP converts remote operations into model-callable tools. Xquik adds
+tweet search, profile lookup, follower exports, monitors, and reviewed actions.
+
+### Can LangChain post tweets through MCP?
+
+Yes. Connect the target X account first. Require human approval, preserve the
+idempotency key, and store the returned tweet or write-action ID.
+
+### Does a LangChain Twitter agent need X Developer keys?
+
+No. The client authenticates with an Xquik API key. Some private reads and
+write actions also require a connected X account.
+
+### Should I use LangChain or LangGraph for tweet search?
+
+Use LangChain for a short search and typed handoff. Use LangGraph for paginated
+searches, approvals, checkpoints, durable retries, or scheduled monitoring.
+
+### How does a LangChain agent paginate Twitter results?
+
+Save `has_more` and `next_cursor`. Send the cursor with unchanged filters.
+Stop on completion, limits, or a stalled cursor.
+
+### How do I prevent an agent from posting automatically?
+
+Interrupt every `xquik` tool call in write-capable agents. Approve the exact
+route, account, target, text, and media before execution.
+
+### How should a Python Twitter API agent save results?
+
+Validate a Pydantic schema first. Save typed IDs, tweet fields, cursors, error
+fields, and job status. Never save conversational prose as JSON.
+
+### Can a LangGraph agent export Twitter followers?
+
+Yes. Create an extraction, persist its ID, and poll its status. Export only
+after completion. Store the source user and requested format together.
+
+### Can LangChain monitor Twitter keywords continuously?
+
+Yes. Create a monitor and webhook, then store their IDs. Replay missed events
+through `GET /api/v1/events` using `after` pagination.
+
+## Next Steps
+
+- Review the [MCP tool contract](/mcp/tools).
+- Follow the [agent handoff checklist](/mcp/agent-handoff).
+- Build a [tweet search workflow](/guides/tweet-scraper-csv-export).
+- Add [monitor and webhook delivery](/guides/brand-monitoring-workflow).
+- Compare [Twitter API alternatives](/twitter-api-alternatives).
+
+Xquik is an independent third-party service. Not affiliated with X Corp.
+"Twitter" and "X" are trademarks of X Corp.
