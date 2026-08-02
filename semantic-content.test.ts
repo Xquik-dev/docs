@@ -140,8 +140,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'api-reference/x-write/unfollow.mdx',
     snippets: [
-      '| Unfollow batch column | Source | Cleanup rule |',
-      '| Remove an account follower | `POST /x/users/{id}/remove-follower` |',
+      'Store the returned action ID, request hash, and `statusUrl` immediately.',
+      '[Remove Follower](/api-reference/x-write/remove-follower) ends one inbound relationship.',
     ],
   },
   {
