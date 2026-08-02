@@ -255,7 +255,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       '| Webhook alignment | `GET /webhooks` | Match subscriptions before trusting alerts. |',
       'How Do I Update Twitter Monitoring Alerts?',
       'Which Twitter Alert Settings Can This Endpoint Change?',
-      'How Do Twitter Account Alert Settings Affect Notifications?',
+      'How Do Twitter Account Alert Settings Work in This Twitter Monitoring Tool?',
       'How Do I Send Twitter Account Alerts to Slack or a CRM?',
       'How Do I Reduce High-Volume Twitter Alert Noise?',
       '`409 monitor_profile_unavailable`',
