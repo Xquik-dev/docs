@@ -1,9 +1,9 @@
 ---
-title: "Twitter Giveaway Draw API & Winner Details"
+title: "Twitter Giveaway Winner API & Draw Verification"
 sidebarTitle: "Get draw"
-description: "Retrieve one giveaway draw's source tweet, eligibility rules, exclusions, selected winners, status, timestamps, and audit details. See request fields."
+description: "Retrieve one Twitter giveaway draw by ID. Verify source tweet metrics, entry counts, ordered primary and backup winners, timestamps, and result status."
 api: "GET /draws/{id}"
-keywords: ["draw", "get", "winners", "results", "tweet metadata"]
+keywords: ["Twitter giveaway winner API", "Twitter giveaway verification", "giveaway draw ID", "past giveaway winners", "X giveaway results", "backup winner", "tweet giveaway results"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -58,17 +58,49 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-## Choose One Draw
+Retrieve one Twitter giveaway result with its draw ID. Inspect the source tweet
+snapshot, candidate counts, timestamps, and ordered winner rows. Separate
+primary winners from backup winners before publishing results.
 
-Use this route to retrieve one completed or pending draw by ID. Use list for draw history and export for downloadable results. Keep the draw ID with winner verification records.
+This endpoint does not return create-time eligibility rules or exclusion
+reasons. Preserve the original `POST /draws` request when an audit needs those
+rules.
+
+## Verify One Twitter Giveaway Draw
+
+Use this route to review one completed or pending draw. Keep its draw ID with
+winner announcements, support records, and exports.
 
 <Callout icon="circle-check" color="#16a34a">
   **Free** - does not consume credits
 </Callout>
 
+<CardGroup cols={2}>
+  <Card title="Source Tweet Snapshot" icon="message-square-text">
+    Read the tweet ID, URL, text, author, and engagement counts captured for
+    the draw.
+  </Card>
+  <Card title="Candidate Counts" icon="users-round">
+    Compare `totalEntries` with `validEntries`. Neither value reports the
+    number of winners.
+  </Card>
+  <Card title="Ordered Winners" icon="trophy">
+    Preserve `position`, `authorUsername`, `tweetId`, and `isBackup` for every
+    selected account.
+  </Card>
+  <Card title="Draw Timing" icon="clock-3">
+    Store `createdAt` for creation. Store `drawnAt` when winner selection has
+    finished.
+  </Card>
+</CardGroup>
+
+Use [Giveaway History](/api-reference/draws/twitter-giveaway-history) to find a
+draw ID. Use [Export Draw](/api-reference/draws/export) for winner or entry
+files.
+
 <CodeGroup>
   ```bash cURL
-  curl https://xquik.com/api/v1/draws/f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345 \
+  curl --fail-with-body https://xquik.com/api/v1/draws/f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345 \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
@@ -77,8 +109,24 @@ Use this route to retrieve one completed or pending draw by ID. Use list for dra
   const response = await fetch(`https://xquik.com/api/v1/draws/${drawId}`, {
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
-  const data = await response.json();
-  console.log(data);
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || "Giveaway draw request failed.");
+  }
+
+  const verification = {
+    draw_id: result.draw.id,
+    tweet_id: result.draw.tweetId,
+    tweet_url: result.draw.tweetUrl,
+    status: result.draw.status,
+    total_entries: result.draw.totalEntries,
+    valid_entries: result.draw.validEntries,
+    created_at: result.draw.createdAt,
+    drawn_at: result.draw.drawnAt || null,
+    primary_winners: result.winners.filter((winner) => !winner.isBackup),
+    backup_winners: result.winners.filter((winner) => winner.isBackup),
+  };
+  process.stdout.write(`${JSON.stringify(verification)}\n`);
   ```
 
   ```python Python
@@ -89,8 +137,21 @@ Use this route to retrieve one completed or pending draw by ID. Use list for dra
       f"https://xquik.com/api/v1/draws/{draw_id}",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
-  data = response.json()
-  print(data)
+  response.raise_for_status()
+  result = response.json()
+  verification = {
+      "draw_id": result["draw"]["id"],
+      "tweet_id": result["draw"]["tweetId"],
+      "tweet_url": result["draw"]["tweetUrl"],
+      "status": result["draw"]["status"],
+      "primary_winners": [
+          winner for winner in result["winners"] if not winner["isBackup"]
+      ],
+      "backup_winners": [
+          winner for winner in result["winners"] if winner["isBackup"]
+      ],
+  }
+  print(verification)
   ```
 
   ```go Go
@@ -118,15 +179,85 @@ Use this route to retrieve one completed or pending draw by ID. Use list for dra
   	defer resp.Body.Close()
 
   	body, err := io.ReadAll(resp.Body)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	fmt.Println(string(body))
+	if err != nil {
+		log.Fatal(err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		log.Fatalf("giveaway draw failed with %d: %s", resp.StatusCode, string(body))
+	}
+	fmt.Println(string(body))
   }
   ```
 </CodeGroup>
 
-## Path parameters
+## Interpret Twitter Giveaway Winner Rows
+
+Winner order is part of the result. Preserve each 1-indexed `position` instead
+of sorting by username or tweet ID.
+
+<CardGroup cols={2}>
+  <Card title="Primary Winner" icon="medal">
+    `isBackup` is `false`. Use the original `position` in announcements and
+    fulfillment records.
+  </Card>
+  <Card title="Backup Winner" icon="shield-plus">
+    `isBackup` is `true`. Keep the row separate until replacement approval is
+    recorded.
+  </Card>
+  <Card title="Winning Reply" icon="reply">
+    `tweetId` identifies the selected reply. Store it beside the winner's X
+    username.
+  </Card>
+  <Card title="Winner Account" icon="at-sign">
+    `authorUsername` identifies the selected X account at draw time. Keep the
+    tweet ID as the stable join value.
+  </Card>
+</CardGroup>
+
+Do not promote a backup winner by changing the existing row. Record the
+replacement decision separately. This preserves the original draw result.
+
+## Preserve Eligibility Rules Separately
+
+`GET /draws/{id}` returns the draw snapshot and winners. It does not repeat the
+eligibility filters sent to `POST /draws`.
+
+Store the original create request when reviews need these settings:
+
+- required repost and followed-account rules
+- required keywords, hashtags, mentions, or language
+- minimum account age and follower count
+- primary, backup, and unique-author settings
+
+Use an entry export when the review needs candidate rows. The export can show
+whether an entry passed the filters. It does not reconstruct a missing create
+request.
+
+## Build a Giveaway Verification Handoff
+
+Join the draw summary, winner rows, and export location with one draw ID:
+
+```json
+{
+  "draw_id": "f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345",
+  "tweet_id": "1893456789012345678",
+  "tweet_url": "https://x.com/xquik/status/1893456789012345678",
+  "status": "completed",
+  "total_entries": 847,
+  "valid_entries": 312,
+  "created_at": "2026-02-24T10:00:00.000Z",
+  "drawn_at": "2026-02-24T10:05:00.000Z",
+  "primary_winner_count": 3,
+  "backup_winner_count": 0,
+  "winner_export_path": "/api/v1/draws/f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345/export?format=csv&type=winners",
+  "entry_export_path": "/api/v1/draws/f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345/export?format=csv&type=entries"
+}
+```
+
+Store winner rows separately from this summary. Keep `position` and `isBackup`
+on every row. Never infer filter rules from entry counts.
+
+## Path Parameters
 
 <ParamField path="id" type="string" required>
   The draw public ID. Returned when you [create a draw](/api-reference/draws/create) or [list draws](/api-reference/draws/twitter-giveaway-history).
@@ -135,7 +266,11 @@ Use this route to retrieve one completed or pending draw by ID. Use list for dra
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. This endpoint also accepts session cookie authentication.
+  Send your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.
 </ParamField>
 
 ## Response
@@ -155,7 +290,7 @@ Use this route to retrieve one completed or pending draw by ID. Use list for dra
     <ResponseField name="tweetReplyCount" type="number">Reply count at time of draw.</ResponseField>
     <ResponseField name="tweetQuoteCount" type="number">Quote tweet count at time of draw.</ResponseField>
     <ResponseField name="status" type="string">Draw status (e.g. `completed`).</ResponseField>
-    <ResponseField name="totalEntries" type="number">Total replies collected.</ResponseField>
+    <ResponseField name="totalEntries" type="number">Inspected candidate entries.</ResponseField>
     <ResponseField name="validEntries" type="number">Entries that passed all filters.</ResponseField>
     <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
     <ResponseField name="drawnAt" type="string">ISO 8601 timestamp of when winners were selected. Present only for completed draws.</ResponseField>
@@ -217,7 +352,8 @@ Use this route to retrieve one completed or pending draw by ID. Use list for dra
 ```json
 { "error": "unauthenticated" }
 ```
-Missing or invalid API key / session cookie.
+The API key or OAuth bearer token is missing or invalid. Replace it before
+retrying.
 
 ### 404 Not Found
 
@@ -233,6 +369,57 @@ No draw exists with this ID, or it belongs to a different account.
 ```
 Too many requests. Wait for the `Retry-After` header before retrying.
 
+## Handle Giveaway Draw Responses
+
+<CardGroup cols={2}>
+  <Card title="200 Draw Result" icon="circle-check">
+    Read `draw` and `winners`. Split primary and backup winners before handoff.
+  </Card>
+  <Card title="401 Authentication" icon="key-round">
+    Authentication failed. Replace the API key or OAuth bearer token first.
+  </Card>
+  <Card title="404 Draw Missing" icon="search-x">
+    No accessible draw matches that ID. Check its account and exact value.
+  </Card>
+  <Card title="429 Rate Limit" icon="timer">
+    Too many requests. Honor `Retry-After`, then retry the same draw ID.
+  </Card>
+</CardGroup>
+
+## Twitter Giveaway Winner Verification Questions
+
+### How Do I Verify a Past Twitter Giveaway Winner?
+
+Get the draw ID from giveaway history. Request `GET /draws/{id}`. Preserve the
+ordered winner rows and source tweet snapshot.
+
+### Does the Draw Detail Include Eligibility Rules?
+
+No. Store the original create request separately. Use entry exports when a
+review needs candidate pass or fail values.
+
+### How Do I Identify Backup Winners?
+
+Read `isBackup` on every winner row. A primary winner has `false`. A backup
+winner has `true`.
+
+### Can I Download the Giveaway Result?
+
+Yes. Call `GET /draws/{id}/export`. Choose winners or entries and a supported
+file format.
+
+### What If the Giveaway Draw ID Returns 404?
+
+Check the exact draw ID and authenticated account. Another account's draw is
+not accessible with the current credential.
+
+### Does Winner Verification Consume Credits?
+
+No. Retrieving an existing draw is free. Running a new draw can consume
+credits.
+
 <Note>
-  **Related:** [Export Draw](/api-reference/draws/export) to download results as CSV/XLSX/Markdown &middot; [List Draws](/api-reference/draws/twitter-giveaway-history) to see all draws &middot; [Create Draw](/api-reference/draws/create) to run a new draw.
+  **Related:** [Export Draw](/api-reference/draws/export) downloads results.
+  [Giveaway History](/api-reference/draws/twitter-giveaway-history) lists past
+  draws. [Create Draw](/api-reference/draws/create) runs a new selection.
 </Note>

@@ -6802,6 +6802,53 @@ const FORBIDDEN_DRAW_HISTORY_SNIPPETS = [
   '`totalEntries` counts inspected replies.',
 ] as const;
 
+const REQUIRED_DRAW_DETAIL_SNIPPETS = [
+  'title: "Twitter Giveaway Winner API & Draw Verification"',
+  '"Twitter giveaway winner API"',
+  'This endpoint does not return create-time eligibility rules or exclusion',
+  '## Verify One Twitter Giveaway Draw',
+  '<Card title="Source Tweet Snapshot" icon="message-square-text">',
+  '<Card title="Candidate Counts" icon="users-round">',
+  '<Card title="Ordered Winners" icon="trophy">',
+  '<Card title="Draw Timing" icon="clock-3">',
+  'curl --fail-with-body https://xquik.com/api/v1/draws/',
+  'primary_winners: result.winners.filter((winner) => !winner.isBackup)',
+  'backup_winners: result.winners.filter((winner) => winner.isBackup)',
+  'if resp.StatusCode < 200 || resp.StatusCode >= 300',
+  '## Interpret Twitter Giveaway Winner Rows',
+  '<Card title="Primary Winner" icon="medal">',
+  '<Card title="Backup Winner" icon="shield-plus">',
+  '<Card title="Winning Reply" icon="reply">',
+  '<Card title="Winner Account" icon="at-sign">',
+  '## Preserve Eligibility Rules Separately',
+  'required repost and followed-account rules',
+  'minimum account age and follower count',
+  'primary, backup, and unique-author settings',
+  '## Build a Giveaway Verification Handoff',
+  '"winner_export_path"',
+  '"entry_export_path"',
+  '<ParamField header="Authorization" type="string">',
+  'Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.',
+  '<ResponseField name="totalEntries" type="number">Inspected candidate entries.</ResponseField>',
+  '## Handle Giveaway Draw Responses',
+  '<Card title="200 Draw Result" icon="circle-check">',
+  '<Card title="404 Draw Missing" icon="search-x">',
+  '## Twitter Giveaway Winner Verification Questions',
+  '### Does the Draw Detail Include Eligibility Rules?',
+  '### How Do I Identify Backup Winners?',
+] as const;
+
+const FORBIDDEN_DRAW_DETAIL_SNIPPETS = [
+  'title: "Twitter Giveaway Draw API & Winner Details"',
+  'eligibility rules, exclusions',
+  'keywords: ["draw", "get", "winners", "results", "tweet metadata"]',
+  'This endpoint also accepts session cookie authentication.',
+  'Missing or invalid API key / session cookie.',
+  '>Total replies collected.</ResponseField>',
+  'minimum account age, followers, posts, or verification state',
+  'excluded usernames or duplicate-author rules',
+] as const;
+
 const REQUIRED_DRAW_EXPORT_RESPONSE_SNIPPETS = [
   'Returns a file download. The response includes a `Content-Disposition`',
   'header with the filename.',
@@ -15019,6 +15066,25 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(
       FORBIDDEN_DRAW_HISTORY_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps draw detail focused on winner verification', (): void => {
+    expect.assertions(2);
+
+    const source = readFileSync('api-reference/draws/get.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Twitter giveaway winner API',
+        REQUIRED_DRAW_DETAIL_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_DRAW_DETAIL_SNIPPETS.filter((snippet) =>
         source.includes(snippet),
       ),
     ).toStrictEqual([]);
