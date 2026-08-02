@@ -99,11 +99,11 @@ or availability events. Store the monitor ID. Then connect a signed webhook.
 
 ## Create a Twitter Monitor for One Account
 
-Use this Twitter monitor when one known profile needs continuous checks.
+Use this Twitter monitor API for continuous checks on one known profile.
 Send the username without `@`. Choose only the required event types.
-The endpoint returns one stable monitor ID for event and webhook joins.
+This API endpoint returns one stable monitor ID for event and webhook joins.
 
-Use `POST /monitors` to monitor Twitter account activity from one username.
+Use `POST /monitors` for Twitter API monitoring from one username.
 This tweet monitor covers selected posts, replies, quotes, reposts, and profile
 changes. It does not search posts from every public account.
 
@@ -295,10 +295,12 @@ account monitor into one state row. Store `monitor_id`, `username`, `x_user_id`,
 
 ## Account monitor handoff
 
-Use `POST /monitors` when a queue, CRM, warehouse, Slack alert, or agent needs
-1-second tweet checks for one X account. Create the monitor first. Then create a
-signed webhook with [`POST /webhooks`](/api-reference/webhooks/create). Test it
-with [`POST /webhooks/{id}/test`](/api-reference/webhooks/test).
+Use `POST /monitors` when a queue, CRM, warehouse, Slack alert, or agent tracks
+one X account. It checks selected tweets and profile changes every second.
+Create the monitor first. Then create a signed webhook with
+[`POST /webhooks`](/api-reference/webhooks/create). Call
+[`POST /webhooks/{id}/test`](/api-reference/webhooks/test) before enabling
+production alerts.
 
 | Created monitor column | Response source | Setup rule |
 | --- | --- | --- |
@@ -307,8 +309,8 @@ with [`POST /webhooks/{id}/test`](/api-reference/webhooks/test).
 | X user ID | `xUserId` | Use this stable ID for account joins. |
 | Event filter | `eventTypes` | Align webhook subscriptions with these event types. |
 | Polling state | `isActive` | Route only active monitors into alert checks. |
-| Creation time | `createdAt` | Preserve the monitor audit timestamp. |
-| Billing checkpoint | `nextBillingAt` | Schedule the next credit review before this time. |
+| Creation time | `createdAt` | Store this timestamp with each monitor audit. |
+| Billing checkpoint | `nextBillingAt` | Review available credits before this time. |
 
 <CardGroup cols={2}>
   <Card title="Monitor ID" icon="fingerprint">
@@ -344,12 +346,16 @@ with [`POST /webhooks/{id}/test`](/api-reference/webhooks/test).
   </Card>
 </CardGroup>
 
-Active account monitors check every 1 second and cost 21 credits per active monitor-hour. Creation or reactivation requires 22 available credits: 1 credit for the username lookup plus 21 credits for the first active monitor hour. Pause with [Update Monitor](/api-reference/monitors/update) (`PATCH /monitors/{id}`) and `{ "isActive": false }` when the alert should stop.
+Active account monitors check every 1 second. Each active hour costs 21 credits.
+Creation and reactivation require 22 available credits. That total includes a 1-credit username lookup and the first active hour. Pause the monitor through
+[Update Monitor](/api-reference/monitors/update) (`PATCH /monitors/{id}`). Set
+`{ "isActive": false }` when alerts should stop.
 
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+  Your API key. You can also authenticate with a session cookie. Generate a key
+  from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
@@ -359,7 +365,8 @@ Active account monitors check every 1 second and cost 21 credits per active moni
 ## Body
 
 <ParamField body="username" type="string" required>
-  X username to monitor. 1-15 characters, alphanumeric and underscores only. The `@` prefix is automatically stripped if included.
+  Send an X username with 1-15 letters, numerals, or underscores. Xquik removes
+  a leading `@` before validation.
 </ParamField>
 
 <ParamField body="eventTypes" type="string[]" required>
@@ -383,7 +390,7 @@ Valid account monitor types: `tweet.new`, `tweet.quote`, `tweet.reply`,
 | New posts and conversations | `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet` | Original posts, replies, quotes, or reposts from one profile. |
 | Tweet content formats | `tweet.media`, `tweet.link`, `tweet.poll`, `tweet.mention`, `tweet.hashtag`, `tweet.longform` | Posts containing the selected format or reference. |
 | Profile text changes | `profile.name.changed`, `profile.username.changed`, `profile.bio.changed`, `profile.location.changed`, `profile.url.changed` | Previous and current profile text values. |
-| Profile image changes | `profile.avatar.changed`, `profile.banner.changed` | Previous and current image references. |
+| Profile image changes | `profile.avatar.changed`, `profile.banner.changed` | Old and new avatar or banner references. |
 | Profile state changes | `profile.verified.changed`, `profile.protected.changed`, `profile.pinned_tweet.changed`, `profile.unavailable.changed` | Verification, visibility, pinned post, or availability changes. |
 
 <Warning>
@@ -420,7 +427,7 @@ Valid account monitor types: `tweet.new`, `tweet.quote`, `tweet.reply`,
 <ResponseField name="xUserId" type="string">Resolved X user ID for the account.</ResponseField>
 <ResponseField name="eventTypes" type="string[]">Event types this monitor is subscribed to.</ResponseField>
 <ResponseField name="isActive" type="boolean">Whether the monitor is currently active.</ResponseField>
-<ResponseField name="createdAt" type="string">ISO 8601 timestamp of when the monitor was created.</ResponseField>
+<ResponseField name="createdAt" type="string">Xquik records the creation time in ISO 8601 format.</ResponseField>
 <ResponseField name="nextBillingAt" type="string">Next hourly credit charge time. New active monitors are due immediately.</ResponseField>
 
 ```json
@@ -454,21 +461,23 @@ Missing or invalid API key.
 ```json
 { "error": "insufficient_credits", "message": "Insufficient credits" }
 ```
-At least 22 available credits are required for the username lookup and first active monitor hour. Possible errors include `no_credits` and `insufficient_credits`.
+This request requires at least 22 available credits. The API may return
+`no_credits` or `insufficient_credits`.
 
 ### 404 User Not Found
 
 ```json
 { "error": "user_not_found", "message": "X user not found" }
 ```
-The specified X username does not exist or could not be resolved.
+Xquik could not find that username. Check the spelling.
 
 ### 409 Duplicate
 
 ```json
 { "error": "monitor_already_exists", "message": "Monitor already exists." }
 ```
-An active monitor already exists for this resolved X account. Use [Update Monitor](/api-reference/monitors/update) to change event types instead.
+An active monitor already tracks this X account. Use
+[Update Monitor](/api-reference/monitors/update) to change event types instead.
 
 ### 429 Rate Limited
 
