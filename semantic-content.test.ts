@@ -357,6 +357,9 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     snippets: [
       '| Radar monitoring column | Response source | Queue rule |',
       '| Trend score | `items[].score` | Sort higher-scoring items first. |',
+      '## How Do You Evaluate Radar Topic Accuracy?',
+      'Compare `publishedAt` with `createdAt` to separate publication from indexing.',
+      'Radar does not guarantee complete source coverage or independent fact',
     ],
   },
   {
