@@ -78,7 +78,8 @@ provides no keyword search volume or long-term history. Use `hours` for
 ## Build a Trending Topics API Feed
 
 Use Radar as a trending topics API for dashboards, alerts, and research queues.
-Start with a narrow time window. Then select one source or category.
+Start with a narrow time window. Select any source and category filters you
+need.
 
 1. Call `GET /radar` with your API key.
 2. Filter one source when the request names a platform.
@@ -97,10 +98,13 @@ Radar returns recently indexed topics. It does not stream every new event.
 Read `publishedAt` for the source timestamp. Read `createdAt` for the index
 timestamp.
 
-Poll the monitoring API on a schedule that fits your workflow. Keep the latest
-item ID and cursor. Respect every `429` rate limit response. Wait before the
-next poll. This pattern supports trend analysis without promising a fixed
-delivery delay.
+Start each scheduled poll without `after`. Use `nextCursor` only for later
+pages within that poll. The contract defines no cross-poll cursor lifetime or
+snapshot guarantee. Deduplicate records by `items[].id`. Do not treat an item
+ID as a chronological checkpoint.
+
+Respect every `429` rate limit response. Wait before the next poll. This
+pattern supports trend analysis without promising a fixed delivery delay.
 
 ## Can Radar Track Brand Mentions and Sentiment?
 
@@ -125,8 +129,8 @@ Group rows by `source` for a multi-feed dashboard. Sort rows by `score`. Filter
 rows by `publishedAt`. Open `url` only when the source provides it.
 
 Use `hasMore` and `nextCursor` for background ingestion. Never construct a
-cursor. Keep each cursor with its matching filters. Changing `source`,
-`category`, `region`, or `hours` starts a different result set.
+cursor. Keep it with matching filters during one pagination run. Changing
+`source`, `category`, `region`, or `hours` starts a different result set.
 
 Choose a searchable news API when you need exact keyword or domain matching.
 Choose Radar when you need normalized topic discovery across its documented
