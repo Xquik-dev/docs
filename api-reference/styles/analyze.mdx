@@ -1,9 +1,9 @@
 ---
-title: "Tweet Writing Style API & Profile Analysis"
+title: "Tweet Writing Style API for Cached X Profile Samples"
 sidebarTitle: "Analyze & cache style"
-description: "Fetch recent tweets from an X profile and analyze tone, vocabulary, sentence patterns, post length, and engagement for reuse during composition. See costs."
+description: "Cache recent tweet writing samples for one X username. Reuse fresh profiles, refresh stale samples, inspect authors, timestamps, and exact Tweet IDs safely."
 api: "POST /styles"
-keywords: ["style", "analyze", "cache", "tweets", "x account", "writing style"]
+keywords: ["tweet writing", "Twitter writing style", "X writing style", "tweet writing samples", "Twitter brand voice"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -86,36 +86,21 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-## Choose Style Analysis
-
-Use this route to create or refresh a cached writing-style profile. Fresh cached profiles can return without another X fetch. Use list or get only when an existing cache should remain unchanged.
+<Callout icon="coins" color="#5c3327">
+  **Cached response: free** · **Refresh: 1 credit per tweet returned**
+</Callout>
 
 ## Build a Reusable Tweet Writing Profile
 
-Send one X username to analyze that profile's recent tweets. The analysis
-captures tone, vocabulary, sentence patterns, post length, and recurring
-structures. Use those patterns when a composer needs a consistent writing
-baseline.
+Send one X username to cache recent tweet writing samples. Xquik searches posts
+from that username and stores each returned Tweet ID, text, author, and time.
 
-This route owns cache creation and refreshes. It can reuse a fresh profile
-without another X request. An older or missing profile triggers a new tweet
-fetch. Use [Get Style](/api-reference/styles/get) when refreshes are unwanted.
+This route manages cache creation and refreshes. It does not generate a tone
+label, vocabulary summary, sentence score, or engagement analysis.
 
-Keep the returned profile identifier with the normalized username. Preserve
-the analyzed tweet records and timestamps exactly as returned. A later compose
-step can reference the style without repeating profile discovery.
-
-Do not treat writing patterns as current tweet performance. Style analysis
-describes how the account writes. Use
-[Analyze Performance](/api-reference/styles/performance) to refresh likes,
-reposts, quotes, replies, bookmarks, and views.
-
-<Callout icon="circle-check" color="#16a34a">
-  **Free** - does not consume credits
-</Callout>
-<Info>
-  This endpoint uses a two-tier system. It returns cached styles under 7 days old for free. Missing or older styles refresh from X and consume credits.
-</Info>
+Use the returned samples for your approved writing review. Use
+[Analyze Performance](/api-reference/styles/performance) for current likes,
+replies, reposts, quotes, bookmarks, and views.
 
 <CodeGroup>
   ```bash cURL
@@ -123,7 +108,7 @@ reposts, quotes, replies, bookmarks, and views.
     -H "x-api-key: xq_YOUR_KEY_HERE" \
     -H "Content-Type: application/json" \
     -d '{
-      "username": "elonmusk"
+      "username": "xquik"
     }' | jq
   ```
 
@@ -134,11 +119,14 @@ reposts, quotes, replies, bookmarks, and views.
       "x-api-key": "xq_YOUR_KEY_HERE",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      username: "elonmusk",
-    }),
+    body: JSON.stringify({ username: "xquik" }),
   });
-  const data = await response.json();
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(`${result.error}: ${result.message}`);
+  }
+  const cacheWasRefreshed = response.status === 201;
   ```
 
   ```python Python
@@ -147,9 +135,12 @@ reposts, quotes, replies, bookmarks, and views.
   response = requests.post(
       "https://xquik.com/api/v1/styles",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-      json={"username": "elonmusk"},
+      json={"username": "xquik"},
+      timeout=30,
   )
-  data = response.json()
+  response.raise_for_status()
+  result = response.json()
+  cache_was_refreshed = response.status_code == 201
   ```
 
   ```go Go
@@ -163,11 +154,16 @@ reposts, quotes, replies, bookmarks, and views.
   )
 
   func main() {
-      body, _ := json.Marshal(map[string]interface{}{
-          "username": "elonmusk",
-      })
+      body, err := json.Marshal(map[string]string{"username": "xquik"})
+      if err != nil {
+          panic(err)
+      }
 
-      req, err := http.NewRequest("POST", "https://xquik.com/api/v1/styles", bytes.NewReader(body))
+      req, err := http.NewRequest(
+          http.MethodPost,
+          "https://xquik.com/api/v1/styles",
+          bytes.NewReader(body),
+      )
       if err != nil {
           panic(err)
       }
@@ -180,19 +176,177 @@ reposts, quotes, replies, bookmarks, and views.
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      var result map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+          panic(fmt.Sprintf("style request failed: %v", result))
+      }
+      cacheWasRefreshed := resp.StatusCode == http.StatusCreated
+      fmt.Println(cacheWasRefreshed)
   }
   ```
 </CodeGroup>
 
+## Understand Cached and Refreshed Responses
+
+The HTTP status explains the cache action. Always inspect `fetchedAt` too.
+
+| Status | Cache condition | X request | Credit result |
+| --- | --- | --- | --- |
+| `200` | Profile is under 7 days old | No | Free cached response |
+| `200` | Profile is older, but refresh cannot be funded | No | Existing stale cache returned |
+| `201` | Profile is missing or older and refresh is funded | Yes | 1 credit per returned Tweet |
+| `402` | No cache exists and refresh cannot be funded | No | `no_cached_style` returned |
+
+A `200` response does not guarantee a recent refresh. Compare `fetchedAt` with
+your freshness policy before using the samples.
+
+The route has no `force` parameter. Repeating POST while the profile is fresh
+returns the same cache without another X request.
+
+## Send a Normalized X Username
+
+Send a non-empty X username without `@`, spaces, or a profile URL. Xquik
+lowercases the value before lookup and storage.
+
+```json
+{
+  "username": "xquik"
+}
+```
+
+The request body accepts one field only:
+
+| Field | Type | Required | Rule |
+| --- | --- | --- | --- |
+| `username` | string | Yes | Send the X handle without `@`. |
+
+Missing, empty, or non-string values return `400 invalid_input`. Preserve the
+returned `xUsername` value for Get, Compare, Delete, and Performance requests.
+
+## Read the Cached Tweet Writing Samples
+
+The profile response contains exact cached examples. It does not contain
+derived writing conclusions.
+
+| Profile field | Meaning | Integration use |
+| --- | --- | --- |
+| `xUsername` | Lowercase analyzed X username | Use as the profile key. |
+| `tweetCount` | Number of cached Tweet samples | Record the sample size and refresh cost. |
+| `isOwnAccount` | Ownership classification stored during refresh | Separate owned and external profiles. |
+| `fetchedAt` | ISO 8601 fetch time | Apply your cache freshness policy. |
+| `tweets` | Cached tweet writing samples | Review the source text directly. |
+
+`isOwnAccount` compares the username with the saved
+[X identity](/api-reference/account/x-identity) during a refresh. A cached
+`200` response does not recompute that flag.
+
+## Parse Every Cached Tweet
+
+Each public `tweets[]` entry contains these fields:
+
+| Tweet field | Required | Meaning |
+| --- | --- | --- |
+| `id` | Yes | Exact Tweet ID as a string |
+| `text` | Yes | Cached tweet text |
+| `authorUsername` | No | Tweet author's X username |
+| `createdAt` | No | ISO 8601 publication time |
+
+Keep Tweet IDs as strings. JavaScript numbers cannot safely represent every X
+Tweet ID.
+
+The public Style Profile contract does not include cached media objects. Use a
+Tweet or media endpoint when your workflow requires images, videos, or GIFs.
+
+```json
+{
+  "xUsername": "xquik",
+  "tweetCount": 2,
+  "isOwnAccount": true,
+  "fetchedAt": "2026-08-02T12:00:00.000Z",
+  "tweets": [
+    {
+      "id": "1950882898740914261",
+      "text": "Export tweet replies to JSON or CSV.",
+      "authorUsername": "xquik",
+      "createdAt": "2026-08-02T11:30:00.000Z"
+    }
+  ]
+}
+```
+
+## Review Observable Tweet Writing Features
+
+The response provides source text for your analysis. Start with observable
+features before assigning subjective voice or tone labels.
+
+| Writing feature | Sample calculation | Review question |
+| --- | --- | --- |
+| Post length | Median `text.length` | Does the profile prefer short tweets? |
+| Questions | Samples containing `?` | How often does the profile invite replies? |
+| Links | Samples containing an HTTP URL | How often does it cite another page? |
+| Hashtags | Count `#` tokens | Does it label topics explicitly? |
+| Openings | Compare first sentences | Which hooks recur? |
+| Vocabulary | Count repeated meaningful words | Which specific terms define the sample? |
+| Cadence | Compare available `createdAt` values | How closely were samples published? |
+
+Do not infer future engagement from writing samples. Refresh public metrics
+through Analyze Performance when outcome comparisons are required.
+
+## Build a Safe Twitter Brand Voice Workflow
+
+1. Set the [X identity](/api-reference/account/x-identity) before refreshing.
+2. Send one public X username to this endpoint.
+3. Branch on HTTP `200` or `201`.
+4. Store `xUsername`, `fetchedAt`, and `tweetCount`.
+5. Preserve every Tweet ID and text value.
+6. Review observable patterns with a human editor.
+7. Keep current product claims out of copied historical tweets.
+
+Use cached examples as references. Never copy another person's distinctive
+phrasing without authorization.
+
+## Analyze Another Public X Account
+
+You can cache recent public tweets from another username. The resulting
+profile belongs only to the authenticated Xquik account.
+
+This route does not expose drafts, private posts, private analytics, followers,
+following, profile visits, or direct messages.
+
+## Budget a Style Refresh
+
+Cached `200` responses are free. A `201` refresh costs 1 credit per Tweet
+returned and stored.
+
+Use `tweetCount` to reconcile the refresh. The endpoint does not accept a limit
+parameter, date range, pagination cursor, or requested sample count.
+
+When a stale cache exists without enough available credits, Xquik returns that
+cache with `200`. It does not delete the existing writing samples.
+
+## Handle Style Cache Errors
+
+| Status | Error | Meaning | Recovery |
+| --- | --- | --- | --- |
+| `200` | None | Cached profile returned | Inspect `fetchedAt` before use. |
+| `201` | None | Profile fetched and stored | Record `tweetCount` for billing. |
+| `400` | `invalid_input` | Username is missing, empty, or not a string | Send one username string. |
+| `401` | `unauthenticated` | Credential is missing or invalid | Replace the API key or bearer token. |
+| `402` | `no_cached_style` | No cache exists and refresh cannot be funded | Top up or save approved examples. |
+| `429` | `rate_limit_exceeded` | Request exceeded the rate limit | Wait for `Retry-After`, then retry once. |
+
+The response widget includes every status in the canonical OpenAPI contract.
+
 ## Headers
 
+Send `x-api-key` with an Xquik API key. OAuth clients can send a bearer token
+through the `Authorization` header instead.
+
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+  Your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
@@ -202,94 +356,93 @@ reposts, quotes, replies, bookmarks, and views.
 ## Body
 
 <ParamField body="username" type="string" required>
-  X username to analyze. 1-15 characters, alphanumeric and underscores only.
+  Non-empty X username without `@`. Xquik lowercases the value.
 </ParamField>
 
 ## Response
 
-### 200 OK (cached)
+### 200 OK
 
-Returns cached style data when a fresh cache exists (less than 7 days old). Same response shape as 201 Created.
-
-<ResponseField name="xUsername" type="string">Normalized X username (lowercase, no `@` prefix).</ResponseField>
-<ResponseField name="tweetCount" type="number">Number of tweets fetched and cached.</ResponseField>
-<ResponseField name="isOwnAccount" type="boolean">`true` if the user has set their [X identity](/api-reference/account/x-identity) to this account.</ResponseField>
-<ResponseField name="fetchedAt" type="string">ISO 8601 timestamp when tweets were fetched from X.</ResponseField>
-<ResponseField name="tweets" type="object[]">Array of cached tweets.</ResponseField>
+Returns a cached profile. It can be fresh or an unfunded stale fallback.
 
 ### 201 Created
 
-<ResponseField name="xUsername" type="string">Normalized X username (lowercase, no `@` prefix).</ResponseField>
-<ResponseField name="tweetCount" type="number">Number of tweets fetched and cached.</ResponseField>
-<ResponseField name="isOwnAccount" type="boolean">`true` if the user has set their [X identity](/api-reference/account/x-identity) to this account.</ResponseField>
-<ResponseField name="fetchedAt" type="string">ISO 8601 timestamp when tweets were fetched from X.</ResponseField>
-<ResponseField name="tweets" type="object[]">Array of cached tweets.</ResponseField>
+Returns a newly fetched and stored profile.
 
-Each tweet object contains:
-- `id` (string) - Tweet ID
-- `text` (string) - Tweet text content
-- `authorUsername` (string) - Author's X username
-- `createdAt` (string) - ISO 8601 timestamp
-- `media` (object[], optional) - Media objects attached to the tweet
-
-```json
-{
-  "xUsername": "elonmusk",
-  "tweetCount": 20,
-  "isOwnAccount": false,
-  "fetchedAt": "2026-02-24T10:30:00.000Z",
-  "tweets": [
-    {
-      "id": "1893456789012345678",
-      "text": "The future is now.",
-      "authorUsername": "elonmusk",
-      "createdAt": "2026-02-24T14:22:00.000Z"
-    }
-  ]
-}
-```
+<ResponseField name="xUsername" type="string">Lowercase analyzed X username.</ResponseField>
+<ResponseField name="tweetCount" type="number">Number of cached Tweet samples.</ResponseField>
+<ResponseField name="isOwnAccount" type="boolean">Stored ownership classification.</ResponseField>
+<ResponseField name="fetchedAt" type="string">ISO 8601 cache fetch timestamp.</ResponseField>
+<ResponseField name="tweets" type="object[]">
+  Cached tweet writing samples.
+  <Expandable title="Tweet sample fields">
+    <ResponseField name="id" type="string">Exact Tweet ID.</ResponseField>
+    <ResponseField name="text" type="string">Cached tweet text.</ResponseField>
+    <ResponseField name="authorUsername" type="string">Optional author username.</ResponseField>
+    <ResponseField name="createdAt" type="string">Optional ISO 8601 publication time.</ResponseField>
+  </Expandable>
+</ResponseField>
 
 ### 400 Invalid Input
 
 ```json
-{ "error": "invalid_input", "message": "Invalid or missing username" }
+{ "error": "invalid_input", "message": "Invalid input. Check the request body." }
 ```
-Invalid or missing username. Provide a valid X username.
+
+Username is missing, empty, or not a string. Send one username string.
 
 ### 401 Unauthenticated
 
 ```json
 { "error": "unauthenticated", "message": "Missing or invalid API key" }
 ```
-Missing or invalid API key.
 
-### 402 Credits Required
+Authentication failed. Replace the missing or invalid credential.
 
-Possible error codes:
-
-- `no_cached_style` - No cached style is available, and the balance cannot fund a refresh
-- `insufficient_credits` - Insufficient credits
+### 402 No Cached Style
 
 ```json
 { "error": "no_cached_style", "message": "No cached style for @username. Share 5-10 example tweet texts, then save via PUT /api/v1/styles/username." }
 ```
-Top up or subscribe from the [dashboard billing page](https://dashboard.xquik.com/en/account?tab=subscription).
+
+No cache exists and the refresh cannot be funded. Top up through the
+[billing page](https://dashboard.xquik.com/en/account?tab=subscription), or
+save approved tweet examples with [Save Custom Style](/api-reference/styles/save).
 
 ### 429 Rate Limited
 
 ```json
 { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
 ```
-Too many requests. Wait for the `Retry-After` header before retrying.
 
-<Tip>
-  Cached style data remains available after a plan ends. Fresh analysis requires enough available credits.
-</Tip>
+Too many requests. Wait for `Retry-After`, then retry once.
 
-<Info>
-  If a cached style already exists for this username, it will be replaced with fresh data.
-</Info>
+### How Do I Analyze a Twitter Writing Style?
+
+Cache one public username, then review the returned tweet text. This endpoint
+supplies writing samples. Your application performs any voice or tone analysis.
+
+### Does Analyze Style Return Tone or Vocabulary Scores?
+
+No. It returns Tweet IDs, text, authors, timestamps, and cache metadata. It
+does not return generated style labels or scores.
+
+### Why Did Analyze Style Return 200 Instead of 201?
+
+The route reused an existing cache. Check `fetchedAt`. A `200` can also be a
+stale fallback when refresh funding is unavailable.
+
+### Can I Force a Twitter Style Refresh?
+
+No force parameter exists. Fresh profiles return from cache. Delete and
+recreate a profile only when that destructive workflow is appropriate.
+
+### Can I Analyze Another Twitter Account?
+
+Yes, for recent public tweets. The cached profile remains isolated to your
+authenticated Xquik account.
 
 <Note>
-  **Next steps:** [List Styles](/api-reference/styles/list) to see all cached styles, [Get Style](/api-reference/styles/get) to retrieve a specific style, or [Analyze Performance](/api-reference/styles/performance) to fetch engagement metrics for cached tweets.
+  **Next:** [Get Style](/api-reference/styles/get) reads samples without a
+  refresh. [Compare Styles](/api-reference/styles/compare) retrieves 2 profiles.
 </Note>
