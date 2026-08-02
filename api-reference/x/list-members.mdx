@@ -1,9 +1,9 @@
 ---
-title: "Twitter List Members API & Profile Export Guide"
+title: "Twitter List Members API & CSV Profile Export Guide"
 sidebarTitle: "Get list members"
-description: "Retrieve X list members with usernames, display names, bios, verification state, profile media, and follower and following counts. See request fields."
+description: "Retrieve Twitter List members with usernames, bios, verification, profile images, and follower counts. Export pages as CSV, JSON, or XLSX for roster analysis."
 api: "GET /x/lists/{id}/members"
-keywords: ["Twitter list members API", "Twitter list members", "X Lists API", "list member export", "profile export"]
+keywords: ["Twitter list members API", "Twitter list members", "export Twitter list members", "X Lists API", "list member export"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -79,6 +79,72 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 <LlmsDirective />
 <AudienceCommunityApiLinks />
 
+Use this Twitter List members API for one X List. Retrieve its curated profiles.
+Keep user IDs, usernames, bios, verification, profile images, and public counts.
+Follow every cursor to export Twitter List members into a complete roster.
+
+## Twitter List Members Questions
+
+### What Is a Twitter List Member?
+
+A List member is an account selected by the List owner. Membership creates the
+List's curated timeline. It does not mean the account follows that List. An
+account follower follows one profile instead. X explains these roles in its
+official [Lists guide](https://help.x.com/en/using-x/x-lists).
+
+### How Do I View Members of a Twitter List?
+
+Copy the numeric List ID from its X URL. Request the first page without a
+cursor. Store every returned profile before requesting another page. Continue
+only when `has_next_page` is true. Pass `next_cursor` unchanged as `cursor`.
+X also documents a [Get List members](https://docs.x.com/x-api/lists/get-list-members)
+route. Its response and pagination fields differ from Xquik's fields.
+
+### How Do I Export Twitter List Members?
+
+The direct endpoint returns JSON pages. Convert each profile into one export
+row. Store the List ID, member ID, username, bio, counts, and collection time.
+Follow every cursor before treating the export as complete. Use
+`list_member_extractor` for a saved job. It can produce CSV, JSON, or XLSX
+files without custom spreadsheet code.
+
+### Which Profile Fields Can I Analyze?
+
+Analyze user IDs, usernames, display names, bios, and public location text.
+Compare follower counts, following counts, verification, and account dates.
+Use public counts to sort a roster for manual review. Do not call a high count
+"influence" without a clear method. This endpoint does not calculate reach,
+engagement, demographics, sentiment, or audience quality.
+
+### How Do I Compare List Member Snapshots?
+
+Finish both snapshots before comparing their member IDs. Added IDs indicate
+newly observed members. Missing IDs indicate newly unobserved members. Record
+both snapshot times and completion states. A renamed username is not a new
+member. Never report removals from an incomplete later snapshot.
+
+### Can I Export Members From a Private Twitter List?
+
+Access depends on the credentials and visibility available to the read
+service. Never assume a private List is readable. Treat `404` as unavailable
+unless the List ID is wrong. Do not promise access to private Lists. Public
+profile fields also do not grant outreach consent.
+
+### Can This Endpoint Add or Remove List Members?
+
+No. This GET endpoint only reads the current roster. It cannot create Lists,
+add members, remove members, follow Lists, or publish tweets. Use X's supported
+write tools for owner-authorized changes. Xquik does not expose those actions
+through this endpoint.
+
+### How Do I Find Active Members or Recent Tweets?
+
+This response describes profiles, not recent activity. Retrieve
+[List Tweets](/api-reference/x/list-tweets) for posts from the current List
+timeline. Keep tweet analysis separate from membership analysis. A profile
+count does not prove recent activity. One active account can publish many
+posts while remaining one List member.
+
 <Note>
   Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
 </Note>
@@ -140,22 +206,21 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
   ```
 </CodeGroup>
 
-The Node.js and Python snippets shape durable list-member rows instead of
-printing full profile pages. Persist `memberRows` or `member_rows` with
-`nextCursor` before requesting the next page.
+The Node.js and Python snippets create one row per List member. Save
+`memberRows` or `member_rows` with `nextCursor`. Then request the next page.
 
-## Direct list member handoff
+## Direct List Member Handoff
 
-Use `GET /x/lists/{id}/members` when a CRM, warehouse, audience, enrichment, or
-agent workflow needs one JSON page of accounts on a list. Use
-[`list_member_extractor`](/api-reference/extractions/create) when you need a
-saved extraction, estimated job, or CSV/JSON/XLSX file export.
+Use `GET /x/lists/{id}/members` for one JSON page of curated accounts. Send
+saved rows to a CRM, warehouse, audience tool, or agent. Use
+[`list_member_extractor`](/api-reference/extractions/create) for a saved job.
+That job supports CSV, JSON, or XLSX file export.
 
-Store `list_id`, `member_id`, `username`, `display_name`, profile metrics,
-verification state, `has_next_page`, and `next_cursor`. Treat `next_cursor` as
-opaque and pass it back as `cursor` only when `has_next_page` is true. Set
-`pageSize` from 20 to 200 for direct calls. Zero affordable results return
-`402 insufficient_credits`.
+Store `list_id`, `member_id`, `username`, and `display_name`. Keep profile
+counts, verification, `has_next_page`, and `next_cursor`. Do not edit the
+cursor. Pass it back only when `has_next_page` is true. Direct calls accept a
+`pageSize` from 20 through 200. Each returned profile costs 1 credit. Xquik
+returns `402 insufficient_credits` when credits cover zero results.
 
 <CardGroup cols={2}>
   <Card title="Member roster" icon="users">
@@ -176,10 +241,10 @@ opaque and pass it back as `cursor` only when `has_next_page` is true. Set
   </Card>
 </CardGroup>
 
-## Export a curated list roster
+## Export a Curated List Roster
 
-Use list members to understand which profiles a list owner selected. Preserve
-the list ID on every row. Also preserve the page cursor and collection time.
+Use List members for profiles selected by one List owner. Keep the List ID on
+every row. Also keep the collection time and snapshot status.
 
 Useful list-member columns include:
 
@@ -188,40 +253,35 @@ Useful list-member columns include:
 - Follower and following counts.
 - List ID and collection timestamp.
 
-Compare snapshots by user ID to find additions and removals. Do not compare
-only usernames. Profile owners can rename their accounts.
+Compare snapshots by user ID. Profile owners can rename their usernames. List
+membership reflects curation, not audience interest. Use List followers for
+profiles that follow the List. Use account followers for one profile's
+audience. For CRM imports, deduplicate by List ID and user ID. This preserves
+the same profile across several Lists.
 
-List membership reflects curation, not audience interest. Use list followers
-to retrieve profiles that follow the list. Use user followers for profiles
-following a specific account.
+## Track List Curation Changes
 
-For CRM imports, deduplicate by list ID and user ID. This allows the same
-profile to appear correctly in several lists.
-
-## Track list curation changes
-
-Create complete snapshots at consistent intervals. Mark added user IDs as new
-members. Mark missing IDs as removals only after a complete later snapshot.
+Create complete snapshots at consistent intervals. Mark added user IDs as
+newly observed members. Mark missing IDs only after a complete later snapshot.
 
 Keep the list name and owner in your snapshot metadata. The endpoint path uses
 the list ID, while reviewers often recognize the readable name.
 
-Use member changes to review curation decisions. Do not describe them as
-follower growth. A list owner controls membership.
+Use snapshot differences to review curation decisions. Do not call them
+follower growth. The List owner controls membership.
 
 Create one change row for each added or removed user ID. Include the earlier
 and later snapshot times. Keep the current username only as a display label.
 
-Send uncertain comparisons to review. Do not publish changes from incomplete
-snapshots.
+Send uncertain comparisons to review. Never publish incomplete comparisons.
 
-## Path parameters
+## Path Parameters
 
 <ParamField path="id" type="string" required>
   List ID (numeric string).
 </ParamField>
 
-## Query parameters
+## Query Parameters
 
 <ParamField query="cursor" type="string">
   Pagination cursor from a previous response. Omit for the first page.
@@ -231,7 +291,7 @@ snapshots.
   Results per page. Range: 20-200. Default: `20`.
 </ParamField>
 
-## Which list endpoint?
+## Which List Endpoint?
 
 <CardGroup cols={2}>
   <Card title="List members" icon="users">
@@ -273,38 +333,38 @@ snapshots.
     <ResponseField name="id" type="string">User ID.</ResponseField>
     <ResponseField name="username" type="string">X username.</ResponseField>
     <ResponseField name="name" type="string">Display name.</ResponseField>
-    <ResponseField name="description" type="string">Profile bio.</ResponseField>
-    <ResponseField name="followers" type="number">Follower count.</ResponseField>
-    <ResponseField name="following" type="number">Following count.</ResponseField>
-    <ResponseField name="verified" type="boolean">Verified status.</ResponseField>
-    <ResponseField name="profilePicture" type="string">Profile image URL.</ResponseField>
-    <ResponseField name="location" type="string">Profile location.</ResponseField>
-    <ResponseField name="createdAt" type="string">Account creation date (ISO 8601).</ResponseField>
-    <ResponseField name="statusesCount" type="number">Total number of tweets posted. Omitted if unavailable.</ResponseField>
-    <ResponseField name="coverPicture" type="string">Cover/banner image URL. Omitted if unavailable.</ResponseField>
-    <ResponseField name="mediaCount" type="number">Total number of media tweets posted. Omitted if unavailable.</ResponseField>
+    <ResponseField name="description" type="string">Contains the profile bio.</ResponseField>
+    <ResponseField name="followers" type="number">Shows how many accounts follow this profile.</ResponseField>
+    <ResponseField name="following" type="number">Shows how many accounts this profile follows.</ResponseField>
+    <ResponseField name="verified" type="boolean">Shows if X marks this profile as verified.</ResponseField>
+    <ResponseField name="profilePicture" type="string">Links to the profile image.</ResponseField>
+    <ResponseField name="location" type="string">Shows the location written on the profile.</ResponseField>
+    <ResponseField name="createdAt" type="string">Shows when the account began, in ISO 8601 format.</ResponseField>
+    <ResponseField name="statusesCount" type="number">Shows the post count if X returns it.</ResponseField>
+    <ResponseField name="coverPicture" type="string">Links to the cover image if X returns it.</ResponseField>
+    <ResponseField name="mediaCount" type="number">Shows the media post count if X returns it.</ResponseField>
     <ResponseField name="url" type="string">Website URL from profile. Omitted if empty.</ResponseField>
-    <ResponseField name="favouritesCount" type="number">Total number of tweets liked. Omitted if unavailable.</ResponseField>
-    <ResponseField name="hasCustomTimelines" type="boolean">Whether the user has custom timelines. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isTranslator" type="boolean">Whether the user is an X translator. Omitted if unavailable.</ResponseField>
-    <ResponseField name="withheldInCountries" type="string[]">Country codes where the account is withheld. Omitted if empty.</ResponseField>
-    <ResponseField name="possiblySensitive" type="boolean">Whether the account is flagged as possibly sensitive. Omitted if unavailable.</ResponseField>
-    <ResponseField name="pinnedTweetIds" type="string[]">IDs of pinned tweets. Omitted if none.</ResponseField>
-    <ResponseField name="isAutomated" type="boolean">Whether the account is marked as automated. Omitted if unavailable.</ResponseField>
-    <ResponseField name="automatedBy" type="string">Username of the account operator if automated. Omitted if not automated.</ResponseField>
-    <ResponseField name="unavailable" type="boolean">Whether the account is unavailable. Omitted if available.</ResponseField>
-    <ResponseField name="unavailableReason" type="string">Reason the account is unavailable. Omitted if available.</ResponseField>
-    <ResponseField name="verifiedType" type="string">Verification type (e.g. `Business`, `Government`). Omitted if not verified or standard blue check.</ResponseField>
-    <ResponseField name="profile_bio" type="object">Structured profile bio with entity annotations. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isBlueVerified" type="boolean">Whether the account has X Premium verification. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isVerified" type="boolean">Normalized verification status. Omitted if unavailable.</ResponseField>
-    <ResponseField name="profileBannerUrl" type="string">Profile banner URL. Omitted if unavailable.</ResponseField>
-    <ResponseField name="protected" type="boolean">Whether the account protects its posts. Omitted if unavailable.</ResponseField>
-    <ResponseField name="communityRole" type="string">Role within the requested community context. Omitted outside community results.</ResponseField>
+    <ResponseField name="favouritesCount" type="number">Shows how many posts this account liked if X returns it.</ResponseField>
+    <ResponseField name="hasCustomTimelines" type="boolean">Shows custom timelines if X returns this field.</ResponseField>
+    <ResponseField name="isTranslator" type="boolean">Shows X translator status if X returns it.</ResponseField>
+    <ResponseField name="withheldInCountries" type="string[]">Lists country codes where X withholds this account. Omitted if empty.</ResponseField>
+    <ResponseField name="possiblySensitive" type="boolean">Shows if X marks the account as sensitive. Omitted if X does not send it.</ResponseField>
+    <ResponseField name="pinnedTweetIds" type="string[]">Lists pinned Tweet IDs. Omitted if none.</ResponseField>
+    <ResponseField name="isAutomated" type="boolean">Shows if X marks this account as automated. Omitted if X does not send it.</ResponseField>
+    <ResponseField name="automatedBy" type="string">Names the operator. Omitted when the account is not automated.</ResponseField>
+    <ResponseField name="unavailable" type="boolean">Shows if X could not load the account. Omitted when X loads it.</ResponseField>
+    <ResponseField name="unavailableReason" type="string">Explains why X could not load the account. Omitted when X loads it.</ResponseField>
+    <ResponseField name="verifiedType" type="string">Shows Business or Government status. Omitted for blue checks or unverified profiles.</ResponseField>
+    <ResponseField name="profile_bio" type="object">Adds the structured bio and its tags. Omitted if X does not send it.</ResponseField>
+    <ResponseField name="isBlueVerified" type="boolean">Shows if X Premium verifies the account. Omitted if X does not send it.</ResponseField>
+    <ResponseField name="isVerified" type="boolean">Shows the normalized verified state. Omitted if X does not send it.</ResponseField>
+    <ResponseField name="profileBannerUrl" type="string">Links to the profile banner. Omitted if X does not send it.</ResponseField>
+    <ResponseField name="protected" type="boolean">Shows if the account protects its posts. Omitted if X does not send it.</ResponseField>
+    <ResponseField name="communityRole" type="string">Shows a community role only in community results.</ResponseField>
 
 </ResponseField>
-<ResponseField name="has_next_page" type="boolean">Whether more results are available.</ResponseField>
-<ResponseField name="next_cursor" type="string">Cursor for the next page. Pass as the `cursor` query parameter.</ResponseField>
+<ResponseField name="has_next_page" type="boolean">Shows if another page exists.</ResponseField>
+<ResponseField name="next_cursor" type="string">Gives the next cursor. Pass it as the `cursor` query value.</ResponseField>
 
 ```json
 {
@@ -323,7 +383,7 @@ snapshots.
 }
 ```
 
-### 400 Invalid list ID
+### 400 Invalid List ID
 
 ```json
 { "error": "invalid_list_id", "message": "List ID required" }
@@ -338,19 +398,19 @@ Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout ac
 ```
 Missing or invalid API key.
 
-### 402 Payment required
+### 402 Payment Required
 
 Account keys get account options; guest keys get guest top-up only.
 No checkout starts automatically. Confirm any payment action.
 
-### 404 List not found
+### 404 List Not Found
 
 ```json
 { "error": "not_found" }
 ```
 The list could not be resolved. Check the list ID.
 
-### 502 X API unavailable
+### 502 X API Unavailable
 
 ```json
 { "error": "x_api_unavailable" }
@@ -362,14 +422,14 @@ The read service returned an error. Retry after a short delay.
 ```json
 { "error": "rate_limit_exceeded", "retryAfter": 60 }
 ```
-Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
+You exceeded your tier's rate limit. Wait for the `Retry-After` header.
 
 ### 424 Dependency Failed
 
 ```json
 { "error": "x_api_unavailable" }
 ```
-The normalized v1 response contract can return 424 when the read service is unavailable.
+The v1 response can return 424 when the read service fails.
 
 <Note>
   **Related:** [List Followers](/api-reference/x/list-followers) · [List Tweets](/api-reference/x/list-tweets)
