@@ -124,7 +124,16 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
   **30 credits text-only** · attached media adds 2 credits per started MB across all files
 </Callout>
 
-Create a tweet or reply from one connected X account. Put public HTTPS image URLs or one public MP4 URL in `media`; when `POST /x/media` hosts a local file, use the returned `mediaUrl` here, not `mediaId`. Do not send `media_ids` to this endpoint. Send a unique `Idempotency-Key`, store the durable action, and poll `statusUrl` while `terminal` is `false`.
+Create a tweet or reply from one connected X account.
+This Twitter API for posting tweets accepts text and public media URLs.
+Put public HTTPS images or one MP4 URL in `media`.
+When `POST /x/media` hosts a local file, use its `mediaUrl`.
+Never send `mediaId` or `media_ids` to this endpoint.
+Send a unique `Idempotency-Key`.
+Store the durable action.
+Poll `statusUrl` while `terminal` is `false`.
+X also documents an official [Create Post](https://docs.x.com/x-api/posts/create-post) endpoint.
+Its authentication and response fields differ from Xquik's fields.
 
 <CodeGroup>
   ```bash cURL
@@ -289,7 +298,7 @@ Create a tweet or reply from one connected X account. Put public HTTPS image URL
   ```
 </CodeGroup>
 
-## Choose the Twitter post request
+## Choose the Twitter Post Request
 
 Use this Twitter API to post tweets, replies, community posts, image tweets,
 video tweets, or long-form note tweets. Send only the fields required for the
@@ -301,35 +310,37 @@ intended post.
 | Tweet reply | `account`, `text`, and `reply_to_tweet_id` | Store the parent Tweet ID and confirm the connected account may reply. |
 | Community post | `account`, `text`, and `community_id` | Confirm the connected account belongs to the target X Community. |
 | Image tweet | `account`, optional `text`, and 1 to 4 image URLs in `media` | Use public HTTPS JPEG, PNG, GIF, WebP, or AVIF URLs. |
-| Video tweet | `account`, optional `text`, and 1 MP4 URL in `media` | Send one public HTTPS MP4 URL up to 100 MB. Do not mix video and images. |
+| Video tweet | `account`, optional `text`, and 1 MP4 URL in `media` | Keep the public MP4 at 100 MB or less. Do not mix video and images. |
 | Note tweet | `account`, `text`, and `is_note_tweet: true` | Keep note tweet text at 25,000 characters or fewer. |
 
 For automatic Twitter posting, create one `Idempotency-Key` for each intended
-tweet. Reuse that key only when replaying the exact same network request. A new
+tweet. Reuse that key only when replaying the same network request. A new
 tweet, reply, caption, media URL, account, or community requires a new key.
 
-## Store the tweet write receipt
+This endpoint starts the write immediately. It does not schedule a future
+post. Let your scheduler call it at the approved time. One request creates one
+tweet or reply. Create each thread post with a separate approved request.
 
-Persist the write receipt before another worker posts the next tweet. These
-fields support polling, billing reconciliation, duplicate prevention, and
-tweet reply audits.
+## Store the Tweet Write Receipt
 
-| Response field | Store it as | Why it matters |
-| --- | --- | --- |
-| `id` | Write action ID | Use it to correlate the request with later status checks. |
-| `request.hash` | Request fingerprint | Detect an accidental payload change during retry handling. |
-| `status` | Current write state | Route pending, completed, and failed actions separately. |
-| `terminal` | Completion flag | Stop polling only when this value becomes `true`. |
-| `safeToRetry` | Retry decision | Create a new idempotency key only when retry is explicitly safe. |
-| `account` | Connected X account | Prove which account submitted the tweet or reply. |
-| `target` | Write target | Preserve the resolved tweet, reply, or community target. |
-| `result.id` or `tweetId` | Published Tweet ID | Join the write receipt to tweet search, replies, quotes, and engagement checks. |
-| `billing.chargedCredits` | Settled credit charge | Reconcile the write action and attached media charge. |
-| `statusUrl` | Polling path | Poll this route while `terminal` remains `false`. |
+Persist the write receipt before another worker posts. Keep these field groups:
 
-## Post with public media URLs
+- Store `id` and `request.hash` for request matching.
+- Store `account` and `target` for the selected account and destination.
+- Store `status`, `terminal`, and `statusUrl` for polling.
+- Store `safeToRetry` for retry decisions.
+- Store `result.result?.id` or `tweetId` for the published Tweet ID.
+- Store `billing.chargedCredits` for billing checks.
 
-Use `media` when your image or MP4 video is already a public HTTPS URL or when [Upload Media](/api-reference/x-write/upload-media) returned `mediaUrl`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not send `media_ids`; that field is for DMs only. Attached media adds 2 credits per started MB across all files.
+## Post With Public Media URLs
+
+Use `media` for an image or MP4 at a public HTTPS URL.
+For local files, call [Upload Media](/api-reference/x-write/upload-media) first.
+Pass its returned `mediaUrl` in `media`.
+Send up to 4 image URLs or exactly 1 MP4 URL.
+Keep the MP4 at 100 MB or less.
+Never send `media_ids`; that field is for DMs only.
+Attached media adds 2 credits per started MB across all files.
 
 <CodeGroup>
   ```bash Image tweet
@@ -374,8 +385,8 @@ Store `id`, `request.hash`, `billing`, `result`, `reply_to_tweet_id`, and `media
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported.
+<ParamField header="x-api-key" type="string">
+  Send your Xquik API key in this header. Alternatively, send an OAuth 2.1 bearer token.
 </ParamField>
 
 <ParamField header="Idempotency-Key" type="string" required>
@@ -389,27 +400,35 @@ Store `id`, `request.hash`, `billing`, `result`, `reply_to_tweet_id`, and `media
 ## Body
 
 <ParamField body="account" type="string" required>
-  X username or account ID identifying which connected X account to post as. The `@` prefix is automatically stripped if included.
+  Choose the connected X account by username or account ID. Xquik removes an optional `@` prefix.
 </ParamField>
 
 <ParamField body="text" type="string">
-  Tweet text content. Maximum 280 characters for standard tweets, or up to 25,000 characters if `is_note_tweet` is `true`. Optional when `media` is provided.
+  Send up to 280 characters for a standard tweet. Note tweets accept up to 25,000 characters. Omit text only when `media` exists.
 </ParamField>
 
 <ParamField body="reply_to_tweet_id" type="string">
-  Tweet ID to reply to. When set, the new tweet is posted as a reply in that tweet's thread.
+  Set the parent Tweet ID. Xquik posts the new tweet inside that thread.
 </ParamField>
 
 <ParamField body="community_id" type="string">
-  X Community ID to post the tweet into. The connected account must be a member of the community.
+  Set the target X Community ID. Confirm that the connected account is a member.
 </ParamField>
 
 <ParamField body="is_note_tweet" type="boolean">
-  Set to `true` to post a long-form note tweet (up to 25,000 characters). Defaults to `false`.
+  Set `true` for a note tweet with up to 25,000 characters. The default is `false`.
 </ParamField>
 
 <ParamField body="media" type="string[]">
-  Array of public media URLs to attach directly. Send up to 4 JPEG, PNG, GIF, WebP, or AVIF image URLs, or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. Use [Upload Media](/api-reference/x-write/upload-media) first if you need Xquik to host a local file, then pass the returned `mediaUrl` in `media`. Do not pass uploaded `mediaId` values or `media_ids`. Attached media adds 2 credits per started MB across all files.
+  Attach public media URLs directly.
+
+  - Send up to 4 JPEG, PNG, GIF, WebP, or AVIF image URLs.
+  - Send exactly 1 public MP4 URL up to 100 MB.
+  - Never mix video with other media.
+  - Use [Upload Media](/api-reference/x-write/upload-media) to host a local file.
+  - Pass its returned `mediaUrl` in `media`.
+  - Never pass uploaded `mediaId` values or `media_ids`.
+  - Attached media adds 2 credits per started MB across all files.
 </ParamField>
 
 ## Response
