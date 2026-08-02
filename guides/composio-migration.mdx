@@ -1,250 +1,483 @@
 ---
-title: "Migrate from Composio Integration for X API"
-sidebarTitle: Composio Migration
-description: "Move a Composio Twitter MCP workflow to Xquik for tweet search, profile lookup, follower exports, managed authorization, and account actions. See exact routes."
-keywords: ["composio", "migration", "twitter", "mcp", "alternative", "oauth"]
+title: "Composio Twitter MCP Alternative & Migration Guide"
+sidebarTitle: "Composio Migration"
+description: "Replace a Composio Twitter MCP session with Xquik for tweet search, profiles, followers, replies, monitors, webhooks, and approved account actions safely."
+keywords: ["Composio alternative", "Twitter MCP", "Twitter API alternative", "X API alternative", "Twitter automation tools", "tweet search API", "follower API", "MCP migration", "Xquik"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Composio offers session-based MCP URLs and a 79-tool Twitter toolkit.
-This guide is for teams that prefer Xquik's fixed MCP endpoint, Xquik-managed
-authorization, and broader Xquik operation catalog.
+Migrate a Composio Twitter MCP workflow without losing tweet IDs, followers, replies, or cursors. Preserve webhooks and write confirmations too. Xquik uses one fixed MCP endpoint. It provides searchable Xquik REST routes through `explore`. Execute approved calls through `xquik`.
 
-## Why Migrate
+Composio remains an active product. Its current session MCP endpoints are not decommissioned. Choose Xquik for a fixed endpoint and managed X authorization. It also provides tweet reads, follower exports, monitors, and direct REST contracts.
+
+## Compare Current MCP Models
 
 <table>
   <caption className="sr-only">
-    Compare Composio and Xquik MCP setup.
+    Compare current Composio and Xquik Twitter MCP workflows.
   </caption>
   <thead>
     <tr>
       <th scope="col">Capability</th>
-      <th scope="col">Composio</th>
+      <th scope="col">Composio session</th>
       <th scope="col">Xquik</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th scope="row">MCP endpoint</th>
-      <td>Generated for a reusable session and user</td>
+      <td>Create or resume a user session.</td>
       <td>
-        Fixed at <a href="https://xquik.com/mcp">Xquik API MCP server</a>
+        Configure the <a href="https://xquik.com/mcp">Xquik API MCP server</a> once.
       </td>
     </tr>
     <tr>
-      <th scope="row">MCP authorization</th>
-      <td>Session URL plus the selected Composio connection flow</td>
-      <td>OAuth 2.1 login, or a client-specific API-key fallback</td>
+      <th scope="row">Endpoint access</th>
+      <td>Use <code>session.mcp.url</code> and <code>session.mcp.headers</code>.</td>
+      <td>Complete OAuth consent or use a supported API-key fallback.</td>
     </tr>
     <tr>
-      <th scope="row">Twitter connection</th>
-      <td>Uses a Composio auth configuration</td>
-      <td>Uses the Xquik login and consent flow</td>
+      <th scope="row">X account</th>
+      <td>Scope the session to a user, auth config, and connection.</td>
+      <td>Bind each credential to one application user or tenant.</td>
     </tr>
     <tr>
-      <th scope="row">Developer credentials</th>
-      <td>Depends on the selected Composio auth configuration</td>
-      <td>No X developer credentials required</td>
+      <th scope="row">Route discovery</th>
+      <td>Load Twitter toolkit actions and schemas through the session.</td>
+      <td>Use <code>explore</code> to find current Xquik REST routes.</td>
     </tr>
     <tr>
-      <th scope="row">Published toolkit</th>
-      <td>79 Twitter tools</td>
-      <td>119 JSON or text operations through 2 MCP tools</td>
+      <th scope="row">Reads and exports</th>
+      <td>Call the matching toolkit action.</td>
+      <td>Use <code>xquik</code>, direct REST, or an extraction job.</td>
     </tr>
     <tr>
-      <th scope="row">Agent setup</th>
-      <td>Create a session, read <code>session.mcp.url</code>, then configure the client</td>
-      <td>Add the fixed endpoint, then authorize</td>
+      <th scope="row">Account actions</th>
+      <td>Execute against the session's connected account.</td>
+      <td>Require approval, then confirm each terminal result.</td>
     </tr>
   </tbody>
 </table>
 
-## Before: Current Composio Session MCP Setup
+Do not compare volatile tool counts. Compare the exact operations, schemas, permissions, and results your workflow uses.
+
+## Capture the Current Composio Contract
+
+Inventory the existing workflow before changing clients. Record each Composio tool slug, input, output, connection, and side effect.
 
 <Steps>
-  <Step title="Install the current SDK">
-    Install `composio` for Python or `@composio/core` for TypeScript.
+  <Step title="List Every Twitter Tool Call">
+    Separate tweet reads, profile reads, follower reads, DMs, lists, and writes.
   </Step>
-  <Step title="Create a Twitter auth configuration">
-    Select managed or custom authorization according to the current Composio
-    toolkit options available to your organization.
+  <Step title="Record Stable Output Fields">
+    Keep tweet IDs, user IDs, usernames, timestamps, metrics, URLs, and cursors.
   </Step>
-  <Step title="Create a reusable MCP session">
-    Call `composio.create(...)` with the user ID, Twitter toolkit, auth config,
-    and `mcp=True` or `mcp: true`.
+  <Step title="Mark Every Mutation">
+    Mark tweet creation, replies, likes, follows, DMs, deletes, and list changes.
   </Step>
-  <Step title="Read the session URL">
-    Use `session.mcp.url` as the user's MCP endpoint. Reuse the session instead
-    of creating one for every request.
+  <Step title="Capture Auth Ownership">
+    Record which application user owns each Composio session and connection.
   </Step>
-  <Step title="Configure the MCP client">
-    Add `session.mcp.url` and follow the current Composio session authentication
-    instructions.
+  <Step title="Save Retry Rules">
+    Record retryable statuses, attempt caps, delays, and idempotency controls.
   </Step>
-  <Step title="Connect the Twitter account">
-    Complete the authorization flow required by the selected auth
-    configuration.
+  <Step title="Build Representative Fixtures">
+    Save sanitized tweet, profile, follower, pagination, and error examples.
   </Step>
 </Steps>
 
-## After: Xquik Setup (2 Steps)
+Never store Composio API keys, session headers, or OAuth tokens in fixtures. Exclude raw private messages too.
 
-<Steps>
-  <Step title="Add the MCP server">
-    Add `https://xquik.com/mcp` to your MCP client:
+## Verify the Current Composio Session Code
 
-    <CodeGroup>
-
-    ```bash Claude Code
-    claude mcp add --transport http xquik https://xquik.com/mcp
-    ```
-
-    ```bash Codex
-    codex mcp add xquik --url https://xquik.com/mcp
-    ```
-
-    ```json Cursor
-    {
-      "mcpServers": {
-        "xquik": {
-          "url": "https://xquik.com/mcp"
-        }
-      }
-    }
-    ```
-
-    </CodeGroup>
-  </Step>
-  <Step title="Authorize Xquik">
-    Start authentication from the client. Use `/mcp` in Claude Code or run
-    `codex mcp login xquik` in Codex. Complete Xquik login and consent in the
-    browser. Let the client use its documented CIMD or DCR registration flow.
-  </Step>
-</Steps>
-
-<Warning>
-  Affected Codex releases discard the RFC 9207 `iss` value before token exchange. Xquik already returns it. If Codex reports `Authorization server response missing required issuer: expected https://xquik.com`, set `XQUIK_API_KEY` and use `bearer_token_env_var = "XQUIK_API_KEY"` as described in [Codex OAuth issuer validation error](/guides/troubleshooting#codex-oauth-issuer-validation-error). Track the [upstream Codex issue](https://github.com/openai/codex/issues/31573) for the fixed release.
-</Warning>
-
-Use an API key only for programmatic clients that cannot complete OAuth and
-document secure header storage. ChatGPT custom apps require OAuth and cannot
-present custom API keys.
-
-## Code Migration
-
-### Python (Pydantic AI)
+Composio's Python and TypeScript SDKs expose different creation signatures. Use version-specific code when documenting the system being replaced.
 
 <CodeGroup>
 
-```python Before (Composio)
+```bash Python
+python -m pip install "composio==0.15.0"
+```
+
+```bash TypeScript
+npm install "@composio/core@0.14.1"
+```
+
+</CodeGroup>
+
+### Python Session MCP
+
+Python `composio==0.15.0` exposes `Composio.create()` with keyword arguments. It returns a session containing the MCP URL and headers.
+
+```python
 import os
+
 from composio import Composio
-from dotenv import load_dotenv
 
-load_dotenv()
-
-composio_client = Composio(api_key=os.getenv("COMPOSIO_API_KEY"))
+composio_client = Composio(api_key=os.environ["COMPOSIO_API_KEY"])
 session = composio_client.create(
     user_id=os.environ["USER_ID"],
     toolkits=["twitter"],
     auth_configs={
         "twitter": os.environ["COMPOSIO_TWITTER_AUTH_CONFIG_ID"],
     },
-    mcp=True,
 )
+
 COMPOSIO_MCP_URL = session.mcp.url
+COMPOSIO_MCP_HEADERS = session.mcp.headers
 ```
 
-```python After (Xquik)
-import os
+Do not pass `mcp=True` to this Python version. Its published signature does not accept that argument.
 
-from pydantic_ai import Agent
-from pydantic_ai.mcp import MCPToolset
+### TypeScript Session MCP
 
-toolset = MCPToolset(
-    "https://xquik.com/mcp",
-    headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
-)
+TypeScript `@composio/core==0.14.1` makes MCP an explicit typed option. Use the canonical `composio.sessions.create()` entry point.
 
-agent = Agent("anthropic:claude-sonnet-4-6", toolsets=[toolset])
-# API-key fallback for noninteractive runtimes
-```
-
-</CodeGroup>
-
-### TypeScript (Mastra)
-
-<CodeGroup>
-
-```typescript Before (Composio)
+```typescript
 import { Composio } from "@composio/core";
 
-const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
-const session = await composio.create(process.env.USER_ID!, {
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+const session = await composio.sessions.create(process.env.USER_ID!, {
   toolkits: ["twitter"],
   authConfigs: {
     twitter: process.env.COMPOSIO_TWITTER_AUTH_CONFIG_ID!,
   },
   mcp: true,
 });
-const mcpUrl = session.mcp.url;
+
+const composioMcpUrl = session.mcp.url;
+const composioMcpHeaders = session.mcp.headers;
 ```
 
-```typescript After (Xquik)
-import { MCPClient } from "@mastra/mcp";
+Do not drop `session.mcp.headers`. Composio's hosted endpoint can require them.
 
-const mcp = new MCPClient({
-  servers: {
-    xquik: {
-      url: new URL("https://xquik.com/mcp"),
-      requestInit: {
-        headers: { Authorization: `Bearer ${process.env.XQUIK_API_KEY}` },
-      },
-    },
-  },
-});
-// API-key fallback for noninteractive runtimes
+## Configure the Xquik Twitter MCP Server
+
+Add the fixed Xquik endpoint to each supported client.
+
+<CodeGroup>
+
+```bash Claude Code
+claude mcp add --transport http xquik https://xquik.com/mcp
+```
+
+```bash Codex
+codex mcp add xquik --url https://xquik.com/mcp
+codex mcp login xquik
+```
+
+```json Cursor
+{
+  "mcpServers": {
+    "xquik": {
+      "url": "https://xquik.com/mcp"
+    }
+  }
+}
 ```
 
 </CodeGroup>
 
-## Result Handoff
+Complete Xquik login and consent through the client. Programmatic runtimes can use a supported API-key fallback. Store API keys in a secret manager.
 
-When you replace Composio agent steps, map raw tool responses into stable rows before sending them to Slack, Sheets, queues, databases, or dashboards.
+<Warning>
+  Affected Codex releases discard the RFC 9207 `iss` value before token exchange. Xquik already returns it. The error reads `Authorization server response missing required issuer: expected https://xquik.com`. Follow [Codex OAuth issuer validation error](/guides/troubleshooting#codex-oauth-issuer-validation-error) when issuer validation fails. Track [upstream issue #31573](https://github.com/openai/codex/issues/31573) for the fixed Codex release.
+</Warning>
+
+ChatGPT custom apps require OAuth. They cannot present custom Xquik API-key headers.
+
+## Map Composio Twitter Tools to Xquik Routes
+
+Use `explore` before selecting a route. Confirm the path, method, parameters, response shape, and account permission.
 
 <CardGroup cols={2}>
-  <Card title="Tweet Search Page" icon="search">
-    Store request `q`, each `tweet_id`, `text`, `author_username`, `created_at`, and `url`. Keep `has_more` and `next_cursor` for page loops.
+  <Card title="Search Tweets" icon="search">
+    Map Twitter search to `GET /api/v1/x/tweets/search`. Preserve `q`, ordering, timestamps, filters, and cursors.
   </Card>
-  <Card title="User Page" icon="users">
-    Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, and `profile_picture`. Keep `has_more` and `next_cursor` when present.
+  <Card title="Get One Tweet" icon="message-square">
+    Map tweet lookup to `GET /api/v1/x/tweets/{id}`. Preserve the numeric tweet ID.
   </Card>
-  <Card title="Trend Page" icon="trending-up">
-    Store each trend `name`, `rank`, `query`, and `description`. Keep response `count` and `woeid` for regional audit trails.
+  <Card title="Get a Profile" icon="user-round">
+    Map user lookup to `GET /api/v1/x/users/{id}`. Accept a username or user ID.
   </Card>
-  <Card title="Monitor Webhook" icon="radio">
-    Store `delivery_id` for receiver retry de-dupe and `stream_event_id` when one monitor event should process once across endpoint changes.
+  <Card title="Search Profiles" icon="users">
+    Map profile search to `GET /api/v1/x/users/search`. Preserve the search query.
   </Card>
-  <Card title="Stored Event Replay" icon="activity">
-    Use `GET /api/v1/events` with `after` to replay stored monitor events. Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, and `next_cursor`.
+  <Card title="Read Followers" icon="user-plus">
+    Map followers to `GET /api/v1/x/users/{id}/followers`. Preserve user IDs and cursors.
   </Card>
-  <Card title="Media Attachments" icon="image">
-    For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`. For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.
+  <Card title="Read Following" icon="user-check">
+    Map following to `GET /api/v1/x/users/{id}/following`. Keep following rows separate.
+  </Card>
+  <Card title="Read User Tweets" icon="list">
+    Map timelines to `GET /api/v1/x/users/{id}/tweets`. Choose reply and parent options.
+  </Card>
+  <Card title="Read Tweet Replies" icon="messages-square">
+    Map replies to `GET /api/v1/x/tweets/{id}/replies`. Preserve parent and nested reply IDs.
+  </Card>
+  <Card title="Read Trends" icon="trending-up">
+    Map trends to `GET /api/v1/x/trends`. Preserve WOEID, rank, query, and description.
+  </Card>
+  <Card title="Create Monitors" icon="radio">
+    Use catalog-listed monitor routes. Store the monitor ID before creating webhooks.
   </Card>
 </CardGroup>
 
-For downstream tables, keep `tweet_rows`, `user_rows`, `trend_rows`, `webhook_event_rows`, `event_replay_rows`, and `media_write_rows` as separate shapes instead of passing the whole MCP result through the workflow.
+Use direct REST or generated SDKs for binary downloads. Also use them when responses exceed the MCP handoff. Use extraction jobs for durable CSV, JSON, or XLSX exports.
 
-## Framework-Specific Guides
+## Discover Routes Before Execution
 
-For complete integration guides with your framework:
+The `explore` tool searches the authenticated Xquik catalog without executing a request. Ask it for route metadata before calling `xquik`.
+
+```javascript
+async () => {
+  return spec.endpoints.filter((endpoint) =>
+    endpoint.summary.toLowerCase().includes("followers"),
+  );
+}
+```
+
+Then call the selected route through `xquik.request()`.
+
+```javascript
+async () => {
+  return xquik.request("/api/v1/x/tweets/search", {
+    query: {
+      q: '"model context protocol" lang:en -filter:retweets',
+      queryType: "Latest",
+      limit: 100,
+    },
+  });
+}
+```
+
+Keep searches focused. Preserve the exact query beside every tweet page.
+
+## Replace Provider-Specific Cursors
+
+Never pass a Composio cursor into Xquik. Cursor formats belong to their source and request contract.
+
+Start the Xquik shadow read at page one. Persist the first Xquik `next_cursor` only after storing its rows. Continue with the same route, query, ordering, limits, filters, and time window.
+
+Xquik MCP list and search results use `has_more` and `next_cursor`. Pass `next_cursor` as `cursor` for tweets, profiles, followers, replies, timelines, communities, and lists. Use `after` for event replay and extraction pages.
+
+Stop when `has_more` becomes false. Also stop on a missing or repeated cursor. Return the partial row count and a clear stop reason.
+
+## Normalize Results Before Cutover
+
+Composio and Xquik return different envelopes. Compare stable business rows, not raw provider payloads.
+
+### Tweet Search Rows
+
+Store request `q`, `query_type`, `since_time`, and `until_time`. Store each `tweet_id`, `text`, `author_id`, `author_username`, `created`, and `url`. Keep likes, reposts, replies, quotes, views, and bookmarks as separate metrics.
+
+### Profile and Follower Rows
+
+Store source `id` as `user_id`. Preserve `username`, `name`, `followers`, `following`, `verified`, and `profile_picture`. Keep follower and following rows in separate collections.
+
+### Reply Rows
+
+Store `tweet_id`, `conversation_id`, `in_reply_to_id`, `author_id`, `author_username`, `created`, `text`, and `url`. Keep nested replies separate from direct replies.
+
+### Trend Rows
+
+Store each trend `name`, `rank`, `query`, and `description`. Store response `count` and `woeid` with the batch.
+
+### Monitor and Webhook Rows
+
+Store `monitor_id`, `monitor_type`, and the webhook endpoint ID. Verify each webhook signature before parsing the body. Store `delivery_id` for delivery deduplication. Store `stream_event_id` for event deduplication.
+
+### Stored Event Replay
+
+Use `GET /api/v1/events` with `after`. Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, and `next_cursor`.
+
+Keep `tweet_rows`, `profile_rows`, `follower_rows`, `following_rows`, `reply_rows`, `trend_rows`, `webhook_event_rows`, and `event_replay_rows` separate.
+
+## Preserve Tenant and Account Boundaries
+
+A Composio session belongs to an application user. Preserve that ownership during migration.
+
+<CardGroup cols={2}>
+  <Card title="One Tenant Context" icon="building-2">
+    Bind each Xquik credential to one tenant or application user.
+  </Card>
+  <Card title="One Account Scope" icon="user-round-cog">
+    Confirm which connected X account each read or write uses.
+  </Card>
+  <Card title="No Shared Bearer Tokens" icon="key-round">
+    Never reuse one tenant's OAuth token inside another tenant's agent.
+  </Card>
+  <Card title="Server-Side Secrets" icon="vault">
+    Keep OAuth tokens and API keys outside prompts, traces, and client storage.
+  </Card>
+</CardGroup>
+
+Do not put tokens inside agent state or saved chat history. Inject authorization at the MCP transport boundary.
+
+## Migrate Reads Before Writes
+
+Start with tweet search, profile lookup, followers, following, replies, and trends. Compare normalized rows during a shadow period.
+
+Validate these invariants:
+
+- Requested accounts and query windows match.
+- Tweet and user IDs remain strings.
+- Pagination reaches the expected stopping condition.
+- Missing optional fields stay missing.
+- Timestamps use one documented representation.
+- Duplicate rows collapse by stable IDs.
+- Error routes preserve status and safe categories.
+
+Do not expect ranking order or engagement metrics to remain identical forever. Compare IDs, coverage, fields, and timestamps within the same test window.
+
+## Cut Over Writes Safely
+
+Do not run Composio and Xquik mutations in parallel. That can duplicate tweets, replies, likes, follows, DMs, or list changes.
+
+<Steps>
+  <Step title="Disable Composio Mutations">
+    Keep read-only shadow checks active. Stop every old write path.
+  </Step>
+  <Step title="Require Explicit Approval">
+    Show the action, account, text, recipients, and media before execution.
+  </Step>
+  <Step title="Execute One Xquik Write">
+    Use the catalog-listed route or direct REST contract.
+  </Step>
+  <Step title="Store Durable IDs">
+    Store `tweet_id`, `message_id`, or `write_action_id` immediately.
+  </Step>
+  <Step title="Confirm Terminal State">
+    Poll pending write actions before retrying or showing success.
+  </Step>
+  <Step title="Enable the Remaining Writes">
+    Migrate one mutation class at a time.
+  </Step>
+</Steps>
+
+Never claim success from an accepted request alone. Confirm the documented terminal response.
+
+## Preserve Media Workflows
+
+For tweets and replies, pass public HTTPS image or MP4 URLs in `media`. Store `tweet_id` or `write_action_id` from the response.
+
+For DMs, upload media first. Pass one returned `media_id` inside `media_ids`. Store `message_id`, `media_id`, account, and recipient. Leave `reply_to_message_id` unset unless the documented route requires it.
+
+Do not copy Composio media identifiers into Xquik requests. Upload or reference media through the target contract.
+
+## Handle Xquik Errors
+
+Branch on the selected route's canonical statuses.
+
+<CardGroup cols={2}>
+  <Card title="400 Invalid Request" icon="circle-x">
+    Fix the query, route parameters, or body. Do not retry unchanged.
+  </Card>
+  <Card title="401 Authentication" icon="key-round">
+    Reauthorize Xquik or supply a valid credential.
+  </Card>
+  <Card title="402 Account Action" icon="credit-card">
+    Resolve subscription or credits before retrying.
+  </Card>
+  <Card title="404 Not Found" icon="search-x">
+    Check tweet IDs, user IDs, usernames, monitor IDs, or webhook IDs.
+  </Card>
+  <Card title="424 Dependency Failure" icon="unplug">
+    Preserve returned rows and diagnostics. Retry only when safe.
+  </Card>
+  <Card title="429 Rate Limit" icon="timer">
+    Respect the returned retry guidance and use bounded backoff.
+  </Card>
+  <Card title="502 Retrieval Failure" icon="triangle-alert">
+    Retry transient X retrieval failures with an attempt cap.
+  </Card>
+  <Card title="Write Pending" icon="clock-3">
+    Store the action ID and poll the documented status route.
+  </Card>
+</CardGroup>
+
+Log the route, method, safe status, and workflow ID. Never log authorization headers or raw private messages.
+
+## Test, Cut Over, and Roll Back
+
+<Steps>
+  <Step title="Run Contract Tests">
+    Validate normalized tweet, profile, follower, reply, trend, and error rows.
+  </Step>
+  <Step title="Run Shadow Reads">
+    Compare providers without triggering writes or customer notifications.
+  </Step>
+  <Step title="Switch One Consumer">
+    Route one downstream index, dashboard, or alert to Xquik rows.
+  </Step>
+  <Step title="Observe Production Runs">
+    Check cursors, duplicates, missing fields, status codes, and latency.
+  </Step>
+  <Step title="Cut Over Remaining Reads">
+    Move consumers only after their row invariants pass.
+  </Step>
+  <Step title="Cut Over Writes Separately">
+    Use the approval and terminal-confirmation process above.
+  </Step>
+</Steps>
+
+Keep the old Composio configuration disabled but recoverable during validation. Roll back consumers, not stored Xquik rows. Never replay completed writes during rollback.
+
+## Common Composio Twitter MCP Migration Questions
+
+### Is Xquik a Composio Alternative for Twitter MCP?
+
+Yes, when the workflow needs X-specific reads, exports, monitors, webhooks, and approved actions. Compare required routes instead of toolkit counts.
+
+### Do I Need an X Developer Account for Xquik?
+
+No X developer credentials are required. Complete Xquik authorization through its supported login or API-key flow.
+
+### Can I Reuse a Composio MCP Session URL?
+
+No. Configure `https://xquik.com/mcp` as a new server. Do not treat a Composio session URL as an Xquik credential.
+
+### Can I Reuse Composio Pagination Cursors?
+
+No. Restart at page one and store the new Xquik cursor after each committed page.
+
+### Can Xquik Export Twitter Followers and Following?
+
+Yes. Use the follower and following routes for pages. Use extraction jobs for durable file exports.
+
+### How Do I Migrate Tweet Search Without Missing Posts?
+
+Use the same query and time window during shadow reads. Compare stable tweet IDs and pagination checkpoints.
+
+### How Do I Avoid Duplicate Tweets During Write Cutover?
+
+Disable Composio mutations first. Execute one approved Xquik write and confirm its terminal result.
+
+### Should I Compare Raw Composio and Xquik Responses?
+
+No. Normalize stable tweet, profile, follower, reply, trend, and webhook rows first.
+
+## Framework-Specific Xquik Guides
 
 - [LangChain](/guides/langchain)
 - [CrewAI](/guides/crewai)
 - [Pydantic AI](/guides/pydantic-ai)
 - [Google ADK](/guides/google-adk)
+- [Haystack](/guides/haystack)
 - [Mastra](/guides/mastra)
 - [Microsoft Agent Framework](/guides/microsoft-agent-framework)
+
+## Source and Contracts
+
+- [Composio Sessions Through MCP](https://docs.composio.dev/docs/sessions-via-mcp)
+- [Composio Twitter Toolkit](https://composio.dev/toolkits/twitter)
+- [Xquik MCP Overview](/mcp/overview)
+- [Xquik MCP Tools](/mcp/tools)
+- [Xquik Tweet Search API](/api-reference/x/search-tweets)
+- [Xquik Followers API](/api-reference/x/followers)
+- [Xquik Error Handling](/guides/error-handling)

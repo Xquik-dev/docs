@@ -10063,28 +10063,64 @@ const FORBIDDEN_HAYSTACK_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_COMPOSIO_MIGRATION_SNIPPETS = [
-  'Composio offers session-based MCP URLs and a 79-tool Twitter toolkit.',
+  'title: "Composio Twitter MCP Alternative & Migration Guide"',
+  'sidebarTitle: "Composio Migration"',
+  'Do not compare volatile tool counts.',
+  'python -m pip install "composio==0.15.0"',
+  'npm install "@composio/core@0.14.1"',
   'session = composio_client.create(',
   'COMPOSIO_MCP_URL = session.mcp.url',
+  'COMPOSIO_MCP_HEADERS = session.mcp.headers',
+  'Do not pass `mcp=True` to this Python version.',
+  'const session = await composio.sessions.create(process.env.USER_ID!',
+  'mcp: true,',
+  'const composioMcpUrl = session.mcp.url;',
+  'const composioMcpHeaders = session.mcp.headers;',
+  '## Configure the Xquik Twitter MCP Server',
+  'https://xquik.com/mcp',
+  '## Map Composio Twitter Tools to Xquik Routes',
+  'GET /api/v1/x/tweets/search',
+  'GET /api/v1/x/users/{id}/followers',
+  '## Discover Routes Before Execution',
+  'return xquik.request("/api/v1/x/tweets/search"',
+  '## Replace Provider-Specific Cursors',
+  'Never pass a Composio cursor into Xquik.',
+  'Xquik MCP list and search results use `has_more` and `next_cursor`.',
+  '## Normalize Results Before Cutover',
+  '### Tweet Search Rows',
+  '### Profile and Follower Rows',
+  '### Reply Rows',
+  '### Trend Rows',
+  '### Monitor and Webhook Rows',
+  '### Stored Event Replay',
+  'Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, and `next_cursor`.',
+  '## Preserve Tenant and Account Boundaries',
+  '## Migrate Reads Before Writes',
+  '## Cut Over Writes Safely',
+  '## Preserve Media Workflows',
+  '## Handle Xquik Errors',
+  '400 Invalid Request',
+  '401 Authentication',
+  '402 Account Action',
+  '404 Not Found',
+  '424 Dependency Failure',
+  '429 Rate Limit',
+  '502 Retrieval Failure',
+  '## Test, Cut Over, and Roll Back',
+  '## Common Composio Twitter MCP Migration Questions',
+] as const;
+
+const FORBIDDEN_COMPOSIO_MIGRATION_SNIPPETS = [
+  'Composio offers session-based MCP URLs and a 79-tool Twitter toolkit.',
+  '119 JSON or text operations',
+  '    mcp=True,',
   'const session = await composio.create(process.env.USER_ID!',
   'const mcpUrl = session.mcp.url;',
-  '## Result Handoff',
-  'When you replace Composio agent steps, map raw tool responses into stable rows before sending them to Slack, Sheets, queues, databases, or dashboards.',
-  '<Card title="Tweet Search Page" icon="search">',
-  'Store request `q`, each `tweet_id`, `text`, `author_username`, `created_at`, and `url`. Keep `has_more` and `next_cursor` for page loops.',
-  '<Card title="User Page" icon="users">',
-  'Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, and `profile_picture`. Keep `has_more` and `next_cursor` when present.',
-  '<Card title="Trend Page" icon="trending-up">',
-  'Store each trend `name`, `rank`, `query`, and `description`. Keep response `count` and `woeid` for regional audit trails.',
-  '<Card title="Monitor Webhook" icon="radio">',
-  'Store `delivery_id` for receiver retry de-dupe and `stream_event_id` when one monitor event should process once across endpoint changes.',
-  '<Card title="Stored Event Replay" icon="activity">',
-  'Use `GET /api/v1/events` with `after` to replay stored monitor events.',
-  'Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, and `next_cursor`.',
-  '<Card title="Media Attachments" icon="image">',
-  'For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`.',
-  'For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.',
-  'For downstream tables, keep `tweet_rows`, `user_rows`, `trend_rows`, `webhook_event_rows`, `event_replay_rows`, and `media_write_rows` as separate shapes instead of passing the whole MCP result through the workflow.',
+  'title: "Migrate from Composio Integration for X API"',
+  'Pass the raw response to',
+  'Store the entire MCP result',
+  "Composio's deprecated Twitter MCP",
+  'was decommissioned',
 ] as const;
 
 const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
@@ -16445,7 +16481,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Composio migration guide handoff concrete', (): void => {
-    expect.assertions(5);
+    expect.assertions(6);
 
     const source = readFileSync('guides/composio-migration.mdx', 'utf8');
 
@@ -16460,6 +16496,11 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('Store the entire MCP result');
     expect(source).not.toContain("Composio's deprecated Twitter MCP");
     expect(source).not.toContain('was decommissioned');
+    expect(
+      FORBIDDEN_COMPOSIO_MIGRATION_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps the Hermes Tweet guide aligned with the current plugin scope', (): void => {
