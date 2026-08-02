@@ -425,9 +425,14 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'api-reference/x-write/leave-community.mdx',
     snippets: [
-      '| Community departure record | Request or response source | Membership rule |',
-      '| Idempotency key | Request header | Never reuse the earlier join key. |',
-      '## How to Leave a Twitter Community Through the API',
+      'How to Leave a Community on Twitter via API',
+      '## Archive Community Posts Before Leaving',
+      '## How to Leave Twitter Community Membership Safely',
+      '## Verify the Twitter Community Departure',
+      '### Can This API Cancel a Pending Join Request?',
+      '### Is a Twitter Group Chat the Same as a Community?',
+      '### Is Community Notes the Same as X Communities?',
+      'OAuth bearer authentication is also supported.',
       '| Membership task | Correct route | Expected result |',
     ],
   },
