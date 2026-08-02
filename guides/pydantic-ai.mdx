@@ -72,7 +72,8 @@ The explicit FastMCP range prevents an MCP SDK v2 prerelease from entering the
 environment. Remove that cap only after Pydantic AI adds FastMCP 4 support.
 
 This Pydantic AI MCP Streamable HTTP setup keeps execution inside Python.
-This Pydantic AI MCP server connection uses the Xquik HTTPS URL.
+This Pydantic AI MCP server connection uses the Xquik endpoint.
+Keep the MCP URL HTTPS-only.
 It authenticates with the `x-api-key` header.
 After setup is complete, it can be run inside a local Python process.
 
@@ -95,7 +96,7 @@ validates the model output against this schema.
 
 To import `Agent` from Pydantic AI, use `from pydantic_ai import Agent`.
 Use type hints for every durable handoff field.
-The `import asyncio` statement enables the asynchronous entry point.
+Start the async example with `import asyncio`.
 The `typing` import supplies `Literal` for finite stop reasons.
 
 ```python
@@ -175,8 +176,8 @@ Pydantic AI opens and closes the connection automatically. Enter
 
 The agent discovers `explore` and `xquik`. Discover route requirements before
 selecting an unfamiliar endpoint. The Xquik sandbox invokes
-`xquik.request(...)` with validated route values. Authentication is injected
-outside that code.
+`xquik.request(...)` with validated route values. Xquik injects authentication
+separately.
 
 ## Validate Twitter API Fields Before Storage
 
@@ -203,7 +204,7 @@ Events, draws, extractions, and radar pages use `after`. Draft pages use
 
 Continue through an empty page when `has_more` stays true. Stop when no cursor
 exists. Stop after the server repeats a cursor. Return `cursor_stalled` with
-the collected total.
+the number of collected rows.
 
 MCP output has a 24,000-character limit. Project only required fields. Use
 extraction exports when the workflow must persist every complete row.
@@ -253,8 +254,8 @@ output. Never place private messages in shared traces.
 
 ## Reuse the MCP Connection Safely
 
-Wrap related calls in `async with agent`. This reuses one session while
-fetching profiles and tweets.
+Wrap related calls in `async with agent`. One session handles related profile
+and tweet requests.
 
 ```python
 async def collect_two_search_pages() -> None:
@@ -292,7 +293,7 @@ human decision before every X action. Review posts, replies, likes, reposts,
 follows, and direct messages.
 
 Xquik exposes all API calls through one aggregate `xquik` tool. Therefore, a
-write-capable agent must review every Xquik API call. Leave `explore` available
+write-capable agent must review every Xquik request. Leave `explore` available
 without approval.
 
 ```python
@@ -464,14 +465,16 @@ IDs, authors, `created`, URLs, `has_more`, and `next_cursor`.
 ### How Do I Validate Twitter API JSON With Pydantic?
 
 Pass a `BaseModel` as the agent's `output_type`. Call `model_dump_json()` before
-storing each validated output. Never save conversational text as JSON.
+storing each validated output. Do not print `result.output`; validate and store
+it. Never save conversational text as JSON.
 
 ### How Can I Use Pydantic With AI Model Validation Effectively?
 
 Model tweet IDs and cursors as strings. Mark a field optional only when its
-route omits that field. Use `Literal` for finite stop reasons. A plain `str`
-return discards typed tweet IDs, cursors, and error fields. Validate before
-storage, queues, exports, or another agent receives the handoff.
+route omits that field. Use `Literal` for finite stop reasons. Never use a str
+return for a durable handoff. It discards typed tweet IDs, cursors, and error
+fields. Validate before storage, queues, exports, or another agent receives the
+handoff.
 
 ### How Do I Import Agent From Pydantic AI?
 
@@ -486,7 +489,7 @@ connected X account.
 ### How Do I Post a Tweet With Pydantic AI?
 
 Use the matching X write route through `xquik`. Require approval for every API
-call. Store the idempotency key and returned action ID.
+request. Store the idempotency key and returned action ID.
 
 ### How Do I Handle Twitter API Rate Limits in Python?
 
