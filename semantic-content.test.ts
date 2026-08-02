@@ -120,7 +120,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: 'api-reference/x-write/send-dm.mdx',
     snippets: [
       'Store `writeActionId`, recipient ID, account, request hash, and `messageId`.',
-      'For `422 x_dm_not_allowed`, use an account permitted to message the recipient.',
+      'After `422 x_dm_not_allowed`, choose a sender allowed to message this recipient.',
     ],
   },
   {
