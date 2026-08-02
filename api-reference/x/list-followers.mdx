@@ -1,9 +1,9 @@
 ---
 title: "Twitter List Followers API & Profile Export"
 sidebarTitle: "Get list followers"
-description: "Retrieve followers associated with an X list with usernames, bios, verification state, profile media, follower counts, and cursor pages. See examples."
+description: "Retrieve Twitter List followers with usernames, bios, locations, profile images, verification, follower counts, following counts, and JSON cursor pages."
 api: "GET /x/lists/{id}/followers"
-keywords: ["list", "followers", "users", "x api"]
+keywords: ["Twitter List followers API", "Twitter List follower export", "X List followers", "List subscribers", "List audience profiles"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -79,6 +79,57 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 <LlmsDirective />
 <AudienceCommunityApiLinks />
 
+Use this Twitter List followers API to retrieve subscriber profiles for one
+accessible X List. Export stable user IDs, usernames, bios, profile locations,
+verification, follower counts, following counts, profile images, and cursors.
+
+## Twitter List Followers Questions
+
+### What Is a Twitter List Follower?
+
+A List follower subscribes to one List. A List member is an account selected
+by the List owner. An account follower follows one profile instead.
+
+X says anyone can follow a public List. Only its owner can access a private
+List. Read X's official [Lists guide](https://help.x.com/en/using-x/x-lists)
+for current List visibility and follow behavior.
+
+### How Do I Find Who Follows a Specific Twitter List?
+
+Copy the numeric List ID from its X URL. Request the first page without a
+cursor. Store every returned user row before requesting another page.
+
+Continue only when `has_next_page` is true. Pass `next_cursor` unchanged as
+the next `cursor`. X documents the same relationship in its official
+[Get List followers](https://docs.x.com/x-api/lists/get-list-followers) guide.
+
+### How Do I Export Twitter List Followers?
+
+The direct endpoint returns normalized JSON pages. Convert each profile into
+one row. Store the List ID, user ID, username, bio, metrics, and collection
+time.
+
+Use `list_follower_explorer` for a saved Twitter List follower export. The job
+can produce CSV, JSON, or XLSX files without custom spreadsheet code.
+
+### Which List Follower Attributes Can I Analyze?
+
+Analyze stable user IDs, usernames, bios, profile-declared locations, account
+creation dates, verification, and public profile counts. Compare automation,
+protected-account, and availability fields only when the response includes
+them.
+
+These fields do not reveal age, gender, income, private identity, consent, or
+audience sentiment. Do not convert a profile location into verified residence.
+
+### Can This API Add, Remove, or Buy List Followers?
+
+No. This read endpoint cannot follow a List or remove a List follower. It
+cannot create Lists, manage List members, publish posts, or buy followers.
+
+Use the [List Members endpoint](/api-reference/x/list-members) for the curated
+profile roster. That endpoint also reads profiles. It does not edit the List.
+
 <Note>
   Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
 </Note>
@@ -144,7 +195,7 @@ The Node.js and Python snippets shape durable list-follower rows instead of
 printing full profile pages. Persist `followerRows` or `follower_rows` with
 `nextCursor` before requesting the next page.
 
-## Direct list follower handoff
+## Direct List Follower Handoff
 
 Use `GET /x/lists/{id}/followers` when a CRM, warehouse, audience, enrichment,
 or agent workflow needs one JSON page of accounts that follow a list. Use
@@ -176,7 +227,7 @@ Zero affordable results return `402 insufficient_credits`.
   </Card>
 </CardGroup>
 
-## Measure the audience around a list
+## Measure Twitter List Follower Profiles
 
 Use list followers to retrieve profiles that chose to follow one list. Keep
 the list ID with every profile. This distinguishes audience rows from curated
@@ -199,7 +250,7 @@ answer different questions.
 For outreach review, keep source list context. Never infer consent or contact
 permission from a public follow relationship.
 
-## Track list audience changes
+## Track List Audience Changes
 
 Create complete follower snapshots before calculating additions or removals.
 Record the list ID, collection time, page count, and final row count.
@@ -207,8 +258,8 @@ Record the list ID, collection time, page count, and final row count.
 Use follower user IDs as stable comparison keys. Keep usernames only as
 readable labels. Mark interrupted or credit-limited collections as partial.
 
-Audience differences describe observed list follows. They do not describe changes
-to the list’s curated member roster.
+Audience differences describe observed list follows. They do not describe
+changes to the List's curated member roster.
 
 Report newly observed follower IDs separately from missing IDs. Keep both
 snapshot completion states beside the comparison.
@@ -216,19 +267,19 @@ snapshot completion states beside the comparison.
 Use follower differences for audience analysis only. A public follow does not
 grant outreach permission or prove interest in every list topic.
 
-## Path parameters
+## Path Parameters
 
 <ParamField path="id" type="string" required>
   List ID (numeric string).
 </ParamField>
 
-## Query parameters
+## Query Parameters
 
 <ParamField query="cursor" type="string">
   Pagination cursor from a previous response. Omit for the first page.
 </ParamField>
 
-## Which list endpoint?
+## Which List Endpoint?
 
 <CardGroup cols={2}>
   <Card title="List followers" icon="user-plus">
@@ -269,38 +320,38 @@ grant outreach permission or prove interest in every list topic.
     <ResponseField name="id" type="string">User ID.</ResponseField>
     <ResponseField name="username" type="string">X username.</ResponseField>
     <ResponseField name="name" type="string">Display name.</ResponseField>
-    <ResponseField name="description" type="string">Profile bio.</ResponseField>
-    <ResponseField name="followers" type="number">Follower count.</ResponseField>
-    <ResponseField name="following" type="number">Following count.</ResponseField>
-    <ResponseField name="verified" type="boolean">Verified status.</ResponseField>
-    <ResponseField name="profilePicture" type="string">Profile image URL.</ResponseField>
-    <ResponseField name="location" type="string">Profile location.</ResponseField>
-    <ResponseField name="createdAt" type="string">Account creation date (ISO 8601).</ResponseField>
-    <ResponseField name="statusesCount" type="number">Total number of tweets posted. Omitted if unavailable.</ResponseField>
+    <ResponseField name="description" type="string">Contains the profile bio.</ResponseField>
+    <ResponseField name="followers" type="number">Reports the profile's follower count.</ResponseField>
+    <ResponseField name="following" type="number">Reports the profile's following count.</ResponseField>
+    <ResponseField name="verified" type="boolean">Indicates whether the profile is verified.</ResponseField>
+    <ResponseField name="profilePicture" type="string">Provides the profile image URL.</ResponseField>
+    <ResponseField name="location" type="string">Provides the profile-declared location.</ResponseField>
+    <ResponseField name="createdAt" type="string">Reports the account creation date in ISO 8601 format.</ResponseField>
+    <ResponseField name="statusesCount" type="number">Reports total posts when available.</ResponseField>
     <ResponseField name="coverPicture" type="string">Cover/banner image URL. Omitted if unavailable.</ResponseField>
-    <ResponseField name="mediaCount" type="number">Total number of media tweets posted. Omitted if unavailable.</ResponseField>
+    <ResponseField name="mediaCount" type="number">Reports total media posts when available.</ResponseField>
     <ResponseField name="url" type="string">Website URL from profile. Omitted if empty.</ResponseField>
-    <ResponseField name="favouritesCount" type="number">Total number of tweets liked. Omitted if unavailable.</ResponseField>
-    <ResponseField name="hasCustomTimelines" type="boolean">Whether the user has custom timelines. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isTranslator" type="boolean">Whether the user is an X translator. Omitted if unavailable.</ResponseField>
-    <ResponseField name="withheldInCountries" type="string[]">Country codes where the account is withheld. Omitted if empty.</ResponseField>
-    <ResponseField name="possiblySensitive" type="boolean">Whether the account is flagged as possibly sensitive. Omitted if unavailable.</ResponseField>
-    <ResponseField name="pinnedTweetIds" type="string[]">IDs of pinned tweets. Omitted if none.</ResponseField>
-    <ResponseField name="isAutomated" type="boolean">Whether the account is marked as automated. Omitted if unavailable.</ResponseField>
-    <ResponseField name="automatedBy" type="string">Username of the account operator if automated. Omitted if not automated.</ResponseField>
-    <ResponseField name="unavailable" type="boolean">Whether the account is unavailable. Omitted if available.</ResponseField>
-    <ResponseField name="unavailableReason" type="string">Reason the account is unavailable. Omitted if available.</ResponseField>
-    <ResponseField name="verifiedType" type="string">Verification type (e.g. `Business`, `Government`). Omitted if not verified or standard blue check.</ResponseField>
-    <ResponseField name="profile_bio" type="object">Structured profile bio with entity annotations. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isBlueVerified" type="boolean">Whether the account has X Premium verification. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isVerified" type="boolean">Normalized verification status. Omitted if unavailable.</ResponseField>
-    <ResponseField name="profileBannerUrl" type="string">Profile banner URL. Omitted if unavailable.</ResponseField>
-    <ResponseField name="protected" type="boolean">Whether the account protects its posts. Omitted if unavailable.</ResponseField>
-    <ResponseField name="communityRole" type="string">Role within the requested community context. Omitted outside community results.</ResponseField>
+    <ResponseField name="favouritesCount" type="number">Reports total liked posts when available.</ResponseField>
+    <ResponseField name="hasCustomTimelines" type="boolean">Indicates custom timelines when available.</ResponseField>
+    <ResponseField name="isTranslator" type="boolean">Indicates X translator status when available.</ResponseField>
+    <ResponseField name="withheldInCountries" type="string[]">Lists withholding country codes. Omitted if empty.</ResponseField>
+    <ResponseField name="possiblySensitive" type="boolean">Flags a possibly sensitive account when available.</ResponseField>
+    <ResponseField name="pinnedTweetIds" type="string[]">Lists pinned Tweet IDs. Omitted if none.</ResponseField>
+    <ResponseField name="isAutomated" type="boolean">Indicates automation status when available.</ResponseField>
+    <ResponseField name="automatedBy" type="string">Names the account operator. Omitted when not automated.</ResponseField>
+    <ResponseField name="unavailable" type="boolean">Indicates account unavailability. Omitted when available.</ResponseField>
+    <ResponseField name="unavailableReason" type="string">Explains account unavailability. Omitted when available.</ResponseField>
+    <ResponseField name="verifiedType" type="string">Reports `Business` or `Government` verification. Omitted for other profiles.</ResponseField>
+    <ResponseField name="profile_bio" type="object">Contains the structured profile bio and entities. Omitted when unavailable.</ResponseField>
+    <ResponseField name="isBlueVerified" type="boolean">Indicates X Premium verification. Omitted when unavailable.</ResponseField>
+    <ResponseField name="isVerified" type="boolean">Provides normalized verification status. Omitted when unavailable.</ResponseField>
+    <ResponseField name="profileBannerUrl" type="string">Provides the profile banner URL. Omitted when unavailable.</ResponseField>
+    <ResponseField name="protected" type="boolean">Indicates protected-post status. Omitted when unavailable.</ResponseField>
+    <ResponseField name="communityRole" type="string">Reports a community role only within community results.</ResponseField>
 
 </ResponseField>
-<ResponseField name="has_next_page" type="boolean">Whether more results are available.</ResponseField>
-<ResponseField name="next_cursor" type="string">Cursor for the next page. Pass as the `cursor` query parameter.</ResponseField>
+<ResponseField name="has_next_page" type="boolean">Indicates whether another page is available.</ResponseField>
+<ResponseField name="next_cursor" type="string">Provides the next cursor. Pass it as the `cursor` query parameter.</ResponseField>
 
 ```json
 {
@@ -318,7 +369,7 @@ grant outreach permission or prove interest in every list topic.
 }
 ```
 
-### 400 Invalid list ID
+### 400 Invalid List ID
 
 ```json
 { "error": "invalid_list_id", "message": "List ID required" }
@@ -333,19 +384,19 @@ Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout ac
 ```
 Missing or invalid API key.
 
-### 402 Payment required
+### 402 Payment Required
 
 Account keys get account options; guest keys get guest top-up only.
 No checkout starts automatically. Confirm any payment action.
 
-### 404 List not found
+### 404 List Not Found
 
 ```json
 { "error": "not_found" }
 ```
 The list could not be resolved. Check the list ID.
 
-### 502 X API unavailable
+### 502 X API Unavailable
 
 ```json
 { "error": "x_api_unavailable" }
