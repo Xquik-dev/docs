@@ -1,52 +1,110 @@
 ---
-title: "Mastra Twitter Agent Guide | X API Tutorial"
+title: "Mastra Twitter MCP Agent Guide for TypeScript"
 sidebarTitle: "Mastra"
-description: "Build a Mastra TypeScript agent that searches tweets, looks up profiles, exports followers, monitors keywords, and calls approved X actions. Follow exact steps."
-keywords: ["mastra", "mcp", "agent", "twitter", "typescript", "node"]
+description: "Build a Mastra Twitter MCP agent for tweet search, profiles, followers, monitors, exports, and approved X actions with typed, validated TypeScript output."
+keywords:
+  [
+    "Mastra Twitter MCP",
+    "Twitter MCP TypeScript",
+    "Mastra MCPClient",
+    "Twitter API TypeScript",
+    "tweet search agent",
+    "Twitter follower scraper API",
+    "X API agent",
+    "Twitter automation agent",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Build a Mastra agent in TypeScript that can search tweets, hand off IDs and cursors, post tweets, replay stored monitor events, and run extraction jobs - connected to Xquik's MCP server.
+Build a Mastra Twitter MCP agent through Xquik's remote MCP server. Search
+tweets, inspect profiles, export followers, replay monitor events, and review
+X actions. Preserve every tweet ID, profile ID, cursor, and job ID.
 
-## Choose Mastra for TypeScript agent services
+## Why Use Mastra With a Twitter API?
 
-Use Mastra when the surrounding worker already runs on TypeScript. Keep Xquik
-tool discovery inside the MCP client. Give the agent only the tools required
-for its current task.
+Mastra provides TypeScript agents, model routing, tools, memory, and workflows.
+Xquik supplies Twitter API operations through two MCP tools: `explore` and
+`xquik`.
 
-Represent handoffs with typed objects. Preserve tweet IDs, user IDs, queries,
-and cursors as strings. Store media URLs separately from generated summaries.
-This keeps later steps tied to the original tweet.
+Use each boundary for one responsibility.
 
-Use dynamic headers when each user brings a separate Xquik API key. Do not
-share one credential across unrelated tenants. Create the toolset after the
-request identity is known.
+| Boundary | Mastra control | Twitter agent benefit |
+| --- | --- | --- |
+| Remote MCP | `MCPClient` | Connect models to tweet, profile, follower, and monitor routes |
+| Final response | Zod `structuredOutput` | Reject malformed tweet rows and pagination state |
+| Per-call tools | `listToolsets()` | Isolate one tenant's Xquik credentials |
+| X actions | `requireToolApproval` | Pause before the `xquik` execution tool runs |
+| Error handling | `onToolError: "throw"` | Surface MCP failures instead of treating them as success |
+| Cleanup | `disconnect()` | Close remote sessions and avoid leaked connections |
 
-Stream explanatory text to the interface. Keep write-action results in a
-durable job record. Require approval before posting tweets, sending direct
-messages, or changing follows.
+Choose Mastra when the surrounding service already uses TypeScript. Choose
+direct REST for deterministic jobs without model decisions.
 
-## Prerequisites
+## Mastra Twitter API Prerequisites
 
-- Node.js 22.13+
-- [Xquik API key](/x-api-quickstart) (`xq_...`)
-- An LLM API key (OpenAI, Anthropic, or any Vercel AI SDK-supported provider)
+- Node.js 22.13 or later
+- An [Xquik API key](/x-api-quickstart) beginning with `xq_`
+- An LLM provider key supported by Mastra
+- A connected X account for private reads or X write actions
 
-## Install
+Public X reads do not require X Developer credentials. Authenticate with
+Xquik. Connect an X account only when the route requires it.
+
+## Install Mastra MCP Support
+
+Install the tested Mastra minor lines and Zod.
 
 ```bash
-npm install @mastra/mcp @mastra/core
+npm install "@mastra/core@^1.55" "@mastra/mcp@^1.15" zod
 ```
 
-## Full Example
+Store secrets outside source control.
+
+```bash .env
+XQUIK_API_KEY=xq_YOUR_KEY_HERE
+OPENAI_API_KEY=YOUR_OPENAI_KEY
+```
+
+```text .gitignore
+.env
+xquik-*-handoff.json
+```
+
+## Build a Mastra Tweet Search Agent
+
+Define the final handoff before creating the agent. Mastra validates the model
+response against the Zod schema.
 
 ```typescript
 import { writeFile } from "node:fs/promises";
-import { MCPClient } from "@mastra/mcp";
 import { Agent } from "@mastra/core/agent";
+import { MCPClient } from "@mastra/mcp";
+import { z } from "zod";
+
+const tweetRowSchema = z.object({
+  tweet_id: z.string(),
+  text: z.string(),
+  author_username: z.string().nullable(),
+  created: z.number().int().nullable(),
+  url: z.string().url().nullable(),
+});
+
+const handoffSchema = z.object({
+  query: z.string(),
+  route_used: z.literal("GET /api/v1/x/tweets/search"),
+  tweets: z.array(tweetRowSchema),
+  has_more: z.boolean(),
+  next_cursor: z.string().nullable(),
+  pages_fetched: z.number().int().positive(),
+  stop_reason: z.enum([
+    "complete",
+    "requested_limit",
+    "cursor_stalled",
+  ]),
+});
 
 const mcp = new MCPClient({
   servers: {
@@ -57,152 +115,365 @@ const mcp = new MCPClient({
           "x-api-key": process.env.XQUIK_API_KEY!,
         },
       },
+      onToolError: "throw",
+    },
+  },
+  timeout: 60_000,
+});
+
+try {
+  const agent = new Agent({
+    id: "xquik-tweet-search-agent",
+    name: "Xquik Tweet Search Agent",
+    instructions: [
+      "Use Xquik for Twitter API requests.",
+      "Use GET /api/v1/x/tweets/search.",
+      "Preserve exact tweet IDs, created timestamps, and cursors.",
+      "Never invent missing tweet fields.",
+      "Stop when the requested limit is reached.",
+      "Stop if the server repeats a cursor.",
+    ].join(" "),
+    model: "openai/gpt-5",
+    tools: await mcp.listTools(),
+  });
+
+  const result = await agent.generate(
+    "Search 50 latest tweets about Mastra Twitter MCP.",
+    { structuredOutput: { schema: handoffSchema } },
+  );
+
+  await writeFile(
+    "xquik-mastra-handoff.json",
+    JSON.stringify(result.object, null, 2),
+    "utf8",
+  );
+} finally {
+  await mcp.disconnect();
+}
+```
+
+`MCPClient` namespaces tools from every configured server. `listTools()` suits
+agent construction. `listToolsets()` groups tools by server for each call.
+
+The client tries Streamable HTTP for URL servers. It can fall back to SSE when
+the remote server requires it.
+
+The MCP runtime returns normalized snake_case fields through
+`xquik.request()`. It normalizes `createdAt` to the Unix-second field
+`created`. Keep the Zod schema aligned with that contract.
+
+## Search Tweets With Precise Operators
+
+Send the search route a focused `q`. Keep the exact query in the handoff.
+
+| Search intent | Example `q` |
+| --- | --- |
+| Latest framework posts | `"Mastra" MCP` |
+| One account's timeline | `from:mastra_ai since:2026-07-01 until:2026-08-01` |
+| Popular TypeScript posts | `"Twitter API" TypeScript lang:en min_faves:25` |
+| Questions without reposts | `"tweet search agent" ? -filter:retweets` |
+| Exact tweet | A numeric Tweet ID or X status URL |
+
+Use `queryType=Latest` for chronological monitoring. Use `Top` for
+engagement-ranked research. See the [tweet search API
+contract](/api-reference/x/search-tweets).
+
+Pass `next_cursor` back unchanged. Never rebuild a cursor. Stop when
+`has_more` becomes false. Also stop when a cursor repeats.
+
+Deduplicate resumed results by `tweet_id`. Keep the original `q` beside every
+page checkpoint.
+
+## Require Approval for Twitter Actions
+
+Xquik intentionally exposes one `xquik` execution tool. That tool can run
+reads and writes allowed by the API key.
+
+Tool-name checks cannot distinguish routes inside `xquik`. Require approval
+for every `xquik` execution when the agent holds write access.
+
+```typescript
+const approvedMcp = new MCPClient({
+  servers: {
+    xquik: {
+      url: new URL("https://xquik.com/mcp"),
+      requestInit: {
+        headers: { "x-api-key": process.env.XQUIK_API_KEY! },
+      },
+      requireToolApproval: ({ toolName }) => toolName === "xquik",
+      onToolError: "throw",
     },
   },
 });
+```
 
-const agent = new Agent({
-  id: "xquik-agent",
-  name: "Xquik Agent",
-  instructions:
-    "You help users interact with X (Twitter) via the Xquik API.",
-  model: "anthropic/claude-sonnet-4-6",
-  tools: await mcp.listTools(),
+The generated `xquik` tool pauses before execution. Your interface must show
+the route, method, arguments, and selected X account.
+
+Approve a suspended non-streaming run with
+`agent.approveToolCallGenerate()`. Decline it with
+`agent.declineToolCallGenerate()`. Pass the returned `runId` and suspended
+`toolCallId`.
+
+Never treat MCP annotations as an authorization boundary. The MCP
+specification defines them as hints. Mastra exposes them for trusted-server
+approval policies.
+
+For public research, a guest `paid_reads` key provides a hard read-only
+boundary. It exposes only eligible GET routes. See [guest
+wallets](/guides/guest-wallets) for its exact scope.
+
+## Expose Discovery Without Execution
+
+Mastra receives namespaced tools from `listTools()`. Filter the returned map
+when an agent should only inspect endpoint schemas.
+
+```typescript
+const tools = await mcp.listTools();
+const discoveryTools = Object.fromEntries(
+  Object.entries(tools).filter(([name]) => name.endsWith("_explore")),
+);
+
+const discoveryAgent = new Agent({
+  id: "xquik-route-discovery-agent",
+  name: "Xquik Route Discovery Agent",
+  instructions: "Inspect Twitter API routes. Never execute an operation.",
+  model: "openai/gpt-5",
+  tools: discoveryTools,
 });
-
-const handoffPrompt = (
-  "Search for the latest tweets about AI agents. Return compact JSON " +
-  "with query, route_used, tweets[{tweet_id,text,author_username,created_at}], " +
-  "has_more, next_cursor, and key influencers."
-);
-const result = await agent.generate(handoffPrompt);
-
-await writeFile("xquik-mastra-handoff.json", result.text, "utf8");
-
-await mcp.disconnect();
 ```
 
-The agent discovers both Xquik tools and can call 119 MCP-compatible JSON or text operations.
+This agent cannot execute Twitter API operations. Adding `xquik` enables every
+operation authorized by the key.
 
-Mastra's `MCPClient` loads tools with `listTools()` for agent setup and `listToolsets()` for per-call tools. For HTTP MCP servers, it uses `requestInit` for headers, tries Streamable HTTP from the URL, and falls back to SSE when needed. The MCP runtime returns normalized snake_case fields through `xquik.request()`, so keep prompts aligned with `tweet_id`, `has_more`, `next_cursor`, and returned job IDs.
+Use `explore` before an unfamiliar operation. It returns the route, method,
+parameters, and response fields. It does not call X.
 
-## Handoff Checklist
+## Use Per-User Twitter MCP Clients
 
-<CardGroup cols={2}>
-  <Card title="Tweet search rows" icon="search">
-    Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.
-  </Card>
-  <Card title="User profile rows" icon="users">
-    Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profile_picture`, `has_more`, `next_cursor`, and the source lookup or search query.
-  </Card>
-  <Card title="Trend rows" icon="trending-up">
-    Store each trend `name`, `rank`, `query`, and `description`. Keep response `count`, `woeid`, and the requested region with the run checkpoint.
-  </Card>
-  <Card title="Monitor and webhook setup" icon="radio">
-    Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager. On production deliveries, store `delivery_id` for receiver retry de-dupe and `stream_event_id` when one monitor event should process once across endpoint changes.
-  </Card>
-  <Card title="Stored event replay" icon="activity">
-    Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, `next_cursor`, and the `after` query for the next page.
-  </Card>
-  <Card title="Extraction jobs" icon="database">
-    Store `extraction_id`, `status`, `poll`, and `export_after_complete`; poll before loading CSV, JSON, or XLSX rows.
-  </Card>
-  <Card title="Writes" icon="send">
-    Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, `charged_credits`, and `poll`; do not resend pending writes.
-  </Card>
-  <Card title="Media attachments" icon="image">
-    For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`. For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.
-  </Card>
-</CardGroup>
-
-## Streaming Responses
+Create one client after resolving the tenant identity. Never share one API key
+across unrelated tenants.
 
 ```typescript
-import { writeFile } from "node:fs/promises";
-
-const stream = await agent.stream(
-  "What are the trending topics right now?"
-);
-
-let handoff = "";
-for await (const chunk of stream.textStream) {
-  handoff += chunk;
-}
-
-await writeFile("xquik-mastra-stream-handoff.json", handoff, "utf8");
-```
-
-## Dynamic Toolsets (Per-User API Keys)
-
-For multi-tenant apps, create an `MCPClient` per request with the user's API key:
-
-```typescript
-import { writeFile } from "node:fs/promises";
-import { MCPClient } from "@mastra/mcp";
 import { Agent } from "@mastra/core/agent";
+import { MCPClient } from "@mastra/mcp";
 
-const agent = new Agent({
-  id: "xquik-agent",
-  name: "Xquik Agent",
-  instructions: "You help users with X automation.",
-  model: "openai/gpt-4o",
-});
-
-async function handleRequest(prompt: string, userApiKey: string) {
-  const mcp = new MCPClient({
+async function runTenantRequest(prompt: string, userApiKey: string) {
+  const tenantMcp = new MCPClient({
+    id: crypto.randomUUID(),
     servers: {
       xquik: {
         url: new URL("https://xquik.com/mcp"),
         requestInit: {
           headers: { "x-api-key": userApiKey },
         },
+        requireToolApproval: true,
+        onToolError: "throw",
       },
     },
   });
 
-  try {
-    const response = await agent.generate(prompt, {
-      toolsets: await mcp.listToolsets(),
-    });
+  const agent = new Agent({
+    id: "tenant-twitter-agent",
+    name: "Tenant Twitter Agent",
+    instructions: "Preserve tweet IDs, profile IDs, cursors, and job IDs.",
+    model: "openai/gpt-5",
+  });
 
-    await writeFile("xquik-mastra-user-handoff.json", response.text, "utf8");
-    return response.text;
+  try {
+    return await agent.generate(prompt, {
+      toolsets: await tenantMcp.listToolsets(),
+    });
   } finally {
-    await mcp.disconnect();
+    await tenantMcp.disconnect();
   }
 }
 ```
 
-## Dynamic Headers with Custom Fetch
+Keep API keys outside prompts, memory, traces, and saved handoffs. Resolve each
+key from your existing secret manager.
 
-For request-context-aware headers (e.g., forwarding cookies):
+Mastra caches identical client configurations. Supply a unique `id` when
+separate clients use otherwise identical settings.
+
+## Forward Dynamic Headers Safely
+
+Use custom `fetch` when headers depend on request context. Resolve the secret
+before the remote request.
 
 ```typescript
 const mcp = new MCPClient({
   servers: {
     xquik: {
       url: new URL("https://xquik.com/mcp"),
-      fetch: async (url, init, requestContext) => {
+      fetch: async (url, init) => {
         const headers = new Headers(init?.headers);
-        headers.set("x-api-key", process.env.XQUIK_API_KEY!);
+        headers.set("x-api-key", await secretStore.getXquikKey());
         return fetch(url, { ...init, headers });
       },
+      onToolError: "throw",
     },
   },
 });
 ```
 
-## Environment Variables
+The `secretStore` object represents your existing secret manager. Never send
+its returned key to the model.
 
-```bash .env
-XQUIK_API_KEY=xq_YOUR_KEY_HERE
-ANTHROPIC_API_KEY=sk-ant-...
-```
+Keep `forwardInstructions` disabled unless you trust the MCP server. Enabling
+it injects remote server instructions into the agent's system prompt.
 
-## Verified Package Versions
+## Store a Resumable Twitter Agent Handoff
 
-| Package | Version |
-|---------|---------|
-| `@mastra/mcp` | 1.14.0 |
-| `@mastra/core` | 1.51.0 |
-| `@modelcontextprotocol/sdk` | 1.29.0 |
+Store identifiers and checkpoints outside the model transcript. Keep tweet
+text only when a later step needs it.
+
+<CardGroup cols={2}>
+  <Card title="Tweet Search Rows" icon="search">
+    Store `tweet_id`, `text`, `author_username`, `created`, `url`, `has_more`, `next_cursor`, and the original `q`.
+  </Card>
+  <Card title="Follower Exports" icon="users">
+    Store source `id` as `user_id`. Keep `username`, `name`, `followers`, `verified`, `profile_picture`, `has_more`, and `next_cursor`.
+  </Card>
+  <Card title="Trend Rows" icon="trending-up">
+    Store each `name`, `rank`, `query`, and `description`. Keep `count`, `woeid`, and the requested region.
+  </Card>
+  <Card title="Monitor Events" icon="radio">
+    Store `monitor_id`, `event_id`, `type`, `occurred_at`, `has_more`, `next_cursor`, and the next `after` value.
+  </Card>
+  <Card title="Webhook Deliveries" icon="webhook">
+    Store `webhook_id`, `delivery_id`, and `stream_event_id`. Store the one-time `secret` in a secret manager.
+  </Card>
+  <Card title="Extraction Jobs" icon="database">
+    Store `extraction_id`, `status`, `poll`, and `export_after_complete`. Poll before loading CSV, JSON, or XLSX rows.
+  </Card>
+  <Card title="Approved X Actions" icon="send">
+    Store `tweet_id` or `write_action_id`, `status`, `charged_credits`, and `poll`. Never resend pending writes.
+  </Card>
+  <Card title="Media Attachments" icon="image">
+    Tweets accept public URLs in `media`. Direct messages accept one uploaded `media_id` in `media_ids`.
+  </Card>
+</CardGroup>
+
+Persist the validated `result.object`, not free-form `result.text`. This keeps
+downstream jobs tied to exact Twitter API fields.
+
+## Handle Twitter API Errors and Rate Limits
+
+The tweet search contract documents these responses. Keep their meanings
+separate.
+
+| Status | Meaning | Agent action |
+| --- | --- | --- |
+| `400` | The search query is missing or invalid | Fix `q`; do not retry unchanged |
+| `401` | Guest authentication cannot complete this request | Provide an Xquik key or connect X |
+| `402` | The account lacks credits | Stop and request account action |
+| `424` | The upstream X dependency failed | Retry with bounded backoff |
+| `429` | The Twitter API rate limit applies | Wait for reset guidance, then resume the cursor |
+| `502` | The X dependency returned an invalid response | Retry later without changing IDs |
+
+Keep Mastra's default `onToolError: "throw"` behavior. The explicit setting
+documents that decision. It surfaces MCP `isError` results as failed tool
+calls.
+
+Do not restart pagination after `429`. Preserve `next_cursor` and completed
+tweet IDs. Deduplicate by `tweet_id` after recovery.
+
+POST and DELETE routes document different statuses. Read each route before
+building retry logic. See [error handling](/guides/error-handling).
+
+## Choose Mastra MCP or Direct REST
+
+| Requirement | Mastra with MCP | Direct REST API |
+| --- | --- | --- |
+| Natural-language tweet research | Strong fit | Write query logic yourself |
+| TypeScript agent workflows | Native fit | Add an orchestrator |
+| Scheduled follower export | Extra model step | Strong fit |
+| Human-approved tweet posting | Built-in approval suspension | Build approval state yourself |
+| Predictable latency and cost | Less predictable | More predictable |
+| Typed final handoff | Zod `structuredOutput` | TypeScript SDK schema |
+
+Use MCP when the model chooses among related Twitter operations. Use REST for
+fixed routes, scheduled exports, or latency-sensitive services.
+
+A JavaScript Twitter scraper library usually couples results to page markup.
+Xquik returns documented tweet, profile, follower, cursor, and job contracts.
+Choose the contract that matches your production workflow.
+
+## Verified Mastra Package Versions
+
+These versions were checked on August 2, 2026.
+
+| Package | Checked compatible version | Compatible range used here |
+| --- | --- | --- |
+| `@mastra/core` | 1.55.0 | `>=1.55,<2` |
+| `@mastra/mcp` | 1.15.0 | `>=1.15,<2` |
+| `@modelcontextprotocol/sdk` | 1.30.0 | Installed through Mastra constraints |
+| `zod` | 4.4.3 | `^3.25` or `^4` through Mastra peer constraints |
+
+Mastra 1.55 requires Node.js 22.13 or later. Review release notes before
+widening the pinned minor range.
+
+## Mastra Twitter MCP Questions
+
+### Does Mastra Support Remote MCP Servers?
+
+Yes. `MCPClient` connects to URL-based Streamable HTTP servers. Xquik exposes
+`explore` and `xquik` at `https://xquik.com/mcp`.
+
+### How Do I Connect Mastra to a Twitter API?
+
+Create `MCPClient` with the Xquik MCP URL. Send your Xquik API key through the
+`x-api-key` header. Pass `listTools()` into `Agent.tools`.
+
+### How Do I Search Tweets With TypeScript?
+
+Ask the agent to call `GET /api/v1/x/tweets/search`. Supply `q`, `queryType`,
+and a limit. Preserve `tweet_id`, `created`, and `next_cursor`.
+
+### Can a Mastra Agent Export Twitter Followers?
+
+Yes. Use the [followers API](/api-reference/x/followers) for paginated profile
+rows. Use an extraction job for larger CSV, JSON, or XLSX exports.
+
+### Can Mastra Monitor Tweets Without Repeated Searches?
+
+Yes. Create an account or keyword monitor. Replay stored events by cursor.
+Connect a webhook when the receiver can verify signatures.
+
+### Can Mastra Post Tweets and Replies?
+
+Yes. A connected X account is required. Require approval for every `xquik`
+execution. Validate the account, text, reply ID, and media before approval.
+
+See [create tweet](/api-reference/x-write/create-tweet) for the exact contract.
+
+### How Should a Mastra Agent Handle Twitter Rate Limits?
+
+Treat `429` separately from dependency failures. Save the current cursor and
+completed tweet IDs. Resume after the reset guidance.
+
+### Does MCP Tool Filtering Make Xquik Read-Only?
+
+Only when the agent receives `explore` without `xquik`. The `xquik` tool can
+run every operation authorized by the key.
+
+### Why Does MCPClient Need `disconnect()`?
+
+The client owns remote connections and optional local child processes.
+Disconnect it in `finally`. Repeated disconnect calls remain safe.
+
+### Mastra or LangChain for a Twitter Agent?
+
+Choose Mastra for TypeScript-first agents and workflows. Choose LangChain for
+its broad Python ecosystem or LangGraph orchestration. Xquik supports both.
+
+### Mastra MCP or a JavaScript Twitter Scraper Library?
+
+Choose Mastra MCP for model-selected operations and typed handoffs. Choose a
+scraper library only when page-markup coupling fits your workflow.
+
+### Should I Forward MCP Server Instructions to Mastra?
+
+Keep forwarding disabled by default. Enable it only for trusted servers.
+Remote instructions become part of the agent's system prompt.
