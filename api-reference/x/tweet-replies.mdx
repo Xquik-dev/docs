@@ -238,7 +238,6 @@ problem before the next request. Use `reply_extractor` when a fixed
       created_at: reply.createdAt ?? null,
       in_reply_to_id: reply.inReplyToId ?? null,
       conversation_id: reply.conversationId ?? null,
-      like_count: reply.likeCount ?? null,
       media_urls: (reply.media ?? []).map((item) => item.mediaUrl).filter(Boolean),
       next_cursor: page.next_cursor,
     }));
@@ -277,7 +276,6 @@ problem before the next request. Use `reply_extractor` when a fixed
               "created_at": reply.get("createdAt"),
               "in_reply_to_id": reply.get("inReplyToId"),
               "conversation_id": reply.get("conversationId"),
-              "like_count": reply.get("likeCount"),
               "media_urls": [
                   item["mediaUrl"] for item in reply.get("media", []) if item.get("mediaUrl")
               ],
@@ -293,9 +291,13 @@ problem before the next request. Use `reply_extractor` when a fixed
 
 ## Direct Replies Handoff
 
-Use `GET /x/tweets/{id}/replies` for current reply rows as JSON. The examples
-write one JSON Lines row per reply. Store the parent Tweet ID, reply ID, author,
-thread joins, engagement, media URLs, and next cursor.
+Use `GET /x/tweets/{id}/replies` when a support, community, moderation,
+giveaway, or agent workflow needs reply rows as JSON. The examples above write
+JSON Lines rows with `parent_tweet_id`, `reply_id`, `text`, author IDs and
+usernames, thread joins, media URLs, and cursor fields. Each output line ties
+one reply to the requested tweet. Workers can restart after storing the latest
+response page. The moderation table below adds follower, verification, timing,
+and engagement projections.
 
 A `424 replies_incomplete` response still contains collected direct and nested
 replies. Inspect its diagnostic before retrying. Keep only rows whose
@@ -501,7 +503,8 @@ Remove every filter before requesting complete mode.
 
 ### 400 Invalid Tweet ID
 
-The Tweet ID is invalid. Send a numeric Tweet ID from an X status URL.
+The response uses `invalid_tweet_id`. Replace the path value with a numeric
+Tweet ID before retrying.
 
 ### 401 Unauthenticated
 
@@ -521,51 +524,6 @@ The read service returned an error. Retry after a short delay.
 Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
 
 ### 424 Replies Incomplete
-
-```json
-{
-  "error": "replies_incomplete",
-  "message": "Replies are incomplete. Retry complete mode later.",
-  "tweets": [],
-  "has_next_page": false,
-  "next_cursor": "",
-  "nested_replies": [],
-  "diagnostic": {
-    "complete": false,
-    "reportedReplyCount": 100,
-    "targetDirectReplies": 80,
-    "uniqueDirectReplies": 42,
-    "coveragePercentage": 42,
-    "nestedReplyCount": 5,
-    "pagesAttempted": 12,
-    "strategiesAttempted": [],
-    "duplicateCount": 3,
-    "cursorFailures": 0,
-    "repeatedCursorCount": 0,
-    "emptyFalseProgressPages": 1,
-    "malformedCount": 0,
-    "unrelatedCount": 2,
-    "missingResponseModulesOrFields": [],
-    "recommendedFallback": "Retry complete mode later. X did not expose enough direct replies.",
-    "richness": {
-      "totalReplies": 42,
-      "text": 42,
-      "author": 40,
-      "createdAt": 42,
-      "language": 38,
-      "url": 42,
-      "entities": 20,
-      "media": 5,
-      "article": 0,
-      "card": 2,
-      "communityNote": 0,
-      "quotedOrRepostedTweet": 1,
-      "engagementCounts": 42
-    },
-    "responseTruncated": false
-  }
-}
-```
 
 The response preserves collected rows and diagnostic evidence. Trust
 `diagnostic.complete`. Follow `recommendedFallback` before retrying.

@@ -30,6 +30,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     snippets: [
       '| Reply column | Response source | Review use |',
       '| Incomplete complete-mode run | `424 replies_incomplete` plus `diagnostic` |',
+      'JSON Lines rows with `parent_tweet_id`, `reply_id`, `text`, author IDs and',
+      'The moderation table below adds follower, verification, timing,',
     ],
   },
   {
