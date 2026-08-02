@@ -217,8 +217,8 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 ## How to Join a Community on Twitter Through the API
 
 Call `POST /x/communities/{id}/join` for one existing Community. Send one
-connected Twitter account in the request body. Xquik returns a tracked
-membership action.
+connected Twitter account in the request body. Xquik tracks that membership
+change.
 
 This route does not discover Communities. It cannot create a Community or send
 an invitation. It also cannot change membership rules. X controls whether the
@@ -270,18 +270,18 @@ This section explains how to join a Twitter Community with one connected
 account. It also explains how to join Twitter Community membership without
 bypassing X's controls.
 
-Current X guidance limits Community membership to public accounts. Protected
-accounts cannot join. X controls this rule and may change it.
+Only public accounts can join under X's current guidance. Protected accounts
+cannot join. X controls this rule and may change it.
 
 A block involving a moderator can prevent membership. X says the account loses
 membership when either side blocks the other. The API has no block override.
 
 Admins and moderators enforce each Community's rules. They review restricted
-membership requests and manage participant access. This route cannot approve
-requests for them.
+membership requests and manage participant access. They keep approval control;
+this route only submits the account.
 
-Twitter Communities group members around shared topics. Each Community sets
-its own rules and membership mode. Review both before the API call.
+Twitter Communities offer topic-focused spaces for members. Every Community
+defines rules and a membership mode. Check both before the API call.
 
 The contract defines no separate community account. It identifies one connected
 Twitter account and one Community ID. Store both identifiers separately.
@@ -381,12 +381,12 @@ separate approval.
 
 ## Join Communities in Controlled Batches
 
-Handle one approved account and Community pair at a time. Use one idempotency
-key dedicated to that pair. Keep its retries serial.
+Handle one approved account and Community pair at a time. Assign a unique
+idempotency key to each pair. Process retries serially.
 
 Use a batch ledger when several accounts need membership. Each row should
-contain one account, one Community ID, and one approval. Keep every earlier
-attempt.
+contain one account, one Community ID, and one approval. Keep the full
+membership history.
 
 Pause one account after an authorization error. Confirm its connection before
 continuing. Other approved accounts can proceed through separate workers.
@@ -425,9 +425,9 @@ Twitter account. Use [Create Tweet](/api-reference/x-write/create-tweet) for a
 separately approved Community post.
 
 Members can join relevant conversations. The Community topic should match the
-account's purpose. Any strategy that builds loyalty needs separate engagement
-metrics. Joining proves membership only. It never guarantees followers,
-replies, reposts, likes, reach, or leads.
+account's purpose. Useful discussions can build a loyal member group over time.
+Xquik reports membership only. It cannot predict follower growth, engagement,
+reach, or sales.
 The join API provides no growth, moderation, engagement, or analytics service.
 
 ## Answer Common Twitter Community Questions
@@ -454,8 +454,8 @@ can also appear publicly. Treat membership and participation as discoverable.
 
 ### How Do I Join a Community on a Phone?
 
-Use X's current iOS or Android interface for a manual join. Use this endpoint
-within server or app integrations. Its request stays identical across clients.
+Use X's current iOS or Android interface for a manual join. Server and app
+integrations can call this endpoint.
 
 ### Do Twitter Communities Still Exist?
 
@@ -473,14 +473,14 @@ Check the numeric ID, account connection, membership mode, and invitation.
 X currently requires a public account. A moderator block can also prevent
 membership.
 
-Review the returned status before another attempt. Invalid input, missing
+Review the returned status before retrying. Invalid input, missing
 credits, account authorization, rate limits, and X rejection need different
 responses.
 
 ### Is Community Notes the Same as X Communities?
 
 No. Community Notes adds context to posts. X Communities organize membership
-and discussions. Community Notes enrollment uses another product workflow.
+and discussions. Use the Community Notes workflow for contributor enrollment.
 
 ### Can This API Create, Moderate, or Grow a Community?
 
