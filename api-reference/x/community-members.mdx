@@ -88,15 +88,15 @@ Scrape X community members into explicit profile rows. Store the community and u
 Call `GET /api/v1/x/communities/{id}/members` with the numeric community ID.
 Store the community ID and stable user ID. Keep the username, profile name,
 bio, location, and verification. Record an ISO 8601 collection time for every
-page. Keep each available follower count, following count, profile image, and
-page cursor.
+page. Keep each available follower count, following count, and profile image.
+Store the cursor used to fetch each profile page.
 
 Save the page before advancing its opaque cursor. Use `has_next_page` as the
 only pagination guard. Send another request only for the boolean `true`. Reuse
 the exact `next_cursor`. Deduplicate a resumed page by community ID and user ID.
 Mark credit-bounded, failed, or interrupted runs as partial. Use the moderators
-route for role-specific profiles. The members route returns the complete member
-roster.
+route for role-specific profiles. The members route returns every visible
+member profile.
 
 ### What Is the Best Way to Extract Data From a Twitter Community?
 
@@ -121,8 +121,8 @@ the follower count and page cursor.
 Stop when `has_next_page` is false. Until then, send `next_cursor` without
 modification. Save each profile page before advancing its cursor.
 
-Deduplicate resumed pages by stable user ID. Write the community ID into each
-exported profile row. Record the collection time because usernames, bios,
+Deduplicate resumed pages by stable user ID. Write the community ID into every
+exported profile record. Record the collection time because usernames, bios,
 verification, and audience counts can change. Do not infer moderator status
 from membership.
 Use the dedicated moderators route for that role. Mark an interrupted or
@@ -231,10 +231,11 @@ failed, and interrupted runs as partial membership snapshots. Mark the export
 complete only after `has_next_page` is `false`.
 
 Community membership shows roster inclusion. It does not prove posting
-activity. Use [Community Tweets](/api-reference/x/community-tweets) for recent
-posts. Use [Community Search](/api-reference/x/community-search) for Community
-posts that contain a keyword. Join those posts to member profiles by `manifest_id`,
-`community_id`, and stable user ID.
+activity. Retrieve recent Community posts through
+[Community Tweets](/api-reference/x/community-tweets). Use
+[Community Search](/api-reference/x/community-search) for posts that contain a
+keyword. Join those posts to member profiles by `manifest_id`, `community_id`,
+and stable user ID.
 
 Use [Community Moderators](/api-reference/x/community-moderators) for
 role-specific profiles. Verification and follower counts do not prove a
@@ -257,18 +258,18 @@ Choose columns that support the next task:
 - Follower and following counts.
 - Store the Community ID and cursor with every page's ISO 8601 collection time.
 
-Build member directories, enrich CRM contacts, or review moderators from this
-Community member roster.
+Use this Community member roster for directories, CRM enrichment, or moderator
+review.
 Do not label every member as a moderator. Use the moderators route to retrieve
 only moderator profiles.
 
 Treat `has_next_page` as the only pagination guard. The next request requires
 the boolean value `true`. Pass `next_cursor` without modification. Persist each
-page before saving its cursor. Deduplicate by user ID when a resumed job repeats
-its previous page.
+page before saving its cursor. Deduplicate repeated results by user ID after
+resuming a job.
 
-Profile fields can change after collection. Record an ISO 8601 time on each
-profile row. Refresh the profile through user lookup when the workflow requires
+Profile fields can change after collection. Record an ISO 8601 time for every
+returned profile. Refresh the profile through user lookup when the workflow requires
 current bios, follower counts, following counts, or avatars.
 
 ## Compare Community Membership Snapshots
