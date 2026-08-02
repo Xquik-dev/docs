@@ -130,8 +130,8 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 ## How to Leave a Community on Twitter via API
 
 Call `DELETE /x/communities/{id}/join` to remove one connected account's
-membership. The Community remains available to its other members. Xquik tracks
-the departure as a write action.
+membership. Other members keep access to the Community. Xquik tracks the
+departure as a write action.
 
 This route does not delete the Community. It does not delete the connected
 Twitter account. It also does not remove Community posts or replies.
@@ -229,12 +229,15 @@ for an owned post that should disappear.
 
 ## How to Leave a Twitter Community with Xquik
 
-Resolve the numeric Community ID before submitting the departure. Call
+This section explains how to leave a Twitter Community through Xquik. It also
+explains how to leave Twitter Community membership without deleting the group.
+
+Resolve and review the numeric Community ID. Call
 [Community Info](/api-reference/x/community-info) to confirm its name, rules,
 creator, and description.
 
-Show the selected connected account beside those details. A Community has its
-own ID. The connected account has a separate stable account ID.
+Show the selected connected account beside those details. Keep the Community ID
+separate from the connected account ID.
 
 Check [Community Members](/api-reference/x/community-members) when current
 membership needs proof. Follow every cursor before declaring the account
@@ -264,7 +267,7 @@ Use [Community Search](/api-reference/x/community-search) for keyword matches
 inside the known Community. That route cannot archive every post unless the
 query covers them. Use the unfiltered timeline for a complete export.
 
-The leave request has no notification field. Notify members through a separate
+No request field sends a notification. Notify members through a separate
 approved workflow when a handoff requires notice. Never claim that this API
 sends a farewell post, direct message, or moderator alert.
 
@@ -280,7 +283,7 @@ Use this sequence:
 3. Approve one membership-removal request.
 4. Submit `DELETE /x/communities/{id}/join` once.
 5. Store the returned action ID immediately.
-6. Poll until `terminal` becomes `true`.
+6. Poll until the action reaches a terminal result.
 7. Verify the account no longer appears as a member.
 
 A `202` response confirms accepted processing. It does not confirm departure.
@@ -296,7 +299,7 @@ Keep the write receipt separate from later roster snapshots. The receipt shows
 the requested action. The roster shows membership observed later.
 
 If the account remains, refresh the complete roster once. Preserve the result
-and request ID. Do not submit parallel departures with different keys.
+with its request ID. Do not submit parallel departures with different keys.
 
 | Membership task | Correct route | Expected result |
 | --- | --- | --- |
@@ -329,12 +332,10 @@ Delete Tweet for an owned post that should be removed.
 
 ### Can I Rejoin the Community Later?
 
-Yes, when X permits membership. X says the original invitation can support a
-later rejoin. Open and restricted Communities can follow different approval
-flows.
+Yes, when X permits membership. The original invitation may allow rejoining.
+Open and restricted Communities can follow different approval flows.
 
-Create a new join action and idempotency key. Never replay the earlier leave
-request to rejoin.
+Rejoining needs a new join action, approval, and idempotency key.
 
 ### Can This API Cancel a Pending Join Request?
 
@@ -344,17 +345,17 @@ cancel-pending-request field or separate cancellation endpoint.
 ### Does Leaving Delete the Community?
 
 No. Other members, moderators, rules, and Community posts remain. Use Delete
-Community only when an authorized owner intends to remove the whole group.
+Community only to close an owned group.
 
 ### Is a Twitter Group Chat the Same as a Community?
 
-No. Group direct messages use a different X feature. This endpoint changes
-Community membership and does not remove someone from a group conversation.
+No. Group direct messages use a different X feature. Leaving a Community does
+not leave a group conversation.
 
 ### Can an Admin Transfer Ownership Before Leaving?
 
-This request has no ownership-transfer field. Complete any supported transfer
-inside X first. Verify the new admin before removing the original account.
+This request has no ownership-transfer field. Complete any available transfer
+in X, then verify the new admin.
 
 ### What Are the Privacy Effects of Leaving?
 
@@ -364,8 +365,8 @@ remain outside this membership action.
 
 ### Is Community Notes the Same as X Communities?
 
-No. Community Notes is a separate feature for adding context to posts. This
-endpoint cannot leave or change Community Notes participation.
+No. Community Notes adds context to eligible posts through a separate X
+feature. This endpoint cannot change Community Notes participation.
 
 ### Do Twitter Communities Still Exist?
 
@@ -380,11 +381,11 @@ Fix malformed IDs or bodies after `400`. Replace invalid credentials after
 Check both the account and Community after `404`. A missing account differs
 from a missing Community. Preserve that distinction in operator messages.
 
-For `409`, compare the saved account, Community ID, and request body. Reuse the
-key only when every value still matches. Different inputs require new approval.
+For `409`, compare the saved account, Community ID, and request body. Keep the
+key only for identical inputs. Changed inputs need fresh approval.
 
 Preserve `422` rejection details. Do not delete the Community as a fallback.
-Honor `Retry-After` after `429` without changing the approved departure.
+After `429`, wait for `Retry-After`. Keep the approved inputs unchanged.
 
 After `500` or `503`, inspect `safeToRetry` and the existing lifecycle. Never
 infer failure from a dropped connection. Verification prevents duplicate
