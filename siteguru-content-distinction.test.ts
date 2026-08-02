@@ -75,6 +75,8 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
       'A healthy account alert',
       'requires four aligned layers.',
       'Followers and following are not monitor event types.',
+      'How Do Twitter Analytics Tools Differ From Monitor Status?',
+      'What Should a Twitter Account Activity Audit Store?',
       'Approve One Account Monitor Change',
       'Trace One Missing Profile Alert',
     ],

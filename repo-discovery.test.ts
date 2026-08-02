@@ -9086,8 +9086,7 @@ const REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS = [
   'EventsEndpoint:             "/api/v1/events?monitorId=" + monitor.ID',
   'WebhooksEndpoint:           "/api/v1/webhooks"',
   'json.NewEncoder(os.Stdout).Encode(state)',
-  'The Node.js, Python, and Go examples convert the fetched account monitor',
-  'one state snapshot row.',
+  'The Node.js, Python, and Go examples produce one normalized monitor snapshot.',
   '`monitor_id`, `event_types`, `is_active`,',
   '`next_billing_at`, `update_endpoint`, `events_endpoint`,',
   '`event_detail_endpoint_pattern`, `webhooks_endpoint`, and',
@@ -9134,11 +9133,17 @@ const REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS = [
   '| Delivery | Events and webhook deliveries |',
   '## How Do I Track Mentions and Replies for One Account?',
   '`tweet.mention` for mentions.',
-  '`tweet.reply` for replies.',
+  'require the `tweet.reply` event type.',
   '## Does This Endpoint Return Account Analytics or Historical Reports?',
   'It does not calculate',
   'engagement rate, follower growth, posting frequency, reach, impressions, or',
   'sentiment.',
+  '## How Do Twitter Analytics Tools Differ From Monitor Status?',
+  'Those values are engagement metrics.',
+  'This workflow separates monitor configuration from analytics',
+  '## What Should a Twitter Account Activity Audit Store?',
+  'This chain distinguishes a',
+  'missing event from a failed receiver.',
 ] as const;
 
 const FORBIDDEN_ACCOUNT_MONITOR_GET_RAW_OUTPUT_SNIPPETS = [
