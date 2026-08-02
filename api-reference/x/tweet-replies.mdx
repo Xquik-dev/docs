@@ -219,7 +219,7 @@ problem before the next request. Use `reply_extractor` when a fixed
   const tweetId = "1893456789012345678";
   let pageCursor = "";
 
-  for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
+  for (let pageCount = 0; pageCount < 3; pageCount += 1) {
     const params =
       pageCursor === "" ? "" : `?${new URLSearchParams({ cursor: pageCursor })}`;
     const response = await fetch(
@@ -238,8 +238,9 @@ problem before the next request. Use `reply_extractor` when a fixed
       created_at: reply.createdAt ?? null,
       in_reply_to_id: reply.inReplyToId ?? null,
       conversation_id: reply.conversationId ?? null,
+      like_count: reply.likeCount ?? null,
       media_urls: (reply.media ?? []).map((item) => item.mediaUrl).filter(Boolean),
-      page_index: pageIndex,
+      page_index: pageCount,
       page_cursor: pageCursor,
       next_cursor: page.next_cursor,
       has_next_page: page.has_next_page,
@@ -279,6 +280,7 @@ problem before the next request. Use `reply_extractor` when a fixed
               "created_at": reply.get("createdAt"),
               "in_reply_to_id": reply.get("inReplyToId"),
               "conversation_id": reply.get("conversationId"),
+              "like_count": reply.get("likeCount"),
               "media_urls": [
                   item["mediaUrl"] for item in reply.get("media", []) if item.get("mediaUrl")
               ],
@@ -295,7 +297,7 @@ problem before the next request. Use `reply_extractor` when a fixed
   ```
 </CodeGroup>
 
-## Direct replies handoff
+## Direct Replies Handoff
 
 Use `GET /x/tweets/{id}/replies` when a support, community, moderation,
 giveaway, or agent workflow needs reply rows as JSON. The examples above write
@@ -328,7 +330,7 @@ downloads after completion.
 
 Direct replies cost 1 credit per tweet returned. Low balances can reduce standard pages. Zero affordable results return `402 insufficient_credits`. Retry `429` with `Retry-After`. Retry `502` after a short backoff. Retry `503` after its stated delay. For `424 replies_incomplete`, inspect `diagnostic.recommendedFallback`.
 
-## Build a reply moderation table
+## Build a Reply Moderation Table
 
 Store one row per reply. Keep the parent Tweet ID and conversation ID beside
 the reply so support, moderation, campaign, and giveaway reviews can reconstruct
@@ -506,30 +508,6 @@ Remove every filter before requesting complete mode.
     <ResponseField name="responseTruncated" type="boolean">Whether the requested limit truncated safe results.</ResponseField>
   </Expandable>
 </ResponseField>
-
-```json
-{
-  "tweets": [
-    {
-      "id": "1893456789012345679",
-      "text": "I agree with this!",
-      "createdAt": "2026-03-27T11:00:00.000Z",
-      "isReply": true,
-      "inReplyToId": "1893456789012345678",
-      "author": {
-        "id": "44196397",
-        "username": "username",
-        "name": "Xquik",
-        "followers": 1200,
-        "verified": true,
-        "profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"
-      }
-    }
-  ],
-  "has_next_page": true,
-  "next_cursor": "DAACCgACGE..."
-}
-```
 
 ### 400 Invalid Tweet ID
 
