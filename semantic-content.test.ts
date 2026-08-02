@@ -253,7 +253,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     snippets: [
       '| Account monitor update column | Request or response source | Verification rule |',
       '| Webhook alignment | `GET /webhooks` | Match subscriptions before trusting alerts. |',
-      'How Do I Update Twitter Monitoring Alerts?',
+      'How to Set Twitter Alerts for an Existing Account Monitor',
       'Which Twitter Alert Settings Can This Endpoint Change?',
       'How Do Twitter Account Alert Settings Work in This Twitter Monitoring Tool?',
       'How Do I Send Twitter Account Alerts to Slack or a CRM?',
