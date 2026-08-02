@@ -20,8 +20,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <LlmsDirective />
 
 Build a Pydantic AI Twitter API agent through Xquik's MCP server. Search
-tweets, inspect profiles, export followers, replay monitor events, and review
-X actions. Validate every durable handoff with a Pydantic model.
+tweets, inspect profiles, export followers, and replay monitor events. Review
+every proposed post, reply, like, repost, follow, and direct message. Validate
+every durable handoff with a Pydantic model.
 
 ## Why Use Pydantic AI With a Twitter API?
 
@@ -71,8 +72,9 @@ The explicit FastMCP range prevents an MCP SDK v2 prerelease from entering the
 environment. Remove that cap only after Pydantic AI adds FastMCP 4 support.
 
 This Pydantic AI MCP Streamable HTTP setup keeps execution inside Python.
-This Pydantic AI MCP server connection uses the Xquik URL and `x-api-key`
-header.
+This Pydantic AI MCP server connection uses the Xquik HTTPS URL.
+It authenticates with the `x-api-key` header.
+After setup is complete, it can be run inside a local Python process.
 
 Store secrets outside source control.
 
@@ -93,6 +95,8 @@ validates the model output against this schema.
 
 To import `Agent` from Pydantic AI, use `from pydantic_ai import Agent`.
 Use type hints for every durable handoff field.
+The `import asyncio` statement enables the asynchronous entry point.
+The `typing` import supplies `Literal` for finite stop reasons.
 
 ```python
 import asyncio
@@ -169,9 +173,10 @@ for `headers`, `allowed_tools`, `capabilities`, and `output_type`.
 Pydantic AI opens and closes the connection automatically. Enter
 `async with agent` when several runs should share one connection.
 
-The agent discovers `explore` and `xquik`. Use endpoint discovery before an
-unfamiliar route. The `xquik` tool runs sandbox code containing
-`xquik.request(...)`. Authentication is injected outside that code.
+The agent discovers `explore` and `xquik`. Discover route requirements before
+selecting an unfamiliar endpoint. The Xquik sandbox invokes
+`xquik.request(...)` with validated route values. Authentication is injected
+outside that code.
 
 ## Validate Twitter API Fields Before Storage
 
@@ -197,8 +202,8 @@ Events, draws, extractions, and radar pages use `after`. Draft pages use
 `afterCursor`. Treat every cursor as opaque.
 
 Continue through an empty page when `has_more` stays true. Stop when no cursor
-exists. Also stop after the server repeats one. Return `cursor_stalled` with
-the saved row count.
+exists. Stop after the server repeats a cursor. Return `cursor_stalled` with
+the collected total.
 
 MCP output has a 24,000-character limit. Project only required fields. Use
 extraction exports when the workflow must persist every complete row.
@@ -248,8 +253,8 @@ output. Never place private messages in shared traces.
 
 ## Reuse the MCP Connection Safely
 
-Wrap related calls in `async with agent`. This reuses one MCP session for
-profile and tweet requests.
+Wrap related calls in `async with agent`. This reuses one session while
+fetching profiles and tweets.
 
 ```python
 async def collect_two_search_pages() -> None:
@@ -337,11 +342,11 @@ if isinstance(pending.output, DeferredToolRequests):
 
 Inspect the sandbox code before approval. Confirm the route, method, account,
 target ID, text, media, and idempotency key. Reject unexpected arguments.
-The CLI prompt displays every validated tool call. Replace it with your
+The CLI displays every validated tool request. Replace it with your
 application's review screen when needed.
 
-Do not use `approve_all=True` for X actions. Store the approval decision and
-tool call ID with the resulting action receipt.
+Do not use `approve_all=True` when the agent can write to X.
+Store the approval decision and tool call ID with the resulting action receipt.
 
 ## Build Twitter API Error Handling
 
@@ -443,13 +448,13 @@ publishes `explore` and `xquik` through MCP.
 ### Is Pydantic AI Better Than LangChain for a Twitter Agent?
 
 Choose Pydantic AI when typed Python handoffs are the primary boundary. Choose
-[LangChain and LangGraph](/guides/langchain) when durable graph orchestration
-matters. Both can call the same Xquik MCP tools.
+[LangChain and LangGraph](/guides/langchain) for durable graph orchestration.
+Both can call the same Xquik MCP tools.
 
 ### Can Pydantic AI Call the Twitter API?
 
-Yes. MCP exposes eligible tweet, profile, follower, monitor, extraction, and X
-action routes. Authenticate with an Xquik API key.
+Yes. MCP exposes eligible routes for tweets, profiles, followers, monitors,
+extractions, and X actions. Authenticate with an Xquik API key.
 
 ### Can Pydantic AI Scrape Tweets With Python?
 
@@ -458,15 +463,15 @@ IDs, authors, `created`, URLs, `has_more`, and `next_cursor`.
 
 ### How Do I Validate Twitter API JSON With Pydantic?
 
-Pass a `BaseModel` as the agent's `output_type`. Serialize validated output with
-`model_dump_json()`. Never save unvalidated conversational text as JSON.
+Pass a `BaseModel` as the agent's `output_type`. Call `model_dump_json()` before
+storing each validated output. Never save conversational text as JSON.
 
 ### How Can I Use Pydantic With AI Model Validation Effectively?
 
 Model tweet IDs and cursors as strings. Mark a field optional only when its
-route omits that field. Use `Literal` for finite stop reasons. Avoid `str`
-return values for durable handoffs. Validate before storage, queues, exports,
-or another agent receives the handoff.
+route omits that field. Use `Literal` for finite stop reasons. A plain `str`
+return discards typed tweet IDs, cursors, and error fields. Validate before
+storage, queues, exports, or another agent receives the handoff.
 
 ### How Do I Import Agent From Pydantic AI?
 
@@ -502,7 +507,7 @@ after completion. Save the source user and format together.
 
 Yes. Create a monitor and webhook. Persist both identifiers together. Replay
 missed events through `GET /api/v1/events` with `after` pagination. Monitor
-events are asynchronous, not real time.
+delivery is asynchronous and cannot guarantee real-time events.
 
 ## Next Steps
 
