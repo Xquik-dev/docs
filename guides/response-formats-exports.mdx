@@ -1,11 +1,16 @@
 ---
-title: "Tweet, Follower & Reply API Export Formats"
+title: "Twitter API CSV, JSON & XLSX Export Formats"
 sidebarTitle: "Export formats"
-description: "Choose JSON pages, CSV, JSON, XLSX, Markdown, PDF, or TXT handoffs for Xquik API results, extraction jobs, and draw exports. Includes exact API steps."
+description: "Export tweets, followers, following, replies, profiles, and draw rows through JSON pages or CSV, JSON, XLSX, Markdown, PDF, and TXT files with checkpoints."
 keywords:
   [
     "X API response formats",
     "Twitter API export",
+    "Twitter API CSV export",
+    "Twitter API JSON",
+    "Twitter JSON",
+    "tweet CSV export",
+    "follower CSV export",
     "CSV export",
     "JSON export",
     "XLSX export",
@@ -25,6 +30,9 @@ Choose the output shape before wiring a worker, dashboard, spreadsheet, or
 archive. Xquik gives you live JSON pages for endpoint calls, saved JSON pages
 for extraction jobs, file exports for downstream tools, and draw exports for
 giveaway audits.
+
+This guide covers Xquik API result files. It does not download tweet images or
+videos. It also does not export your private X account archive.
 
 <TweetReadApiLinks />
 <ConnectedAccountApiLinks />
@@ -84,6 +92,31 @@ The export endpoint selects a file format. Filter or select columns downstream.
   </Card>
 </CardGroup>
 
+## Match the Format to the Handoff
+
+Choose a format from the next consumer's exact requirements. Do not convert a
+file twice when Xquik already returns the required format.
+
+Use a live JSON page when code needs fresh tweets, followers, following rows,
+replies, profiles, or media fields. Keep the documented endpoint cursor with
+the same request filters.
+
+Use saved extraction JSON pages when a worker needs incremental processing.
+Append each completed page to JSON Lines through an idempotent sink. Use the
+extraction ID and requested `after` cursor as the page key. Persist the page and
+its `nextCursor` in one atomic commit. A retry must replace or skip an existing
+page key instead of appending duplicate tweets, followers, or replies.
+
+Use a JSON file when an application needs one structured download. The export
+contains the documented columns for that extraction tool. Store the extraction
+ID, tool type, and selected filters beside the file.
+
+Use CSV for CRM or spreadsheet imports. CSV exports include one header row.
+They also neutralize spreadsheet formula prefixes in result cells.
+
+Use XLSX when analysts need an Excel workbook. Use Markdown, PDF, or TXT when
+people need a readable review artifact instead of an import file.
+
 ## Pagination and Cursor Map
 
 Direct X API pages expose endpoint-specific cursor fields such as
@@ -97,6 +130,14 @@ File exports do not paginate. File exports are capped at 100,000 rows, and PDF
 exports are capped at 10,000 rows. Use extraction JSON pages or JSON Lines when
 you need to process larger jobs incrementally.
 
+For larger extractions, page results through
+`GET /api/v1/extractions/{id}`. Keep `after`, `hasMore`, and `nextCursor` in one
+checkpoint. Never continue from the downloaded file's last visible value.
+
+The file endpoint returns the first 100,000 rows ordered by result ID. PDF
+returns the first 10,000 rows. A successful file response does not prove the
+extraction contains no additional rows.
+
 ## Format Map
 
 <CardGroup cols={2}>
@@ -106,8 +147,9 @@ you need to process larger jobs incrementally.
   </Card>
 
   <Card title="JSON File" icon="braces">
-    Best for replay, durable archives, and backend handoffs. The response
-    content type is `application/json; charset=utf-8`.
+    Best for replay, durable archives, and application handoffs. The file is a
+    JSON array containing the extraction tool's documented columns. The
+    response content type is `application/json; charset=utf-8`.
   </Card>
 
   <Card title="XLSX" icon="file-spreadsheet">
@@ -116,7 +158,8 @@ you need to process larger jobs incrementally.
   </Card>
 
   <Card title="Markdown" icon="file-text">
-    Best for docs and text review. `md` and `md-document` return
+    Best for docs and text review. `md` returns a Markdown table.
+    `md-document` returns numbered sections with labeled fields. Both return
     `text/markdown; charset=utf-8`.
   </Card>
 
@@ -130,6 +173,30 @@ you need to process larger jobs incrementally.
     `text/plain; charset=utf-8`.
   </Card>
 </CardGroup>
+
+## Download and Validate an Export
+
+Use the server filename from `Content-Disposition`. `curl` can apply that
+filename without parsing the header yourself.
+
+```bash
+curl --fail --location --remote-header-name --remote-name \
+  "https://xquik.com/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=csv" \
+  -H "x-api-key: xq_YOUR_KEY_HERE"
+```
+
+Validate these properties before handing the file to another system:
+
+1. Require HTTP `200`.
+2. Match `Content-Type` to the requested format.
+3. Store the `Content-Disposition` filename.
+4. Reject an unexpectedly empty file.
+5. Parse the selected format before marking the handoff complete.
+6. Record the parsed row count and extraction ID.
+7. Calculate a local checksum when an audit requires one.
+
+Do not assume a filename proves the format. Verify the response header and
+parser result. Never print CSV, JSON, XLSX, PDF, or TXT bytes to shared logs.
 
 ## Handoff Checkpoint
 
@@ -149,12 +216,81 @@ format later.
   "pagination": {
     "limit": 1000,
     "after": "990200",
-    "hasMore": true
+    "hasMore": true,
+    "nextCursor": "991200"
+  },
+  "download": {
+    "requested_format": "csv",
+    "expected_content_type": "text/csv; charset=utf-8",
+    "server_filename": "extraction-follower_explorer-2026-08-02.csv",
+    "parsed_rows": 5000,
+    "local_sha256": "calculated-after-download"
   },
   "draw_export_path": "/api/v1/draws/f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345/export?format=csv&type=winners",
   "next_action": "poll_until_completed_then_download"
 }
 ```
+
+`local_sha256` is calculated by your workflow after download. Xquik does not
+return that field in the export response.
+
+## Handle Export Failures
+
+- `400 invalid_format`: Use one of the 7 documented format values.
+- `401 unauthenticated`: Replace the missing or invalid credential.
+- `404 not_found`: Verify the extraction or draw ID belongs to the account.
+- `429 rate_limit_exceeded`: Wait for `Retry-After` before downloading again.
+
+For draw exports, also validate `type=winners` or `type=entries`. Do not retry
+an unchanged `400`, `401`, or `404` request. Retry `429` after the documented
+delay.
+
+## Twitter API Export Questions
+
+### How Do I Export Twitter API Results to CSV?
+
+Run an extraction for tweets, followers, following rows, replies, or profiles.
+After completion, request its export endpoint with `format=csv`.
+
+### Can I Export Tweets as JSON?
+
+Yes. Use live JSON pages for incremental processing. Use `format=json` for one
+saved extraction file within the 100,000-row cap.
+
+### Should I Use CSV or JSON for Twitter Results?
+
+Use CSV for CRM and spreadsheet imports. Use JSON for applications, replay,
+and structured result fields. Choose before building the downstream parser.
+
+### When Should I Use XLSX Instead of CSV?
+
+Use XLSX when analysts need an Excel workbook. Use CSV when another system
+expects a simple delimited import.
+
+### Can I Export More Than 100,000 Rows?
+
+Process larger extraction jobs through saved JSON pages. Append JSON Lines and
+resume with `after`. One file export stops at 100,000 rows.
+
+### Why Does PDF Stop at 10,000 Rows?
+
+PDF uses the documented 10,000-row cap. Choose CSV, JSON, XLSX, Markdown, or
+TXT for file exports up to 100,000 rows.
+
+### What Is the Difference Between `md` and `md-document`?
+
+`md` returns a Markdown table. `md-document` returns numbered result sections
+with labeled fields. Both use the Markdown response content type.
+
+### Does This Download Twitter Images or Videos?
+
+No. This guide exports documented result fields. Use returned media URLs when
+your workflow separately processes tweet images or videos.
+
+### Does This Export My Private X Account Archive?
+
+No. These endpoints export Xquik extraction or draw results. Use X's account
+archive process for your private account archive.
 
 ## Safety Checklist
 
