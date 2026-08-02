@@ -1,9 +1,9 @@
 ---
-title: "Twitter Media Upload API & Tweet Attachments"
+title: "Twitter Media Upload API for Tweets, Replies & DMs"
 sidebarTitle: "Upload media"
-description: "Upload images, GIFs, WebP, AVIF, or MP4 files. Use mediaUrl for tweets and replies, or attach 1 returned mediaId to a direct message. See action fields."
+description: "Use the Twitter media upload API for images, GIFs, and MP4 videos. Return mediaUrl for tweets and replies or mediaId for one direct message attachment."
 api: "POST /x/media"
-keywords: ["media upload", "upload media", "Twitter media upload", "X media upload", "post tweet with media", "post tweet replies with media", "send DM with media", "mediaUrl", "mediaId"]
+keywords: ["twitter media upload api", "twitter api media upload", "twitter api upload media", "X media upload", "post tweet with media", "post tweet replies with media", "tweet media attachment", "send DM with media", "mediaUrl", "mediaId"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -131,7 +131,18 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
   **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 </Callout>
 
-Skip this endpoint when a tweet or reply already has public HTTPS image URLs or a public MP4 URL. Use `POST /x/media` only when Xquik must host a local file, validate a generated media URL, or return a `mediaId` for one-item DM `media_ids`. Tweets use the returned `mediaUrl`; DMs use the returned `mediaId`.
+Call `POST /x/media` for one local file or hosted HTTPS media URL. Each call
+uploads one image, GIF, or MP4 for one connected X account. The response returns
+a media ID and reusable `mediaUrl` after completion.
+
+Skip this endpoint when a tweet already has public HTTPS media URLs. Call
+[Create Tweet](/api-reference/x-write/create-tweet) directly with those URLs.
+
+## Use the Twitter API Upload Media Workflow
+
+Send `multipart/form-data` for a file. Send `application/json` for a hosted
+URL. Authenticate with an API key or OAuth bearer token. Add one
+`Idempotency-Key` per intended upload. Any HTTP client works.
 
 <CodeGroup>
   ```bash cURL
@@ -158,113 +169,11 @@ Skip this endpoint when a tweet or reply already has public HTTPS image URLs or 
   if (!response.ok) {
     throw new Error(await response.text());
   }
-  const result = await response.json();
-  const handoff = {
-    media_id: result.mediaId,
-    media_url: result.mediaUrl,
-    dm_media_ids: [result.mediaId],
-    dm_endpoint: "/api/v1/x/dm/{userId}",
-    tweet_media_url: result.mediaUrl,
-    success: result.success,
-  };
-  ```
-
-  ```python Python
-  import requests
-
-  with open("/path/to/image.png", "rb") as media_file:
-      response = requests.post(
-          "https://xquik.com/api/v1/x/media",
-          headers={
-              "x-api-key": "xq_YOUR_KEY_HERE",
-              "Idempotency-Key": "media-upload-1895432178065391234",
-          },
-          files={"file": media_file},
-          data={"account": "myxhandle"},
-      )
-  response.raise_for_status()
-  result = response.json()
-  handoff = {
-      "media_id": result["mediaId"],
-      "media_url": result["mediaUrl"],
-      "dm_media_ids": [result["mediaId"]],
-      "dm_endpoint": "/api/v1/x/dm/{userId}",
-      "tweet_media_url": result["mediaUrl"],
-      "success": result["success"],
-  }
-  ```
-
-  ```go Go
-  package main
-
-  import (
-      "bytes"
-      "encoding/json"
-      "fmt"
-      "io"
-      "mime/multipart"
-      "net/http"
-      "os"
-  )
-
-  type UploadMediaResponse struct {
-      MediaID string `json:"mediaId"`
-      MediaURL string `json:"mediaUrl"`
-      Success bool `json:"success"`
-  }
-
-  func main() {
-      var buf bytes.Buffer
-      writer := multipart.NewWriter(&buf)
-
-      _ = writer.WriteField("account", "myxhandle")
-
-      file, _ := os.Open("/path/to/image.png")
-      defer file.Close()
-      part, _ := writer.CreateFormFile("file", "image.png")
-      io.Copy(part, file)
-      writer.Close()
-
-      req, err := http.NewRequest("POST", "https://xquik.com/api/v1/x/media", &buf)
-      if err != nil {
-          panic(err)
-      }
-      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-      req.Header.Set("Idempotency-Key", "media-upload-1895432178065391234")
-      req.Header.Set("Content-Type", writer.FormDataContentType())
-
-      resp, err := http.DefaultClient.Do(req)
-      if err != nil {
-          panic(err)
-      }
-      defer resp.Body.Close()
-      if resp.StatusCode >= 300 {
-          body, _ := io.ReadAll(resp.Body)
-          panic(string(body))
-      }
-
-      var upload UploadMediaResponse
-      if err := json.NewDecoder(resp.Body).Decode(&upload); err != nil {
-          panic(err)
-      }
-      handoff := map[string]any{
-          "media_id": upload.MediaID,
-          "media_url": upload.MediaURL,
-          "dm_media_ids": []string{upload.MediaID},
-          "dm_endpoint": "/api/v1/x/dm/{userId}",
-          "tweet_media_url": upload.MediaURL,
-          "success": upload.Success,
-      }
-      encoded, err := json.Marshal(handoff)
-      if err != nil {
-          panic(err)
-      }
-      fmt.Println(string(encoded))
-  }
+  const { mediaId, mediaUrl } = await response.json();
   ```
 </CodeGroup>
 
-**URL-based upload (for AI agents and MCP clients):**
+### Upload a Hosted Media URL
 
 <CodeGroup>
   ```bash cURL
@@ -274,124 +183,51 @@ Skip this endpoint when a tweet or reply already has public HTTPS image URLs or 
     -H "Content-Type: application/json" \
     -d '{"account": "myxhandle", "url": "https://example.com/image.png"}' | jq
   ```
-
-  ```javascript Node.js
-  const response = await fetch("https://xquik.com/api/v1/x/media", {
-    method: "POST",
-    headers: {
-      "x-api-key": "xq_YOUR_KEY_HERE",
-      "Idempotency-Key": "media-url-1895432178065391234",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      account: "myxhandle",
-      url: "https://example.com/image.png",
-    }),
-  });
-  if (!response.ok) {
-    throw new Error(await response.text());
-  }
-  const result = await response.json();
-  const handoff = {
-    media_id: result.mediaId,
-    media_url: result.mediaUrl,
-    dm_media_ids: [result.mediaId],
-    dm_endpoint: "/api/v1/x/dm/{userId}",
-    tweet_media_url: result.mediaUrl,
-    success: result.success,
-  };
-  ```
-
-  ```python Python
-  import requests
-
-  response = requests.post(
-      "https://xquik.com/api/v1/x/media",
-      headers={
-          "x-api-key": "xq_YOUR_KEY_HERE",
-          "Idempotency-Key": "media-url-1895432178065391234",
-          "Content-Type": "application/json",
-      },
-      json={
-          "account": "myxhandle",
-          "url": "https://example.com/image.png",
-      },
-  )
-  response.raise_for_status()
-  result = response.json()
-  handoff = {
-      "media_id": result["mediaId"],
-      "media_url": result["mediaUrl"],
-      "dm_media_ids": [result["mediaId"]],
-      "dm_endpoint": "/api/v1/x/dm/{userId}",
-      "tweet_media_url": result["mediaUrl"],
-      "success": result["success"],
-  }
-  ```
 </CodeGroup>
 
-The file and URL examples both build the same handoff shape. Store `media_id`, `media_url`, `dm_media_ids`, `dm_endpoint`, and `tweet_media_url`; pass `dm_media_ids` only to `POST /x/dm/{userId}`, and pass `tweet_media_url` in the `media` array on `POST /x/tweets`.
+Both inputs return the same lifecycle record. Poll `statusUrl` after 202. Store
+`mediaId`, `mediaUrl`, the account, and the idempotency key.
 
-## Media upload handoff
+## Handle Media Types, Large Videos & Multiple Images
 
-Use `POST /x/media` when an app, support queue, CRM, workflow tool, or AI agent needs to turn a local file or hosted HTTPS media URL into media that Xquik can attach to a tweet, reply, or DM.
+Accept these media types: AVIF, GIF, JPEG, PNG, WebP, and MP4. Match the content
+type to the file. Every URL must resolve to a public address. Finish within 30
+seconds and stay under 15,728,640 bytes.
 
-<CardGroup cols={2}>
-  <Card title="mediaUrl" icon="image">
-    Store `mediaUrl` for tweet and reply attachments. Pass it in the `media`
-    array on `POST /x/tweets`.
-  </Card>
-  <Card title="mediaId" icon="paperclip">
-    Store `mediaId` for direct message attachments. Pass it as the only item in
-    `media_ids` on `POST /x/dm/{userId}`.
-  </Card>
-  <Card title="success" icon="circle-check">
-    Store `success` to confirm the upload completed before the next write call.
-  </Card>
-  <Card title="account" icon="user">
-    Store the `account` you submitted to audit which connected X account
-    uploaded and sent the media.
-  </Card>
-  <Card title="Source input" icon="file-image">
-    Store the source URL or filename to reconcile generated images, support
-    files, or CRM assets with the uploaded media.
-  </Card>
-</CardGroup>
+Set `is_long_video` to `true` for MP4 files longer than 140 seconds.
+Xquik handles the chunked upload and media category internally.
+Send one request, then poll its lifecycle.
 
-For tweets with already-public image URLs or exactly 1 public MP4 video URL up to 100 MB, skip this endpoint and call [`POST /x/tweets`](/api-reference/x-write/create-tweet) directly with `media`. After uploading through this endpoint, call `POST /x/tweets` and pass `media: ["<mediaUrl>"]`. To post a media reply, also pass `reply_to_tweet_id`. Do not send `media_ids` to `POST /x/tweets`; that endpoint returns `400 unsupported_field` and expects public media URLs.
+For multiple images, call once per file. Collect up to 4 `mediaUrl` values.
+Send them together in Create Tweet. DMs accept exactly one media ID. Schedulers
+store `mediaUrl` until send time. This endpoint does not schedule tweets.
 
-For DMs, call [`POST /x/dm/{userId}`](/api-reference/x-write/send-dm) after upload and pass `media_ids: ["<mediaId>"]`. DMs accept exactly 1 uploaded media ID.
+## Store the Twitter API Media Upload Receipt
 
-For JSON URL upload, the URL must use HTTPS, resolve to a public address, return AVIF, GIF, JPEG, PNG, WebP, or MP4 content, finish within 30 seconds, and stay at or below 15,728,640 bytes. URL download failures return `422 media_download_failed`; fix the URL or switch to multipart upload.
-
-Upload media costs 10 credits per upload call. Posting a tweet or reply is a separate 30-credit create-tweet call before media surcharges; sending the DM is a separate 10-credit write call.
-
-## Store the media upload receipt
-
-| Upload receipt column | Request or response source | Handoff rule |
+| Output | Next request | Rule |
 | --- | --- | --- |
-| `media_id` | Response `mediaId` | Pass only as the single `media_ids` item for a DM. |
-| `media_url` | Response `mediaUrl` | Pass in the `media` array for a tweet or reply. |
-| `success` | Response `success` | Continue only after the upload succeeds. |
-| `sender_account` | Request `account` | Keep the connected X account with the uploaded asset. |
-| `source_kind` | Multipart file or JSON URL | Record how Xquik received the asset. |
-| `source_reference` | Filename or HTTPS URL | Reconcile the upload with the approved source asset. |
-| `idempotency_key` | Request header | Reuse only for the exact interrupted upload. |
-| `uploaded_at` | Integration timestamp | Audit when the reusable upload receipt was stored. |
+| `mediaUrl` | Tweet or reply `media` | Send up to 4 image URLs or 1 MP4 URL up to 100 MB. |
+| `mediaId` | DM `media_ids` | Send exactly 1 media ID. |
 
-| Next write | Value from upload | Required request shape |
-| --- | --- | --- |
-| Image tweet | `mediaUrl` | `media: ["<mediaUrl>"]` on `POST /x/tweets` |
-| Video tweet | `mediaUrl` | One MP4 URL in `media` on `POST /x/tweets` |
-| Media reply | `mediaUrl` | `media` plus `reply_to_tweet_id` on `POST /x/tweets` |
-| Media DM | `mediaId` | Exactly one item in `media_ids` on `POST /x/dm/{userId}` |
-| Public image already hosted | No upload required | Send the public HTTPS URL directly in tweet `media` |
-| Public MP4 already hosted | No upload required | Send exactly one public HTTPS MP4 URL in tweet `media` |
+Store the account, success, source reference, and idempotency key with each
+receipt. For replies, add `reply_to_tweet_id` in Create Tweet.
+Never send `media_ids` to Create Tweet. Use public `mediaUrl` values.
+Tweet and reply writes cost 30 credits, plus media surcharges.
+DM writes cost 10 credits.
+
+## Fix Twitter Media Upload API Errors
+
+Fix invalid fields or content types after 400. Replace credentials after 401.
+Add credits after 402. Reconnect the X account after 403. Connect a missing
+account after 404. Keep the original action after 409. Replace unreachable or
+private URLs after `422 media_download_failed`. Replace rejected media after
+other 422 errors. Honor `Retry-After` after 429. Check `safeToRetry` after 500
+or 503.
 
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+  Your API key. OAuth bearer authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
 <ParamField header="Idempotency-Key" type="string" required>
@@ -405,19 +241,19 @@ Upload media costs 10 credits per upload call. Posting a tweet or reply is a sep
 ## Body
 
 <ParamField body="account" type="string" required>
-  The connected X account to upload media as. Must be a username you have connected to your Xquik account.
+  A connected X username or account ID. The account performs the upload.
 </ParamField>
 
 <ParamField body="file" type="binary">
-  The media file to upload. Required if `url` is not provided. Supported formats: AVIF, GIF, JPEG, PNG, WebP, MP4.
+  Required without `url`. Accepts AVIF, GIF, JPEG, PNG, WebP, or MP4.
 </ParamField>
 
 <ParamField body="url" type="string">
-  HTTPS URL to download media from. Required if `file` is not provided. The server fetches the file from this URL. Useful for AI agents and MCP clients that work with URLs instead of binary file uploads.
+  Required without `file`. Provide a public HTTPS URL. AI agents and MCP clients can send URLs instead of binary uploads.
 </ParamField>
 
 <ParamField body="is_long_video" type="boolean">
-  Multipart video uploads only. Set to `true` for `video/mp4` files longer than 140 seconds. Defaults to `false`.
+  Multipart MP4 uploads only. Set `true` when the video exceeds 140 seconds. Defaults to `false`.
 </ParamField>
 
 ## Response

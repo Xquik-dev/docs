@@ -127,8 +127,12 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'api-reference/x-write/upload-media.mdx',
     snippets: [
-      '| Upload receipt column | Request or response source | Handoff rule |',
-      '| Media DM | `mediaId` | Exactly one item in `media_ids`',
+      'Twitter Media Upload API for Tweets, Replies & DMs',
+      '## Use the Twitter API Upload Media Workflow',
+      '| Output | Next request | Rule |',
+      '| `mediaId` | DM `media_ids` | Send exactly 1 media ID. |',
+      'Xquik handles the chunked upload and media category internally.',
+      'OAuth bearer authentication is also supported.',
     ],
   },
   {
@@ -436,6 +440,9 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       '1500 × 500 pixels',
       '1500 x 500 pixels',
       'header dimensions',
+      'image size',
+      'online presence',
+      'boost engagement',
       'social media platform',
       'support animated GIFs',
       'OAuth bearer authentication is also supported.',
@@ -650,6 +657,19 @@ describe('update banner contract copy', (): void => {
 
     const source = readFileSync(
       'api-reference/x-write/update-banner.mdx',
+      'utf8',
+    );
+
+    expect(source).not.toContain('Session cookie authentication');
+  });
+});
+
+describe('upload media contract copy', (): void => {
+  it('does not advertise unsupported session authentication', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x-write/upload-media.mdx',
       'utf8',
     );
 
