@@ -1,185 +1,156 @@
 ---
-title: "Microsoft Agent Framework for Twitter API Workflows"
+title: "Microsoft Agent Framework Twitter MCP Python Guide"
 sidebarTitle: "Microsoft Agent"
-description: "Connect Microsoft Agent Framework agents to tweet search, profile lookup, follower export, monitor, webhook, and write tools through MCP. Follow exact steps."
-keywords: ["microsoft-agent-framework", "mcp", "agent", "twitter", "python", "streamable-http"]
+description: "Build a Microsoft Agent Framework Twitter MCP agent for tweet search, profiles, followers, monitors, exports, and approved X actions with typed Python output."
+keywords:
+  [
+    "Microsoft Agent Framework Twitter MCP",
+    "Twitter MCP Python",
+    "Microsoft Agent Framework MCP",
+    "Twitter API Python",
+    "tweet search agent",
+    "Twitter follower scraper API",
+    "X API agent",
+    "Twitter automation agent",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Build a Microsoft Agent Framework agent that can search tweets, hand off IDs and cursors, post tweets, replay stored monitor events, and run extraction jobs - all through Xquik's MCP server.
+Build a Microsoft Agent Framework Twitter MCP agent through Xquik. Search
+tweets, inspect profiles, export followers, replay monitors, and review X
+actions. Preserve every tweet ID, profile ID, cursor, and job ID.
 
-## Choose Microsoft Agent Framework for enterprise handoffs
+## Why Use Microsoft Agent Framework With a Twitter API?
 
-Use this framework when Python agents join existing Microsoft application
-services. Connect Xquik through one streamable HTTP tool. Keep provider
-configuration separate from tweet and profile tasks.
+Microsoft Agent Framework provides Python agents, sessions, tools, middleware,
+and workflows. Xquik publishes Twitter API operations through two MCP tools:
+`explore` and `xquik`.
 
-Pass structured identifiers between agents. Preserve tweet IDs, user IDs,
-queries, cursors, and connected account names. A handoff should never depend
-on a generated description alone.
+Use each boundary for one responsibility.
 
-Use one agent for discovery and another for approved actions. The discovery
-agent can search tweets, inspect profiles, and export followers. The action
-agent should receive exact targets and approved text.
+| Boundary | Framework control | Twitter agent benefit |
+| --- | --- | --- |
+| Remote MCP | `MCPStreamableHTTPTool` | Connect agents to tweet, profile, follower, and monitor routes |
+| Final response | Pydantic `response_format` | Reject malformed tweet rows and pagination state |
+| Tenant context | `header_provider` | Resolve one Xquik key for each agent run |
+| X actions | MCP `approval_mode` | Pause before the shared `xquik` execution tool runs |
+| Agent handoff | `AgentSession` and typed models | Preserve IDs without copying whole transcripts |
+| Tool scope | `allowed_tools` | Expose discovery alone or both MCP tools |
 
-Attach per-run headers when credentials differ by user or tenant. Remove
-credentials before persisting conversation state. Record write-action IDs
-outside the model transcript.
+Choose Microsoft Agent Framework for Python services using Microsoft agent
+components. Choose direct REST for deterministic jobs without model choices.
 
-## Prerequisites
+## Microsoft Agent Framework Twitter API Prerequisites
 
-- Python 3.10+
-- [Xquik API key](/x-api-quickstart) (`xq_...`)
-- An LLM API key (OpenAI, Azure OpenAI, or any supported provider)
+- Python 3.10 or later
+- An [Xquik API key](/x-api-quickstart) beginning with `xq_`
+- An LLM provider key supported by Microsoft Agent Framework
+- A connected X account for private reads or X write actions
 
-## Install
+Public X reads do not require X Developer credentials. Authenticate with
+Xquik. Connect an X account only when the route requires it.
+
+## Install Microsoft Agent Framework MCP Support
+
+Install the tested Python release.
 
 ```bash
-pip install agent-framework
+python -m pip install "agent-framework==1.13.0"
 ```
 
-The `agent-framework` meta-package installs the core framework, providers, and
-MCP support.
+Store secrets outside source control.
 
-## Full Example
+```bash .env
+XQUIK_READ_ONLY_API_KEY=xq_YOUR_PAID_READS_KEY
+XQUIK_API_KEY=xq_YOUR_WRITE_CAPABLE_KEY
+OPENAI_API_KEY=YOUR_OPENAI_KEY
+OPENAI_CHAT_MODEL=gpt-5
+```
+
+```text .gitignore
+.env
+xquik-*-handoff.json
+```
+
+## Build a Typed Tweet Search Agent
+
+Define the handoff before creating the agent. The framework parses the final
+response into the Pydantic model.
+
+Use a guest `paid_reads` key for this autonomous example. Never give an
+unattended research agent a write-capable key.
 
 ```python
 import asyncio
 import os
 from pathlib import Path
+from typing import Literal
+
 from agent_framework import Agent, MCPStreamableHTTPTool
 from agent_framework.openai import OpenAIChatClient
+from pydantic import BaseModel
 
 
-async def main():
+class TweetRow(BaseModel):
+    tweet_id: str
+    text: str
+    author_username: str | None
+    created: int | None
+    url: str | None
+
+
+class TweetSearchHandoff(BaseModel):
+    query: str
+    route_used: Literal["GET /api/v1/x/tweets/search"]
+    tweets: list[TweetRow]
+    has_more: bool
+    next_cursor: str | None
+    pages_fetched: int
+    stop_reason: Literal[
+        "complete",
+        "requested_limit",
+        "cursor_stalled",
+    ]
+
+
+async def main() -> None:
+    xquik_mcp = MCPStreamableHTTPTool(
+        name="xquik-twitter-api",
+        url="https://xquik.com/mcp",
+        description="Search tweets, profiles, followers, monitors, and exports.",
+        allowed_tools=["explore", "xquik"],
+        header_provider=lambda kwargs: {
+            "x-api-key": kwargs["xquik_api_key"],
+        },
+    )
+
     async with Agent(
-        client=OpenAIChatClient(model="gpt-4o"),
-        name="xquik_agent",
-        instructions="You help users interact with X through the Xquik API.",
-        tools=MCPStreamableHTTPTool(
-            name="xquik",
-            url="https://xquik.com/mcp",
-            description="Tweet, profile, follower, monitor, webhook, and write platform with 119 MCP-compatible operations",
-            header_provider=lambda kwargs: {
-                "x-api-key": kwargs["xquik_api_key"],
-            },
-        ),
-    ) as agent:
-        handoff_prompt = (
-            "Search for tweets about AI agents. Return compact JSON with "
-            "query, route_used, tweets[{tweet_id,text,author_username,created_at}], "
-            "has_more, next_cursor."
-        )
-        response = await agent.run(
-            handoff_prompt,
-            function_invocation_kwargs={
-                "xquik_api_key": os.environ["XQUIK_API_KEY"],
-            },
-        )
-        Path("xquik-agent-handoff.json").write_text(response.text, encoding="utf-8")
-
-
-asyncio.run(main())
-```
-
-The agent discovers `explore` and `xquik`. It can call 119 MCP-compatible JSON or text operations. The MCP runtime returns normalized snake_case fields through `xquik.request()`. Keep prompts aligned with `tweet_id`, `has_more`, `next_cursor`, and returned job IDs.
-
-## Handoff Checklist
-
-<CardGroup cols={2}>
-  <Card title="Tweet search rows" icon="search">
-    Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.
-  </Card>
-  <Card title="User profile rows" icon="users">
-    Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profile_picture`, `has_more`, `next_cursor`, and the source lookup or search query.
-  </Card>
-  <Card title="Trend rows" icon="trending-up">
-    Store each trend `name`, `rank`, `query`, and `description`. Keep response `count`, `woeid`, and the requested region with the run checkpoint.
-  </Card>
-  <Card title="Monitor and webhook setup" icon="radio">
-    Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager. On production deliveries, store `delivery_id` for receiver retry de-dupe and `stream_event_id` when one monitor event should process once across endpoint changes.
-  </Card>
-  <Card title="Stored event replay" icon="activity">
-    Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, `next_cursor`, and the `after` query for the next page.
-  </Card>
-  <Card title="Extraction jobs" icon="database">
-    Store `extraction_id`, `status`, `poll`, and `export_after_complete`; poll before loading CSV, JSON, or XLSX rows.
-  </Card>
-  <Card title="Writes" icon="send">
-    Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, `charged_credits`, and `poll`; do not resend pending writes.
-  </Card>
-  <Card title="Media attachments" icon="image">
-    For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`. For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.
-  </Card>
-</CardGroup>
-
-## Streaming Responses
-
-Pass `stream=True` to `run` for real-time token streaming:
-
-```python
-async with agent:
-    async for update in agent.run(
-        "What are the trending topics on X right now?",
-        stream=True,
-        function_invocation_kwargs={"xquik_api_key": xquik_api_key},
-    ):
-        if update.text:
-            print(update.text, end="")
-```
-
-## Multi-Agent Handoff
-
-Keep data access in one agent, then pass its compact result to a separate
-analysis agent. This makes the MCP credential boundary explicit.
-
-```python
-import asyncio
-import os
-from pathlib import Path
-from agent_framework import Agent, MCPStreamableHTTPTool
-from agent_framework.openai import OpenAIChatClient
-
-
-async def main():
-    client = OpenAIChatClient(model="gpt-4o")
-    researcher = Agent(
-        client=client,
-        name="researcher",
+        client=OpenAIChatClient(model=os.environ["OPENAI_CHAT_MODEL"]),
+        name="xquik_tweet_search_agent",
         instructions=(
-            "Search X. Return compact JSON with "
-            "tweet_id, author_username, text, created_at, has_more, next_cursor, "
-            "and route_used."
+            "Use GET /api/v1/x/tweets/search. "
+            "Preserve exact tweet IDs, created timestamps, and cursors. "
+            "Never invent missing tweet fields. "
+            "Stop at the requested limit. Stop if a cursor repeats."
         ),
-        tools=MCPStreamableHTTPTool(
-            name="xquik",
-            url="https://xquik.com/mcp",
-            header_provider=lambda kwargs: {
-                "x-api-key": kwargs["xquik_api_key"],
-            },
-        ),
-    )
-    analyst = Agent(
-        client=client,
-        name="analyst",
-        instructions="Analyze the supplied tweets and profiles. Do not fetch additional records.",
-    )
-
-    async with researcher, analyst:
-        research = await researcher.run(
-            "Find the top 10 most engaged tweets about AI agents.",
+        tools=xquik_mcp,
+    ) as agent:
+        result = await agent.run(
+            "Search 50 latest tweets about Microsoft Agent Framework MCP.",
+            options={"response_format": TweetSearchHandoff},
             function_invocation_kwargs={
-                "xquik_api_key": os.environ["XQUIK_API_KEY"],
+                "xquik_api_key": os.environ["XQUIK_READ_ONLY_API_KEY"],
             },
         )
-        result = await analyst.run(
-            "Analyze sentiment and key themes in this JSON:\n" + research.text
-        )
-        Path("xquik-agent-workflow-handoff.json").write_text(
-            result.text,
+
+        if not isinstance(result.value, TweetSearchHandoff):
+            raise RuntimeError("Tweet handoff invalid. Inspect the agent response.")
+
+        Path("xquik-microsoft-agent-handoff.json").write_text(
+            result.value.model_dump_json(indent=2),
             encoding="utf-8",
         )
 
@@ -187,96 +158,335 @@ async def main():
 asyncio.run(main())
 ```
 
-## Per-Run Headers
+`allowed_tools` keeps the remote surface explicit. The agent receives only
+`explore` and `xquik` from Xquik's MCP server.
 
-Pass API keys through `header_provider` and `function_invocation_kwargs` for
-multi-tenant apps. The key remains scoped to the current run.
+`response_format` asks the model for the Pydantic shape. Read the validated
+object from `result.value`. Never persist `result.text` as a typed handoff.
+
+The MCP runtime returns normalized snake_case fields through
+`xquik.request()`. It normalizes `createdAt` to the Unix-second field
+`created`. Keep the Pydantic model aligned with that contract.
+
+## Search Tweets With Focused Queries
+
+Send a precise `q` to the tweet search route. Keep it in the handoff.
+
+| Search intent | Example `q` |
+| --- | --- |
+| Framework discussions | `"Microsoft Agent Framework" MCP` |
+| One account's timeline | `from:Microsoft since:2026-07-01 until:2026-08-01` |
+| Popular Python posts | `"Twitter API" Python lang:en min_faves:25` |
+| Questions without reposts | `"tweet search agent" ? -filter:retweets` |
+| Exact tweet | A numeric Tweet ID or X status URL |
+
+Use `queryType=Latest` for chronological monitoring. Use `Top` for
+engagement-ranked research. See the [tweet search API
+contract](/api-reference/x/search-tweets).
+
+Pass `next_cursor` back unchanged. Never rebuild a cursor. Stop when
+`has_more` becomes false. Also stop when a cursor repeats.
+
+Continue through an empty page when `has_more` remains true. Deduplicate
+resumed results by `tweet_id`.
+
+## Require Approval for Twitter Actions
+
+Xquik intentionally exposes one `xquik` execution tool. That tool can run
+reads and writes authorized by the API key.
+
+Tool-name checks cannot distinguish routes inside `xquik`. Require approval
+for every `xquik` call when the key permits writes.
 
 ```python
-mcp_tool = MCPStreamableHTTPTool(
-    name="xquik",
+from agent_framework import Agent, MCPStreamableHTTPTool, Message
+
+approved_mcp = MCPStreamableHTTPTool(
+    name="xquik-twitter-api",
     url="https://xquik.com/mcp",
-    description="Tweet, profile, follower, monitor, webhook, and write platform",
+    allowed_tools=["explore", "xquik"],
+    approval_mode={
+        "never_require_approval": ["explore"],
+        "always_require_approval": ["xquik"],
+    },
     header_provider=lambda kwargs: {
         "x-api-key": kwargs["xquik_api_key"],
     },
 )
 
 async with Agent(
-    client=OpenAIChatClient(model="gpt-4o"),
-    name="xquik_agent",
-    instructions="You help users interact with X through the Xquik API.",
-    tools=mcp_tool,
+    client=OpenAIChatClient(model=os.environ["OPENAI_CHAT_MODEL"]),
+    name="approved_xquik_agent",
+    instructions="Show exact routes and arguments before every Xquik request.",
+    tools=approved_mcp,
 ) as agent:
-    response = await agent.run(
-        "Search for tweets about AI agents",
-        function_invocation_kwargs={"xquik_api_key": user_api_key},
+    session = agent.create_session()
+    run_options = {"response_format": TweetSearchHandoff}
+    run_context = {"xquik_api_key": os.environ["XQUIK_API_KEY"]}
+
+    result = await agent.run(
+        "Search tweets about Python Twitter MCP agents.",
+        session=session,
+        options=run_options,
+        function_invocation_kwargs=run_context,
     )
+
+    while result.user_input_requests:
+        responses = []
+        for request in result.user_input_requests:
+            if request.function_call is None:
+                responses.append(
+                    request.to_function_approval_response(approved=False)
+                )
+                continue
+
+            print("Function:", request.function_call.name)
+            print("Arguments:", request.function_call.arguments)
+            answer = await asyncio.to_thread(input, "Approve this call? [y/N] ")
+            responses.append(
+                request.to_function_approval_response(
+                    approved=answer.strip().lower() == "y"
+                )
+            )
+
+        result = await agent.run(
+            Message(role="user", contents=responses),
+            session=session,
+            options=run_options,
+            function_invocation_kwargs=run_context,
+        )
 ```
 
-Do not close over a shared user's key in `header_provider`. Resolve it from the
-current call's `function_invocation_kwargs`.
+Show the route, method, arguments, text, and selected X account. Never approve
+a hidden or changed request.
 
-## Azure OpenAI
+For public research, a guest `paid_reads` key supplies a hard read-only
+boundary. It exposes only eligible GET routes. See [guest
+wallets](/guides/guest-wallets) for its exact scope.
 
-Use the same `OpenAIChatClient` with explicit Azure routing inputs:
+## Expose Route Discovery Without Execution
+
+Expose only `explore` when an agent should inspect endpoint schemas.
 
 ```python
-import os
-
-from agent_framework import Agent
-from agent_framework.openai import OpenAIChatClient
-
-client = OpenAIChatClient(
-    model=os.environ["AZURE_OPENAI_CHAT_MODEL"],
-    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
-    api_version=os.environ["AZURE_OPENAI_API_VERSION"],
-    api_key=os.environ["AZURE_OPENAI_API_KEY"],
-)
-
-agent = Agent(
-    client=client,
-    name="xquik_agent",
-    instructions="You help users interact with X through the Xquik API.",
-    tools=mcp_tool,
-)
-```
-
-## Environment Variables
-
-Store your API keys in a `.env` file instead of hardcoding them:
-
-```bash .env
-XQUIK_API_KEY=xq_YOUR_KEY_HERE
-OPENAI_API_KEY=sk-...
-```
-
-```python
-import os
-from dotenv import load_dotenv
-from agent_framework import Agent, MCPStreamableHTTPTool
-from agent_framework.openai import OpenAIChatClient
-
-load_dotenv()
-
-mcp_tool = MCPStreamableHTTPTool(
-    name="xquik",
+discovery_mcp = MCPStreamableHTTPTool(
+    name="xquik-route-discovery",
     url="https://xquik.com/mcp",
+    allowed_tools=["explore"],
     header_provider=lambda kwargs: {
         "x-api-key": kwargs["xquik_api_key"],
     },
-    description="Tweet, profile, follower, monitor, webhook, and write platform",
-)
-
-agent = Agent(
-    client=OpenAIChatClient(model="gpt-4o"),
-    tools=mcp_tool,
 )
 ```
 
-## Package Versions
+This configuration cannot execute Twitter API operations. Adding `xquik`
+enables every operation authorized by the key.
 
-| Package | Version |
-|---------|---------|
-| `agent-framework` | 1.11.0+ |
-| `mcp` | 1.24.0+ |
+Use `explore` before an unfamiliar operation. It returns routes, parameters,
+and response fields. It does not call X.
+
+## Keep Tenant Credentials Out of Agent State
+
+Resolve one Xquik key for every run. Pass it through runtime context.
+
+```python
+def tenant_headers(kwargs: dict[str, object]) -> dict[str, str]:
+    tenant_id = str(kwargs["tenant_id"])
+    return {"x-api-key": secret_store.get_xquik_key(tenant_id)}
+
+
+tenant_mcp = MCPStreamableHTTPTool(
+    name="tenant-xquik-twitter-api",
+    url="https://xquik.com/mcp",
+    allowed_tools=["explore", "xquik"],
+    header_provider=tenant_headers,
+)
+
+async with Agent(
+    client=OpenAIChatClient(model=os.environ["OPENAI_CHAT_MODEL"]),
+    name="tenant_twitter_agent",
+    instructions="Preserve exact profile IDs and usernames.",
+    tools=tenant_mcp,
+) as tenant_agent:
+    result = await tenant_agent.run(
+        "Look up the profile for microsoft.",
+        function_invocation_kwargs={"tenant_id": authenticated_tenant_id},
+    )
+```
+
+The `secret_store` represents your existing secret manager. Never include the
+returned key in prompts, sessions, handoffs, or logs.
+
+Microsoft Agent Framework injects provider headers on matching-origin MCP
+requests. Avoid a shared `httpx.AsyncClient` with unconditional auth headers.
+
+## Separate Tweet Research From Analysis
+
+Give only the researcher access to Twitter MCP. Pass its validated handoff to
+a tool-free analyst.
+
+```python
+researcher = Agent(
+    client=client,
+    name="tweet_researcher",
+    instructions="Return validated tweet rows and pagination state.",
+    tools=xquik_mcp,
+)
+
+analyst = Agent(
+    client=client,
+    name="tweet_analyst",
+    instructions="Analyze only supplied tweets. Preserve every tweet_id.",
+)
+
+research = await researcher.run(
+    "Search latest tweets about Python agent frameworks.",
+    options={"response_format": TweetSearchHandoff},
+    function_invocation_kwargs={"xquik_api_key": tenant_api_key},
+)
+
+if not isinstance(research.value, TweetSearchHandoff):
+    raise RuntimeError("Tweet research invalid. Stop the handoff.")
+
+analysis = await analyst.run(research.value.model_dump_json())
+```
+
+The analyst receives no MCP tools. It cannot fetch unrelated tweets or post
+X actions.
+
+## Handle Tweet Search Errors and Rate Limits
+
+The tweet search contract documents these responses. Keep their meanings
+separate.
+
+| Status | Meaning | Agent action |
+| --- | --- | --- |
+| `400` | The search query is missing or invalid | Fix `q`; do not retry unchanged |
+| `401` | Authentication cannot complete this request | Provide an Xquik key or connect X |
+| `402` | The account lacks credits | Stop and request account action |
+| `424` | The upstream X dependency failed | Retry with bounded backoff |
+| `429` | The Twitter API rate limit applies | Wait for reset guidance, then resume the cursor |
+| `502` | The X dependency returned an invalid response | Retry later without changing IDs |
+
+Do not restart pagination after `429`. Preserve `next_cursor` and completed
+tweet IDs. Deduplicate by `tweet_id` after recovery.
+
+POST and DELETE routes document different statuses. Read each route before
+building retry logic. See [error handling](/guides/error-handling).
+
+## Preserve Twitter Workflow Handoffs
+
+<CardGroup cols={2}>
+  <Card title="Tweet Search Rows" icon="search">
+    Store `tweet_id`, `text`, `author_username`, `created`, `url`, `has_more`, `next_cursor`, and the original `q`.
+  </Card>
+  <Card title="Profile and Follower Rows" icon="users">
+    Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profile_picture`, `has_more`, `next_cursor`, and the source lookup.
+  </Card>
+  <Card title="Monitor and Webhook State" icon="radio">
+    Store `monitor_id`, `event_types`, `next_billing_at`, `webhook_id`, and `url`. Keep the one-time webhook `secret` in a secret manager.
+  </Card>
+  <Card title="Stored Event Replay" icon="activity">
+    Store `event_id`, `type`, `monitor_id`, `occurred_at`, `has_more`, `next_cursor`, and the requested `after` value.
+  </Card>
+  <Card title="Follower Export Jobs" icon="file-spreadsheet">
+    Store `extraction_id`, `status`, `poll`, and `export_after_complete`. Poll before loading CSV, JSON, or XLSX rows.
+  </Card>
+  <Card title="Tweets and Replies" icon="send">
+    Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, `charged_credits`, and `poll`. Never resend a pending write.
+  </Card>
+</CardGroup>
+
+## Choose MCP or the Direct REST API
+
+| Requirement | Microsoft Agent Framework with MCP | Direct REST API |
+| --- | --- | --- |
+| Natural-language tweet research | Strong fit | Write route selection yourself |
+| Microsoft agent sessions | Native fit | Add session orchestration |
+| Strict scheduled follower export | Extra model step | Strong fit |
+| Human-approved tweet posting | Function approval flow | Build approval state yourself |
+| Predictable latency and cost | Less predictable | More predictable |
+| Typed final handoff | Pydantic `response_format` | SDK or Pydantic model |
+
+Use MCP when a model chooses among related Twitter API operations. Use REST
+for fixed routes, scheduled exports, or latency-sensitive services.
+
+## Migrate Older Microsoft Agent Framework Code
+
+Use current 1.13 APIs. Several preview-era examples use removed names.
+
+| Preview-era pattern | Current pattern |
+| --- | --- |
+| Preview agent class | `Agent(...)` |
+| Legacy client keyword | `client=` |
+| Legacy model identifier | Provider client's `model=` |
+| Dedicated streaming method | `run(..., stream=True)` |
+| Prompt-only JSON | Pydantic `response_format` and `result.value` |
+| Static shared auth headers | `header_provider` and `function_invocation_kwargs` |
+
+Current releases also scope runtime MCP headers to matching origins. Keep the
+framework updated for those authentication fixes.
+
+## Verified Python Package Versions
+
+These versions were checked on August 2, 2026.
+
+| Package | Checked compatible version | Supported range used here |
+| --- | --- | --- |
+| `agent-framework` | 1.13.0 | `==1.13.0` |
+| `agent-framework-core` | 1.13.0 | Installed by the meta-package |
+| `agent-framework-openai` | 1.12.0 | Installed by the meta-package |
+| `mcp` | 1.29.0 | `>=1.24,<2` |
+| `pydantic` | 2.13.4 | `>=2,<3` |
+
+Pin a tested release. Review Microsoft Agent Framework release notes before
+widening the range.
+
+## Microsoft Agent Framework Twitter API Questions
+
+### Does Microsoft Agent Framework Support MCP?
+
+Yes. Python agents connect through `MCPStreamableHTTPTool`. Xquik publishes
+`explore` and `xquik` at `https://xquik.com/mcp`.
+
+### How Do I Connect Microsoft Agent Framework to a Twitter API?
+
+Create `MCPStreamableHTTPTool` with the Xquik MCP URL. Resolve the `x-api-key`
+header through `header_provider`. Pass the tool to `Agent.tools`.
+
+### How Do I Search Tweets With a Python Agent?
+
+Ask the agent to call `GET /api/v1/x/tweets/search`. Supply an exact `q`,
+`queryType`, and limit. Preserve `tweet_id`, `created`, and `next_cursor`.
+
+### Can Microsoft Agent Framework Post Tweets and Replies?
+
+Yes. A connected X account is required. Require approval for every `xquik`
+call. Validate the selected account, text, reply ID, and media.
+
+See [create tweet](/api-reference/x-write/create-tweet) for the exact contract.
+
+### How Do I Handle Twitter API Rate Limits in Python?
+
+Treat `429` separately from dependency errors. Save the cursor and completed
+tweet IDs. Resume after reset guidance. Never retry in a tight loop.
+
+### Can a Microsoft Agent Export Twitter Followers?
+
+Yes. Use the [followers API](/api-reference/x/followers) for paginated profile
+rows. Use an extraction job for larger CSV, JSON, or XLSX exports.
+
+### Can the Agent Monitor Tweets Without Repeated Searches?
+
+Yes. Create an account or keyword monitor. Replay stored events by cursor.
+Connect a webhook only after implementing signature verification and de-dupe.
+
+### Does Tool Filtering Make the Twitter API Read-Only?
+
+Only when `allowed_tools` contains `explore` without `xquik`. The `xquik` tool
+can run every operation authorized by its API key.
+
+### Why Does My MCP Agent Lose Authentication Between Calls?
+
+Pass runtime values through `function_invocation_kwargs` on every resumed run.
+Keep one `AgentSession` during approvals. Never store the key in session state.
