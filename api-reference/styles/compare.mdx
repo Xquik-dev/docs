@@ -1,9 +1,9 @@
 ---
-title: "Compare Tweet Writing Styles & Account Voices"
+title: "Compare 2 Cached Tweet Writing Profiles with Xquik"
 sidebarTitle: "Compare styles"
-description: "Compare 2 cached tweet writing-style profiles by tone, sentence patterns, vocabulary, analyzed posts, and engagement signals. Includes request fields."
+description: "Compare 2 cached tweet writing profiles for X usernames or custom labels. Retrieve both sample sets, authors, timestamps, counts, and ownership status."
 api: "GET /styles/compare"
-keywords: ["style", "compare", "side by side", "two accounts"]
+keywords: ["tweet writing", "compare tweet styles", "Twitter writing style", "X brand voice", "tweet writing samples"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -87,23 +87,44 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **Free** - does not consume credits
 </Callout>
 
+## Retrieve 2 Cached Tweet Writing Profiles
+
+Call this endpoint to retrieve 2 cached writing profiles together. Supply 2 X
+usernames, 2 custom labels, or one of each.
+
+Xquik performs 2 account-scoped cache lookups. It does not contact X, refresh
+tweets, or calculate a writing-style score.
+
+The response preserves request order. `style1` matches `username1`. `style2`
+matches `username2`.
+
 <CodeGroup>
   ```bash cURL
   curl -G https://xquik.com/api/v1/styles/compare \
-    -d "username1=elonmusk" \
-    -d "username2=sama" \
+    --data-urlencode "username1=xquik" \
+    --data-urlencode "username2=product updates" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
   ```javascript Node.js
-  const params = new URLSearchParams({ username1: "elonmusk", username2: "sama" });
-  const response = await fetch(`https://xquik.com/api/v1/styles/compare?${params}`, {
-    method: "GET",
-    headers: {
-      "x-api-key": "xq_YOUR_KEY_HERE",
-    },
+  const params = new URLSearchParams({
+    username1: "xquik",
+    username2: "product updates",
   });
-  const data = await response.json();
+  const response = await fetch(
+    `https://xquik.com/api/v1/styles/compare?${params}`,
+    {
+      method: "GET",
+      headers: {
+        "x-api-key": "xq_YOUR_KEY_HERE",
+      },
+    },
+  );
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(`${result.error}: ${result.message}`);
+  }
   ```
 
   ```python Python
@@ -111,10 +132,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
   response = requests.get(
       "https://xquik.com/api/v1/styles/compare",
-      params={"username1": "elonmusk", "username2": "sama"},
+      params={"username1": "xquik", "username2": "product updates"},
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      timeout=30,
   )
-  data = response.json()
+  response.raise_for_status()
+  result = response.json()
   ```
 
   ```go Go
@@ -128,12 +151,16 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   )
 
   func main() {
-      baseURL := "https://xquik.com/api/v1/styles/compare"
-      params := url.Values{}
-      params.Set("username1", "elonmusk")
-      params.Set("username2", "sama")
+      endpoint, err := url.Parse("https://xquik.com/api/v1/styles/compare")
+      if err != nil {
+          panic(err)
+      }
+      query := endpoint.Query()
+      query.Set("username1", "xquik")
+      query.Set("username2", "product updates")
+      endpoint.RawQuery = query.Encode()
 
-      req, err := http.NewRequest("GET", baseURL+"?"+params.Encode(), nil)
+      req, err := http.NewRequest(http.MethodGet, endpoint.String(), nil)
       if err != nil {
           panic(err)
       }
@@ -145,29 +172,179 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      var result map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      if resp.StatusCode != http.StatusOK {
+          panic(fmt.Sprintf("style comparison failed: %v", result))
+      }
   }
   ```
 </CodeGroup>
 
-## Query parameters
+## Select Comparable Tweet Style Keys
+
+Both query values use the same keys as [Get Style](/api-reference/styles/get).
+Xquik lowercases each value before lookup.
+
+| Profile source | Query value | Example |
+| --- | --- | --- |
+| [Analyze & Cache Style](/api-reference/styles/analyze) | Returned `xUsername` | `xquik` |
+| [Save Custom Style](/api-reference/styles/save) | Returned lowercase label | `product updates` |
+| [List Styles](/api-reference/styles/list) | Any `styles[].xUsername` | `founder voice` |
+
+The query parameter names say `username`. They also accept saved custom labels.
+Do not send numeric database IDs.
+
+Use 2 different keys for a meaningful comparison. The API accepts the same key
+twice, but both response objects will contain the same profile.
+
+## Understand What Compare Styles Returns
+
+This endpoint groups 2 stored sample sets into one response. It does not
+generate conclusions about voice, tone, vocabulary, readability, or sentiment.
+
+| Response field | Meaning | Comparison use |
+| --- | --- | --- |
+| `style1` | Profile selected by `username1` | Treat as the first sample set. |
+| `style2` | Profile selected by `username2` | Treat as the second sample set. |
+| `xUsername` | Lowercase X username or custom label | Preserve each profile key. |
+| `tweetCount` | Stored tweet sample count | Check whether sample sizes differ. |
+| `isOwnAccount` | Stored ownership classification | Separate owned and external profiles. |
+| `fetchedAt` | ISO 8601 cache timestamp | Check whether collection times differ. |
+| `tweets` | Cached or supplied tweet examples | Perform your approved comparison. |
+
+The 2 profiles can have different sample counts. They can also have different
+cache timestamps. Compare equivalent subsets when those differences matter.
+
+## Inspect Every Tweet Writing Sample
+
+Both `style1.tweets[]` and `style2.tweets[]` use this public contract:
+
+| Tweet field | Required | Meaning |
+| --- | --- | --- |
+| `id` | Yes | Stored Tweet ID or generated custom-sample ID |
+| `text` | Yes | Cached tweet or supplied writing example |
+| `authorUsername` | No | X author username or custom label |
+| `createdAt` | No | ISO 8601 tweet or custom-sample timestamp |
+
+Keep Tweet IDs as strings. JavaScript numbers cannot safely represent every X
+Tweet ID.
+
+Do not send generated custom-sample IDs to X tweet endpoints. They identify
+local writing examples only.
+
+```json
+{
+  "style1": {
+    "xUsername": "xquik",
+    "tweetCount": 2,
+    "fetchedAt": "2026-07-31T10:30:00.000Z",
+    "isOwnAccount": true,
+    "tweets": [
+      {
+        "id": "1950882898740914261",
+        "text": "Export tweet replies to JSON or CSV.",
+        "authorUsername": "xquik",
+        "createdAt": "2026-07-31T09:00:00.000Z"
+      }
+    ]
+  },
+  "style2": {
+    "xUsername": "product updates",
+    "tweetCount": 2,
+    "fetchedAt": "2026-07-31T10:35:00.000Z",
+    "isOwnAccount": false,
+    "tweets": [
+      {
+        "id": "0",
+        "text": "Ship notes should name the endpoint and user outcome.",
+        "authorUsername": "product updates",
+        "createdAt": "2026-07-31T10:35:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+## Compare Tweet Writing Without Inventing Signals
+
+Voice describes a consistent brand personality. Tone can change with context.
+This API returns the source text needed for your own review.
+
+Use observable text features before assigning subjective labels:
+
+| Writing feature | Calculation | Review question |
+| --- | --- | --- |
+| Post length | Compare median `text.length` | Which profile writes shorter tweets? |
+| Questions | Count samples containing `?` | Which profile asks readers more often? |
+| Links | Count samples containing an HTTP URL | Which profile cites external pages? |
+| Hashtags | Count `#` tokens | Which profile uses topic labels? |
+| Openings | Compare each sample's first sentence | Which recurring openings appear? |
+| Vocabulary | Compare repeated meaningful words | Which terms distinguish each profile? |
+| Cadence | Compare available `createdAt` values | Were the samples posted in similar periods? |
+
+Review examples in context. A small or stale cache cannot prove a permanent
+brand voice. Avoid copying personal phrases without authorization.
+
+## Separate Writing Style from Twitter Analytics
+
+Compare Styles returns no likes, replies, reposts, quotes, bookmarks, views,
+followers, or impressions. It cannot prove which writing style performs better.
+
+Use [Analyze Performance](/api-reference/styles/performance) for current tweet
+engagement. Compare equivalent periods and sample sizes before drawing an
+outcome conclusion.
+
+## Build a Reliable Tweet Style Comparison
+
+1. List cached profiles with the same Xquik credential.
+2. Select 2 returned profile keys.
+3. Review `fetchedAt` and `tweetCount` for both profiles.
+4. Refresh stale X profiles through Analyze when required.
+5. Call Compare Styles with both URL-encoded keys.
+6. Compare equivalent tweet subsets using observable features.
+7. Preserve both source keys with any derived conclusion.
+
+The endpoint does not modify either cache. Repeating the same request returns
+the current stored profiles until another route changes them.
+
+## Handle Tweet Style Comparison Errors
+
+| Status | Error | Meaning | Recovery |
+| --- | --- | --- | --- |
+| `200` | None | Both profiles exist | Compare `style1` and `style2` in order. |
+| `400` | `missing_params` | One or both query values are absent | Send both non-empty query parameters. |
+| `401` | `unauthenticated` | The credential is missing or invalid | Replace the API key or bearer token. |
+| `404` | `style_not_found` | At least one account-scoped key is missing | List profiles, then create the missing cache. |
+| `429` | `rate_limit_exceeded` | The request exceeded the rate limit | Wait for `Retry-After`, then retry once. |
+
+A `404` response does not identify which key failed. Call Get Style for each
+key when you need to isolate the missing profile.
+
+The canonical contract documents no `402` response. Existing cache comparison
+does not require credits.
+
+## Query Parameters
 
 <ParamField query="username1" type="string" required>
-  First X username to compare. Must have been analyzed with [Analyze & Cache Style](/api-reference/styles/analyze) first.
+  First X username or saved custom style label. Xquik lowercases this value and
+  returns its profile as `style1`.
 </ParamField>
 
 <ParamField query="username2" type="string" required>
-  Second X username to compare. Must have been analyzed with [Analyze & Cache Style](/api-reference/styles/analyze) first.
+  Second X username or saved custom style label. Xquik lowercases this value and
+  returns its profile as `style2`.
 </ParamField>
 
 ## Headers
 
+Send `x-api-key` with an Xquik API key. OAuth clients can send a bearer token
+through the `Authorization` header instead.
+
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+  Your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
 </ParamField>
 
 ## Response
@@ -175,80 +352,79 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 ### 200 OK
 
 <ResponseField name="style1" type="object">
-  First user's full cached style detail.
-  **Style object fields:**
-    <ResponseField name="xUsername" type="string">Normalized X username.</ResponseField>
-    <ResponseField name="tweetCount" type="number">Number of cached tweets.</ResponseField>
-    <ResponseField name="fetchedAt" type="string">ISO 8601 timestamp when tweets were fetched.</ResponseField>
-    <ResponseField name="isOwnAccount" type="boolean">Whether this is the authenticated user's own X account.</ResponseField>
-    <ResponseField name="tweets" type="object[]">Array of cached tweets with `id`, `text`, `authorUsername`, and `createdAt`.</ResponseField>
-
+  First cached profile.
+  <ResponseField name="xUsername" type="string">Lowercase X username or custom label.</ResponseField>
+  <ResponseField name="tweetCount" type="number">Stored tweet writing sample count.</ResponseField>
+  <ResponseField name="isOwnAccount" type="boolean">Stored ownership classification.</ResponseField>
+  <ResponseField name="fetchedAt" type="string">ISO 8601 cache fetch or custom-save timestamp.</ResponseField>
+  <ResponseField name="tweets" type="object[]">
+    Cached or supplied tweet writing samples.
+    <Expandable title="First profile tweet fields">
+      <ResponseField name="id" type="string">Tweet ID or generated custom-sample ID.</ResponseField>
+      <ResponseField name="text" type="string">Cached tweet or supplied writing example.</ResponseField>
+      <ResponseField name="authorUsername" type="string">Optional author username or custom label.</ResponseField>
+      <ResponseField name="createdAt" type="string">Optional ISO 8601 sample timestamp.</ResponseField>
+    </Expandable>
+  </ResponseField>
 </ResponseField>
+
 <ResponseField name="style2" type="object">
-  Second user's full cached style detail. Same shape as `style1`.
+  Second cached profile. It follows the same contract as `style1`.
 </ResponseField>
-
-```json
-{
-  "style1": {
-    "xUsername": "elonmusk",
-    "tweetCount": 20,
-    "fetchedAt": "2026-02-24T10:30:00.000Z",
-    "isOwnAccount": false,
-    "tweets": [
-      {
-        "id": "1893456789012345678",
-        "text": "The future is now.",
-        "authorUsername": "elonmusk",
-        "createdAt": "2026-02-24T09:00:00.000Z"
-      }
-    ]
-  },
-  "style2": {
-    "xUsername": "sama",
-    "tweetCount": 18,
-    "fetchedAt": "2026-02-25T14:00:00.000Z",
-    "isOwnAccount": false,
-    "tweets": [
-      {
-        "id": "1893456789012345999",
-        "text": "Intelligence is not zero-sum.",
-        "authorUsername": "sama",
-        "createdAt": "2026-02-25T12:00:00.000Z"
-      }
-    ]
-  }
-}
-```
 
 ### 400 Missing Parameters
 
 ```json
 { "error": "missing_params", "message": "Both usernames are required" }
 ```
-Missing query parameters. Provide both `username1` and `username2`.
+
+One or both query values are missing. Send `username1` and `username2`.
 
 ### 401 Unauthenticated
 
 ```json
 { "error": "unauthenticated", "message": "Missing or invalid API key" }
 ```
-Missing or invalid API key.
 
-### 404 Not Found
+Authentication failed. Replace the missing or invalid credential.
+
+### 404 Style Not Found
 
 ```json
 { "error": "style_not_found", "message": "No cached style found for this username" }
 ```
-One or both usernames have no cached style. Use [Analyze & Cache Style](/api-reference/styles/analyze) to cache them first.
+
+At least one cache key is missing for this Xquik account. List styles first.
 
 ### 429 Rate Limited
 
 ```json
 { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
 ```
-Too many requests. Wait for the `Retry-After` header before retrying.
+
+Too many requests. Wait for `Retry-After`, then retry once.
+
+### Does Compare Styles Calculate Tone or Brand Voice?
+
+No. It returns 2 cached tweet sample sets. Your application performs any tone,
+voice, vocabulary, or sentence-pattern analysis.
+
+### Can I Compare an X Username with a Custom Style?
+
+Yes. Send the analyzed username and the saved custom label as the 2 query
+values. Both profiles must belong to the authenticated Xquik account.
+
+### Can I Compare Twitter Analytics for Another Account?
+
+Not with this endpoint. Compare Styles returns writing samples, not engagement
+metrics. Analyze Performance retrieves current metrics for cached tweets.
+
+### Why Does Compare Styles Return 404?
+
+At least one lowercase key is missing from this account. List styles, verify
+both keys, then analyze or save the missing profile.
 
 <Note>
-  **Related:** [Analyze & Cache Style](/api-reference/styles/analyze) to cache a style before comparing, [Get Style](/api-reference/styles/get) to view full tweet data for either account, or [Analyze Performance](/api-reference/styles/performance) to fetch engagement metrics.
+  **Related:** [Get Style](/api-reference/styles/get) isolates one profile.
+  [Delete Style](/api-reference/styles/delete) removes a cached profile.
 </Note>
