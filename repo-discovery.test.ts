@@ -10027,18 +10027,52 @@ const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_HAYSTACK_GUIDE_SNIPPETS = [
+  'title: "Haystack Twitter Search API & RAG Python Guide"',
+  'python -m pip install "xquik-haystack==0.1.3" "haystack-ai==3.0.0"',
+  'Release `0.1.3` is published on PyPI.',
+  '`XquikTweetSearch` calls `GET /x/tweets/search`.',
+  '`XquikUserTweetsFetcher` calls `GET /x/users/{id}/tweets`.',
+  '## Build Reliable RAG Citations',
+  '### Treat Tweet Text as Untrusted Context',
+  'Never treat tweet text as a system instruction.',
+  '## Index Tweets or Retrieve Them Live',
+  '## Paginate Without Duplicate Tweets',
+  'Deduplicate on `Document.meta["id"]`.',
+  '## Run Haystack Pipelines Asynchronously',
+  '## Handle Every Documented Error',
+  'X retrieval dependency failed',
+  'Retry with bounded backoff.',
+  'X retrieval error',
+  'Retry transient failures with a cap.',
   '## Pipeline Handoff',
   'Use this shape when Haystack hands results to a vector store, evaluation job, queue, CSV export, or dashboard.',
   '<Card title="Document Rows" icon="file-text">',
-  'Store each `Document.content`, `meta.endpoint`, `meta.id`, `meta.url`, `meta.created_at`, `meta.author.id`, `meta.author.username`, `meta.author.name`, `meta.author.verified`, and public metrics before embedding or export.',
-  '| `meta.author` | Author `id`, `username`, `name`, and `verified` fields when present |',
+  'Store each `Document.content`, `meta.endpoint`, `meta.id`, `meta.url`,',
+  '`meta.created_at`, `meta.author.id`, `meta.author.username`,',
+  '`meta.author.name`, `meta.author.verified`, and public metrics before',
+  'Author ID, username, name, and verified flag',
   '<Card title="Citation Links" icon="link">',
-  'Store `links` as the canonical tweet URLs returned by the component. Join them to `meta.id` when a citation, audit row, or UI card needs a source link.',
+  'Store `links` as the canonical tweet URLs returned by the component. Join',
+  'them to `meta.id` when a citation, audit row, or UI card needs a source',
   '<Card title="Pagination Checkpoint" icon="list-tree">',
-  'Store request `query` or `user_id`, component options, `has_more`, and `next_cursor`. Resume with `cursor=next_cursor`; do not decode cursors.',
+  'Store request `query` or `user_id`, component options, `has_more`, and',
+  '`next_cursor`. Resume with `cursor=next_cursor`; do not decode cursors.',
   '<Card title="Failure Branch" icon="route">',
-  'Catch `httpx.HTTPStatusError`, branch on `response.status_code`, and store the status with the pipeline run ID instead of retrying bad inputs unchanged.',
+  'Catch `httpx.HTTPStatusError`, branch on `response.status_code`, and store',
+  'the status with the pipeline run ID instead of retrying bad inputs',
   'Keep `document_rows`, `citation_rows`, and `pagination_checkpoints` separate from embeddings so later reruns can refresh X context without rebuilding the whole pipeline.',
+  '## Haystack Component or Direct REST API',
+  '## Migrate to Haystack 3',
+  '## Common Haystack Twitter API Questions',
+] as const;
+
+const FORBIDDEN_HAYSTACK_GUIDE_SNIPPETS = [
+  'pip install git+https://github.com/Xquik-dev/xquik-haystack.git',
+  'The package is not published on PyPI yet',
+  'Install the current GitHub build',
+  'title: "Haystack X API Guide for Tweet Search & RAG"',
+  'Store the raw Xquik response',
+  'Store the entire MCP result',
 ] as const;
 
 const REQUIRED_COMPOSIO_MIGRATION_SNIPPETS = [
@@ -16396,7 +16430,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Haystack guide handoff concrete', (): void => {
-    expect.assertions(4);
+    expect.assertions(5);
 
     const source = readFileSync('guides/haystack.mdx', 'utf8');
 
@@ -16410,6 +16444,11 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('print(result["documents"])');
     expect(source).not.toContain('Store the raw Xquik response');
     expect(source).not.toContain('Store the entire MCP result');
+    expect(
+      FORBIDDEN_HAYSTACK_GUIDE_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps the Composio migration guide handoff concrete', (): void => {
