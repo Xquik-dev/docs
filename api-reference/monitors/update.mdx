@@ -83,7 +83,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Learn how to set Twitter alerts for one saved X profile. This Twitter
 monitoring tool replaces tweet and profile filters. It can also pause or resume
-the same monitor. The response returns the resulting monitor settings.
+the same monitor. The response shows the updated account and event filter.
 
 This route cannot change the profile, keyword query, webhook URL, alert
 threshold, or sentiment rule. Manage webhook delivery separately.
@@ -260,8 +260,8 @@ threshold, or sentiment rule. Manage webhook delivery separately.
   ```
 </CodeGroup>
 
-The Node.js, Python, and Go examples convert the updated account monitor into
-one state row. Store `monitor_id`, `event_types`, `is_active`,
+The Node.js, Python, and Go examples print one reusable monitor record. Store
+`monitor_id`, `event_types`, `is_active`,
 `next_billing_at`, `verify_endpoint`, `list_endpoint`, `events_endpoint`,
 `event_detail_endpoint_pattern`, `webhooks_endpoint`, and
 `deliveries_endpoint_pattern` before resuming alerts or webhook checks.
@@ -308,13 +308,14 @@ At least 1 field is required.
 Read the monitor before changing its Twitter alert settings. Save its `id`,
 `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`.
 
-Send the complete `eventTypes` array when coverage changes. The array replaces
-the saved filter. Omit it when only `isActive` changes. Use `false` to pause
-checks and `true` to resume them.
+Send the complete `eventTypes` array when coverage changes. The new array
+replaces every existing event type. Omit it when only `isActive` changes. Set
+`false` to pause monitoring. Set `true` to resume monitoring.
 
-An unavailable profile blocks resumption with `409 monitor_profile_unavailable`.
-Wait for profile recovery, then retry. Finally, compare the returned account,
-filter, and active state with the approved request.
+If the profile is unavailable, the API returns
+`409 monitor_profile_unavailable`. Wait for profile recovery, then retry.
+Finally, compare the returned account, filter, and active state with the
+approved request.
 
 ## Which Twitter Alert Settings Can This Endpoint Change?
 
@@ -326,16 +327,16 @@ filter, and active state with the approved request.
 | Keyword, hashtag, or product query | Cannot change an account monitor into a keyword monitor. | Create or [update a keyword monitor](/api-reference/monitors/update-keyword). |
 | Webhook destination | Cannot change an HTTPS receiver or delivery state. | [Update the webhook](/api-reference/webhooks/update). |
 | Delivery channels | Cannot send Slack, CRM, email, or queue messages directly. | Process a signed webhook in your integration. |
-| Volume or sentiment threshold | No threshold or sentiment field exists in this contract. | Evaluate stored events in your own workflow. |
+| Volume or sentiment rules | This route has no threshold or sentiment field. | Evaluate stored events in your workflow. |
 
 Account filters select future tweet and profile events. Webhook subscriptions
 select events for an HTTPS receiver. Your receiver can notify Slack, update a
-CRM, or enqueue work.
+CRM record, or add work to a queue.
 
 ## How Do Twitter Account Alert Settings Work in This Twitter Monitoring Tool?
 
-Twitter account alert settings choose captured tweet and profile changes. API
-access requires a valid API key or bearer token. To receive notifications,
+Twitter account alert settings choose captured tweet and profile changes.
+Authenticate with an API key or bearer token. To receive notifications,
 subscribe a webhook to the same event types.
 
 Webhook notification settings choose the HTTPS receiver. They do not change
@@ -357,9 +358,9 @@ confirms delivery attempts.
 
 ## How Do I Reduce High-Volume Twitter Alert Noise?
 
-Select only required tweet and profile events. Use `tweet.mention` for mentions
-and `tweet.reply` for replies. Add repost, quote, media, or link events only
-when the receiver handles them.
+Select only required tweet and profile events. Use `tweet.mention` for
+mentions. Use `tweet.reply` for replies. Add repost, quote, media, or link
+events only when the receiver handles them.
 
 Use a keyword monitor for words, hashtags, products, or campaigns. Account monitor event types do not express Boolean search
 rules, languages, sensitivity, or sentiment. Keep webhook subscriptions aligned.
@@ -367,17 +368,17 @@ Join delivery attempts to stored events with `streamEventId`.
 
 ## Update handoff
 
-Use this endpoint when an account alert changes event scope, needs a temporary
-pause, or must resume without creating a new monitor ID.
+Use this endpoint to change event scope. You can also pause or resume an
+account alert without creating another monitor ID.
 
 | Account monitor update column | Request or response source | Verification rule |
 | --- | --- | --- |
 | Monitor ID | Path `{id}` and response `id` | Require both IDs to match. |
-| Event filter | Request and response `eventTypes` | Confirm the complete replacement filter. |
-| Polling state | Request and response `isActive` | Confirm the intended pause or resume state. |
+| Event filter | `eventTypes` in the request and response | Match every event type. |
+| Polling state | `isActive` in the request and response | Match the pause or resume choice. |
 | X username | Response `username` | Confirm the tracked profile did not change. |
 | X user ID | Response `xUserId` | Preserve the stable account join. |
-| Billing checkpoint | Response `nextBillingAt` | Recalculate the next credit review. |
+| Billing checkpoint | `nextBillingAt` in the response | Schedule the next credit review. |
 | Webhook alignment | `GET /webhooks` | Match subscriptions before trusting alerts. |
 
 <CardGroup cols={2}>
@@ -449,7 +450,7 @@ rollback. Another approved update may already exist.
 
 Pause when the monitor may resume. Replace `eventTypes` to change future scope.
 Delete only for permanent removal. Create another monitor for another profile.
-These actions preserve the meaning of stored account events.
+These actions keep stored account events consistent.
 
 ## Verify the First Event After Resuming
 
@@ -512,9 +513,8 @@ No monitor exists with this ID, or it belongs to a different account.
 ```json
 { "error": "monitor_profile_unavailable", "message": "X account unavailable. Restore it before resuming." }
 ```
-The X profile remains unavailable. Wait for profile recovery before sending
-`isActive: true` again. Pausing or changing event filters does not require
-profile reactivation.
+The X profile is unavailable. Wait for profile recovery, then resume the
+monitor. You can still pause it or change its event filters.
 
 ### 429 Rate Limited
 
