@@ -8075,7 +8075,7 @@ const REQUIRED_SEND_DM_API_SNIPPETS = [
   'Wait for `terminal: true` before closing the send job.',
   'The Xquik POST limit is 120 requests per minute.',
   '## Handle Every Twitter DM API Response',
-  'For `422 x_dm_not_allowed`, use an account permitted to message the recipient.',
+  'After `422 x_dm_not_allowed`, choose a sender allowed to message this recipient.',
   'Honor `Retry-After` after `429`.',
   'After `500` or `503`, inspect `safeToRetry` before retrying.',
   '## Twitter DM API Questions',
