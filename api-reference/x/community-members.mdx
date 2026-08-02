@@ -87,14 +87,16 @@ Scrape X community members into explicit profile rows. Store the community and u
 
 Call `GET /api/v1/x/communities/{id}/members` with the numeric community ID.
 Store the community ID and stable user ID. Keep the username, profile name,
-bio, location, and verification. Record each available follower count,
-following count, profile image, page cursor, and collection timestamp.
+bio, location, and verification. Record an ISO 8601 collection time for every
+page. Keep each available follower count, following count, profile image, and
+page cursor.
 
-Save the page before advancing its opaque cursor. Request another page only
-when `has_next_page` is exactly `true`. Reuse the exact `next_cursor`. Deduplicate a
-resumed page by community ID and user ID. Mark a credit-bounded, failed, or
-interrupted run as partial. Use the moderators route for role-specific
-profiles. The members route returns the complete member roster.
+Save the page before advancing its opaque cursor. Use `has_next_page` as the
+only pagination guard. Send another request only for the boolean `true`. Reuse
+the exact `next_cursor`. Deduplicate a resumed page by community ID and user ID.
+Mark credit-bounded, failed, or interrupted runs as partial. Use the moderators
+route for role-specific profiles. The members route returns the complete member
+roster.
 
 ### What Is the Best Way to Extract Data From a Twitter Community?
 
@@ -223,7 +225,7 @@ Store `community_id`, `member_id`, `username`, `display_name`, `bio`,
 
 ## Build a Community Member Export
 
-Complete every cursor page before marking the community member export complete.
+The community member export becomes complete after every cursor page finishes.
 Save each profile page before advancing its cursor. Mark credit-bounded,
 failed, and interrupted runs as partial membership snapshots. Mark the export
 complete only after `has_next_page` is `false`.
@@ -253,20 +255,21 @@ Choose columns that support the next task:
 - User ID, username, and profile name.
 - Biography, location, and verification state.
 - Follower and following counts.
-- Record the Community ID, page cursor, and collection timestamp.
+- Store the Community ID and cursor with every page's ISO 8601 collection time.
 
 Build member directories, enrich CRM contacts, or review moderators from this
 Community member roster.
-Do not label every member as a moderator. Use the moderators route for that
-role-specific moderator roster.
+Do not label every member as a moderator. Use the moderators route to retrieve
+only moderator profiles.
 
-Request another page only when `has_next_page` is exactly `true`. Pass
-`next_cursor` without modification. Persist each page before saving its cursor.
-Deduplicate by user ID when a resumed job repeats the previous page.
+Treat `has_next_page` as the only pagination guard. The next request requires
+the boolean value `true`. Pass `next_cursor` without modification. Persist each
+page before saving its cursor. Deduplicate by user ID when a resumed job repeats
+its previous page.
 
-Profile fields can change after collection. Stamp each profile row with its
-collection timestamp. Refresh the profile through user lookup when the
-workflow requires current bios, follower counts, following counts, or avatars.
+Profile fields can change after collection. Record an ISO 8601 time on each
+profile row. Refresh the profile through user lookup when the workflow requires
+current bios, follower counts, following counts, or avatars.
 
 ## Compare Community Membership Snapshots
 
@@ -348,7 +351,7 @@ When another process adds moderator status, store it in a separate
     <ResponseField name="isBlueVerified" type="boolean">Whether the account has X Premium verification. Omitted if unavailable.</ResponseField>
     <ResponseField name="isVerified" type="boolean">Normalized verification status. Omitted if unavailable.</ResponseField>
     <ResponseField name="profileBannerUrl" type="string">Profile banner URL. Omitted if unavailable.</ResponseField>
-    <ResponseField name="protected" type="boolean">Whether the account protects its posts. Omitted if unavailable.</ResponseField>
+    <ResponseField name="protected" type="boolean">Indicates whether the account protects its Tweets. Omitted if unavailable.</ResponseField>
     <ResponseField name="communityRole" type="string">Role within the requested community context. Omitted outside community results.</ResponseField>
 
 </ResponseField>
