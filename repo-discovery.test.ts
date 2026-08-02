@@ -10349,7 +10349,7 @@ const REQUIRED_PYDANTIC_AI_GUIDE_SNIPPETS = [
   'This Pydantic AI MCP Streamable HTTP setup',
   'This Pydantic AI MCP server connection uses the Xquik endpoint.',
   'Keep the MCP URL HTTPS-only.',
-  'Complete setup before running it inside a local Python process.',
+  'After setup is complete, it can be run inside a local Python process.',
   '## Build a Pydantic AI MCP Example for Tweet Search',
   'Use type hints for every durable handoff field.',
   'Start the async example with `import asyncio`.',
