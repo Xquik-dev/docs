@@ -23,6 +23,8 @@ const REQUIRED_RADAR_PAGE_COPY = [
   'Interpret the fields documented below for that source.',
   'The `score` value measures relevance, not sentiment.',
   'Radar is not a social listening API for every major social platform.',
+  'Radar is not an exhaustive source archive.',
+  'Use Radar for cross-source trend analysis, not full social listening data.',
   'provides no keyword search volume or long-term history.',
   'Apply the relevant source, category, region, and time window to each request.',
   '## Is Radar Real-Time for Monitoring Trending Topics?',
