@@ -28,6 +28,7 @@ interface ApiDoc {
 
 interface OpenApiOperation {
   readonly responses?: Record<string, unknown>;
+  readonly 'x-write-action'?: string;
 }
 
 interface OpenApiSpec {
@@ -138,6 +139,28 @@ function generatedResponseTabs(
       title: match[1] ?? '',
     }),
   );
+}
+
+function generatedJsonResponse(
+  source: string,
+  status: string,
+): Readonly<Record<string, unknown>> | undefined {
+  const tabStart = source.indexOf(`<Tab title="${status}"`);
+  if (tabStart === -1) return undefined;
+
+  const fence = '```json\n';
+  const fenceStart = source.indexOf(fence, tabStart);
+  if (fenceStart === -1) return undefined;
+
+  const fenceEnd = source.indexOf('\n    ```', fenceStart + fence.length);
+  if (fenceEnd === -1) return undefined;
+
+  const json = source
+    .slice(fenceStart + fence.length, fenceEnd)
+    .split('\n')
+    .map((line): string => line.replace(/^    /u, ''))
+    .join('\n');
+  return JSON.parse(json) as Readonly<Record<string, unknown>>;
 }
 
 function operationKey(apiDoc: ApiDoc): string {
@@ -300,6 +323,31 @@ describe('API success response status documentation', (): void => {
     );
 
     expect(noContentPages).toHaveLength(2);
+    expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps write success examples aligned with each canonical action', (): void => {
+    expect.assertions(2);
+
+    const spec = parseYaml(
+      readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'),
+    );
+    const writeDocs = readApiDocs().flatMap((apiDoc) => {
+      const action = getOperation(spec, apiDoc)?.['x-write-action'];
+      return action === undefined ? [] : [{ action, apiDoc }];
+    });
+    const findings = writeDocs.flatMap(({ action, apiDoc }) =>
+      ['200', '202'].flatMap((status): readonly string[] => {
+        const example = generatedJsonResponse(apiDoc.source, status);
+        return example?.['action'] === action
+          ? []
+          : [
+              `${apiDoc.file}: ${status} action is ${String(example?.['action'])}; expected ${action}.`,
+            ];
+      }),
+    );
+
+    expect(writeDocs).toHaveLength(18);
     expect(findings).toStrictEqual([]);
   });
 
