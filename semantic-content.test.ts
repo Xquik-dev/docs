@@ -438,7 +438,9 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       'This route does not change a username, avatar, banner, or birth date.',
       'OAuth bearer authentication is also supported.',
       '## Verify the Saved Twitter Profile',
+      '## Coordinate Updates Across Connected Accounts',
       '### Can I automate recurring Twitter bio changes?',
+      '### Does a profile update change tweets or follower counts?',
     ],
   },
   {
