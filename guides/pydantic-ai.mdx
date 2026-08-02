@@ -1,75 +1,145 @@
 ---
-title: "Pydantic AI X API Guide for Tweet Search & Agents"
+title: "Pydantic AI Twitter API Agent Guide with MCP"
 sidebarTitle: "Pydantic AI"
-description: "Connect Pydantic AI agents to tweet search, profile lookup, follower export, monitors, webhooks, and X account actions through MCP. Follow exact steps."
-keywords: ["pydantic-ai", "mcp", "agent", "twitter", "python", "streamable-http"]
+description: "Build a Pydantic AI Twitter API agent for typed tweet search, profiles, followers, monitors, exports, and reviewed X actions through MCP. See Python code."
+keywords:
+  [
+    "Pydantic AI Twitter API",
+    "Pydantic AI MCP",
+    "Python Twitter API agent",
+    "Twitter API for Python",
+    "typed Twitter agent",
+    "MCP Twitter API",
+    "tweet search agent",
+    "Pydantic structured output",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Build a Pydantic AI agent that can search tweets, hand off IDs and cursors, post tweets, replay stored monitor events, and run extraction jobs - connected to Xquik's MCP server with 3 lines of config.
+Build a Pydantic AI Twitter API agent through Xquik's MCP server. Search
+tweets, inspect profiles, export followers, replay monitor events, and review
+X actions. Validate every durable handoff with a Pydantic model.
 
-## Choose Pydantic AI for typed agent boundaries
+## Why Use Pydantic AI With a Twitter API?
 
-Use Pydantic AI when tool outputs must enter validated Python models. Connect
-Xquik with an `MCPToolset`. Keep tweet and profile schemas in application
-result types.
+Pydantic AI combines model tool calls with typed Python output. Xquik supplies
+the Twitter API routes through two MCP tools: `explore` and `xquik`.
 
-Validate every durable handoff. Preserve tweet IDs, user IDs, queries, cursors,
-and media URLs. Reject a write plan that lacks the connected account or target
-ID.
+Use each strength at the correct boundary.
 
-Defer tool loading when an agent needs only a small operation set. Prefix
-tools when several MCP servers expose similar names. These controls make tool
-selection easier to inspect.
+| Boundary | Pydantic AI control | Twitter agent benefit |
+| --- | --- | --- |
+| Final response | Pydantic `output_type` | Reject malformed tweet rows and cursors |
+| Tool catalog | `.defer_loading()` | Hide unused MCP tools until discovery |
+| Write actions | `.approval_required()` | Pause before posting, replying, or following |
+| MCP naming | `.prefixed()` | Prevent tool collisions across servers |
+| Connection lifecycle | `async with agent` | Reuse one MCP session across related calls |
 
-Use dependencies for request-scoped policy and identity. Require approval
-before post, like, repost, follow, or direct-message calls. Save action IDs and
-lifecycle states outside the generated answer.
+Use a typed Pydantic AI agent for tweet search, profile enrichment, follower
+exports, and monitor processing. Keep each agent focused on one workflow.
 
-## Prerequisites
+## Pydantic AI Twitter API Prerequisites
 
-- Python 3.10+
-- [Xquik API key](/x-api-quickstart) (`xq_...`)
-- An LLM API key (Anthropic, OpenAI, or any Pydantic AI-supported provider)
+- Python 3.10 or later
+- An [Xquik API key](/x-api-quickstart) beginning with `xq_`
+- A Pydantic AI-supported model with tool calling
+- A connected X account for private reads or write actions
 
-## Install
+Public X reads do not require X Developer credentials. Authenticate with
+Xquik. Connect an X account only when the selected route requires it.
+
+The keyword research favors practical Python intent. Relevant phrases include
+“Twitter API for Python,” “Python Twitter API,” and “API agents.”
+
+## Install Pydantic AI MCP Support
+
+Install the current stable Pydantic AI 2.x line. Keep FastMCP below 4 until
+Pydantic AI adds MCP SDK v2 support.
 
 ```bash
-pip install "pydantic-ai-slim[anthropic,mcp]"
+python -m pip install --upgrade \
+  "pydantic-ai-slim[anthropic,mcp]>=2.22,<3" \
+  python-dotenv
 ```
 
-## Full Example
+The `mcp` extra installs the compatible FastMCP 3.x client. Do not add a
+FastMCP 4 prerelease to this environment.
+
+Store secrets outside source control.
+
+```bash .env
+XQUIK_API_KEY=xq_YOUR_KEY_HERE
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+```text .gitignore
+.env
+xquik-*-handoff.json
+```
+
+## Use the Twitter API in Python With Pydantic AI
+
+Define the final tweet-search handoff before creating the agent. Pydantic AI
+validates the model output against this schema.
 
 ```python
 import asyncio
+import os
 from pathlib import Path
+from typing import Literal
+
+from dotenv import load_dotenv
+from pydantic import BaseModel
 from pydantic_ai import Agent
 from pydantic_ai.mcp import MCPToolset
 
-toolset = MCPToolset(
-    "https://xquik.com/mcp",
-    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-)
 
-agent = Agent(
-    "anthropic:claude-sonnet-4-6",
-    toolsets=[toolset],
-    instructions="You help users interact with X (Twitter) via the Xquik API.",
-)
+class TweetRow(BaseModel):
+    tweet_id: str
+    text: str
+    author_username: str | None = None
+    created: int | None = None
+    url: str | None = None
 
 
-async def main():
-    prompt = (
-        "Search for the latest tweets about AI agents. Return compact JSON "
-        "with query, route_used, tweets[{tweet_id,text,author_username,created_at}], "
-        "has_more, next_cursor, and key influencers."
+class TweetSearchHandoff(BaseModel):
+    query: str
+    route_used: str
+    tweets: list[TweetRow]
+    has_more: bool
+    next_cursor: str | None = None
+    stop_reason: Literal["complete", "requested_limit", "cursor_stalled"]
+
+
+async def main() -> None:
+    load_dotenv()
+
+    xquik = MCPToolset(
+        "https://xquik.com/mcp",
+        headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
     )
-    result = await agent.run(prompt)
+
+    agent = Agent(
+        "anthropic:claude-sonnet-4-6",
+        toolsets=[xquik],
+        output_type=TweetSearchHandoff,
+        instructions=(
+            "Use Xquik for Twitter API requests. Preserve exact IDs and cursors. "
+            "Use GET /api/v1/x/tweets/search. Never invent missing tweet fields."
+        ),
+    )
+
+    result = await agent.run(
+        "Search 25 recent tweets about Pydantic AI MCP. "
+        "Return the query, route, tweet rows, cursor state, "
+        "and an explicit stop reason."
+    )
+
     Path("xquik-pydantic-ai-handoff.json").write_text(
-        result.output,
+        result.output.model_dump_json(indent=2),
         encoding="utf-8",
     )
 
@@ -77,143 +147,309 @@ async def main():
 asyncio.run(main())
 ```
 
-The agent discovers both Xquik tools and can call 119 MCP-compatible JSON or text operations.
+`MCPToolset` uses Streamable HTTP for this URL. Pydantic AI opens and closes
+the connection automatically. Enter `async with agent` when several runs
+should share one connection.
 
-Pydantic AI registers `MCPToolset` as an agent `toolsets` entry. A URL that does not end in `/sse` uses Streamable HTTP automatically. The MCP runtime returns normalized snake_case fields through `xquik.request()`. Keep prompts aligned with `tweet_id`, `has_more`, `next_cursor`, and returned job IDs.
+The agent discovers `explore` and `xquik`. Use `explore` before an unfamiliar
+route. The `xquik` tool runs sandbox code containing `xquik.request(...)`.
+Authentication is injected outside that code.
 
-## Handoff Checklist
+## Validate Twitter API Fields Before Storage
+
+MCP returns normalized snake_case fields. Date-time values use Unix seconds.
+A REST `createdAt` field becomes `created`, not `created_at`.
+
+Keep these source fields unchanged:
+
+- Tweet rows: `id`, `text`, `author`, `created`, and `url`
+- Profile rows: `id`, `username`, `name`, `description`, and `followers`
+- Page state: `has_more` and `next_cursor`
+- Error fields: `error.type`, `error.code`, and `error.message`
+- Write receipts: `tweet_id`, `write_action_id`, and `charged_credits`
+
+Map source `id` to `tweet_id` or `user_id` only in your output model. Never
+cast large IDs to floating-point numbers.
+
+Search and list routes return `has_more` and `next_cursor`. Pass the cursor as
+`cursor` for tweets, profiles, followers, replies, timelines, communities, and
+lists. Keep the original query and filters unchanged.
+
+Events, draws, extractions, and radar pages use `after`. Draft pages use
+`afterCursor`. Treat every cursor as opaque.
+
+Continue through an empty page when `has_more` stays true. Stop when the cursor
+is missing or repeats. Return `cursor_stalled` with the saved row count.
+
+MCP output has a 24,000-character limit. Project only required fields. Use
+extraction exports when the workflow must persist every complete row.
+
+## Build a Typed Twitter Agent Handoff
+
+Conversation text cannot safely resume a Python Twitter API job. Persist the
+validated fields required by the next worker.
 
 <CardGroup cols={2}>
-  <Card title="Tweet search rows" icon="search">
-    Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.
+  <Card title="Tweet Search" icon="search">
+    Store the query, route, tweet IDs, authors, `created`, URLs, `has_more`,
+    `next_cursor`, and stop reason.
   </Card>
-  <Card title="User profile rows" icon="users">
-    Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profile_picture`, `has_more`, `next_cursor`, and the source lookup or search query.
+  <Card title="Profile Lookup" icon="user">
+    Store `user_id`, `username`, `name`, `description`, `followers`,
+    `verified`, and `profile_picture`.
   </Card>
-  <Card title="Trend rows" icon="trending-up">
-    Store each trend `name`, `rank`, `query`, and `description`. Keep response `count`, `woeid`, and the requested region with the run checkpoint.
+  <Card title="Follower Export" icon="download">
+    Store the source user, extraction ID, status, poll URL, requested format,
+    and export completion state.
   </Card>
-  <Card title="Monitor and webhook setup" icon="radio">
-    Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager. On production deliveries, store `delivery_id` for receiver retry de-dupe and `stream_event_id` when one monitor event should process once across endpoint changes.
+  <Card title="Reply Collection" icon="message-circle">
+    Store the root tweet ID, reply IDs, parent IDs, cursor state, and coverage
+    diagnostics. Keep nested replies separate.
   </Card>
-  <Card title="Stored event replay" icon="activity">
-    Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, `next_cursor`, and the `after` query for the next page.
+  <Card title="Monitor Replay" icon="radio">
+    Store `monitor_id`, `event_id`, `type`, `occurred_at`, `has_more`, and
+    `next_cursor`. Send the next cursor as `after`.
   </Card>
-  <Card title="Extraction jobs" icon="database">
-    Store `extraction_id`, `status`, `poll`, and `export_after_complete`; poll before loading CSV, JSON, or XLSX rows.
+  <Card title="Webhook Delivery" icon="webhook">
+    Store `webhook_id`, `delivery_id`, and `stream_event_id`. Keep the webhook
+    secret in a secret manager.
   </Card>
-  <Card title="Writes" icon="send">
-    Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, `charged_credits`, and `poll`; do not resend pending writes.
+  <Card title="Write Receipt" icon="send">
+    Store `tweet_id` or `write_action_id`, `status`, `charged_credits`, `poll`,
+    and the idempotency key.
   </Card>
-  <Card title="Media attachments" icon="image">
-    For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`. For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.
+  <Card title="Media Attachment" icon="image">
+    Use public URLs in `media` for tweets. Reserve uploaded `media_id` values
+    for direct messages.
   </Card>
 </CardGroup>
 
-## Reusing Connections
+Keep API keys, headers, webhook secrets, and raw signatures outside agent
+output. Never place private messages in shared traces.
 
-Wrap multiple calls in `async with agent` to keep the MCP connection open across requests:
+## Reuse the MCP Connection Safely
+
+Wrap related calls in `async with agent`. This avoids reconnecting between a
+profile lookup and its tweet search.
 
 ```python
-from pathlib import Path
-
-async def main():
+async def collect_two_search_pages() -> None:
     async with agent:
-        profile = await agent.run("Look up @username's public profile")
-        tweets = await agent.run(
-            "Get @username's latest 5 tweets. Return compact JSON with "
-            "tweet_id, author_username, text, created_at, has_more, next_cursor, "
-            "and route_used."
+        first_page = await agent.run(
+            "Search 25 tweets about Pydantic AI MCP. Preserve the next cursor."
+        )
+        cursor = first_page.output.next_cursor
+        if not first_page.output.has_more or cursor is None:
+            Path("xquik-pydantic-ai-page-1.json").write_text(
+                first_page.output.model_dump_json(indent=2),
+                encoding="utf-8",
+            )
+            return
+
+        second_page = await agent.run(
+            f"Continue tweet search for {first_page.output.query!r}. "
+            f"Use this exact cursor: {cursor!r}. Preserve IDs and cursor state."
         )
 
-    Path("xquik-pydantic-ai-profile.json").write_text(
-        profile.output,
-        encoding="utf-8",
-    )
-    Path("xquik-pydantic-ai-tweets.json").write_text(
-        tweets.output,
+    Path("xquik-pydantic-ai-page-2.json").write_text(
+        second_page.output.model_dump_json(indent=2),
         encoding="utf-8",
     )
 ```
 
-## Deferred Tool Loading
+One `MCPToolset` instance connects as one identity. Do not share one instance
+across users with different Xquik keys. Create a request-scoped toolset for
+each credential.
 
-For large tool sets, use `DeferredLoadingToolset` to hide tools from the model until they're discovered via tool search. This reduces prompt token usage:
+## Require Approval Before X Actions
+
+Read-only agents can search tweets automatically. Write-capable agents need a
+human decision before posting, replying, liking, reposting, following, or
+sending a direct message.
+
+Xquik exposes all API calls through one aggregate `xquik` tool. Therefore, a
+write-capable agent should review every `xquik` call. Leave `explore` available
+without approval.
 
 ```python
-from pydantic_ai import Agent
+from pydantic import BaseModel
+from pydantic_ai import Agent, DeferredToolRequests, DeferredToolResults
 from pydantic_ai.mcp import MCPToolset
 
-toolset = MCPToolset(
+
+class ActionReceipt(BaseModel):
+    route_used: str
+    tweet_id: str | None = None
+    write_action_id: str | None = None
+    status: str
+    charged_credits: int | None = None
+
+
+xquik = MCPToolset(
     "https://xquik.com/mcp",
-    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
+)
+reviewed_xquik = xquik.approval_required(
+    lambda _ctx, tool_def, _args: tool_def.name == "xquik"
+)
+
+write_agent = Agent(
+    "anthropic:claude-sonnet-4-6",
+    toolsets=[reviewed_xquik],
+    output_type=[ActionReceipt, DeferredToolRequests],
+    instructions="Never execute an X action without explicit approval.",
+)
+
+pending = await write_agent.run(
+    "Draft a reply to tweet 123. Do not post before approval."
+)
+
+if isinstance(pending.output, DeferredToolRequests):
+    approvals = {
+        call.tool_call_id: review_call_in_ui(call)
+        for call in pending.output.approvals
+    }
+    completed = await write_agent.run(
+        message_history=pending.all_messages(),
+        deferred_tool_results=DeferredToolResults(approvals=approvals),
+    )
+```
+
+Inspect the sandbox code before approval. Confirm the route, method, account,
+target ID, text, media, and idempotency key. Reject unexpected arguments.
+Implement `review_call_in_ui()` in your application. Return `True` only after
+the user approves the displayed call.
+
+Do not use `approve_all=True` for X actions. Store the approval decision and
+tool call ID with the resulting action receipt.
+
+## Handle Twitter API Errors Deliberately
+
+Treat errors as typed workflow decisions.
+
+| Status | Meaning | Pydantic AI decision |
+| --- | --- | --- |
+| `400` | Invalid parameters or unsupported fields | Correct the request before retrying |
+| `401` | Invalid Xquik authentication | Stop and replace the credential |
+| `402` | Subscription or credit action required | Report choices and request confirmation |
+| `424` | Dependency failure or incomplete replies | Preserve partial rows and inspect retryability |
+| `429` | Twitter API rate limit reached | Respect `error.retry_after` and back off |
+| `502` | Temporary upstream failure | Retry safe reads with a bounded policy |
+
+A `402` never authorizes a purchase. Show the available payment choices. Wait
+for explicit confirmation before any supported account checkout action.
+
+Never recreate a pending write after a timeout. Poll the returned action ID.
+Retry only safe reads when `error.retryable` permits it.
+
+## Defer and Prefix MCP Tools
+
+Xquik exposes only two aggregate tools. Deferred loading is optional for one
+Xquik connection. Use it when several servers create a larger tool catalog.
+
+```python
+xquik = MCPToolset(
+    "https://xquik.com/mcp",
+    headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
 )
 
 agent = Agent(
     "anthropic:claude-sonnet-4-6",
-    toolsets=[toolset.defer_loading()],
+    toolsets=[xquik.defer_loading()],
 )
 ```
 
-## Loading from JSON Config
-
-If you manage MCP servers via a config file:
-
-```json mcp_config.json
-{
-  "mcpServers": {
-    "xquik": {
-      "url": "https://xquik.com/mcp",
-      "headers": {
-        "x-api-key": "xq_YOUR_KEY_HERE"
-      }
-    }
-  }
-}
-```
+Prefix tools when another server also exposes `explore` or `xquik`.
 
 ```python
-from pydantic_ai import Agent
-from pydantic_ai.mcp import load_mcp_toolsets
-
-toolsets = load_mcp_toolsets("mcp_config.json")
-agent = Agent("anthropic:claude-sonnet-4-6", toolsets=toolsets)
-```
-
-## Tool Prefixes
-
-Avoid naming conflicts when connecting multiple MCP servers:
-
-```python
-from pydantic_ai.mcp import MCPToolset
-
-xquik = MCPToolset(
-    "https://xquik.com/mcp",
-    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-).prefixed("xquik")
-# Tools become: xquik_explore, xquik_xquik, etc.
-```
-
-## Environment Variables
-
-```bash .env
-XQUIK_API_KEY=xq_YOUR_KEY_HERE
-ANTHROPIC_API_KEY=sk-ant-...
-```
-
-```python
-import os
-from pydantic_ai.mcp import MCPToolset
-
-toolset = MCPToolset(
+twitter_tools = MCPToolset(
     "https://xquik.com/mcp",
     headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
+).prefixed("twitter")
+
+agent = Agent(
+    "anthropic:claude-sonnet-4-6",
+    toolsets=[twitter_tools],
 )
 ```
 
-## Verified Package Versions
+The resulting names become `twitter_explore` and `twitter_xquik`. Update any
+approval predicate after adding a prefix.
 
-| Package | Version |
-|---------|---------|
-| `pydantic-ai-slim` | 2.11.0 |
-| `fastmcp-slim` | 3.4.4 |
+## Tested Pydantic AI Compatibility
+
+These versions were checked on August 3, 2026.
+
+| Package | Checked version | Supported range in this guide |
+| --- | --- | --- |
+| Python | 3.10 or later | `>=3.10` |
+| `pydantic-ai-slim` | 2.22.0 | `>=2.22,<3` |
+| `fastmcp-slim` | 3.4.5 | `>=3.3,<4` through the `mcp` extra |
+
+[Pydantic AI issue 6661](https://github.com/pydantic/pydantic-ai/issues/6661)
+tracks FastMCP 4 and MCP SDK v2 support. Use the stable FastMCP 3.x line until
+that compatibility work ships.
+
+## Pydantic AI Twitter API Questions
+
+### Does Pydantic AI support MCP?
+
+Yes. Install the `mcp` extra and create an `MCPToolset`. Xquik uses the
+recommended Streamable HTTP transport.
+
+### Can Pydantic AI call the Twitter API?
+
+Yes. Xquik exposes tweet, profile, follower, monitor, extraction, and X action
+routes through MCP. Authenticate with an Xquik API key.
+
+### Can Pydantic AI scrape tweets with Python?
+
+Yes. Call `GET /api/v1/x/tweets/search` through the MCP tools. Preserve tweet
+IDs, authors, `created`, URLs, `has_more`, and `next_cursor`.
+
+### How do I validate Twitter API JSON with Pydantic?
+
+Pass a `BaseModel` as the agent's `output_type`. Save `result.output` with
+`model_dump_json()`. Never save unvalidated conversational text as JSON.
+
+### Does a Pydantic AI Twitter agent need X Developer keys?
+
+No. Use an Xquik API key. Some private reads and write actions also require a
+connected X account.
+
+### How do I post a tweet with Pydantic AI?
+
+Use the matching X write route through `xquik`. Require approval for the tool
+call. Store the idempotency key and returned action ID.
+
+### How do I handle Twitter API rate limits in Python?
+
+Read `error.retry_after` from a `429` response. Wait for that interval. Retry
+safe reads with bounded backoff.
+
+### How do I paginate tweet search in Pydantic AI?
+
+Persist `has_more` and `next_cursor` in the output model. Reuse unchanged
+filters. Stop on completion, limits, or a stalled cursor.
+
+### Can a Pydantic AI agent export Twitter followers?
+
+Yes. Create an extraction, persist its ID, and poll its status. Export only
+after completion. Save the source user and format together.
+
+### Can Pydantic AI monitor Twitter keywords?
+
+Yes. Create a monitor and webhook. Store both IDs. Replay missed events through
+`GET /api/v1/events` with `after` pagination.
+
+## Next Steps
+
+- Read the [official Pydantic AI MCP client guide](https://pydantic.dev/docs/ai/mcp/client/).
+- Review the [MCP tool contract](/mcp/tools).
+- Follow the [agent handoff checklist](/mcp/agent-handoff).
+- Build a [tweet search workflow](/guides/tweet-scraper-csv-export).
+- Add [monitor and webhook delivery](/guides/brand-monitoring-workflow).
+- Compare [Twitter API alternatives](/twitter-api-alternatives).
+
+Xquik is an independent third-party service. Not affiliated with X Corp.
+"Twitter" and "X" are trademarks of X Corp.
