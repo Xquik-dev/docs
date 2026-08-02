@@ -192,7 +192,21 @@ function compactErrorExample(value) {
   );
 }
 
-function responseExample(document, rawResponse, status) {
+function specializeWriteActionExample(value, status, writeAction) {
+  if (
+    (status !== '200' && status !== '202') ||
+    typeof writeAction !== 'string' ||
+    value === null ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    !Object.hasOwn(value, 'action')
+  ) {
+    return value;
+  }
+  return { ...value, action: writeAction };
+}
+
+function responseExample(document, rawResponse, status, writeAction) {
   const response = resolveNode(document, rawResponse);
   if (status === '204') {
     return { language: 'text', value: 'No response body.' };
@@ -211,9 +225,15 @@ function responseExample(document, rawResponse, status) {
     media.example ??
     firstNamedExample?.value ??
     exampleFromSchema(document, media.schema);
-  const compactValue = status.startsWith('4') || status.startsWith('5')
-    ? compactErrorExample(value)
-    : compactExample(value, 10);
+  const operationValue = specializeWriteActionExample(
+    value,
+    status,
+    writeAction,
+  );
+  const compactValue =
+    status.startsWith('4') || status.startsWith('5')
+      ? compactErrorExample(operationValue)
+      : compactExample(operationValue, 10);
 
   return {
     language: mediaType.includes('json') ? 'json' : 'text',
@@ -228,9 +248,15 @@ function formatValue(language, value) {
   return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
 }
 
-function responseExampleBlock(document, responses, scope) {
+function responseExampleBlock(document, operation, scope) {
+  const responses = operation.responses ?? {};
   const tabs = Object.entries(responses).map(([status, rawResponse]) => {
-    const example = responseExample(document, rawResponse, status);
+    const example = responseExample(
+      document,
+      rawResponse,
+      status,
+      operation['x-write-action'],
+    );
     const tabId = `response-${scope.replaceAll('/', '-')}-${status}`;
     const value = formatValue(example.language, example.value)
       .split('\n')
@@ -303,7 +329,7 @@ for (const file of listMdxFiles(API_REFERENCE_DIR)) {
   }
 
   const scope = relative(API_REFERENCE_DIR, file).replace(/\.mdx$/u, '');
-  const block = responseExampleBlock(document, operation.responses ?? {}, scope);
+  const block = responseExampleBlock(document, operation, scope);
   const nextSource = replaceGeneratedBlock(source, block);
   pages += 1;
   statuses += Object.keys(operation.responses ?? {}).length;

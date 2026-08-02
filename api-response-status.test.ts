@@ -28,6 +28,7 @@ interface ApiDoc {
 
 interface OpenApiOperation {
   readonly responses?: Record<string, unknown>;
+  readonly 'x-write-action'?: string;
 }
 
 interface OpenApiSpec {
@@ -119,25 +120,56 @@ interface GeneratedResponseTab {
   readonly title: string;
 }
 
-function generatedResponseTabs(
-  source: string,
-): readonly GeneratedResponseTab[] {
+function generatedResponseBlock(source: string): string | undefined {
   const start = source.indexOf(GENERATED_RESPONSE_EXAMPLES_START);
   const end = source.indexOf(GENERATED_RESPONSE_EXAMPLES_END);
   if (start === -1 || end === -1 || end < start) {
-    return [];
+    return undefined;
   }
+  return source.slice(start, end);
+}
+
+function generatedResponseTabs(
+  source: string,
+): readonly GeneratedResponseTab[] {
+  const generated = generatedResponseBlock(source);
+  if (generated === undefined) return [];
 
   return [
-    ...source
-      .slice(start, end)
-      .matchAll(/^  <Tab title="(\d{3})" id="([^"]+)">$/gmu),
+    ...generated.matchAll(
+      /^  <Tab title="(\d{3})" id="([^"]+)">$/gmu,
+    ),
   ].map(
     (match): GeneratedResponseTab => ({
       id: match[2] ?? '',
       title: match[1] ?? '',
     }),
   );
+}
+
+function generatedJsonResponse(
+  source: string,
+  status: string,
+): Readonly<Record<string, unknown>> | undefined {
+  const generated = generatedResponseBlock(source);
+  if (generated === undefined) return undefined;
+
+  const tabStart = generated.indexOf(`<Tab title="${status}"`);
+  if (tabStart === -1) return undefined;
+
+  const fence = '```json\n';
+  const fenceStart = generated.indexOf(fence, tabStart);
+  if (fenceStart === -1) return undefined;
+
+  const fenceEnd = generated.indexOf('\n    ```', fenceStart + fence.length);
+  if (fenceEnd === -1) return undefined;
+
+  const json = generated
+    .slice(fenceStart + fence.length, fenceEnd)
+    .split('\n')
+    .map((line): string => line.replace(/^    /u, ''))
+    .join('\n');
+  return JSON.parse(json) as Readonly<Record<string, unknown>>;
 }
 
 function operationKey(apiDoc: ApiDoc): string {
@@ -300,6 +332,31 @@ describe('API success response status documentation', (): void => {
     );
 
     expect(noContentPages).toHaveLength(2);
+    expect(findings).toStrictEqual([]);
+  });
+
+  it('keeps write success examples aligned with each canonical action', (): void => {
+    expect.assertions(2);
+
+    const spec = parseYaml(
+      readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'),
+    );
+    const writeDocs = readApiDocs().flatMap((apiDoc) => {
+      const action = getOperation(spec, apiDoc)?.['x-write-action'];
+      return action === undefined ? [] : [{ action, apiDoc }];
+    });
+    const findings = writeDocs.flatMap(({ action, apiDoc }) =>
+      ['200', '202'].flatMap((status): readonly string[] => {
+        const example = generatedJsonResponse(apiDoc.source, status);
+        return example?.['action'] === action
+          ? []
+          : [
+              `${apiDoc.file}: ${status} action is ${String(example?.['action'])}; expected ${action}.`,
+            ];
+      }),
+    );
+
+    expect(writeDocs).toHaveLength(18);
     expect(findings).toStrictEqual([]);
   });
 
