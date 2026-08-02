@@ -248,8 +248,8 @@ public labels.
 
 ## Review Every Profile Field
 
-Show the exact display name, bio, location, and website during approval. Check
-each link and spelling choice. Save previous values when your workflow needs a
+Show the exact display name, bio, location, and website during approval. Review
+every link and spelling choice. Save previous values when your workflow needs a
 rollback. Never place private notes, API keys, or credentials in public user
 profiles.
 
@@ -260,21 +260,21 @@ or `location` to clear that field. A blank `name` or invalid URL returns 400.
 
 | X profile text update column | Request or response source | Review rule |
 | --- | --- | --- |
-| Acting X account | Request `account` | Check which profile receives the change. |
+| Acting X account | Request `account` | Make sure this is the intended profile. |
 | Display name | Request `name` | Check the final 1-to-50-character name. |
-| Profile bio | Request `description` | Check the final bio within 160 characters. |
-| Location | Request `location` | Check the final location within 30 characters. |
+| Profile bio | Request `description` | Keep the final bio within 160 characters. |
+| Location | Request `location` | Keep the final location within 30 characters. |
 | Website | Request `url` | Open and verify the public destination. |
 | Changed fields | Exact request keys | Leave unrelated profile fields absent. |
-| Idempotency key | Request header | Change the key after editing any value. |
+| Idempotency key | Request header | Use a new key after changing any value. |
 | Write action ID | Response `id` | Poll the matching lifecycle record. |
 
 ## Automate a Safe Profile Update
 
 Create one idempotency key for the exact account and field set. Reuse that key
-only after a network interruption. Change it after editing any value. Store the
+only after a network interruption. Change it after editing any value. Save the
 account, changed field names, request hash, write action ID, and lifecycle
-state.
+status.
 
 A 200 response contains a completed action. A 202 response needs polling
 through `statusUrl`. Wait for `terminal: true` before reporting success. Never
@@ -292,9 +292,9 @@ as public proof. Store both timestamps when profile changes need an audit
 trail. Record only public changes, including user profile fields and action
 IDs. Never copy authentication tokens into that record.
 
-This endpoint never edits posts, tweets, followers, following, replies, or
-likes. Those resources remain separate from the profile text. A lookup may
-show their counts, but this update cannot change those counts.
+The update leaves posts, tweets, followers, following, replies, and likes
+unchanged. Profile text stays separate from those resources. A lookup may show
+their counts, but this update cannot change those counts.
 
 ## Sequence Updates Across User Profiles
 
@@ -305,11 +305,12 @@ account's terminal result before starting its next profile change.
 
 For a campaign, store the approved previous and replacement values. Apply the
 replacement at launch. Verify the public profile, then restore the earlier
-text with a new key. This sequence makes recurring profile changes reversible.
+fields with a new idempotency key. Saved earlier values make each change
+reversible.
 
-Use separate API keys when your application separates environments or teams.
-Do not share credentials between unrelated workflows. The request's `account`
-field still selects which connected profile receives the change.
+Give different environments or teams their own API keys. Do not share
+credentials between unrelated workflows. The request's `account` field still
+selects which connected profile receives the change.
 
 ## Fix Twitter Profile Update Failures
 
@@ -318,8 +319,8 @@ credits after 402. Reconnect the X account after 403. Connect a missing account
 after 404. Keep the original action after a 409 idempotency conflict. Honor
 `Retry-After` after 429. Check `safeToRetry` after 500 or 503.
 
-X may reject profile text containing a fake verification mark or harmful URL.
-Remove the flagged content before retrying. X documents more causes in its
+X can reject fake verification marks or harmful profile URLs. Remove the
+flagged content before retrying. X documents more causes in its
 [profile save troubleshooting guide](https://help.x.com/en/managing-your-account/cant-save-changes-to-my-account).
 
 ## Twitter API Update Profile Questions
