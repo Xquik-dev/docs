@@ -222,7 +222,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'api-reference/monitors/list.mdx',
     snippets: [
-      '| Account monitor inventory column | Response source | Reconciliation rule |',
+      '| Account monitor inventory column | Response source | Inventory check |',
       '| X user ID | `monitors[].xUserId` | Use this stable ID for account joins. |',
     ],
   },
