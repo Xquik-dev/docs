@@ -1,229 +1,486 @@
 ---
-title: "CrewAI Twitter Agent Guide | X API Tutorial"
+title: "CrewAI Twitter MCP Multi-Agent Guide for Python"
 sidebarTitle: "CrewAI"
-description: "Build a CrewAI research crew that searches tweets, looks up profiles, exports followers, summarizes replies, and monitors keywords through MCP. See examples."
-keywords: ["crewai", "mcp", "agent", "twitter", "python", "crew", "multi-agent"]
+description: "Build a CrewAI Twitter MCP crew for tweet search, profiles, followers, monitors, exports, and reviewed X actions with typed Python agent handoffs safely."
+keywords:
+  [
+    "CrewAI Twitter MCP",
+    "Twitter MCP Python",
+    "CrewAI MCPServerHTTP",
+    "Twitter API Python",
+    "tweet search agent",
+    "Twitter follower scraper API",
+    "multi-agent Twitter workflow",
+    "X API agent",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Build a CrewAI crew that can search tweets, hand off IDs and cursors, monitor accounts, replay stored monitor events, and run extraction jobs - all powered by Xquik's MCP server.
+Build a CrewAI Twitter MCP crew through Xquik's remote MCP server. Search
+tweets, inspect profiles, export followers, replay monitors, and review X
+actions. Preserve every tweet ID, profile ID, cursor, and job ID.
 
-## Choose CrewAI for role-based tweet work
+## Why Use CrewAI With a Twitter API?
 
-Use CrewAI when separate agents own research, review, and reporting. Give each
-agent a narrow role. A researcher can search tweets and profiles. A reviewer
-can inspect replies and media. A reporter can save approved tweet IDs and
-follower rows.
+CrewAI coordinates role-based agents and sequential tasks. Xquik supplies
+Twitter API operations through two MCP tools: `explore` and `xquik`.
 
-Keep task outputs concrete. Pass tweet IDs, user IDs, queries, and cursors
-between agents. Do not pass an unstructured summary when the next task needs
-the original tweet.
+Use each boundary for one responsibility.
 
-Set write tools apart from read tools. Require explicit approval before likes,
-reposts, follows, direct messages, or published tweets. Keep the connected
-account visible in every write task.
+| Boundary | CrewAI control | Twitter workflow benefit |
+| --- | --- | --- |
+| Remote MCP | `MCPServerHTTP` | Connect agents to tweet, profile, follower, and monitor routes |
+| Final handoff | Pydantic `output_pydantic` | Reject malformed tweet rows and pagination state |
+| Task sequence | `Process.sequential` and `context` | Pass exact tweet records between specialists |
+| Discovery | Static MCP tool filter | Expose endpoint schemas without execution |
+| Human review | A tool-free planning task | Review X actions before any write request |
+| Failure checks | `CrewOutput.has_tool_failures` | Stop incomplete research before downstream analysis |
 
-Use a sequential crew when one result becomes the next input. Use hierarchical
-delegation only when a manager agent must choose among independent specialists.
+Choose CrewAI when separate roles own research, analysis, and reporting.
+Choose direct REST for deterministic jobs without model decisions.
 
-## Prerequisites
+## CrewAI Twitter API Prerequisites
 
-- Python 3.10+
-- [Xquik API key](/x-api-quickstart) (`xq_...`)
-- An LLM API key (OpenAI, Anthropic, or any CrewAI-supported provider)
+- Python 3.10 through 3.13
+- An [Xquik API key](/x-api-quickstart) beginning with `xq_`
+- An LLM provider key supported by CrewAI
+- A connected X account for private reads or X write actions
 
-## Install
+Public X reads do not require X Developer credentials. Authenticate with
+Xquik. Connect an X account only when the route requires it.
+
+## Install CrewAI MCP Support
+
+CrewAI core includes its native MCP client.
 
 ```bash
-pip install crewai
+python -m pip install "crewai>=1.15,<1.16"
 ```
 
-MCP support is built into CrewAI core - no extra packages needed.
+CrewAI 1.15 requires MCP 1.28. Do not install MCP 2.x beside this release.
 
-## Full Example
+Store secrets outside source control.
+
+```bash .env
+XQUIK_API_KEY=xq_YOUR_KEY_HERE
+OPENAI_API_KEY=YOUR_OPENAI_KEY
+```
+
+```text .gitignore
+.env
+xquik-*-handoff.json
+```
+
+## Build a Typed CrewAI Tweet Search Agent
+
+Define the handoff before building the task. CrewAI validates the final task
+against the Pydantic model.
 
 ```python
+import os
 from pathlib import Path
-from crewai import Agent, Task, Crew, Process
-from crewai.mcp import MCPServerHTTP
+from typing import Literal
 
-researcher = Agent(
-    role="X Research Analyst",
-    goal="Find and analyze trending conversations on X",
-    backstory="Expert social media analyst with deep experience in trend analysis",
-    mcps=[
-        MCPServerHTTP(
-            url="https://xquik.com/mcp",
-            headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-        ),
-    ],
+from crewai import Agent, Crew, Process, Task
+from crewai.mcp import MCPServerHTTP
+from pydantic import BaseModel
+
+
+class TweetRow(BaseModel):
+    tweet_id: str
+    text: str
+    author_username: str | None
+    created: int | None
+    url: str | None
+
+
+class TweetSearchHandoff(BaseModel):
+    query: str
+    route_used: Literal["GET /api/v1/x/tweets/search"]
+    tweets: list[TweetRow]
+    has_more: bool
+    next_cursor: str | None
+    pages_fetched: int
+    stop_reason: Literal[
+        "complete",
+        "requested_limit",
+        "cursor_stalled",
+    ]
+
+
+xquik_mcp = MCPServerHTTP(
+    url="https://xquik.com/mcp",
+    headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
+    streamable=True,
+    cache_tools_list=True,
 )
 
-task = Task(
-    description="Search for the latest tweets about AI agents. Return compact JSON with query, route_used, tweets[{tweet_id,text,author_username,created_at}], has_more, next_cursor, and key influencers.",
-    expected_output="Compact JSON with tweet rows, pagination state, and influencer notes",
+researcher = Agent(
+    role="Twitter API Researcher",
+    goal="Return exact tweet records and resumable pagination state",
+    backstory=(
+        "You inspect Twitter conversations through documented Xquik routes. "
+        "You preserve source IDs and never invent missing fields."
+    ),
+    llm="openai/gpt-5",
+    mcps=[xquik_mcp],
+    allow_delegation=False,
+    verbose=False,
+)
+
+search_task = Task(
+    description=(
+        "Use GET /api/v1/x/tweets/search. "
+        "Search 50 latest tweets about CrewAI Twitter MCP. "
+        "Preserve exact tweet IDs, created timestamps, and cursors. "
+        "Stop at the requested limit. Stop if a cursor repeats."
+    ),
+    expected_output="A validated tweet search handoff with pagination state.",
     agent=researcher,
+    output_pydantic=TweetSearchHandoff,
 )
 
 crew = Crew(
     agents=[researcher],
-    tasks=[task],
+    tasks=[search_task],
     process=Process.sequential,
-    verbose=True,
+    verbose=False,
 )
 
 result = crew.kickoff()
-Path("xquik-crewai-handoff.json").write_text(str(result), encoding="utf-8")
-```
+if result.has_tool_failures:
+    raise RuntimeError("Twitter MCP tool failed. Inspect result.tool_failures.")
 
-The `mcps` field on `Agent` auto-discovers all Xquik tools and makes them available to the agent. No manual tool wiring needed.
-
-The MCP runtime returns normalized snake_case fields through `xquik.request()`, so keep CrewAI tasks aligned with `tweet_id`, `has_more`, `next_cursor`, and returned job IDs.
-
-## Handoff Checklist
-
-<CardGroup cols={2}>
-  <Card title="Tweet search rows" icon="search">
-    Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.
-  </Card>
-  <Card title="User profile rows" icon="users">
-    Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profile_picture`, `has_more`, `next_cursor`, and the source lookup or search query.
-  </Card>
-  <Card title="Trend rows" icon="trending-up">
-    Store each trend `name`, `rank`, `query`, and `description`. Keep response `count`, `woeid`, and the requested region with the run checkpoint.
-  </Card>
-  <Card title="Monitor and webhook setup" icon="radio">
-    Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager. On production deliveries, store `delivery_id` for receiver retry de-dupe and `stream_event_id` when one monitor event should process once across endpoint changes.
-  </Card>
-  <Card title="Stored event replay" icon="activity">
-    Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, `next_cursor`, and the `after` query for the next page.
-  </Card>
-  <Card title="Extraction jobs" icon="database">
-    Store `extraction_id`, `status`, `poll`, and `export_after_complete`; poll before loading CSV, JSON, or XLSX rows.
-  </Card>
-  <Card title="Writes" icon="send">
-    Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, `charged_credits`, and `poll`; do not resend pending writes.
-  </Card>
-  <Card title="Media attachments" icon="image">
-    For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`. For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.
-  </Card>
-</CardGroup>
-
-## Multi-Agent Crew
-
-Use multiple agents with different roles sharing the same MCP server:
-
-```python
-from pathlib import Path
-from crewai import Agent, Task, Crew, Process
-from crewai.mcp import MCPServerHTTP
-
-xquik_mcp = MCPServerHTTP(
-    url="https://xquik.com/mcp",
-    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-)
-
-researcher = Agent(
-    role="X Researcher",
-    goal="Gather compact JSON handoff rows from X about a given topic",
-    backstory="Data collection specialist who finds relevant tweets and profiles",
-    mcps=[xquik_mcp],
-)
-
-analyst = Agent(
-    role="Engagement Analyst",
-    goal="Analyze engagement patterns and identify trends",
-    backstory="Data analyst who turns structured social data into actionable insights",
-    mcps=[xquik_mcp],
-)
-
-writer = Agent(
-    role="Report Writer",
-    goal="Write a concise executive summary from the analysis",
-    backstory="Technical writer who creates clear, data-driven reports",
-)
-
-research_task = Task(
-    description="Search X for tweets about '{topic}' from the last 24 hours. Collect the top 20 by engagement.",
-    expected_output="Compact JSON with tweet_id, author_username, text, created_at, has_more, next_cursor, and route_used",
-    agent=researcher,
-)
-
-analysis_task = Task(
-    description="Analyze the collected tweets. Identify sentiment distribution, peak posting times, and top contributors.",
-    expected_output="Structured analysis with charts-ready data",
-    agent=analyst,
-)
-
-report_task = Task(
-    description="Write a 3-paragraph executive summary of the findings.",
-    expected_output="Executive summary in markdown format",
-    agent=writer,
-)
-
-crew = Crew(
-    agents=[researcher, analyst, writer],
-    tasks=[research_task, analysis_task, report_task],
-    process=Process.sequential,
-    verbose=True,
-)
-
-result = crew.kickoff(inputs={"topic": "AI agents"})
-Path("xquik-crewai-workflow-handoff.json").write_text(
-    str(result),
+handoff = TweetSearchHandoff.model_validate(result.to_dict())
+Path("xquik-crewai-handoff.json").write_text(
+    handoff.model_dump_json(indent=2),
     encoding="utf-8",
 )
 ```
 
-## Discovery-Only Tool Filtering
+`Agent.mcps` discovers the remote tool schemas before task execution.
+`MCPServerHTTP` uses Streamable HTTP by default. The explicit setting makes
+that transport choice visible.
 
-Restrict an agent to endpoint discovery without API execution:
+The MCP runtime returns normalized snake_case fields through
+`xquik.request()`. It normalizes `createdAt` to the Unix-second field
+`created`. Keep the Pydantic model aligned with that contract.
+
+Always inspect `has_tool_failures`. CrewAI can finish after one tool fails.
+Never pass an incomplete result into follower exports or X actions.
+
+## Search Tweets With Focused Queries
+
+Send the search route a precise `q`. Keep the exact query in the handoff.
+
+| Search intent | Example `q` |
+| --- | --- |
+| Latest framework posts | `"CrewAI" MCP` |
+| One account's timeline | `from:crewAIInc since:2026-07-01 until:2026-08-01` |
+| Popular Python posts | `"Twitter API" Python lang:en min_faves:25` |
+| Questions without reposts | `"multi-agent workflow" ? -filter:retweets` |
+| Exact tweet | A numeric Tweet ID or X status URL |
+
+Use `queryType=Latest` for chronological monitoring. Use `Top` for
+engagement-ranked research. See the [tweet search API
+contract](/api-reference/x/search-tweets).
+
+Pass `next_cursor` back unchanged. Never rebuild a cursor. Stop when
+`has_more` becomes false. Also stop when a cursor repeats.
+
+Continue through an empty page when `has_more` remains true. Deduplicate
+resumed results by `tweet_id`.
+
+## Build a Role-Based Tweet Research Crew
+
+Give only the researcher access to Twitter MCP. Feed its validated task into a
+tool-free analyst.
+
+```python
+class TweetAnalysis(BaseModel):
+    query: str
+    analyzed_tweet_ids: list[str]
+    recurring_topics: list[str]
+    top_author_usernames: list[str]
+    next_cursor: str | None
+
+
+analyst = Agent(
+    role="Tweet Conversation Analyst",
+    goal="Analyze only the supplied tweet rows",
+    backstory="You compare exact tweets without fetching extra records.",
+    llm="openai/gpt-5",
+    allow_delegation=False,
+    verbose=False,
+)
+
+analysis_task = Task(
+    description=(
+        "Analyze the supplied tweet rows. "
+        "Keep every analyzed tweet_id. Preserve the next_cursor."
+    ),
+    expected_output="A typed topic analysis tied to source tweet IDs.",
+    agent=analyst,
+    context=[search_task],
+    output_pydantic=TweetAnalysis,
+)
+
+research_crew = Crew(
+    agents=[researcher, analyst],
+    tasks=[search_task, analysis_task],
+    process=Process.sequential,
+    verbose=False,
+)
+```
+
+The `context` list passes the first task's result into the second. The analyst
+receives no MCP tools. It cannot fetch unrelated tweets or profiles.
+
+Use hierarchical delegation only when a manager chooses independent
+specialists. Use sequential tasks for cursor-dependent work.
+
+## Keep Twitter Actions Outside the Research Crew
+
+Xquik intentionally exposes one `xquik` execution tool. That tool can run
+reads and writes allowed by the API key.
+
+CrewAI's MCP tool filter sees only `explore` and `xquik`. It cannot distinguish
+GET, POST, and DELETE routes inside `xquik`.
+
+Do not give a write-capable key to an autonomous research crew. Use a guest
+`paid_reads` key for eligible public GET routes. See [guest
+wallets](/guides/guest-wallets) for its exact scope.
+
+Create write plans in a tool-free task. Review them before deterministic
+execution.
+
+```python
+class TweetWritePlan(BaseModel):
+    account_id: str
+    text: str
+    reply_to_tweet_id: str | None
+    media_urls: list[str]
+    idempotency_key: str
+
+
+planner = Agent(
+    role="Twitter Action Planner",
+    goal="Prepare one reviewable X action without executing it",
+    backstory="You preserve approved text, target IDs, and account IDs.",
+    llm="openai/gpt-5",
+    tools=[],
+    allow_delegation=False,
+)
+
+plan_task = Task(
+    description="Prepare a tweet or reply plan from reviewed source tweets.",
+    expected_output="One typed action plan. Do not execute any X request.",
+    agent=planner,
+    output_pydantic=TweetWritePlan,
+    human_input=True,
+)
+```
+
+`human_input=True` reviews the task result. It does not approve earlier tool
+calls. The empty tool list makes this planning stage safe.
+
+After approval, validate the selected X account and exact text. Then send one
+deterministic REST request. Never retry a pending write automatically.
+
+## Expose Endpoint Discovery Only
+
+Expose only `explore` when an agent should inspect endpoint schemas.
 
 ```python
 from crewai.mcp import MCPServerHTTP
 from crewai.mcp.filters import create_static_tool_filter
 
-# Discovery only: cannot execute read or write API operations
-researcher = Agent(
-    role="API Catalog Researcher",
-    goal="Inspect Xquik endpoint schemas without executing API calls",
-    backstory="Researcher who maps available API operations",
-    mcps=[
-        MCPServerHTTP(
-            url="https://xquik.com/mcp",
-            headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-            tool_filter=create_static_tool_filter(
-                allowed_tool_names=["explore"],
-            ),
-        ),
-    ],
-)
-```
 
-This configuration exposes only `explore`. It can inspect endpoint schemas but cannot run API operations. The `xquik` meta-tool executes API operations. MCP tool-name filtering cannot make it read-only.
-
-## Environment Variables
-
-```bash .env
-XQUIK_API_KEY=xq_YOUR_KEY_HERE
-OPENAI_API_KEY=sk-...
-```
-
-```python
-import os
-
-xquik_mcp = MCPServerHTTP(
+discovery_mcp = MCPServerHTTP(
     url="https://xquik.com/mcp",
     headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
+    tool_filter=create_static_tool_filter(
+        allowed_tool_names=["explore"],
+    ),
+    cache_tools_list=True,
 )
 ```
 
-## Verified Package Versions
+This configuration cannot execute Twitter API operations. Adding `xquik`
+enables every operation authorized by the key.
 
-| Package | Version |
-|---------|---------|
-| `crewai` | 1.15.2 |
-| `mcp` | 1.26.0 |
+Use `explore` before an unfamiliar route. It returns methods, parameters, and
+response fields. It does not call X.
+
+## Use One MCP Configuration Per Tenant
+
+`MCPServerHTTP.headers` stores a concrete dictionary. It does not provide a
+per-call header callback.
+
+Create each configuration after resolving the tenant identity.
+
+```python
+def build_tenant_mcp(user_api_key: str) -> MCPServerHTTP:
+    return MCPServerHTTP(
+        url="https://xquik.com/mcp",
+        headers={"x-api-key": user_api_key},
+        streamable=True,
+        cache_tools_list=True,
+    )
+```
+
+Never share one agent across unrelated tenant keys. Keep API keys outside
+prompts, task output, memory, traces, and saved handoffs.
+
+Reuse one configuration during a related crew run. Tool-list caching avoids
+repeating schema discovery for every task.
+
+## Store a Resumable CrewAI Handoff
+
+Store identifiers and checkpoints outside task prose. Keep tweet text only
+when a later step needs it.
+
+<CardGroup cols={2}>
+  <Card title="Tweet Search Rows" icon="search">
+    Store `tweet_id`, `text`, `author_username`, `created`, `url`, `has_more`, `next_cursor`, and the original `q`.
+  </Card>
+  <Card title="Follower Exports" icon="users">
+    Store source `id` as `user_id`. Keep `username`, `name`, `followers`, `verified`, `profile_picture`, `has_more`, and `next_cursor`.
+  </Card>
+  <Card title="Trend Rows" icon="trending-up">
+    Store each `name`, `rank`, `query`, and `description`. Keep `count`, `woeid`, and the requested region.
+  </Card>
+  <Card title="Monitor Events" icon="radio">
+    Store `monitor_id`, `event_id`, `type`, `occurred_at`, `has_more`, `next_cursor`, and the next `after` value.
+  </Card>
+  <Card title="Webhook Deliveries" icon="webhook">
+    Store `webhook_id`, `delivery_id`, and `stream_event_id`. Store the one-time `secret` in a secret manager.
+  </Card>
+  <Card title="Extraction Jobs" icon="database">
+    Store `extraction_id`, `status`, `poll`, and `export_after_complete`. Poll before loading CSV, JSON, or XLSX rows.
+  </Card>
+  <Card title="Approved X Actions" icon="send">
+    Store `tweet_id` or `write_action_id`, `status`, `charged_credits`, and `poll`. Never resend pending writes.
+  </Card>
+  <Card title="Media Attachments" icon="image">
+    Tweets accept public URLs in `media`. Direct messages accept one uploaded `media_id` in `media_ids`.
+  </Card>
+</CardGroup>
+
+Persist `result.pydantic` or `result.to_dict()`. Do not persist free-form
+`result.raw` when downstream code expects tweet fields.
+
+## Handle Twitter API Errors and Tool Failures
+
+The tweet search contract documents these responses. Keep their meanings
+separate.
+
+| Status | Meaning | Crew action |
+| --- | --- | --- |
+| `400` | The search query is missing or invalid | Fix `q`; do not retry unchanged |
+| `401` | Guest authentication cannot complete this request | Provide an Xquik key or connect X |
+| `402` | The account lacks credits | Stop and request account action |
+| `424` | The upstream X dependency failed | Retry with bounded backoff |
+| `429` | The Twitter API rate limit applies | Wait for reset guidance, then resume the cursor |
+| `502` | The X dependency returned an invalid response | Retry later without changing IDs |
+
+Inspect `result.tool_failures` when `has_tool_failures` is true. Keep the
+failed route, safe error message, and task index in operational logs.
+
+Do not restart pagination after `429`. Preserve `next_cursor` and completed
+tweet IDs. Deduplicate by `tweet_id` after recovery.
+
+POST and DELETE routes document different statuses. Read each route before
+building retry logic. See [error handling](/guides/error-handling).
+
+## Choose CrewAI MCP or Direct REST
+
+| Requirement | CrewAI with MCP | Direct REST API |
+| --- | --- | --- |
+| Role-based tweet research | Strong fit | Write orchestration yourself |
+| Typed multi-agent handoffs | Pydantic task output | Python SDK model |
+| Scheduled follower export | Extra model steps | Strong fit |
+| Reviewed tweet planning | Tool-free review task | Build review state yourself |
+| Predictable latency and cost | Less predictable | More predictable |
+| Fixed cursor loop | Model adds risk | Strong fit |
+
+Use MCP when agents choose among related Twitter operations. Use REST for
+fixed routes, scheduled exports, or latency-sensitive services.
+
+A Python Twitter scraper library usually couples results to page markup.
+Xquik returns documented tweet, profile, follower, cursor, and job contracts.
+
+## Verified CrewAI Package Versions
+
+These versions were checked on August 2, 2026.
+
+| Package | Checked compatible version | Compatible range used here |
+| --- | --- | --- |
+| `crewai` | 1.15.10 | `>=1.15,<1.16` |
+| `mcp` | 1.28.1 | `>=1.28.1,<1.29` through CrewAI |
+| `pydantic` | 2.12.5 | `>=2.11.9,<2.13` through CrewAI |
+
+CrewAI 1.15 supports Python 3.10 through 3.13. Review release notes before
+widening these ranges.
+
+## CrewAI Twitter MCP Questions
+
+### Does CrewAI Support Remote MCP Servers?
+
+Yes. `MCPServerHTTP` connects agents to Streamable HTTP servers. Xquik exposes
+`explore` and `xquik` at `https://xquik.com/mcp`.
+
+### How Do I Connect CrewAI to a Twitter API?
+
+Create `MCPServerHTTP` with the Xquik MCP URL. Send your Xquik key through the
+`x-api-key` header. Add the configuration to `Agent.mcps`.
+
+### How Do I Search Tweets With Python and CrewAI?
+
+Ask the researcher to call `GET /api/v1/x/tweets/search`. Supply `q`,
+`queryType`, and a limit. Preserve `tweet_id`, `created`, and `next_cursor`.
+
+### Can CrewAI Export Twitter Followers?
+
+Yes. Use the [followers API](/api-reference/x/followers) for paginated profile
+rows. Use an extraction job for larger CSV, JSON, or XLSX exports.
+
+### Can CrewAI Monitor Tweets and Accounts?
+
+Yes. Create an account or keyword monitor. Replay stored events by cursor.
+Connect a webhook when the receiver can verify signatures.
+
+### Can a CrewAI Agent Post Tweets and Replies?
+
+Yes, but isolate planning from execution. Give the planner no MCP execution
+tool. Review the typed plan before one deterministic write request.
+
+See [create tweet](/api-reference/x-write/create-tweet) for the exact contract.
+
+### How Should CrewAI Handle Twitter API Rate Limits?
+
+Treat `429` separately from dependency failures. Save the current cursor and
+completed tweet IDs. Resume after the reset guidance.
+
+### Does CrewAI MCP Tool Filtering Make Xquik Read-Only?
+
+Only when the filter exposes `explore` without `xquik`. The `xquik` tool can
+run every operation authorized by the key.
+
+### CrewAI or LangChain for a Twitter Agent?
+
+Choose CrewAI for explicit roles and sequential task handoffs. Choose
+LangChain or LangGraph for graph-first orchestration and broader integrations.
+
+### CrewAI MCP or a Python Twitter Scraper Library?
+
+Choose CrewAI MCP for model-selected operations and typed handoffs. Choose a
+scraper library only when page-markup coupling fits your workflow.
+
+### Why Are CrewAI MCP Tools Missing?
+
+Check the MCP URL, key, and transport first. CrewAI skips unavailable servers
+and logs warnings. Treat missing tools as a failed research run.

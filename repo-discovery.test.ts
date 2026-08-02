@@ -10248,36 +10248,54 @@ const REQUIRED_GOOGLE_ADK_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CREWAI_GUIDE_SNIPPETS = [
-  'Build a CrewAI crew that can search tweets, hand off IDs and cursors, monitor accounts, replay stored monitor events, and run extraction jobs',
-  '## Discovery-Only Tool Filtering',
-  'MCP tool-name filtering cannot make it read-only.',
+  'title: "CrewAI Twitter MCP Multi-Agent Guide for Python"',
+  'Build a CrewAI Twitter MCP crew through Xquik\'s remote MCP server.',
+  'python -m pip install "crewai>=1.15,<1.16"',
   'from pathlib import Path',
-  'query, route_used, tweets[{tweet_id,text,author_username,created_at}]',
-  'Path("xquik-crewai-handoff.json").write_text(str(result), encoding="utf-8")',
-  'The MCP runtime returns normalized snake_case fields through `xquik.request()`',
-  '## Handoff Checklist',
-  '<Card title="Tweet search rows" icon="search">',
-  'Store `tweet_id`, `text`, `author_username`, `created_at`, `has_more`, `next_cursor`, and the original `q`.',
-  '<Card title="User profile rows" icon="users">',
-  'Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profile_picture`, `has_more`, `next_cursor`, and the source lookup or search query.',
-  '<Card title="Trend rows" icon="trending-up">',
-  'Store each trend `name`, `rank`, `query`, and `description`. Keep response `count`, `woeid`, and the requested region with the run checkpoint.',
-  '<Card title="Monitor and webhook setup" icon="radio">',
-  'Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager.',
-  'On production deliveries, store `delivery_id` for receiver retry de-dupe and `stream_event_id` when one monitor event should process once across endpoint changes.',
-  '<Card title="Stored event replay" icon="activity">',
-  'Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, `next_cursor`, and the `after` query for the next page.',
-  '<Card title="Extraction jobs" icon="database">',
-  'Store `extraction_id`, `status`, `poll`, and `export_after_complete`',
-  '<Card title="Writes" icon="send">',
-  'Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, `charged_credits`, and `poll`; do not resend pending writes.',
-  '<Card title="Media attachments" icon="image">',
-  'For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`.',
-  'For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.',
-  'goal="Gather compact JSON handoff rows from X about a given topic"',
-  'structured social data',
-  'Compact JSON with tweet_id, author_username, text, created_at, has_more, next_cursor, and route_used',
-  'Path("xquik-crewai-workflow-handoff.json").write_text(',
+  'from crewai.mcp import MCPServerHTTP',
+  'class TweetSearchHandoff(BaseModel):',
+  'route_used: Literal["GET /api/v1/x/tweets/search"]',
+  'created: int | None',
+  'output_pydantic=TweetSearchHandoff',
+  'if result.has_tool_failures:',
+  'TweetSearchHandoff.model_validate(result.to_dict())',
+  'handoff.model_dump_json(indent=2)',
+  'The MCP runtime returns normalized snake_case fields through',
+  '`xquik.request()`.',
+  '`createdAt` to the Unix-second field',
+  '## Build a Role-Based Tweet Research Crew',
+  'context=[search_task]',
+  '## Keep Twitter Actions Outside the Research Crew',
+  '`human_input=True` reviews the task result.',
+  'tools=[]',
+  'allowed_tool_names=["explore"]',
+  '<Card title="Tweet Search Rows" icon="search">',
+  'Store `tweet_id`, `text`, `author_username`, `created`, `url`, `has_more`, `next_cursor`, and the original `q`.',
+  '<Card title="Follower Exports" icon="users">',
+  '<Card title="Monitor Events" icon="radio">',
+  '<Card title="Extraction Jobs" icon="database">',
+  '<Card title="Approved X Actions" icon="send">',
+  '| `400` | The search query is missing or invalid |',
+  '| `401` | Guest authentication cannot complete this request |',
+  '| `402` | The account lacks credits |',
+  '| `424` | The upstream X dependency failed |',
+  '| `429` | The Twitter API rate limit applies |',
+  '| `502` | The X dependency returned an invalid response |',
+  '| `crewai` | 1.15.10 | `>=1.15,<1.16` |',
+  '| `mcp` | 1.28.1 | `>=1.28.1,<1.29` through CrewAI |',
+  '### How Do I Search Tweets With Python and CrewAI?',
+  '### Can CrewAI Export Twitter Followers?',
+  '### How Should CrewAI Handle Twitter API Rate Limits?',
+] as const;
+
+const FORBIDDEN_CREWAI_GUIDE_SNIPPETS = [
+  'title: "CrewAI Twitter Agent Guide | X API Tutorial"',
+  'created_at',
+  'tweets[{tweet_id,text,author_username,created_at}]',
+  'Path("xquik-crewai-handoff.json").write_text(str(result)',
+  '119 MCP-compatible',
+  '| `crewai` | 1.15.2 |',
+  '| `mcp` | 1.26.0 |',
 ] as const;
 
 const REQUIRED_PYDANTIC_AI_GUIDE_SNIPPETS = [
@@ -16456,7 +16474,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the CrewAI guide handoff concrete', (): void => {
-    expect.assertions(4);
+    expect.assertions(5);
 
     const source = readFileSync('guides/crewai.mdx', 'utf8');
 
@@ -16466,6 +16484,11 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('raw data');
     expect(source).not.toContain('Raw tweet data');
     expect(source).not.toContain('print(result)');
+    expect(
+      FORBIDDEN_CREWAI_GUIDE_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps the Pydantic AI guide handoff concrete', (): void => {
