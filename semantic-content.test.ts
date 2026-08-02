@@ -851,3 +851,13 @@ describe('Apify comparison search intent', (): void => {
     expect(missing).toStrictEqual([]);
   });
 });
+
+describe('tweet replies crawler budget', (): void => {
+  it('keeps rendered documentation beneath the live page-size threshold', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('api-reference/x/tweet-replies.mdx', 'utf8');
+
+    expect(Buffer.byteLength(source, 'utf8')).toBeLessThanOrEqual(27_000);
+  });
+});

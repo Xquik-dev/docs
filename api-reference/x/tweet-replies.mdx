@@ -219,7 +219,7 @@ problem before the next request. Use `reply_extractor` when a fixed
   const tweetId = "1893456789012345678";
   let pageCursor = "";
 
-  for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
+  for (let pageCount = 0; pageCount < 3; pageCount += 1) {
     const params =
       pageCursor === "" ? "" : `?${new URLSearchParams({ cursor: pageCursor })}`;
     const response = await fetch(
@@ -235,23 +235,12 @@ problem before the next request. Use `reply_extractor` when a fixed
       text: reply.text,
       author_id: reply.author?.id ?? null,
       author_username: reply.author?.username ?? null,
-      author_name: reply.author?.name ?? null,
-      author_followers: reply.author?.followers ?? null,
-      author_verified: reply.author?.verified ?? null,
-      author_profile_picture: reply.author?.profilePicture ?? null,
       created_at: reply.createdAt ?? null,
       in_reply_to_id: reply.inReplyToId ?? null,
       conversation_id: reply.conversationId ?? null,
       like_count: reply.likeCount ?? null,
-      reply_count: reply.replyCount ?? null,
-      retweet_count: reply.retweetCount ?? null,
-      quote_count: reply.quoteCount ?? null,
-      view_count: reply.viewCount ?? null,
       media_urls: (reply.media ?? []).map((item) => item.mediaUrl).filter(Boolean),
-      page_index: pageIndex,
-      page_cursor: pageCursor,
       next_cursor: page.next_cursor,
-      has_next_page: page.has_next_page,
     }));
     for (const row of replyRows) process.stdout.write(`${JSON.stringify(row)}\n`);
 
@@ -267,7 +256,7 @@ problem before the next request. Use `reply_extractor` when a fixed
   tweet_id = "1893456789012345678"
   page_cursor = ""
 
-  for page_index in range(3):
+  for _ in range(3):
       params = {"cursor": page_cursor} if page_cursor else {}
       response = requests.get(
           f"https://xquik.com/api/v1/x/tweets/{tweet_id}/replies",
@@ -285,25 +274,14 @@ problem before the next request. Use `reply_extractor` when a fixed
               "text": reply["text"],
               "author_id": (reply.get("author") or {}).get("id"),
               "author_username": (reply.get("author") or {}).get("username"),
-              "author_name": (reply.get("author") or {}).get("name"),
-              "author_followers": (reply.get("author") or {}).get("followers"),
-              "author_verified": (reply.get("author") or {}).get("verified"),
-              "author_profile_picture": (reply.get("author") or {}).get("profilePicture"),
               "created_at": reply.get("createdAt"),
               "in_reply_to_id": reply.get("inReplyToId"),
               "conversation_id": reply.get("conversationId"),
               "like_count": reply.get("likeCount"),
-              "reply_count": reply.get("replyCount"),
-              "retweet_count": reply.get("retweetCount"),
-              "quote_count": reply.get("quoteCount"),
-              "view_count": reply.get("viewCount"),
               "media_urls": [
                   item["mediaUrl"] for item in reply.get("media", []) if item.get("mediaUrl")
               ],
-              "page_index": page_index,
-              "page_cursor": page_cursor,
               "next_cursor": page["next_cursor"],
-              "has_next_page": page["has_next_page"],
           }
           print(json.dumps(reply_row, separators=(",", ":")))
 
@@ -313,15 +291,11 @@ problem before the next request. Use `reply_extractor` when a fixed
   ```
 </CodeGroup>
 
-## Direct replies handoff
+## Direct Replies Handoff
 
-Use `GET /x/tweets/{id}/replies` when a support, community, moderation,
-giveaway, or agent workflow needs reply rows as JSON. The examples above write
-JSON Lines rows with `parent_tweet_id`, `reply_id`, `text`, author ID,
-username, display name, follower count, verified state, profile image URL,
-thread joins, engagement counts, media URLs, and cursor fields. Each output
-line contains one reply tied to the requested tweet. Workers can restart after
-storing the latest response page.
+Use `GET /x/tweets/{id}/replies` for current reply rows as JSON. The examples
+write one JSON Lines row per reply. Store the parent Tweet ID, reply ID, author,
+thread joins, engagement, media URLs, and next cursor.
 
 A `424 replies_incomplete` response still contains collected direct and nested
 replies. Inspect its diagnostic before retrying. Keep only rows whose
@@ -342,38 +316,11 @@ downloads after completion.
   </Card>
 </CardGroup>
 
-<CardGroup cols={2}>
-  <Card title="Reply rows" icon="rows-3">
-    Store `tweets[]` as reply rows for moderation queues, support triage, giveaway audits, or agents.
-  </Card>
-  <Card title="Reply keys" icon="key-round">
-    Store `tweets[].id` as the stable reply key for dedupe, labels, and follow-up actions.
-  </Card>
-  <Card title="Reply context" icon="message-square-text">
-    Store `tweets[].text` and `tweets[].createdAt` for reply context and time ordering.
-  </Card>
-  <Card title="Author joins" icon="user-round">
-    Store `tweets[].author.id`, `tweets[].author.username`, `tweets[].author.name`, `tweets[].author.followers`, `tweets[].author.verified`, and `tweets[].author.profilePicture` for joins, display names, trust cues, and avatars.
-  </Card>
-  <Card title="Thread joins" icon="git-branch">
-    Store `tweets[].inReplyToId` and `conversationId` to join replies back to the parent tweet and thread.
-  </Card>
-  <Card title="Reply priority" icon="chart-no-axes-combined">
-    Store engagement counts to prioritize high-signal or high-risk replies.
-  </Card>
-  <Card title="Attached context" icon="image">
-    Store `tweets[].media`, `quoted_tweet`, and `retweeted_tweet` to preserve attachments and relationship context when available.
-  </Card>
-  <Card title="Older replies" icon="arrow-right">
-    Store `has_next_page` and `next_cursor`, then pass `next_cursor` as `cursor` to fetch older reply pages.
-  </Card>
-</CardGroup>
-
 `sinceTime` and `untilTime` are Unix timestamps in seconds. Use them to bound moderation windows, campaign periods, or giveaway audit ranges. Direct replies calls use the default paid page size; use `reply_extractor` with `resultsLimit` when you need a predictable file export cap.
 
 Direct replies cost 1 credit per tweet returned. Low balances can reduce standard pages. Zero affordable results return `402 insufficient_credits`. Retry `429` with `Retry-After`. Retry `502` after a short backoff. Retry `503` after its stated delay. For `424 replies_incomplete`, inspect `diagnostic.recommendedFallback`.
 
-## Build a reply moderation table
+## Build a Reply Moderation Table
 
 Store one row per reply. Keep the parent Tweet ID and conversation ID beside
 the reply so support, moderation, campaign, and giveaway reviews can reconstruct
@@ -552,43 +499,13 @@ Remove every filter before requesting complete mode.
   </Expandable>
 </ResponseField>
 
-```json
-{
-  "tweets": [
-    {
-      "id": "1893456789012345679",
-      "text": "I agree with this!",
-      "createdAt": "2026-03-27T11:00:00.000Z",
-      "isReply": true,
-      "inReplyToId": "1893456789012345678",
-      "author": {
-        "id": "44196397",
-        "username": "username",
-        "name": "Xquik",
-        "followers": 1200,
-        "verified": true,
-        "profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"
-      }
-    }
-  ],
-  "has_next_page": true,
-  "next_cursor": "DAACCgACGE..."
-}
-```
-
 ### 400 Invalid Tweet ID
 
-```json
-{ "error": "invalid_tweet_id" }
-```
+The Tweet ID is invalid. Send a numeric Tweet ID from an X status URL.
 
 ### 401 Unauthenticated
 
 Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
-
-```json
-{ "error": "unauthenticated" }
-```
 
 ### 402 Payment Required
 
@@ -597,17 +514,9 @@ No checkout starts automatically. Confirm any payment action.
 
 ### 502 X API Unavailable
 
-```json
-{ "error": "x_api_unavailable" }
-```
-
 The read service returned an error. Retry after a short delay.
 
 ### 429 Rate Limit Exceeded
-
-```json
-{ "error": "rate_limit_exceeded", "retryAfter": 60 }
-```
 
 Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
 
@@ -662,13 +571,6 @@ The response preserves collected rows and diagnostic evidence. Trust
 `diagnostic.complete`. Follow `recommendedFallback` before retrying.
 
 ### 503 Complete Reply Extraction Busy
-
-```json
-{
-  "error": "x_api_unavailable",
-  "message": "Complete reply extraction is busy. Retry shortly."
-}
-```
 
 Wait for the `Retry-After` duration before repeating complete mode.
 
