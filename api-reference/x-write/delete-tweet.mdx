@@ -124,13 +124,14 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 </Callout>
 
 Use this Twitter API delete tweet route to remove 1 owned post by ID.
+This delete tweet API accepts 1 Tweet ID per request.
 Select the connected X account that published the tweet.
 Save approval evidence before sending the request.
 Send 1 unique `Idempotency-Key` for the intended deletion.
 Store the durable write action and poll `statusUrl` when needed.
 Confirm `targetId` matches the requested Tweet ID after terminal success.
 X also documents an official [Delete Post endpoint](https://docs.x.com/x-api/posts/delete-post).
-Xquik uses its own authentication and durable write response.
+Authenticate with Xquik. Store its durable write response.
 
 <CodeGroup>
   ```bash cURL
@@ -350,9 +351,8 @@ Read X's [Manage Posts guide](https://docs.x.com/x-api/posts/manage-tweets/intro
 
 ## Save Tweet Deletion Evidence
 
-Treat deletion as irreversible within this API workflow.
+This API workflow cannot restore a deleted tweet.
 Show the final tweet text during approval.
-Save any required compliance record before removal.
 Keep the approver, approval time, and reason beside the Tweet ID.
 
 Persist these fields after sending the request:
@@ -367,7 +367,7 @@ Persist these fields after sending the request:
 
 A replacement tweet receives a different Tweet ID.
 Keep the deleted ID in the audit record.
-This prevents incorrect joins with replies, analytics, or moderation records.
+Join replies, analytics, and moderation records with the deleted ID.
 
 ## Run Bulk or Scheduled Tweet Cleanup
 
@@ -376,7 +376,7 @@ It does not provide a bulk-delete operation.
 Feed approved Tweet IDs through the route individually.
 Create a unique `Idempotency-Key` for every Tweet ID.
 
-Limit concurrent deletions and retain every write action.
+Delete tweets in a controlled queue. Store every write action.
 After HTTP `429`, wait for `Retry-After` before continuing.
 X publishes separate limits for its [Delete Post endpoint](https://docs.x.com/x-api/fundamentals/rate-limits).
 Those limits do not replace Xquik's response headers.
@@ -391,13 +391,13 @@ A `202` response means the deletion is still active.
 Poll `statusUrl` until `terminal` becomes `true`.
 Never submit another deletion while the action remains active.
 
-After terminal success, require the requested ID in `targetId`, `tweetId`, or
-`result.id`. Then call [Get Tweet](/api-reference/x/get-tweet) with that ID.
+After terminal success, accept `targetId`, `tweetId`, or `result.id` as
+confirmation. Call [Get Tweet](/api-reference/x/get-tweet) with that ID.
 Store the lookup time and result beside the write action.
 
-An unavailable lookup supports the deletion record after confirmed success.
-It is not sufficient before the write reaches a terminal state.
-A missing tweet can also indicate another availability restriction.
+Save the unavailable lookup beside the successful write action.
+Before terminal success, an unavailable lookup proves nothing.
+A missing tweet does not always prove deletion.
 
 ## Handle Delete Tweet Errors
 
@@ -432,7 +432,7 @@ repost. Both actions preserve the source tweet.
 | Remove a reply | `DELETE /x/tweets/{id}` | The owned reply tweet is deleted by its own ID. |
 
 Never delete the source tweet when a campaign only needs engagement cleanup.
-Confirm the route and intended state during approval.
+Check the route during approval. Record the intended state.
 
 ## Twitter API Delete Tweet Questions
 
