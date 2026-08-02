@@ -431,6 +431,10 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     snippets: [
       '| Profile banner update column | Request or response source | Review rule |',
       '| Uploaded file | Request `file` | Accept JPEG or PNG up to 2 MB. |',
+      'Twitter Profile Banner API: Update Header Images',
+      '## Prepare Twitter Profile Banner Dimensions',
+      '1500 × 500 pixels',
+      'OAuth bearer authentication is also supported.',
     ],
   },
   {
@@ -629,6 +633,19 @@ describe('update avatar contract copy', (): void => {
 
     const source = readFileSync(
       'api-reference/x-write/update-avatar.mdx',
+      'utf8',
+    );
+
+    expect(source).not.toContain('Session cookie authentication');
+  });
+});
+
+describe('update banner contract copy', (): void => {
+  it('does not advertise unsupported session authentication', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x-write/update-banner.mdx',
       'utf8',
     );
 
