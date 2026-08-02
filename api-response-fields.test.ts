@@ -7,10 +7,6 @@ const PROJECT_ROOT = process.cwd();
 const PRODUCT_ROOT =
   process.env['XQUIK_PRODUCT_ROOT'] ?? join(PROJECT_ROOT, '..', 'xquik');
 const DOCS_OPENAPI_PATH = join(PROJECT_ROOT, 'openapi.yaml');
-const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
-  PROJECT_ROOT,
-  'snippets/write-action-lifecycle-response.mdx',
-);
 const PRODUCT_ROUTE_HELPERS_PATH = join(
   PRODUCT_ROOT,
   'app/api/v1/x/route-helpers.ts',
@@ -303,6 +299,12 @@ const UNRETWEET_PAGE = 'api-reference/x-write/unretweet.mdx';
 const FOLLOW_USER_PAGE = 'api-reference/x-write/follow.mdx';
 const UNFOLLOW_USER_PAGE = 'api-reference/x-write/unfollow.mdx';
 const REMOVE_FOLLOWER_PAGE = 'api-reference/x-write/remove-follower.mdx';
+const WRITE_ACTION_STATUS_PAGE =
+  'api-reference/x-write/get-write-action-status.mdx';
+const WRITE_ACTION_STATUS_PAGE_SOURCE = readFileSync(
+  join(PROJECT_ROOT, WRITE_ACTION_STATUS_PAGE),
+  'utf8',
+);
 const X_ACCOUNT_LIST_PAGE = 'api-reference/x-accounts/list.mdx';
 const X_ACCOUNT_DETAIL_PAGE = 'api-reference/x-accounts/get.mdx';
 const X_ACCOUNT_CONNECT_PAGE = 'api-reference/x-accounts/connect.mdx';
@@ -459,7 +461,7 @@ function uniqueSorted(fields: readonly string[]): readonly string[] {
 function responseFields(page: string): readonly string[] {
   const pageSource = readFileSync(join(PROJECT_ROOT, page), 'utf8');
   const source = pageSource.includes('<WriteActionLifecycleResponse />')
-    ? `${pageSource}\n${readFileSync(WRITE_ACTION_LIFECYCLE_SNIPPET_PATH, 'utf8')}`
+    ? `${pageSource}\n${WRITE_ACTION_STATUS_PAGE_SOURCE}`
     : pageSource;
   return uniqueSorted(
     [...source.matchAll(/<ResponseField\s+name="(?<field>[^"]+)"/gu)].map(
@@ -1525,6 +1527,9 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const removeFollower = propertyNames(
     responseSchema(spec, '/x/users/{id}/remove-follower', 'post'),
   );
+  const writeActionStatus = propertyNames(
+    responseSchema(spec, '/x/write-actions/{id}', 'get'),
+  );
   const xAccount = schemaPropertyNames(spec, 'XAccount');
   const xAccountDetail = schemaPropertyNames(spec, 'XAccountDetail');
   const sanitizedXAccount = schemaPropertyNames(spec, 'SanitizedXAccount');
@@ -1795,6 +1800,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       allowedFields: removeFollower,
       page: REMOVE_FOLLOWER_PAGE,
       requiredFields: removeFollower,
+    },
+    {
+      allowedFields: writeActionStatus,
+      page: WRITE_ACTION_STATUS_PAGE,
+      requiredFields: writeActionStatus,
     },
     {
       allowedFields: uniqueSorted([

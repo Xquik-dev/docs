@@ -2903,6 +2903,7 @@ const REQUIRED_CREATE_TWEET_API_SNIPPETS = [
   'Retry only when `safeToRetry` is `true`, using a new key.',
   '<ParamField header="Idempotency-Key" type="string" required>',
   '<WriteActionLifecycleResponse />',
+  '[Get Write Action Status](/api-reference/x-write/get-write-action-status)',
 ] as const;
 
 const FORBIDDEN_CREATE_TWEET_API_SNIPPETS = [
@@ -2940,8 +2941,14 @@ const FORBIDDEN_PUBLIC_DM_REPLY_FIELD_EXAMPLES = [
 ] as const;
 
 const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
+  'title: "Twitter API Errors & X Write Action Status"',
+  '"Twitter API error handling"',
   'Every X write returns a durable `x_write_action` record.',
   'Trust `terminal`, `safeToRetry`, and `nextAction`.',
+  '## Handle Twitter API Errors',
+  'Use this endpoint for Twitter API error handling after an Xquik write.',
+  '[response codes and errors](https://docs.x.com/x-api/fundamentals/response-codes-and-errors)',
+  'An error message does not prove that a write failed.',
   '## Agent Algorithm',
   'Generate one unique `Idempotency-Key` for the intended write.',
   'Store `id`, `request.hash`, `account`, `target`, `billing`, and `statusUrl`.',
@@ -2961,6 +2968,15 @@ const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
   'const action = await response.json();',
   'if (!action.terminal) {',
   'print({"delay_ms": action["pollAfterMs"], "next": action["statusUrl"]})',
+  '<ParamField header="x-api-key" type="string">',
+  '<ParamField header="Authorization" type="string">',
+  'Send an OAuth 2.1 bearer token instead of `x-api-key`.',
+  '<Tab title="401 Unauthenticated">',
+  'Fix the authentication credentials. Keep the original write record.',
+  '<Tab title="404 Not Found">',
+  'Check the action ID and environment. Never resubmit the original write.',
+  '<Tab title="429 Rate Limited">',
+  'Wait for `Retry-After`. Poll the same action again. Never resend the write.',
   '<ResponseField name="request" type="object">',
   '<ResponseField name="account" type="object">',
   '<ResponseField name="target" type="object | null">',
