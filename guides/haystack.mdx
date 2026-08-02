@@ -5,7 +5,11 @@ description: "Build Haystack RAG pipelines with Twitter search and user timeline
 keywords:
   [
     "haystack",
+    "haystack ai framework",
+    "haystack ai agents",
+    "haystack ai rag",
     "twitter search api",
+    "twitter api keyword search",
     "twitter api python",
     "tweet search",
     "user timeline",
@@ -19,7 +23,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use [`xquik-haystack`](https://github.com/Xquik-dev/xquik-haystack) for fresh X context in Haystack. It converts public tweets into typed Haystack `Document` objects. Each document includes tweet text, author fields, timestamps, metrics, and citation URLs.
+Haystack is an open source framework for building AI applications with modular pipelines. Use [`xquik-haystack`](https://github.com/Xquik-dev/xquik-haystack) for fresh X context in Haystack. This Haystack AI framework converts public tweets into typed Haystack `Document` objects. Each document includes tweet text, author fields, timestamps, metrics, and citation URLs.
+
+This Haystack AI API integration supports RAG pipelines and agent workflows. It supplies cited tweets to large language models (LLMs) without granting write access. This guide covers building AI applications with Haystack and current public tweets.
 
 The integration provides two read-only components:
 
@@ -40,7 +46,7 @@ The integration provides two read-only components:
   </Card>
 </CardGroup>
 
-Use these components for search, timelines, monitoring research, and retrieval-augmented generation. Use the [followers API](/api-reference/x/followers) for follower exports. Use the [write API](/api-reference/x-write/create-tweet) for approved publishing. The Haystack integration does not expose those actions.
+Use these building blocks for search, timelines, monitoring research, and retrieval-augmented generation. They can retrieve relevant tweets for Haystack AI agents and Haystack AI RAG pipelines. Use the [followers API](/api-reference/x/followers) for follower exports. Use the [write API](/api-reference/x-write/create-tweet) for approved publishing. The Haystack integration does not expose those actions.
 
 ## Install Haystack and Xquik
 
@@ -50,7 +56,7 @@ Use Python 3.10 or newer. Pin both packages for repeatable pipeline builds.
 python -m pip install "xquik-haystack==0.1.3" "haystack-ai==3.0.0"
 ```
 
-Release `0.1.3` is published on PyPI. Haystack `3.0.0` supports synchronous and asynchronous execution through one `Pipeline` class.
+Run the `pip install` command inside the AI application's virtual environment. Release `0.1.3` is published on PyPI. Haystack `3.0.0` uses one `Pipeline` class for synchronous and asynchronous runs.
 
 Create an [Xquik API key](/x-api-quickstart), then export it locally.
 
@@ -58,11 +64,11 @@ Create an [Xquik API key](/x-api-quickstart), then export it locally.
 export XQUIK_API_KEY="xq_..."
 ```
 
-Never embed production keys in pipeline YAML, notebooks, or source control. Use Haystack `Secret` objects for explicit injection.
+Never embed production keys in pipeline YAML, notebooks, or source control. Load the environment variable through a Haystack `Secret` object.
 
 ## Search Twitter Tweets in Python
 
-`XquikTweetSearch` calls `GET /x/tweets/search`. It accepts standard X search syntax and structured filters.
+`XquikTweetSearch` calls the `GET /x/tweets/search` search endpoint. It accepts standard X search syntax and structured filters. Use it for each Twitter API keyword search or exact phrase query.
 
 ```python
 from haystack import Pipeline
@@ -94,7 +100,7 @@ Use `Latest` for chronological monitoring. Use `Top` for engagement-ranked disco
 
 ### Build Focused Tweet Searches
 
-Precise queries produce cleaner RAG context and lower review costs.
+Use a precise search query to keep RAG context focused.
 
 | Search intent      | Query example                                |
 | ------------------ | -------------------------------------------- |
@@ -141,7 +147,7 @@ Store the exact window beside the returned tweet IDs. Use non-overlapping window
 
 ## Fetch a Twitter User Timeline
 
-`XquikUserTweetsFetcher` calls `GET /x/users/{id}/tweets`. Pass a username or numeric X user ID.
+Use `XquikUserTweetsFetcher` for `GET /x/users/{id}/tweets`. Pass a username or numeric X user ID.
 
 ```python
 from haystack.utils import Secret
@@ -159,9 +165,9 @@ result = timeline.run(user_id="deepset_ai")
 documents = result["documents"]
 ```
 
-Set `include_replies=True` for the account's replies. Set `include_parent_tweet=True` to request reply context when available.
+Set `include_replies=True` for the account's replies. Enable `include_parent_tweet=True` only when the workflow needs reply context.
 
-Choose tweet search for topics spanning many accounts. Choose timelines for one account's recent tweets. Use direct REST endpoints when you need filters absent from the component interface.
+Choose tweet search for topics spanning many accounts. Choose timelines for one account's recent tweets. Choose REST for filters the components do not expose.
 
 ## Understand Haystack Document Fields
 
@@ -216,7 +222,7 @@ Ask generators to cite only supplied URLs. Reject citations absent from the retr
 
 ### Treat Tweet Text as Untrusted Context
 
-Tweets can contain prompt injection, misleading instructions, and unsafe URLs. Never treat tweet text as a system instruction. Delimit retrieved tweets as quoted evidence. Keep tool permissions outside model-controlled text.
+Tweets can contain prompt injection, misleading instructions, and unsafe URLs. Never treat tweet text as a system instruction. Delimit retrieved tweets as quoted evidence. Separate system instructions and tool permissions from retrieved tweets.
 
 Apply these controls before generation:
 
@@ -235,6 +241,7 @@ Choose the pipeline pattern that matches freshness requirements.
 <CardGroup cols={3}>
   <Card title="Live Retrieval" icon="radio">
     Search during each question. Use this for recent tweets and active events.
+    Results reflect current searches, but the API does not promise real time delivery.
   </Card>
   <Card title="Indexed Corpus" icon="database">
     Store embeddings once. Use this for repeated research across stable windows.
@@ -309,12 +316,12 @@ The integration raises `httpx.HTTPStatusError` after unsuccessful HTTP responses
 | Status | Tweet search meaning          | User timeline meaning         | Recommended action                       |
 | ------ | ----------------------------- | ----------------------------- | ---------------------------------------- |
 | `400`  | Missing or invalid query      | Invalid timeline input        | Fix the request. Do not retry unchanged. |
-| `401`  | Authentication required       | Authentication required       | Supply a valid API key.                  |
-| `402`  | Payment or credits required   | Payment or credits required   | Resolve account billing.                 |
+| `401`  | API key missing or invalid    | API key missing or invalid    | Add a valid API key.                     |
+| `402`  | Payment or credits needed     | Payment or credits needed     | Resolve account billing.                 |
 | `404`  | Not documented                | User not found                | Check the username or user ID.           |
 | `424`  | X retrieval dependency failed | X retrieval dependency failed | Retry with bounded backoff.              |
 | `429`  | Rate limit exceeded           | Rate limit exceeded           | Back off before retrying.                |
-| `502`  | X retrieval error             | X retrieval error             | Retry transient failures with a cap.     |
+| `502`  | X retrieval error             | X retrieval error             | Retry up to the configured limit.        |
 
 ```python
 import httpx
@@ -367,7 +374,7 @@ Keep `document_rows`, `citation_rows`, and `pagination_checkpoints` separate fro
 
 ## Haystack Component or Direct REST API
 
-Use the Haystack components when your next step consumes `Document` objects. They normalize tweet text, metadata, URLs, and pagination.
+Choose the Haystack components when the next step expects `Document` objects. They normalize tweet text, metadata, URLs, and pagination.
 
 Use the direct Xquik REST API when you need:
 
@@ -377,7 +384,7 @@ Use the direct Xquik REST API when you need:
 - Write actions with explicit approval
 - Query options absent from the Haystack component interface
 
-Both approaches use the same public Xquik contracts. Do not invent component capabilities that the package does not expose.
+Both approaches use the same public Xquik contracts. Keep the component scope to tweet search and user timelines.
 
 ## Migrate to Haystack 3
 
@@ -385,9 +392,45 @@ Haystack 3 replaces `AsyncPipeline` with one `Pipeline` class. Change `AsyncPipe
 
 Haystack 3 also produces deterministic `Document.id` values from canonical metadata. Continue using `meta.id` as the tweet identity. Tweet IDs remain stable across embedding and metadata changes.
 
-Pin `haystack-ai==3.0.0` while validating your existing generators, stores, and custom components. Follow the [official Haystack 3 migration guide](https://docs.haystack.deepset.ai/docs/migration) for unrelated breaking changes.
+Pin `haystack-ai==3.0.0` while validating your existing generators, stores, and custom components. Review the [official Haystack 3 migration guide](https://docs.haystack.deepset.ai/docs/migration) for other changes.
 
 ## Common Haystack Twitter API Questions
+
+### What Is Haystack AI?
+
+Haystack is a modular Python framework for building search, RAG, and AI agent applications. Components connect retrieval, processing, generation, storage, and evaluation steps inside explicit pipelines.
+
+### How Does the Twitter API Search Tweets?
+
+The Twitter API search route receives a query, filters, ordering, and optional cursor. Xquik returns normalized tweets, pagination fields, and canonical URLs for citations.
+
+### What Is a Twitter Search API Python Workflow?
+
+Install both packages, load the API key, and create `XquikTweetSearch`. Run the component with a query, then process its `documents`, `links`, and cursor fields.
+
+### How Does an API Twitter Search Workflow Preserve Cursors?
+
+Store `next_cursor` after every successful page. Reuse the same filters and ordering. Pass only the saved cursor when fetching the next page.
+
+### How Does the Twitter API Search Tweets by Keyword?
+
+Pass keywords, phrases, hashtags, account operators, or structured filters. Use `Latest` for chronological results and `Top` for engagement-ranked results.
+
+### Haystack AI vs LangChain: Which Fits Twitter RAG?
+
+Choose Haystack when pipelines should exchange typed `Document` objects. Choose LangChain when an existing application already uses its retrievers and tools. Both frameworks for building AI applications need citation, pagination, and error controls.
+
+### Where Is the Haystack AI GitHub Integration?
+
+The [Xquik Haystack repository](https://github.com/Xquik-dev/xquik-haystack) contains the package and offline tests. The package exports two read-only components, not an autonomous tool called by default.
+
+### Can a Haystack AI Agent Publish Tweets?
+
+No. This integration only reads tweet searches and user timelines. Use the separate write API with explicit approval for publishing actions.
+
+### How Many Tweets Can One Search Return?
+
+Set `top_k` to control the requested number of tweets per page. Continue with `next_cursor` when `has_more` is true.
 
 ### Can Haystack Search Twitter Tweets Without the Official X API SDK?
 
