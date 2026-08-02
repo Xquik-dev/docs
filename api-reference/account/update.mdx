@@ -1,9 +1,9 @@
 ---
-title: "Update Xquik Account Locale & Profile Settings"
-sidebarTitle: "Update account"
-description: "Update your Xquik account locale for dashboard labels, notices, and supported messages. Send the locale and inspect the saved account response. See costs."
+title: "Update Xquik Account Language & Locale API"
+sidebarTitle: "Update locale"
+description: "Set the Xquik dashboard locale to English, Turkish, or Spanish. Send a locale code, receive a success confirmation, and handle validation or rate-limit errors."
 api: "PATCH /account"
-keywords: ["account", "locale", "language", "settings"]
+keywords: ["Xquik locale", "dashboard language", "account language", "English", "Turkish", "Spanish"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -127,6 +127,66 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 </CodeGroup>
 
+## Change the Xquik Dashboard Language
+
+Send one locale code to change the language used by supported Xquik screens.
+The account locale controls dashboard labels, notices, and supported messages.
+It does not translate tweets, replies, profiles, or media from X.
+
+| Dashboard language | `locale` value | Example body |
+| --- | --- | --- |
+| English | `en` | `{ "locale": "en" }` |
+| Turkish | `tr` | `{ "locale": "tr" }` |
+| Spanish | `es` | `{ "locale": "es" }` |
+
+Send exactly one supported value. Locale codes are lowercase and case-sensitive.
+Values such as `EN`, `en-US`, or `de` fail validation.
+
+<Warning>
+  This endpoint changes only the Xquik account locale. It leaves connected X
+  accounts and profile settings unchanged. It does not alter tweet language or
+  X API content.
+</Warning>
+
+## Confirm an Account Locale Update
+
+A successful request returns `{ "success": true }`. This response confirms the
+accepted update. It does not echo the locale or return an account object.
+
+Keep the locale from your request when the client needs an audit record. The
+[Get Account](/api-reference/account/get) response reports subscription,
+credits, monitor billing, and the connected X username. It does not return the
+saved locale.
+
+| Client check | Expected result | Next action |
+| --- | --- | --- |
+| HTTP status is `200` | Locale update was accepted | Store the requested locale when needed. |
+| `success` is `true` | The response matches the success contract | Continue without parsing an account object. |
+| Response is `400` | Locale is missing or unsupported | Send `en`, `tr`, or `es`. |
+| Response is `401` | Authentication failed | Replace the missing or invalid credential. |
+| Response is `429` | The request exceeded the rate limit | Wait for `Retry-After`, then retry once. |
+
+## Handle Locale Validation Safely
+
+Validate the code before sending the request. Do not retry a `400` response
+with the same body. Correct the locale first.
+
+For `401`, provide a valid API key or bearer token. Browser sessions may use
+the supported session cookie. Never place credentials in query parameters.
+
+For `429`, pause the locale update. Read the `Retry-After` header and retry
+after that interval. Do not run parallel retries for one account setting.
+
+### How Do I Change Xquik to Turkish or Spanish?
+
+Send `{ "locale": "tr" }` for Turkish. Send `{ "locale": "es" }` for
+Spanish. Use `{ "locale": "en" }` to return to English.
+
+### Does This Change the Language of Tweets or Replies?
+
+No. Xquik stores the account interface preference. Tweet text, reply text,
+profile bios, timelines, and media remain unchanged.
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
@@ -160,7 +220,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 ```json
 { "error": "invalid_input" }
 ```
-Missing `locale` field or value is not one of `en`, `tr`, `es`.
+The `locale` field is missing or unsupported. Send `en`, `tr`, or `es`.
 
 ### 401 Unauthenticated
 
@@ -177,5 +237,5 @@ Missing or invalid API key.
 Too many requests. Wait for the `Retry-After` header before retrying.
 
 <Note>
-  **Related:** [Get Account](/api-reference/account/get) to verify changes · [Authentication](/api-reference/authentication)
+  **Related:** [Get Account](/api-reference/account/get) for subscription, credits, monitor billing, and the connected X username · [Authentication](/api-reference/authentication)
 </Note>
