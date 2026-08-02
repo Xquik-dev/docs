@@ -1,9 +1,9 @@
 ---
-title: "Tweet Composer API, Draft Checks & Post Preview"
+title: "Tweet Composer API, Writing Rules & 9 Draft Checks"
 sidebarTitle: "Build a post draft"
-description: "Generate editorial rules, refine a tweet or thread plan, and check a post draft for clarity, tone, structure, claims, and platform fit. See API fields."
+description: "Plan an X post, refine it by goal and voice, then check links, hashtags, capitalization, length, punctuation, emojis, dashes, substance, and repeated URLs."
 api: "POST /compose"
-keywords: ["compose", "post", "editorial checks", "refine", "draft", "free"]
+keywords: ["tweet composer", "tweet writing", "how to write a good tweet", "Twitter post ideas", "tweet template", "X post checker", "tweet draft API", "Twitter writing style"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -66,8 +66,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **Free.** This endpoint does not consume credits.
 </Callout>
 
-Use 3 Compose calls. The endpoint returns guidance and checks. It does not write
-or publish the final post.
+Use this guided Tweet composer to plan, refine, and check one post draft. The
+endpoint returns questions, writing rules, patterns, and deterministic checks.
+
+It does not generate final Tweet text. It also never publishes a post. This
+boundary separates the endpoint from an automatic Tweet generator.
+
+Use 3 Compose calls for one complete writing cycle.
 
 ## Workflow
 
@@ -78,6 +83,32 @@ or publish the final post.
 
 The guidance uses Xquik editorial heuristics. It does not predict reach. X does
 not publish its production ranking weights.
+
+## Choose the Correct Tweet Writing Step
+
+| Step | Required input | Returned writing help | Not returned |
+| --- | --- | --- | --- |
+| `compose` | `topic` | 18 rules, 4 questions, 7 Radar suggestions | Finished Tweet text |
+| `refine` | `topic`, `goal`, `tone` | Goal guidance and 3 structural patterns | Finished Tweet text |
+| `score` | `draft` | 9 checks, failure suggestions, and pass status | Predicted reach |
+
+Each call returns only its step-specific shape. Do not deserialize every result
+into one generic response type.
+
+## Match the Goal to Your Tweet Intent
+
+The `goal` changes rule order, questions, and refine patterns. It does not
+guarantee likes, replies, reposts, profile visits, or followers.
+
+| Goal | Compose question | Refine emphasis |
+| --- | --- | --- |
+| `engagement` | What call to action should readers take? | One useful point and concrete example |
+| `followers` | Why should readers follow this account? | Niche expertise and future value |
+| `authority` | What expertise or insight supports the post? | Evidence, reasoning, and useful frameworks |
+| `conversation` | What replies should the post invite? | Context, one open question, and readable paragraphs |
+
+`compose` defaults to `engagement` when `goal` is omitted. Send one documented
+goal explicitly when downstream behavior must remain stable.
 
 ## Requests
 
@@ -106,7 +137,7 @@ not publish its production ranking weights.
 
     - `goal`: `engagement`, `followers`, `authority`, or `conversation`.
       Defaults to `engagement`.
-    - `styleUsername`: Username from a saved style analysis.
+    - `styleUsername`: An analyzed X username or saved custom style label.
   </Tab>
 
   <Tab title="2. Refine">
@@ -161,12 +192,35 @@ not publish its production ranking weights.
   </Tab>
 </Tabs>
 
+## Refine Tone and Media Guidance
+
+The `tone` field accepts any non-empty string. Known terms receive focused
+guidance. Other terms receive general audience and consistency guidance.
+
+| Tone words | Returned emphasis |
+| --- | --- |
+| `casual`, `conversational` | Direct language and familiar words |
+| `professional`, `formal` | Precise terms and complete sentences |
+| `provocative`, `bold` | Challenge claims without attacking people |
+| `humor`, `witty`, `funny` | Keep the joke clear and useful |
+| `educational`, `informative` | Define terms and order complex points |
+| Any other non-empty value | Match audience expectations consistently |
+
+`mediaType` accepts `photo`, `video`, or `none`. Photo guidance covers
+context, mobile cropping, and alt text. Video guidance covers early value and
+captions. Text-only guidance never requires unnecessary media.
+
 ## Headers
 
-Send either an API key or an authenticated session cookie.
+Send `x-api-key` with an Xquik API key. OAuth clients can send a bearer token
+through the `Authorization` header instead.
 
 <ParamField header="x-api-key" type="string">
-  Full account API key. An authenticated session cookie also works.
+  Your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  OAuth bearer token using `Bearer YOUR_TOKEN`.
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
@@ -176,23 +230,25 @@ Send either an API key or an authenticated session cookie.
 ## Body
 
 <ParamField body="step" type="string" required>
-  Use `compose`, `refine`, or `score`.
+  Use exactly `compose`, `refine`, or `score`.
 </ParamField>
 
 <ParamField body="topic" type="string">
-  Required for `compose` and `refine`.
+  Non-empty subject. Required for `compose` and `refine`.
 </ParamField>
 
 <ParamField body="goal" type="string">
-  Required for `refine`. Optional for `compose`.
+  Use `engagement`, `followers`, `authority`, or `conversation`. Required for
+  `refine`. Optional for `compose`.
 </ParamField>
 
 <ParamField body="styleUsername" type="string">
-  Saved style username for `compose`.
+  Account-scoped analyzed username or custom label. Only used by `compose`.
+  Xquik lowercases the lookup value.
 </ParamField>
 
 <ParamField body="tone" type="string">
-  Required for `refine`.
+  Non-empty voice description. Required for `refine`.
 </ParamField>
 
 <ParamField body="mediaType" type="string">
@@ -204,12 +260,12 @@ Send either an API key or an authenticated session cookie.
 </ParamField>
 
 <ParamField body="additionalContext" type="string">
-  Optional audience, constraint, or source context for `refine`. Include selected
-  facts from a recommended Radar endpoint when current context helps.
+  Optional audience, constraint, or verified source context for `refine`.
+  Include selected Radar facts only when current context helps.
 </ParamField>
 
 <ParamField body="draft" type="string">
-  Required full post text for `score`.
+  Non-empty full post text. Required for `score`.
 </ParamField>
 
 <ParamField body="hasLink" type="boolean">
@@ -219,6 +275,8 @@ Send either an API key or an authenticated session cookie.
 <ParamField body="hasMedia" type="boolean">
   Deprecated compatibility field. Text checks ignore it.
 </ParamField>
+
+Unknown body fields are ignored. Send only the fields for the selected step.
 
 ## Response
 
@@ -230,6 +288,10 @@ The response shape matches the requested workflow step.
 
 <ResponseField name="contentRules" type="object[]" required>
   18 Xquik editorial rules. Each item has `rule`.
+</ResponseField>
+
+<ResponseField name="contentRules[].rule" type="string" required>
+  One concrete editorial rule for the requested goal.
 </ResponseField>
 
 <ResponseField name="followUpQuestions" type="string[]" required>
@@ -261,8 +323,28 @@ The response shape matches the requested workflow step.
   the production weight.
 </ResponseField>
 
+<ResponseField name="engagementMultipliers[].action" type="string" required>
+  Human-readable public signal name.
+</ResponseField>
+
+<ResponseField name="engagementMultipliers[].multiplier" type="string" required>
+  States that X does not publish the production multiplier.
+</ResponseField>
+
 <ResponseField name="scorerWeights" type="object[]" required>
   19 published signal names. Every `weight` is `null`.
+</ResponseField>
+
+<ResponseField name="scorerWeights[].signal" type="string" required>
+  Signal name from X's public ranking repository.
+</ResponseField>
+
+<ResponseField name="scorerWeights[].context" type="string" required>
+  Signal direction and the limit of public evidence.
+</ResponseField>
+
+<ResponseField name="scorerWeights[].weight" type="null" required>
+  Always `null` because X does not publish production weights.
 </ResponseField>
 
 <ResponseField name="engagementVelocity" type="string" required>
@@ -291,7 +373,7 @@ The response shape matches the requested workflow step.
 </ResponseField>
 
 <ResponseField name="savedStyles[].username" type="string">
-  Cached style username.
+  Saved analyzed username or custom style label.
 </ResponseField>
 
 <ResponseField name="savedStyles[].tweetCount" type="integer">
@@ -306,6 +388,22 @@ The response shape matches the requested workflow step.
   Fallback instruction when the requested style is unavailable.
 </ResponseField>
 
+### Match a Saved Twitter Writing Style
+
+`styleUsername` searches only styles owned by the authenticated account.
+Xquik lowercases the lookup value before searching.
+
+| Style lookup | Result |
+| --- | --- |
+| Matching analyzed username or custom label | 200 response with `styleTweets` |
+| Omitted value with saved styles | 200 response with `savedStyles` |
+| Missing style without available credits | 200 response with `styleNote` |
+| Missing style with available credits | 400 `invalid_input` with analysis instructions |
+
+The 200 fallback still returns the complete Compose response. The 400 branch
+returns only the documented error object. Analyze the username first when the
+account can run a new style analysis.
+
 ## Refine Response
 
 <ResponseField name="compositionGuidance" type="string[]" required>
@@ -314,6 +412,14 @@ The response shape matches the requested workflow step.
 
 <ResponseField name="examplePatterns" type="object[]" required>
   3 patterns. Each item has `description` and `pattern`.
+</ResponseField>
+
+<ResponseField name="examplePatterns[].description" type="string" required>
+  Explains the purpose of one structure.
+</ResponseField>
+
+<ResponseField name="examplePatterns[].pattern" type="string" required>
+  Lists the ordered writing blocks without generating final text.
 </ResponseField>
 
 <ResponseField name="intentUrl" type="string" required>
@@ -326,19 +432,26 @@ The response shape matches the requested workflow step.
 
 ## Score Response
 
-The checks cover:
+Runs 9 deterministic text checks.
 
-1. External links in the body
-2. Hashtags
-3. Excessive capitalization
-4. Length from 50 through 280 characters
-5. Excessive punctuation
-6. Emojis
-7. Em dashes, en dashes, or double dashes
-8. At least 8 substantive words
-9. Duplicate link-card URLs
+| Check | Passing rule | Fix for a failed check |
+| --- | --- | --- |
+| External links | No `http`, `https`, `t.co`, or `www` URL appears | Move the URL to a reply or skip this style check |
+| Hashtags | No hashtag remains after URLs are removed | Remove hashtags or skip this style check |
+| Capitalization | Uppercase letters are at most 30% of letters | Replace all-caps wording with normal casing |
+| Length | The draft contains 50 through 280 characters | Add useful context or trim the draft |
+| Punctuation | No run contains 4 consecutive `!` or `?` marks | Use 3 or fewer consecutive marks |
+| Emojis | No extended pictographic emoji appears | Remove emojis or skip this style check |
+| Dashes | No em dash, en dash, or double dash appears | Use commas, periods, colons, or parentheses |
+| Substance | At least 8 words remain after removing URLs, hashtags, and mentions | Add a concrete claim, example, or takeaway |
+| Repeated URL | A separate link card does not duplicate a body URL | Remove either the body URL or link card |
 
 These are Xquik style checks. They are not X ranking guarantees.
+
+Some failures can reflect an intentional editorial choice. The endpoint has no
+per-check disable switch. Review the failed factor before changing valid copy.
+Treat "skip this style check" as an editorial exception. The API still marks
+that factor as failed.
 
 ```json
 {
@@ -365,7 +478,57 @@ These are Xquik style checks. They are not X ranking guarantees.
 `intentUrl` appears only when all 9 checks pass. Failed items include a
 `suggestion`.
 
+<ResponseField name="checklist" type="object[]" required>
+  Exactly 9 deterministic editorial checks.
+</ResponseField>
+
+<ResponseField name="checklist[].factor" type="string" required>
+  Stable name for the evaluated rule.
+</ResponseField>
+
+<ResponseField name="checklist[].passed" type="boolean" required>
+  Whether the draft satisfies this rule.
+</ResponseField>
+
+<ResponseField name="checklist[].suggestion" type="string">
+  Revision guidance. Present only when this check fails.
+</ResponseField>
+
+<ResponseField name="passed" type="boolean" required>
+  True only when all 9 checks pass.
+</ResponseField>
+
+<ResponseField name="passedCount" type="integer" required>
+  Number of passing checks from 0 through 9.
+</ResponseField>
+
+<ResponseField name="totalChecks" type="integer" required>
+  Always `9` for the current contract.
+</ResponseField>
+
+<ResponseField name="topSuggestion" type="string" required>
+  Highest-priority failed suggestion, or the all-passed message.
+</ResponseField>
+
+<ResponseField name="intentUrl" type="string">
+  X post intent containing the draft. Present only when every check passes.
+</ResponseField>
+
+<ResponseField name="nextStep" type="string" required>
+  Publishing instructions after success. Revision instructions after failure.
+</ResponseField>
+
 ## Errors
+
+| Status | Cause | Fix |
+| --- | --- | --- |
+| `400` | Invalid `step` or non-object JSON body | Send `compose`, `refine`, or `score` |
+| `400` | Missing `topic` for `compose` | Send a non-empty topic |
+| `400` | Missing `goal`, `tone`, or `topic` for `refine` | Send every required Refine field |
+| `400` | Missing `draft` for `score` | Send the complete post text |
+| `400` | Account with credits requested an uncached style | Analyze the username with `POST /api/v1/styles` |
+| `401` | Missing or invalid API credentials | Send an API key or OAuth bearer token |
+| `429` | Request rate exceeded | Wait for `Retry-After` before retrying |
 
 <Tabs>
   <Tab title="400 Invalid Input">
@@ -397,6 +560,61 @@ These are Xquik style checks. They are not X ranking guarantees.
     Wait for `Retry-After` before retrying.
   </Tab>
 </Tabs>
+
+## Tweet Composer Questions
+
+### What Does the Tweet Composer Generate?
+
+It generates writing rules, research prompts, structural patterns, and checks.
+It never returns finished Tweet text. You write the draft between `refine` and
+`score`. This keeps facts, opinions, and account voice under your control.
+
+### Is This Endpoint a Tweet Generator?
+
+No. A Tweet generator usually writes final post text from one prompt. This
+endpoint guides a deliberate writing workflow. It helps plan, refine, and check
+one draft without publishing it.
+
+### How Does It Help Write a Good Tweet?
+
+Choose a goal before drafting. Add verified context when the topic needs it.
+Use the returned pattern as structure, not final copy. Then run all 9 checks.
+Revise failed factors only when the rule matches your editorial policy.
+
+### Can It Supply Current Twitter Post Ideas?
+
+The Compose response lists 7 Radar sources. Each suggestion includes an
+endpoint, source, purpose, and usage guidance. Fetch only relevant sources.
+Place selected facts in `additionalContext` during Refine.
+
+Radar supplies research leads, not verified claims. Check publication dates,
+source credibility, and original context before writing.
+
+### Can It Match a Saved Twitter Writing Style?
+
+Yes. Send an analyzed username or custom style label in `styleUsername`. A
+successful match returns cached `styleTweets`. Use those samples to study
+sentence length, vocabulary, openings, and calls to action.
+
+The endpoint does not rewrite the draft automatically. It also does not verify
+that one style belongs to a public X username.
+
+### What Happens When a Draft Check Fails?
+
+`passed` becomes false. The failed checklist items receive `suggestion` text.
+`topSuggestion` selects the highest-priority revision. `intentUrl` stays absent
+until all 9 checks pass.
+
+### Does the Score Predict Likes, Replies, or Reposts?
+
+No. The score applies Xquik editorial rules only. It cannot predict likes,
+replies, reposts, bookmarks, profile visits, or follower growth. X does not
+publish the production ranking weights required for such a prediction.
+
+### Can the Endpoint Publish the Draft?
+
+No. Use [Create Tweet](/api-reference/x-write/create-tweet) after review. You
+can also open `intentUrl` after every score check passes.
 
 <Note>
   Research current context with [Radar](/api-reference/radar/list). Save accepted
