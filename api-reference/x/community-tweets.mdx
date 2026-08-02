@@ -1,7 +1,7 @@
 ---
 title: "X Community Tweets API & Timeline Export Guide"
 sidebarTitle: "Get community tweets"
-description: "Export X community tweets with authors, text, replies, reposts, likes, quotes, media, and cursor pages. Use saved jobs for CSV, JSON, or XLSX files. See costs."
+description: "Export X community tweets with authors, text, replies, reposts, likes, quotes, and media. Traverse cursor pages or save CSV, JSON, and XLSX exports for reviews."
 api: "GET /x/communities/{id}/tweets"
 keywords: ["export community tweets", "X community tweets API", "Twitter community API", "community tweet export", "community timeline", "community posts"]
 ---
@@ -81,11 +81,11 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 <LlmsDirective />
 <AudienceCommunityApiLinks />
 
-Export recent tweets from one X community. Keep tweet text, authors, replies, reposts, likes, quotes, media, and cursor state.
-
-Use this community timeline export for unfiltered posts from one community.
-This Twitter community scraping guide covers cursors and saved CSV, JSON, or
-XLSX files.
+Export Twitter community posts from one known Community timeline. Keep Tweet
+text, authors, engagement counts, media, and cursor state. This X Community
+Tweets API guide covers live pages and saved CSV, JSON, or XLSX exports.
+This Twitter community scraping guide builds a community timeline export from
+cursor pages.
 
 ## Archive the Unfiltered Community Feed
 
@@ -101,25 +101,64 @@ returned feed order for timeline archives, content review, and moderation.
 | Duplicate control | Tweet `id` | Deduplicate moving-feed pages by stable tweet ID. |
 | Saved export | `community_post_extractor` | Produce CSV, JSON, or XLSX timeline files. |
 
-Use community search when reviewers need keywords, `Latest`, or `Top` ranking.
+Choose Community Search for keyword filters, `Latest`, or `Top` ranking.
 
 ## X Community Tweet Export Questions
 
 ### Export Community Tweets
 
 Call `GET /api/v1/x/communities/{id}/tweets` for the recent community feed.
-Keep the community ID, Tweet ID, text, author, and creation time. Add replies,
-reposts, likes, quotes, media, and cursor state.
+Keep the Community ID, Tweet ID, text, author, creation time, and media. Store
+each returned engagement count and cursor checkpoint.
 
-Use the community search route when a keyword is required. Feed retrieval
-answers what members posted recently. Search answers which posts match a query.
+Choose Community Search when the workflow requires a keyword. Feed retrieval
+returns recent posts. Search returns posts that match a query.
 
-Save each page before advancing `next_cursor`. Deduplicate by stable Tweet ID
-when new posts enter the feed during pagination. Record community ID, Tweet ID,
-author ID, text, and creation time. Add replies, reposts, likes, quotes, and
-media. Keep the page cursor and collection time. Use JSON for application
-ingestion. Create CSV or XLSX for analyst handoffs. Label interrupted,
-result-capped, or credit-bounded collections as partial.
+Persist each page and cursor checkpoint before requesting another page.
+Deduplicate by stable Tweet ID when new posts enter the feed. Record Community
+ID, Tweet ID, author ID, text, and creation time. Store engagement counts,
+media, and collection time.
+Label interrupted, result-capped, or credit-bounded collections as partial.
+
+### Are Twitter Community Posts Public or Private?
+
+X says Community posts can appear on the Community page, profiles, global
+search, and other timelines. Read the official
+[Communities guide](https://help.x.com/en/using-x/communities) for current
+visibility and participation rules. A restricted membership policy does not
+make every visible Community post private.
+
+This endpoint returns posts available to the read service for the requested
+Community. A missing Tweet does not prove deletion, privacy, or moderation.
+Store the collection time and observed cursor window with every export.
+
+### Where Can I Find Analytics for X Community Posts?
+
+Use the returned reply, repost, like, quote, view, and bookmark counts when
+available. Keep each count beside its Tweet ID and collection time. Compare
+complete snapshots to measure changes without rewriting the original values.
+
+Calculate concrete measures from the captured rows:
+
+- Unique Tweet IDs and authors.
+- Earliest and latest creation times.
+- Replies, reposts, likes, quotes, views, and bookmarks.
+- Tweets with photos, videos, or animated GIFs.
+- Repeated Tweet IDs removed after retries.
+
+These fields support Community engagement analysis. They do not expose unique
+viewers, link clicks, conversions, or moderation decisions. Never invent a
+missing metric or replace it with zero.
+
+### Can This API Schedule or Moderate Community Posts?
+
+No. This route reads a Community feed. It cannot publish, schedule, hide,
+report, or remove posts. Use X's own Community tools for role changes and
+moderation actions.
+
+Use the captured posts to prepare a review queue. Require a human decision
+before any moderation action. Keep private review notes outside Tweet text,
+author profiles, and exported engagement fields.
 
 ### What Does the Twitter Community API Return?
 
@@ -132,35 +171,13 @@ into an ambiguous row. Join them later with stable user and community IDs.
 
 ### How Do I Build a Complete Community Tweet Export?
 
-Persist every page before saving `next_cursor`. Deduplicate Tweet IDs when new
-posts change the live feed during pagination. Record the collection window.
+Persist every page and cursor checkpoint before requesting another page.
+Deduplicate Tweet IDs when new posts change the live feed. Record the
+collection window.
 
-Use a saved community extraction for CSV, JSON, or XLSX files. Use the direct
-route for live pages. Label interrupted or credit-bounded collections as
+Use a saved Community extraction for CSV, JSON, or XLSX exports. Keep direct
+API pages for live ingestion. Mark interrupted or credit-bounded runs as
 partial.
-
-## Choose The Community Feed
-
-Use this route for recent posts from one community without a keyword. Use community search routes when the request includes a query. Keep the community ID and cursor with each feed checkpoint.
-
-## Export a Community Timeline Without a Search Query
-
-Request the community feed when analysts need recent posts in timeline order.
-Each tweet can include its author, text, replies, reposts, likes, quotes, and
-media. Keep the community ID with every exported row.
-
-Store `next_cursor` only when `has_next_page` is true. Send that cursor back
-unchanged for the next page. De-duplicate by stable tweet ID when a busy
-community receives new posts during pagination.
-
-Use [Live Community Tweet Search](/api-reference/x/community-search)
-when the workflow includes specific keywords. Feed retrieval answers what the
-community posted recently. Keyword search answers which community tweets match
-the supplied query.
-
-For saved CSV, JSON, or XLSX files, create a community extraction job. For a
-live dashboard, keep the returned tweet rows and cursor directly. Both paths
-should preserve author IDs, timestamps, engagement counts, and media URLs.
 
 <Note>
   Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
@@ -242,14 +259,12 @@ should preserve author IDs, timestamps, engagement counts, and media URLs.
   ```
 </CodeGroup>
 
-## Direct community tweet handoff
+## Direct Community Tweet Handoff
 
 Use `GET /x/communities/{id}/tweets` for community monitoring, content review,
 post exports, or moderation queues. It creates one row per community tweet.
-Store `community_id`, `tweet_id`, `text`, `author_id`, `author_username`,
-`author_name`, `author_followers`, `author_verified`,
-`author_profile_picture`, `created_at`, `like_count`, `reply_count`,
-`retweet_count`, `media_urls`, and `next_cursor`.
+Keep one record for each Tweet ID. Preserve the Community ID, author, text,
+creation time, engagement counts, media, and cursor checkpoint.
 
 <CardGroup cols={2}>
   <Card title="Community tweet rows" icon="message-square-text">
@@ -257,8 +272,8 @@ Store `community_id`, `tweet_id`, `text`, `author_id`, `author_username`,
     counts with the tweet row for review queues and exports.
   </Card>
   <Card title="Next page" icon="arrow-right">
-    Store `has_next_page` and `next_cursor`. Only request another page when
-    `has_next_page` is true.
+    Store `has_next_page` with `next_cursor`. Request another page only when
+    the flag is `true`.
   </Card>
   <Card title="Default page" icon="rows-3">
     Request 1 to 100 tweets with `pageSize`. The default is 20. Treat the value
@@ -270,35 +285,6 @@ Store `community_id`, `tweet_id`, `text`, `author_id`, `author_username`,
   </Card>
 </CardGroup>
 
-## Archive posts from one community
-
-Use this route when the community ID is known and no keyword filter is needed.
-Keep the community ID with every tweet row.
-
-Save tweet ID, text, author, creation time, engagement counts, media URLs,
-cursor, and collection time. These fields support moderation review and
-community research.
-
-This route has no sort parameter. Preserve the returned order. Use community
-search when `Latest` or `Top` is required. Reuse the same `queryType` while
-paginating that search.
-
-Deduplicate resumed pages by community ID and tweet ID. Persist each page
-before saving the next cursor.
-
-Use community search when keywords or phrases must filter the posts. Use
-community members when the workflow needs profiles instead of tweets.
-
-## Build a Community Timeline Archive
-
-Choose one community ID and archive window. Request the unfiltered community feed when completeness matters.
-
-Store each Tweet ID, text, author, publication time, and engagement counts. Add media and the returned cursor. Write each page before requesting `next_cursor`.
-
-Deduplicate by Tweet ID. Record the first and last tweet times per page. Label incomplete runs as partial archives.
-
-Use community search separately when the community ID is unknown. This route archives one known community timeline.
-
 ## Audit a Cursor-Based Community Feed
 
 Start each feed run with one numeric community ID. Record the request time and
@@ -306,8 +292,8 @@ requested `pageSize`. Do not add a keyword to this route. Use community search
 when the workflow needs text matching.
 
 Persist every response before advancing its cursor. Store `has_next_page` with
-`next_cursor`. Request another page only when the flag is true. Pass the cursor
-back unchanged.
+`next_cursor`. Request another page only when the flag is true. Reuse the saved
+cursor without modification.
 
 Count returned rows and unique Tweet IDs after each page. A busy community can
 receive new posts during pagination. Deduplicate repeated Tweet IDs without
@@ -319,16 +305,17 @@ result caps, credit limits, and interrupted cursors explicitly.
 
 Store a completion record after the final page. Include community ID, page
 count, unique Tweet count, first timestamp, and last timestamp. Add collection
-time and the interrupted cursor when applicable.
+time and the interrupted cursor when applicable. Store a final
+`has_next_page` value of `false` for a completed cursor chain.
 
 ## Preserve Community Tweet Authors and Media
 
-Use one row per stable Tweet ID. Keep author ID, username, profile name, and
-verification when returned. Store tweet text and creation time separately from
-profile fields.
+Keep one record for each stable Tweet ID. Store author ID, username, profile
+name, and verification when returned. Separate Tweet content from author
+attributes.
 
-Keep replies, reposts, likes, and quotes as measured engagement fields. Record
-the collection time beside them. Counts can change after the feed run.
+Keep replies, reposts, likes, and quotes as measured engagement fields. Store
+their ISO 8601 collection time. Counts can change after publication.
 
 Store each media URL with its owning Tweet ID. Keep media type when available.
 Do not infer missing images or videos from tweet text. Do not move media URLs
@@ -339,8 +326,8 @@ analysts need one normalized row. Use XLSX for reviewed spreadsheet handoffs.
 Document any column flattening beside the exported file.
 
 Join later profile refreshes through stable author ID. Usernames and profile
-names can change. Never replace the original tweet creation time with a profile
-refresh time.
+names are mutable attributes. Keep Tweet timestamps separate from profile
+refresh timestamps.
 
 ## Compare Community Timeline Snapshots
 
@@ -360,69 +347,13 @@ and cursor recovery.
 Keep the request time, page count, row count, and completion state. These
 fields let another reviewer repeat the comparison without guessing its scope.
 
-## Measure a Community Timeline Window
-
-Define one timeline window before requesting the first page. Record the
-community ID and collection start time. This route needs no keyword query.
-
-Save each page before advancing its cursor. Store page number, request time,
-first Tweet ID, last Tweet ID, and returned row count. Preserve the exact
-cursor used for each request.
-
-After the final page, calculate these concrete measures:
-
-- Unique Tweet IDs collected.
-- Earliest and latest tweet creation times.
-- Authors represented by stable user ID.
-- Tweets containing photos, videos, or animated GIFs.
-- Total replies, reposts, likes, and quotes when returned.
-- Duplicate Tweet IDs removed after retries.
-
-Label the result as a captured timeline window. Never call it a complete
-community archive without separate completeness evidence.
-
-Store the final `has_next_page` value. A false value closes this cursor chain.
-A stopped job remains interrupted when another page was available.
-
-## Reconcile a Moving Community Feed
-
-New community tweets can appear while older cursor pages load. Deduplicate all
-rows by Tweet ID before export. Keep the newest complete engagement fields.
-
-Do not sort only by page position. Preserve `createdAt` and Tweet ID. Page
-boundaries can move between requests while the community remains active.
-
-When a request fails, retain the last durable cursor. Retry with the same
-community ID and page size. Never guess, shorten, or decode the cursor.
-
-If a retry repeats a page, compare its Tweet IDs with saved rows. Keep one row
-per Tweet ID. Record the repeated request in the collection manifest.
-
-For scheduled snapshots, use separate run IDs. Compare overlaps by Tweet ID.
-Report new, repeated, and missing IDs independently.
-
-## Audit Authors, Engagement, and Media
-
-Join authors by stable user ID. Keep usernames and display names as changeable
-profile attributes. Never use a visible name as the author key.
-
-Validate every media item against its owning Tweet ID. Preserve its media type
-and URL. Do not infer attachments from tweet text.
-
-Keep replies, reposts, likes, quotes, views, and bookmarks in separate columns.
-Missing fields stay missing. Never replace unavailable engagement counts with
-zero.
-
-Record when each snapshot captured those counts. Engagement can change after
-the tweet first appears. Compare counts only with both collection times.
-
-## Path parameters
+## Path Parameters
 
 <ParamField path="id" type="string" required>
   Community ID (numeric string).
 </ParamField>
 
-## Query parameters
+## Query Parameters
 
 <ParamField query="cursor" type="string">
   Pagination cursor from a previous response. Omit for the first page.
@@ -432,7 +363,7 @@ the tweet first appears. Compare counts only with both collection times.
   Upper bound for tweets per page. Range: 1-100. Default: `20`.
 </ParamField>
 
-## Which community endpoint?
+## Which Community Endpoint?
 
 <CardGroup cols={2}>
   <Card title="Community tweets" icon="message-square-text">
@@ -471,46 +402,46 @@ the tweet first appears. Compare counts only with both collection times.
   Array of community tweets.
   **Tweet object fields:**
     <ResponseField name="id" type="string">Tweet ID.</ResponseField>
-    <ResponseField name="text" type="string">Tweet text.</ResponseField>
-    <ResponseField name="type" type="string">Tweet type. Omitted if unavailable.</ResponseField>
+    <ResponseField name="text" type="string">Contains the complete Tweet text.</ResponseField>
+    <ResponseField name="type" type="string">Classifies the Tweet when X returns a type.</ResponseField>
     <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
     <ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet. Omitted if unavailable.</ResponseField>
-    <ResponseField name="likeCount" type="number">Like count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="retweetCount" type="number">Retweet count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="replyCount" type="number">Reply count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="quoteCount" type="number">Quote tweet count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="viewCount" type="number">View count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="bookmarkCount" type="number">Bookmark count. Omitted if unavailable.</ResponseField>
+    <ResponseField name="likeCount" type="number">Reports the number of likes when available.</ResponseField>
+    <ResponseField name="retweetCount" type="number">Reports the number of reposts when available.</ResponseField>
+    <ResponseField name="replyCount" type="number">Reports the number of replies when available.</ResponseField>
+    <ResponseField name="quoteCount" type="number">Reports the number of quotes when available.</ResponseField>
+    <ResponseField name="viewCount" type="number">Reports the number of views when available.</ResponseField>
+    <ResponseField name="bookmarkCount" type="number">Reports the number of bookmarks when available.</ResponseField>
     <ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
-    <ResponseField name="lang" type="string">Tweet language code. Omitted if unavailable.</ResponseField>
+    <ResponseField name="lang" type="string">Reports the Tweet language code when available.</ResponseField>
     <ResponseField name="isReply" type="boolean">Whether the tweet is a reply. Omitted if unavailable.</ResponseField>
     <ResponseField name="inReplyToId" type="string">Tweet ID being replied to. Omitted if not a reply.</ResponseField>
-    <ResponseField name="inReplyToUserId" type="string">User ID being replied to. Omitted if unavailable.</ResponseField>
-    <ResponseField name="inReplyToUsername" type="string">Username being replied to. Omitted if unavailable.</ResponseField>
+    <ResponseField name="inReplyToUserId" type="string">Identifies the replied-to user when available.</ResponseField>
+    <ResponseField name="inReplyToUsername" type="string">Reports the replied-to username when available.</ResponseField>
     <ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
     <ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
     <ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
     <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
     <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
     <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
-    <ResponseField name="contentDisclosure" type="object">Disclosure metadata for paid partnership and AI-generated media labels. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them. Omitted if unavailable.</ResponseField>
+    <ResponseField name="contentDisclosure" type="object">Returns paid-promotion and AI-generated-media labels when available. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia`.</ResponseField>
     <ResponseField name="author" type="object">
       Tweet author profile. Omitted if unavailable.
       **Author object fields:**
         <ResponseField name="id" type="string">Author user ID.</ResponseField>
         <ResponseField name="username" type="string">Author X username.</ResponseField>
         <ResponseField name="name" type="string">Author display name.</ResponseField>
-        <ResponseField name="followers" type="number">Follower count. Omitted if unavailable.</ResponseField>
+        <ResponseField name="followers" type="number">Reports the author's follower count when available.</ResponseField>
         <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
         <ResponseField name="profilePicture" type="string">Profile picture URL. Omitted if unavailable.</ResponseField>
 
     </ResponseField>
     <ResponseField name="media" type="object[]">
-      Media attachments. Omitted when the tweet has no media.
+      Lists media items attached to the Tweet. Omitted when none exist.
       **Media object fields:**
-        <ResponseField name="mediaUrl" type="string">Direct media URL.</ResponseField>
-        <ResponseField name="videoVariants" type="object[]">Available video renditions with bitrate, content type, and URL. Omitted for images.</ResponseField>
-        <ResponseField name="type" type="string">Media type.</ResponseField>
+        <ResponseField name="mediaUrl" type="string">Provides the direct media URL.</ResponseField>
+        <ResponseField name="videoVariants" type="object[]">Lists available video renditions and playback details. Omitted for images.</ResponseField>
+        <ResponseField name="type" type="string">Identifies the attached media type.</ResponseField>
         <ResponseField name="url" type="string">Shortened URL from the tweet text.</ResponseField>
 
     </ResponseField>
@@ -572,7 +503,7 @@ No checkout starts automatically. Confirm any payment action.
 ```json
 { "error": "not_found" }
 ```
-The community could not be resolved. Check the community ID.
+Xquik could not resolve the Community. Check the Community ID.
 
 ### 502 X API unavailable
 
@@ -586,14 +517,14 @@ The read service returned an error. Retry after a short delay.
 ```json
 { "error": "rate_limit_exceeded", "retryAfter": 60 }
 ```
-Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
+The request exceeded your tier rate limit. Wait for the `Retry-After` header before retrying.
 
 ### 424 Dependency Failed
 
 ```json
 { "error": "x_api_unavailable" }
 ```
-The normalized v1 response contract can return 424 when the read service is unavailable.
+HTTP 424 reports an unavailable read service under the normalized v1 contract.
 
 <Note>
   **Next steps:** [Community Info](/api-reference/x/community-info) for community details, or [Community Members](/api-reference/x/community-members) to list members.
