@@ -210,6 +210,27 @@ function missingEventTypeMentions(
 }
 
 describe('documented event types', (): void => {
+  it('keeps account monitor metadata within supported event scope', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      join(PROJECT_ROOT, 'api-reference/monitors/create.mdx'),
+      'utf8',
+    );
+    const description = /^description:\s*"([^"]+)"$/mu.exec(source)?.[1] ?? '';
+
+    expect({
+      descriptionPresent: description.length > 0,
+      unsupportedClaims:
+        description.match(
+          /\b(?:followers?|following|relationship changes?)\b/giu,
+        ) ?? [],
+    }).toStrictEqual({
+      descriptionPresent: true,
+      unsupportedClaims: [],
+    });
+  });
+
   it('keeps the OpenAPI subscribable event enum explicit', (): void => {
     expect.assertions(1);
 

@@ -1,7 +1,7 @@
 ---
 title: "Twitter Account Monitor API & Real-Time Webhooks"
 sidebarTitle: Create account monitor
-description: "Monitor one X account every second for tweets, followers, following, profile, or relationship changes and deliver signed webhook events. See event fields."
+description: "Monitor one X account every second. Track tweets, replies, quotes, reposts, mentions, media, links, and profile changes. Deliver signed webhook alerts."
 api: "POST /monitors"
 keywords: ["Twitter account monitor API", "monitor Twitter account", "Twitter webhook alerts", "real-time Twitter alerts", "monitor tweets", "account monitor", "signed webhooks"]
 ---
@@ -86,17 +86,30 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-Create a Twitter account monitor when one profile needs continuous tweet,
-profile, or relationship checks. Select event types, store the monitor ID,
-then connect a signed webhook for real-time alerts.
+Create a Twitter account monitor for one known profile. Select tweet, profile,
+or availability events. Store the monitor ID. Then connect a signed webhook.
 
 <Callout icon="coins" color="#5c3327">
-  **Requires 22 available credits** - 1 credit for the username lookup plus 21 credits for the first active monitor hour
+  **Requires 22 available credits.** The username lookup costs 1 credit. The first active monitor hour costs 21 credits.
 </Callout>
 
 <Note>
   Monitors are unlimited. Active monitors check every 1 second. Webhook and event deliveries are included in active monitor billing.
 </Note>
+
+## Create a Twitter Monitor for One Account
+
+Use this Twitter monitor when one known profile needs continuous checks.
+Send the username without `@`. Choose only the required event types.
+The endpoint returns one stable monitor ID for event and webhook joins.
+
+Use `POST /monitors` to monitor Twitter account activity from one username.
+This tweet monitor covers selected posts, replies, quotes, reposts, and profile
+changes. It does not search posts from every public account.
+
+Use [Create Keyword Monitor](/api-reference/monitors/create-keyword) for matching
+queries across many profiles. Use [Search Tweets](/api-reference/x/search-tweets)
+for an on-demand result page without continuous alerts.
 
 <CodeGroup>
   ```bash cURL
@@ -362,6 +375,22 @@ Valid account monitor types: `tweet.new`, `tweet.quote`, `tweet.reply`,
 `profile.bio.changed`, `profile.location.changed`, `profile.url.changed`,
 `profile.verified.changed`, `profile.protected.changed`,
 `profile.pinned_tweet.changed`, `profile.unavailable.changed`.
+
+### Match Event Types to Monitor Goals
+
+| Monitor goal | Event types | Stored signal |
+| --- | --- | --- |
+| New posts and conversations | `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet` | Original posts, replies, quotes, or reposts from one profile. |
+| Tweet content formats | `tweet.media`, `tweet.link`, `tweet.poll`, `tweet.mention`, `tweet.hashtag`, `tweet.longform` | Posts containing the selected format or reference. |
+| Profile text changes | `profile.name.changed`, `profile.username.changed`, `profile.bio.changed`, `profile.location.changed`, `profile.url.changed` | Previous and current profile text values. |
+| Profile image changes | `profile.avatar.changed`, `profile.banner.changed` | Previous and current image references. |
+| Profile state changes | `profile.verified.changed`, `profile.protected.changed`, `profile.pinned_tweet.changed`, `profile.unavailable.changed` | Verification, visibility, pinned post, or availability changes. |
+
+<Warning>
+  Account monitors do not emit follower-gained or follower-lost events. Use
+  [Followers](/api-reference/x/followers) and
+  [Following](/api-reference/x/following) for paginated relationship snapshots.
+</Warning>
 
 <CardGroup cols={2}>
   <Card title="tweet.new" icon="bell">
