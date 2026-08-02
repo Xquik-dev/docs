@@ -390,6 +390,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       'How to Delete a Community on Twitter via API',
       '## How to Delete a Twitter Community Through REST',
       '## How to Delete Twitter Community Records Safely',
+      'This route explains how to delete a Twitter Community through one tracked',
+      'It also shows how to delete Twitter Community records safely.',
       'Send its exact `community_name` as a confirmation safeguard.',
       'X says Community posts remain after their Community is deleted.',
       'OAuth bearer authentication is also supported.',

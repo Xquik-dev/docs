@@ -133,6 +133,9 @@ Call `DELETE /x/communities/{id}` for one community owned by a connected
 account. Send its exact `community_name` as a confirmation safeguard. This
 route removes the community, not the connected X account.
 
+This route explains how to delete a Twitter Community through one tracked
+request. It also shows how to delete Twitter Community records safely.
+
 Use [Leave Community](/api-reference/x-write/leave-community) to remove one
 account's membership. Use [Delete Tweet](/api-reference/x-write/delete-tweet)
 to remove one owned Community post.
@@ -232,7 +235,7 @@ to remove one owned Community post.
 
 Confirm the community ID, owner, exact name, reason, and approver. Create one
 `Idempotency-Key` for that deletion. Reuse it only for an unchanged network
-replay. Treat this API action as permanent because Xquik has no restore route.
+recovery attempt. Xquik has no restore route. Plan for permanent removal.
 
 Archive required records before approval:
 
@@ -263,7 +266,7 @@ after `404`. Resolve key conflicts after `409`. Review rejected requests after
 
 ### Can You Delete a Twitter Community?
 
-Yes. The connected owner can submit the community ID and exact name. Xquik
+Yes. Send the community ID and exact name through the connected owner. Xquik
 then returns a tracked write action.
 
 ### Does Deletion Affect the Owner's X Profile?
@@ -283,9 +286,9 @@ X before deletion, then verify the intended owner.
 
 ### What Happens to Members and Community Posts?
 
-Deletion removes the shared community for its members. X says existing
-Community posts are not deleted with the Community. Archive required posts
-before removal and use Delete Tweet for an owned post.
+Members lose access to the deleted Community. X says existing Community posts
+are not deleted with the Community. Archive required posts before removal. Use
+Delete Tweet for an owned post.
 
 ## Headers
 
@@ -294,7 +297,7 @@ before removal and use Delete Tweet for an owned post.
 </ParamField>
 
 <ParamField header="Idempotency-Key" type="string" required>
-  Unique key for this intended write. Reuse it only for an exact network replay.
+  Unique key for this intended write. Reuse it only after an interrupted identical request.
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
@@ -314,7 +317,7 @@ before removal and use Delete Tweet for an owned post.
 </ParamField>
 
 <ParamField body="community_name" type="string" required>
-  The name of the community. Required as a confirmation safeguard to prevent accidental deletion.
+  The exact community name. This safeguard helps prevent deletion of the wrong Community.
 </ParamField>
 
 ## Response
