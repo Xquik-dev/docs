@@ -219,10 +219,15 @@ describe('documented event types', (): void => {
       /^description:\s*"([^"]+)"$/mu.exec(createSource)?.[1] ?? '';
     const listFile = 'api-reference/monitors/list.mdx';
     const listSource = readFileSync(join(PROJECT_ROOT, listFile), 'utf8');
+    const updateFile = 'api-reference/monitors/update.mdx';
+    const updateSource = readFileSync(join(PROJECT_ROOT, updateFile), 'utf8');
+    const updateDescription =
+      /^description:\s*"([^"]+)"$/mu.exec(updateSource)?.[1] ?? '';
 
     const findings = [
       { file: createFile, source: createDescription },
       { file: listFile, source: listSource },
+      { file: updateFile, source: updateDescription },
     ].flatMap(({ file, source }): readonly Finding[] => {
       return Array.from(
         source.matchAll(
@@ -240,9 +245,11 @@ describe('documented event types', (): void => {
     expect({
       createDescriptionPresent: createDescription.length > 0,
       findings,
+      updateDescriptionPresent: updateDescription.length > 0,
     }).toStrictEqual({
       createDescriptionPresent: true,
       findings: [],
+      updateDescriptionPresent: true,
     });
   });
 
