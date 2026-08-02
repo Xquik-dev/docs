@@ -3022,6 +3022,7 @@ const REQUIRED_UNLIKE_TWEET_API_SNIPPETS = [
   'Use this Remove Twitter Likes API to unlike 1 tweet by ID.',
   "This Twitter unlike API changes 1 connected account's like state.",
   'Use this route to delete likes on Twitter without deleting tweets.',
+  'Clean up your Twitter likes without deleting tweets, replies, or reposts.',
   'Learn how to remove a like on Twitter through REST below.',
   '[Unlike Post endpoint](https://docs.x.com/x-api/users/unlike-post)',
   'curl -X DELETE https://xquik.com/api/v1/x/tweets/1895432178065391234/like',
@@ -3057,6 +3058,41 @@ const FORBIDDEN_UNLIKE_TWEET_API_SNIPPETS = [
   'fmt.Println(data)',
   'Session cookie authentication is also supported.',
   'title: "Twitter Unlike API for Engagement Removal Actions"',
+] as const;
+
+const REQUIRED_RETWEET_TWEET_API_SNIPPETS = [
+  'title: "Twitter Retweet API: Repost One Tweet by ID"',
+  '"Twitter retweet API"',
+  '"Twitter API retweet"',
+  'Use this Twitter Retweet API to repost 1 tweet by ID.',
+  'Each Twitter API retweet request names 1 connected X account.',
+  '[Repost Post endpoint](https://docs.x.com/x-api/users/repost-post)',
+  'const repostReceipt = await response.json();',
+  'repost_receipt = response.json()',
+  'var repostReceipt map[string]interface{}',
+  '## Publish One Repost by Tweet ID',
+  '## Choose a Repost or New Tweet',
+  '## Reconcile Retweet Automation',
+  '## Twitter Retweet API Questions',
+  '### How Do I Automate a Retweet Through an API?',
+  '### How Do I Authenticate a Twitter API Retweet?',
+  '### Can I Schedule a Retweet?',
+  '### What Is the Retweet API Rate Limit?',
+  '### Is a Retweet the Same as a Quote Tweet?',
+  '### Can I Bulk Retweet Several Tweet IDs?',
+  '### How Do I Track Retweet Activity?',
+  'No bulk request exists here.',
+  '<ParamField header="Authorization" type="string">',
+  '<WriteActionLifecycleResponse />',
+] as const;
+
+const FORBIDDEN_RETWEET_TWEET_API_SNIPPETS = [
+  'const data = await response.json();',
+  'data = response.json()',
+  'var data map[string]interface{}',
+  'fmt.Println(data)',
+  'Session cookie authentication is also supported.',
+  'title: "Twitter Repost API for Retweet Automation Workflows"',
 ] as const;
 
 const FORBIDDEN_PUBLIC_TWEET_MEDIA_ID_SNIPPETS = [
@@ -14867,6 +14903,28 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(
       FORBIDDEN_UNLIKE_TWEET_API_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the retweet API page focused and recoverable', (): void => {
+    expect.assertions(2);
+
+    const source = `${readFileSync(
+      'api-reference/x-write/retweet.mdx',
+      'utf8',
+    )}\n${readFileSync(WRITE_ACTION_LIFECYCLE_SNIPPET_PATH, 'utf8')}`;
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Retweet API docs',
+        REQUIRED_RETWEET_TWEET_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_RETWEET_TWEET_API_SNIPPETS.filter((snippet) =>
         source.includes(snippet),
       ),
     ).toStrictEqual([]);
