@@ -4534,6 +4534,7 @@ const REQUIRED_COMMUNITY_SEARCH_API_HANDOFF_SNIPPETS = [
   '## Twitter Community Search Questions',
   '### Does This Endpoint Find Communities to Join?',
   '[X Communities guide](https://help.x.com/en/using-x/communities)',
+  'Send `communityId` and `q`. Omit `queryType` to use `Latest`.',
   '### Why Does Twitter Community Search Return No Results?',
   '### Can I Find Active Authors in Matching Tweets?',
   'They do not prove influence,',
