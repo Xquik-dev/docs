@@ -155,7 +155,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: 'api-reference/x-write/unlike.mdx',
     snippets: [
       '| Unlike action column | Source | Removal rule |',
-      '| Already unliked | Converged terminal result |',
+      '| No like found | Terminal success |',
     ],
   },
   {
