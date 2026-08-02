@@ -238,8 +238,12 @@ problem before the next request. Use `reply_extractor` when a fixed
       created_at: reply.createdAt ?? null,
       in_reply_to_id: reply.inReplyToId ?? null,
       conversation_id: reply.conversationId ?? null,
+      like_count: reply.likeCount ?? null,
       media_urls: (reply.media ?? []).map((item) => item.mediaUrl).filter(Boolean),
+      page_index: pageCount,
+      page_cursor: pageCursor,
       next_cursor: page.next_cursor,
+      has_next_page: page.has_next_page,
     }));
     for (const row of replyRows) process.stdout.write(`${JSON.stringify(row)}\n`);
 
@@ -255,7 +259,7 @@ problem before the next request. Use `reply_extractor` when a fixed
   tweet_id = "1893456789012345678"
   page_cursor = ""
 
-  for _ in range(3):
+  for page_index in range(3):
       params = {"cursor": page_cursor} if page_cursor else {}
       response = requests.get(
           f"https://xquik.com/api/v1/x/tweets/{tweet_id}/replies",
@@ -276,10 +280,14 @@ problem before the next request. Use `reply_extractor` when a fixed
               "created_at": reply.get("createdAt"),
               "in_reply_to_id": reply.get("inReplyToId"),
               "conversation_id": reply.get("conversationId"),
+              "like_count": reply.get("likeCount"),
               "media_urls": [
                   item["mediaUrl"] for item in reply.get("media", []) if item.get("mediaUrl")
               ],
+              "page_index": page_index,
+              "page_cursor": page_cursor,
               "next_cursor": page["next_cursor"],
+              "has_next_page": page["has_next_page"],
           }
           print(json.dumps(reply_row, separators=(",", ":")))
 
