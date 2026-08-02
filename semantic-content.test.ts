@@ -14,7 +14,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: 'api-reference/x-write/create-tweet.mdx',
     snippets: [
       '| Post intent | Required fields | Validation before sending |',
-      '| `result.id` or `tweetId` | Published Tweet ID |',
+      '- Store `result.id` or `tweetId` for the published Tweet ID.',
     ],
   },
   {
