@@ -10275,8 +10275,11 @@ const REQUIRED_PYDANTIC_AI_GUIDE_SNIPPETS = [
   'Build a Pydantic AI Twitter API agent through Xquik',
   '## Why Use Pydantic AI With a Twitter API?',
   'Public X reads do not require X Developer credentials.',
-  '"pydantic-ai-slim[anthropic,mcp]>=2.22,<3"',
-  'FastMCP 4 prerelease',
+  '"pydantic-ai-slim[anthropic,mcp]>=2.22,<2.23"',
+  '"fastmcp-slim>=3.3,<4"',
+  'from pydantic_ai.capabilities import MCP',
+  'allowed_tools=["explore", "xquik"]',
+  'capabilities=[xquik_mcp]',
   'from pathlib import Path',
   'output_type=TweetSearchHandoff',
   'Path("xquik-pydantic-ai-handoff.json").write_text(',
@@ -10300,11 +10303,15 @@ const REQUIRED_PYDANTIC_AI_GUIDE_SNIPPETS = [
   '| `429` | Twitter API rate limit reached |',
   'toolsets=[xquik.defer_loading()]',
   ').prefixed("twitter")',
-  '| `pydantic-ai-slim` | 2.22.0 | `>=2.22,<3` |',
+  '## Choose Pydantic AI MCP or the REST API',
+  'Xquik validates the sandbox route, method, query, and body.',
+  '| `pydantic-ai-slim` | 2.22.0 | `>=2.22,<2.23` |',
   '| `fastmcp-slim` | 3.4.5 | `>=3.3,<4` through the `mcp` extra |',
-  '### Does Pydantic AI support MCP?',
-  '### How do I validate Twitter API JSON with Pydantic?',
-  '### How do I handle Twitter API rate limits in Python?',
+  '### Does Pydantic AI Support MCP?',
+  '### What Is the Difference Between Pydantic AI Tools and MCP?',
+  '### How Can I Use Pydantic With AI Model Validation Effectively?',
+  '### How Do I Validate Twitter API JSON With Pydantic?',
+  '### How Do I Handle Twitter API Rate Limits in Python?',
 ] as const;
 
 const FORBIDDEN_PYDANTIC_AI_GUIDE_SNIPPETS = [
@@ -10318,6 +10325,7 @@ const FORBIDDEN_PYDANTIC_AI_GUIDE_SNIPPETS = [
   'Path("xquik-pydantic-ai-handoff.json").write_text(\n        result.output,',
   '| `pydantic-ai-slim` | 2.11.0 |',
   '| `fastmcp-slim` | 3.4.4 |',
+  'MCP tool schemas validate the selected route, method, query, and body.',
 ] as const;
 
 const REQUIRED_LANGCHAIN_GUIDE_SNIPPETS = [
