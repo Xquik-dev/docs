@@ -543,7 +543,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: 'guides/rate-limits.mdx',
     snippets: [
       '| Rate-limit signal | Meaning | Client action |',
-      '| `Retry-After` header | The account hit a server-enforced limit. | Pause for the supplied duration before retrying. |',
+      '| `Retry-After` header | The response supplies a wait in seconds. | Pause that bucket for the supplied duration. |',
     ],
   },
   {

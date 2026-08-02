@@ -1661,13 +1661,13 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
   {
     file: 'guides/rate-limits.mdx',
     required: [
-      '**Limits:** 300 GET/1s, 120 POST/60s, 60 DELETE/60s per account.',
-      '`GET`, `HEAD`, and `OPTIONS` share 300 requests per 1 second.',
-      'Read tier (300 per 1s):',
-      'const readLimiter = new WindowRateLimiter(300, 1_000);',
-      'read_limiter = WindowRateLimiter(300, 1)',
-      'var readLimiter = NewWindowRateLimiter(300, time.Second)',
-      'reservoir: 300,           // 300 requests per read window',
+      '**Standard limits:** 300 reads per second, 120 writes per minute, and 60',
+      '`GET`, `HEAD`, and `OPTIONS` allow 300 requests per 1 second.',
+      'Read bucket: 300 requests per 1 second',
+      'reservoir: 270,',
+      'reservoirRefreshAmount: 270,',
+      'reservoirRefreshInterval: 1_000,',
+      'This Bottleneck configuration reserves 10% read headroom.',
     ],
     forbidden: [
       '60 GET/1s',
@@ -2611,26 +2611,47 @@ const FORBIDDEN_SEARCH_TWEETS_QUERY_PARAM_SNIPPETS = [
 const REQUIRED_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
   'Respect `Retry-After`; otherwise start at 1 second, add jitter, and stop after 3 retries.',
   'Requests sent before the fixed window resets keep returning `429` until `Retry-After` elapses.',
-  '<Card title="Retry-After header" icon="timer">',
-  'Standard read throttles return `Retry-After: 1`. Write and delete throttles return `Retry-After: 60`. Account connection safety limits return `Retry-After: 900`; login cooldowns return their exact remaining wait.',
-  '<Card title="JSON retry field" icon="braces">',
-  '`error: "rate_limit_exceeded"`',
-  '<Card title="Node.js libraries" icon="package">',
-  '`npm install bottleneck`',
-  '<Card title="Python library" icon="package">',
+  'Standard read throttles return `Retry-After: 1`. Standard write and delete',
+  'Account connection returns the remaining',
+  'window. A login cooldown returns its own remaining duration.',
+  '"error": "rate_limit_exceeded"',
+  '<Card title="Node.js Libraries" icon="package">',
+  '<Card title="Python Library" icon="package">',
   '`pip install ratelimit`',
-  '<Card title="Go library" icon="package">',
+  '<Card title="Go Library" icon="package">',
   '`go get golang.org/x/time/rate`',
-  'GET /api/v1/events?limit=100',
-  'If `hasMore` is `true`, store `nextCursor` and pass it as `after`',
-  '1 read slot per page instead of 1 request per monitor',
-  'GET /api/v1/events?limit=100&after={nextCursor}',
-  'only for backfills and reconciliation',
+  'Tweet searches return `has_next_page` and `next_cursor`.',
+  'Store the completed page and next cursor atomically.',
+  'Do not advance the cursor after a failed request.',
+  'Use event reads for backfills, reconciliation, and missed delivery checks.',
 ] as const;
 
 const FORBIDDEN_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
   'max 5 retries',
   'Sending requests before the window resets may extend your cooldown.',
+] as const;
+
+const REQUIRED_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS = [
+  'title: "Twitter API Rate Limits, 429 Errors & Retry-After"',
+  'Standard API keys for one account share the same method buckets.',
+  '| Follow or remove follower | `POST /x/users/{id}/follow` and `POST /x/users/{id}/remove-follower` | 20 actions per minute and 400 per day, shared |',
+  '| Connect X account | `POST /x/accounts` | 10 attempts per 15 minutes |',
+  'The window starts with your first request. It does not follow wall-clock seconds.',
+  '## Xquik Limits Versus Official X API Limits',
+  '| `502 x_api_rate_limited` | The read service was throttled upstream. |',
+  'Store the completed page and next cursor atomically.',
+  'This Bottleneck configuration reserves 10% read headroom.',
+  "Multiple API keys do not multiply a standard account's limits.",
+  '### What Does API Rate Limit Exceeded Mean?',
+  '### Does a Rate-Limited Request Consume Tweet Credits?',
+  'An Xquik tier rejection happens before the endpoint performs its work.',
+  'See [X API rate limits](https://docs.x.com/x-api/fundamentals/rate-limits)',
+] as const;
+
+const FORBIDDEN_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS = [
+  '3 attempts per 15 minutes',
+  '10 requests per 1 second',
+  '120 requests per 60 seconds for reads',
 ] as const;
 
 const REQUIRED_TROUBLESHOOTING_RECOVERY_SNIPPETS = [
@@ -13168,6 +13189,32 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Rate-limit troubleshooting docs contain stale wording "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the Twitter API rate-limit guide source-backed', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/rate-limits.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'Twitter API rate-limit guide',
+          REQUIRED_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS,
+        ),
+        ...FORBIDDEN_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Twitter API rate-limit guide contains stale wording "${snippet}".`,
                   },
                 ]
               : [],
