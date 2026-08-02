@@ -194,6 +194,9 @@ function compactErrorExample(value) {
 
 function responseExample(document, rawResponse, status) {
   const response = resolveNode(document, rawResponse);
+  if (status === '204') {
+    return { language: 'text', value: 'No response body.' };
+  }
   const contentEntries = Object.entries(response.content ?? {});
   if (contentEntries.length === 0) {
     return { language: 'text', value: response.description ?? 'No response body.' };
