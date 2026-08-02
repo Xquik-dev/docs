@@ -1,9 +1,9 @@
 ---
-title: "Twitter Trends API & Ranked Regional Topics"
+title: "Twitter Trends API for WOEID Topics & Hashtags"
 sidebarTitle: "List trends"
-description: "List ranked X trends by WOEID region with trend names, search queries, descriptions, ranks, timestamps, and a configurable result count. See examples."
+description: "Use the Twitter Trends API to get ranked topics and hashtags by WOEID. Return search queries, ranks, public post counts, URLs, and regional result totals."
 api: "GET /trends"
-keywords: ["trends", "trending", "woeid", "regions"]
+keywords: ["Twitter trends API", "Twitter trending API", "Twitter API trends", "Twitter API trending", "X trends API", "trending topics", "trending hashtags", "WOEID", "regional trends"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -72,9 +72,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-## Choose The Top-Level Trends Route
+## Use the Top-Level Twitter Trends API
 
-`GET /trends` is the top-level regional trends route. It returns ranked topics with WOEID context and requested counts. Use one route consistently when `/x/trends` also fits the client.
+`GET /trends` is Xquik's top-level regional trends route.
+It returns ranked topics with WOEID context and a `total` field.
+The `/x/trends` alias returns `count` instead of `total`.
+Use one route consistently throughout each client.
 
 <Callout icon="coins" color="#5c3327">
   **3 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Direct [MPP](/mpp/machine-payments-protocol): USD 0.00045 per call
@@ -214,21 +217,27 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 </CodeGroup>
 
-## Direct trends handoff
+## Build a Regional Twitter Trending Monitor
 
 Use `GET /trends` when a dashboard, alerting job, content queue, warehouse, or
 agent needs ranked X topics for a supported WOEID region.
 
-The Node.js, Python, and Go examples shape one JSON line per trend. Store
-`trend_name`, `rank`, `description`, `search_query`, `region_woeid`,
-`requested_count`, and `returned_total`. Pass `search_query` to
-[Search Tweets](/api-reference/x/search-tweets) when the next step needs
-matching tweets.
+The Node.js, Python, and Go examples emit one JSON line per trend.
+Store `trend_name`, `rank`, `description`, and `search_query`.
+Also store `region_woeid`, `requested_count`, and `returned_total`.
+Use `search_query` as the input for [Search Tweets](/api-reference/x/search-tweets).
+That search can retrieve related tweets, hashtags, or brand mentions.
+A Twitter API trends client should save each snapshot before starting that search.
 
 Map `trends[].name` to `trend_name` and `trends[].query` to `search_query`.
 Map `woeid` to `region_woeid` and request `count` to `requested_count`.
 Derive `returned_total` from `trends.length`. The raw `total` field remains the
 number of valid trends available before `count` slicing.
+
+Poll one WOEID on a stable schedule. Compare ranks only within that region.
+A Twitter API trending workflow creates history by storing those snapshots.
+The route itself returns current trends, not a historical archive.
+Keep missing optional fields unset. Preserve `tweetVolume` as null when returned.
 
 | Regional trend column | Response source | Monitoring rule |
 | --- | --- | --- |
@@ -250,10 +259,10 @@ number of valid trends available before `count` slicing.
   `Bearer xq_your_guest_key_here` authenticates `paid_reads` guest keys. Direct MPP uses the `Payment ...` credential. Get it from the `WWW-Authenticate: Payment` challenge.
 </ParamField>
 
-## Query parameters
+## Query Parameters
 
 <ParamField query="woeid" type="number">
-  Region WOEID. See supported regions below. Default: `1` (Worldwide).
+  Region WOEID. See supported regions below. Omit it to use `1` for Worldwide.
 </ParamField>
 
 <ParamField query="count" type="number">
@@ -272,6 +281,9 @@ number of valid trends available before `count` slicing.
     <ResponseField name="description" type="string">Short description. Omitted if unavailable.</ResponseField>
     <ResponseField name="rank" type="number">Position in the trending list. Omitted if unavailable.</ResponseField>
     <ResponseField name="query" type="string">Search query for this trend. Omitted if unavailable.</ResponseField>
+    <ResponseField name="promotedContent" type="string | null">Promotion identifier. Null for organic trends.</ResponseField>
+    <ResponseField name="tweetVolume" type="number | null">Approximate public post count when X supplies it.</ResponseField>
+    <ResponseField name="url" type="string">X search URL for the trend.</ResponseField>
 
 </ResponseField>
 <ResponseField name="total" type="number">
@@ -289,7 +301,10 @@ number of valid trends available before `count` slicing.
       "name": "#SuperBowl",
       "description": "Trending in United States",
       "rank": 1,
-      "query": "%23SuperBowl"
+      "query": "%23SuperBowl",
+      "promotedContent": null,
+      "tweetVolume": 250000,
+      "url": "https://x.com/search?q=%23SuperBowl"
     },
     {
       "name": "Taylor Swift",
@@ -316,11 +331,12 @@ Unsupported or malformed `woeid`. Use one of the WOEIDs in the regions table. `c
 ```
 Missing or invalid API key. Check the `x-api-key` header value.
 
-### 402 Payment required
+### 402 Payment Required
 
-Account keys get account options; guest keys get guest top-up only.
-Anonymous calls receive a direct MPP `WWW-Authenticate: Payment` challenge plus a guest wallet creation action.
-No checkout starts automatically. Confirm any payment action.
+Account keys receive account payment options. Guest keys receive guest top-up.
+Anonymous direct MPP calls receive a `WWW-Authenticate: Payment` challenge.
+They also receive a guest wallet action. Confirm a payment option first.
+No checkout starts automatically.
 
 ### 502 X API Unavailable
 
@@ -341,7 +357,40 @@ Your tier rate limit was exceeded. Wait for the `Retry-After` header before retr
 ```json
 { "error": "x_api_unavailable" }
 ```
-The normalized v1 response contract can return 424 when the read service is unavailable.
+The opt-in normalized contract returns 424 when the read service fails.
+Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns 502.
+
+## Twitter Trends API Questions
+
+### How Do I Get Twitter Trends Programmatically?
+
+Call `GET /trends` with a WOEID and result count.
+Read each name, rank, query, description, public post count, and search URL.
+
+### Can I Get Location-Based Trending Topics?
+
+Yes. Use a supported WOEID for Worldwide, a country, or a listed region.
+Keep that WOEID with every snapshot and rank comparison.
+
+### Does The API Return Historical Twitter Trends?
+
+No. Each request returns a current regional snapshot.
+Create history by storing timestamped responses on a consistent schedule.
+
+### How Do I Authenticate to the Twitter Trends API?
+
+Send an Xquik API key or OAuth bearer token.
+Guest keys and direct MPP credentials follow the header guidance above.
+
+### Is the Twitter Trends API Free?
+
+No. Each successful call uses the amount shown in the pricing callout.
+Rate-limit responses include retry guidance and consume no successful result.
+
+### Does This Replace X's Official API?
+
+No. This page documents Xquik, an independent third-party service.
+It does not document X's official trends endpoint.
 
 ## Regions
 
