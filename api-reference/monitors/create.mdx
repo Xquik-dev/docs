@@ -101,7 +101,8 @@ or availability events. Store the monitor ID. Then connect a signed webhook.
 
 Use this Twitter monitor API for continuous checks on one known profile.
 Send the username without `@`. Choose only the required event types.
-This API endpoint returns one stable monitor ID for event and webhook joins.
+This API endpoint gives you one stable monitor ID. Use it to join events and
+webhook deliveries.
 
 Use `POST /monitors` for Twitter API monitoring from one username.
 This tweet monitor covers selected posts, replies, quotes, reposts, and profile
@@ -286,12 +287,9 @@ for an on-demand result page without continuous alerts.
   ```
 </CodeGroup>
 
-The cURL, Node.js, Python, and Go examples convert the created or reactivated
-account monitor into one state row. Store `monitor_id`, `username`, `x_user_id`,
-`event_types`, `is_active`, `next_billing_at`, `verify_endpoint`,
-`update_endpoint`, `delete_endpoint`, `events_endpoint`,
-`event_detail_endpoint_pattern`, `webhooks_endpoint`, and
-`deliveries_endpoint_pattern` before routing alerts.
+Each code example maps the response to one monitor row. Save the account IDs,
+event filter, active state, next charge time, and monitor routes. The routes
+cover updates, events, webhooks, and delivery checks.
 
 ## Account monitor handoff
 
@@ -346,16 +344,23 @@ production alerts.
   </Card>
 </CardGroup>
 
+### What Should a Webhook Receiver Save?
+
+Save the monitor ID, username, user ID, event type, event time, and delivery ID.
+Use the monitor ID to group alerts for one account. Use the delivery ID to stop
+the same job twice. Keep the event ID for later checks. These fields help with
+replay, audits, retries, and clear alert ownership.
+
 Active account monitors check every 1 second. Each active hour costs 21 credits.
-Creation and reactivation require 22 available credits. That total includes a 1-credit username lookup and the first active hour. Pause the monitor through
+You need 22 available credits to create or restore a monitor. That total includes a 1-credit username lookup and the first active hour. Pause the monitor through
 [Update Monitor](/api-reference/monitors/update) (`PATCH /monitors/{id}`). Set
 `{ "isActive": false }` when alerts should stop.
 
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. You can also authenticate with a session cookie. Generate a key
-  from the [dashboard](https://xquik.com/dashboard).
+  Your API key. You can also authenticate with a session cookie. Create an API
+  key in the [Xquik dashboard](https://xquik.com/dashboard).
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
@@ -449,7 +454,7 @@ Valid account monitor types: `tweet.new`, `tweet.quote`, `tweet.reply`,
 ```
 Invalid username format or missing/invalid `eventTypes` array.
 
-### 401 Unauthenticated
+### 401 Missing API Key
 
 ```json
 { "error": "unauthenticated", "message": "Missing or invalid API key" }
@@ -461,7 +466,7 @@ Missing or invalid API key.
 ```json
 { "error": "insufficient_credits", "message": "Insufficient credits" }
 ```
-This request requires at least 22 available credits. The API may return
+Keep at least 22 credits available before sending this request. The API may return
 `no_credits` or `insufficient_credits`.
 
 ### 404 User Not Found
