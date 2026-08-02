@@ -672,6 +672,27 @@ describe('operational content structure', (): void => {
   });
 });
 
+describe('join community writing budget', (): void => {
+  it('keeps the audited narrative within 1,100 source words', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x-write/join-community.mdx',
+      'utf8',
+    );
+    const start = source.indexOf(
+      '## How to Join a Community on Twitter Through the API',
+    );
+    const end = source.indexOf('## Headers', start);
+    const wordCount =
+      start >= 0 && end > start
+        ? source.slice(start, end).trim().split(/\s+/u).length
+        : Number.POSITIVE_INFINITY;
+
+    expect(wordCount).toBeLessThanOrEqual(1_100);
+  });
+});
+
 describe('update profile contract copy', (): void => {
   it('does not advertise unsupported session authentication', (): void => {
     expect.assertions(1);

@@ -242,86 +242,57 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 
 ## How to Join a Community on Twitter Through the API
 
-Call `POST /x/communities/{id}/join` for one existing Community. Send one
-connected Twitter account. Xquik records one membership request.
-
-This route cannot discover, create, or moderate Communities. X decides whether
-the account can join. Tie each approval to one account and Community ID.
+Call `POST /x/communities/{id}/join` with one connected account and numeric ID.
+X decides whether that account can join. The route cannot discover, create, or
+moderate Communities. Approve each account and Community pair first.
 
 ## Understand Open, Restricted, and Invited Membership
 
 Open Communities allow direct joins. Restricted Communities may require
-moderator approval or an invitation. X controls those membership modes.
+approval or an invitation. X controls each membership mode.
 
-For a manual open membership, visit the specific Community page. Open
-membership uses the join button at the top of the page. Review the rules.
-Accept them to complete membership. Restricted Communities display Ask to join.
-A moderator can approve or deny that request. X can approve invited accounts
-immediately.
-
-Send only the connected account. Put the Community ID in the path. No request
-field selects a mode or accepts an invitation.
+Open the Community page and review its rules.
+Use the join button for manual membership.
+Restricted Communities display Ask to join. A moderator decides that request.
+No API field selects a mode or accepts an invitation.
 
 Use the official [X Communities guide](https://help.x.com/en/using-x/communities)
 for current interface behavior. This page defines Xquik's API contract.
 
 ## Find Twitter Communities Before Joining
 
-Choose the Community before calling this endpoint. Existing members can open
-the Communities page on X.com or iOS. Search the Communities tab by name,
-description, creator, or handle.
+Search the X Communities page by name, creator, or handle.
 X warns that some Communities never appear in search results.
 
-Use a shared direct URL before the account joins its first Community. A direct
-link also helps when one specific Community remains unlisted. Confirm the name,
-description, rules, moderators, membership type, and recent posts. Verify that
-the topic matches the intended automation. Never trust a similar display name.
+Use a direct URL for an account's first Community. Confirm its name, rules,
+moderators, membership mode, and recent posts. Match the numeric ID with
+[Community Info](/api-reference/x/community-info).
 
-Use the join button for manual membership. Use this API for server or app
-workflows.
-
-Do not use [Community Search](/api-reference/x/community-search) for discovery.
-That route searches posts inside a known numeric ID. It does not find Twitter
-Communities by topic. Review the name, rules, moderators, and recent posts.
+[Community Search](/api-reference/x/community-search) searches posts inside one
+known Community. It cannot find Community directories or topics.
 
 ## Compare Manual and API Community Joining
 
-Manual and API steps request the same Community membership. X manages interface
-controls, rules, invitations, and moderator review. Xquik sends the approved
-request from one connected account.
-
-This endpoint cannot click interface controls or choose a membership mode. It
-cannot accept an invite or bypass moderator approval. Complete manual phone
-and iPhone membership through X. Use Xquik for approved server and application
-workflows.
-
-Open the Community page before approving automation. Use the URL to confirm the
-numeric Community ID. Compare that ID with
-[Community Info](/api-reference/x/community-info). This check prevents
-membership in a similarly named Community.
+X handles invitations, rules, and moderator review. Use X for phone membership.
+Use Xquik for approved server workflows. The API cannot click controls, choose
+a membership mode, or bypass moderator approval.
 
 ## Review Account Eligibility and Moderator Limits
 
 Make the X account public before joining.
-X controls this rule and may change it.
-
-Admins and moderators enforce each Community's rules. They review restricted
-requests. A moderator block can prevent membership. This API cannot override it.
+Admins and moderators enforce each Community's rules.
+They review restricted requests. Moderator blocks can stop membership.
+The API cannot override them.
 
 X says an admin account must have a verified email address or phone number.
 This verified-contact requirement applies only to admins.
 
-Twitter Communities offer topic-focused spaces for members. Check each group's
-rules and membership mode.
-
+Twitter Communities offer topic-focused spaces for members.
 Members use a dedicated space for one shared topic.
-
-The contract defines no separate community account. Store the connected
-account and Community ID separately.
+Check its rules and membership mode.
+The contract defines no separate community account.
 
 ## Choose the Correct X Relationship
-
-Choose the route that matches the intended relationship.
 
 - Use Join Community for one approved membership.
 - Use Follow for one account relationship.
@@ -329,120 +300,80 @@ Choose the route that matches the intended relationship.
 - Use Community Members to verify the roster.
 - Use Community Tweets to read the Community timeline.
 
-Following, Lists, group messages, and Community Notes do not change membership.
-Approve each write separately.
+Following, Lists, group messages, and Community Notes cannot change membership.
 
 ## Plan Post-Join Reading and Publishing
 
-Use [Community Tweets](/api-reference/x/community-tweets) to read the known
-Community's timeline. Store Tweet IDs, replies, reposts, likes, media, and cursors.
-
-Use [Community Search](/api-reference/x/community-search) for keyword matches
-inside that Community. It cannot discover new Communities.
-
-Membership does not authorize publishing. Approve Create Tweet separately.
-Verify membership, posts, replies, reposts, likes, and media through their routes.
-
 Joining adds one connected account to one social media Community. It does not
-create a post, invite users, or change moderators. After success, inspect the
-member list and Community timeline. Keep the reviewed rules with the approval.
+create posts, invitations, or moderator changes.
 
-Read current conversations before drafting replies or media posts. Avoid
-repetitive promotions. Approve every Community post separately. Admins and
-moderators can enforce local rules after membership. They can remove accounts
-that violate those rules.
+Read [Community Tweets](/api-reference/x/community-tweets) after confirmation.
+Store Tweet IDs, replies, reposts, likes, media, and cursors.
 
-Run Community Search inside the reviewed Community ID. Search recent posts
-before sending a topical reply. Keep post approvals separate from join
-approval. Separate approvals simplify consent audits and failed-request
-recovery.
-
+Membership never authorizes publishing.
 Approve separate Create Tweet actions for members posting after joining.
+Keep the reviewed rules with each approval.
 
 ## Resolve Membership Intent
 
-Start with a numeric Community ID. Display names can duplicate. Review
-[Community Info](/api-reference/x/community-info) before approval.
-
-Record the Community ID, display name, connected account, and membership mode.
-Add the approval, idempotency key, and returned action ID.
-
-Never reuse approval across account and Community pairs.
+Use a numeric Community ID. Record its connected account, membership mode, and
+approval.
 
 ## How to Join Twitter Community Membership Safely
 
 The steps below explain how to join Twitter Community membership through Xquik.
 
-Create one idempotency key for the approved pair. Send the Community ID in the
-path. Send the connected username through `account`.
-
-Store the returned action. A `202` confirms processing, not membership.
-
-Use this sequence:
-
 1. Review the numeric Community ID and connected account.
-2. Create one pair-specific idempotency key.
+2. Create one pair-specific `Idempotency-Key`.
 3. Submit `POST /x/communities/{id}/join` once.
 4. Poll the returned action to a terminal result.
 5. Verify the account through Community Members.
-6. Store the result with the original approval.
+6. Store the action, approval, membership mode, and result.
 
-Keep the existing action during a timeout. Changed accounts or Communities need
-separate approval.
+An HTTP `202` confirms processing, not membership. Keep the existing action
+during a timeout. A changed account or Community needs new approval.
 
 ## Join Communities in Controlled Batches
 
-Assign one idempotency key per account and Community pair. Process retries
-serially. Keep one ledger row per approval, action, and final result.
-
-After an authorization error, pause only that account. Never infer
-posting permission from membership.
+Assign one `Idempotency-Key` per approved pair. Process retries serially. Keep
+one ledger row per result. Pause only the affected account after errors.
 
 ## Verify Visible Membership
 
 After a terminal result, call
 [Community Members](/api-reference/x/community-members). Follow every cursor.
 
-Store the Community ID, account, action status, and completion time.
-Also store cursor coverage, matched username, and stable user ID.
-Never resubmit after one page.
-
-Anyone with the direct Community URL can see its member list. Assume anyone
-with that URL can inspect membership.
+Store the Community ID, action status, matched username, and stable user ID.
+Never resubmit after checking only one page.
+Anyone with the direct Community URL can see its member list.
 
 ## Explain Community Post Visibility
 
 Community posts are not private group messages. They can appear on Community
 pages, profiles, timelines, and search.
 
-Joining does not publish a post. It only changes membership for the selected
-Twitter account. Approve each Community post before publishing.
-Use [Create Tweet](/api-reference/x-write/create-tweet) for that post.
-
-The group builds loyalty only through useful member discussions. Xquik reports
-membership only. It cannot predict followers, engagement, reach, or sales.
-
 Anyone on X with the direct Community URL can see the Community's member list.
+Joining never publishes a post. Use
+[Create Tweet](/api-reference/x-write/create-tweet) after separate approval.
 
 ## Answer Common Twitter Community Questions
 
 ### How to Join a Twitter Community with Xquik?
 
-Review Community Info. Submit the numeric ID with one connected account. Poll,
-then verify Community Members.
+Review Community Info. Submit one connected account and numeric ID. Poll the
+action, then verify Community Members.
 
 ### Can I Join an Invitation-Only Twitter Community?
 
 For an invite-only Community, X still requires an invitation.
 Confirm you are logged in to your account on X. This endpoint cannot accept
-invitations.
-Preserve any `422` rejection.
+invitations. Preserve any `422` rejection.
 
 ### What Happens When You Join a Twitter Community?
 
-After success, find the account through Community Members. X can display the
-Communities tab and Community posts. Rules still apply. Require separate
-approval for every Community post.
+X adds the membership after approval.
+Members can reply after X confirms membership.
+They can connect, share posts, and follow the Community's rules.
 
 ### Can People See the Communities You Join on Twitter?
 
@@ -450,8 +381,8 @@ Direct Community URLs expose member lists. Posts can also appear publicly.
 
 ### How Do I Join a Community on a Phone?
 
-Open a shared Community URL in X. Review the rules and membership mode. Use X
-to complete manual membership. Server and app integrations can call this endpoint.
+Open a shared Community URL. Review its rules and membership mode. Use X for
+manual membership or Xquik for server workflows.
 
 ### Do Twitter Communities Still Exist?
 
@@ -463,68 +394,45 @@ The request has no Premium field. X decides account eligibility.
 
 ### Why Can't I Join a Twitter Community?
 
-Check the ID, account, membership mode, invitation, and moderator blocks.
-Review the returned status before retrying.
-
-Resolve join problems in this order:
-
-1. Confirm that the connected X account is public.
-2. Match the numeric ID with the intended Community page.
-3. Confirm that the X account remains connected to Xquik.
-4. Check whether membership is open, restricted, or invitation-based.
-5. Check for pending requests or existing membership.
-6. Check whether the account blocks a moderator, or vice versa.
-7. Read the HTTP status, `terminal`, `retryable`, and `safeToRetry` fields.
-
-Moderators may keep a restricted request pending. Wait on the existing action
-while moderators review the request. After success, confirm the account through
-every Community Members page.
+Check the public account, numeric ID, connection, mode, invitation, and moderator
+blocks. Read `terminal`, `retryable`, and `safeToRetry` before retrying.
 
 ### How Do I Find Active Twitter Communities by Interest?
 
-After joining once, search the Communities page by topic or creator. A first
-membership needs a shared direct URL. Review recent posts before joining.
-Use Join Community to change membership. Use Community Search to search posts
-inside one Community ID. These routes cannot find Community directories.
+Search the Communities page by topic or creator after joining once. A first
+membership needs a shared URL. Community Search cannot find Community directories.
 
 ### What Are the Benefits of Joining a Twitter Community?
 
-Membership opens one topic-focused discussion space. Members can read the
-Community timeline and participate under its rules. This endpoint cannot
-promise followers, engagement, leads, or sales.
-
-Members can reply after X confirms membership.
-They can connect, share posts, and follow the Community's rules.
+Membership opens one topic-focused discussion space. Members can read its
+timeline and participate under its rules. This endpoint cannot promise
+followers, engagement, leads, or sales.
 
 ### How Should a Brand Participate After Joining?
 
-Read recent Community posts before publishing. Match the discussion topic and
-follow moderator rules. Approve each reply, post, and media upload separately.
-Do not automate repetitive promotions or unsolicited invitations.
+Read recent Community posts first. Match the topic and follow moderator rules.
+Approve each reply, post, and media upload separately. Avoid repetitive
+promotions and unwanted invitations.
 
 ### Is Community Notes the Same as X Communities?
 
-No. Community Notes adds context to posts. X Communities organize membership
-and discussions. Use X to join Community Notes, not this endpoint.
+No. Community Notes adds context to posts. X Communities organize memberships
+and discussions. Use X to join Community Notes.
 
 ### Can This API Create, Moderate, or Grow a Community?
 
 No. Use [Create Community](/api-reference/x-write/create-community) for creation.
-This route cannot moderate, invite, or grow members.
+Join Community cannot moderate, invite, or grow members.
 
 ## Recover From Join Failures
 
 Fix input after `400`. Replace credentials after `401`. Restore credits after
-`402`. Reconnect the account after `403`. Check both IDs after `404`.
+`402`. Reconnect the account after `403`. Check both IDs after `404`. Reuse the
+same key only for identical input after `409`. Preserve `422` rejections. Honor
+`Retry-After` after `429`. Inspect `safeToRetry` after `500` or `503`.
 
-Keep an idempotency key only for identical input after `409`. Preserve `422`
-rejections. Honor `Retry-After` after `429`. Inspect `safeToRetry` after `500`
-or `503`.
-
-Never infer failure from a dropped connection. Store the Community ID and
-connected account. Preserve the membership mode and idempotency key. Record the
-action ID and final status. Keep the matching roster result.
-Never infer posting permission from membership.
+Store the action ID and final membership result. Never infer failure from a
+dropped connection. Never infer posting permission from membership.
 
 ## Headers
 
