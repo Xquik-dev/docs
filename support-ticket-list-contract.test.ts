@@ -1,14 +1,18 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-const PROJECT_ROOT = process.cwd();
+const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
 const PRODUCT_ROOT =
   process.env['XQUIK_PRODUCT_ROOT'] ?? join(PROJECT_ROOT, '..', 'xquik');
-const page = readFileSync('api-reference/support/list.mdx', 'utf8');
+const page = readFileSync(
+  join(PROJECT_ROOT, 'api-reference/support/list.mdx'),
+  'utf8',
+);
 const normalizedPage = page.replaceAll(/\s+/gu, ' ');
-const openapi = readFileSync('openapi.yaml', 'utf8');
+const openapi = readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8');
 const TICKET_SOURCE_PATH = join(PRODUCT_ROOT, 'lib/support/tickets.ts');
 const listOperation = openapi.slice(
   openapi.indexOf('      operationId: listTickets'),
@@ -28,7 +32,7 @@ describe('support ticket list documentation', (): void => {
       attachmentClaimRemoved: !description.includes('attachment'),
       createdAt: page.includes('| Opened time | `createdAt` |'),
       fullDetailBoundary: normalizedPage.includes(
-        'It never returns message bodies or attachment metadata.',
+        'when you need message bodies or attachment metadata.',
       ),
       messageCount: page.includes(
         '| Conversation size | `messageCount` |',
@@ -54,6 +58,15 @@ describe('support ticket list documentation', (): void => {
 
     expect({
       apiKeyAuth: listOperation.includes('- apiKey: []'),
+      documentedApiKey: normalizedPage.includes(
+        'Your Xquik API key. Generate one from the',
+      ),
+      documentedBearer: normalizedPage.includes(
+        'An OAuth bearer token formatted as `Bearer YOUR_TOKEN`.',
+      ),
+      noSessionCookieClaim: !normalizedPage.includes(
+        'Session cookie authentication',
+      ),
       oauthAuth: listOperation.includes('- oauthBearer: []'),
       statuses: ['200', '401', '429'].every((status) =>
         listOperation.includes(`        '${status}':`),
@@ -63,6 +76,9 @@ describe('support ticket list documentation', (): void => {
       ),
     }).toStrictEqual({
       apiKeyAuth: true,
+      documentedApiKey: true,
+      documentedBearer: true,
+      noSessionCookieClaim: true,
       oauthAuth: true,
       statuses: true,
       ticketStates: true,
@@ -92,13 +108,21 @@ describe('support ticket list documentation', (): void => {
     }
 
     const ticketSource = readFileSync(TICKET_SOURCE_PATH, 'utf8');
+    const listStart = ticketSource.indexOf('async function listTickets(');
+    const listEnd = ticketSource.indexOf(
+      '\nasync function getTicketWithMessages(',
+      listStart,
+    );
+    const listTicketsSource = ticketSource.slice(listStart, listEnd);
 
     expect({
-      productLimit: ticketSource.includes('const MAX_TICKETS = 200;'),
-      productOrder: ticketSource.includes(
+      listFunctionFound: listStart >= 0 && listEnd > listStart,
+      productLimit: listTicketsSource.includes('.limit(MAX_TICKETS)'),
+      productOrder: listTicketsSource.includes(
         '.orderBy(desc(supportTickets.updatedAt))',
       ),
     }).toStrictEqual({
+      listFunctionFound: true,
       productLimit: true,
       productOrder: true,
     });
