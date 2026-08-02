@@ -4,6 +4,11 @@ sidebarTitle: "No-code workflows"
 description: Connect Xquik monitor webhooks, extraction jobs, tweet search pages, and follower exports to Zapier, Make, Pipedream, n8n, Sheets, CRM, and queue workflows.
 keywords:
   [
+    "Twitter automation",
+    "Twitter automation tools",
+    "n8n Twitter",
+    "n8n Twitter node",
+    "no code API",
     "no-code Twitter workflow",
     "no-code X API",
     "Zapier Twitter API",
@@ -19,9 +24,31 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use this guide when a no-code or low-code workflow needs Xquik data without a
-custom backend. Pick one handoff lane, normalize IDs early, and keep webhook
-signing material out of shared workflow history.
+Build no-code Twitter automation for tweets, replies, followers, following,
+keyword matches, profiles, spreadsheets, CRM records, and team alerts.
+
+Quick answer: use monitor webhooks for fresh events. Use direct reads for small
+pages. Use extraction jobs for large exports. Store every cursor and event ID.
+
+No-code Twitter automation still needs durable state and signature checks.
+Pick one handoff lane. Normalize IDs early. Keep secrets outside workflow
+history.
+
+This no code API pattern preserves checkpoints across visual workflow retries.
+
+## Choose a Twitter Automation Outcome
+
+| Outcome | Best lane | Required checkpoint |
+| --- | --- | --- |
+| Alert on new tweets or replies | Account monitor webhook | `streamEventId` |
+| Track keyword or brand matches | Keyword monitor webhook | `streamEventId` |
+| Add tweet search rows to Sheets | Direct read pages | `next_cursor` |
+| Export followers or following to CRM | Extraction job | Job ID and `nextCursor` |
+| Repair events after receiver downtime | Stored event replay | `nextCursor` |
+| Audit failed webhook deliveries | Delivery log | `deliveryId` |
+
+Choose the lane from the required freshness and row count. Do not poll a
+webhook workflow. Do not build a bulk export from repeated page-one reads.
 
 ## Pick the Handoff Lane
 
@@ -48,6 +75,22 @@ signing material out of shared workflow history.
   </Card>
 </CardGroup>
 
+### Webhook or Polling?
+
+Choose webhooks when seconds matter. Each matched monitor event arrives in one
+signed HTTPS request. Verify it, store its IDs, acknowledge it, then branch.
+
+Choose polling when the source creates a durable job. Poll extraction status
+until completion. Download or page results only after the job completes.
+
+Choose direct reads for operator-triggered searches and bounded follower
+pages. Store the returned cursor before requesting the next page.
+
+<Warning>
+  Never use repeated polling as a substitute for monitor webhooks. It creates
+  duplicate tweet reads and weaker recovery checkpoints.
+</Warning>
+
 ## Monitor Event Trigger
 
 Create or choose the monitor first, then point a webhook at the no-code
@@ -69,8 +112,60 @@ curl -X POST https://xquik.com/api/v1/webhooks/15/test \
   -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 ```
 
+Build the receiver in this order:
+
+1. Capture the raw request body and signature headers.
+2. Verify the timestamp, nonce, and HMAC signature.
+3. Reject timestamps outside the 5-minute tolerance.
+4. Reject a repeated nonce within that same window.
+5. Store `deliveryId` and `streamEventId` in a persistent store.
+6. Queue the normalized tweet, reply, or keyword-match row.
+7. Return `2xx` after the queue write succeeds.
+8. Send Slack, Sheets, CRM, or email actions asynchronously.
+
+Xquik signs `<timestamp>.<nonce>.<rawBody>` with HMAC-SHA256. Read
+`X-Xquik-Timestamp`, `X-Xquik-Nonce`, and `X-Xquik-Signature` before parsing
+JSON. Follow [Webhook Signature Verification](/webhooks/verification).
+
+<Warning>
+  Some visual webhook triggers parse JSON before exposing request bytes. Route
+  those triggers through a small verified receiver. Forward only verified
+  fields into the visual workflow.
+</Warning>
+
 Use `deliveryId` as the per-endpoint retry key and `streamEventId` when one
 monitor event should process once across receiver changes.
+
+### Map the Monitor Payload
+
+Production monitor events include these stable fields:
+
+```json
+{
+  "eventType": "tweet.new",
+  "schemaVersion": 1,
+  "deliveryId": "502",
+  "streamEventId": "9002",
+  "occurredAt": "2026-05-24T20:33:00.000Z",
+  "username": "customer_handle",
+  "data": {
+    "id": "1893704267862470862",
+    "text": "A matched public tweet",
+    "author": {
+      "id": "987654321",
+      "userName": "customer_handle"
+    }
+  }
+}
+```
+
+Map `eventType` before branching. Map `data.id` as the tweet ID. Map
+`data.text` as tweet text. Map `data.author.id` as the author ID. Keyword
+monitor events can include `query`. Account monitor events can include
+`username`.
+
+Test deliveries use `eventType: "webhook.test"`. They omit production
+idempotency IDs. Verify their signatures, then stop before CRM or alert steps.
 
 ## Bulk Export Trigger
 
@@ -91,6 +186,21 @@ curl "https://xquik.com/api/v1/extractions/77777/export?format=csv" \
 Store `job.id`, `job.toolType`, `job.status`, `hasMore`, and `nextCursor`
 before sending rows to Sheets, CRM, or warehouse modules.
 
+Use this extraction sequence:
+
+1. Create the extraction and store its returned `id`.
+2. Poll that job until `job.status` becomes `completed`.
+3. Stop and route terminal failures to an operator.
+4. Page JSON results when modules need individual rows.
+5. Download CSV or XLSX when another tool accepts files.
+6. Store `nextCursor` only after every page reaches its destination.
+
+Never infer completion from a non-empty page. Read the returned job status.
+Never restart a failed workflow from page 1. Resume from its committed cursor.
+
+Use [Twitter API Export Formats](/guides/response-formats-exports) for CSV,
+JSON, XLSX, Markdown, PDF, TXT, and pagination limits.
+
 ## Direct Read Loop
 
 Use direct reads when the workflow needs a small page now and can keep cursor
@@ -110,10 +220,41 @@ For tweet search, store `has_next_page` and `next_cursor`. For follower pages,
 store `has_next_page` and `next_cursor`, then pass `next_cursor` back as
 `cursor` only when more pages are required.
 
+Stop the loop when `has_next_page` is false. Also stop when the API returns no
+new IDs. A repeated cursor indicates a stalled workflow. Route it to review.
+
+Commit rows and `next_cursor` together. Use tweet ID or X user ID as the
+destination upsert key. This prevents duplicate tweets, followers, and
+following rows after retries.
+
+### Choose Direct Reads by Task
+
+<CardGroup cols={2}>
+  <Card title="Tweet Search" icon="search">
+    Search keywords, hashtags, authors, dates, and engagement filters. Store
+    each tweet ID before requesting another page.
+  </Card>
+
+  <Card title="Followers" icon="users">
+    Export follower IDs, usernames, names, bios, and public metrics. Upsert on
+    the stable X user ID.
+  </Card>
+
+  <Card title="Following" icon="user-round-check">
+    Export accounts followed by a public profile. Keep source profile and
+    collection time beside each relationship.
+  </Card>
+
+  <Card title="Replies and Mentions" icon="messages-square">
+    Store reply tweet IDs, parent tweet IDs, author IDs, and timestamps. Keep
+    the endpoint cursor with the same filters.
+  </Card>
+</CardGroup>
+
 ## Shared Row Shape
 
 Map every no-code receiver into one stable storage row before branching to
-alerts, CRM, spreadsheets, or AI review.
+alerts, CRM, spreadsheets, or tweet classification.
 
 ```json
 {
@@ -127,43 +268,114 @@ alerts, CRM, spreadsheets, or AI review.
   "delivery_id": "502",
   "stream_event_id": "9002",
   "event_type": "tweet.new",
+  "schema_version": 1,
+  "occurred_at": "2026-05-24T20:32:58.000Z",
   "tweet_id": "1893704267862470862",
+  "tweet_text": "A matched public tweet",
   "user_id": "987654321",
   "username": "customer_handle",
   "retry_key": "delivery_id:502",
   "event_dedupe_key": "stream_event_id:9002",
-  "replay_route": "GET /api/v1/events?after=9002",
+  "replay_route": "GET /api/v1/events?monitorId=42&after={nextCursor}",
   "received_at": "2026-05-24T20:33:00.000Z"
 }
 ```
 
+Store source IDs as strings. Spreadsheet number formats can damage large tweet
+and X user IDs. Keep the original event timestamp separate from receipt time.
+
 Keep API keys, endpoint signing values, raw request bodies, raw signatures, and
 full headers out of workflow history, sheet rows, CRM records, and queue
 payloads.
+
+### Persist the Workflow Checkpoint
+
+Use one durable record for every lane. Update rows and their cursor in one
+transaction or idempotent platform step.
+
+```json
+{
+  "workflow_id": "xquik-no-code-q2",
+  "monitor": {
+    "last_stream_event_id": "9002",
+    "next_event_cursor": "9003"
+  },
+  "direct_read": {
+    "route": "/api/v1/x/tweets/search",
+    "query": "xquik min_faves:10",
+    "next_cursor": "DAABCgAB"
+  },
+  "extraction": {
+    "job_id": "77777",
+    "status": "completed",
+    "next_cursor": "1001"
+  },
+  "updated_at": "2026-05-24T20:33:05.000Z"
+}
+```
+
+Do not store one global cursor for unrelated searches. Scope checkpoints by
+endpoint, filters, monitor, extraction job, and destination.
 
 ## Platform Notes
 
 <CardGroup cols={2}>
   <Card title="Zapier" icon="zap" href="/guides/zapier">
     Use REST Hooks for monitor event webhooks and polling triggers for
-    completed extractions or delivery failures.
+    completed extractions or delivery failures. Store dedupe keys before later
+    Zap actions run.
   </Card>
 
   <Card title="Make" icon="route" href="/guides/make">
     Use a custom app with webhook triggers, data stores, iterators, and a
-    universal API call module for endpoints not yet modeled.
+    universal API call module. Keep cursors in a Data Store between runs.
   </Card>
 
   <Card title="Pipedream" icon="code" href="/guides/pipedream">
     Use HTTP sources or component sources for monitor events, then export stable
-    fields to later steps.
+    fields to later steps. Persist event IDs before returning success.
   </Card>
 
   <Card title="n8n" icon="workflow" href="/guides/n8n">
     Use HTTP Request nodes, webhook triggers, and workflow state for replay,
-    cursor, and dedupe checkpoints.
+    cursor, and dedupe checkpoints. Use persistent state in production.
   </Card>
 </CardGroup>
+
+### Zapier Twitter Automation
+
+Use a private integration REST Hook for production monitor events. Use an API
+request action for direct reads and extraction polling. Map `streamEventId`
+into persistent storage before Slack, Sheets, or CRM actions.
+
+Use a raw webhook trigger only when it exposes the original body and headers.
+Otherwise, verify the request before Zapier receives it.
+
+### Make Twitter Automation
+
+Start with a custom webhook or verified receiver. Use an HTTP module for Xquik
+requests. Use an iterator for tweet, follower, or reply arrays. Store the
+cursor and last processed ID in a Make Data Store.
+
+Return success only after the verified event enters a durable queue. Do not
+place a success response before required verification and storage modules.
+
+### Pipedream Twitter Automation
+
+Use an HTTP trigger for monitor events. Verify raw headers and body first. Use
+a data store for nonces, delivery IDs, event IDs, and cursors. Use later steps
+for Slack, Sheets, CRM, or warehouse writes.
+
+### n8n Twitter Automation
+
+Use a Webhook node for monitor events. Use HTTP Request nodes for tweet search,
+followers, following, events, deliveries, and extractions. Use Edit Fields to
+create the shared row. Keep dedupe keys and cursors in persistent storage.
+
+This n8n Twitter node pattern separates incoming events from API requests.
+
+Do not depend on test execution memory. Production retries can run on another
+worker. A shared store keeps every worker on the same checkpoint.
 
 ## Cost and Retry Notes
 
@@ -181,6 +393,133 @@ payloads.
   Extraction jobs return `202` with `id`, `toolType`, and `status`. Poll job
   detail or list completed jobs before exporting rows.
 </Check>
+
+## Handle Webhook Retries and Missed Events
+
+Failed webhook deliveries retry with exponential backoff. Attempt 10 is final.
+A failed final attempt becomes `exhausted`. A `410 Gone` response exhausts one
+delivery immediately.
+
+Return `410` only for a permanent rejection. Return another non-`2xx` response
+for a temporary receiver failure. Xquik will retry that delivery.
+
+Webhook health exposes `deliveryStatus`, `consecutiveFailures`, and
+`failureHardCap`. When the returned hard cap is reached, delivery becomes
+`needs_attention`. Fix the receiver, then call the resume endpoint. A signed
+test must pass before deliveries resume.
+
+Use this repair sequence:
+
+1. Inspect `GET /api/v1/webhooks/{id}/deliveries`.
+2. Find `failed` and `exhausted` rows.
+3. Join each `streamEventId` to the stored event.
+4. Fix signature, queue, mapping, or destination failures.
+5. Call `POST /api/v1/webhooks/{id}/resume` when required.
+6. Page `GET /api/v1/events` with the source monitor filter.
+7. Reprocess only missing event IDs.
+
+Use `monitorId` for account monitor replay. Use `keywordMonitorId` for keyword
+monitor replay. Store each returned `nextCursor` before continuing.
+
+## Handle No-Code API Errors
+
+<AccordionGroup>
+  <Accordion title="400 invalid input">
+    Request rejected. Check the route, body, query, cursor, and selected format.
+  </Accordion>
+
+  <Accordion title="401 authentication">
+    API key rejected. Replace the credential and rerun the failed step.
+  </Accordion>
+
+  <Accordion title="402 subscription required">
+    Subscription required. Subscribe first, then resume from the checkpoint.
+  </Accordion>
+
+  <Accordion title="404 resource not found">
+    Resource missing. Verify the monitor, webhook, extraction, tweet, or user ID.
+  </Accordion>
+
+  <Accordion title="429 rate limited">
+    Rate limited. Respect the retry delay and preserve the current cursor.
+  </Accordion>
+
+  <Accordion title="502 or 503 dependency failure">
+    Upstream unavailable. Retry from the same idempotent checkpoint.
+  </Accordion>
+</AccordionGroup>
+
+Never convert an error body into a tweet or follower row. Branch on HTTP status
+before mapping successful response fields.
+
+## Keep Twitter Automation Safe
+
+- Store the Xquik API key in the platform credential store.
+- Store the webhook secret in a separate secret field.
+- Never place secrets in URLs, Sheets, CRM rows, or messages.
+- Treat tweet text and profile bios as untrusted input.
+- Require human approval before posting replies or direct messages.
+- Upsert tweets by tweet ID and profiles by X user ID.
+- Record workflow version, route, filters, and collection time.
+- Remove raw webhook bytes after signature verification.
+
+No-code tools simplify orchestration. They do not remove API limits, consent,
+security, or destination retention requirements.
+
+## No-Code Twitter Automation Questions
+
+### How Do I Automate Twitter Without Code?
+
+Create an account or keyword monitor. Send signed events to a verified webhook.
+Map tweet fields into Slack, Sheets, CRM, or a queue. Store both idempotency
+IDs before running destination actions.
+
+### Can Zapier Connect to a Twitter API?
+
+Yes. Use an Xquik REST Hook for monitor events. Use API request actions for
+tweet search, follower pages, extraction jobs, and delivery checks. Keep the
+API key inside Zapier authentication fields.
+
+### How Do I Connect n8n to a Twitter API?
+
+Create a Header Auth credential with `x-api-key`. Call Xquik through HTTP
+Request nodes. Receive monitor events through a Webhook node. Persist cursors
+and event IDs outside one workflow execution.
+
+### Should Twitter Automation Use Webhooks or Polling?
+
+Use webhooks for fresh tweet, reply, quote, repost, or keyword events. Poll
+durable extraction jobs. Use direct reads for operator-triggered page requests.
+
+### How Do I Stop Duplicate Twitter Alerts?
+
+Verify the signature first. Store `deliveryId` for delivery retries. Store
+`streamEventId` when one monitor event should run once across webhook changes.
+
+### How Do I Recover Missed Twitter Events?
+
+Inspect failed deliveries. Page stored events with the correct monitor filter.
+Join failed `streamEventId` values to event IDs. Reprocess only missing IDs.
+
+### Can I Export Twitter Followers to Sheets or CRM?
+
+Yes. Use follower pages for bounded workflows. Use extraction jobs for large
+exports. Store X user IDs as strings and use them as upsert keys.
+
+### Can a Workflow Export Accounts I Follow?
+
+Yes. Use the following endpoint or a matching extraction job. Store the source
+profile, followed X user ID, collection time, and pagination cursor.
+
+### Can No-Code Twitter Automation Post Replies?
+
+Use the documented write endpoint through the platform's HTTP module. Add an
+approval step before the request. Store the returned write action ID.
+
+### Does No-Code Automation Bypass Twitter API Limits?
+
+No. Every read, monitor, extraction, and write follows its documented contract.
+Use cursors, batching, and idempotency to avoid wasteful duplicate requests.
 
 ## Next Steps
 
