@@ -373,6 +373,13 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'api-reference/x-write/create-community.mdx',
     snippets: [
+      'Create a Twitter Community with the X Community API',
+      '## How to Create a Community on Twitter with Xquik',
+      'This route does not add rules, members,',
+      '## Confirm the Community Admin Account',
+      '## Plan Community Rules and Membership',
+      'The request has no website, app, rules, or invitation field.',
+      'OAuth bearer authentication is also supported.',
       '| Community creation record | Request or response source | Completion rule |',
       '| Community ID | Response `communityId` | Store the confirmed new community ID. |',
     ],
@@ -672,6 +679,19 @@ describe('upload media contract copy', (): void => {
 
     const source = readFileSync(
       'api-reference/x-write/upload-media.mdx',
+      'utf8',
+    );
+
+    expect(source).not.toContain('Session cookie authentication');
+  });
+});
+
+describe('create community contract copy', (): void => {
+  it('does not advertise unsupported session authentication', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'api-reference/x-write/create-community.mdx',
       'utf8',
     );
 
