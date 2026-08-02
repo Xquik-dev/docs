@@ -1,9 +1,9 @@
 ---
-title: "Xquik Subscription Checkout & Plan Activation"
+title: "X API Subscription Checkout & Billing Portal"
 sidebarTitle: "Subscription checkout"
-description: "Create a hosted subscription checkout or billing portal URL. Start, update, or cancel account access before using API features. Includes API examples."
+description: "Create a confirmed Xquik API subscription checkout or billing portal URL. Route new, active & payment-issue accounts without automatically charging the account."
 api: "POST /subscribe"
-keywords: ["subscribe", "checkout", "billing", "payment"]
+keywords: ["X API subscription checkout", "Twitter API subscription", "API billing portal", "Xquik plan checkout"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -111,6 +111,63 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 </CodeGroup>
 
+## Create an X API Subscription Checkout
+
+Call `POST /subscribe` after an authenticated user confirms a billing action.
+The request creates a hosted URL. It never completes payment automatically.
+
+Use this route for 3 account states:
+
+| Account state                       | Response status      | Returned destination                          |
+| ----------------------------------- | -------------------- | --------------------------------------------- |
+| No active subscription              | `checkout_created`   | Hosted subscription checkout                  |
+| Active or trialing subscription     | `already_subscribed` | Billing portal for plan or payment management |
+| Past-due or incomplete subscription | `payment_issue`      | Billing portal for payment recovery           |
+
+Always route by `status`. Do not infer the destination from the URL hostname.
+Use only the URL returned by the current response.
+
+This endpoint does not quote current Twitter API pricing or X API pricing.
+Review the [live Xquik pricing page](https://xquik.com/#pricing) before checkout.
+The pricing page remains authoritative for tiers, credits, and current terms.
+
+## Choose a Subscription Tier
+
+Send `tier` only when the user selected a specific Xquik plan.
+
+| Tier value | Checkout behavior                           |
+| ---------- | ------------------------------------------- |
+| `starter`  | Pre-select Starter.                         |
+| `pro`      | Pre-select Pro.                             |
+| `business` | Pre-select Business.                        |
+| Omitted    | Let the user choose on the hosted checkout. |
+
+The field pre-selects a tier. It does not activate that tier by itself.
+Send only the documented enum values.
+
+## Complete a Safe Billing Handoff
+
+1. Show the current plan and credit terms before confirmation.
+2. Call this endpoint once for the confirmed action.
+3. Check the HTTP status before reading `url`.
+4. Send the user to the returned hosted URL.
+5. Keep the billing URL out of logs and analytics.
+6. Recheck [`GET /account`](/api-reference/account/get) after the user returns.
+
+Read `plan` to confirm subscription state. Read `creditInfo.balance` before
+tweet search, follower exports, writes, or monitor work.
+
+Subscriptions are not the only funding path. A funded pay-as-you-go account can
+continue eligible work while `plan` is `inactive`.
+
+## Handle Checkout Retries
+
+The service can reuse a matching open checkout. Treat the latest returned URL
+as authoritative. A different tier request can replace an older open checkout.
+
+Do not repeatedly call this endpoint from a timer or automatic retry loop.
+For `429`, wait for `Retry-After`. For `401`, replace the credential first.
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
@@ -120,7 +177,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 ## Body
 
 <ParamField body="tier" type="string">
-  Subscription tier to pre-select. One of: `starter`, `pro`, `business`. If omitted, the user chooses on the checkout page.
+  Pre-select `starter`, `pro`, or `business`. Omit the body when the user should
+  choose on the hosted checkout.
 </ParamField>
 
 ## Response
