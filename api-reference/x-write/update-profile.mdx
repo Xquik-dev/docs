@@ -262,7 +262,7 @@ characters. Website values must be valid URLs. Empty `description` or
 | Location | Request `location` | Keep 30 characters or fewer. |
 | Website | Request `url` | Verify the public destination. |
 | Changed fields | Exact request keys | Leave unrelated profile fields absent. |
-| Idempotency key | Request header | Pick a new key after any field edit. |
+| Idempotency key | Request header | New field values need a new key. |
 | Write action ID | Response `id` | Poll the matching lifecycle record. |
 
 ## Automate a Safe Profile Update
@@ -280,7 +280,7 @@ before starting its next profile change. Other accounts may update in parallel
 with different keys.
 
 Store the account, requested fields, request hash, write action ID, and status.
-This record keeps separate workers from applying the same profile update twice.
+Workers use this record to avoid duplicate profile updates.
 It also shows which display name, bio, location, or website each action changed.
 Give different teams their own API keys. Never share credentials between
 unrelated profile workflows.
@@ -294,8 +294,8 @@ works across user profiles, including user-owned brand accounts. Profile
 updates never change posts, tweets, followers, replies, likes, or lists. For a
 campaign, save earlier values and restore them with a new key.
 
-Keep the approved previous and replacement values beside the action ID. Apply
-the replacement at launch, then verify the public profile. Restore earlier
+Store the earlier and replacement values with the action ID. Apply the
+replacement at launch, then verify the public profile. Restore earlier
 fields with a new idempotency key after the campaign. This history makes each
 temporary Twitter profile update reversible.
 
@@ -314,10 +314,10 @@ Delete fake verification marks or unsafe profile links, then retry. X documents
 more causes in its
 [profile save troubleshooting guide](https://help.x.com/en/managing-your-account/cant-save-changes-to-my-account).
 
-Do not create a new action after an uncertain network response. Poll the saved
-`statusUrl` first. Reuse the original idempotency key only for the exact request.
-Change the key after correcting any field. Retry a server error only when
-`safeToRetry` allows it.
+Do not create a new action after an uncertain network response. Check the saved
+`statusUrl` before creating another action. The same request may reuse its
+original idempotency key. Change the key after correcting any field. Retry a
+server error only when `safeToRetry` allows it.
 
 ## Twitter API Update Profile Questions
 
@@ -355,8 +355,8 @@ and headers.
 
 ### How should I schedule temporary profile changes?
 
-Approve the replacement and rollback values before scheduling. Use one key for
-the launch action and a different key for the rollback. Poll each action until
+Schedule only reviewed replacement and rollback values. Use one key for the
+launch action and a different key for the rollback. Poll each action until
 terminal, then verify the public profile before continuing.
 
 ## Headers
