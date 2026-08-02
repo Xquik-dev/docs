@@ -3141,6 +3141,41 @@ const FORBIDDEN_UNRETWEET_TWEET_API_SNIPPETS = [
   'title: "Twitter Unretweet API for Repost Removal Actions"',
 ] as const;
 
+const REQUIRED_FOLLOW_TWITTER_API_SNIPPETS = [
+  'title: "Twitter Follow API: Follow One X User by ID"',
+  '"Twitter API follow"',
+  '"Twitter API follow user"',
+  '"Twitter Follow API"',
+  'Use this Twitter API follow endpoint for 1 target user ID.',
+  'Each Twitter API follow user request names 1 connected X account.',
+  '[Follow User endpoint](https://docs.x.com/x-api/users/follow-user)',
+  'const followReceipt = await response.json();',
+  'follow_receipt = response.json()',
+  'var followReceipt map[string]interface{}',
+  '## Authenticate and Approve the Follow',
+  'The Python sample uses `import requests` with this request URL:',
+  '## Verify the Twitter Follow API Result',
+  '## Handle Twitter Follow API Errors',
+  '## Twitter API Follow Questions',
+  '### How Do I Follow a User Programmatically?',
+  '### Can I Follow a Protected X Account?',
+  '### Can I Bulk Follow Twitter Users?',
+  '### Do I Need a Twitter Follow SDK?',
+  '### How Do I Check or Undo a Follow?',
+  'No bulk request exists here.',
+  '<ParamField header="Authorization" type="string">',
+  '<WriteActionLifecycleResponse />',
+] as const;
+
+const FORBIDDEN_FOLLOW_TWITTER_API_SNIPPETS = [
+  'const data = await response.json();',
+  'data = response.json()',
+  'var data map[string]interface{}',
+  'fmt.Println(data)',
+  'Session cookie authentication is also supported.',
+  'title: "Twitter Follow API for User & Audience Connections"',
+] as const;
+
 const FORBIDDEN_PUBLIC_TWEET_MEDIA_ID_SNIPPETS = [
   'Pass returned `mediaId` in the `media` array on `POST /x/tweets`',
   'Pass `mediaId` to `POST /x/tweets`',
@@ -14993,6 +15028,28 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(
       FORBIDDEN_UNRETWEET_TWEET_API_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the follow API page focused and recoverable', (): void => {
+    expect.assertions(2);
+
+    const source = `${readFileSync(
+      'api-reference/x-write/follow.mdx',
+      'utf8',
+    )}\n${readFileSync(WRITE_ACTION_LIFECYCLE_SNIPPET_PATH, 'utf8')}`;
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Follow API docs',
+        REQUIRED_FOLLOW_TWITTER_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_FOLLOW_TWITTER_API_SNIPPETS.filter((snippet) =>
         source.includes(snippet),
       ),
     ).toStrictEqual([]);
