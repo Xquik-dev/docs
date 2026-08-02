@@ -408,8 +408,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'api-reference/x-write/remove-follower.mdx',
     snippets: [
-      '| Follower removal record | Request or response source | Moderation rule |',
-      '| Unfollow distinction | `DELETE /x/users/{id}/follow` | Use that route for outgoing follows. |',
+      'Store each returned action ID beside its target follower ID.',
+      'This endpoint lets you remove a follower without blocking them.',
     ],
   },
   {
