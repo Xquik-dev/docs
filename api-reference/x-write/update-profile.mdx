@@ -248,76 +248,45 @@ public labels.
 
 ## Review Every Profile Field
 
-Show the exact display name, bio, location, and website during approval. Review
-every link and spelling choice. Save previous values when your workflow needs a
-rollback. Never place private notes, API keys, or credentials in public user
-profiles.
-
-Respect the route limits before submission. Names must contain 1 to 50
-characters. Bios may contain up to 160 characters. Locations may contain up to
-30 characters. Website values must be valid URLs. Send a blank `description`
-or `location` to clear that field. A blank `name` or invalid URL returns 400.
+Review the exact display name, bio, location, and website before approval.
+Names allow 1 to 50 characters. Bios allow 160 characters. Locations allow 30
+characters. Website values must be valid URLs. Empty `description` or
+`location` values clear those fields. An empty `name` or invalid URL returns
+400. Keep API keys and private notes outside public profiles.
 
 | X profile text update column | Request or response source | Review rule |
 | --- | --- | --- |
-| Acting X account | Request `account` | Make sure this is the intended profile. |
-| Display name | Request `name` | Check the final 1-to-50-character name. |
-| Profile bio | Request `description` | Keep the final bio within 160 characters. |
-| Location | Request `location` | Keep the final location within 30 characters. |
-| Website | Request `url` | Open and verify the public destination. |
+| Acting X account | Request `account` | Confirm the intended profile. |
+| Display name | Request `name` | Keep 1 to 50 characters. |
+| Profile bio | Request `description` | Keep 160 characters or fewer. |
+| Location | Request `location` | Keep 30 characters or fewer. |
+| Website | Request `url` | Verify the public destination. |
 | Changed fields | Exact request keys | Leave unrelated profile fields absent. |
-| Idempotency key | Request header | Use a new key after changing any value. |
+| Idempotency key | Request header | Change it after editing any value. |
 | Write action ID | Response `id` | Poll the matching lifecycle record. |
 
 ## Automate a Safe Profile Update
 
-Create one idempotency key for the exact account and field set. Reuse that key
-only after a network interruption. Change it after editing any value. Save the
-account, changed field names, request hash, write action ID, and lifecycle
-status.
-
-A 200 response contains a completed action. A 202 response needs polling
-through `statusUrl`. Wait for `terminal: true` before reporting success. Never
-submit another update while the first action remains nonterminal.
+Create one idempotency key for each account and field set. Reuse that key after
+a network interruption. Workers handling the same update must share it. Change
+the key after editing any value. A 200 response is terminal. Poll `statusUrl`
+after 202 until `terminal` becomes true.
 
 ## Verify the Saved Twitter Profile
 
-Retrieve the connected account after the write becomes terminal. Use
-[Twitter Profile Lookup](/api-reference/x/twitter-profile-lookup) with the
-account's username or numeric ID. Compare the returned name, description,
-location, and website against the approved request.
-
-Treat the write action as the lifecycle record. Treat the later profile lookup
-as public proof. Store both timestamps when profile changes need an audit
-trail. Record only public changes, including user profile fields and action
-IDs. Never copy authentication tokens into that record.
-
-The update leaves posts, tweets, followers, following, replies, and likes
-unchanged. Profile text stays separate from those resources. A lookup may show
-their counts, but this update cannot change those counts.
-
-## Sequence Updates Across User Profiles
-
-Send one approved request for each connected X account. Give each request a
-key for its exact account and field set. Every worker handling that update must
-reuse the same key. Different updates require different keys. Wait for one
-account's terminal result before starting its next profile change.
-
-For a campaign, store the approved previous and replacement values. Apply the
-replacement at launch. Verify the public profile, then restore the earlier
-fields with a new idempotency key. Saved earlier values make each change
-reversible.
-
-Give different environments or teams their own API keys. Do not share
-credentials between unrelated workflows. The request's `account` field still
-selects which connected profile receives the change.
+After a terminal write, use
+[Twitter Profile Lookup](/api-reference/x/twitter-profile-lookup). Compare its
+name, description, location, and website with the approved request. This check
+works across user profiles, including user-owned brand accounts. Profile
+updates never change posts, tweets, followers, replies, likes, or lists. For a
+campaign, save earlier values and restore them with a new key.
 
 ## Fix Twitter Profile Update Failures
 
-Fix rejected fields after 400. Replace invalid authentication after 401. Add
-credits after 402. Reconnect the X account after 403. Connect a missing account
-after 404. Keep the original action after a 409 idempotency conflict. Honor
-`Retry-After` after 429. Check `safeToRetry` after 500 or 503.
+Fix rejected fields after 400. Replace authentication after 401. Add credits
+after 402. Reconnect after 403. Connect a missing account after 404. Keep the
+original action after 409. Honor `Retry-After` after 429. Check `safeToRetry`
+after 500 or 503.
 
 X can reject fake verification marks or harmful profile URLs. Remove the
 flagged content before retrying. X documents more causes in its
@@ -325,36 +294,20 @@ flagged content before retrying. X documents more causes in its
 
 ## Twitter API Update Profile Questions
 
-### What endpoint changes a Twitter display name?
+### What endpoint changes a Twitter display name or bio?
 
-Send `name` to `PATCH /x/profile`. This changes the display name only. It does
-not change the account's `@username`.
-
-### Can I update a Twitter bio through the API?
-
-Yes. Send the new bio as `description`. Keep it within 160 characters. Send an
-empty string when the approved workflow should clear the bio.
+Send `name` or `description` to `PATCH /x/profile`. The `name` field changes
+the display name, not the `@username`. An empty `description` clears the bio.
 
 ### Can I automate recurring Twitter bio changes?
 
-Yes. Require approval for every replacement value. Use a new idempotency key
-for each scheduled change. Poll the action, verify the profile, and keep the
-previous bio for rollback.
+Yes. Approve every replacement value. Use a new key for each scheduled change.
+Poll the action, verify the profile, and retain the earlier bio for rollback.
 
 ### Can this endpoint update a profile picture or banner?
 
 No. Use the dedicated avatar or banner route. Those endpoints validate image
 type and size separately.
-
-### How do I confirm that a profile update finished?
-
-Wait for a terminal write action. Then retrieve the public profile and compare
-each requested field. Do not treat a 202 response as finished.
-
-### Does a profile update change existing tweets or followers?
-
-No. It changes only the submitted profile fields. Existing tweets, replies,
-followers, following, lists, and communities remain unchanged.
 
 ### Which authentication works with this Twitter API route?
 
