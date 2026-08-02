@@ -62,8 +62,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 This endpoint deletes one saved Xquik account monitor. It stops future tweet
 and profile checks. It removes stored events and linked webhook delivery
-records. It never deletes the tracked X account, tweets, followers, following,
-or profile.
+records. The tracked X account and its profile remain unchanged. Its tweets,
+followers, and following list also remain unchanged.
 
 <Warning>
   This operation is permanent. Pause the monitor when its alerts may resume.
@@ -268,8 +268,8 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 ## Does This Delete the X Account or Its Tweets?
 
 No. This route deletes an Xquik account monitor only. It does not deactivate an
-X profile. It does not remove tweets, followers, following, replies, likes,
-reposts, media, lists, or communities.
+X account. It does not remove tweets, followers, following, replies, likes,
+reposts, media, lists, communities, or profile details.
 
 The tracked X account remains unchanged. Its public activity remains available
 through the applicable X API endpoints. Only Xquik's saved monitor and related
@@ -293,13 +293,13 @@ monitor and its stored history. A replacement monitor receives another ID.
 
 ## What Does Monitor Deletion Remove?
 
-Deletion removes the monitor configuration and its stored tweet events. It also
+Deleting the monitor removes its settings and stored tweet events. It also
 removes stored profile events, search records, and webhook delivery attempts.
 These records depend on the deleted monitor.
 
-Webhook endpoints remain configured. Reuse them with another monitor when their
-event subscriptions still match. Deletion never removes unrelated account or
-keyword monitors.
+Webhook endpoints remain configured. Existing endpoints can serve another
+monitor with matching event subscriptions. Other account monitors and keyword
+monitors remain active.
 
 ## How Do I Verify Monitor Deletion?
 
@@ -309,8 +309,8 @@ keyword monitors.
 4. List monitors and confirm the ID is absent.
 5. Treat another `DELETE` response of `404` as already removed.
 
-Do not treat a network timeout as deletion proof. Read the monitor before
-retrying. Wait for `Retry-After` after a `429` response.
+Do not treat a network timeout as deletion proof. Confirm the monitor state
+before another deletion request. Wait for `Retry-After` after a `429` response.
 
 ## Deletion handoff
 
@@ -327,61 +327,148 @@ you only need to pause alerts and keep the monitor available.
 | Delivery history | `GET /webhooks/{id}/deliveries` | Preserve required delivery evidence first. |
 | Temporary stop | `PATCH /monitors/{id}` | Use `isActive: false` instead of deletion. |
 
-<CardGroup cols={2}>
-  <Card title="Permanent Remove" icon="trash-2">
-    Delete removes the account monitor. Store returned `success` before treating
-    the deleted ID as permanently removed. The deleted ID cannot be fetched,
-    updated, resumed, or billed again.
-  </Card>
+## Plan Retention Before Monitor Deletion
 
-  <Card title="Stored History" icon="database">
-    Stored events and webhook delivery records tied to this account monitor are
-    removed with it. Export or reconcile records before deletion when support or
-    audit workflows need history.
-  </Card>
+Deletion cascades through stored events and linked delivery records. Decide
+which records your team must keep before sending `DELETE`.
 
-  <Card title="Event Audit" icon="list-tree">
-    Use [List Events](/api-reference/events/list) before deletion to capture
-    monitor events. Use [Get Event](/api-reference/events/get) when you need one
-    event's full payload before removing the monitor.
-  </Card>
+Export required tweet events, profile events, and relationship events first. Keep
+each event's `id`, `type`, `monitorId`, `username`, and `occurredAt`. Preserve
+the complete `data` object when downstream analysis needs its details.
 
-  <Card title="Delivery Audit" icon="activity">
-    Use [List Deliveries](/api-reference/webhooks/deliveries) before deletion
-    when webhook delivery evidence must be retained. Join delivery
-    `streamEventId` to event IDs. Do not use `x_event_id` as the delivery join
-    key.
-  </Card>
+Support teams may also need webhook delivery evidence. Save delivery status,
+attempt counts, receiver responses, errors, and timestamps before deletion.
+Store these records in your approved system. Never place API keys in exports.
 
-  <Card title="Pause Instead" icon="circle-pause">
-    Use `PATCH /monitors/{id}` with `isActive: false` to stop future checks,
-    alerts, and hourly billing while preserving the monitor record.
-  </Card>
+Deletion does not create an archive. Xquik cannot return deleted monitor events
+through the events endpoints later. Finish retention checks before approval.
 
-  <Card title="Verify Removal" icon="list-checks">
-    Call [List Monitors](/api-reference/monitors/list) after deletion. [Get
-    Monitor](/api-reference/monitors/twitter-account-monitor-status) should return `404` for the deleted
-    ID.
-  </Card>
+## Select the Exact Twitter Account Monitor
 
-  <Card title="Track New Account" icon="user-plus">
-    Create a new account monitor when the tracked account changes. Store the new
-    `id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`.
-  </Card>
+Never select a monitor from a display label alone. Read the account monitor and
+compare its `id`, `username`, `xUserId`, `eventTypes`, and `isActive` values.
 
-  <Card title="Webhook Reuse" icon="webhook">
-    Existing webhook endpoints remain configured. Check
-    [List Webhooks](/api-reference/webhooks/list), keep their `eventTypes`
-    aligned, then run [Test Webhook](/api-reference/webhooks/test) before
-    relying on new account monitor alerts.
-  </Card>
-</CardGroup>
+Use [List Monitors](/api-reference/monitors/list) when the monitor ID is
+unknown. Then use [Get Monitor](/api-reference/monitors/twitter-account-monitor-status)
+to confirm the selected record. Record the final identity beside the approval.
 
-<Info>
-  The monitor is deleted and its stored events are removed with it. Pause with
-  `isActive: false` if you want to stop new checks without deleting the monitor.
-</Info>
+Account monitors and keyword monitors use different deletion routes. Use
+[Delete Keyword Monitor](/api-reference/monitors/delete-keyword) for a keyword
+query. Never send a keyword monitor ID to this account monitor endpoint.
 
-<Note>
-  **Related:** [List Monitors](/api-reference/monitors/list) to verify the monitor was removed, [Get Monitor](/api-reference/monitors/twitter-account-monitor-status) to confirm `404`, [List Events](/api-reference/events/list) and [Get Event](/api-reference/events/get) to preserve event evidence, [List Webhooks](/api-reference/webhooks/list) and [List Deliveries](/api-reference/webhooks/deliveries) to retain delivery evidence, or [Create Monitor](/api-reference/monitors/create) to set up a new one.
-</Note>
+The route deletes by Xquik monitor ID. It does not delete by X username. This
+boundary prevents an account name from selecting several monitor records.
+
+## Preserve Tweet and Profile Events
+
+Call [List Events](/api-reference/events/list) with the selected `monitorId`.
+Follow every cursor until `hasMore` becomes `false`. An incomplete cursor walk
+can omit older tweet, follower, or profile events.
+
+Use [Get Event](/api-reference/events/get) for every event needing full detail.
+Keep `event.id` as the stable Xquik event identifier. Keep `event.type` to
+separate tweets, followers, profile changes, and relationship changes.
+
+Store `occurredAt` with each event payload. It represents the observed event
+time. Keep the monitor ID with every exported row. This association supports
+later reconciliation after the monitor record disappears.
+
+Validate the export before deletion. Compare exported IDs with the final list
+response. Retry incomplete pages before approving monitor removal.
+
+## Preserve Webhook Delivery Evidence
+
+List configured endpoints through [List Webhooks](/api-reference/webhooks/list).
+Then call [List Deliveries](/api-reference/webhooks/deliveries) for each relevant
+endpoint.
+
+Join each delivery's `streamEventId` to the exported event `id`.
+Do not use `x_event_id` as the delivery join key. That value identifies an
+external event, not the stored Xquik event row.
+
+Keep `status`, `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and
+`deliveredAt`. These fields explain successful deliveries, receiver failures,
+and exhausted attempts.
+
+Deleting the monitor removes linked delivery attempts. It does not remove the
+webhook endpoint. Reuse that endpoint when another monitor emits matching event
+types. Test the endpoint before depending on new alerts.
+
+## Handle Every Delete Response
+
+A `200` response confirms the deletion. Require `success: true` before closing
+the workflow. Store the monitor ID beside that receipt.
+
+A `400` response means the ID format is invalid. Correct the path value before
+retrying. Do not substitute an X username for the monitor ID.
+
+A `401` response means authentication failed. Replace the invalid API key or
+session. Never expose that credential in logs or support tickets.
+
+A `404` response means the monitor is unavailable. It may already be deleted.
+It may also belong to another account. Verify the account context before taking
+another action.
+
+A `429` response means the rate limit blocked the request. Read
+`Retry-After`, wait for that interval, and verify the monitor before retrying.
+
+## Resolve an Unknown Delete Result
+
+A client timeout does not prove failure. The server may have completed the
+deletion before the connection ended.
+
+Read the same monitor ID after the timeout. A `404` response confirms that the
+record is unavailable. A successful read shows that the monitor still exists.
+
+List account monitors as a second check. Confirm that the deleted ID is absent.
+Do not rely on an empty event search alone. An event filter can be wrong while
+the monitor still exists.
+
+Repeated deletion leaves the final state unchanged. However, the response
+changes. The first completed request returns `200`; later requests return
+`404` because the monitor no longer exists.
+
+## Recreate Monitoring After Deletion
+
+A deleted account monitor cannot resume. Create another monitor when checks must
+restart. The replacement receives a different monitor ID.
+
+Use the saved X username, X user ID, and event types for reconstruction. Review
+those values before creating the replacement. Do not assume the old filters
+still match the current workflow.
+
+Existing webhook endpoints remain available. Confirm their event subscriptions
+before connecting the replacement monitor. Run [Test Webhook](/api-reference/webhooks/test)
+to validate receiver access and response handling.
+
+Update downstream jobs with the new monitor ID. Replace stored event filters,
+verification links, and support references. The deleted ID will continue
+returning `404`.
+
+## Account Monitor Deletion Checklist
+
+1. Confirm the monitor ID, X username, and X user ID.
+2. Review `eventTypes`, `isActive`, and the deletion reason.
+3. Export every required tweet and profile event.
+4. Preserve required webhook delivery attempts and receiver results.
+5. Obtain approval for permanent removal.
+6. Send `DELETE` and require `200` with `success: true`.
+7. Read the deleted ID and require `404 not_found`.
+8. List monitors and confirm that the ID is absent.
+9. Update downstream references to the removed monitor.
+
+Pause with `isActive: false` when monitoring may resume. Delete only after the
+retention, approval, and verification steps finish.
+
+## Related Account Monitor Operations
+
+Use [List Monitors](/api-reference/monitors/list) to find and verify account
+monitors. Use [Get Monitor](/api-reference/monitors/twitter-account-monitor-status)
+to confirm the selected ID and its final `404` response.
+
+Use [List Events](/api-reference/events/list) and [Get Event](/api-reference/events/get)
+to retain tweet and profile evidence. Use [List Webhooks](/api-reference/webhooks/list)
+and [List Deliveries](/api-reference/webhooks/deliveries) for delivery evidence.
+
+Use [Create Monitor](/api-reference/monitors/create) when a replacement account
+monitor is required. Store the new ID before restoring dependent workflows.
