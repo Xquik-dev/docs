@@ -1,84 +1,479 @@
 ---
 title: "X API Glossary for Tweets, Followers & Webhooks"
 sidebarTitle: "Glossary"
-description: "Define tweets, profiles, followers, following, replies, monitors, events, webhooks, extractions, cursors, credits, and API contracts. Follow exact steps."
-keywords: ["glossary", "terms", "definitions", "monitor", "extraction", "credits", "webhook"]
+description: "Use this X API glossary to define tweets, replies, reposts, followers, profiles, media, cursors, monitors, webhooks, extractions, credits, and errors."
+keywords: ["X API glossary", "Twitter API glossary", "Twitter API terms", "tweet terminology", "follower vs following", "reply vs quote tweet", "repost vs retweet", "Twitter scraper API terms", "cursor pagination", "Twitter webhook", "tweet metadata"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Quick reference for terminology used throughout the Xquik platform and API.
+Use this X API glossary while reading Xquik API responses and guides.
+It defines concrete tweet, profile, follower, monitor, webhook, and billing terms.
 
-## Core concepts
+X calls its content objects posts. Xquik keeps `tweet` in public route names.
+This preserves familiar Twitter API terms and existing client integrations.
+
+<Note>
+  Treat IDs and cursors as strings. Treat counts as collection-time snapshots.
+  Treat optional fields as absent unless the response supplies them.
+</Note>
+
+## Quick X API Terminology
+
+| Term | Short definition | Primary reference |
+| --- | --- | --- |
+| Tweet or post | One X content object with text and optional media. | [Get tweet](/api-reference/x/get-tweet) |
+| Reply | A tweet linked to a direct parent and conversation. | [Tweet replies](/api-reference/x/tweet-replies) |
+| Quote tweet | A new tweet that embeds another tweet. | [Tweet quotes](/api-reference/x/tweet-quotes) |
+| Repost or retweet | A redistribution of an existing tweet. | [Retweeters](/api-reference/x/retweeters) |
+| Profile | An X account's identity, biography, audience, and status fields. | [Get user](/api-reference/x/twitter-profile-lookup) |
+| Followers | Accounts that follow the source profile. | [Followers](/api-reference/x/followers) |
+| Following | Accounts the source profile follows. | [Following](/api-reference/x/following) |
+| Cursor | An opaque token for the next result page. | [Request-efficient usage](/guides/request-efficient-api-usage#store-cursor-checkpoints) |
+| Extraction | A durable tweet, reply, profile, or audience export job. | [Extraction workflow](/guides/extraction-workflow) |
+| Monitor | A recurring account or keyword check. | [Create monitor](/api-reference/monitors/create) |
+| Event | A stored tweet or profile change detected by a monitor. | [List events](/api-reference/events/list) |
+| Webhook | A signed HTTP callback containing one monitor event. | [Webhooks](/webhooks/overview) |
+| Write action | A connected-account operation that changes X state. | [Create tweet](/api-reference/x-write/create-tweet) |
+| Credit | The shared metered unit used by Xquik operations. | [Pricing & billing](/guides/billing) |
+| Rate limit | A request-frequency boundary for one account bucket. | [Rate limits](/guides/rate-limits) |
+
+## Tweet, Reply & Media Terms
 
 <AccordionGroup>
-  <Accordion title="Monitor">
-    A persistent account or keyword check. Monitor slots are unlimited. Active monitors check every second and cost 21 credits per hour.
+  <Accordion title="Tweet or post">
+    One content object published on X. Xquik routes use the word `tweet`.
+    A tweet can contain text, media, links, mentions, hashtags, or polls.
+    Store its `id` as a string. See the
+    [tweet field guide](/guides/tweet-profile-api-fields#tweet-fields).
   </Accordion>
 
-  <Accordion title="Extraction">
-    A batch job that pulls historical data (tweets, followers, etc.) into exportable results. Extractions are metered operations - credit cost depends on the volume of data returned.
+  <Accordion title="Tweet ID">
+    The stable string identifier for one tweet. A status URL usually ends with
+    `/status/{tweetId}`. Use the ID for joins, dedupe, replies, quotes, likes,
+    reposts, and media lookups. Never store it as a JavaScript number.
   </Accordion>
 
-  <Accordion title="Draw">
-    A giveaway selection tool that picks winners from extraction results. Draws support filters (minimum followers, account age) and produce a transparent, publicly verifiable result page.
+  <Accordion title="Reply">
+    A tweet written in response to another tweet. `inReplyToId` identifies the
+    direct parent. `conversationId` identifies the root conversation. A reply
+    remains its own tweet with its own author and engagement counts.
   </Accordion>
 
-  <Accordion title="Event">
-    A supported change detected by a monitor. Signed webhooks can deliver the event to your server.
+  <Accordion title="Quote tweet">
+    A new tweet that adds text while referencing another tweet. The outer tweet
+    owns the quote text. `quoted_tweet` contains the referenced tweet when
+    available. Keep both tweet IDs and metric snapshots separate.
+  </Accordion>
+
+  <Accordion title="Repost or retweet">
+    A redistribution of an existing tweet. X now uses the term repost.
+    Xquik retains `retweet` in route and field names for compatibility.
+    `retweeted_tweet` contains original tweet context when available.
+  </Accordion>
+
+  <Accordion title="Thread and conversation">
+    A thread is a connected sequence of tweets and replies. Use
+    `conversationId` to group a conversation. Use `inReplyToId` to preserve
+    each direct parent edge. Do not infer reply order from IDs alone.
+  </Accordion>
+
+  <Accordion title="Mention">
+    A reference to an X username inside tweet text. Mentions can appear in
+    parsed `entities` and monitor events. A mention does not prove a reply,
+    follow, endorsement, or conversation relationship.
+  </Accordion>
+
+  <Accordion title="Hashtag and cashtag">
+    A hashtag begins with `#`. A cashtag begins with `$`.
+    Both can appear inside tweet entities and search queries.
+    Preserve the original token before applying lowercase normalization.
+  </Accordion>
+
+  <Accordion title="Entities">
+    Parsed tweet markers for URLs, mentions, hashtags, and related tokens.
+    Entity arrays are conditional. Preserve the original tweet text beside
+    extracted tokens. See the
+    [official X data dictionary](https://docs.x.com/x-api/fundamentals/data-dictionary)
+    for upstream object terminology.
+  </Accordion>
+
+  <Accordion title="Media">
+    An image, video, or animated GIF attached to a tweet or message.
+    Xquik can return media URLs, types, dimensions, preview images, variants,
+    alt text, and identifiers. Availability depends on the returned object.
+  </Accordion>
+
+  <Accordion title="Engagement counts">
+    Numeric snapshots for likes, replies, reposts, quotes, views, and bookmarks.
+    Counts can change after collection. Store `collected_at` with every metrics
+    snapshot. A missing count is not automatically zero.
+  </Accordion>
+
+  <Accordion title="Note Tweet and X Article">
+    A Note Tweet carries long-form tweet content and metadata. An X Article is
+    a separate long-form object referenced from a tweet. Preserve returned
+    nested objects instead of flattening their text into one field.
   </Accordion>
 </AccordionGroup>
 
-## Billing & usage
+## Profile, Follower & Audience Terms
 
 <AccordionGroup>
-  <Accordion title="Credits">
-    The metered unit for API usage. Credit cost depends on the endpoint, returned result count, draw filters, media upload, or active monitor hours. Subscription grants, top-ups, and automatic top-ups add credits to one shared balance. Unused credits carry over until you spend them.
+  <Accordion title="X user or profile">
+    The account object behind a username. Core fields include `id`, `username`,
+    and `name`. Optional fields can include a biography, images, verification,
+    location, followers, following, activity counts, and availability state.
   </Accordion>
 
-  <Accordion title="Metered">
-    Operations that deduct credits from your balance. Includes reads, writes, and extractions. When credits are exhausted, metered calls return `402 Payment Required`.
+  <Accordion title="User ID">
+    The stable string identifier for one X account. Prefer it for database joins.
+    A username can change. A user ID remains the stronger profile key.
   </Accordion>
 
-  <Accordion title="Non-metered">
-    Operations that consume no credits. Stored monitor records, event reads, webhooks, and account management are free. Active monitors are billed hourly.
+  <Accordion title="Username or handle">
+    The public account name used after `@`. Xquik accepts usernames with or
+    without a leading `@` on supported routes. Store the returned user ID too.
   </Accordion>
 
-  <Accordion title="PAYG">
-    Pay-as-you-go - purchase credits on demand via top-up at USD 0.00015/credit. Top-up credits are added to your balance immediately and do not expire.
+  <Accordion title="Followers">
+    Accounts that follow the source profile. `GET /x/users/{id}/followers`
+    returns follower profiles and cursor state. A follower snapshot can change
+    after collection. Store the source user ID and collection time.
   </Accordion>
 
-  <Accordion title="MPP">
-    Machine Payments Protocol - pay-per-call with USDC, no subscription required. Designed for autonomous agents that pay for each API call individually.
+  <Accordion title="Following">
+    Accounts the source profile follows. `GET /x/users/{id}/following` returns
+    those profiles. Following is directional. It does not prove mutual follow.
+  </Accordion>
+
+  <Accordion title="Follower relationship">
+    A directional edge between two X accounts. Use
+    [`GET /x/followers/check`](/api-reference/x/check-follower) when one current
+    relationship matters. Use follower or following pages for audience exports.
+  </Accordion>
+
+  <Accordion title="Protected profile">
+    An account whose posts have restricted visibility. A public profile lookup
+    can still return limited metadata. Do not claim complete tweet or follower
+    coverage when the response marks an account protected or unavailable.
+  </Accordion>
+
+  <Accordion title="Timeline">
+    An ordered page of tweets. A user timeline contains one profile's tweets.
+    A home timeline reflects the connected account's feed. Save each returned
+    cursor before requesting the next page.
+  </Accordion>
+
+  <Accordion title="Community">
+    An X group with members, moderators, rules, and a community tweet timeline.
+    Xquik exposes community details, members, moderators, tweets, and search.
+  </Accordion>
+
+  <Accordion title="List">
+    A curated X account collection. List members belong to the collection.
+    List followers follow the list itself. These are different profile sets.
+  </Accordion>
+
+  <Accordion title="Direct message">
+    A private message between X accounts. DM history and writes require a
+    connected X account. Store message IDs, participant IDs, timestamps, and
+    returned media references.
   </Accordion>
 </AccordionGroup>
 
-## Delivery
+## Twitter Scraper API & Export Terms
 
 <AccordionGroup>
-  <Accordion title="Webhook">
-    An HTTP callback for monitor events. Webhooks use HMAC-SHA256 signatures. See the [webhook guide](/webhooks/overview).
+  <Accordion title="Twitter scraper API">
+    An API that retrieves tweets, replies, profiles, followers, following,
+    timelines, communities, lists, or media as structured responses.
+    Xquik exposes these reads through REST, SDKs, MCP, and Actors.
   </Accordion>
 
-  <Accordion title="Write action">
-    An operation that modifies X state - tweet, like, follow, DM, etc. Most write actions cost 10 credits; tweet and reply posting costs are documented on [Create tweet](/api-reference/x-write/create-tweet). Write actions require a connected X account.
+  <Accordion title="Tweet search">
+    A query over recent or top tweets. Search can use keywords, hashtags,
+    authors, dates, media filters, language, and engagement filters.
+    Preserve the exact query and filters across cursor pages.
   </Accordion>
-</AccordionGroup>
 
-## API & technical
-
-<AccordionGroup>
-  <Accordion title="API key">
-    Authentication credential passed via the `x-api-key` header. Generate keys from the [API Keys dashboard](https://dashboard.xquik.com/en/account?tab=api-keys) or the same-origin, session-authenticated [API keys endpoint](/api-reference/api-keys/create).
+  <Accordion title="Page">
+    One bounded response from a list endpoint. A requested page size is an
+    upper bound. Fewer rows do not prove pagination finished. Check the returned
+    continuation flag and cursor.
   </Accordion>
 
   <Accordion title="Cursor-based pagination">
-    A pagination method using opaque cursor tokens instead of page numbers. Pass the `cursor` value from the previous response to fetch the next page. More reliable than offset-based pagination for real-time data.
+    Pagination using opaque cursor tokens instead of page numbers. For X reads,
+    pass `next_cursor` back as `cursor`. Events, draws, and extractions use
+    `after`. Drafts use `afterCursor`. Never decode or modify a cursor.
+  </Accordion>
+
+  <Accordion title="Batch lookup">
+    One request containing multiple tweet or profile IDs. Batch routes reduce
+    repeated HTTP calls. Each returned object still needs its own ID-based
+    validation and error handling.
+  </Accordion>
+
+  <Accordion title="Extraction">
+    A durable job for collecting and saving tweet, reply, profile, follower,
+    following, community, list, media, or article results. Store the extraction
+    ID. Poll status before retrieving JSON pages or file exports.
+  </Accordion>
+
+  <Accordion title="Export">
+    A saved CSV, JSON, or XLSX representation of extraction results.
+    Direct API pages can also feed JSONL or database rows. Record the query,
+    final cursor, row count, format, and completion state.
+  </Accordion>
+
+  <Accordion title="Snapshot">
+    A collection-time view of profiles, relationships, or engagement counts.
+    Followers, following, biographies, and tweet metrics can change later.
+    Store collection timestamps before comparing two snapshots.
+  </Accordion>
+
+  <Accordion title="Dedupe">
+    Removing repeated objects with a stable ID. Dedupe tweets by tweet ID.
+    Dedupe profiles by user ID. Keep the newest complete optional fields when
+    merging repeated pages or overlapping date windows.
+  </Accordion>
+</AccordionGroup>
+
+## Monitor, Event & Webhook Terms
+
+<AccordionGroup>
+  <Accordion title="Monitor">
+    A recurring account or keyword check. Monitor slots are unlimited.
+    Active monitors check every second and cost 21 credits per hour.
+    Account monitors track one username. Keyword monitors track a search query.
+  </Accordion>
+
+  <Accordion title="Monitor event">
+    A stored tweet or profile change detected by a monitor. Account monitors
+    support 21 event types. Keyword monitors support the 10 `tweet.*` types.
+    Account monitors do not emit follower-gained or follower-lost events.
+  </Accordion>
+
+  <Accordion title="Tweet event">
+    A monitor signal such as `tweet.new`, `tweet.reply`, `tweet.quote`,
+    `tweet.retweet`, `tweet.media`, `tweet.link`, or `tweet.poll`.
+    Subscribe only to types your receiver handles.
+  </Accordion>
+
+  <Accordion title="Profile event">
+    A detected profile change. Events cover names, usernames, biographies,
+    locations, URLs, avatars, banners, verification, protection, pinned tweets,
+    and availability. Keyword monitors do not accept profile event types.
+  </Accordion>
+
+  <Accordion title="Webhook">
+    An HTTPS callback for one monitor event. Xquik signs webhook requests with
+    HMAC-SHA256. Verify `X-Xquik-Signature` and `X-Xquik-Timestamp` before
+    processing the JSON body.
+  </Accordion>
+
+  <Accordion title="Delivery ID">
+    The identifier for one webhook delivery attempt sequence. Store
+    `deliveryId` for receiver dedupe. Repeated delivery attempts must not create
+    repeated tickets, alerts, or warehouse rows.
+  </Accordion>
+
+  <Accordion title="Stream event ID">
+    The stable ID of the stored monitor event behind a webhook payload.
+    Join `streamEventId` to the events API when reconciling webhook delivery
+    with stored tweet or profile changes.
+  </Accordion>
+
+  <Accordion title="Webhook replay and reconciliation">
+    Replay means processing a previously stored event again. Reconciliation
+    compares webhook receipts with the events API. Use event IDs, delivery IDs,
+    and cursors to find missing or duplicate work.
+  </Accordion>
+
+  <Accordion title="Draw">
+    A giveaway winner selection from one tweet's eligible participants.
+    Draws can filter replies, follower counts, account age, reposts, following,
+    language, keywords, hashtags, and mentions. Results include an audit page.
+  </Accordion>
+</AccordionGroup>
+
+## X Write & Authentication Terms
+
+<AccordionGroup>
+  <Accordion title="Connected X account">
+    An X account authorized for private reads or write actions. Public tweet,
+    profile, follower, reply, community, and list reads need no connected
+    account. Tweets, likes, follows, DMs, and profile changes require one.
+  </Accordion>
+
+  <Accordion title="Write action">
+    An operation that changes X state. Examples include creating or deleting
+    tweets, liking, reposting, following, sending DMs, and updating profiles.
+    Write costs vary by operation and media size.
+  </Accordion>
+
+  <Accordion title="Durable action">
+    The persisted lifecycle record for an X write. It records request identity,
+    target, billing, status, retry safety, and next action. Store the returned
+    durable action before starting another write.
+  </Accordion>
+
+  <Accordion title="Idempotency key">
+    A unique request key that prevents accidental duplicate write submission.
+    Reuse the key only for the identical request. Use a new key only when the
+    durable action says `safeToRetry` is `true`.
+  </Accordion>
+
+  <Accordion title="statusUrl, terminal, and safeToRetry">
+    `statusUrl` identifies the durable action to poll. `terminal` shows whether
+    processing ended. `safeToRetry` shows whether another submission is safe.
+    Poll an active action instead of resending it.
+  </Accordion>
+
+  <Accordion title="API key">
+    Authentication credential passed via the `x-api-key` header.
+    Account keys also support Bearer authentication.
+    Generate account keys from the
+    [API Keys dashboard](https://dashboard.xquik.com/en/account?tab=api-keys)
+    or the session-authenticated
+    [API keys endpoint](/api-reference/api-keys/create).
+  </Accordion>
+
+  <Accordion title="OAuth 2.1">
+    Scoped authorization for account access without sharing an API key.
+    Xquik uses S256 PKCE for authorization-code flows. Preserve granted scopes.
+    Use refresh-token grants only through the documented OAuth endpoints.
+  </Accordion>
+
+  <Accordion title="OpenAPI contract">
+    The machine-readable specification for public routes, parameters, schemas,
+    responses, and examples. Use `https://docs.xquik.com/openapi.yaml` as the
+    public REST contract. Never infer undocumented response statuses.
+  </Accordion>
+
+  <Accordion title="Normalized response contract">
+    An opt-in response shape selected with
+    `xquik-api-contract: 2026-04-29`. It uses snake-case envelopes, prefixed
+    resource IDs, structured errors, and normalized pagination fields.
+  </Accordion>
+</AccordionGroup>
+
+## Billing, Error & Rate-Limit Terms
+
+<AccordionGroup>
+  <Accordion title="Credits">
+    The metered unit for API usage. Costs depend on the operation, returned
+    results, active monitor hours, write type, and media size.
+    Subscription grants, top-ups, and automatic top-ups add credits to one shared balance.
+    Unused credits carry over until you spend them.
+  </Accordion>
+
+  <Accordion title="Metered">
+    An operation that deducts credits. Paid tweet, profile, follower, reply,
+    timeline, extraction, draw, media, write, and active-monitor work can be
+    metered. Check each route's cost callout before running it.
+  </Accordion>
+
+  <Accordion title="Non-metered">
+    An operation that consumes no credits. Stored monitor management, stored
+    event reads, webhook operations, saved extraction reads, exports, account
+    status, and API-key management are free. Active monitors are billed hourly.
+  </Accordion>
+
+  <Accordion title="PAYG">
+    Pay-as-you-go credits purchased by top-up. Top-up credits cost
+    USD 0.00015 each. Top-up credits are added to your balance immediately and do not expire.
+  </Accordion>
+
+  <Accordion title="Guest wallet">
+    An accountless prepaid balance for 33 eligible GET routes. A verified
+    hosted payment activates its Bearer key. Guest keys cannot access writes,
+    account management, or private X reads.
+  </Accordion>
+
+  <Accordion title="MPP">
+    Machine Payments Protocol for direct per-call payment. Seven fixed-price
+    read operations accept an MPP Payment challenge without a subscription.
+    A failed request does not create checkout automatically.
+  </Accordion>
+
+  <Accordion title="402 Payment Required">
+    The caller cannot fund a metered operation. Account and guest responses can
+    include credential-specific `payment_options`. Confirm any purchase before
+    creating checkout or charging a saved payment method.
+  </Accordion>
+
+  <Accordion title="429 Too Many Requests">
+    The caller exceeded a request bucket or action cooldown. Read `error` and
+    `Retry-After` before retrying. A `429` is not a credit failure.
   </Accordion>
 
   <Accordion title="Fixed window counter">
-    The rate-limiting algorithm used by Xquik. Each user account gets a counter per tier. Read counters reset every 1 second; write and delete counters reset every 60 seconds. Requests are rejected with 429 when the counter exceeds the tier limit. See [rate limits](/guides/rate-limits) for details.
+    Xquik's rate-limiting algorithm. Standard accounts receive independent read,
+    write, and delete counters. Reads reset after 1 second. Writes and deletes
+    reset after 60 seconds. See [rate limits](/guides/rate-limits).
+  </Accordion>
+
+  <Accordion title="Retry-After">
+    A response header containing seconds to wait. It can accompany a `429`,
+    active write, connection cooldown, or temporary service response.
+    Inspect the status and error code before choosing an action.
   </Accordion>
 </AccordionGroup>
+
+## Common Twitter API Definition Questions
+
+### What Is the Difference Between a Tweet and a Post?
+
+They describe the same core X content object. X now says post.
+Xquik keeps tweet terminology in routes, fields, and developer documentation.
+
+### What Is the Difference Between Followers and Following?
+
+Followers are accounts that follow the source profile.
+Following are accounts the source profile follows. Both relationships are directional.
+
+### How Do Replies, Quotes & Reposts Differ?
+
+A reply points to a parent tweet. A quote adds new text around another tweet.
+A repost redistributes the original. Keep every involved tweet ID separate.
+
+### Is Tweet Scraping the Same as Monitoring?
+
+No. A scraper API retrieves requested tweets, profiles, or audience pages.
+A monitor runs repeatedly and stores matching tweet or profile events.
+
+### Why Does Xquik Use Cursors Instead of Page Numbers?
+
+Cursors preserve server-defined continuation state for changing result sets.
+Pass them back unchanged. Never calculate or decode the next cursor.
+
+### Is a Webhook the Same as Polling?
+
+No. A webhook pushes signed monitor events to your HTTPS receiver.
+Polling repeatedly requests events. Use polling for replay and reconciliation.
+
+### Is an API Key the Same as a Connected X Account?
+
+No. An API key authenticates the Xquik caller.
+A connected X account authorizes private reads and X write actions.
+
+### What Is the Difference Between 402 and 429?
+
+`402` means the request lacks sufficient payment or credits.
+`429` means the request rate or action frequency was exceeded.
+
+<CardGroup cols={3}>
+  <Card title="API Field Guide" icon="braces" href="/guides/tweet-profile-api-fields">
+    Map tweet, profile, media, relationship, and cursor fields.
+  </Card>
+  <Card title="API Overview" icon="book-open" href="/api-reference/overview">
+    Choose tweet, follower, reply, monitor, webhook, and write routes.
+  </Card>
+  <Card title="Error Handling" icon="triangle-alert" href="/guides/error-handling">
+    Classify validation, billing, rate-limit, dependency, and write errors.
+  </Card>
+</CardGroup>

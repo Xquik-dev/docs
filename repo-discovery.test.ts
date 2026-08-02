@@ -2496,6 +2496,49 @@ const FORBIDDEN_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS = [
   'https://xquik.com/dashboard/account',
 ] as const;
 
+const REQUIRED_X_API_GLOSSARY_SNIPPETS = [
+  'title: "X API Glossary for Tweets, Followers & Webhooks"',
+  'X calls its content objects posts. Xquik keeps `tweet` in public route names.',
+  '## Quick X API Terminology',
+  '| Reply | A tweet linked to a direct parent and conversation. |',
+  '| Followers | Accounts that follow the source profile. |',
+  '| Following | Accounts the source profile follows. |',
+  '## Tweet, Reply & Media Terms',
+  '<Accordion title="Tweet ID">',
+  '`inReplyToId` identifies the',
+  '`quoted_tweet` contains the referenced tweet when',
+  '`retweeted_tweet` contains original tweet context when available.',
+  '<Accordion title="Engagement counts">',
+  '## Profile, Follower & Audience Terms',
+  'Following is directional. It does not prove mutual follow.',
+  '## Twitter Scraper API & Export Terms',
+  'pass `next_cursor` back as `cursor`. Events, draws, and extractions use',
+  '## Monitor, Event & Webhook Terms',
+  'Account monitors do not emit follower-gained or follower-lost events.',
+  '`X-Xquik-Signature` and `X-Xquik-Timestamp`',
+  '<Accordion title="Stream event ID">',
+  '## X Write & Authentication Terms',
+  '<Accordion title="Durable action">',
+  '<Accordion title="Idempotency key">',
+  '`statusUrl` identifies the durable action to poll.',
+  'xquik-api-contract: 2026-04-29',
+  '## Billing, Error & Rate-Limit Terms',
+  '<Accordion title="402 Payment Required">',
+  '<Accordion title="429 Too Many Requests">',
+  '### What Is the Difference Between Followers and Following?',
+  '### How Do Replies, Quotes & Reposts Differ?',
+  '### Is Tweet Scraping the Same as Monitoring?',
+  '### What Is the Difference Between 402 and 429?',
+] as const;
+
+const FORBIDDEN_X_API_GLOSSARY_SNIPPETS = [
+  'historical data (tweets, followers, etc.)',
+  'picks winners from extraction results',
+  'Most write actions cost 10 credits',
+  'Each API key gets a counter per tier',
+  '<Accordion title="Token bucket">',
+] as const;
+
 const REQUIRED_QUICK_TOPUP_PAGE_SNIPPETS = [
   'At USD 0.00015 per credit, a USD 25 quick top-up adds 166,666 credits',
   'Only the `charged` outcome grants credits and updates `balance`.',
@@ -13028,6 +13071,32 @@ describe('repository discovery', (): void => {
         'Glossary API key dashboard link',
         REQUIRED_GLOSSARY_API_KEY_SNIPPETS,
       ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the X API glossary concrete and source-backed', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/glossary.mdx', 'utf8');
+
+    expect(
+      [
+        ...collectSnippetFindings(
+          source,
+          'X API glossary',
+          REQUIRED_X_API_GLOSSARY_SNIPPETS,
+        ),
+        ...FORBIDDEN_X_API_GLOSSARY_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `X API glossary contains stale wording "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ],
     ).toStrictEqual([]);
   });
 
