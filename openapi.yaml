@@ -5690,15 +5690,7 @@ paths:
               required: [subject]
               anyOf:
                 - required: [body]
-                  properties:
-                    body:
-                      type: string
-                      minLength: 1
-                      pattern: '.*\S.*'
                 - required: [attachments]
-                  properties:
-                    attachments:
-                      type: array
               properties:
                 subject:
                   type: string
@@ -5708,7 +5700,9 @@ paths:
                   example: 'Cannot connect X account'
                 body:
                   type: string
+                  minLength: 1
                   maxLength: 10000
+                  pattern: '.*\S.*'
                   example: 'I am unable to connect my X account.'
                 attachments:
                   type: array
@@ -5835,6 +5829,9 @@ paths:
                       - publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
                         subject: 'Cannot connect X account'
                         status: 'open'
+                        messageCount: 2
+                        createdAt: '2025-01-15T12:00:00Z'
+                        updatedAt: '2025-01-16T09:30:00Z'
               example:
                 tickets:
                   - publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
@@ -5921,6 +5918,8 @@ paths:
                 publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
                 subject: 'Cannot connect X account'
                 status: 'open'
+                createdAt: '2025-01-15T12:00:00Z'
+                updatedAt: '2025-01-16T09:30:00Z'
                 messages:
                   - body: 'I am unable to connect my X account.'
                     sender: 'user'
@@ -6032,19 +6031,13 @@ paths:
               type: object
               anyOf:
                 - required: [body]
-                  properties:
-                    body:
-                      type: string
-                      minLength: 1
-                      pattern: '.*\S.*'
                 - required: [attachments]
-                  properties:
-                    attachments:
-                      type: array
               properties:
                 body:
                   type: string
+                  minLength: 1
                   maxLength: 10000
+                  pattern: '.*\S.*'
                   example: 'Thank you for the update.'
                 attachments:
                   type: array
@@ -7554,16 +7547,9 @@ paths:
                       invites_policy:
                         type: string
                         description: Invitation policy
-                      is_member:
-                        type: boolean
-                        description:
-                          Whether the authenticated viewer is a member
                       is_nsfw:
                         type: boolean
                         description: Whether the community is marked sensitive
-                      role:
-                        type: string
-                        description: Authenticated viewer's community role
                       creator:
                         type: object
                         required: [id, username, verified]
@@ -8134,11 +8120,11 @@ paths:
       operationId: getTweetReplies
       summary: List replies to a tweet
       description: >
-        Returns visible replies. For an unfiltered first page, Xquik compares a
-        terminal page with the post's reported reply count. If the page is
-        visibly incomplete, the endpoint returns 424 `replies_incomplete`
-        instead of presenting partial coverage as complete. Use tweet search
-        with a `conversation_id:{id}` query as the broader fallback.
+        Returns direct replies. Complete mode merges available timeline views,
+        supported rankings, every forward cursor module, labeled hidden-content
+        branches, exact-parent time partitions scaled to the reported reply
+        count, and search. It separates nested replies and returns 424 below 80%
+        coverage.
       tags:
         - Tweets
       security:
@@ -8157,7 +8143,27 @@ paths:
           schema:
             type: string
           description: Pagination cursor for tweet replies
-        - $ref: '#/components/parameters/ResultPageSize'
+        - name: mode
+          in: query
+          schema:
+            type: string
+            enum: [standard, complete]
+            default: standard
+          description: >
+            Use standard for pagination and filters. Use complete for maximum
+            coverage. Complete mode accepts only limit. Remove other pagination
+            and filter parameters.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 25000
+          description: >
+            With mode=complete, maximum combined direct and nested reply rows
+            (1-25000, default 25000). Without complete mode, this is the
+            deprecated pageSize alias and accepts only 1-100.
+        - $ref: '#/components/parameters/ReplyPageSize'
         - name: sinceTime
           in: query
           schema:
@@ -8199,7 +8205,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedTweets'
+                $ref: '#/components/schemas/TweetReplies'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -8212,6 +8218,21 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
         '424':
           $ref: '#/components/responses/RepliesIncomplete'
+        '503':
+          description: Complete reply extraction is temporarily busy.
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Seconds to wait before retrying.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'x_api_unavailable'
+                message: 'Complete reply extraction is busy. Retry shortly.'
 
   /x/tweets/{id}/retweeters:
     get:
@@ -8642,16 +8663,27 @@ components:
       name: pageSize
       in: query
       description: >
-        Maximum items requested from this page (1-100, default 20). The response
-        can contain fewer items because the source returned fewer, filters
-        removed items, or remaining credits cover fewer results. Keep requesting
-        next_cursor while has_next_page is true, even when a page is empty. The
-        deprecated limit and count aliases remain accepted.
+        Maximum page items (1-100, default 20). Source, filters, or credits can
+        reduce results. Continue while has_next_page is true. Deprecated limit
+        and count aliases remain accepted.
       schema:
         type: integer
         minimum: 1
         maximum: 100
         default: 20
+    ReplyPageSize:
+      name: pageSize
+      in: query
+      description: >
+        Maximum page items in standard mode (1-100, default 20). Omit pageSize
+        when mode=complete. Generated pageSize=20 and the exact default filter
+        bundle are ignored in complete mode. Continue while has_next_page is
+        true. Deprecated limit and count aliases remain accepted in standard
+        mode.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
     FollowerPageSize:
       name: pageSize
       in: query
@@ -9392,19 +9424,54 @@ components:
               'Users who liked this post are unavailable. Use retweeters or
               replies instead.'
     RepliesIncomplete:
-      description: >
-        The direct replies page ended before the post's reported reply count.
-        Returns error code `replies_incomplete` so verification workflows do not
-        treat partial coverage as exhaustive.
+      description: Incomplete replies
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            anyOf:
+              - $ref: '#/components/schemas/Error'
+              - $ref: '#/components/schemas/IncompleteTweetReplies'
           example:
             error: 'replies_incomplete'
-            message:
-              'Replies are incomplete. Use tweet search with a conversation_id
-              filter.'
+            message: 'Replies are incomplete. Retry complete mode later.'
+            tweets: []
+            has_next_page: false
+            next_cursor: ''
+            nested_replies: []
+            diagnostic:
+              complete: false
+              reportedReplyCount: 100
+              targetDirectReplies: 80
+              uniqueDirectReplies: 42
+              coveragePercentage: 42
+              nestedReplyCount: 5
+              pagesAttempted: 12
+              strategiesAttempted: []
+              duplicateCount: 3
+              cursorFailures: 0
+              repeatedCursorCount: 0
+              emptyFalseProgressPages: 1
+              malformedCount: 0
+              unrelatedCount: 2
+              missingResponseModulesOrFields: []
+              recommendedFallback:
+                'Retry complete mode later. X did not expose enough direct
+                replies.'
+              richness:
+                totalReplies: 42
+                text: 42
+                author: 40
+                createdAt: 42
+                language: 38
+                url: 42
+                entities: 20
+                media: 5
+                article: 0
+                card: 2
+                communityNote: 0
+                quotedOrRepostedTweet: 1
+                engagementCounts: 42
+              responseTruncated: false
     ConnectAlreadyConnected:
       description: >
         The specified X account is already connected to this Xquik account.
@@ -9681,7 +9748,7 @@ components:
           type: string
           description: Signal name from X's public ranking repository.
         weight:
-          type: [number, 'null']
+          type: 'null'
           description: X does not publish the production weight.
       additionalProperties: false
     ComposeSavedStyle:
@@ -10297,11 +10364,10 @@ components:
           example: pending
     PaginatedTweets:
       description: >
-        Paginated tweet results. The item count can be lower than pageSize when
-        the source returns fewer tweets, filters remove tweets, or remaining
-        credits cover fewer results. Follow next_cursor while has_next_page is
-        true. An empty page can still have has_next_page true after filtering.
-        Zero affordable results returns 402 insufficient_credits.
+        Paginated tweets. Source visibility, filters, or remaining credits can
+        reduce results. An empty filtered page can still have has_next_page
+        true. Follow next_cursor while has_next_page is true. Zero affordable
+        results returns 402 insufficient_credits.
       type: object
       required: [tweets, has_next_page, next_cursor]
       properties:
@@ -10324,6 +10390,232 @@ components:
         next_cursor:
           type: string
           example: 'DAACCgACGRElMJcAAA'
+    TweetReplies:
+      description: >
+        Reply rows. Complete mode also returns nested replies and coverage
+        diagnostics. Keep nested replies separate from direct coverage.
+      allOf:
+        - $ref: '#/components/schemas/PaginatedTweets'
+        - type: object
+          properties:
+            nested_replies:
+              type: array
+              items:
+                $ref: '#/components/schemas/SearchTweet'
+              description: Nested replies. Excluded from direct coverage.
+            diagnostic:
+              $ref: '#/components/schemas/ReplyCoverageDiagnostic'
+    IncompleteTweetReplies:
+      allOf:
+        - $ref: '#/components/schemas/TweetReplies'
+        - type: object
+          required: [error, message, nested_replies, diagnostic]
+          properties:
+            error:
+              type: string
+              const: replies_incomplete
+            message:
+              type: string
+            has_next_page:
+              type: boolean
+              const: false
+            next_cursor:
+              type: string
+              const: ''
+    ReplyCoverageStrategy:
+      type: object
+      required:
+        - name
+        - pagesAttempted
+        - newDirectReplies
+        - newNestedReplies
+        - stopReason
+      properties:
+        name:
+          type: string
+        pagesAttempted:
+          type: integer
+          minimum: 0
+        newDirectReplies:
+          type: integer
+          minimum: 0
+        newNestedReplies:
+          type: integer
+          minimum: 0
+        stopReason:
+          type: string
+          enum:
+            - deadline
+            - empty_pages
+            - error
+            - missing_cursor
+            - no_next_page
+            - page_cap
+            - repeated_cursor
+    ReplyCoverageRichness:
+      description: Field-presence counts across the collected direct replies.
+      type: object
+      required:
+        - totalReplies
+        - text
+        - author
+        - createdAt
+        - language
+        - url
+        - entities
+        - media
+        - article
+        - card
+        - communityNote
+        - quotedOrRepostedTweet
+        - engagementCounts
+      properties:
+        totalReplies:
+          type: integer
+          minimum: 0
+          description: Total unique direct replies evaluated for richness.
+        text:
+          type: integer
+          minimum: 0
+          description: Replies with text.
+        author:
+          type: integer
+          minimum: 0
+          description: Replies with author details.
+        createdAt:
+          type: integer
+          minimum: 0
+          description: Replies with a creation timestamp.
+        language:
+          type: integer
+          minimum: 0
+          description: Replies with a language value.
+        url:
+          type: integer
+          minimum: 0
+          description: Replies with a canonical URL.
+        entities:
+          type: integer
+          minimum: 0
+          description: Replies with entity metadata.
+        media:
+          type: integer
+          minimum: 0
+          description: Replies with media metadata.
+        article:
+          type: integer
+          minimum: 0
+          description: Replies with article content.
+        card:
+          type: integer
+          minimum: 0
+          description: Replies with card metadata.
+        communityNote:
+          type: integer
+          minimum: 0
+          description: Replies with community-note data.
+        quotedOrRepostedTweet:
+          type: integer
+          minimum: 0
+          description: Replies with quoted or reposted tweet data.
+        engagementCounts:
+          type: integer
+          minimum: 0
+          description: Replies with engagement counts.
+    ReplyCoverageDiagnostic:
+      description: Evidence for direct-reply coverage and collector behavior.
+      type: object
+      required:
+        - complete
+        - reportedReplyCount
+        - targetDirectReplies
+        - uniqueDirectReplies
+        - coveragePercentage
+        - nestedReplyCount
+        - pagesAttempted
+        - strategiesAttempted
+        - duplicateCount
+        - cursorFailures
+        - repeatedCursorCount
+        - emptyFalseProgressPages
+        - malformedCount
+        - unrelatedCount
+        - missingResponseModulesOrFields
+        - recommendedFallback
+        - richness
+        - responseTruncated
+      properties:
+        complete:
+          type: boolean
+          description: Whether coverage met the target without truncation.
+        reportedReplyCount:
+          type: integer
+          minimum: 0
+          description: Reply count reported on the source post.
+        targetDirectReplies:
+          type: integer
+          minimum: 0
+          description: Minimum direct replies required for the coverage target.
+        uniqueDirectReplies:
+          type: integer
+          minimum: 0
+          description: Unique replies whose parent ID equals the source post ID.
+        coveragePercentage:
+          type: number
+          minimum: 0
+          maximum: 100
+          description:
+            Unique direct replies as a percentage of the reported count.
+        nestedReplyCount:
+          type: integer
+          minimum: 0
+          description: Unique nested replies kept outside direct coverage.
+        pagesAttempted:
+          type: integer
+          minimum: 0
+          description: Total pages attempted across all strategies.
+        strategiesAttempted:
+          type: array
+          description: Per-strategy pagination and contribution evidence.
+          items:
+            $ref: '#/components/schemas/ReplyCoverageStrategy'
+        duplicateCount:
+          type: integer
+          minimum: 0
+          description: Duplicate tweet IDs removed across pages and strategies.
+        cursorFailures:
+          type: integer
+          minimum: 0
+          description: Cursor requests that failed.
+        repeatedCursorCount:
+          type: integer
+          minimum: 0
+          description: Repeated cursors rejected to prevent loops.
+        emptyFalseProgressPages:
+          type: integer
+          minimum: 0
+          description: Empty pages rejected because they did not make progress.
+        malformedCount:
+          type: integer
+          minimum: 0
+          description: Malformed response items rejected.
+        unrelatedCount:
+          type: integer
+          minimum: 0
+          description: Tweets rejected because they belonged elsewhere.
+        missingResponseModulesOrFields:
+          type: array
+          description: Expected response modules or fields missing from X.
+          items:
+            type: string
+        recommendedFallback:
+          type: string
+          description: Recommended next action when coverage is incomplete.
+        richness:
+          $ref: '#/components/schemas/ReplyCoverageRichness'
+        responseTruncated:
+          type: boolean
+          description: Whether the requested row limit truncated safe results.
     PaginatedUsers:
       description: >
         Paginated user profiles. The item count can be lower than pageSize when
@@ -11842,8 +12134,6 @@ components:
           type: boolean
         protected:
           type: boolean
-        canDm:
-          type: boolean
 
     TweetMedia:
       description: Normalized media attached to a tweet.
@@ -12019,10 +12309,6 @@ components:
             type: string
         editableUntilMsecs:
           type: string
-        editsRemaining:
-          type: string
-        isEditEligible:
-          type: boolean
 
     TweetNote:
       description: Complete Note Tweet content and rich-text metadata.
@@ -12162,21 +12448,12 @@ components:
           $ref: '#/components/schemas/ContentDisclosure'
         article:
           $ref: '#/components/schemas/TweetArticleMetadata'
-        bookmarked:
-          type: boolean
         card:
           $ref: '#/components/schemas/TweetCard'
         communityNote:
           $ref: '#/components/schemas/TweetCommunityNote'
         edit:
           $ref: '#/components/schemas/TweetEdit'
-        favorited:
-          type: boolean
-        grokAnalysisButton:
-          type: boolean
-          description: Whether X offers its analysis action for this post.
-        grokImageEditable:
-          type: boolean
         isTranslatable:
           type: boolean
         noteTweet:
@@ -12185,14 +12462,8 @@ components:
           $ref: '#/components/schemas/TweetPlace'
         possiblySensitive:
           type: boolean
-        possiblySensitiveEditable:
-          type: boolean
         previousCounts:
           $ref: '#/components/schemas/TweetPreviousCounts'
-        quickPromoteEligibility:
-          type: string
-        retweeted:
-          type: boolean
         viewState:
           type: string
         entities:
@@ -12232,10 +12503,6 @@ components:
               type: string
               description: Source of the AI-generated media disclosure.
               example: UserDeclared
-            canEdit:
-              type: boolean
-              description: Whether the disclosure can be edited on X.
-              example: true
             hasAiGeneratedMedia:
               type: boolean
               description:
@@ -12328,21 +12595,12 @@ components:
           $ref: '#/components/schemas/ContentDisclosure'
         article:
           $ref: '#/components/schemas/TweetArticleMetadata'
-        bookmarked:
-          type: boolean
         card:
           $ref: '#/components/schemas/TweetCard'
         communityNote:
           $ref: '#/components/schemas/TweetCommunityNote'
         edit:
           $ref: '#/components/schemas/TweetEdit'
-        favorited:
-          type: boolean
-        grokAnalysisButton:
-          type: boolean
-          description: Whether X offers its analysis action for this post.
-        grokImageEditable:
-          type: boolean
         isTranslatable:
           type: boolean
         noteTweet:
@@ -12351,14 +12609,8 @@ components:
           $ref: '#/components/schemas/TweetPlace'
         possiblySensitive:
           type: boolean
-        possiblySensitiveEditable:
-          type: boolean
         previousCounts:
           $ref: '#/components/schemas/TweetPreviousCounts'
-        quickPromoteEligibility:
-          type: string
-        retweeted:
-          type: boolean
         viewState:
           type: string
         entities:
@@ -12499,21 +12751,12 @@ components:
           $ref: '#/components/schemas/ContentDisclosure'
         article:
           $ref: '#/components/schemas/TweetArticleMetadata'
-        bookmarked:
-          type: boolean
         card:
           $ref: '#/components/schemas/TweetCard'
         communityNote:
           $ref: '#/components/schemas/TweetCommunityNote'
         edit:
           $ref: '#/components/schemas/TweetEdit'
-        favorited:
-          type: boolean
-        grokAnalysisButton:
-          type: boolean
-          description: Whether X offers its analysis action for this post.
-        grokImageEditable:
-          type: boolean
         isTranslatable:
           type: boolean
         noteTweet:
@@ -12522,14 +12765,8 @@ components:
           $ref: '#/components/schemas/TweetPlace'
         possiblySensitive:
           type: boolean
-        possiblySensitiveEditable:
-          type: boolean
         previousCounts:
           $ref: '#/components/schemas/TweetPreviousCounts'
-        quickPromoteEligibility:
-          type: string
-        retweeted:
-          type: boolean
         viewState:
           type: string
         entities:
@@ -12671,9 +12908,6 @@ components:
         mediaCount:
           type: integer
           example: 1200
-        canDm:
-          type: boolean
-          example: false
         protected:
           type: boolean
           description: Whether the profile protects its posts
@@ -12722,12 +12956,8 @@ components:
           $ref: '#/components/schemas/UserAffiliateLabel'
         businessAccountAffiliatesCount:
           type: integer
-        canMediaTag:
-          type: boolean
         creatorSubscriptionsCount:
           type: integer
-        followRequestSent:
-          type: boolean
         hasGraduatedAccess:
           type: boolean
         hasHiddenSubscriptionsOnProfile:
@@ -12737,8 +12967,6 @@ components:
         identityVerification:
           $ref: '#/components/schemas/UserIdentityVerification'
         isProfileTranslatable:
-          type: boolean
-        notificationsEnabled:
           type: boolean
         parodyCommentaryFanLabel:
           type: string
@@ -12754,30 +12982,10 @@ components:
           type: string
         superFollowEligible:
           type: boolean
-        superFollowedBy:
-          type: boolean
-        superFollowing:
-          type: boolean
         communityRole:
           type: string
           description: Community role when returned by community member reads
           example: Member
-        viewerFollowedBy:
-          type: boolean
-          description: Whether this profile follows the authenticated viewer
-          example: false
-        viewerFollowing:
-          type: boolean
-          description: Whether the authenticated viewer follows this profile
-          example: true
-        viewerBlockedBy:
-          type: boolean
-        viewerBlocking:
-          type: boolean
-        viewerLiveFollowing:
-          type: boolean
-        viewerMuting:
-          type: boolean
         profile_bio:
           type: object
           additionalProperties: true

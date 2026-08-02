@@ -132,12 +132,14 @@ List and search responses use `has_more` and `next_cursor`, even when a REST pag
 
 Continue through empty filtered pages while `has_more` is true and the cursor advances. Stop when you reach the requested total or `has_more` becomes false. Treat a missing or repeated `next_cursor` while `has_more` is true as stalled pagination and return the partial count plus a clear stop reason.
 
-For a full reply page, call
-`/api/v1/x/tweets/<tweet_id>/replies?pageSize=100`. Follow advancing cursors.
-On `replies_incomplete`, search `conversation_id:<tweet_id>` as the broader
-fallback. Filter exact `inReplyToId` values when only direct replies qualify.
-Disclose that reply coverage depends on X. Never infer exhaustive coverage
-from a reported reply count.
+For maximum reply coverage, call
+`/api/v1/x/tweets/<tweet_id>/replies?mode=complete&limit=25000`.
+Complete mode combines timelines, rankings, cursors, hidden branches, and
+search. Direct replies match `inReplyToId`. Keep `nested_replies` separate.
+Trust `diagnostic.complete`. HTTP 424 `replies_incomplete` preserves rows.
+Inspect `coveragePercentage`, strategy results, cursor failures, missing
+modules, and `recommendedFallback`.
+Disclose that reply coverage depends on X.
 
 Errors use `error.type`, `error.code`, and `error.message`, with fields such as `error.retryable` or `error.retry_after` when available. Dependency failures use HTTP `424` in this contract. Fix validation errors before retrying, and respect `retry_after` on `429`.
 

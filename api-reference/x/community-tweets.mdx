@@ -1,5 +1,5 @@
 ---
-title: "X Community Tweets API & Timeline Export Guide"
+title: "Twitter Community Posts API & X Timeline Export"
 sidebarTitle: "Get community tweets"
 description: "Export X community tweets with authors, text, replies, reposts, likes, quotes, and media. Traverse cursor pages or save CSV, JSON, and XLSX exports for reviews."
 api: "GET /x/communities/{id}/tweets"
@@ -82,8 +82,8 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 <AudienceCommunityApiLinks />
 
 Export Twitter community posts from one known Community timeline. Keep Tweet
-text, authors, engagement counts, media, and cursor state. This X Community
-Tweets API guide covers live pages and saved CSV, JSON, or XLSX exports.
+text, authors, engagement counts, media, and cursor state. Use this X Community
+Tweets API for Twitter Communities. Save live pages or CSV, JSON, and XLSX exports.
 This Twitter community scraping guide builds a community timeline export from
 cursor pages.
 
@@ -114,10 +114,10 @@ each returned engagement count and cursor checkpoint.
 Choose Community Search when the workflow requires a keyword. Feed retrieval
 returns recent posts. Search returns posts that match a query.
 
-Persist each page and cursor checkpoint before requesting another page.
+Save each page and cursor before requesting another page.
 Deduplicate by stable Tweet ID when new posts enter the feed. Record Community
-ID, Tweet ID, author ID, text, and creation time. Store engagement counts,
-media, and collection time.
+ID, Tweet ID, author ID, text, and creation time. Store each engagement count
+with media and collection timestamps.
 Label interrupted, result-capped, or credit-bounded collections as partial.
 
 ### Are Twitter Community Posts Public or Private?
@@ -146,9 +146,20 @@ Calculate concrete measures from the captured rows:
 - Tweets with photos, videos, or animated GIFs.
 - Repeated Tweet IDs removed after retries.
 
-These fields support Community engagement analysis. They do not expose unique
+Use these fields to analyze Community engagement. They do not expose unique
 viewers, link clicks, conversions, or moderation decisions. Never invent a
 missing metric or replace it with zero.
+
+### Do I Need to Join a Community to Export Posts?
+
+This read route never changes membership. It exports Community posts visible
+to the connected read context. Do not treat a successful export as membership
+proof. Use X's Communities tab to join a Community or join Communities.
+
+Members posting inside a Community can follow its rules and visibility model.
+Community moderators can review participation through X. Only admins and
+moderators can use the corresponding Community controls. This endpoint reads
+community content but cannot perform those actions.
 
 ### Can This API Schedule or Moderate Community Posts?
 
@@ -171,9 +182,9 @@ into an ambiguous row. Join them later with stable user and community IDs.
 
 ### How Do I Build a Complete Community Tweet Export?
 
-Persist every page and cursor checkpoint before requesting another page.
+Save every page and cursor before requesting another page.
 Deduplicate Tweet IDs when new posts change the live feed. Record the
-collection window.
+first and last observed Tweet timestamps.
 
 Use a saved Community extraction for CSV, JSON, or XLSX exports. Keep direct
 API pages for live ingestion. Mark interrupted or credit-bounded runs as
@@ -272,8 +283,8 @@ creation time, engagement counts, media, and cursor checkpoint.
     counts with the tweet row for review queues and exports.
   </Card>
   <Card title="Next page" icon="arrow-right">
-    Store `has_next_page` with `next_cursor`. Request another page only when
-    the flag is `true`.
+    Store both pagination values together. Request another page only when
+    `has_next_page` is `true`.
   </Card>
   <Card title="Default page" icon="rows-3">
     Request 1 to 100 tweets with `pageSize`. The default is 20. Treat the value
@@ -291,9 +302,9 @@ Start each feed run with one numeric community ID. Record the request time and
 requested `pageSize`. Do not add a keyword to this route. Use community search
 when the workflow needs text matching.
 
-Persist every response before advancing its cursor. Store `has_next_page` with
-`next_cursor`. Request another page only when the flag is true. Reuse the saved
-cursor without modification.
+Save every response before advancing its cursor. Store both pagination values
+together. Request another page only when `has_next_page` is true. Reuse
+`next_cursor` without modification.
 
 Count returned rows and unique Tweet IDs after each page. A busy community can
 receive new posts during pagination. Deduplicate repeated Tweet IDs without
@@ -326,8 +337,8 @@ analysts need one normalized row. Use XLSX for reviewed spreadsheet handoffs.
 Document any column flattening beside the exported file.
 
 Join later profile refreshes through stable author ID. Usernames and profile
-names are mutable attributes. Keep Tweet timestamps separate from profile
-refresh timestamps.
+names are mutable attributes. Separate Tweet creation times from later profile
+retrieval times.
 
 ## Compare Community Timeline Snapshots
 
@@ -524,7 +535,7 @@ The request exceeded your tier rate limit. Wait for the `Retry-After` header bef
 ```json
 { "error": "x_api_unavailable" }
 ```
-HTTP 424 reports an unavailable read service under the normalized v1 contract.
+HTTP 424 indicates that the read service was unavailable.
 
 <Note>
   **Next steps:** [Community Info](/api-reference/x/community-info) for community details, or [Community Members](/api-reference/x/community-members) to list members.

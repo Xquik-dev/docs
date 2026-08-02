@@ -235,7 +235,6 @@ const PAGINATED_TWEET_PAGES = [
   'api-reference/x/timeline.mdx',
   'api-reference/x/tweet-quotes.mdx',
   'api-reference/x/tweet-thread.mdx',
-  'api-reference/x/tweet-replies.mdx',
   'api-reference/x/list-tweets.mdx',
   'api-reference/x/community-tweets.mdx',
   'api-reference/x/community-search.mdx',
@@ -258,6 +257,7 @@ const PAGINATED_USER_PAGES = [
 ] as const;
 
 const NOTIFICATION_PAGE = 'api-reference/x/notifications.mdx';
+const TWEET_REPLIES_PAGE = 'api-reference/x/tweet-replies.mdx';
 const COMMUNITY_INFO_PAGE = 'api-reference/x/community-info.mdx';
 const MEDIA_DOWNLOAD_PAGE = 'api-reference/x/download-media.mdx';
 const BOOKMARK_FOLDERS_PAGE = 'api-reference/x/bookmark-folders.mdx';
@@ -1365,6 +1365,14 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const tweetAuthor = schemaPropertyNames(spec, 'TweetAuthor');
   const searchTweetMedia = itemPropertyNames(spec, 'SearchTweet', 'media');
   const tweetDetailMedia = itemPropertyNames(spec, 'TweetDetail', 'media');
+  const tweetRepliesResponse = responseSchema(
+    spec,
+    '/x/tweets/{id}/replies',
+    'get',
+  );
+  const tweetReplies = responseFieldNamesFromSchema(spec, tweetRepliesResponse);
+  const replyDiagnostic = schemaPropertyNames(spec, 'ReplyCoverageDiagnostic');
+  const replyRichness = schemaPropertyNames(spec, 'ReplyCoverageRichness');
   const paginatedTweetRequired = uniqueSorted([
     ...requiredSchemaPropertyNames(spec, 'PaginatedTweets'),
     ...requiredSchemaPropertyNames(spec, 'SearchTweet'),
@@ -1557,6 +1565,18 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
 
   return [
     ...paginatedTweetContracts,
+    {
+      allowedFields: uniqueSorted([
+        ...tweetReplies,
+        ...replyDiagnostic,
+        ...replyRichness,
+        ...searchTweet,
+        ...userProfile,
+        ...searchTweetMedia,
+      ]),
+      page: TWEET_REPLIES_PAGE,
+      requiredFields: paginatedTweetRequired,
+    },
     ...paginatedUserContracts,
     {
       allowedFields: uniqueSorted([

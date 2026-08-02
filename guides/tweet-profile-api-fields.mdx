@@ -41,25 +41,18 @@ Core tweet fields are `id`, `text`, `createdAt`, `isNoteTweet`, `isReply`,
 `retweeted_tweet`, `author`, `media`, `retweetCount`, `replyCount`,
 `likeCount`, `quoteCount`, `viewCount`, and `bookmarkCount`.
 
-| Field                         | Description                                  |
-| ----------------------------- | -------------------------------------------- |
-| `article`                     | X Article metadata                           |
-| `bookmarked`                  | Observed bookmark state                      |
-| `card`                        | Link card metadata                           |
-| `communityNote`               | Community Note metadata                      |
-| `edit`                        | Edit history and remaining edit state        |
-| `favorited`                   | Observed like state                          |
-| `grokAnalysisButton`          | Grok analysis action availability            |
-| `grokImageEditable`           | Grok image editing availability              |
-| `isTranslatable`              | Translation availability                     |
-| `noteTweet`                   | Long-form post metadata                      |
-| `place`                       | Tagged place metadata                        |
-| `possiblySensitive`           | X sensitivity state                          |
-| `possiblySensitiveEditable`   | Sensitivity setting editability              |
-| `previousCounts`              | Pre-edit engagement counts                   |
-| `quickPromoteEligibility`     | Quick Promote eligibility state              |
-| `retweeted`                   | Observed repost state                        |
-| `viewState`                   | X view-state metadata                        |
+| Field               | Description                       |
+| ------------------- | --------------------------------- |
+| `article`           | X Article metadata                |
+| `card`              | Link card metadata                |
+| `communityNote`     | Community Note metadata           |
+| `edit`              | Edit history and remaining state  |
+| `isTranslatable`    | Translation availability          |
+| `noteTweet`         | Long-form post metadata           |
+| `place`             | Tagged place metadata             |
+| `possiblySensitive` | X sensitivity state               |
+| `previousCounts`    | Pre-edit engagement counts        |
+| `viewState`         | X view-state metadata             |
 
 Tweets also include available entities, disclosures, nested tweets, and media.
 
@@ -81,16 +74,12 @@ Core profile fields are `id`, `username`, `name`, `description`, `followers`,
 | --------------------------------- | -------------------------------------------- |
 | `affiliatesHighlightedLabel`      | Affiliate label metadata                     |
 | `businessAccountAffiliatesCount`  | Business affiliate count                     |
-| `canDm`                            | Whether the viewer can send a direct message |
-| `canMediaTag`                      | Whether the viewer can tag this profile      |
 | `creatorSubscriptionsCount`       | Creator subscription count                   |
-| `followRequestSent`                | Whether a follow request is pending           |
 | `hasGraduatedAccess`              | Graduated access state                       |
 | `hasHiddenSubscriptionsOnProfile` | Hidden subscription state                    |
 | `highlightsInfo`                  | Profile highlights metadata                  |
 | `identityVerification`            | Identity verification metadata               |
 | `isProfileTranslatable`           | Profile translation availability             |
-| `notificationsEnabled`             | Whether profile notifications are enabled    |
 | `parodyCommentaryFanLabel`        | Parody or fan label                          |
 | `profileDescriptionLanguage`      | Detected bio language                        |
 | `profileImageShape`               | Profile image shape                          |
@@ -98,17 +87,9 @@ Core profile fields are `id`, `username`, `name`, `description`, `followers`,
 | `profileSortEnabled`              | Profile sorting state                        |
 | `profileTranslatorType`           | Profile translator type                      |
 | `superFollowEligible`             | Subscription eligibility                     |
-| `superFollowedBy`                  | Whether this profile subscribes to the viewer |
-| `superFollowing`                   | Whether the viewer subscribes to this profile |
-| `viewerBlockedBy`                  | Whether this profile blocks the viewer       |
-| `viewerBlocking`                   | Whether the viewer blocks this profile       |
-| `viewerFollowedBy`                 | Whether this profile follows the viewer      |
-| `viewerFollowing`                  | Whether the viewer follows this profile      |
-| `viewerLiveFollowing`              | Whether live-following is enabled            |
-| `viewerMuting`                     | Whether the viewer mutes this profile        |
 
-Viewer-specific relationship fields appear only when X supplies them.
-Observed tweet action flags follow the same omission rule.
+Xquik removes account-specific actions, permissions, and relationships from
+public reads. Use dedicated write routes or X for account state.
 
 ## Media Fields
 
@@ -140,13 +121,14 @@ Every media object includes `mediaUrl`, `type`, and `url` when available.
 
 Reply coverage depends on X. X can hide, rank, or omit counted replies.
 
-Use `GET /api/v1/x/tweets/<tweet_id>/replies?pageSize=100`.
-Follow `next_cursor` while `has_next_page` remains `true`.
+Use `GET /api/v1/x/tweets/<tweet_id>/replies?mode=complete&limit=25000`.
+Complete mode combines timelines, rankings, cursors, hidden branches, and search.
 
-The first unfiltered page checks visible terminal-page coverage. Xquik returns
-`424 replies_incomplete` when X reports more replies than the page exposes.
-Use tweet search with `conversation_id:<tweet_id>` as the broader fallback.
-Filter `inReplyToId` when the workflow needs only direct replies.
+Direct replies match `inReplyToId` to the requested tweet. Keep
+`nested_replies` separate. Trust `diagnostic.complete` instead of row count.
+Complete mode requires 80% of X's current reported direct replies. HTTP 424
+`replies_incomplete` returns the collected rows and coverage diagnostic.
+Inspect `coveragePercentage`, strategy results, cursor failures, and fallback.
 Disclose that reply coverage depends on X.
 
 ## Surface Mapping

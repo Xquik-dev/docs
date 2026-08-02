@@ -24,7 +24,23 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
       }
     ],
     "has_next_page": true,
-    "next_cursor": "DAACCgACGRElMJcAAA"
+    "next_cursor": "DAACCgACGRElMJcAAA",
+    "nested_replies": [
+      {
+        "id": "1234567890",
+        "text": "Just launched our new feature!",
+        "likeCount": 42,
+        "retweetCount": 5,
+        "replyCount": 3
+      }
+    ],
+    "diagnostic": {
+      "complete": false,
+      "reportedReplyCount": 0,
+      "targetDirectReplies": 0,
+      "uniqueDirectReplies": 0,
+      "coveragePercentage": 0
+    }
   }
   ```
 
@@ -52,7 +68,7 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
   ```json 424 · x/tweet-replies
   {
     "error": "replies_incomplete",
-    "message": "Replies are incomplete. Use tweet search with a conversation_id filter."
+    "message": "Replies are incomplete. Retry complete mode later."
   }
   ```
 
@@ -68,6 +84,13 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
   {
     "error": "x_api_unavailable",
     "message": "X data source temporarily unavailable. Try again later."
+  }
+  ```
+
+  ```json 503 · x/tweet-replies
+  {
+    "error": "x_api_unavailable",
+    "message": "Complete reply extraction is busy. Retry shortly."
   }
   ```
 </ResponseExample>
@@ -90,10 +113,9 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 </Info>
 
 <Warning>
-  Reply visibility depends on X. An unfiltered first page can return
-  `424 replies_incomplete` when X reports more replies than it exposes. Use
-  tweet search as the broader fallback. Set `conversation_id:{id}` before
-  collecting fallback rows.
+  Reply visibility depends on X. Complete mode returns `424
+  replies_incomplete` below 80% direct-reply coverage. Inspect the returned
+  diagnostic before retrying.
   Never treat missing rows as proof that a user did not reply.
 </Warning>
 
@@ -112,11 +134,12 @@ Store `next_cursor` after writing every page. Continue only while
 
 ### How Complete Is a Tweet Reply Collection?
 
-X controls which public replies each page exposes. Protected, deleted, hidden,
-or unavailable replies may not appear. A `424 replies_incomplete` response
-marks the first page as incomplete. Search the matching `conversation_id` when
-the first page is incomplete. Filter `inReplyToId` for direct replies only.
-Never promise a complete set without a terminal cursor.
+X controls which public replies each request exposes. Protected, deleted,
+hidden, or unavailable replies may not appear. Set `mode=complete` for maximum
+coverage. This mode combines timelines, rankings, cursors, hidden branches,
+parent windows, and search. Direct replies match `inReplyToId` to the source
+tweet. Keep `nested_replies` outside direct coverage. Trust `diagnostic.complete`,
+not the reported count alone.
 
 ### How Can a Team Analyze or Moderate Replies?
 
@@ -167,9 +190,10 @@ problem before the next request. Use `reply_extractor` when a fixed
     --data-urlencode "untilTime=1777478400" \
     -H "x-api-key: xq_your_api_key_here" | jq
 
-  # Request the largest supported reply page
+  # Request maximum reply coverage
   curl -G "https://xquik.com/api/v1/x/tweets/1893456789012345678/replies" \
-    --data-urlencode "pageSize=100" \
+    --data-urlencode "mode=complete" \
+    --data-urlencode "limit=25000" \
     -H "x-api-key: xq_your_api_key_here" | jq
   ```
 
@@ -281,9 +305,9 @@ thread joins, engagement counts, media URLs, and cursor fields. Each output
 line contains one reply tied to the requested tweet. Workers can restart after
 storing the latest response page.
 
-A `424 replies_incomplete` response means the first page is not exhaustive.
-Search tweets with `conversation_id:<tweet_id>` as the broader fallback. Keep
-only rows whose `inReplyToId` matches the requested tweet when needed.
+A `424 replies_incomplete` response still contains collected direct and nested
+replies. Inspect its diagnostic before retrying. Keep only rows whose
+`inReplyToId` matches the requested tweet for direct-reply workflows.
 
 Use [`reply_extractor`](/guides/tweet-replies-export) instead when a team needs
 an estimate, durable extraction ID, stored result pages, or CSV, JSON, and XLSX
@@ -329,7 +353,7 @@ downloads after completion.
 
 `sinceTime` and `untilTime` are Unix timestamps in seconds. Use them to bound moderation windows, campaign periods, or giveaway audit ranges. Direct replies calls use the default paid page size; use `reply_extractor` with `resultsLimit` when you need a predictable file export cap.
 
-Direct replies cost 1 credit per tweet returned. Low credit balances can return fewer replies than a full page; zero affordable results return `402 insufficient_credits`. Retry `429` with the `Retry-After` header. Retry `502 x_api_unavailable` after a short backoff. For `424 replies_incomplete`, use tweet search with `conversation_id:<tweet_id>`.
+Direct replies cost 1 credit per tweet returned. Low balances can reduce standard pages. Zero affordable results return `402 insufficient_credits`. Retry `429` with `Retry-After`. Retry `502` after a short backoff. Retry `503` after its stated delay. For `424 replies_incomplete`, inspect `diagnostic.recommendedFallback`.
 
 ## Build a reply moderation table
 
@@ -358,7 +382,7 @@ each conversation branch.
 | Resume cursor | `next_cursor` | Send it as `cursor` only when `has_next_page` is `true`. |
 | Time window | `sinceTime` and `untilTime` | Keep both time values unchanged when retrying. |
 | Completion state | `has_next_page` plus the terminal cursor | Mark the export complete only after the final page. |
-| Incomplete first page | `424 replies_incomplete` | Stop exhaustive verification and search the conversation ID. |
+| Incomplete complete-mode run | `424 replies_incomplete` plus `diagnostic` | Preserve rows, inspect evidence, and follow `recommendedFallback`. |
 
 ## Which replies endpoint?
 
@@ -375,14 +399,24 @@ each conversation branch.
 
 ## Query parameters
 
+<ParamField query="mode" type="string" default="standard">
+  Use `standard` for cursor pages and filters. Use `complete` for maximum
+  direct-reply coverage. Complete mode accepts only `limit`.
+</ParamField>
+
+<ParamField query="limit" type="number" default="25000">
+  Maximum combined direct and nested replies in complete mode. Use `1` through
+  `25000`. In standard mode, this deprecated alias accepts `1` through `100`.
+</ParamField>
+
 <ParamField query="pageSize" type="number" default="20">
-  Maximum replies requested from this page. Use a value from `1` to `100`.
-  Deprecated `limit` and `count` aliases remain accepted.
+  Maximum replies requested in standard mode. Use `1` through `100`. Omit this
+  field in complete mode. Deprecated `limit` and `count` aliases remain.
 </ParamField>
 
 <ParamField query="cursor" type="string">
-  Opaque pagination cursor for older reply pages. Omit it for the first page,
-  then pass the `next_cursor` value from the previous response.
+  Opaque cursor for standard mode. Omit it initially. Then pass the returned
+  `next_cursor` while `has_next_page` remains `true`.
 </ParamField>
 
 <ParamField query="sinceTime" type="string">
@@ -397,9 +431,9 @@ each conversation branch.
 
 ### Tweet result filters
 
-These optional filters apply to `tweets[]` returned by this route. They keep the
-same parent tweet and filter rows after each page is fetched, so selective
-filters can return fewer rows than an unfiltered page.
+These optional filters apply only in standard mode. They keep the same parent
+tweet and filter rows after retrieval. Selective filters can return fewer rows.
+Remove every filter before requesting complete mode.
 
 <TweetResultFilterParams />
 
@@ -470,6 +504,35 @@ filters can return fewer rows than an unfiltered page.
 </ResponseField>
 <ResponseField name="has_next_page" type="boolean">Whether more results are available.</ResponseField>
 <ResponseField name="next_cursor" type="string">Cursor for the next page.</ResponseField>
+<ResponseField name="nested_replies" type="object[]">Nested replies returned by complete mode. Exclude them from direct coverage.</ResponseField>
+<ResponseField name="diagnostic" type="object">
+  Complete-mode coverage evidence. Omitted from standard responses.
+  <Expandable title="Coverage diagnostic fields">
+    <ResponseField name="complete" type="boolean">Whether direct coverage met the target without truncation.</ResponseField>
+    <ResponseField name="reportedReplyCount" type="number">Reply count reported on the source tweet.</ResponseField>
+    <ResponseField name="targetDirectReplies" type="number">Minimum direct replies required for the coverage target.</ResponseField>
+    <ResponseField name="uniqueDirectReplies" type="number">Unique replies whose parent matches the requested tweet.</ResponseField>
+    <ResponseField name="coveragePercentage" type="number">Unique direct replies divided by the reported count.</ResponseField>
+    <ResponseField name="nestedReplyCount" type="number">Nested replies excluded from direct coverage.</ResponseField>
+    <ResponseField name="pagesAttempted" type="number">Pages attempted across every collection strategy.</ResponseField>
+    <ResponseField name="strategiesAttempted" type="object[]">Strategy names, page counts, contributions, and stop reasons.</ResponseField>
+    <ResponseField name="duplicateCount" type="number">Duplicate tweet IDs removed across strategies.</ResponseField>
+    <ResponseField name="cursorFailures" type="number">Cursor requests that failed.</ResponseField>
+    <ResponseField name="repeatedCursorCount" type="number">Repeated cursors rejected to prevent loops.</ResponseField>
+    <ResponseField name="emptyFalseProgressPages" type="number">Empty pages rejected for making no progress.</ResponseField>
+    <ResponseField name="malformedCount" type="number">Malformed response items rejected.</ResponseField>
+    <ResponseField name="unrelatedCount" type="number">Tweets rejected because they belong elsewhere.</ResponseField>
+    <ResponseField name="missingResponseModulesOrFields" type="string[]">Expected X modules or fields that were unavailable.</ResponseField>
+    <ResponseField name="recommendedFallback" type="string">Recommended action when coverage remains incomplete.</ResponseField>
+    <ResponseField name="richness" type="object">
+      Field-presence counts across collected direct replies. Includes
+      `totalReplies`, `text`, `author`, `createdAt`, `language`, `url`,
+      `entities`, `media`, `article`, `card`, `communityNote`,
+      `quotedOrRepostedTweet`, and `engagementCounts`.
+    </ResponseField>
+    <ResponseField name="responseTruncated" type="boolean">Whether the requested limit truncated safe results.</ResponseField>
+  </Expandable>
+</ResponseField>
 
 ```json
 {
@@ -535,12 +598,61 @@ Your tier rate limit was exceeded. Wait for the `Retry-After` header before retr
 ```json
 {
   "error": "replies_incomplete",
-  "message": "Replies are incomplete. Use tweet search with a conversation_id filter."
+  "message": "Replies are incomplete. Retry complete mode later.",
+  "tweets": [],
+  "has_next_page": false,
+  "next_cursor": "",
+  "nested_replies": [],
+  "diagnostic": {
+    "complete": false,
+    "reportedReplyCount": 100,
+    "targetDirectReplies": 80,
+    "uniqueDirectReplies": 42,
+    "coveragePercentage": 42,
+    "nestedReplyCount": 5,
+    "pagesAttempted": 12,
+    "strategiesAttempted": [],
+    "duplicateCount": 3,
+    "cursorFailures": 0,
+    "repeatedCursorCount": 0,
+    "emptyFalseProgressPages": 1,
+    "malformedCount": 0,
+    "unrelatedCount": 2,
+    "missingResponseModulesOrFields": [],
+    "recommendedFallback": "Retry complete mode later. X did not expose enough direct replies.",
+    "richness": {
+      "totalReplies": 42,
+      "text": 42,
+      "author": 40,
+      "createdAt": 42,
+      "language": 38,
+      "url": 42,
+      "entities": 20,
+      "media": 5,
+      "article": 0,
+      "card": 2,
+      "communityNote": 0,
+      "quotedOrRepostedTweet": 1,
+      "engagementCounts": 42
+    },
+    "responseTruncated": false
+  }
 }
 ```
 
-X reports more replies than the terminal first page exposes. Use tweet search
-with the same conversation ID. Disclose that coverage depends on X.
+The response preserves collected rows and diagnostic evidence. Trust
+`diagnostic.complete`. Follow `recommendedFallback` before retrying.
+
+### 503 Complete Reply Extraction Busy
+
+```json
+{
+  "error": "x_api_unavailable",
+  "message": "Complete reply extraction is busy. Retry shortly."
+}
+```
+
+Wait for the `Retry-After` duration before repeating complete mode.
 
 <Note>
   **Related:** [Tweet Replies Export Workflow](/guides/tweet-replies-export) when you need saved CSV, JSON, or XLSX files, [Tweet Quotes](/api-reference/x/tweet-quotes), [Tweet Thread](/api-reference/x/tweet-thread), [Retweeters](/api-reference/x/retweeters), and [Favoriters](/api-reference/x/favoriters).
