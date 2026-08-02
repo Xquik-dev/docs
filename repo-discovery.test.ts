@@ -3015,6 +3015,57 @@ const FORBIDDEN_LIKE_TWEET_API_SNIPPETS = [
   'Link the like to its human or automated rule.',
 ] as const;
 
+const REQUIRED_UNLIKE_TWEET_API_SNIPPETS = [
+  'title: "Remove Twitter Likes API: Unlike a Tweet by ID"',
+  '"remove Twitter likes"',
+  '"how to remove a like on Twitter"',
+  'Use this Remove Twitter Likes API to unlike 1 tweet by ID.',
+  'If you need to know how to remove a like on Twitter through REST, start here.',
+  '[Unlike Post endpoint](https://docs.x.com/x-api/users/unlike-post)',
+  '[Like a Post guide](https://help.x.com/en/using-x/liking-posts-and-moments)',
+  'const removalRecord =',
+  'request_hash: result.request.hash',
+  'requested_tweet_id: tweetId',
+  'result.result?.id ?? result.tweetId ?? result.targetId ?? null',
+  'process.stdout.write(`${JSON.stringify(removalRecord)}\\n`);',
+  'removal_record = {',
+  '"request_hash": result["request"]["hash"]',
+  'response.raise_for_status()',
+  'type UnlikeTweetResponse struct',
+  'SafeToRetry bool `json:"safeToRetry"`',
+  '## Remove One Twitter Like by ID',
+  'This endpoint accepts 1 Tweet ID per request.',
+  '## Authenticate the Twitter Account',
+  'The request never accepts an X password or session cookie.',
+  '## Approve the Exact Like Removal',
+  '## Save a Durable Unlike Receipt',
+  '| Unlike action column | Source | Removal rule |',
+  '## Confirm Like Removal',
+  '| Already unliked | Converged terminal result |',
+  '## Remove Twitter Likes in a Controlled Queue',
+  'This route has no mass-delete request.',
+  '## Prevent Duplicate Unlike Requests',
+  '## Handle Remove Twitter Likes Errors',
+  '## Choose Unlike, Delete, or Unretweet',
+  '## Remove Twitter Likes Questions',
+  '### How to remove a like on Twitter with an API?',
+  '### Can I remove all Twitter likes at once?',
+  '### Can I remove likes for multiple Twitter accounts?',
+  '### What are the risks of third-party like removal tools?',
+  '### Does unliking delete the original tweet?',
+  '<ParamField header="Authorization" type="string">',
+  '<WriteActionLifecycleResponse />',
+] as const;
+
+const FORBIDDEN_UNLIKE_TWEET_API_SNIPPETS = [
+  'const data = await response.json();',
+  'data = response.json()',
+  'var data map[string]interface{}',
+  'fmt.Println(data)',
+  'Session cookie authentication is also supported.',
+  'title: "Twitter Unlike API for Engagement Removal Actions"',
+] as const;
+
 const FORBIDDEN_PUBLIC_TWEET_MEDIA_ID_SNIPPETS = [
   'Pass returned `mediaId` in the `media` array on `POST /x/tweets`',
   'Pass `mediaId` to `POST /x/tweets`',
@@ -14801,6 +14852,28 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(
       FORBIDDEN_LIKE_TWEET_API_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the unlike tweet API page scoped and auditable', (): void => {
+    expect.assertions(2);
+
+    const source = `${readFileSync(
+      'api-reference/x-write/unlike.mdx',
+      'utf8',
+    )}\n${readFileSync(WRITE_ACTION_LIFECYCLE_SNIPPET_PATH, 'utf8')}`;
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Unlike tweet API docs',
+        REQUIRED_UNLIKE_TWEET_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_UNLIKE_TWEET_API_SNIPPETS.filter((snippet) =>
         source.includes(snippet),
       ),
     ).toStrictEqual([]);
