@@ -9,9 +9,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use [`prefect-xquik`](https://github.com/Xquik-dev/prefect-xquik) for scheduled Twitter API reads in Python. Build repeatable tweet searches, profile lookups, user timeline refreshes, and trend checks. Prefect adds schedules, retries, blocks, run history, and deployment controls.
+Prefect is an open-source workflow orchestrator for Python code. This Prefect Python tutorial schedules Twitter API Python reads through Xquik. It builds a Prefect Python workflow orchestration pipeline for tweets, profiles, timelines, and trends.
+
+Use [`prefect-xquik`](https://github.com/Xquik-dev/prefect-xquik) for repeatable tweet searches, profile lookups, timeline refreshes, and trend checks. Use it for scheduled Twitter API reads in Python. This Prefect Python library provides typed credentials and six read-only tasks. It is a collection, not a general Prefect Python SDK.
 
 The collection is read-only. It provides six asynchronous Prefect tasks. Each task returns the canonical Xquik JSON response as a Python dictionary.
+
+Prefect turns Python functions into observable data pipelines. Prefect flows wrap normal Python code with retries, schedules, and state tracking. Prefect offers run history, deployment controls, and execution environments for each data workflow. The Prefect UI shows every created task and flow state in real time.
 
 <CardGroup cols={3}>
   <Card title="Search Tweets" icon="search">
@@ -47,15 +51,30 @@ python -m pip install \
   "prefect-xquik @ https://github.com/Xquik-dev/prefect-xquik/archive/refs/tags/v0.1.7.tar.gz"
 ```
 
-PyPI does not currently publish a `prefect-xquik` distribution. Tag `v0.1.7` supports published Prefect 3 releases. It also uses the canonical Xquik API base URL. Tag `v0.1.8` changes package maintenance only and raises the Prefect dependency floor.
+PyPI publishes `prefect-xquik` 0.1.8 and earlier releases, including 0.1.7. The verified `v0.1.7` source pin supports published Prefect 3 releases. It also uses the canonical Xquik API base URL. Tag `v0.1.8` only changes package maintenance. It also requires newer Prefect releases.
 
 The explicit `importlib-metadata` pin fixes Prefect's clean Python 3.12 CLI import. Prefect documents the upstream issue in [#22011](https://github.com/PrefectHQ/prefect/issues/22011) and [#22137](https://github.com/PrefectHQ/prefect/issues/22137).
 
-Register the credentials block after installation.
+Use the tested pins above for production. Use a separate sandbox for compatibility checks.
 
 ```bash
+python -m venv .venv-prefect-compat
+source .venv-prefect-compat/bin/activate
+python -m pip install -U prefect prefect-xquik
+prefect server start
+```
+
+Keep the server running. Open another shell and activate the same environment.
+
+```bash
+source .venv-prefect-compat/bin/activate
+prefect config set PREFECT_API_URL="http://127.0.0.1:4200/api"
 prefect block register -m prefect_xquik
 ```
+
+PowerShell users should activate `.venv-prefect-compat\Scripts\Activate.ps1` instead. Run `pip install -U prefect` only inside this sandbox. Run `prefect server start` before registering the block.
+
+Keep the tested pins above for this integration. Treat Prefect and the collection as separate Python packages.
 
 ## Store the Xquik API Key
 
@@ -76,6 +95,16 @@ credentials.save("xquik", overwrite=True)
 Prefect blocks store typed configuration across flows and deployments. The API key uses Pydantic `SecretStr`. Prefect hides its value in normal block rendering.
 
 Never place API keys in deployment YAML, flow parameters, logs, or repositories. Limit block access to deployments that require Xquik reads.
+
+## Understand the Prefect Python Runtime
+
+Prefect runs ordinary Python functions. The `@flow` decorator creates a tracked flow run. The `@task` decorator creates task state with optional retries. Configure retries per task or through a nonzero global default.
+
+The `from prefect import flow, task` statement imports both decorators.
+
+A dynamic workflow can branch from returned tweets, profiles, or trends. Prefect does not require YAML files for Python flows. Use Python code for branches, loops, and task dependencies.
+
+Environment variables can select a local Prefect profile or server. Store Xquik keys in `XquikCredentials` for deployed flows.
 
 ## Choose the Right Prefect Task
 
@@ -187,7 +216,7 @@ The timestamps define a reproducible search window. Store them beside every run 
 
 ## Write Focused Tweet Search Queries
 
-Focused searches reduce irrelevant rows and downstream review work.
+Use focused searches to reduce irrelevant rows and review work.
 
 <CardGroup cols={2}>
   <Card title="Exact Phrase" icon="quote">
@@ -329,7 +358,7 @@ search_recent_tweets = search_tweets.with_options(
 )
 ```
 
-Jitter prevents many scheduled tasks from retrying together. The collection does not expose response headers on `XquikError`. Use conservative delays for `429`, or call REST directly when header-aware handling matters.
+Add jitter so scheduled tasks avoid synchronized retries. The collection does not expose response headers on `XquikError`. Use conservative delays for `429`, or call REST directly when header-aware handling matters.
 
 ## Route Every Documented Error
 
@@ -366,11 +395,29 @@ These statuses cover all six collection endpoints. Do not add undocumented statu
 
 ## Control Concurrency and Rate Limits
 
-Multiple schedules can overlap and share one API key. Apply a Prefect concurrency limit to the Xquik task tag or work queue. Keep retry policies aligned with [Xquik rate-limit guidance](/guides/rate-limits).
+Multiple schedules can overlap and share one API key. Create one global rate limit with slot decay.
+
+```bash
+prefect gcl create xquik-read-rate --limit 300 --slot-decay-per-second 300
+```
+
+Acquire one shared slot before every Xquik read.
+
+```python
+from prefect.concurrency.asyncio import rate_limit
+
+
+async def acquire_xquik_read_slot() -> None:
+    await rate_limit("xquik-read-rate", occupy=1, strict=True)
+```
+
+Await this helper before `search_tweets`, `get_tweet`, and `search_users`. Also await it before `get_user`, `get_user_tweets`, and `get_trends`.
+
+Use a separate Prefect concurrency limit for in-flight task runs. Concurrency limits do not enforce request frequency. Keep retry policies aligned with [Xquik rate-limit guidance](/guides/rate-limits).
 
 Read endpoints share a 300 per 1s user bucket. Treat this as one shared capacity limit.
 
-Use one limit across tweet search, profile lookup, timelines, and trends. Avoid separate limits that exceed the shared account capacity. Slow low-priority refreshes before delaying interactive reads.
+Use one limit across tweet search, profile lookup, timelines, and trends. Share that limit across tasks using the same account capacity. Slow low-priority refreshes before delaying interactive reads.
 
 ## Build Profile and Timeline Workflows
 
@@ -415,11 +462,11 @@ Trends are discovery signals, not verified facts. Validate important topics thro
   </Card>
 </CardGroup>
 
-Do not pass raw dictionaries directly into alerts or generators. Define compact row contracts first. This keeps downstream changes independent from API response additions.
+Do not pass raw dictionaries directly into alerts or generators. Define compact row contracts first. Stable row contracts isolate consumers from new response fields.
 
 ## Prefect Collection or Direct Xquik API
 
-Use `prefect-xquik` when normal Prefect tasks cover the required read. It provides blocks, async calls, validation, and task metadata.
+Choose `prefect-xquik` for its six supported reads. It provides blocks, async calls, validation, and task metadata.
 
 Use direct REST, a generated SDK, or MCP for:
 
@@ -433,6 +480,38 @@ Use direct REST, a generated SDK, or MCP for:
 Keep writes behind explicit approval. Store confirmed IDs before retrying any write action.
 
 ## Common Prefect Twitter API Questions
+
+### What Is Prefect Python?
+
+Prefect orchestrates Python functions as tracked flows and tasks. It adds schedules, retries, state, logs, and deployment controls without replacing Python syntax.
+
+### What Does This Python Prefect Tutorial Cover?
+
+It builds a Prefect Python pipeline for scheduled Twitter searches and timeline reads. The flow preserves tweets, cursors, time windows, and documented errors.
+
+### How Does a Twitter Search API Python Flow Work?
+
+The flow calls `search_tweets` with a query and time window. It normalizes tweet IDs, text, authors, metrics, URLs, and pagination fields.
+
+### Is This Twitter Automation Python Workflow Read-Only?
+
+Yes. The Prefect Python API collection reads tweets, profiles, timelines, and trends. Send approved writes through separate REST, SDK, or MCP routes.
+
+### Is `prefect-xquik` a Prefect Python SDK?
+
+No. It is a focused Prefect Python library with six asynchronous read tasks. Use Xquik SDKs when a workflow needs broader REST coverage.
+
+### Which Prefect Python Version Should I Install?
+
+Use Python 3.10 or newer with the tested Prefect 3.4.25 pin. Validate newer Prefect releases before changing production dependencies.
+
+### Where Is the Prefect Python GitHub Collection?
+
+The [prefect-xquik repository](https://github.com/Xquik-dev/prefect-xquik) contains the package, examples, tests, and release tags. Review source changes before upgrading a pinned deployment.
+
+### Python Prefect vs Airflow: Which Fits Twitter Search?
+
+Prefect fits dynamic Python control flow and task-level retries. Airflow fits teams already operating DAG-based scheduling infrastructure. Either system still needs cursor, idempotency, and rate-limit controls.
 
 ### How Do I Automate Twitter Search With Python?
 
@@ -448,11 +527,11 @@ No. The six tasks are read-only. Use Xquik REST, SDK, or MCP routes for approved
 
 ### How Do I Handle Twitter API Rate Limits in Prefect?
 
-Retry `429` with jittered delays and a hard attempt cap. Apply shared concurrency limits across Xquik tasks.
+Await the shared rate limiter before all six tasks. Retry `429` with jittered delays and a hard attempt cap. Keep concurrency limits separate.
 
 ### How Do I Prevent Duplicate Tweets Across Scheduled Runs?
 
-Upsert by tweet ID. Store time windows and cursors after each committed page.
+Enforce a unique tweet ID constraint. Upsert rows or ignore conflicts during overlapping runs. Save time windows and cursors after each committed page.
 
 ### Should I Use Prefect or Cron for Twitter Automation?
 
@@ -466,6 +545,7 @@ Store it in an `XquikCredentials` block. Never pass it as a flow parameter.
 
 - [prefect-xquik source](https://github.com/Xquik-dev/prefect-xquik)
 - [prefect-xquik v0.1.7](https://github.com/Xquik-dev/prefect-xquik/releases/tag/v0.1.7)
+- [prefect-xquik on PyPI](https://pypi.org/project/prefect-xquik/)
 - [Prefect schedules](https://docs.prefect.io/v3/concepts/schedules)
 - [Prefect task retries](https://docs.prefect.io/v3/how-to-guides/workflows/retries)
 - [Tweet Search API](/api-reference/x/search-tweets)
