@@ -224,13 +224,15 @@ Store `community_id`, `member_id`, `username`, `display_name`, `bio`,
 ## Build a Community Member Export
 
 Finish cursor pagination before declaring the community member export complete.
-Save each profile page before advancing its cursor. Mark interrupted runs as a
-partial membership snapshot.
+Save each profile page before advancing its cursor. Mark credit-bounded,
+failed, and interrupted runs as partial membership snapshots. Mark the export
+complete only after `has_next_page` is `false`.
 
 Community membership shows roster inclusion. It does not prove posting
 activity. Use [Community Tweets](/api-reference/x/community-tweets) for recent
 posts. Use [Community Search](/api-reference/x/community-search) for posts that
-match a keyword. Join those posts to member profiles by stable user ID.
+match a keyword. Join those posts to member profiles by `manifest_id`,
+`community_id`, and stable user ID.
 
 Use [Community Moderators](/api-reference/x/community-moderators) for
 role-specific profiles. Verification and follower counts do not prove a
@@ -238,8 +240,9 @@ moderator role.
 
 X Lists use different IDs and membership rules. Review X's official
 [List Members Lookup](https://docs.x.com/x-api/lists/list-members/quickstart/list-members-lookup)
-before migrating a List workflow. Store a source type when one table contains
-both List members and Community members.
+before migrating a List workflow. Store `source_type` and its source ID. Use
+`community_id` for Community rows and `list_id` for List rows. Join and
+deduplicate with the source ID plus `member_id`.
 
 Use this route to enumerate profiles that belong to one community. Keep the
 community ID on every exported row. A username alone cannot identify its
@@ -257,8 +260,9 @@ roster.
 Do not label every member as a moderator. Use the moderators route for that
 smaller group.
 
-Paginate until no next cursor remains. Persist each page before saving its
-cursor. Deduplicate by user ID when a resumed job repeats the previous page.
+Request another page only when `has_next_page` is exactly `true`. Pass
+`next_cursor` without modification. Persist each page before saving its cursor.
+Deduplicate by user ID when a resumed job repeats the previous page.
 
 Profile fields can change after collection. Stamp each profile row with the
 collection time. Refresh the profile through user lookup when current bios,
@@ -414,7 +418,8 @@ Your tier rate limit was exceeded. Wait for the `Retry-After` header before retr
 ```json
 { "error": "x_api_unavailable" }
 ```
-Opted-in normalized v1 calls return 424 when the read service fails.
+Send `xquik-api-contract: 2026-04-29` to opt in to HTTP 424. Default v1 returns
+HTTP 502 with `x_api_unavailable`.
 
 <Note>
   **Next steps:** [Community Info](/api-reference/x/community-info) for community details, or [Community Moderators](/api-reference/x/community-moderators) to list moderators.
