@@ -1,9 +1,9 @@
 ---
-title: "Twitter Unretweet API for Repost Removal Actions"
+title: "How to Undo a Retweet with the Twitter API"
 sidebarTitle: "Unretweet"
-description: "Undo a repost by tweet ID from a connected X account. Confirm the removed repost and updated relationship in the action response. See response fields."
+description: "Learn how to undo a retweet on Twitter by Tweet ID. Remove one repost, poll the write action, verify completion, and handle Twitter API undo retweet errors."
 api: "DELETE /x/tweets/{id}/retweet"
-keywords: ["tweet", "unretweet", "undo retweet", "remove retweet", "x account"]
+keywords: ["how to undo a retweet on Twitter", "Twitter undo retweet", "Twitter API undo retweet", "remove retweet", "undo repost"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -119,31 +119,19 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-## Choose Unretweet
-
-Use this route to remove your account's repost of one tweet. It does not remove likes, original tweets, follows, or profile changes. Store the write-action ID before continuing the workflow.
-
-## Remove One Repost Without Changing Follows
-
-Send the original tweet ID and the connected account username. The route
-removes that account's repost relationship only. It does not unfollow the
-author, unlike the tweet, or delete the author's post.
-
-Use a unique idempotency key for the removal intent. Store the returned action
-ID and status URL before retrying. Poll until the action becomes terminal, then
-confirm the repost removal from the final action result.
-
-Do not use this route for quote tweets. A quote tweet is a separate published
-post with its own tweet ID. Remove it through the supported tweet deletion
-workflow when that behavior is required.
-
-Keep the connected account and tweet ID in the audit row. They identify which
-repost changed. The [Unfollow User](/api-reference/x-write/unfollow) route
-changes a profile relationship and serves a different workflow.
-
 <Callout icon="coins" color="#5c3327">
   **10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 </Callout>
+
+Use this Twitter undo retweet endpoint to remove 1 repost by Tweet ID.
+Name the connected X account that owns the repost.
+Then poll `statusUrl` until `terminal` becomes `true`.
+
+The route preserves the source tweet and its original author.
+It does not remove likes, follows, replies, bookmarks, or original tweets.
+
+Compare X's separate [Unrepost Post endpoint](https://docs.x.com/x-api/users/unrepost-post).
+X also publishes a [Retweet management guide](https://docs.x.com/x-api/posts/retweets/quickstart/manage-retweets).
 
 <CodeGroup>
   ```bash cURL
@@ -169,7 +157,10 @@ changes a profile relationship and serves a different workflow.
       account: "elonmusk",
     }),
   });
-  const data = await response.json();
+  const unretweetReceipt = await response.json();
+  if (!response.ok) {
+    throw new Error(JSON.stringify(unretweetReceipt));
+  }
   ```
 
   ```python Python
@@ -186,7 +177,8 @@ changes a profile relationship and serves a different workflow.
           "account": "elonmusk",
       },
   )
-  data = response.json()
+  unretweet_receipt = response.json()
+  response.raise_for_status()
   ```
 
   ```go Go
@@ -219,70 +211,256 @@ changes a profile relationship and serves a different workflow.
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      var unretweetReceipt map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&unretweetReceipt); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      fmt.Println(unretweetReceipt)
   }
   ```
 </CodeGroup>
 
-## Reverse a repost with traceability
+## Authenticate and Approve the Reposting Account
 
-Use this route to remove one repost from a connected account. Match the tweet
-ID against the account’s repost record first. Keep the original approval
-reference beside the removal request. This makes campaign cleanup auditable.
+Send an Xquik API key or OAuth 2.1 bearer token.
+Name 1 connected X account in the request body.
+Connect that account before approving the repost removal.
+Never send an X password or session cookie.
 
-Generate a new idempotency key for the removal. Do not reuse the key from the
-original repost. Reuse the removal key only after a timeout or dropped
-connection.
+Show the source tweet immediately before approval.
+Include its author, text, media, Tweet ID, and availability.
+Also show the account that will lose the repost.
+This review prevents cleanup on the wrong account.
 
-Typical repost-removal workflows include:
+Store these approval fields with the request:
 
-- Ending a time-bounded promotion.
-- Correcting an accidental repost from the wrong account.
-- Removing content after a policy or legal review.
-- Reconciling a campaign ledger with the account timeline.
+| Approval field | Source | Purpose |
+| --- | --- | --- |
+| Acting account | Request `account` | Identify the account removing the repost. |
+| Source Tweet ID | Path `id` | Preserve the exact repost target. |
+| Source author | Tweet lookup | Keep original attribution in the review. |
+| Removal reason | Workflow input | Record why the repost should end. |
+| Approval owner | Workflow identity | Record who approved removal. |
+| Idempotency key | Request header | Bind retries to this removal decision. |
 
-Record the returned action ID and lifecycle state. Keep failures separate from
-completed removals. Poll the action status route if processing continues in
-the background.
+## Remove One Repost by Tweet ID
 
-## Confirm Repost Removal
+Resolve the source Tweet ID before approval.
+Do not use a timeline position or search-result index.
+Send the ID as a string to preserve all digits.
 
-Store the Tweet ID, connected account ID, action ID, and idempotency key. Poll the write status until it reaches a terminal state.
+Generate a new idempotency key for the removal.
+Do not reuse the key from the original repost.
+Reuse the removal key only after an interrupted response.
 
-A queued response does not prove removal. An already-removed result means the repost state converged.
+Store the action ID before starting another removal.
+An accepted action may not update the timeline immediately.
+Poll the lifecycle state while the action remains active.
 
-Refresh the account timeline only when downstream work needs current proof. Preserve generic errors and request IDs. Then retry the same Tweet.
+Common Twitter API undo retweet workflows include:
 
-This operation changes only repost state. It does not change follows, likes, replies, or bookmarks.
+- End an approved, time-bounded repost campaign.
+- Remove an accidental repost from the wrong account.
+- Retract a repost after a policy review.
+- Reconcile a campaign ledger with an account timeline.
+- Clean old reposts selected during an account audit.
+
+## Choose Unretweet, Delete Tweet, or Unlike
+
+Use Unretweet for an unchanged repost of someone else's tweet.
+The operation changes only that account's repost relationship.
+
+Use [Delete Tweet](/api-reference/x-write/delete-tweet) for original tweets and quote tweets.
+A quote tweet has its own Tweet ID and published text.
+
+Use [Unlike Tweet](/api-reference/x-write/unlike) to remove a like.
+Use [Unfollow User](/api-reference/x-write/unfollow) to remove a following relationship.
+
+| Cleanup intent | API route | Required target |
+| --- | --- | --- |
+| Remove an unchanged repost | `DELETE /x/tweets/{id}/retweet` | Source Tweet ID and connected account |
+| Delete an original tweet | `DELETE /x/tweets/{id}` | Published Tweet ID and connected account |
+| Delete a quote tweet | `DELETE /x/tweets/{id}` | Quote Tweet ID and connected account |
+| Remove a like | `DELETE /x/tweets/{id}/like` | Liked Tweet ID and connected account |
+| Unfollow an account | `DELETE /x/users/{id}/follow` | Target user ID and connected account |
+
+X Premium's Undo Post feature is different.
+It delays publication during a short preview window.
+This endpoint removes a repost that already exists.
+
+## Reverse Reposts With Traceability
+
+Keep the original repost action beside the removal action.
+Together, they explain when distribution started and ended.
+
+Record these fields before dispatch:
 
 | Repost removal column | Source | Cleanup rule |
 | --- | --- | --- |
 | `acting_account` | Request `account` | Match the account that owns the repost. |
 | `tweet_id` | Path `id` | Match the exact reposted Tweet ID. |
-| `original_approval_reference` | Repost ledger | Preserve why the repost originally occurred. |
+| `original_action_id` | Repost ledger | Link removal to the earlier repost. |
 | `removal_reason` | Workflow value | Preserve why the repost should end. |
-| `idempotency_key` | Request header | Use a new key, separate from the original repost. |
+| `idempotency_key` | Request header | Use a new key for the removal. |
 | `write_action_id` | Response `id` | Store the durable removal action. |
-| `status` | Response `status` | Keep pending, completed, and failed removals distinct. |
-| `terminal` | Response `terminal` | Update the campaign ledger only when `true`. |
-| `requested_at` | Integration timestamp | Keep cleanup time separate from repost time. |
+| `status` | Response `status` | Separate active, completed, and failed removals. |
+| `terminal` | Response `terminal` | Update the ledger only when `true`. |
+| `requested_at` | Workflow clock | Keep removal time separate from repost time. |
+
+Do not overwrite the original repost record.
+Mark it removed only after terminal success.
+Keep final failures beside the prior repost state.
+
+## Verify Repost Removal and Timeline State
+
+Store `id` as the durable write action ID.
+Store `request.hash` with the account and source Tweet ID.
+Keep `status`, `terminal`, `statusUrl`, and `safeToRetry` together.
+Store `billing.chargedCredits` after billing settles.
+
+Treat `202` as active work, not confirmed removal.
+Poll the same `statusUrl` until `terminal` becomes `true`.
+Never send another removal while that action remains active.
+
+Use these outcomes in the campaign ledger:
 
 | Removal outcome | Evidence | Campaign update |
 | --- | --- | --- |
 | Queued | `terminal: false` | Poll `statusUrl`; keep the repost active locally. |
-| Completed | Terminal success | Mark the repost removed for this account and Tweet ID. |
-| Already removed | Converged terminal result | Mark the desired state without another request. |
-| Retryable failure | `safeToRetry: true` | Preserve the receipt and follow lifecycle guidance. |
+| Completed | Terminal success | Mark this account's repost removed. |
+| Already removed | Converged terminal result | Record the desired state without another request. |
+| Retry allowed | `safeToRetry: true` | Keep the receipt; follow `nextAction`. |
 | Final failure | Terminal failure | Store the error and keep the prior repost state. |
+
+Refresh the account timeline only when downstream proof needs it.
+Timeline caches can display a removed repost temporarily.
+X documents that delay in its [repost help](https://help.x.com/en/using-x/how-to-repost).
+
+Read visibility and write completion are different observations.
+Store their timestamps separately.
+Do not treat a stale timeline as permission to resend.
+
+## Schedule Repost Cleanup Without Bulk Unretweet
+
+This endpoint starts removal when it receives the approved request.
+Use your scheduler when a repost should end later.
+Store the Tweet ID, account, time zone, and approval together.
+
+Create the idempotency key when the schedule becomes immutable.
+Reuse that key only after a network interruption.
+Never reuse it for another account, Tweet ID, or removal time.
+
+The endpoint accepts 1 Tweet ID per request.
+It has no bulk unretweet body.
+Queue approved removals as separate jobs.
+Store each action before starting the next job.
+
+After `429`, honor `Retry-After`.
+Do not rotate connected accounts to bypass a limit.
+X explains separate [API rate limits](https://docs.x.com/x-api/fundamentals/rate-limits).
+
+## Handle Twitter Undo Retweet Errors
+
+Keep every error beside the request hash and action ID.
+Never substitute another Tweet ID automatically.
+
+- `400`: Correct the Tweet ID or account value.
+- `401`: Replace invalid Xquik authentication.
+- `402`: Add credits before another removal request.
+- `403`: Reconnect the selected X account.
+- `409`: Keep the action protected by that idempotency key.
+- `422`: Review X's rejection before another attempt.
+- `429`: Honor `Retry-After` before polling or retrying.
+- `500`: Store the failure; contact support if it persists.
+- `503`: Retry only when `safeToRetry` is `true`.
+
+A client timeout does not prove removal failed.
+Check any returned action before sending another write.
+Follow `nextAction` when the terminal response needs review.
+
+## Apply Repost Cleanup Controls
+
+Require approval for the exact account and source tweet.
+Use campaign allowlists for authors, topics, or Tweet IDs.
+Set a removal limit before bulk cleanup begins.
+Keep separate limits for each connected account.
+
+Freeze the approved cleanup list before processing it.
+Record skipped, active, completed, and failed jobs separately.
+Never count an accepted action as completed.
+
+Inspect unavailable tweets instead of substituting new content.
+Keep deleted or restricted source tweets as distinct outcomes.
+Do not convert an unretweet failure into tweet deletion.
+
+Store the approval, request, action, billing, and final result.
+These records support audits without exposing account credentials.
+
+## Twitter Undo Retweet Questions
+
+### How Do I Undo a Retweet on Twitter with an API?
+
+Approve the connected account and source Tweet ID.
+Send this DELETE request, then poll the action until terminal.
+
+### Can I Undo a Recent Retweet Instantly?
+
+Submit the removal immediately after approval.
+Wait for terminal success before treating the repost as removed.
+
+### Can I Undo an Old Retweet After the Undo Window?
+
+Yes. X Premium's Undo Post window is unrelated.
+Submit the source Tweet ID for an existing repost.
+
+### Why Can't I Undo a Retweet on Twitter?
+
+The account may need reconnection, credits, or a later retry.
+The source tweet may also be unavailable or rejected by X.
+
+### Can a Third-Party App Remove My Retweet?
+
+Yes. This REST endpoint uses your connected X account.
+Approve the account and exact source tweet before removal.
+
+### Does Undoing a Retweet Remove the Original Tweet?
+
+No. It removes only the selected account's repost relationship.
+The source tweet and original author remain unchanged.
+
+### Does Undoing a Retweet Remove Engagement?
+
+It removes the repost from the selected account.
+It does not delete likes, replies, bookmarks, or the source tweet.
+
+### Will Removed Retweets Disappear From Every Timeline Immediately?
+
+Not always. Cached timelines can display an older state temporarily.
+Use the terminal write action as the primary completion record.
+
+### Does Unretweet Retract Existing Notifications?
+
+Do not assume X retracts notifications already delivered.
+This response confirms repost state, not notification delivery.
+
+### Can I Undo Several Retweets in One Request?
+
+No bulk request exists here.
+Approve and submit each Tweet ID separately.
+
+### Can I Undo a Quote Tweet With This Endpoint?
+
+No. A quote tweet is a separate published tweet.
+Use [Delete Tweet](/api-reference/x-write/delete-tweet) with its Tweet ID.
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+<ParamField header="x-api-key" type="string">
+  Send your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.
 </ParamField>
 
 <ParamField header="Idempotency-Key" type="string" required>
@@ -296,13 +474,13 @@ This operation changes only repost state. It does not change follows, likes, rep
 ## Path parameters
 
 <ParamField path="id" type="string" required>
-  The ID of the tweet to unretweet.
+  Source Tweet ID to remove from the selected account's reposts.
 </ParamField>
 
 ## Body
 
 <ParamField body="account" type="string" required>
-  X username or account ID identifying which connected X account will unretweet. The `@` prefix is automatically stripped if included.
+  X username or account ID that owns the repost. The `@` prefix is optional.
 </ParamField>
 
 ## Response

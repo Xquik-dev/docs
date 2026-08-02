@@ -3105,6 +3105,50 @@ const FORBIDDEN_RETWEET_TWEET_API_SNIPPETS = [
   'title: "Twitter Repost API for Retweet Automation Workflows"',
 ] as const;
 
+const REQUIRED_UNRETWEET_TWEET_API_SNIPPETS = [
+  'title: "How to Undo a Retweet with the Twitter API"',
+  '"how to undo a retweet on Twitter"',
+  '"Twitter undo retweet"',
+  '"Twitter API undo retweet"',
+  'Use this Twitter undo retweet endpoint to remove 1 repost by Tweet ID.',
+  '[Unrepost Post endpoint](https://docs.x.com/x-api/users/unrepost-post)',
+  'const unretweetReceipt = await response.json();',
+  'unretweet_receipt = response.json()',
+  'var unretweetReceipt map[string]interface{}',
+  '## Authenticate and Approve the Reposting Account',
+  '## Remove One Repost by Tweet ID',
+  '## Choose Unretweet, Delete Tweet, or Unlike',
+  '## Reverse Reposts With Traceability',
+  '## Verify Repost Removal and Timeline State',
+  '## Schedule Repost Cleanup Without Bulk Unretweet',
+  '## Handle Twitter Undo Retweet Errors',
+  '## Apply Repost Cleanup Controls',
+  '## Twitter Undo Retweet Questions',
+  '### How Do I Undo a Retweet on Twitter with an API?',
+  '### Can I Undo a Recent Retweet Instantly?',
+  '### Can I Undo an Old Retweet After the Undo Window?',
+  '### Why Can\'t I Undo a Retweet on Twitter?',
+  '### Can a Third-Party App Remove My Retweet?',
+  '### Does Undoing a Retweet Remove the Original Tweet?',
+  '### Does Undoing a Retweet Remove Engagement?',
+  '### Will Removed Retweets Disappear From Every Timeline Immediately?',
+  '### Does Unretweet Retract Existing Notifications?',
+  '### Can I Undo Several Retweets in One Request?',
+  '### Can I Undo a Quote Tweet With This Endpoint?',
+  'It has no bulk unretweet body.',
+  '<ParamField header="Authorization" type="string">',
+  '<WriteActionLifecycleResponse />',
+] as const;
+
+const FORBIDDEN_UNRETWEET_TWEET_API_SNIPPETS = [
+  'const data = await response.json();',
+  'data = response.json()',
+  'var data map[string]interface{}',
+  'fmt.Println(data)',
+  'Session cookie authentication is also supported.',
+  'title: "Twitter Unretweet API for Repost Removal Actions"',
+] as const;
+
 const FORBIDDEN_PUBLIC_TWEET_MEDIA_ID_SNIPPETS = [
   'Pass returned `mediaId` in the `media` array on `POST /x/tweets`',
   'Pass `mediaId` to `POST /x/tweets`',
@@ -14935,6 +14979,28 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(
       FORBIDDEN_RETWEET_TWEET_API_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the unretweet API page focused and recoverable', (): void => {
+    expect.assertions(2);
+
+    const source = `${readFileSync(
+      'api-reference/x-write/unretweet.mdx',
+      'utf8',
+    )}\n${readFileSync(WRITE_ACTION_LIFECYCLE_SNIPPET_PATH, 'utf8')}`;
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Unretweet API docs',
+        REQUIRED_UNRETWEET_TWEET_API_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_UNRETWEET_TWEET_API_SNIPPETS.filter((snippet) =>
         source.includes(snippet),
       ),
     ).toStrictEqual([]);
