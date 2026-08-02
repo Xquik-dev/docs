@@ -129,6 +129,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     snippets: [
       'Twitter Media Upload API for Tweets, Replies & DMs',
       '## Use the Twitter API Upload Media Workflow',
+      'This Twitter API media upload route accepts one local file',
+      'A Twitter API upload media request uses one connected',
       '| Output | Next request | Rule |',
       '| `mediaId` | DM `media_ids` | Send exactly 1 media ID. |',
       'Xquik handles the chunked upload and media category internally.',
