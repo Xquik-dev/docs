@@ -10432,6 +10432,7 @@ const REQUIRED_PYDANTIC_AI_GUIDE_SNIPPETS = [
   '### Why Avoid a str Return?',
   'A structured result preserves tweet IDs, cursors, stop reasons, and errors.',
   '### How Do I Import Agent From Pydantic AI?',
+  'Validate and approve each requested X write operation.',
   'delivery is asynchronous and cannot guarantee real-time events.',
   '### How Do I Handle Twitter API Rate Limits in Python?',
 ] as const;
