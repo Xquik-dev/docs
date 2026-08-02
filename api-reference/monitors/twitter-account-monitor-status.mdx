@@ -1,9 +1,9 @@
 ---
-title: "Twitter Account Monitor Status & Alert Checks"
+title: "Twitter Account Activity Tracker & Monitor Status"
 sidebarTitle: "Account monitor status"
-description: "Retrieve one account monitor's X profile, tweet, follower, following, profile, and relationship event types, state, interval, and billing. See event fields."
+description: "Check one Twitter account activity tracker for its X profile, tweet and profile event filters, active alert state, billing, events, and webhook deliveries."
 api: "GET /monitors/{id}"
-keywords: ["monitor", "get", "details", "status"]
+keywords: ["twitter account activity tracker", "twitter account activity", "twitter monitor status", "account activity alerts"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -68,9 +68,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-## Choose One Account Monitor
+## Check One Twitter Account Activity Tracker
 
-Use this route to inspect one account monitor by ID. It returns target, event types, active state, and billing timing. Use update to change state and list for account-wide inventory.
+Use this route for one Twitter account activity tracker status check. It returns
+the tracked X profile, selected event types, active state, and billing timing.
+Use update to change its filters or state. Use list for the complete monitor
+inventory.
 
 <Callout icon="circle-check" color="#16a34a">
   **Free** - does not consume credits
@@ -230,7 +233,7 @@ one state snapshot row. Store `monitor_id`, `event_types`, `is_active`,
 `deliveries_endpoint_pattern` before changing filters, pausing alerts, or
 reconciling webhooks.
 
-## State handoff
+## State Handoff
 
 Use `GET /monitors/{id}` before changing routing, billing checks, or alert
 state for one account monitor. The endpoint returns the current stored monitor
@@ -278,6 +281,85 @@ for your account only; deleted or cross-account IDs return `404`.
     the delivery join key.
   </Card>
 </CardGroup>
+
+## What Does Twitter Account Activity Tracker Status Prove?
+
+The response proves which X profile one monitor targets. Confirm both
+`username` and `xUserId`. Keep the stable X user ID when a username changes.
+This prevents a renamed profile from appearing as a different account.
+
+Read `eventTypes` as the monitor's current matching contract. Tweet filters
+cover new posts, replies, quotes, reposts, media, links, and polls. They also
+cover mentions, hashtags, and long-form posts. Profile filters cover avatar,
+banner, name, username, biography, location, and URL. They also cover
+verification, protection, pinned tweets, and account availability. The
+response returns only the selected filters.
+
+Followers and following are not monitor event types. Account relationship
+changes are not monitor events either. For follower growth, compare complete
+[follower snapshots](/api-reference/x/followers) at approved intervals. Use the
+[follower export guide](/guides/follower-export-crm) for repeatable CSV or
+warehouse handoffs.
+
+Read `isActive` as the polling state. An active monitor can create future
+matching events. A paused monitor keeps its profile and filters without
+polling. Read `nextBillingAt` as the next active billing checkpoint. It does not
+prove that an event or webhook delivery succeeded.
+
+## How Do I Check Whether Twitter Account Activity Alerts Are Active?
+
+Check the monitor before diagnosing a missing alert. A healthy account alert
+requires four aligned layers.
+
+| Alert layer | Status check | Required evidence |
+| --- | --- | --- |
+| Tracked profile | `username` and `xUserId` | Both identify the intended X account. |
+| Event filter | `eventTypes` | The expected tweet or profile event is selected. |
+| Polling | `isActive` | The monitor was active during the expected change. |
+| Delivery | Events and webhook deliveries | A stored event exists and the receiver accepted its delivery. |
+
+First, confirm the tracked profile. Next, find the expected type in
+`eventTypes`. Then verify `isActive`. Query
+[List Events](/api-reference/events/list) with this monitor ID. Finally, join
+the stored event to [webhook deliveries](/api-reference/webhooks/deliveries)
+through `streamEventId`.
+
+Do not treat one active flag as complete health evidence. The monitor may poll
+correctly while a webhook fails. A webhook may also work while the monitor
+omits the expected event type. Keep configuration, event, and delivery checks
+separate.
+
+## How Do I Track Mentions and Replies for One Account?
+
+Confirm that `eventTypes` contains `tweet.mention` for mentions. Confirm
+`tweet.reply` for replies. The monitor can select either type or both. The
+status route shows the stored selection. It does not return the matching tweets.
+
+Use [List Events](/api-reference/events/list) with `monitorId` after confirming
+the filters. Filter stored events by the required type and time window. Open
+one result with [Get Event](/api-reference/events/get). That payload contains
+the matching tweet evidence.
+
+If the filter is absent, update the monitor before expecting new alerts. If the
+filter exists but the monitor is paused, resume it. If both checks pass, trace
+the stored event and its webhook delivery. Never infer missing tweet activity
+from one failed receiver attempt.
+
+## Does This Endpoint Return Account Analytics or Historical Reports?
+
+No. This endpoint returns one monitor configuration. It does not calculate
+engagement rate, follower growth, posting frequency, reach, impressions, or
+sentiment. It also does not backfill a native X analytics report.
+
+Use stored monitor events for historical Twitter account activity that Xquik
+captured. Use [List Events](/api-reference/events/list) for a cursor-based event
+history. Use [X user tweets](/api-reference/x/user-tweets) for a profile's tweet
+timeline. Use follower snapshots or an extraction job for follower exports.
+
+Keep these outputs distinct. A monitor status snapshot explains configuration.
+An event record proves one matched change. A delivery record proves one
+webhook attempt. A follower export records a follower list at one collection
+time. None of those outputs is an engagement analytics dashboard.
 
 ## Approve One Account Monitor Change
 

@@ -238,6 +238,11 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     snippets: [
       '| Account monitor status column | Response source | Decision rule |',
       '| X username | `username` | Confirm the intended tracked profile. |',
+      'Check One Twitter Account Activity Tracker',
+      'How Do I Check Whether Twitter Account Activity Alerts Are Active?',
+      'How Do I Track Mentions and Replies for One Account?',
+      'Does This Endpoint Return Account Analytics or Historical Reports?',
+      'Followers and following are not monitor event types.',
     ],
   },
   {

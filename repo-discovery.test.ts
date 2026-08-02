@@ -9092,7 +9092,7 @@ const REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS = [
   '`next_billing_at`, `update_endpoint`, `events_endpoint`,',
   '`event_detail_endpoint_pattern`, `webhooks_endpoint`, and',
   '`deliveries_endpoint_pattern` before changing filters',
-  '## State handoff',
+  '## State Handoff',
   'Use `GET /monitors/{id}` before changing routing, billing checks, or alert',
   'state for one account monitor.',
   'current stored monitor',
@@ -9121,6 +9121,24 @@ const REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS = [
   'delivery `streamEventId` to event IDs.',
   'Do not use `x_event_id` as',
   '[List Events](/api-reference/events/list) to audit stored events',
+  '## What Does Twitter Account Activity Tracker Status Prove?',
+  'Followers and following are not monitor event types.',
+  'Account relationship',
+  'changes are not monitor events either.',
+  '## How Do I Check Whether Twitter Account Activity Alerts Are Active?',
+  'A healthy account alert',
+  'requires four aligned layers.',
+  '| Tracked profile | `username` and `xUserId` |',
+  '| Event filter | `eventTypes` |',
+  '| Polling | `isActive` |',
+  '| Delivery | Events and webhook deliveries |',
+  '## How Do I Track Mentions and Replies for One Account?',
+  '`tweet.mention` for mentions.',
+  '`tweet.reply` for replies.',
+  '## Does This Endpoint Return Account Analytics or Historical Reports?',
+  'It does not calculate',
+  'engagement rate, follower growth, posting frequency, reach, impressions, or',
+  'sentiment.',
 ] as const;
 
 const FORBIDDEN_ACCOUNT_MONITOR_GET_RAW_OUTPUT_SNIPPETS = [
@@ -9128,6 +9146,12 @@ const FORBIDDEN_ACCOUNT_MONITOR_GET_RAW_OUTPUT_SNIPPETS = [
   'const data = await response.json();',
   'data = response.json()',
   'fmt.Println(data)',
+] as const;
+
+const FORBIDDEN_ACCOUNT_MONITOR_GET_EVENT_TYPE_CLAIMS = [
+  'follower event types',
+  'following event types',
+  'relationship event types',
 ] as const;
 
 const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
@@ -15669,6 +15693,16 @@ describe('repository discovery', (): void => {
               ? [
                   {
                     issue: `Get account monitor API page should map state snapshots instead of raw response output "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+        ...FORBIDDEN_ACCOUNT_MONITOR_GET_EVENT_TYPE_CLAIMS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `Get account monitor API page must not claim unsupported ${snippet}.`,
                   },
                 ]
               : [],
