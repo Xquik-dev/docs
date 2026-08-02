@@ -2927,6 +2927,7 @@ const REQUIRED_DELETE_TWEET_API_SNIPPETS = [
   'title: "Twitter API Delete Tweet: Remove an Owned Post by ID"',
   '"Twitter API delete tweet"',
   'Use this Twitter API delete tweet route to remove 1 owned post by ID.',
+  'This delete tweet API accepts 1 Tweet ID per request.',
   '[Delete Post endpoint](https://docs.x.com/x-api/posts/delete-post)',
   'const deletionRecord =',
   'request_hash: result.request.hash',
