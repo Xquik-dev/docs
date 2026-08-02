@@ -1,343 +1,444 @@
 ---
-title: "Twitter API Rate Limits, Retry-After & 429 Recovery"
+title: "Twitter API Rate Limits, 429 Errors & Retry-After"
 sidebarTitle: "Rate limits"
-description: "Handle Xquik and Twitter API rate limits with fixed-window counters, Retry-After headers, client-side throttling, and practical 429 recovery. See exact routes."
-keywords: ["Twitter API rate limits", "Twitter API limits", "API usage limits", "rate limit", "fixed window", "throttling", "Retry-After", "429"]
+description: "Understand Xquik Twitter API rate limits, recover from 429 errors, honor Retry-After, pace tweet and follower requests, and safely resume cursor exports."
+keywords: ["Twitter API rate limits", "Twitter API limits", "API rate limit", "API rate limit exceeded", "429 Too Many Requests", "Retry-After", "rate limit recovery", "Twitter rate limit", "API throttling"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik applies fixed-window limits per account.
+Xquik applies fixed-window Twitter API rate limits per Xquik account.
+These limits protect tweet reads, profile lookups, writes, and deletions.
+Standard API keys for one account share the same method buckets.
+Separate read, write, and delete buckets reset independently.
 
 <Note>
-**Limits:** 300 GET/1s, 120 POST/60s, 60 DELETE/60s per account.
-After `429`, wait for `Retry-After`. Use the limiter below to prevent `429`.
+  **Standard limits:** 300 reads per second, 120 writes per minute, and 60
+  deletes per minute. After `429`, wait for `Retry-After` before retrying.
 </Note>
 
-## Rate limit tiers
-
-<CardGroup cols={3}>
-  <Card title="Read" icon="database">
-    `GET`, `HEAD`, and `OPTIONS` share 300 requests per 1 second.
-  </Card>
-  <Card title="Write" icon="pen-line">
-    `POST`, `PUT`, and `PATCH` share 120 requests per 60 seconds.
-  </Card>
-  <Card title="Delete" icon="circle-x">
-    `DELETE` requests allow 60 requests per 60 seconds.
-  </Card>
-</CardGroup>
+## Twitter API Rate Limits at a Glance
 
 | Rate-limit signal | Meaning | Client action |
 | --- | --- | --- |
-| 300 reads per second | `GET`, `HEAD`, and `OPTIONS` share one window. | Pace read workers below the shared account limit. |
-| 120 writes per minute | `POST`, `PUT`, and `PATCH` share one window. | Queue tweet, monitor, webhook, and profile changes. |
-| 60 deletes per minute | Every `DELETE` request uses the delete window. | Serialize cleanup jobs and preserve their resource IDs. |
-| 20 follows per minute | Follow actions have a stricter endpoint limit. | Enforce both the minute and daily follow limits. |
-| `Retry-After` header | The account hit a server-enforced limit. | Pause for the supplied duration before retrying. |
-| `retryAfter` or `retryAfterMs` | The SDK exposed a retry duration. | Resume the same operation after the specified delay. |
+| 300 reads per second | `GET`, `HEAD`, and `OPTIONS` share one account bucket. | Pace tweet, profile, follower, reply, and event reads below 300 requests per second. |
+| 120 writes per minute | `POST`, `PUT`, and `PATCH` share one account bucket. | Queue tweets, monitors, webhooks, and profile changes below 120 requests per minute. |
+| 60 deletes per minute | Every `DELETE` request uses the delete bucket. | Serialize cleanup work and preserve each deleted resource ID. |
+| `429 Too Many Requests` | An Xquik tier or action limit blocked the request. | Read the error code before choosing a retry delay. |
+| `Retry-After` header | The response supplies a wait in seconds. | Pause that bucket for the supplied duration. |
+| `retryAfter` or `retryAfterMs` | The JSON body supplies a retry duration. | Use the documented unit before resuming work. |
 
-### Action-specific limits
-
-Some write endpoints have stricter limits that apply on top of the general write tier:
-
-<CardGroup cols={2}>
-  <Card title="Connect account" icon="user">
-    `POST /x/accounts` uses a high safety limit. If exceeded, wait for
-    `Retry-After: 900` before retrying.
+<CardGroup cols={3}>
+  <Card title="Read Bucket" icon="database">
+    `GET`, `HEAD`, and `OPTIONS` allow 300 requests per 1 second.
   </Card>
-  <Card title="Follow" icon="gauge">
-    `POST /x/users/{id}/follow` is limited to 20 requests per 60 seconds and 400 per day.
+  <Card title="Write Bucket" icon="pen-line">
+    `POST`, `PUT`, and `PATCH` allow 120 requests per 60 seconds.
+  </Card>
+  <Card title="Delete Bucket" icon="circle-x">
+    `DELETE` allows 60 requests per 60 seconds.
   </Card>
 </CardGroup>
 
-## How limits work
+The listed request count succeeds inside each window. The next request receives
+`429 rate_limit_exceeded`. A read burst does not consume write capacity.
+A write burst does not consume delete capacity.
 
-Xquik uses a **fixed window counter**:
+### Action-Specific Twitter API Limits
+
+Some actions add a narrower bucket. That bucket applies beside the method tier.
+
+| Action | Route | Additional limit | Recovery |
+| --- | --- | --- | --- |
+| Follow or remove follower | `POST /x/users/{id}/follow` and `POST /x/users/{id}/remove-follower` | 20 actions per minute and 400 per day, shared | Track both counts. Wait for `Retry-After` after `429`. |
+| Connect X account | `POST /x/accounts` | 10 attempts per 15 minutes | Wait the returned remaining seconds. The maximum wait is 900 seconds. |
+| Login cooldown | Account connection and reauthentication | Dynamic cooldown from the login attempt | Use `retryAfterMs` or `Retry-After`. |
+
+The follow bucket protects connected X accounts from rapid automation.
+It also covers follower removal. Reaching 400 actions blocks more attempts.
+Track the daily count instead of retrying every minute.
+
+## How the Fixed Window Works
+
+Xquik uses fixed-window counters. It does not use a token bucket.
+The first counted request starts that bucket's window.
 
 <Steps>
-  <Step title="Window starts on first request">
-    The first request starts a 1-second read window or a 60-second write/delete window.
+  <Step title="Start the Window">
+    The first request starts a 1-second or 60-second window.
   </Step>
-  <Step title="Each request increments the counter">
-    Every request within the window increments the counter for its tier (read, write, or delete).
+  <Step title="Count Every Request">
+    Each request increments its read, write, or delete counter.
   </Step>
-  <Step title="Counter resets after window expires">
-    After that tier's window expires, the counter returns to zero.
+  <Step title="Reject the Overflow">
+    Requests above the bucket limit receive `429 Too Many Requests`.
   </Step>
-  <Step title="Requests rejected when limit is reached">
-    If the counter exceeds the tier limit within a window, subsequent requests return `429 Too Many Requests` until the window resets.
+  <Step title="Reset the Counter">
+    The complete counter resets when its fixed window expires.
   </Step>
 </Steps>
 
 ```text
-Read tier (300 per 1s):
+Read bucket: 300 requests per 1 second
 
-Time 0.0s: [0/300]    -> Send 200 GET requests -> [200/300]
-Time 0.5s: [200/300]  -> Send 100 GET requests -> [300/300]
-Time 0.8s: [300/300]  -> GET request -> 429
-Time 1.0s: [0/300]    -> Window resets
+0.000s  First GET starts the window
+0.600s  Request 300 succeeds
+0.700s  Request 301 returns 429 with Retry-After: 1
+1.000s  The bucket resets
+1.001s  The next GET succeeds
 ```
 
-## Response headers
+The window starts with your first request. It does not follow wall-clock seconds.
+An early retry does not extend the existing window. It still returns `429`.
+Always follow the response instead of guessing the reset time.
 
-When you exceed the rate limit, the response includes:
+## Read a 429 Rate-Limit Response
 
-<CardGroup cols={2}>
-  <Card title="Retry-After header" icon="timer">
-    `Retry-After` is the wait time in seconds before retrying. Standard read throttles return `Retry-After: 1`. Write and delete throttles return `Retry-After: 60`. Account connection safety limits return `Retry-After: 900`; login cooldowns return their exact remaining wait.
-  </Card>
-  <Card title="JSON retry field" icon="braces">
-    Rate limits include `error: "rate_limit_exceeded"` and `retryAfter` in seconds. Login cooldowns include `retryAfterMs` in milliseconds. Clients can back off without reading headers.
-  </Card>
-</CardGroup>
+An Xquik tier limit returns a structured JSON error.
+It also returns `Retry-After` in seconds.
 
-**Example 429 response:**
-
-```text
+```http
 HTTP/1.1 429 Too Many Requests
 Retry-After: 1
 Content-Type: application/json
 
-{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Try again later.",
+  "retryAfter": 1
+}
 ```
 
-Always respect the `Retry-After` header. Requests sent before the fixed window resets keep returning `429` until `Retry-After` elapses.
+| Response field | Unit | Meaning |
+| --- | --- | --- |
+| HTTP status `429` | None | A request limit or cooldown blocked the request. |
+| `Retry-After` | Seconds | Minimum wait before retrying that operation. |
+| `retryAfter` | Seconds | JSON copy of the Xquik tier wait. |
+| `retryAfterMs` | Milliseconds | Login cooldown wait for account connection flows. |
+| `error` | String | The exact reason, such as `rate_limit_exceeded`. |
 
-## Client-side rate limiter
+Standard read throttles return `Retry-After: 1`. Standard write and delete
+throttles return `Retry-After: 60`. Account connection returns the remaining
+window. A login cooldown returns its own remaining duration.
 
-Apply a client-side limiter before production traffic.
+### Retry-After Does Not Always Mean Rate Limited
 
-<CodeGroup>
+Inspect the status and error code together.
 
-```javascript Node.js
-class WindowRateLimiter {
-  constructor(maxRequests, windowMs) {
-    this.maxRequests = maxRequests;
-    this.windowMs = windowMs;
-    this.count = 0;
-    this.windowStart = Date.now();
+| Status or code | Meaning | Correct action |
+| --- | --- | --- |
+| `429 rate_limit_exceeded` | Xquik request bucket was exhausted. | Wait for `Retry-After`, then retry once. |
+| `429 x_rate_limited` | X throttled a connected account write. | Wait for `Retry-After` when present. Otherwise, back off. |
+| `429 x_daily_limit` | The connected X account reached a daily write limit. | Wait 24 hours before reusing that account. |
+| `429 login_cooldown` | A connection attempt triggered a cooldown. | Wait `retryAfterMs` or `Retry-After`. |
+| `502 x_api_rate_limited` | The read service was throttled upstream. | Retry in a few minutes with bounded backoff. |
+| `402 insufficient_credits` | The account cannot fund the requested results. | Add credits or request fewer tweets, followers, or replies. |
+| `202` with `Retry-After` | A durable write remains active. | Poll `statusUrl`. Do not resend the write. |
+| `503` with `Retry-After` | A temporary write or service state needs time. | Follow `safeToRetry`, `nextAction`, and the header. |
+
+Read [API Error Handling](/guides/error-handling) before retrying writes.
+An idempotency key prevents duplicate submission. It does not make every retry safe.
+
+## Xquik Limits Versus Official X API Limits
+
+The phrase "Twitter API limits" can describe two separate systems.
+Xquik enforces the account buckets documented above. X also enforces upstream
+limits for connected accounts and service access.
+
+| Limit owner | Typical scope | Client-visible signal |
+| --- | --- | --- |
+| Xquik | Account plus HTTP method tier | `429 rate_limit_exceeded` and `Retry-After` |
+| Xquik action guard | Follow, follower removal, connection, or login | `429` with an action-specific error or cooldown |
+| X write service | Connected X account and write action | `x_rate_limited` or `x_daily_limit` |
+| X read service | Upstream tweet, profile, follower, or reply access | Default v1 can return `502 x_api_rate_limited` |
+
+Official X API rate limits vary by endpoint and authentication context.
+They can apply per app, user token, or endpoint.
+See [X API rate limits](https://docs.x.com/x-api/fundamentals/rate-limits)
+for the current official tables.
+
+Do not copy official X limits into an Xquik client limiter.
+Use the Xquik values on this page. Handle upstream codes separately.
+
+## Recover From API Rate Limit Exceeded
+
+Use bounded retries for idempotent reads. Preserve cursor state before waiting.
+Never run an unbounded retry loop.
+
+<Steps>
+  <Step title="Classify the Response">
+    Check the HTTP status and exact `error` value.
+  </Step>
+  <Step title="Read the Server Delay">
+    Prefer `Retry-After`. Fall back to `retryAfter` or `retryAfterMs`.
+  </Step>
+  <Step title="Keep the Same Read Checkpoint">
+    Preserve the query, filters, limit, and cursor.
+  </Step>
+  <Step title="Wait With Jitter">
+    Add a small random delay after the required wait.
+  </Step>
+  <Step title="Retry a Bounded Number">
+    Stop after 3 attempts. Surface the final error to the caller.
+  </Step>
+</Steps>
+
+### Node.js 429 Recovery
+
+This helper retries `GET` requests only. It does not retry writes.
+
+```javascript
+const MAX_ATTEMPTS = 3;
+
+function retryDelayMs(response, body) {
+  const headerSeconds = Number.parseInt(
+    response.headers.get("Retry-After") ?? "",
+    10,
+  );
+
+  if (Number.isFinite(headerSeconds) && headerSeconds > 0) {
+    return headerSeconds * 1_000;
   }
+  if (Number.isFinite(body.retryAfter) && body.retryAfter > 0) {
+    return body.retryAfter * 1_000;
+  }
+  if (Number.isFinite(body.retryAfterMs) && body.retryAfterMs > 0) {
+    return body.retryAfterMs;
+  }
+  return 1_000;
+}
 
-  async acquire() {
-    const now = Date.now();
+async function getJsonWithRateLimit(url) {
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    const response = await fetch(url, {
+      headers: { "x-api-key": process.env.XQUIK_API_KEY },
+    });
 
-    if (now - this.windowStart >= this.windowMs) {
-      this.count = 0;
-      this.windowStart = now;
+    if (response.status !== 429) {
+      if (!response.ok) {
+        throw new Error(`Request failed with HTTP ${response.status}`);
+      }
+      return response.json();
     }
 
-    if (this.count >= this.maxRequests) {
-      const waitMs = this.windowMs - (now - this.windowStart);
-      await new Promise((resolve) => setTimeout(resolve, waitMs));
-      this.count = 0;
-      this.windowStart = Date.now();
+    const body = await response.json().catch(() => ({}));
+    if (attempt === MAX_ATTEMPTS) {
+      throw new Error(body.error ?? "rate_limit_exceeded");
     }
 
-    this.count += 1;
+    const jitterMs = Math.floor(Math.random() * 250);
+    const waitMs = retryDelayMs(response, body) + jitterMs;
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
   }
 }
+```
 
-// Read tier: 300 requests per 1s
-const readLimiter = new WindowRateLimiter(300, 1_000);
+The header wins when both values exist. Jitter spreads simultaneous workers.
+The 3-attempt cap prevents a stalled queue from hiding an outage.
 
-async function apiRequest(url) {
-  await readLimiter.acquire();
-  return fetch(url, {
-    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
-  });
+## Resume Tweet Exports After 429
+
+Tweet searches return `has_next_page` and `next_cursor`.
+Store the completed page and next cursor atomically.
+Do not advance the cursor after a failed request.
+
+```javascript
+const baseUrl = "https://xquik.com/api/v1/x/tweets/search";
+let cursor;
+
+while (true) {
+  const url = new URL(baseUrl);
+  url.searchParams.set("q", "from:example launch");
+  url.searchParams.set("queryType", "Latest");
+  url.searchParams.set("limit", "100");
+  if (cursor) url.searchParams.set("cursor", cursor);
+
+  const page = await getJsonWithRateLimit(url);
+
+  // Commit unique tweets[].id values and next_cursor together.
+  await storeTweetPageAndCursor(page.tweets, page.next_cursor);
+
+  if (!page.has_next_page || !page.next_cursor) break;
+  cursor = page.next_cursor;
 }
 ```
 
-```python Python
-import time
-import threading
+Keep `q`, `queryType`, filters, and `limit` unchanged while resuming.
+Dedupe stored tweets by `tweets[].id`. A repeated page then remains harmless.
+See [Request-Efficient API Usage](/guides/request-efficient-api-usage#store-cursor-checkpoints)
+for more checkpoint patterns.
 
-class WindowRateLimiter:
-    def __init__(self, max_requests: int, window_seconds: float):
-        self.max_requests = max_requests
-        self.window_seconds = window_seconds
-        self.count = 0
-        self.window_start = time.monotonic()
-        self.lock = threading.Lock()
+### Cursor Recovery Checklist
 
-    def acquire(self):
-        with self.lock:
-            now = time.monotonic()
+| Checkpoint | Save after success | Reuse after 429 |
+| --- | --- | --- |
+| Search query | Exact `q` string | Yes |
+| Sort order | Exact `queryType` | Yes |
+| Filters | Author, date, media, language, and engagement filters | Yes |
+| Page size | Exact `limit` | Yes |
+| Incoming cursor | Cursor used for the blocked page | Yes |
+| Returned cursor | `next_cursor` from the completed page | Only after storing that page |
+| Tweet identity | Every `tweets[].id` | Use for dedupe |
 
-            if now - self.window_start >= self.window_seconds:
-                self.count = 0
-                self.window_start = now
+## Pace Requests Before 429
 
-            if self.count >= self.max_requests:
-                wait = self.window_seconds - (now - self.window_start)
-                time.sleep(wait)
-                self.count = 0
-                self.window_start = time.monotonic()
+Leave headroom below each documented limit. Headroom absorbs network timing
+and work from other API keys. It also protects shared serverless workers.
 
-            self.count += 1
+### Use a Shared Node.js Limiter
 
-# Read tier: 300 requests per 1s
-read_limiter = WindowRateLimiter(300, 1)
+This Bottleneck configuration reserves 10% read headroom.
 
-def api_request(url: str) -> requests.Response:
-    read_limiter.acquire()
-    return requests.get(url, headers={"x-api-key": "xq_YOUR_KEY_HERE"})
-```
-
-```go Go
-package main
-
-import (
-	"net/http"
-	"sync"
-	"time"
-)
-
-type WindowRateLimiter struct {
-	maxRequests int
-	window      time.Duration
-	count       int
-	windowStart time.Time
-	mu          sync.Mutex
-}
-
-func NewWindowRateLimiter(maxRequests int, window time.Duration) *WindowRateLimiter {
-	return &WindowRateLimiter{
-		maxRequests: maxRequests,
-		window:      window,
-		count:       0,
-		windowStart: time.Now(),
-	}
-}
-
-func (r *WindowRateLimiter) Acquire() {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	now := time.Now()
-
-	if now.Sub(r.windowStart) >= r.window {
-		r.count = 0
-		r.windowStart = now
-	}
-
-	if r.count >= r.maxRequests {
-		wait := r.window - now.Sub(r.windowStart)
-		r.mu.Unlock()
-		time.Sleep(wait)
-		r.mu.Lock()
-		r.count = 0
-		r.windowStart = time.Now()
-	}
-
-	r.count++
-}
-
-// Read tier: 300 requests per 1s
-var readLimiter = NewWindowRateLimiter(300, time.Second)
-
-func apiRequest(url string) (*http.Response, error) {
-	readLimiter.Acquire()
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-	return http.DefaultClient.Do(req)
-}
-```
-
-```bash cURL
-#!/bin/bash
-# Replay stored events in 100-item pages.
-# Read tier: 300 per 1s. A 4ms delay caps this loop at 250 requests/s.
-
-cursor=""
-
-while :; do
-  url="https://xquik.com/api/v1/events?limit=100"
-
-  if [ -n "$cursor" ]; then
-    url="${url}&after=${cursor}"
-  fi
-
-  response=$(curl -s "$url" -H "x-api-key: xq_YOUR_KEY_HERE")
-  echo "$response" | jq ".events[]"
-
-  has_more=$(echo "$response" | jq -r ".hasMore")
-  cursor=$(echo "$response" | jq -r ".nextCursor // empty")
-
-  if [ "$has_more" != "true" ] || [ -z "$cursor" ]; then
-    break
-  fi
-
-  sleep 0.004
-done
-```
-
-</CodeGroup>
-
-## Rate limiting libraries
-
-Instead of building your own rate limiter, consider these battle-tested libraries:
-
-<CardGroup cols={3}>
-  <Card title="Node.js libraries" icon="package">
-    Use [bottleneck](https://github.com/SGrondin/bottleneck) with `npm install bottleneck`, or [p-limit](https://github.com/sindresorhus/p-limit) with `npm install p-limit`.
-  </Card>
-  <Card title="Python library" icon="package">
-    Use [ratelimit](https://github.com/tomasbasham/ratelimit) with `pip install ratelimit`.
-  </Card>
-  <Card title="Go library" icon="package">
-    Use [rate](https://pkg.go.dev/golang.org/x/time/rate) with `go get golang.org/x/time/rate`.
-  </Card>
-</CardGroup>
-
-```javascript bottleneck example
+```javascript
 import Bottleneck from "bottleneck";
 
-const limiter = new Bottleneck({
-  reservoir: 300,           // 300 requests per read window
-  reservoirRefreshAmount: 300,
-  reservoirRefreshInterval: 1_000, // 1 second
+const readLimiter = new Bottleneck({
+  reservoir: 270,
+  reservoirRefreshAmount: 270,
+  reservoirRefreshInterval: 1_000,
   maxConcurrent: 5,
 });
 
-const response = await limiter.schedule(() =>
-  fetch("https://xquik.com/api/v1/events?limit=50", {
-    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
-  })
+const response = await readLimiter.schedule(() =>
+  fetch("https://xquik.com/api/v1/x/tweets/search?q=launch&limit=100", {
+    headers: { "x-api-key": process.env.XQUIK_API_KEY },
+  }),
 );
 ```
 
-## Best practices
+One in-memory limiter coordinates only one process.
+Use a shared queue across multiple servers, functions, or containers.
+
+### Rate-Limiting Libraries
+
+<CardGroup cols={3}>
+  <Card title="Node.js Libraries" icon="package">
+    Use [bottleneck](https://github.com/SGrondin/bottleneck) for shared queues,
+    or [p-limit](https://github.com/sindresorhus/p-limit) for concurrency caps.
+  </Card>
+  <Card title="Python Library" icon="package">
+    Use [ratelimit](https://github.com/tomasbasham/ratelimit) with
+    `pip install ratelimit`.
+  </Card>
+  <Card title="Go Library" icon="package">
+    Use [rate](https://pkg.go.dev/golang.org/x/time/rate) with
+    `go get golang.org/x/time/rate`.
+  </Card>
+</CardGroup>
+
+A client scheduler can use another algorithm. Keep its output below Xquik's
+fixed-window limits. Configure one coordinator per Xquik account.
+
+## Reduce Twitter API Requests
+
+The limit counts requests, not returned tweets or followers.
+Use each endpoint's largest suitable page size.
+One 100-tweet page uses one read request.
+One request per tweet would use 100 read requests.
 
 <AccordionGroup>
-  <Accordion title="Batch event replays with cursors">
-    Fetch `GET /api/v1/events?limit=100`. If `hasMore` is `true`, store `nextCursor` and pass it as `after` on the next page. This uses 1 read slot per page instead of 1 request per monitor.
+  <Accordion title="Use cursor pagination">
+    Request a full page. Store `next_cursor`, then continue the same query.
+    Never restart from page one after a recoverable `429`.
+  </Accordion>
+  <Accordion title="Batch IDs where supported">
+    Batch tweet or profile IDs through the documented batch endpoints.
+    One batch request uses fewer read slots than individual lookups.
   </Accordion>
   <Accordion title="Use webhooks instead of polling">
-    Active monitors already check every 1 second. Use signed webhooks for live delivery, then use `GET /api/v1/events?limit=100&after={nextCursor}` only for backfills and reconciliation. See the [webhooks overview](/webhooks/overview).
+    Let monitors deliver matching tweets through signed webhooks.
+    Use event reads for backfills, reconciliation, and missed delivery checks.
   </Accordion>
-  <Accordion title="Cache responses client-side">
-    Monitor and webhook configurations change infrequently. Cache `GET` responses for list endpoints and invalidate only after mutations (create, update, delete).
+  <Accordion title="Cache stable profile fields">
+    Cache names, usernames, profile images, and account settings.
+    Refresh them on a schedule that matches your product needs.
   </Accordion>
-  <Accordion title="Implement exponential backoff">
-    When you receive a 429, wait for the `Retry-After` duration. If the retry also fails, double the wait time. See the [error handling guide](/guides/error-handling) for complete retry implementations.
+  <Accordion title="Centralize worker concurrency">
+    Multiple API keys do not multiply a standard account's limits.
+    Route every worker through one account-aware queue.
   </Accordion>
-  <Accordion title="Spread requests evenly">
-    Avoid sending all requests in a burst at the start of each window. Spread them evenly across each tier's window to avoid hitting the limit early.
+  <Accordion title="Separate read and write queues">
+    Use different queues for reads, writes, and deletes.
+    This mirrors the independent server buckets.
   </Accordion>
 </AccordionGroup>
 
-<CardGroup cols={2}>
-  <Card title="Error Handling" icon="triangle-alert" href="/guides/error-handling">
-    Retry strategies and error recovery patterns.
+## Monitor API Throttling
+
+Record enough context to explain each `429`. Never log API key values.
+
+| Metric or log field | Why it matters |
+| --- | --- |
+| HTTP method and route | Identifies the exhausted method bucket. |
+| `error` code | Separates Xquik limits from upstream X throttling. |
+| `Retry-After` | Confirms the required pause. |
+| Attempt count | Detects unbounded retry behavior. |
+| Worker concurrency | Shows whether parallel jobs share excessive load. |
+| Query and cursor hash | Connects a retry to the same tweet export page. |
+| Completed tweet count | Confirms progress before throttling. |
+
+A rising Xquik `429` rate usually means excessive local concurrency.
+A rising `x_api_rate_limited` count indicates a different upstream condition.
+Keep those alerts separate.
+
+## Twitter API Rate-Limit Questions
+
+### What Does API Rate Limit Exceeded Mean?
+
+The client sent more requests than one active window allows.
+Xquik returns `429 rate_limit_exceeded` for its own exhausted bucket.
+Wait for `Retry-After`, then retry the same idempotent read.
+
+### How Long Does a Twitter API Rate Limit Last?
+
+Xquik read windows last 1 second. Write and delete windows last 60 seconds.
+Connection safety windows last 15 minutes. Login cooldowns use dynamic waits.
+Official X endpoint windows differ from these Xquik limits.
+
+### Why Am I Rate Limited Below 300 Reads?
+
+All standard keys for one Xquik account share the read bucket.
+Another worker, function, or server may consume the remaining requests.
+Centralize scheduling and reserve headroom below 300 requests per second.
+
+### Do Multiple API Keys Increase My Rate Limit?
+
+No. Standard API keys resolve to the same Xquik account buckets.
+Use separate keys for access control, rotation, and auditability.
+Do not use them to bypass request limits.
+
+### Does Retrying Early Reset the Window?
+
+No. An early retry does not extend or reset the fixed window.
+It still returns `429` until the original window expires.
+
+### Does a Rate-Limited Request Consume Tweet Credits?
+
+An Xquik tier rejection happens before the endpoint performs its work.
+It does not collect new tweets, followers, profiles, or replies.
+Successful pages completed before the rejection keep their normal charges.
+
+### Should I Retry a Tweet Write After 429?
+
+First inspect `error`, `statusUrl`, `terminal`, and `safeToRetry`.
+Poll an active durable action instead of resending it.
+Use a new idempotency key only when `safeToRetry` is `true`.
+
+### How Do I Avoid Twitter API Rate Limits?
+
+Use larger pages, cursor checkpoints, batch routes, caches, and signed webhooks.
+Share one limiter across workers. Keep separate queues for each method bucket.
+
+<CardGroup cols={3}>
+  <Card title="Search Tweets" icon="search" href="/api-reference/x/search-tweets">
+    Search tweets with filters, page limits, and cursor recovery.
   </Card>
-  <Card title="API Overview" icon="book" href="/api-reference/overview">
-    Base URL, authentication, and conventions.
+  <Card title="Error Handling" icon="triangle-alert" href="/guides/error-handling">
+    Classify billing, validation, dependency, and write lifecycle errors.
+  </Card>
+  <Card title="Pagination" icon="list" href="/guides/request-efficient-api-usage#store-cursor-checkpoints">
+    Preserve tweet, follower, reply, and extraction cursors safely.
   </Card>
 </CardGroup>
