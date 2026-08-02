@@ -10417,7 +10417,8 @@ const FORBIDDEN_PYDANTIC_AI_GUIDE_SNIPPETS = [
 const REQUIRED_LANGCHAIN_GUIDE_SNIPPETS = [
   'title: "LangChain Twitter API Agent with MCP & LangGraph"',
   'Build a LangChain Twitter API agent through Xquik',
-  'This LangChain Twitter API integration preserves IDs, timestamps, cursors,',
+  'This LangChain Twitter API integration helps when building agents for Twitter.',
+  'It preserves tweet IDs, timestamps, cursors, and route errors as typed values.',
   '## Why Use LangChain With a Twitter API?',
   'Public X reads do not require X Developer credentials.',
   'Authenticate this MCP server with an Xquik API key.',
