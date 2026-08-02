@@ -6757,6 +6757,51 @@ const REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS = [
   'Results are capped at 100,000 rows (10,000 for PDF).',
 ] as const;
 
+const REQUIRED_DRAW_HISTORY_SNIPPETS = [
+  'title: "Twitter Giveaway History API & Past Draw Results"',
+  '"Twitter giveaway history"',
+  'This endpoint returns draw summaries.',
+  'It does not return winner objects or',
+  '## List Past Twitter Giveaway Draws',
+  '<Card title="List draw history" icon="history">',
+  '<Card title="Review past winners" icon="trophy">',
+  '<Card title="Export audit records" icon="file-down">',
+  '<Card title="Run another draw" icon="shuffle">',
+  'curl --fail-with-body "https://xquik.com/api/v1/draws?limit=10"',
+  'if resp.StatusCode < 200 || resp.StatusCode >= 300',
+  '## Choose the Correct Giveaway Result',
+  '<Card title="Find Past Draws" icon="list-filter">',
+  '<Card title="Verify Winners" icon="badge-check">',
+  '<Card title="Download Results" icon="download">',
+  'Do not label `validEntries` as a winner count.',
+  'Winner rows exist only in the detail response.',
+  '## Build a Twitter Giveaway Audit Handoff',
+  'Preserve winner',
+  'position and `isBackup`.',
+  '<ParamField header="Authorization" type="string">',
+  'Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.',
+  '## Paginate Twitter Giveaway History',
+  'const seenCursors = new Set();',
+  'throw new Error("Giveaway history cursor did not advance.");',
+  'Never build a cursor from timestamps or draw',
+  '## Handle Giveaway History Responses',
+  '<Card title="200 Draw Page" icon="circle-check">',
+  '<Card title="401 Authentication" icon="key-round">',
+  '<Card title="429 Rate Limit" icon="timer">',
+  '## Twitter Giveaway History Questions',
+  '### Does Giveaway History Include Past Winners?',
+  '### Can I Download Previous Twitter Giveaway Winners?',
+  '### What Do Total and Valid Entries Mean?',
+] as const;
+
+const FORBIDDEN_DRAW_HISTORY_SNIPPETS = [
+  'title: "Twitter Giveaway History API & Past Winners"',
+  'eligibility rules, winner counts',
+  'keywords: ["draw", "list", "history", "pagination"]',
+  'This endpoint also accepts session cookie authentication.',
+  '`totalEntries` counts inspected replies.',
+] as const;
+
 const REQUIRED_DRAW_EXPORT_RESPONSE_SNIPPETS = [
   'Returns a file download. The response includes a `Content-Disposition`',
   'header with the filename.',
@@ -14955,6 +15000,28 @@ describe('repository discovery', (): void => {
       ),
     ).toStrictEqual([]);
     expect(source).not.toContain('| Format | Content-Type | Filename |');
+  });
+
+  it('keeps draw history distinct from winner detail and exports', (): void => {
+    expect.assertions(2);
+
+    const source = readFileSync(
+      'api-reference/draws/twitter-giveaway-history.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Twitter giveaway history API',
+        REQUIRED_DRAW_HISTORY_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_DRAW_HISTORY_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps extraction export columns source-backed and mobile friendly', (): void => {

@@ -1,9 +1,9 @@
 ---
-title: "Twitter Giveaway History API & Past Winners"
+title: "Twitter Giveaway History API & Past Draw Results"
 sidebarTitle: "Giveaway history"
-description: "List giveaway draws with source tweets, eligibility rules, winner counts, statuses, creation times, and cursor-based pagination. Includes API examples."
+description: "List past Twitter giveaway draws with tweet URLs, statuses, entry counts, timestamps, and opaque cursors. Then retrieve winners or export audit records."
 api: "GET /draws"
-keywords: ["draw", "list", "history", "pagination"]
+keywords: ["Twitter giveaway history", "past Twitter giveaways", "Twitter giveaway results", "giveaway draw history", "X giveaway picker", "past giveaway winners", "draw audit trail"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -43,13 +43,49 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
+List every Twitter giveaway draw owned by the authenticated Xquik account.
+Review source tweets, draw statuses, entry counts, and completion times.
+Continue through older results with an opaque cursor.
+
+This endpoint returns draw summaries. It does not return winner objects or
+eligibility rules. Retrieve one draw when winner verification needs those
+details.
+
 <Callout icon="circle-check" color="#16a34a">
   **Free** - does not consume credits
 </Callout>
 
+## List Past Twitter Giveaway Draws
+
+Use `GET /draws` for a Twitter giveaway history page or audit queue. Results
+are ordered by `createdAt` and draw ID, newest first. Each row identifies its
+source tweet and inspected candidate counts.
+
+<CardGroup cols={2}>
+  <Card title="List draw history" icon="history">
+    Call `GET /draws` for draw IDs, tweet URLs, statuses, entry counts, and
+    timestamps. Follow `nextCursor` when `hasMore` is true.
+  </Card>
+  <Card title="Review past winners" icon="trophy">
+    Call `GET /draws/{id}` for source tweet metrics and ordered winner rows.
+    Keep primary and backup winners separate.
+  </Card>
+  <Card title="Export audit records" icon="file-down">
+    Call `GET /draws/{id}/export` for winners or entries. Choose CSV, JSON,
+    Markdown, PDF, text, or XLSX.
+  </Card>
+  <Card title="Run another draw" icon="shuffle">
+    Call `POST /draws` with the source tweet and eligibility rules. Do not reuse
+    an old draw ID for a new selection.
+  </Card>
+</CardGroup>
+
+Use list results for discovery. Use detail results for winner verification.
+Use exports for review, customer support, or campaign archives.
+
 <CodeGroup>
   ```bash cURL
-  curl "https://xquik.com/api/v1/draws?limit=10" \
+  curl --fail-with-body "https://xquik.com/api/v1/draws?limit=10" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
@@ -60,8 +96,23 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
     }
   );
-  const data = await response.json();
-  console.log(data);
+  const page = await response.json();
+  if (!response.ok) {
+    throw new Error(page.message || "Giveaway history request failed.");
+  }
+
+  const drawRows = page.draws.map((draw) => ({
+    draw_id: draw.id,
+    tweet_url: draw.tweetUrl,
+    status: draw.status,
+    total_entries: draw.totalEntries,
+    valid_entries: draw.validEntries,
+    created_at: draw.createdAt,
+    drawn_at: draw.drawnAt || null,
+  }));
+  process.stdout.write(
+    `${JSON.stringify({ drawRows, hasMore: page.hasMore, nextCursor: page.nextCursor || null })}\n`,
+  );
   ```
 
   ```python Python
@@ -72,8 +123,21 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
       params={"limit": 10},
   )
-  data = response.json()
-  print(data)
+  response.raise_for_status()
+  page = response.json()
+  draw_rows = [
+      {
+          "draw_id": draw["id"],
+          "tweet_url": draw["tweetUrl"],
+          "status": draw["status"],
+          "total_entries": draw["totalEntries"],
+          "valid_entries": draw["validEntries"],
+          "created_at": draw["createdAt"],
+          "drawn_at": draw.get("drawnAt"),
+      }
+      for draw in page["draws"]
+  ]
+  print({"draws": draw_rows, "next_cursor": page.get("nextCursor")})
   ```
 
   ```go Go
@@ -100,15 +164,70 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   	defer resp.Body.Close()
 
   	body, err := io.ReadAll(resp.Body)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	fmt.Println(string(body))
+	if err != nil {
+		log.Fatal(err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		log.Fatalf("giveaway history failed with %d: %s", resp.StatusCode, string(body))
+	}
+	fmt.Println(string(body))
   }
   ```
 </CodeGroup>
 
-## Query parameters
+## Choose the Correct Giveaway Result
+
+The list route answers which draws exist. It also shows when each draw ran.
+It cannot answer who won or which reply qualified.
+
+Use this handoff for each returned row:
+
+<CardGroup cols={2}>
+  <Card title="Find Past Draws" icon="list-filter">
+    Call `GET /draws`. Preserve `id`, `tweetUrl`, `status`, and `createdAt`.
+  </Card>
+  <Card title="Compare Entry Counts" icon="list-checks">
+    Read `totalEntries` and `validEntries` from each list summary.
+  </Card>
+  <Card title="Verify Winners" icon="badge-check">
+    Call `GET /draws/{id}`. Preserve position, username, tweet ID, and backup
+    state.
+  </Card>
+  <Card title="Review the Source Tweet" icon="message-square-text">
+    Read the tweet ID, text, author, and engagement counts from draw detail.
+  </Card>
+  <Card title="Download Results" icon="download">
+    Call `GET /draws/{id}/export`. Select `winners` or `entries` and one format.
+  </Card>
+</CardGroup>
+
+Do not label `validEntries` as a winner count. It counts inspected entries that
+passed the configured filters. Winner rows exist only in the detail response.
+
+## Build a Twitter Giveaway Audit Handoff
+
+Store one summary row per draw. Keep the public draw ID as the join key.
+Preserve the source tweet URL instead of extracting a mutable username.
+
+```json
+{
+  "draw_id": "f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345",
+  "tweet_url": "https://x.com/xquik/status/1893456789012345678",
+  "status": "completed",
+  "total_entries": 847,
+  "valid_entries": 312,
+  "created_at": "2026-02-24T10:00:00.000Z",
+  "drawn_at": "2026-02-24T10:05:00.000Z",
+  "detail_path": "/api/v1/draws/f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345",
+  "winner_export_path": "/api/v1/draws/f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345/export?format=csv&type=winners"
+}
+```
+
+Fetch detail rows before publishing past giveaway winners. Preserve winner
+position and `isBackup`. This prevents backup winners from appearing as primary
+winners in dashboards or announcements.
+
+## Query Parameters
 
 <ParamField query="limit" type="number">
   Results per page. Default `50`, max `100`.
@@ -121,7 +240,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. This endpoint also accepts session cookie authentication.
+  Send your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.
 </ParamField>
 
 ## Response
@@ -202,24 +325,110 @@ Missing or invalid API key / session cookie.
 ```
 Too many requests. Wait for the `Retry-After` header before retrying.
 
-## Pagination
+## Paginate Twitter Giveaway History
 
 Draws use **cursor-based pagination**. Each response includes `hasMore` and (when `true`) a `nextCursor` value. Pass `nextCursor` as the `after` query parameter to retrieve the next page.
 
 <CodeGroup>
   ```bash First page
-  curl "https://xquik.com/api/v1/draws?limit=10" \
+  curl --fail-with-body "https://xquik.com/api/v1/draws?limit=10" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
   ```bash Next page
-  curl "https://xquik.com/api/v1/draws?limit=10&after=MjAyNi0wMi0yM1QxNjozMDowMC4wMDBafDY2NjY1" \
+  curl --fail-with-body "https://xquik.com/api/v1/draws?limit=10&after=MjAyNi0wMi0yM1QxNjozMDowMC4wMDBafDY2NjY1" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 </CodeGroup>
 
 Continue fetching pages until `hasMore` is `false`. Cursors are opaque strings. Do not parse or construct them manually.
 
+Use a stable loop for a complete history export:
+
+```javascript Node.js
+const seenCursors = new Set();
+const draws = [];
+let after;
+
+do {
+  const url = new URL("https://xquik.com/api/v1/draws");
+  url.searchParams.set("limit", "100");
+  if (after) url.searchParams.set("after", after);
+
+  const response = await fetch(url, {
+    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+  });
+  const page = await response.json();
+  if (!response.ok) {
+    throw new Error(page.message || "Giveaway history page failed.");
+  }
+
+  draws.push(...page.draws);
+  const next = page.nextCursor;
+  if (page.hasMore && (!next || seenCursors.has(next))) {
+    throw new Error("Giveaway history cursor did not advance.");
+  }
+
+  if (next) seenCursors.add(next);
+  after = page.hasMore ? next : undefined;
+} while (after);
+
+process.stdout.write(`${JSON.stringify(draws)}\n`);
+```
+
+Save the last accepted cursor after each durable batch. Restart from that
+cursor after a worker failure. Never build a cursor from timestamps or draw
+IDs.
+
+## Handle Giveaway History Responses
+
+<CardGroup cols={3}>
+  <Card title="200 Draw Page" icon="circle-check">
+    Read `draws` and `hasMore`. Read `nextCursor` only when another page exists.
+  </Card>
+  <Card title="401 Authentication" icon="key-round">
+    Authentication failed. Replace the API key or OAuth bearer token first.
+  </Card>
+  <Card title="429 Rate Limit" icon="timer">
+    Too many requests. Honor `Retry-After`, then resume with the same cursor.
+  </Card>
+</CardGroup>
+
+Do not advance the cursor after a failed request. A retry must request the same
+page. Append results only after the response succeeds.
+
+## Twitter Giveaway History Questions
+
+### How Do I View Past Twitter Giveaway Draws?
+
+Call `GET /draws` with your Xquik API key. The newest draw summaries appear
+first. Follow `nextCursor` for older results.
+
+### Does Giveaway History Include Past Winners?
+
+The list response does not include winners. Pass its `id` to `GET /draws/{id}`
+for primary and backup winner rows.
+
+### Can I Download Previous Twitter Giveaway Winners?
+
+Yes. Fetch the draw ID first. Then export `type=winners` in CSV, JSON,
+Markdown, PDF, text, or XLSX.
+
+### What Do Total and Valid Entries Mean?
+
+`totalEntries` counts inspected candidate entries. `validEntries` counts
+entries that passed the draw filters. Neither field reports the winner count.
+
+### How Do I Audit a Twitter Giveaway Result?
+
+Store the list summary and draw ID. Fetch draw details and preserve winner
+order. Export entries when the review needs candidate-level evidence.
+
+### Does Listing Giveaway Draws Consume Credits?
+
+No. Listing draw history is free. Running a new draw can consume credits.
+
 <Note>
-  **Related:** [Get Draw](/api-reference/draws/get) to retrieve full details for a specific draw &middot; [Create Draw](/api-reference/draws/create) to run a new giveaway draw.
+  **Related:** [Get Draw](/api-reference/draws/get) retrieves one result. Use
+  [Create Draw](/api-reference/draws/create) for a new winner selection.
 </Note>
