@@ -103,17 +103,17 @@ status from verification, follower counts, biographies, or profile images.
 ### How Do I Find X Community Moderators?
 
 Open the Community page when one manual lookup is enough. X says direct
-Community URLs expose visible member and moderator lists. Review the official
-[Communities guide](https://help.x.com/en/using-x/communities) for that public
-view.
+Community URLs expose visible member and moderator lists. X documents that
+public interface in its official
+[Communities guide](https://help.x.com/en/using-x/communities).
 
 Use this API for repeatable collection, pagination, exports, and snapshot
 review. Start with the numeric Community ID. Store that ID with every
 moderator ID. A username can change and cannot identify the source Community.
 
-Request another page only when `has_next_page` is exactly `true`. Reuse the
-exact `next_cursor`. Mark the roster complete only after `has_next_page` is
-`false`.
+Request another page only when `has_next_page` is exactly `true`. Pass the
+returned cursor string back without editing it. Mark the roster complete only
+after `has_next_page` is `false`.
 
 ### Which Tools Support X Community Moderation?
 
@@ -229,7 +229,7 @@ record the returned moderator count for each page.
     fields, verification, and follower count.
   </Card>
   <Card title="Next page" icon="arrow-right">
-    Persist each page before its `has_next_page` flag and `next_cursor`.
+    Persist each page and its pagination fields before requesting another page.
   </Card>
   <Card title="Default page" icon="rows-3">
     Expect up to the default page size per call, reduced when the caller cannot
@@ -251,13 +251,12 @@ Create a local `export_manifest_id` for each collection run. Store it with
 `community_id`, `moderator_id`, page number, cursor, and collection time. This
 key prevents one roster from mixing with another collection run.
 
-Classify credit-bounded, failed, and interrupted runs as partial moderator
-snapshots. Do not compare a partial roster with a completed baseline. A partial
+Label credit-bounded, failed, and interrupted runs as incomplete moderator
+exports. Do not compare a partial roster with a completed baseline. A partial
 comparison can falsely report removed moderators.
 
 Deduplicate resumed pages with `community_id` and `moderator_id`. Keep the
-latest username as a label. Preserve the numeric user ID as the durable join
-key.
+latest username as a label. Use numeric user IDs to join collection runs.
 
 Store these completion fields with the export manifest:
 
@@ -268,8 +267,7 @@ Store these completion fields with the export manifest:
 - Collection start and completion times.
 - Complete, partial, or failed status.
 
-These fields let a reviewer distinguish a real role change from an unfinished
-collection.
+These fields show whether the roster finished successfully.
 
 ## Audit a Community Moderation Team
 
@@ -291,14 +289,14 @@ Do not combine moderator rows with the full member roster silently. Give each
 export a clear role column. This prevents downstream tools from granting
 moderator meaning to ordinary members.
 
-Join the moderator roster to [Community Info](/api-reference/x/community-info)
-only when `community_id` and your local `export_manifest_id` match. Keep rules,
-member counts, and moderator profiles in separate tables. This preserves each
-endpoint's public response contract.
+Both `community_id` and your local `export_manifest_id` must match. Then join
+the moderator roster with [Community Info](/api-reference/x/community-info).
+Keep rules, member counts, and moderator profiles in separate tables. This
+preserves each endpoint's public response contract.
 
-The response may include `communityRole`. Store its returned value without
-normalizing it into a broader permission. An omitted role cannot prove admin,
-creator, or member permissions.
+Store `communityRole` only when the response provides it. Never expand it into
+a broader permission. An omitted role cannot prove admin, creator, or member
+permissions.
 
 ## Review Moderator Coverage
 
@@ -310,7 +308,7 @@ Use this review sequence:
 1. Confirm both exports ended with `has_next_page` set to `false`.
 2. Confirm both exports use the same numeric Community ID.
 3. Compare stable moderator IDs, not usernames or display names.
-4. Review added and missing IDs with an authorized human.
+4. Ask a reviewer to inspect added and missing IDs.
 5. Store the decision outside the public profile snapshot.
 
 Keep one row per visible moderator. Store the username only as a mutable label.
