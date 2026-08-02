@@ -1,9 +1,9 @@
 ---
-title: "Get Tweet Draft Details & Saved Post Content"
+title: "Get a Tweet Draft by ID with the Xquik API"
 sidebarTitle: "Get draft"
-description: "Retrieve one tweet or thread draft by ID with text, post order, media attachments, reply target, creation time, and update time. Includes API examples."
+description: "Retrieve one Xquik tweet draft by ID with saved text, optional topic, optional goal, creation time & update time. Handle 400, 401, 404 & 429 API errors."
 api: "GET /drafts/{id}"
-keywords: ["draft", "get", "details", "single"]
+keywords: ["get tweet draft", "retrieve tweet draft", "tweet draft API", "saved post content", "draft ID"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -65,9 +65,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-## Choose One Draft
+## Retrieve One Tweet Draft by ID
 
-Use this route after another workflow stores a specific draft ID. It returns one saved draft without creating, listing, or deleting drafts. Keep its ID with later edit or publishing steps.
+Retrieve one saved tweet draft from your Xquik account. The response contains
+its ID, text, optional topic, optional goal, and timestamps. It does not return
+thread order, media attachments, reply targets, or publishing results.
+
+Use the ID returned by [Create Draft](/api-reference/drafts/create) or
+[List Drafts](/api-reference/drafts/list). This route reads that record without
+creating, changing, publishing, or deleting it.
+
+Xquik drafts are separate from [X's native Unsent posts](https://help.x.com/en/using-x/how-to-post).
+This endpoint cannot retrieve drafts stored inside the X compose interface.
 
 <Callout icon="circle-check" color="#16a34a">
   **Free** - does not consume credits
@@ -75,8 +84,9 @@ Use this route after another workflow stores a specific draft ID. It returns one
 
 <CodeGroup>
   ```bash cURL
-  curl -X GET https://xquik.com/api/v1/drafts/42 \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+  curl --fail-with-body \
+    https://xquik.com/api/v1/drafts/42 \
+    --header "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
   ```javascript Node.js
@@ -87,7 +97,12 @@ Use this route after another workflow stores a specific draft ID. It returns one
       "x-api-key": "xq_YOUR_KEY_HERE",
     },
   });
-  const data = await response.json();
+  const draft = await response.json();
+  if (!response.ok) {
+    throw new Error(`${response.status} ${draft.error}: ${draft.message}`);
+  }
+
+  console.log(draft.id, draft.text, draft.updatedAt);
   ```
 
   ```python Python
@@ -98,7 +113,13 @@ Use this route after another workflow stores a specific draft ID. It returns one
       f"https://xquik.com/api/v1/drafts/{draft_id}",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
-  data = response.json()
+  draft = response.json()
+  if response.status_code != 200:
+      raise RuntimeError(
+          f'{response.status_code} {draft["error"]}: {draft["message"]}'
+      )
+
+  print(draft["id"], draft["text"], draft["updatedAt"])
   ```
 
   ```go Go
@@ -124,25 +145,138 @@ Use this route after another workflow stores a specific draft ID. It returns one
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+      var draft map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&draft); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      if resp.StatusCode != http.StatusOK {
+          panic(fmt.Sprintf("%d %v: %v", resp.StatusCode, draft["error"], draft["message"]))
+      }
+
+      fmt.Println(draft["id"], draft["text"], draft["updatedAt"])
   }
   ```
 </CodeGroup>
 
-## Path parameters
+## Read the Tweet Draft Fields
+
+The API returns one compact draft object. Optional fields are omitted when they
+were not supplied during creation.
+
+| Field | Meaning | Review use |
+| --- | --- | --- |
+| `id` | Stable Xquik draft ID | Keep it for later retrieval or deletion. |
+| `text` | Exact saved tweet text | Review this copy before publishing. |
+| `topic` | Optional composition topic | Preserve the intended subject. |
+| `goal` | Optional composition goal | Check engagement, followers, authority, or conversation intent. |
+| `createdAt` | ISO 8601 creation timestamp | Record when the draft entered the workflow. |
+| `updatedAt` | ISO 8601 update timestamp | Compare the returned record with a cached review copy. |
+
+The `text` field contains one saved string. It can contain up to 25,000
+characters. The `topic` field can contain up to 500 characters. The `goal`
+value can be `engagement`, `followers`, `authority`, or `conversation`.
+
+This response contains no public tweet ID. A draft remains private until a
+separate X write request publishes approved text.
+
+## Keep Xquik and Native X Drafts Separate
+
+Native X drafts appear inside the X compose interface. Native thread drafts can
+contain several connected posts. Native posts can also include photos, GIFs,
+or video.
+
+An Xquik draft stores one text value plus optional composition context. It has
+no thread sequence, media collection, reply target, or native X draft ID.
+
+| Draft source | Retrieve it here? | Retrieval method |
+| --- | --- | --- |
+| Xquik Create Draft API | Yes | Call `GET /drafts/{id}`. |
+| Xquik List Drafts API | Yes | Copy an ID, then call this route. |
+| X Unsent posts | No | Open the native X compose interface. |
+| Published tweet or thread | No | Use an X tweet read endpoint. |
+
+Do not send a public tweet ID to this route. Tweet IDs and Xquik draft IDs
+identify different resources.
+
+## Build a Tweet Draft Review Workflow
+
+1. Save tweet text through `POST /drafts`.
+2. Store the returned Xquik draft ID.
+3. Retrieve the draft before human or agent review.
+4. Compare its text, topic, goal, and timestamps.
+5. Approve or reject the exact returned text.
+6. Publish approved text through a separate X write route.
+7. Delete the saved draft when retention rules allow it.
+
+This route provides no edit operation. Create a new draft when approved text
+must change. Keep the old ID until reviewers accept the replacement.
+
+Use [Create Tweet](/api-reference/x-write/create-tweet) only after approval.
+Reading a draft never sends text to followers or creates likes and replies.
+
+## Recover From Tweet Draft Lookup Errors
+
+| Status | Error | Cause | Fix |
+| --- | --- | --- | --- |
+| `200` | Draft object | The account owns the requested draft | Read the returned fields. |
+| `400` | `invalid_id` | The path value is not a parseable draft ID | Copy an ID from Create Draft or List Drafts. |
+| `401` | `unauthenticated` | The credential is missing or invalid | Replace the API key or bearer token. |
+| `404` | `draft_not_found` | The draft is absent or belongs to another account | Verify the ID and authenticated account. |
+| `429` | `rate_limit_exceeded` | Too many requests reached the route | Wait for `Retry-After`, then retry once. |
+
+The route returns the same `404` for missing drafts and other-account IDs. This
+boundary prevents clients from discovering another account's draft IDs.
+
+Never retry `400`, `401`, or `404` without changing the request. Retry `429`
+only after the server's delay.
+
+## Answer Tweet Draft Retrieval Questions
+
+### Where Can I Find an Xquik Tweet Draft?
+
+Call List Drafts first. Copy the returned `id`, then request this endpoint.
+
+### Can This API Retrieve My Native X Drafts?
+
+No. Native X drafts remain under Unsent posts. This route reads Xquik records
+created through the draft API.
+
+### Does One Draft Include a Twitter Thread?
+
+No. The response contains one text string. It includes no thread order or
+connected-post collection.
+
+### Does the Response Include Media or Reply Targets?
+
+No. The canonical draft object contains no media, reply target, or tweet ID.
+
+### Can This Route Publish or Update the Draft?
+
+No. This route only reads the saved record. Create replacement text or publish
+through separate endpoints.
+
+### Can I Retrieve a Deleted Draft?
+
+No. A deleted draft returns `404`. Xquik provides no restore endpoint.
+
+### Does Retrieving a Draft Consume Credits?
+
+No. This authenticated lookup is free and consumes no Xquik credits.
+
+## Path Parameters
 
 <ParamField path="id" type="string" required>
-  The unique draft ID. Returned when you [create a draft](/api-reference/drafts/create) or [list drafts](/api-reference/drafts/list).
+  The unique Xquik draft ID. Copy it from [Create Draft](/api-reference/drafts/create) or [List Drafts](/api-reference/drafts/list).
 </ParamField>
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+<ParamField header="x-api-key" type="string">
+  Your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-api-key`, not both.
 </ParamField>
 
 ## Response
@@ -170,21 +304,21 @@ Use this route after another workflow stores a specific draft ID. It returns one
 ### 400 Invalid ID
 
 ```json
-{ "error": "invalid_id" }
+{ "error": "invalid_id", "message": "Invalid ID format." }
 ```
 The provided draft ID is not a valid format.
 
 ### 401 Unauthenticated
 
 ```json
-{ "error": "unauthenticated" }
+{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }
 ```
 Missing or invalid API key.
 
 ### 404 Not Found
 
 ```json
-{ "error": "draft_not_found" }
+{ "error": "draft_not_found", "message": "Draft not found." }
 ```
 No draft exists with this ID, or it belongs to a different account.
 
