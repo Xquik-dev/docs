@@ -1,17 +1,73 @@
 ---
-title: "n8n X Automation for Tweet Search & Webhooks"
+title: "n8n Twitter Node for X API Automation & Webhooks"
 sidebarTitle: "n8n"
-description: "Connect n8n to tweet search, profile lookup, follower exports, extraction jobs, account monitors, signed webhooks, MCP, and X actions. Follow exact steps."
-keywords: ["n8n", "workflow automation", "mcp", "twitter", "x", "webhooks", "extractions"]
+description: "Build n8n Twitter workflows for tweet search, follower exports, monitors, and webhooks. Add media posts, AI agents, and cursor-safe handoffs through Xquik."
+keywords: ["n8n Twitter node", "n8n Twitter", "n8n Twitter integration", "n8n Twitter API", "n8n Twitter automation", "n8n Twitter scraper", "n8n Twitter search", "n8n Twitter agent", "n8n Twitter media upload", "Twitter webhook workflow"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use Xquik in n8n when a workflow needs X (Twitter) search, account lookups, trends, publishing, extraction jobs, monitors, webhooks, or MCP tools without an X Developer app.
+Build an n8n Twitter node workflow with Xquik. Search tweets, export followers,
+monitor accounts, publish media, and run AI agents. This n8n Twitter
+integration uses HTTP Request, Webhook, and MCP Client Tool nodes. Xquik does
+not require an X Developer app.
 
 Xquik uses one API key and the REST base URL `https://xquik.com/api/v1`.
+
+## Choose an n8n Twitter Integration
+
+n8n includes a built-in X node for supported tweets, lists, users, and DMs.
+Use it when those native operations match your workflow.
+
+Use Xquik's n8n Twitter API path for wider reads and durable exports. Xquik
+also adds account monitors, keyword monitors, signed webhooks, and MCP tools.
+HTTP Request nodes call REST endpoints. Webhook nodes receive monitor events.
+MCP Client Tool nodes support agents.
+
+## Match n8n Twitter Automation to the Job
+
+### Search Tweets Without Scraping Pages
+
+Use n8n Twitter search for operator queries and scheduled research. Call
+`/x/tweets/search` with the same query and cursor on every page.
+
+An n8n Twitter scraper should use documented endpoints, not page selectors.
+Never make n8n scrape Twitter webpages or copy session cookies. This preserves
+tweet IDs, authors, engagement counts, and pagination fields.
+
+### Export Followers, Following, Replies, and Media
+
+Use extraction jobs when one n8n Twitter workflow needs many results. Start the
+job, store its ID, and poll until completion. Export followers, following,
+replies, quotes, media, lists, or communities. Commit rows and cursors together.
+
+### Monitor Mentions, Accounts, and Keywords
+
+Build an n8n Twitter monitoring workflow with account or keyword monitors.
+Register n8n's production Webhook URL before activating a monitor. Verify each
+signature before parsing its event. Store `deliveryId` and `streamEventId`.
+
+Route matching tweets to Slack, Sheets, CRM, or an approval queue. Use stored
+events to recover missed mentions without repeating accepted deliveries.
+
+### Post Tweets and Upload Media
+
+Use an approved n8n Twitter post step after read workflows pass. To make n8n
+post to Twitter, call the documented write endpoint with an idempotency key.
+
+An n8n Twitter media upload uses different inputs by action. Tweet and reply
+writes accept public media URLs. DMs require one uploaded media ID.
+
+### Build an n8n Twitter Bot or Agent
+
+An n8n Twitter bot should never publish unreviewed generated text. Use the n8n
+Twitter agent path for searches, profiles, trends, and summaries. Connect the
+MCP Client Tool to Xquik through Header Auth.
+
+Require approval before any tweet, reply, repost, like, or DM. Store returned
+action IDs before polling their final status.
 
 ## Prerequisites
 
@@ -397,6 +453,44 @@ For jobs larger than 1,000 rows, loop while `hasMore` is `true` and pass `after`
 - Send a test event from [Test Webhook](/api-reference/webhooks/test).
 - For extraction jobs, poll until `completed` before writing to Sheets.
 - On `429`, wait for the `Retry-After` header before retrying.
+
+## n8n Twitter Automation Questions
+
+### How Do I Connect n8n to Twitter?
+
+Create a Header Auth credential named for Xquik. Set its header to `x-api-key`.
+Select that credential on every Xquik HTTP Request node.
+
+### Can n8n Post to Twitter?
+
+Yes. Add an approval step before the write request. Send an idempotency key,
+store the action ID, and poll until the action becomes terminal.
+
+### Can n8n Scrape Twitter?
+
+Use Xquik's documented tweet, profile, follower, following, and reply routes.
+Do not scrape rendered X pages. API responses preserve stable IDs and cursors.
+
+### How Do I Monitor Twitter Mentions in n8n?
+
+Create an account or keyword monitor. Register the production n8n Webhook URL.
+Verify each signature, then route matching tweets by `eventType`.
+
+### Can Self-Hosted n8n Use Xquik?
+
+Yes. The instance needs outbound HTTPS access. Monitor recipes also need a
+public HTTPS webhook URL that Xquik can reach.
+
+### How Do I Troubleshoot an n8n Twitter Connection?
+
+Check the base URL, selected Header Auth credential, and `x-api-key` value.
+Use the production Webhook URL after activation. Reselect the credential after
+editing it. Recreate that credential if access still fails.
+
+### Which n8n Twitter Template Should I Build First?
+
+Start with tweet search and durable cursor storage. Add follower exports or
+monitor webhooks after the first read workflow passes.
 
 ## Next Steps
 
