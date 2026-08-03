@@ -1,10 +1,14 @@
 ---
-title: "Mastra Twitter MCP Agent Guide for TypeScript"
+title: "Mastra AI Twitter MCP Agent Guide for TypeScript"
 sidebarTitle: "Mastra"
-description: "Build a Mastra Twitter MCP agent for tweet search, profiles, followers, monitors, exports, and approved X actions with typed, validated TypeScript output."
+description: "Build Mastra AI TypeScript agents for tweet search, followers, monitors, and approved X actions. Add typed MCP workflows, pagination, rate limits, and handoffs."
 keywords:
   [
-    "Mastra Twitter MCP",
+    "Mastra AI Twitter MCP",
+    "Mastra AI agent framework",
+    "Mastra AI MCP server",
+    "Mastra AI SDK",
+    "Mastra AI workflow",
     "Twitter MCP TypeScript",
     "Mastra MCPClient",
     "Twitter API TypeScript",
@@ -19,15 +23,19 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Build a Mastra Twitter MCP agent through Xquik's remote MCP server. Search
+Build a Mastra AI Twitter MCP agent through Xquik's remote MCP server. Search
 tweets, inspect profiles, export followers, replay monitor events, and review
 X actions. Preserve every tweet ID, profile ID, cursor, and job ID.
 
-## Why Use Mastra With a Twitter API?
+This Mastra AI tutorial provides typed examples. These Mastra AI TypeScript
+examples cover agents, workflows, and tool calling. They also cover approval,
+pagination, errors, and durable handoffs.
 
-Mastra provides TypeScript agents, model routing, tools, memory, and workflows.
-Xquik supplies Twitter API operations through two MCP tools: `explore` and
-`xquik`.
+## Why Use the Mastra AI Agent Framework With a Twitter API?
+
+The Mastra AI framework provides agents, model routing, tools, memory, and
+workflows. Xquik supplies Twitter API operations through `explore` and
+`xquik`. Together, they support typed tweet research and approved X actions.
 
 Use each boundary for one responsibility.
 
@@ -48,14 +56,14 @@ direct REST for deterministic jobs without model decisions.
 - Node.js 22.13 or later
 - An [Xquik API key](/x-api-quickstart) beginning with `xq_`
 - An LLM provider key supported by Mastra
-- A connected X account for private reads or X write actions
+- Connect an X account for private reads or X write actions
 
 Public X reads do not require X Developer credentials. Authenticate with
 Xquik. Connect an X account only when the route requires it.
 
-## Install Mastra MCP Support
+## Install the Mastra AI SDK and MCP Support
 
-Install the tested Mastra minor lines and Zod.
+Install the tested Mastra AI SDK packages and Zod.
 
 ```bash
 npm install "@mastra/core@^1.55" "@mastra/mcp@^1.15" zod
@@ -73,7 +81,7 @@ OPENAI_API_KEY=YOUR_OPENAI_KEY
 xquik-*-handoff.json
 ```
 
-## Build a Mastra Tweet Search Agent
+## Build a Mastra AI Agent Example for Tweet Search
 
 Define the final handoff before creating the agent. Mastra validates the model
 response against the Zod schema.
@@ -81,6 +89,7 @@ response against the Zod schema.
 ```typescript
 import { writeFile } from "node:fs/promises";
 import { Agent } from "@mastra/core/agent";
+import { createStep, createWorkflow } from "@mastra/core/workflows";
 import { MCPClient } from "@mastra/mcp";
 import { z } from "zod";
 
@@ -137,14 +146,40 @@ try {
     tools: await mcp.listTools(),
   });
 
-  const result = await agent.generate(
-    "Search 50 latest tweets about Mastra Twitter MCP.",
-    { structuredOutput: { schema: handoffSchema } },
-  );
+  const searchStep = createStep({
+    id: "search-twitter",
+    inputSchema: z.object({ query: z.string().min(1) }),
+    outputSchema: handoffSchema,
+    execute: async ({ inputData }) => {
+      const result = await agent.generate(
+        `Search 50 latest tweets for: ${inputData.query}`,
+        { structuredOutput: { schema: handoffSchema } },
+      );
+
+      return handoffSchema.parse(result.object);
+    },
+  });
+
+  const tweetResearchWorkflow = createWorkflow({
+    id: "xquik-tweet-research",
+    inputSchema: z.object({ query: z.string().min(1) }),
+    outputSchema: handoffSchema,
+  })
+    .then(searchStep)
+    .commit();
+
+  const run = await tweetResearchWorkflow.createRun();
+  const workflowResult = await run.start({
+    inputData: { query: "Mastra AI MCP" },
+  });
+
+  if (workflowResult.status !== "success") {
+    throw new Error(`Tweet workflow ended with ${workflowResult.status}.`);
+  }
 
   await writeFile(
     "xquik-mastra-handoff.json",
-    JSON.stringify(result.object, null, 2),
+    JSON.stringify(workflowResult.result, null, 2),
     "utf8",
   );
 } finally {
@@ -161,6 +196,23 @@ the remote server requires it.
 The MCP runtime returns normalized snake_case fields through
 `xquik.request()`. It normalizes `createdAt` to the Unix-second field
 `created`. Keep the Zod schema aligned with that contract.
+
+## Run a Mastra AI Workflow for Tweet Research
+
+The example creates one typed Mastra AI workflow. Its `inputSchema` accepts a
+query. Its `outputSchema` requires the final tweet handoff.
+
+Mastra core workflows chain steps with `.then()` and finish with `.commit()`.
+`createRun()` creates isolated execution state. `start()` validates the initial
+`inputData` before running the search step.
+
+This pattern keeps model output behind Zod validation. A registered agent can
+also run the workflow through a Mastra application. Add human-in-the-loop
+approval before any workflow step that writes to X.
+
+Mastra AI workflows should preserve cursors between runs. Store the successful
+`result` outside the model transcript. Tweet search is not a real-time event
+stream. Use [monitors](/api-reference/monitors/create) for stored events.
 
 ## Search Tweets With Precise Operators
 
@@ -249,7 +301,7 @@ operation authorized by the key.
 Use `explore` before an unfamiliar operation. It returns the route, method,
 parameters, and response fields. It does not call X.
 
-## Use Per-User Twitter MCP Clients
+## Use a Mastra AI MCP Client for Each User
 
 Create one client after resolving the tenant identity. Never share one API key
 across unrelated tenants.
@@ -414,7 +466,37 @@ These versions were checked on August 2, 2026.
 Mastra 1.55 requires Node.js 22.13 or later. Review release notes before
 widening the pinned minor range.
 
-## Mastra Twitter MCP Questions
+## Mastra AI Twitter MCP Questions
+
+### Where Is the Mastra AI Documentation?
+
+Use Mastra's official agent, workflow, and MCP guides. This guide adds Xquik's
+tweet, profile, follower, monitor, and write contracts.
+
+### Which Mastra AI Examples Does This Tutorial Include?
+
+It covers installation, MCP discovery, tweet search, workflows, approvals, and
+handoffs. It also covers pagination, rate limits, and tenant isolation.
+
+### How Does the Mastra AI SDK Handle MCP?
+
+`@mastra/mcp` supplies `MCPClient`. `@mastra/core` supplies agents and
+workflows. Zod validates workflow inputs, outputs, and final agent responses.
+
+### What Is a Mastra AI MCP Client?
+
+It connects Mastra AI agents to remote MCP servers. Xquik exposes tweet,
+profile, follower, monitor, extraction, webhook, and write operations.
+
+### How Does a Mastra AI MCP Server Connection Work?
+
+`MCPClient` connects through Streamable HTTP. It namespaces remote tools by
+server. Xquik authenticates every execution with the `x-api-key` header.
+
+### Can Mastra AI Agents Run Workflows?
+
+Yes. Mastra AI workflows can call an agent inside a typed step. Validate every
+step output before passing it forward.
 
 ### Does Mastra Support Remote MCP Servers?
 
