@@ -179,7 +179,7 @@ keyword monitor into one state row. Store `keyword_monitor_id`, `query`,
 `event_detail_endpoint_pattern`, `webhooks_endpoint`, and
 `deliveries_endpoint_pattern` before routing alerts.
 
-## Keyword monitor handoff
+## Keyword Monitor Handoff
 
 Use `POST /monitors/keywords` when a queue, CRM, warehouse, Slack alert, or agent
 needs 1-second checks for one X search query. Create the monitor first. Then
@@ -223,6 +223,174 @@ create a signed webhook with
 
 Active keyword monitors check every 1 second and cost 21 credits per active monitor-hour. Creation or reactivation requires 22 available credits. Pause with [Update Keyword Monitor](/api-reference/monitors/update-keyword) and `{ "isActive": false }` when the alert should stop.
 
+## How Do I Monitor Twitter Keywords With an API?
+
+Use one focused query for each alert purpose.
+First, write the exact words, phrases, handles, or hashtags requiring alerts.
+Then select the tweet event types that should reach downstream workers.
+Create the monitor and store its returned ID immediately.
+
+Next, connect a signed webhook for the selected event types.
+Send a signed test before accepting production alerts.
+Store each event before returning a successful receiver response.
+Use the event ID and delivery ID for separate idempotency checks.
+
+This workflow helps applications monitor Twitter keywords without maintaining a stream connection.
+The Twitter keyword monitor checks its stored query every second.
+Matching tweets become stored events and signed webhook deliveries.
+Use [List Events](/api-reference/events/list) when a webhook consumer needs recovery.
+
+## How Do I Choose Twitter Keywords to Monitor?
+
+Start with terms that represent one operational decision.
+Support teams can watch product names, error phrases, or direct handles.
+Campaign teams can watch campaign hashtags and reply language.
+Developers can watch API names, integration phrases, or release mentions.
+
+Prefer an exact phrase when word order changes meaning.
+Use `OR` when any listed term should match.
+Use a space when every listed term must appear.
+Use a leading minus sign to exclude known noise.
+Group mixed `OR` conditions with parentheses.
+
+For example, monitor direct mentions with `@xquik`.
+Monitor a phrase with `"x api"`.
+Combine related terms with `(@xquik OR "xquik api")`.
+Exclude reposts with `-is:retweet` when repost alerts add no value.
+
+Test the proposed query with [Search Tweets](/api-reference/x/search-tweets) first.
+Review returned tweets before enabling continuous keyword monitoring.
+Narrow irrelevant matches before paying for an active monitor.
+Never add undocumented operators merely to increase apparent coverage.
+
+## How Do I Track Twitter Mentions and Brand Keywords?
+
+Include the exact handle when direct mentions require action.
+Add the brand name when plain-text mentions also matter.
+Add specific product names only when workers own those alerts.
+Keep unrelated brands in separate monitors and queues.
+
+Tracking mentions requires stable evidence from every matched tweet.
+Store the tweet ID, author ID, event type, query, and timestamp.
+Keep `keywordMonitorId` beside each stored event.
+This join shows which query matched the tweet.
+
+The selected query monitors conversations across public matching tweets.
+It does not calculate sentiment or brand reputation.
+It also cannot reveal private tweets or direct messages.
+Treat mentions of your brand as matched tweets, not inferred opinions.
+
+## When Should I Use Keyword Alerts, Tweet Search, or Account Monitoring?
+
+Choose the surface that matches the required time range and scope.
+
+| Requirement | Use | Result |
+| --- | --- | --- |
+| Continuous matches across many accounts | Keyword monitor | Stored matching tweet events and real time alerts. |
+| Historical or on-demand query results | [Search Tweets](/api-reference/x/search-tweets) | One cursor-paginated tweet result set. |
+| Selected changes from one known account | [Create Account Monitor](/api-reference/monitors/create) | Tweet and profile events from that username. |
+
+A focused Twitter monitoring tool should not mix these three scopes.
+Use Twitter search for backfill and investigation.
+Use an account monitor for one known profile.
+Use keyword alerts for continuous matches across public tweets.
+
+Brand monitoring often needs both keyword and account monitors.
+Keep their event IDs, monitor IDs, and queue routes separate.
+That separation prevents one alert source from impersonating another.
+
+## How Do Real-Time Tweet Alerts Reach My Application?
+
+Create the keyword monitor before registering its webhook destination.
+Subscribe the webhook to the same selected event types.
+Then send a signed test to validate the receiver.
+
+Verify every signature before parsing the request body.
+Store `deliveryId` before queuing downstream work.
+Store `streamEventId` before processing the matching tweet.
+Return success only after the durable queue write completes.
+
+The Events API provides recovery when live delivery fails.
+The Deliveries API shows webhook attempts for one registered endpoint.
+Use [Webhook Verification](/webhooks/verification) for receiver validation.
+Use [List Deliveries](/api-reference/webhooks/deliveries) for delivery audits.
+
+API access errors require different recovery actions.
+Replace invalid credentials after a `401` response.
+Add credits before retrying a `402` response.
+Respect `Retry-After` before repeating a `429` request.
+
+## How Do I Backfill Tweets Before Starting Keyword Monitoring?
+
+Run the same query through Search Tweets before creating the monitor.
+Page until the response reports no next page.
+Store every tweet ID and its source query.
+Record the newest collected tweet timestamp as the handoff boundary.
+
+Then create the keyword monitor with the reviewed query.
+Deduplicate backfill and monitor events by stable tweet ID.
+Keep the stored monitor ID beside every continuous event.
+Do not reuse a search cursor after changing the query.
+
+A Twitter tracker must distinguish historical results from live alerts.
+Search results answer an on-demand time range.
+Monitor events represent continuous checks after activation.
+Combining both sources without a boundary creates duplicate tweets.
+
+## How Do I Monitor Multiple Keyword Groups?
+
+Use one monitor when all terms share one alert action.
+Combine those terms with explicit `OR` grouping.
+Use separate monitors when terms require different owners or queues.
+Separate monitors also preserve distinct query evidence.
+
+Store each monitor ID, normalized query, event types, and billing time.
+Pause obsolete monitors instead of creating uncertain duplicates.
+List keyword monitors before repeating a timed-out create request.
+A paused duplicate can reactivate with the submitted event types.
+
+Review active monitors before each billing checkpoint.
+Every active keyword monitor adds its hourly charge.
+Pause queries that no longer trigger a real downstream action.
+Do not broaden queries merely to generate more alerts.
+
+## How Do I Keep Twitter Keyword Alerts Actionable?
+
+Assign one owner and queue to each monitor ID.
+Route alerts by query, event type, and matched tweet ID.
+Keep support alerts separate from campaign or competitor alerts.
+Define the required action before activating the monitor.
+
+Review false matches from stored events at a regular interval.
+Add exact phrases or exclusions when irrelevant tweets repeat.
+Remove a term when it no longer supports an operational decision.
+Keep the previous query beside every configuration change.
+
+Do not delete evidence when a query changes.
+Stored events explain why earlier alerts reached their original queue.
+Record the change time and the responsible operator.
+Use a new monitor when ownership or alert purpose changes completely.
+
+Measure matched tweets, accepted alerts, rejected alerts, and processing failures.
+Those counts reveal query precision without inventing sentiment scores.
+Pause noisy monitors while operators correct their stored queries.
+Resume only after a reviewed search returns useful tweets.
+
+## What Does a Twitter Keyword Monitor Not Provide?
+
+A keyword monitor does not return a complete historical archive.
+It does not provide follower, following, like, or bookmark changes.
+It does not verify giveaway follows, replies, or reposts by itself.
+It does not calculate sentiment, reach, or engagement quality.
+
+Use [Followers](/api-reference/x/followers) for follower snapshots.
+Use [Following](/api-reference/x/following) for following snapshots.
+Use focused tweet endpoints for replies, quotes, and retweeters.
+Use Search Tweets when an operator needs historical matching tweets.
+
+This endpoint remains a query-specific Twitter tracker with webhook delivery.
+It stores concrete tweet matches instead of inferred marketing conclusions.
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
@@ -243,7 +411,7 @@ Active keyword monitors check every 1 second and cost 21 credits per active moni
   Array of event types to subscribe to. At least 1 required. See [Valid Event Types](#valid-event-types) below.
 </ParamField>
 
-## Valid event types
+## Valid Event Types
 
 Valid keyword monitor types: `tweet.new`, `tweet.quote`, `tweet.reply`,
 `tweet.retweet`, `tweet.media`, `tweet.link`, `tweet.poll`, `tweet.mention`,
