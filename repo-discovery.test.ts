@@ -10097,6 +10097,10 @@ const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
 const REQUIRED_PIPEDREAM_GUIDE_SNIPPETS = [
   'title: "Pipedream Automation for Twitter API & Webhooks"',
   '## Choose a Pipedream Automation Pattern',
+  'The workflow uses prebuilt actions for Slack, Google Sheets, and CRM handoffs.',
+  '`GET /x/users/{id}` returns the profile fields required for enrichment.',
+  'The deduplication step uses persisted tweet IDs to suppress repeated alerts.',
+  'The approval queue governs every blog post and scheduled tweet.',
   '## Build a Serverless Twitter API Integration',
   'This guide calls Xquik routes directly.',
   "It does not require Pipedream's native Twitter integration.",
@@ -10247,6 +10251,10 @@ const FORBIDDEN_PIPEDREAM_GUIDE_SNIPPETS = [
   'Retry safe reads after `424`, `429`, or `502` with bounded backoff.',
   'Use `GET /x/tweets/search` for a Twitter automation workflow.',
   'Keep raw API pages out of Slack messages, CRM rows, warehouse loads, and retry queues.',
+  'Prebuilt actions handle Slack, Google Sheets, and CRM handoffs.',
+  '`GET /x/users/{id}` provides profile enrichment.',
+  'Persisted tweet IDs prevent repeated alerts.',
+  'Approved queues should handle blog posts and scheduled tweets.',
 ] as const;
 
 const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
@@ -11194,6 +11202,26 @@ const REQUIRED_N8N_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_MAKE_GUIDE_SNIPPETS = [
+  'title: "Make.com Twitter Integration for X API Automation"',
+  '## Choose a Make Twitter Automation Pattern',
+  '## Build a Make.com API Integration',
+  '## Control Rate Limiting and Error Handling',
+  '## Automate Focused Twitter Workflows',
+  '## Make.com Twitter Integration Questions',
+  '### How Do I Connect the Twitter API to Make?',
+  '### How Do I Build a Twitter Webhook in Make?',
+  '### Can Make Automate Twitter Search Without Coding?',
+  '### How Do I Connect Twitter Activity to a CRM?',
+  '## Make and Xquik Sources',
+  'A Make.com API integration uses an Xquik API key for authentication.',
+  'Build a Make scenario automation around one bounded Xquik operation.',
+  'A Twitter monitor webhook can route new tweets and replies immediately.',
+  'Place scheduled tweets and replies in an approval queue.',
+  '[Make custom app base configuration](https://developers.make.com/custom-apps-documentation/app-components/base)',
+  '[Make connection validation guidance](https://developers.make.com/custom-apps-documentation/best-practices/connections)',
+  '[Make community decommissioning notice](https://community.make.com/t/make-is-officially-decommissioning-x-formerly-twitter-app/77497)',
+  '[Make webhook documentation](https://help.make.com/webhooks)',
+  '[Make scenario scheduling](https://help.make.com/schedule-a-scenario)',
   '## App Shape',
   '<Card title="Connection" icon="key-round">',
   'Use an API key parameter named `apiKey` and inject it as `x-api-key`.',
