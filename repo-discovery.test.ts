@@ -10892,6 +10892,10 @@ const REQUIRED_MASTRA_GUIDE_SNIPPETS = [
   'JSON.stringify(workflowResult.result, null, 2)',
   '## Run a Mastra AI Workflow for Tweet Research',
   'Mastra core workflows chain steps with `.then()` and finish with `.commit()`.',
+  'Mastra is an open-source TypeScript framework for building AI applications.',
+  'The `inputSchema: z.object(...)` declaration validates every query.',
+  'also run the workflow through a Mastra instance.',
+  'When running Mastra in production, store each successful handoff immediately.',
   '`listTools()` suits',
   '`listToolsets()` groups tools by server for each call.',
   'The client tries Streamable HTTP for URL servers.',
@@ -10922,6 +10926,7 @@ const REQUIRED_MASTRA_GUIDE_SNIPPETS = [
   '### What Is a Mastra AI MCP Client?',
   '### How Does a Mastra AI MCP Server Connection Work?',
   '### Can Mastra AI Agents Run Workflows?',
+  'Connect an X account before posting.',
   '### Can a Mastra Agent Export Twitter Followers?',
   '### How Should a Mastra Agent Handle Twitter Rate Limits?',
 ] as const;
