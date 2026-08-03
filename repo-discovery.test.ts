@@ -8764,6 +8764,8 @@ const REQUIRED_NO_CODE_WORKFLOW_HANDOFF_SNIPPETS = [
   '<Accordion title="429 rate limited">',
   '## Keep Twitter Automation Safe',
   '## No-Code Twitter Automation Frequently Asked Questions',
+  '### How Do I Choose the Best Twitter Automation Tools?',
+  'Require signature access, durable cursor storage, HTTP status branches, and',
   '### How Do I Automate Twitter Without Code?',
   '### Can Zapier Connect to a Twitter API?',
   '### How Do I Connect n8n to a Twitter API?',
