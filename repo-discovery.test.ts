@@ -7210,6 +7210,7 @@ const FORBIDDEN_DOWNLOAD_MEDIA_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
+  'Read DM history and send direct messages from a connected X account.',
   'title: "X Direct Message API: Send DMs, Read History & Media"',
   '"Twitter DM API"',
   '"Twitter API DM"',
