@@ -10350,7 +10350,8 @@ const REQUIRED_COMPOSIO_MIGRATION_SNIPPETS = [
   'Choose unified APIs or a direct REST API.',
   'Test developer experience through SDK typing, logs, documentation, and rollbacks.',
   'Validate API calls and user profile scope in every AI assisted social media workflow.',
-  'Can your integration platform support clear API documentation and production ready rollback steps?',
+  'Can developers find the integration platform\'s API documentation?',
+  'Can operators run production-ready rollback steps?',
   'Compare pricing, features, free tier, and white-label consent.',
   'Never choose an automation tool by its free tier alone.',
   'Measure real time claims.',
@@ -10428,6 +10429,7 @@ const FORBIDDEN_COMPOSIO_MIGRATION_SNIPPETS = [
   'No X developer credentials are required.',
   'Ask, "what is Composio AI?"',
   'Keep API documentation and production ready rollback steps.',
+  'Can your integration platform support clear API documentation and production ready rollback steps?',
 ] as const;
 
 const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
