@@ -7210,6 +7210,12 @@ const FORBIDDEN_DOWNLOAD_MEDIA_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
+  'title: "X Direct Message API: Send DMs, Read History & Media"',
+  '"Twitter DM API"',
+  '"Twitter API DM"',
+  '"Twitter direct message API"',
+  '"Twitter DM history API"',
+  '"Twitter DM automation"',
   'send direct messages',
   'GET /x/users/{id}',
   'GET /x/dm/{userId}/history',
@@ -7332,6 +7338,25 @@ const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   'and optional `media_id` in private audit records or support systems.',
   '<Card title="JSON Lines" icon="braces">',
   'Store history and send records in `xquik-dm-handoff.jsonl`',
+  '## Twitter DM API Questions',
+  '### How Does the X Direct Message API Work?',
+  'This Twitter DM API workflow also reads participant-scoped message history.',
+  '### How Do I Send a Twitter DM Through an API?',
+  'A Twitter API DM send starts with recipient lookup.',
+  'The Twitter direct message API returns `messageId` and `success`.',
+  '### Can the API Receive Twitter DMs in Real Time?',
+  'This route does not register real-time DM events.',
+  'Use `next_cursor` only after the first page.',
+  'A Twitter DM history API client should dedupe each message `id`.',
+  '### Why Does Sending a DM Return 403 or 422?',
+  'Do not retry an unchanged rejected request.',
+  '### Can This API Create Group DM Conversations?',
+  'The current Xquik contract does not create group conversations.',
+  '### How Do I Send a DM With Media?',
+  'The API rejects empty arrays and multiple media IDs.',
+  '### Is Twitter DM Automation Suitable for Welcome Messages?',
+  'Never send unsolicited welcome messages to new followers.',
+  '[X developer guidance](https://docs.x.com/developer-guidelines)',
 ] as const;
 
 const REQUIRED_WEBHOOK_TESTING_SNIPPETS = [
