@@ -1,18 +1,23 @@
 ---
 title: "Tweet Metadata, Profile & Media API Field Guide"
 sidebarTitle: "API field guide"
-description: "Map normalized tweet, author, profile, media, reply, quote, repost, engagement, URL, and pagination fields across REST, SDK, MCP, and Actors. See exact routes."
+description: "Map Twitter API fields for tweets, profiles, media, replies, engagement metrics, IDs, cursors, exports, REST, SDK, MCP, and Actor responses with JSON examples."
 keywords:
   [
     "X API fields",
     "Twitter API fields",
+    "Twitter API user fields",
+    "Twitter API response fields",
     "tweet metadata",
     "Twitter metadata",
     "tweet fields",
     "Twitter profile API",
+    "Twitter profile fields",
     "profile metadata",
     "media metadata",
     "Twitter media API",
+    "tweet engagement metrics",
+    "Twitter API pagination",
     "MCP response fields",
     "Apify dataset fields",
   ]
@@ -23,20 +28,25 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
 <LlmsDirective />
 
-Use this guide to interpret tweet metadata and Twitter profile API fields.
-It also covers media, replies, quotes, reposts, and engagement counts.
+Use this guide to get tweet metadata from Xquik responses.
+It maps Twitter API fields for tweets, user profiles, media files, and replies.
+Compare Twitter API user fields, Twitter profile fields, and media objects.
+Review tweet engagement metrics, quote context, repost context, and pagination.
 
 Quick answer: treat IDs as strings. Treat optional fields as conditional. Keep
 reply, quote, and repost relationships separate. Store a collection timestamp
 beside mutable engagement and profile counts.
 
+This Twitter metadata guide focuses on public fields X supplies.
 Xquik preserves every documented public field supplied for supported reads.
 Core fields remain stable. Optional fields appear only when X supplies them.
 
 <TweetReadApiLinks />
 
-The [OpenAPI contract](/api-reference/overview) defines exact REST and SDK
-types. The MCP contract normalizes names for agent use.
+The [API reference](/api-reference/overview) defines exact REST and SDK types.
+Each API response must follow those documented types.
+The Twitter API response fields below match that public contract.
+The MCP contract normalizes names for agent use.
 Most fields use `snake_case`. REST `createdAt` becomes MCP `created`.
 It does not become `created_at`.
 
@@ -171,6 +181,8 @@ Read `retweeted_tweet` for original repost context. Keep the returned outer
 tweet ID and nested tweet ID separate. This prevents incorrect engagement
 joins.
 
+Keep original tweets separate from outer repost records.
+
 <CardGroup cols={2}>
   <Card title="Direct Reply" icon="reply">
     Join `inReplyToId` to the parent tweet. Keep `conversationId` for the full
@@ -233,6 +245,11 @@ Core profile fields group into these roles:
 - Automation: `isAutomated` and `automatedBy`
 - Features: `hasCustomTimelines`, `isTranslator`, and `communityRole`
 - Pinned content: `pinnedTweetIds`
+
+Treat `author` as the user object for each returned tweet.
+Store the user profile using its stable `id`.
+A profile page can change its username, name, bio, and images.
+Keep pinned tweet IDs as strings.
 
 | Field                             | Description                                  |
 | --------------------------------- | -------------------------------------------- |
@@ -313,6 +330,8 @@ describe public response state. They do not grant access to hidden content.
 ## Media Fields
 
 Media rows keep their URL and type. These optional fields add detail.
+The Twitter media API field section covers returned photos, videos, and GIFs.
+Store media files only when returned URLs and availability allow it.
 
 Every media object includes `mediaUrl`, `type`, and `url`.
 
@@ -402,7 +421,7 @@ Do not infer a direct parent from array position. Use `inReplyToId`. Keep
 `nested_replies` separate from direct replies when measuring first-level
 coverage.
 
-## Pagination Fields
+## Twitter API Pagination Fields
 
 Tweet, profile, follower, reply, list, and timeline routes can return page
 envelopes. Keep each endpoint's documented field names.
@@ -503,6 +522,36 @@ MCP `created`. Actor datasets follow each Actor's documented output mode.
 </AccordionGroup>
 
 ## Tweet Metadata and Profile API Questions
+
+### How Do I Get Tweet Metadata?
+
+Call the route matching your tweet, timeline, profile, or reply task.
+Read the returned API response through its documented schema.
+Keep IDs, counts, relationships, and cursors without inventing missing fields.
+
+### Which Twitter API Fields Should I Store?
+
+Start with IDs, text, timestamps, authors, engagement counts, media, and
+relationships.
+Add optional fields only when X supplies them.
+Store collection time beside mutable counts.
+
+### Which Twitter API User Fields Identify a Profile?
+
+Use `id` as the stable profile key.
+Keep `username`, `name`, bio, images, verification, followers, and following.
+Record collection time beside changing profile counts.
+
+### How Do I Read Twitter API Response Fields?
+
+Follow each Xquik route's response schema in the API reference.
+Do not rename fields across REST, SDK, MCP, or Actor surfaces.
+
+### How Do I Read Twitter API Pagination Fields?
+
+Read `has_next_page` with `next_cursor` for REST pages.
+Read `hasMore` with `nextCursor` for extraction result pages.
+Never mix cursors between those response envelopes.
 
 ### What Metadata Does a Tweet Include?
 
