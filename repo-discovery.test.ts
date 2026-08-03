@@ -6850,6 +6850,24 @@ const FORBIDDEN_DRAW_DETAIL_SNIPPETS = [
 ] as const;
 
 const REQUIRED_DRAW_EXPORT_RESPONSE_SNIPPETS = [
+  'title: "Twitter Giveaway CSV Export API & Winner Lists"',
+  'sidebarTitle: "Export draw"',
+  'description: "Export selected Twitter giveaway winners or inspected reply entries as CSV, XLSX, JSON, Markdown, PDF, or text. Preserve columns, order, and filenames."',
+  'keywords: ["Twitter giveaway CSV", "giveaway winner export", "Twitter giveaway winner list", "X giveaway results export", "contest entries export", "download giveaway winners", "giveaway audit file"]',
+  '## Export Twitter Giveaway Winners or Entries',
+  'Use `type=winners` for selected primary and backup winners.',
+  'Use `type=entries`\nfor every stored reply inspected during the draw.',
+  '## Download a Giveaway Winner CSV',
+  'Never parse a successful export as JSON. The `200` body contains file bytes.',
+  '## Choose a Twitter Giveaway Export Format',
+  'PDF entry exports include up to 10,000 rows. Winner exports contain selected winners.',
+  '## Understand Winner Export Columns',
+  'The winner export does not include the winning reply ID.',
+  '## Understand Giveaway Entry Export Columns',
+  'Do not call every exported entry eligible. Check `Passed Filter` first.',
+  '## Build a Giveaway Audit Handoff',
+  '<ParamField header="Authorization" type="string">',
+  'Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.',
   'Returns a file download. The response includes a `Content-Disposition`',
   'header with the filename.',
   '<CardGroup cols={2}>',
@@ -6877,6 +6895,25 @@ const REQUIRED_DRAW_EXPORT_RESPONSE_SNIPPETS = [
   '**Winner export columns:** Position, Username, Text, Backup',
   '**Entry export columns:** Username, Text, Passed Filter, Language',
   'Entry exports are capped at 100,000 rows (10,000 for PDF).',
+  '### 400 Invalid Parameters',
+  '"error": "invalid_input"',
+  '## Handle Giveaway Export Responses',
+  '<Card title="429 Rate Limit" icon="timer">',
+  '## Twitter Giveaway Export Questions',
+  '### How Do I Download Twitter Giveaway Winners as CSV?',
+  '### Can I Export Every Inspected Giveaway Entry?',
+  '### Does an Entry Export Contain Only Eligible Replies?',
+  '### Can I Export More Than 100,000 Giveaway Entries?',
+  '### Does the Export Include Giveaway Eligibility Rules?',
+] as const;
+
+const FORBIDDEN_DRAW_EXPORT_RESPONSE_SNIPPETS = [
+  'title: "Export Draw"',
+  'keywords: ["draw", "export"]',
+  '"error": "invalid_params"',
+  'This endpoint also accepts session cookie authentication.',
+  'The export includes the source tweet and giveaway rules.',
+  'Every entry in the export is eligible.',
 ] as const;
 
 const REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS = [
@@ -15056,7 +15093,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps draw export response formats mobile friendly', (): void => {
-    expect.assertions(2);
+    expect.assertions(3);
 
     const source = readFileSync('api-reference/draws/export.mdx', 'utf8');
 
@@ -15065,6 +15102,11 @@ describe('repository discovery', (): void => {
         source,
         'Draw export API response',
         REQUIRED_DRAW_EXPORT_RESPONSE_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      FORBIDDEN_DRAW_EXPORT_RESPONSE_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
       ),
     ).toStrictEqual([]);
     expect(source).not.toContain('| Format | Content-Type | Filename |');
