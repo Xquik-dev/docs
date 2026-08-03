@@ -6403,7 +6403,8 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   'Tweet search results can filter authors, dates, engagement, media, relationships, lists, and locations.',
   'Run bulk data extractions from X in 5 stages:',
   'Use this workflow to scrape tweets, export followers, pull tweet replies, save CSV/JSON/XLSX files, or hand paginated JSON to a CRM, warehouse, queue, or AI agent.',
-  'The estimate endpoint shows expected rows and credits without consuming credits.',
+  'Use the estimate endpoint first.',
+  'It shows expected rows and credits without charging you.',
   'Available export rows include bios, locations, and engagement counts.',
   'Extract visible replies to this tweet: `https://x.com/vercel/status/1893704267862470862`',
   'Treat `202 Accepted` as a queued run receipt.',
@@ -6987,6 +6988,7 @@ const FORBIDDEN_EXTRACTION_WORKFLOW_SNIPPETS = [
   'quota',
   'Run bulk data extractions from X in 4 steps',
   'The estimate endpoint previews the result count and projected credit usage without consuming credits.',
+  'The estimate endpoint shows expected rows and credits without consuming credits.',
   'Exports include enrichment data such as bios, locations, and engagement metrics.',
   '| `502 x_api_unavailable` | X data source temporarily down | Retry with exponential backoff |',
 ] as const;
