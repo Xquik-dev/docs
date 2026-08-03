@@ -10530,7 +10530,7 @@ const FORBIDDEN_COMPOSIO_MIGRATION_SNIPPETS = [
 ] as const;
 
 const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
-  "Hermes Tweet is Xquik's native Hermes Agent plugin.",
+  "Hermes Tweet is Xquik's native Hermes Agent Twitter plugin.",
   'hermes plugins install Xquik-dev/hermes-tweet --enable',
   'uv pip install --python ~/.hermes/hermes-agent/venv/bin/python hermes-tweet',
   'The current package version is `0.1.12`.',
@@ -10541,7 +10541,13 @@ const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
   'Call catalog-listed read-only endpoints after `XQUIK_API_KEY` is configured.',
   '<Card title="tweet_action" icon="shield-check">',
   'Call write-like or private endpoints only when `HERMES_TWEET_ENABLE_ACTIONS=true`.',
+  'It also bundles a reusable Hermes Twitter skill.',
+  'For an existing Hermes Agent install, use the plugin installer:',
+  'Hermes records plugin enablement in `~/.hermes/config.yaml`.',
+  'New agent runs read the updated environment after restart.',
   '## Hermes Agent Twitter Search',
+  'For a tweet search agent, summarize patterns after collecting the selected pages.',
+  'A Twitter follower export supports audience analysis and CRM enrichment.',
   'For keyword searches, use `GET /api/v1/x/tweets/search`.',
   'Available extraction types include `follower_explorer`, `following_explorer`, and `reply_extractor`.',
   '## Approved Twitter Actions',
