@@ -8851,6 +8851,8 @@ const REQUIRED_TWEET_PROFILE_API_FIELDS_SNIPPETS = [
   '### Which Twitter API Fields Should I Store?',
   '### Which Twitter API User Fields Identify a Profile?',
   '### How Do I Read Twitter API Response Fields?',
+  'Use the field names documented for each surface.',
+  'Apply only documented mappings between REST, SDK, MCP, and Actor names.',
   '### How Do I Read Twitter API Pagination Fields?',
   '### What Metadata Does a Tweet Include?',
   '### What Is a Twitter Conversation ID?',
