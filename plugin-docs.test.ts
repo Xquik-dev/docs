@@ -218,6 +218,8 @@ describe('Plugin docs', (): void => {
       '<Card title="Write Approval Required" icon="shield-check">',
       'Review the structured request. Approve only the exact intended action and',
       'account.',
+      'The package also serves as an OpenClaw X Twitter skill for catalog-guided tasks.',
+      'TweetClaw does not implement MCP.',
     ];
 
     expect(fileIncludes(guide, expected)).toStrictEqual([]);
