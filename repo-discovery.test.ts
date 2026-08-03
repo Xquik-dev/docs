@@ -10660,8 +10660,8 @@ const REQUIRED_CREWAI_GUIDE_SNIPPETS = [
   'Teams of AI agents must not share write-capable keys.',
   'This CrewAI MCP integration connects external APIs through synchronized schemas.',
   'Prefer CrewAI tools before building a CrewAI custom tool.',
-  'Each `tools` tool entry grants execution permission.',
-  'That makes agent tools and tool integration boundaries clear.',
+  'The `tools` tool list shows permitted agent actions.',
+  'Review agent tools before each tool integration.',
   '`import tool` shortcuts and `def run` wrappers duplicate native MCP behavior.',
   'Avoid broad web searches when tweet IDs matter.',
   'Real world AI applications need safe multi agent systems.',
@@ -10702,6 +10702,7 @@ const FORBIDDEN_CREWAI_GUIDE_SNIPPETS = [
   'Use hierarchical delegation for independent specialists.',
   'Create each `MCPServerHTTP` configuration after resolving its tenant.',
   'See [guest wallets](/guides/guest-wallets).',
+  'That makes agent tools and tool integration boundaries clear.',
 ] as const;
 
 const REQUIRED_PYDANTIC_AI_GUIDE_SNIPPETS = [
