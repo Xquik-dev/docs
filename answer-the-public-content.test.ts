@@ -111,6 +111,7 @@ const REQUIRED_PROMPTS_BY_FILE = {
   ],
   'guides/twitter-comment-retweet-picker.mdx': [
     'How Does a Twitter Comment Picker Work?',
+    'How Do I Pick a Winner From Twitter Comments?',
     'How Does a Twitter Retweet Picker Verify Entries?',
     'How Does a Twitter Hashtag Giveaway Picker Work?',
     'Can a Comment Picker Verify Likes?',

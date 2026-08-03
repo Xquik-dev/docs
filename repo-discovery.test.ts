@@ -8647,13 +8647,16 @@ const REQUIRED_TWITTER_GIVEAWAY_PICKER_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWITTER_COMMENT_RETWEET_PICKER_SNIPPETS = [
-  'title: "Twitter Comment & Retweet Picker API Verification"',
+  'title: "Twitter Comment Picker & Retweet Giveaway API"',
   'sidebarTitle: "Comment & retweet picker"',
   'Preserve cursors, user IDs, filters, and selection proof.',
   '## How Does a Twitter Comment Picker Work?',
   '[Get Tweet Replies](/api-reference/x/tweet-replies)',
   'A random comment picker selects winners from the remaining stable user IDs.',
+  '## How Do I Pick a Winner From Twitter Comments?',
+  'A Twitter reply picker should freeze eligible user IDs before selection.',
   '## How Does a Twitter Retweet Picker Verify Entries?',
+  'Use a Twitter retweet giveaway picker when published entry rules require reposts.',
   '[Get Retweeters](/api-reference/x/retweeters)',
   '## How Does a Twitter Hashtag Giveaway Picker Work?',
   '## Can a Comment Picker Verify Likes?',
