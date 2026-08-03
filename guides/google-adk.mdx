@@ -26,20 +26,20 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <LlmsDirective />
 
 This Google ADK tutorial uses Xquik's remote MCP server.
-Build a Google ADK Twitter API agent through Xquik.
+Build a Google ADK Twitter API agent through Xquik using this architecture.
 This Twitter API for Python workflow searches tweets, profiles, and followers.
-It also replays monitors and reviews approved X actions. Preserve every tweet
-ID, profile ID, cursor, and job ID.
+It also replays monitors and reviews approved X actions. The handoff must
+preserve tweet IDs, profile IDs, cursors, and job IDs.
 
 ## Why Use Google ADK With a Twitter API?
 
-Google's Agent Development Kit manages Gemini calls, tools, sessions, and
-agent handoffs. Model Context Protocol, or MCP, standardizes tool discovery
-and tool calling. Xquik exposes Twitter API operations through `explore` and
+Google's Agent Development Kit (ADK) manages Gemini calls, tools, sessions,
+and agent handoffs. Model Context Protocol, or MCP, standardizes tool discovery
+and execution. Xquik exposes Twitter API operations through `explore` and
 `xquik`.
 
 This Google ADK guide assigns one responsibility to each boundary. The Agent
-Development Kit MCP client discovers current Xquik route schemas.
+Development Kit MCP client loads Xquik route schemas during startup.
 
 | Boundary | Google ADK control | Twitter agent benefit |
 | --- | --- | --- |
@@ -88,13 +88,13 @@ GOOGLE_API_KEY=YOUR_GOOGLE_AI_KEY
 xquik-*-handoff.json
 ```
 
-The environment variables keep Xquik and Google credentials outside agent
-code. Never place either key inside an agent instruction.
+The environment variables isolate Xquik and Google credentials from the agent
+implementation. Never place either key inside an agent instruction.
 
 ## Connect Google Agent Development Kit to an MCP Server
 
 This Google Agent Development Kit MCP server setup uses Xquik remotely. ADK
-acts as the MCP client. Xquik remains the remote MCP server.
+serves as the MCP client, while Xquik hosts the remote server.
 
 `McpToolset` discovers `explore` and `xquik` through standard tool calling.
 These Google ADK tools cover tweets, profiles, followers, monitors, and X
@@ -106,7 +106,7 @@ Define the final handoff before creating the agent. ADK validates the final
 Gemini response while still allowing MCP tool calls.
 
 `from google.adk import Agent` imports the current agent class. This Google ADK
-Python example validates every final response with Pydantic. The Twitter API
+Python example validates final responses with Pydantic. The Twitter API
 get tweets workflow calls the documented search route.
 
 ```python
@@ -239,6 +239,8 @@ This Twitter API integration accepts standard X search operators. Use
 `queryType=Latest` for chronological monitoring. Use `Top` for engagement
 ranking. See the complete [tweet search API contract](/api-reference/x/search-tweets).
 
+The search query `twitter api get tweets` maps to this route.
+
 Pass the returned `next_cursor` unchanged. Never reconstruct a cursor. Stop
 when `has_more` is false, the requested limit is met, or a cursor repeats.
 
@@ -247,8 +249,8 @@ when `has_more` is false, the requested limit is met, or a cursor repeats.
 Xquik intentionally exposes one `xquik` execution tool. MCP tool-name filters
 cannot distinguish GET, POST, and DELETE requests inside that tool.
 
-This Google ADK multi agent pattern separates research from publishing.
-Production multi agent systems require separate keys and confirmation rules.
+This Google ADK multi agent pattern separates research from publishing. Use
+separate credentials and confirmation rules across multi agent systems.
 
 Use separate ADK agents. Let the research agent read tweets and profiles. Make
 the publishing agent confirm every `xquik` execution.
@@ -320,9 +322,8 @@ workflow, not a prompt sentence.
 The safest writer confirms every `xquik` call. A code-string inspection is not
 a reliable authorization boundary.
 
-For public research, a guest `paid_reads` key enforces read-only access. It
-exposes eligible GET routes only. [Guest wallets](/guides/guest-wallets)
-document the exact scope.
+For public research, a guest `paid_reads` key allows eligible GET routes only.
+[Guest wallets](/guides/guest-wallets) document the exact scope.
 
 ## Discovery-Only Tool Filtering
 
@@ -344,8 +345,8 @@ parameters, and response fields without calling X.
 
 ## Store Tweet IDs and Cursors in ADK State
 
-Keep compact identifiers in session state. Keep complete tweet pages outside
-prompts and session state.
+Keep compact identifiers in session state. Exclude complete tweet pages from
+ADK prompts and stored session state.
 
 Plain state keys belong to one conversation. `user:` keys persist across a
 user's sessions. `app:` keys hold shared configuration. `temp:` keys expire
@@ -392,7 +393,7 @@ outside Gemini prompts and ADK events.
 
 ## Handle Tweet Search Errors and Rate Limits
 
-The tweet search contract assigns distinct meanings to these responses.
+Each documented status requires a separate recovery action.
 
 | Status | Meaning | Agent action |
 | --- | --- | --- |
@@ -403,8 +404,8 @@ The tweet search contract assigns distinct meanings to these responses.
 | `429` | The Twitter API rate limit applies | Wait for reset guidance, then resume the cursor |
 | `502` | The X dependency returned an invalid response | Retry later without changing IDs |
 
-Do not restart pagination after `429`. Preserve `next_cursor` and completed
-tweet identifiers. After recovery, deduplicate results through `tweet_id`.
+Do not restart pagination after `429`. Retain `next_cursor` and completed
+result identifiers. Deduplicate recovered results through the exact `tweet_id`.
 
 POST and DELETE routes document different statuses. Read each route before
 building retry logic. See [error handling](/guides/error-handling).
@@ -465,8 +466,8 @@ symbols.
 | Manual toolset cleanup | `async with InMemoryRunner(...)` |
 | Prompt-only JSON | Pydantic `output_schema` |
 
-`MCPToolset` now emits a deprecation warning. `McpToolset` uses lowercase `cp`
-inside its class name.
+`MCPToolset` now emits a deprecation warning. The current class uses the
+`McpToolset` capitalization.
 
 ## Verified Google ADK Package Versions
 
@@ -491,7 +492,7 @@ Yes. Python ADK connects to remote Streamable HTTP servers through
 ### How Does Google Agent Development Kit Differ From MCP?
 
 ADK orchestrates Gemini agents. MCP standardizes external tool discovery and
-calls. Xquik serves the tools, while `McpToolset` connects the agent.
+invocation. Xquik serves the tools, while `McpToolset` connects the agent.
 
 ### Does Google ADK MCP Require Google Cloud or Cloud Run?
 
@@ -526,15 +527,15 @@ loop.
 
 ### Can a Google ADK Agent Export Twitter Followers?
 
-Yes. The [followers API](/api-reference/x/followers) returns paginated profile
-rows. Extraction jobs produce larger CSV, JSON, or XLSX exports. Poll each job
-before loading its rows.
+Yes. The [followers API](/api-reference/x/followers) returns cursor-paginated
+follower profiles. Extraction jobs produce larger CSV, JSON, or XLSX exports.
+Load exported rows only after polling confirms completion.
 
 ### Can Google ADK Monitor Tweets Without Repeated Searches?
 
 Yes. Create an account or keyword monitor. Replay stored events by cursor.
 Connect a webhook when the receiver can verify signatures and deduplicate
-deliveries.
+deliveries. Monitors use scheduled checks and do not promise real time delivery.
 
 ### Google ADK or LangChain for a Twitter Agent?
 
@@ -544,9 +545,9 @@ both frameworks.
 
 ### Why Does a Remote MCP Connection Close Between Calls?
 
-Keep one runner active during related turns. Let its context manager close each
-toolset. Increase connection and SSE timeouts for long operations. Do not
-create one `McpToolset` per prompt.
+Keep one runner active during related turns. Its context manager closes each
+`McpToolset` instance. Increase connection and SSE timeouts for long operations.
+Do not create one `McpToolset` per prompt.
 
 ### Does Tool Filtering Make the Twitter API Read-Only?
 
