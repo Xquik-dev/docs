@@ -7365,7 +7365,7 @@ const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   '### How Does the X Direct Message API Work?',
   'This Twitter DM API workflow also reads participant-scoped message history.',
   'Store each returned `messageId`.',
-  'Use it for reconciliation and audits.',
+  'Keep that ID for matching records and audit logs.',
   'Use a connected Twitter account for each private message.',
   'Reuse the idempotency key only for the identical request.',
   'Poll non-terminal write actions through their status URL.',
