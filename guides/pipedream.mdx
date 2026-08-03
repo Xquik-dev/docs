@@ -12,7 +12,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 Build a Pipedream Twitter integration for searches, profiles, monitors, and approved posts.
 Xquik supplies one REST API and one API key for every workflow.
 
-Start with one app file, eight actions, and two sources.
+The initial package contains one app file, eight actions, and two sources.
 Add another action after workflows repeatedly need the same HTTP request.
 
 ## Choose a Pipedream Automation Pattern
@@ -24,7 +24,7 @@ An RSS trigger can start an approved publishing queue.
 
 Choose a private component for actions shared by multiple team members.
 Choose a custom JavaScript step for one custom API integration.
-Use prebuilt actions for Slack, Google Sheets, or CRM handoffs.
+Prebuilt actions handle Slack, Google Sheets, and CRM handoffs.
 Keep one output per workflow: tweet alerts, profile rows, or approved posts.
 
 Pipedream workflow automation becomes fragile when unrelated jobs share one trigger.
@@ -44,22 +44,22 @@ It does not require Pipedream's native Twitter integration.
 This serverless API integration runs without a dedicated workflow server.
 Start every Xquik request at `https://xquik.com/api/v1`.
 Send the API key through the `x-api-key` header.
-Keep API keys inside Pipedream secret props.
-Never place them in step exports, logs, or error messages.
+Pipedream secret props should contain all API keys.
+Step exports, logs, and error messages must exclude these keys.
 
-Use `GET /x/tweets/search` for a Twitter automation workflow.
+`GET /x/tweets/search` supports each scheduled Twitter automation workflow.
 Preserve the query, filters, limit, and opaque cursor between pages.
-Store tweet IDs after the destination accepts each row.
+Destinations should store tweet IDs after accepting each row.
 This order prevents skipped tweets after partial failures.
 
-Use `GET /x/users/{id}` for profile enrichment.
+`GET /x/users/{id}` provides profile enrichment.
 Export usernames, follower counts, verification state, and profile images.
 Use `POST /extractions` when exports require multiple API pages.
 Poll the returned job until it reaches a terminal status.
 
 Custom JavaScript automation can read `steps.trigger.event` after a trigger.
 HTTP events include method, body, headers, path, query, and URL fields.
-Retain tweet IDs, text, usernames, cursors, and destination keys.
+Later steps receive tweet IDs, text, usernames, cursors, and destination keys.
 Never export signing secrets, raw signatures, or complete request headers.
 
 A shared request helper keeps API integrations consistent.
@@ -178,9 +178,9 @@ A `429` response means the workflow exceeded a rate limit.
 A `502` response reports a temporary retrieval failure.
 Read `Retry-After` when the response includes it.
 
-Never retry `400`, `401`, `402`, or `404` automatically.
-Retry safe reads after `424`, `429`, or `502` with bounded backoff.
-For writes, follow the returned `safeToRetry` field.
+Automatic retries should exclude `400`, `401`, `402`, and `404`.
+Safe reads can retry `424`, `429`, or `502` with bounded backoff.
+Write retries must follow the returned `safeToRetry` field.
 Send a new idempotency key only when the contract permits another attempt.
 
 Use Pipedream concurrency controls for fixed workflow execution limits.
@@ -189,7 +189,7 @@ Place search and profile actions behind one shared throttle policy.
 Place tweet and reply writes behind a separate approval queue.
 
 Persist a page cursor only after downstream processing succeeds.
-Otherwise, rerun the same page and upsert by tweet or profile ID.
+The workflow can rerun a failed page and upsert by tweet or profile ID.
 This strategy protects Slack alerts, CRM rows, and warehouse loads.
 
 ## Starter Actions
@@ -257,7 +257,8 @@ export default {
 
 ## Result Handoff
 
-Use Pipedream exports and source event metadata to pass stable fields between workflow steps. Keep raw API pages out of Slack messages, CRM rows, warehouse loads, and retry queues.
+Pipedream exports and source metadata pass stable fields between workflow steps.
+Destinations should receive normalized fields, not complete API responses.
 
 <CardGroup cols={2}>
   <Card title="Search Tweets action" icon="search">
@@ -294,7 +295,7 @@ Use Pipedream exports and source event metadata to pass stable fields between wo
 
 ## Source 1: Monitor Event Webhook
 
-Use this for immediate tweet, reply, quote, and retweet alerts.
+This source delivers immediate tweet, reply, quote, and repost alerts.
 
 Setup flow:
 
@@ -348,7 +349,7 @@ Design every CRM upsert and Slack notification for repeated delivery.
 Return `2xx` after accepting an already processed event.
 
 Real-time synchronization should preserve the event timestamp and monitor ID.
-Route replies, quotes, and reposts through separate filters.
+Separate filters should route replies, quotes, and reposts.
 This separation gives marketing campaigns and support teams clearer alerts.
 
 A Twitter monitor webhook should send only verified event fields downstream.
@@ -450,12 +451,12 @@ export default {
 
 Use tweet search automation for scheduled brand, topic, or competitor searches.
 Send matched tweets to Slack only after an engagement filter passes.
-Store tweet IDs before sending repeated alerts.
+Persisted tweet IDs prevent repeated alerts.
 
 Use monitor events for near-real-time lead generation signals.
 Enrich the author profile before creating a CRM record.
 Upsert by X user ID, not a mutable username.
-Store the triggering tweet URL beside the profile.
+Each CRM record should include the triggering tweet URL.
 
 Use bounded follower pages for Google Sheets exports.
 Use extraction jobs when exports exceed one bounded page.
@@ -465,7 +466,7 @@ Use scheduled tasks for regional trends and recurring tweet searches.
 Keep schedule frequency within documented Twitter API rate limits.
 Record the search window so later runs avoid overlapping results.
 
-Use approved queues for blog posts or scheduled tweets.
+Approved queues should handle blog posts and scheduled tweets.
 An RSS item can create a draft payload.
 A reviewer should approve its text, links, and target account.
 The final action can then publish with an idempotency key.
@@ -533,7 +534,7 @@ Use a monitor webhook for near-real-time account or keyword events.
 ### Can Pipedream Connect Twitter Events to Cloud Apps?
 
 Pipedream can send verified events to Slack, Sheets, CRMs, or warehouses.
-Normalize tweet and profile fields before each handoff.
+Each handoff should normalize tweet and profile fields.
 
 ### How Do Serverless API Integrations Handle Rate Limits?
 
@@ -547,13 +548,13 @@ Place tweet publishing behind a separate human approval step.
 
 ### How Do Pipedream CRM Integrations Avoid Duplicate Leads?
 
-Upsert profiles by X user ID.
+CRM integrations should upsert profiles by X user ID.
 Deduplicate monitor events by `streamEventId` before creating CRM activity.
 
 ### Does This Pipedream Twitter Guide Need a Native Twitter App?
 
 The component calls Xquik's REST API with an Xquik API key.
-It does not need a native Twitter app.
+The workflow does not depend on a native Twitter app.
 
 ### When Should I Create a Private Pipedream Component?
 
