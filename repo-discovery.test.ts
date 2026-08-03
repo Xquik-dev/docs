@@ -10052,6 +10052,10 @@ const REQUIRED_ZAPIER_GUIDE_SNIPPETS = [
   'Use Zapier to automate tweets only after explicit approval.',
   '### Can Zapier Schedule Posts From an RSS Feed?',
   'Convert RSS items into scheduled tweets. Approve them before publishing.',
+  'Add routes after Zap history confirms repeated demand.',
+  'Submit the selected value to Xquik.',
+  'Never expose the `secret`',
+  'through trigger output.',
   '## Zapier and Xquik Sources',
 ] as const;
 
@@ -10063,6 +10067,9 @@ const FORBIDDEN_ZAPIER_GUIDE_SNIPPETS = [
   '`429` includes `Retry-After` in the user-facing message when present.',
   'author__username',
   'title: "Zapier X Automation Guide | X API Tutorial"',
+  'proves demand.',
+  'Then call Xquik.',
+  'Never expose `secret` as',
 ] as const;
 
 const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
@@ -10088,6 +10095,21 @@ const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_PIPEDREAM_GUIDE_SNIPPETS = [
+  'title: "Pipedream Automation for Twitter API & Webhooks"',
+  '## Choose a Pipedream Automation Pattern',
+  '## Build a Serverless Twitter API Integration',
+  'This guide calls Xquik routes directly.',
+  "It does not require Pipedream's native Twitter integration.",
+  '## Control Errors, Retries, and Rate Limits',
+  'For writes, follow the returned `safeToRetry` field.',
+  '## Build Event-Driven Twitter Workflows',
+  'Their operations are not atomic transactions.',
+  '## Automate Focused Twitter Workflows',
+  '## Pipedream Twitter Automation Questions',
+  '### How Do I Connect a Twitter Webhook to Custom Code?',
+  '### How Do Serverless API Integrations Handle Rate Limits?',
+  '### What Are Common Pipedream Twitter Automation Use Cases?',
+  '## Pipedream and Xquik Sources',
   '## Component Shape',
   '<Card title="App" icon="app-window">',
   '`components/xquik/app/xquik.app.ts`',
@@ -16910,7 +16932,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Pipedream guide setup cards source-backed', (): void => {
-    expect.assertions(6);
+    expect.assertions(8);
 
     const source = readFileSync('guides/pipedream.mdx', 'utf8');
 
@@ -16926,6 +16948,10 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('| Pipedream field | Xquik payload field |');
     expect(source).not.toContain('| Step | Pipedream component |');
     expect(source).not.toContain('| Test | Expected assertion |');
+    expect(source.match(/<Card /g)?.length).toBeGreaterThan(0);
+    expect(source.match(/<Card /g)?.length).toBe(
+      source.match(/<\/Card>/g)?.length,
+    );
   });
 
   it('keeps the Prefect guide aligned with the current collection scope', (): void => {
