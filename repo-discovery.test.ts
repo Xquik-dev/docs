@@ -16632,7 +16632,7 @@ describe('repository discovery', (): void => {
           source.includes(snippet)
             ? [
                 {
-                  issue: `Campaign verification workflow contains stale Semrush wording "${snippet}".`,
+                  issue: `Campaign verification workflow contains forbidden stale wording "${snippet}".`,
                 },
               ]
             : [],
