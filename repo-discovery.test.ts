@@ -8854,10 +8854,12 @@ const REQUIRED_TWEET_PROFILE_API_FIELDS_SNIPPETS = [
   'Use the field names documented for each surface.',
   'Apply only documented mappings between REST, SDK, MCP, and Actor names.',
   '### How Do I Read Twitter API Pagination Fields?',
+  'Twitter API pagination uses the response envelope documented for each route.',
   '### What Metadata Does a Tweet Include?',
   '### What Is a Twitter Conversation ID?',
   '### How Do Quotes Differ From Reposts?',
   '### Does the Twitter Profile API Include Follower Counts?',
+  'growth tracking. Join snapshots through the profile `id`.',
   '### How Do I Get Tweet Media Metadata?',
   '### Can I Export Tweet Metadata to CSV?',
 ] as const;
