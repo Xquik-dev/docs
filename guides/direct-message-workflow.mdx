@@ -1,8 +1,8 @@
 ---
-title: "Send X Direct Messages and Store Message IDs"
+title: "X Direct Message API: Send DMs, Read History & Media"
 sidebarTitle: "Direct messages"
 description: "Look up a user ID, read DM history, send an X direct message, store the returned message ID, attach one uploaded media item, and handle DM errors. See examples."
-keywords: ["send direct messages", "Twitter DM API", "X direct message API", "send DM", "DM history", "direct message history", "send DM with media", "media_ids", "X API"]
+keywords: ["Twitter DM API", "Twitter API DM", "X direct message API", "Twitter direct message API", "send direct messages", "Twitter DM history API", "send DM with media", "Twitter DM automation", "direct message history"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -366,6 +366,69 @@ audits can join the upload, recipient, sender account, and outbound message.
   "handoff_format": "jsonl"
 }
 ```
+
+## Twitter DM API Questions
+
+### How Does the X Direct Message API Work?
+
+The X direct message API sends one-to-one messages from a connected X account.
+Use a numeric user ID for each recipient.
+Send text through `POST /x/dm/{userId}`.
+This Twitter DM API workflow also reads participant-scoped message history.
+Store each returned `messageId` for reconciliation and audit records.
+Reuse the idempotency key only for the identical request.
+Poll non-terminal write actions through their status URL.
+Use a new key only when `safeToRetry` is `true`.
+
+### How Do I Send a Twitter DM Through an API?
+
+A Twitter API DM send starts with recipient lookup.
+Call `GET /x/users/{id}` when you only know the username.
+Then call `POST /x/dm/{userId}` with `account` and `text`.
+The Twitter direct message API returns `messageId` and `success`.
+Store both before any CRM, queue, or agent handoff.
+
+### Can the API Receive Twitter DMs in Real Time?
+
+Xquik reads saved history on demand.
+This route does not register real-time DM events.
+Poll `GET /x/dm/{userId}/history` when the workflow needs new messages.
+Omit `cursor` from the first history request.
+Then pass each response's `next_cursor` value as the next request's `cursor`.
+A Twitter DM history API client should dedupe each message `id`.
+
+### Why Does Sending a DM Return 403 or 422?
+
+A `403` can indicate a disconnected or non-participant account.
+Reconnect accounts that need reauthorization.
+Use a participant account when reading private conversations.
+A `422` means X rejected the request.
+Check recipient permissions, message text, and sender account state.
+Do not retry an unchanged rejected request.
+
+### Can This API Create Group DM Conversations?
+
+This route accepts one recipient `userId`.
+The current Xquik contract does not create group conversations.
+Do not pass participant arrays to the one-to-one send route.
+Follow the published OpenAPI contract for supported message conversations.
+
+### How Do I Send a DM With Media?
+
+Upload one image, GIF, or video through `POST /x/media`.
+Use the returned `mediaId` in a one-item `media_ids` array.
+To send DM with media, include non-empty text too.
+The API rejects empty arrays and multiple media IDs.
+Keep upload and message IDs together for private attachment audits.
+
+### Is Twitter DM Automation Suitable for Welcome Messages?
+
+Use Twitter DM automation only for expected, approved customer conversations.
+Never send unsolicited welcome messages to new followers.
+Review [X developer guidance](https://docs.x.com/developer-guidelines) before sending DMs.
+Keep message bodies inside restricted support or CRM systems.
+Store IDs and delivery status in shared operational logs.
+Provide an easy opt-out for automated message workflows.
 
 ## Costs
 
