@@ -10351,7 +10351,7 @@ const REQUIRED_COMPOSIO_MIGRATION_SNIPPETS = [
   'Test developer experience through SDK typing, logs, documentation, and rollbacks.',
   'Validate API calls and user profile scope in every AI assisted social media workflow.',
   'Can developers find the integration platform\'s API documentation?',
-  'Can operators run production ready rollback steps?',
+  'Can operators run production-ready rollback steps?',
   'Compare pricing, features, free tier, and white-label consent.',
   'Never choose an automation tool by its free tier alone.',
   'Measure real time claims.',
