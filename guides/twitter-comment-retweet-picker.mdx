@@ -1,0 +1,127 @@
+---
+title: "Twitter Comment & Retweet Picker API Verification"
+sidebarTitle: "Comment & retweet picker"
+description: "Build Twitter comment, retweet, and hashtag picker entry lists from reply authors and retweeters. Preserve cursors, user IDs, filters, and selection proof."
+keywords:
+  [
+    "Twitter comment picker",
+    "Twitter retweet picker",
+    "Twitter hashtag giveaway picker",
+    "random comment picker",
+    "retweet giveaway picker",
+    "Twitter reply picker",
+    "giveaway entries API",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Build reviewable giveaway entry lists from replies and retweets.
+Keep stable user IDs, Tweet IDs, cursors, filters, and checked timestamps.
+Then pass eligible participant IDs into one winner-selection draw.
+
+## How Does a Twitter Comment Picker Work?
+
+A Twitter comment picker treats direct reply authors as potential entries.
+Use [Get Tweet Replies](/api-reference/x/tweet-replies) for reply text and authors.
+Page until `has_next_page` is `false`. Pass `next_cursor` back as `cursor`.
+Store every reply ID, author ID, text, timestamp, and source Tweet ID.
+
+Remove duplicate authors before selection when campaign rules require uniqueness.
+Apply only published keyword, hashtag, mention, language, and account filters.
+A random comment picker selects winners from the remaining stable user IDs.
+It cannot prove follows or retweets without separate API checks.
+
+## How Does a Twitter Retweet Picker Verify Entries?
+
+A Twitter retweet picker reads stable user IDs from the retweeter list.
+Use [Get Retweeters](/api-reference/x/retweeters) to retrieve every available page.
+Store each retweeter ID, page cursor, source Tweet ID, and checked timestamp.
+Do not trust a displayed repost count as participant proof.
+
+Set `mustRetweet` only when the published rules require a repost.
+Join retweeter IDs with reply-author IDs when campaigns require both actions.
+Keep the join result beside both original entry sources.
+This record shows why each participant entered the winner pool.
+
+## How Does a Twitter Hashtag Giveaway Picker Work?
+
+A Twitter hashtag giveaway picker checks required hashtags in reply text.
+Use a specific hashtag only when published campaign rules require it.
+Store the matched reply ID, author ID, hashtag, and checked timestamp.
+Keep unmatched rows when an operator needs rejection evidence.
+
+Normalize hashtag comparisons according to the published campaign rules.
+Record original reply text beside every match and rejection.
+Preserve letter case when the published rule requires exact matching.
+
+Hashtag text cannot prove follows or retweets. Run those checks separately.
+Apply all required checks before random selection begins.
+
+## Can a Comment Picker Verify Likes?
+
+No. The current Draws contract does not accept likes as an eligibility rule.
+Do not claim that a comment picker verifies likes.
+Use only documented follow, retweet, keyword, hashtag, mention, and account rules.
+
+The contract also supports documented language and unique-author conditions.
+It supports account-age and follower-count thresholds when campaigns publish them.
+
+Do not launch unsupported selection when likes define campaign entry.
+Rewrite rules around supported signals before the campaign opens.
+Never substitute replies for likes after participants enter.
+
+## Combine Comment and Retweet Checks
+
+1. Store one source Tweet URL and numeric Tweet ID.
+2. Retrieve every reply page and every retweeter page.
+3. Normalize each participant to a stable X user ID.
+4. Remove duplicates according to published uniqueness rules.
+5. Apply required reply text and account filters.
+6. Join required retweet and follow results by user ID.
+7. Store accepted and rejected entries with reasons.
+8. Send only eligible IDs into [Create Draw](/api-reference/draws/create).
+
+Never change filters after the entry deadline. Never replace stable IDs with names.
+Repeat uncertain reads with the same Tweet ID, filter, and cursor.
+
+## Store an Entry Audit Row
+
+Keep one row for each checked participant and entry source.
+
+```json
+{
+  "tweet_id": "1893704267862470862",
+  "x_user_id": "9876543210",
+  "reply_id": "1893705000000000000",
+  "retweet_verified": true,
+  "required_hashtag_verified": true,
+  "verification_state": "eligible",
+  "checked_at": "2026-05-24T19:30:00.000Z"
+}
+```
+
+Store cursor checkpoints outside participant rows. One checkpoint can resume each page.
+Keep private notes and API keys outside any public result URL.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Get Tweet Replies" icon="messages-square" href="/api-reference/x/tweet-replies">
+    Page reply text and stable author IDs.
+  </Card>
+
+  <Card title="Get Retweeters" icon="repeat-2" href="/api-reference/x/retweeters">
+    Page stable user IDs for repost checks.
+  </Card>
+
+  <Card title="Giveaway Picker" icon="trophy" href="/guides/twitter-giveaway-picker">
+    Select winners and backup winners after verification.
+  </Card>
+
+  <Card title="Campaign Verification" icon="badge-check" href="/guides/campaign-verification-workflow">
+    Combine every campaign proof source.
+  </Card>
+</CardGroup>

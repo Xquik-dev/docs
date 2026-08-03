@@ -8579,8 +8579,8 @@ const FORBIDDEN_WORKFLOW_ENDPOINT_FINDER_TABLE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
-  'title: "Twitter Giveaway Picker API & Campaign Verification"',
-  'Verify giveaway follows, retweets, replies, quotes, winners, and participant exports through one reviewable API workflow.',
+  'title: "Twitter Campaign Verification API Workflow"',
+  'Verify giveaway follows, retweets, replies, quotes, winners, and participant exports through one reviewable Twitter campaign workflow. Includes API examples.',
   '## Pick the Proof Path',
   '<Card title="Follow Task" icon="user-check">',
   '`GET /api/v1/x/followers/check?source={participant}&target={brand}`',
@@ -8591,33 +8591,9 @@ const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
   '`GET /api/v1/x/tweets/{id}/quotes`',
   '<Card title="Giveaway Selection" icon="trophy">',
   '`POST /api/v1/draws`',
-  'Use one reviewable draw as a Twitter giveaway winner picker. Add published',
-  'hashtag checks for a Twitter hashtag giveaway picker. Add retweet checks when',
-  'choosing winners from retweets. This Twitter picker stores source Tweet IDs,',
-  'filters, entries, winners, and backup winners. It also stores timestamps and',
-  'public result URLs.',
-  '## Twitter Giveaway Automation Questions',
-  '### What Makes the Best Twitter Giveaway Picker?',
-  'The best Twitter giveaway picker records the complete draw request and proof.',
-  'Use Xquik as a Twitter giveaway tool with reviewable Draws exports.',
-  '### How Do I Automate a Twitter Giveaway With an API?',
-  '### Automate Twitter Giveaway',
-  '### Tweet Draw Tool',
-  '### Twitter Giveaway Picker API',
-  '### How Do I Prove Giveaway Winners Were Eligible?',
-  '## Programmatic Twitter Giveaway Draw Checklist',
-  '## Frequently Asked Questions',
-  '### How Does the Twitter Giveaway Picker Work?',
-  '### How Does a Twitter Comment Picker Work?',
-  'A random comment picker can randomly select winners from',
-  'The current Draws contract does not accept likes as an eligibility',
-  '### How Does a Twitter Retweet Picker Verify Entries?',
-  'hashtag giveaway picker also checks reply text for each required hashtag.',
-  'a specific hashtag only when the published rules required it.',
-  '### How Does a Twitter Random Giveaway Picker Choose Winners?',
-  'Set the number of winners and backup count in one',
-  'winner picker should store the entry count and draw ID.',
-  '### What Should I Publish With the Winner?',
+  '## Choose the Focused Picker Guide',
+  '[Twitter giveaway picker guide](/guides/twitter-giveaway-picker)',
+  '[comment and retweet picker guide](/guides/twitter-comment-retweet-picker)',
   '## Follow Check',
   'participant_handle',
   '## Tweet-Level Checks',
@@ -8633,14 +8609,50 @@ const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
   '`type=entries`',
   '`type=winners`',
   'campaign-entries.csv',
-  '## Audit Row',
+  '## Store One Audit Row',
   '"campaign_id": "spring-launch-2026"',
   '"proof_endpoint": "GET /api/v1/x/followers/check"',
   '"verification_state": "matched"',
-  '## Cost and Retry Notes',
-  'Direct X read endpoints are metered. Budget by participant count and pages.',
-  'Draw execution meters the source tweet lookup, replies, optional retweeter',
-  'Treat `402 insufficient_credits` as a stopped audit.',
+  '## Handle Costs and Retries',
+  'Direct X read endpoints are metered. Budget by participants and pages.',
+  'Draw execution can meter tweet, reply, retweeter, and follow checks.',
+  '`402 insufficient_credits` stops the audit.',
+] as const;
+
+const REQUIRED_TWITTER_GIVEAWAY_PICKER_SNIPPETS = [
+  'title: "Twitter Giveaway Picker API for Verified Winners"',
+  'sidebarTitle: "Giveaway picker"',
+  'Export entries and winner proof.',
+  '## What Makes the Best Twitter Giveaway Picker?',
+  'The best Twitter giveaway picker records every published rule before selection.',
+  '## How Do I Automate a Twitter Giveaway With an API?',
+  '[Create Draw](/api-reference/draws/create)',
+  '## Programmatic Twitter Giveaway Draw Checklist',
+  '## How Does a Twitter Random Giveaway Picker Choose Winners?',
+  'A Twitter random giveaway picker filters entries before random selection.',
+  '## How Do I Prove Giveaway Winners Were Eligible?',
+  'Export `type=entries` and `type=winners` after the draw completes.',
+  '## What Should I Publish With the Winner?',
+  'Never publish hidden rules because hidden rules should never exist.',
+  'href="/guides/twitter-comment-retweet-picker"',
+] as const;
+
+const REQUIRED_TWITTER_COMMENT_RETWEET_PICKER_SNIPPETS = [
+  'title: "Twitter Comment & Retweet Picker API Verification"',
+  'sidebarTitle: "Comment & retweet picker"',
+  'Preserve cursors, user IDs, filters, and selection proof.',
+  '## How Does a Twitter Comment Picker Work?',
+  '[Get Tweet Replies](/api-reference/x/tweet-replies)',
+  'A random comment picker selects winners from the remaining stable user IDs.',
+  '## How Does a Twitter Retweet Picker Verify Entries?',
+  '[Get Retweeters](/api-reference/x/retweeters)',
+  '## How Does a Twitter Hashtag Giveaway Picker Work?',
+  '## Can a Comment Picker Verify Likes?',
+  'The current Draws contract does not accept likes as an eligibility rule.',
+  '## Combine Comment and Retweet Checks',
+  '## Store an Entry Audit Row',
+  '"verification_state": "eligible"',
+  'href="/guides/twitter-giveaway-picker"',
 ] as const;
 
 const FORBIDDEN_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
@@ -16645,6 +16657,37 @@ describe('repository discovery', (): void => {
             : [],
       ),
     ]).toStrictEqual([]);
+  });
+
+  it('keeps the Twitter giveaway picker guide source-backed', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync('guides/twitter-giveaway-picker.mdx', 'utf8');
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Twitter giveaway picker guide',
+        REQUIRED_TWITTER_GIVEAWAY_PICKER_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it('keeps the comment and retweet picker guide source-backed', (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync(
+      'guides/twitter-comment-retweet-picker.mdx',
+      'utf8',
+    );
+
+    expect(
+      collectSnippetFindings(
+        source,
+        'Comment and retweet picker guide',
+        REQUIRED_TWITTER_COMMENT_RETWEET_PICKER_SNIPPETS,
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps the target audience discovery workflow source-backed', (): void => {
