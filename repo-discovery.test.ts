@@ -10101,7 +10101,7 @@ const REQUIRED_PIPEDREAM_GUIDE_SNIPPETS = [
   'This guide calls Xquik routes directly.',
   "It does not require Pipedream's native Twitter integration.",
   '## Control Errors, Retries, and Rate Limits',
-  'For writes, follow the returned `safeToRetry` field.',
+  'Write retries must follow the returned `safeToRetry` field.',
   '## Build Event-Driven Twitter Workflows',
   'Their operations are not atomic transactions.',
   '## Automate Focused Twitter Workflows',
@@ -10141,8 +10141,8 @@ const REQUIRED_PIPEDREAM_GUIDE_SNIPPETS = [
   '<Card title="Create Webhook" icon="webhook">',
   'Call `POST /webhooks` and return the webhook ID and signing secret.',
   '## Result Handoff',
-  'Use Pipedream exports and source event metadata to pass stable fields between workflow steps.',
-  'Keep raw API pages out of Slack messages, CRM rows, warehouse loads, and retry queues.',
+  'Pipedream exports and source metadata pass stable fields between workflow steps.',
+  'Destinations should receive normalized fields, not complete API responses.',
   '<Card title="Search Tweets action" icon="search">',
   'Export `tweet_count`, `has_more`, and `next_cursor`; return tweet rows with `tweet_id`, `text`, `author_username`, `created_at`, and optional `url`.',
   '<Card title="User profile action" icon="users">',
@@ -10223,6 +10223,30 @@ const REQUIRED_PIPEDREAM_GUIDE_SNIPPETS = [
   'Emits one event per payload with a stable ID.',
   '<Card title="Polling Source" icon="database">',
   'Emits only completed extraction jobs.',
+] as const;
+
+const FORBIDDEN_PIPEDREAM_GUIDE_SNIPPETS = [
+  'Never retry `400`, `401`, `402`, or `404` automatically.',
+  'Use `GET /x/users/{id}` for profile enrichment.',
+  'Store the triggering tweet URL beside the profile.',
+  'Upsert profiles by X user ID.',
+  'It does not need a native Twitter app.',
+  'Start with one app file, eight actions, and two sources.',
+  'Store tweet IDs before sending repeated alerts.',
+  'Use this for immediate tweet, reply, quote, and retweet alerts.',
+  'For writes, follow the returned `safeToRetry` field.',
+  'Use prebuilt actions for Slack, Google Sheets, or CRM handoffs.',
+  'Keep API keys inside Pipedream secret props.',
+  'Otherwise, rerun the same page and upsert by tweet or profile ID.',
+  'Retain tweet IDs, text, usernames, cursors, and destination keys.',
+  'Store tweet IDs after the destination accepts each row.',
+  'Never place them in step exports, logs, or error messages.',
+  'Use approved queues for blog posts or scheduled tweets.',
+  'Normalize tweet and profile fields before each handoff.',
+  'Route replies, quotes, and reposts through separate filters.',
+  'Retry safe reads after `424`, `429`, or `502` with bounded backoff.',
+  'Use `GET /x/tweets/search` for a Twitter automation workflow.',
+  'Keep raw API pages out of Slack messages, CRM rows, warehouse loads, and retry queues.',
 ] as const;
 
 const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
@@ -16932,7 +16956,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Pipedream guide setup cards source-backed', (): void => {
-    expect.assertions(8);
+    expect.assertions(9);
 
     const source = readFileSync('guides/pipedream.mdx', 'utf8');
 
@@ -16952,6 +16976,11 @@ describe('repository discovery', (): void => {
     expect(source.match(/<Card /g)?.length).toBe(
       source.match(/<\/Card>/g)?.length,
     );
+    expect(
+      FORBIDDEN_PIPEDREAM_GUIDE_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps the Prefect guide aligned with the current collection scope', (): void => {
