@@ -1,17 +1,42 @@
 ---
-title: "Hermes Tweet for Hermes Agent | Tweet Guide"
+title: "Hermes Tweet for Hermes Agent Twitter Tools"
 sidebarTitle: "Hermes Tweet"
-description: "Install Hermes Tweet to search tweets, inspect profiles, export followers, monitor X accounts, and run approved actions from Hermes Agent. Follow exact steps."
-keywords: ["hermes tweet", "hermes agent plugin", "tweet search", "x api alternative", "twitter follower export"]
+description: "Install Hermes Tweet for Hermes Agent. Search tweets, export followers and replies, monitor X accounts, and run approved Twitter actions through Xquik."
+keywords: ["hermes tweet", "hermes agent", "hermes agent plugin", "hermes agent skills", "hermes twitter", "hermes agent twitter", "twitter api python", "tweet search agent", "twitter follower export", "x api alternative"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Hermes Tweet is the native Hermes Agent plugin for using Xquik as a structured X automation toolset. It packages the Xquik endpoint catalog, read tools, optional action tools, slash commands, and a bundled Hermes skill into a Python plugin.
+Hermes Tweet is Xquik's native Hermes Agent plugin. It provides a structured X automation toolset.
 
-Use Hermes Tweet when a Hermes Agent workflow needs X search, account reads, tweet posting, replies, likes, retweets, follows, DMs, monitors, webhooks, giveaway draws, extraction jobs, media operations, or trend reads.
+The plugin adds catalog-guided Twitter tools to the Hermes Agent runtime.
+
+The Python package includes read tools, optional action tools, and 2 slash commands. It also bundles a Hermes skill that teaches safe tool selection.
+
+Use Hermes Tweet for X search, profiles, followers, replies, monitors, and approved actions.
+
+Every live call starts from the bundled OpenAPI catalog. This design helps Hermes choose documented methods, paths, parameters, and response shapes.
+
+## Why Add Twitter Tools to Hermes Agent
+
+Hermes Agent handles planning, memory, tools, and long-running workflows. Hermes Tweet adds focused X and Twitter API access through Xquik.
+
+The plugin exposes 102 agent-callable endpoints. Those endpoints cover tweets, profiles, timelines, followers, following, replies, media, monitors, and webhooks.
+
+Hermes Tweet separates discovery, reads, and approved actions. This separation reduces guessed routes and unintended writes.
+
+Use the plugin for these Hermes Agent Twitter tasks:
+
+- Search tweets by keyword, phrase, hashtag, or account.
+- Read tweet details, replies, quotes, and engagement counts.
+- Inspect profiles, timelines, followers, following, and mentions.
+- Export followers, following accounts, or tweet replies.
+- Monitor accounts or keywords and deliver webhook events.
+- Draft, post, reply, like, repost, follow, or send DMs.
+
+The read tool preserves complete JSON payloads. It does not collapse rich tweet, profile, media, or pagination fields.
 
 ## Prerequisites
 
@@ -19,7 +44,7 @@ Use Hermes Tweet when a Hermes Agent workflow needs X search, account reads, twe
 - Hermes Agent with plugin support
 - [Xquik API key](/x-api-quickstart)
 
-Hermes plugins are opt-in. The official Hermes plugin docs describe pip entry points through the `hermes_agent.plugins` group and require plugins to be enabled before they load.
+Hermes exposes pip plugins through the `hermes_agent.plugins` entry-point group. Enable each third-party plugin before loading it.
 
 ## Install
 
@@ -95,11 +120,73 @@ an interactive CLI session, or restart gateway and cron sessions before calling
   </Card>
 </CardGroup>
 
-Start with `tweet_explore` so the agent can discover the right method, path, parameters, and response shape before it calls an endpoint.
+Start with `tweet_explore`. Discover the method, path, parameters, and response shape before any endpoint call.
 
 ```text
 Use tweet_explore to find the endpoint for user lookup, then call tweet_read for @username.
 ```
+
+## Hermes Agent Twitter Search
+
+Start a tweet search with a concrete question. Ask `tweet_explore` for the catalog route before making a live call.
+
+For keyword searches, use `GET /api/v1/x/tweets/search`. Pass a specific `q` value and a bounded `limit`.
+
+Useful queries combine a topic with intent. Examples include product feedback, support complaints, launches, hiring, or competitor mentions.
+
+Return fields needed by the next workflow step. Typical fields include tweet IDs, text, authors, timestamps, metrics, media, and entities.
+
+Preserve `next_cursor` whenever `has_next_page` is true. Continue only when the workflow needs another page.
+
+Do not treat every matching tweet as equally relevant. Filter results by the task's topic, author, language, date, or engagement criteria.
+
+For a tweet research agent, summarize patterns after collecting the selected pages. Keep source tweet IDs beside each conclusion.
+
+## Profiles, Followers, Following, and Replies
+
+Hermes Tweet can inspect an account before starting a larger export. Use catalog-listed reads for profiles, timelines, followers, following, and mentions.
+
+For small lists, use the matching read endpoint. Follow the returned cursor until the requested result count is complete.
+
+For bulk work, use the extraction workflow. Available extraction types include `follower_explorer`, `following_explorer`, and `reply_extractor`.
+
+Estimate each extraction before creating it. Confirm the target username, tweet ID, result limit, format, and expected scope.
+
+After approval, create the extraction with `tweet_action`. Poll its status with `tweet_read` until the job becomes terminal.
+
+Export completed results as CSV, JSON, or XLSX. Retain stable tweet or user IDs for later joins.
+
+A follower export supports audience analysis and CRM enrichment. A following export reveals accounts that the target follows.
+
+A reply export supports conversation analysis, support triage, and giveaway review. Never infer sentiment from usernames alone.
+
+## Monitors and Webhook Delivery
+
+Use an account monitor for new posts from selected profiles. Use a keyword monitor for matching tweets across X.
+
+Create monitors only after confirming the target and cadence. Register a webhook only after reviewing its receiver URL.
+
+Store the webhook secret outside Hermes transcripts. Verify `X-Xquik-Signature` against the exact raw request body.
+
+Persist `deliveryId` and `streamEventId` for deduplication. Return `2xx` when a duplicate was already accepted.
+
+Monitor events can trigger summaries, alerts, CRM updates, or research queues. Keep each downstream action separately approved.
+
+## Approved Twitter Actions
+
+Hermes Tweet keeps `tweet_action` unavailable by default. Enable it only for workflows that can change state.
+
+Before every action, review the method, path, payload, account, and expected effect. Require explicit approval for the exact request.
+
+Supported action areas include tweets, replies, likes, reposts, follows, DMs, profiles, media, communities, and lists.
+
+Use a unique `Idempotency-Key` for durable write actions. Store the returned action ID and status URL.
+
+Poll while `terminal` is false. Retry only when `safeToRetry` is true.
+
+For tweet media, pass public HTTPS image or MP4 URLs in `media`. For DM media, upload first and pass its `mediaId`.
+
+Keep full DM bodies out of shared outputs. Return only the fields needed for confirmation.
 
 ## Workflow Handoffs
 
@@ -137,7 +224,7 @@ Use `tweet_explore` first, then choose `tweet_read` for public reads or
 
 ```text
 Use tweet_explore to find tweet search endpoints.
-Use tweet_read for GET /api/v1/x/tweets/search with q "AI agents" and limit 25.
+Use tweet_read for GET /api/v1/x/tweets/search with q "AI agents". Set limit 25.
 Return tweet id, text, author username, createdAt, and engagement counts.
 ```
 
@@ -154,14 +241,17 @@ Create an account monitor or keyword monitor with tweet_action only after approv
 Register the receiver URL with tweet_action for POST /api/v1/webhooks.
 Store the webhook secret in a secret manager.
 Verify X-Xquik-Signature, store deliveryId and streamEventId, and return 2xx for accepted duplicates.
-Keep endpoint signing values, raw request body, raw signature, and full headers out of Hermes transcripts and shared workflow outputs.
+Keep endpoint signing values and raw request bodies out of Hermes transcripts.
+Also exclude raw signatures and full headers from shared workflow outputs.
 ```
 
 ```text
 Use tweet_explore with include_actions true to find media write endpoints.
-For a tweet or reply, call tweet_action for POST /api/v1/x/tweets with media set to public HTTPS image or MP4 URLs. Do not send media_ids.
+For a tweet or reply, call tweet_action for POST /api/v1/x/tweets.
+Set media to public HTTPS image or MP4 URLs. Do not send media_ids.
 For tweet_action, send a unique Idempotency-Key. Store id, status, billing, result, and statusUrl. Poll with tweet_read while terminal is false. Retry only when safeToRetry is true, using a new key.
-For a DM attachment, call tweet_action for POST /api/v1/x/media first, then POST /api/v1/x/dm/{userId} with one media_ids value. Leave reply_to_message_id unset.
+For a DM attachment, call tweet_action for POST /api/v1/x/media first.
+Then call POST /api/v1/x/dm/{userId} with one media_ids value. Leave reply_to_message_id unset.
 Return the complete action record. Read the confirmed resource ID from result.id.
 Keep full DM bodies out of shared outputs.
 ```
@@ -177,18 +267,20 @@ hermes tools list
 Run a non-mutating one-shot probe after the plugin is enabled:
 
 ```bash
-hermes -z "Use tweet_explore, then read /api/v1/account. Do not call tweet_action." --toolsets hermes-tweet
+hermes -z "Use tweet_explore, then read /api/v1/x/trends. Do not call tweet_action." --toolsets hermes-tweet
 ```
 
 Expected behavior:
 
 - `tweet_explore` can inspect catalog endpoints without an API key.
 - Without `XQUIK_API_KEY`, a non-mutating Hermes probe exposes `tweet_explore` only.
-- After `XQUIK_API_KEY` is configured and the CLI is reloaded, or the gateway or cron process is restarted, `tweet_read` can read `/api/v1/account`.
+- After configuration and restart, `tweet_read` can read `/api/v1/x/trends`.
 - `tweet_action` stays hidden or disabled unless `HERMES_TWEET_ENABLE_ACTIONS=true`.
 - `/xstatus` and `/xtrends` appear in the Hermes plugin command registry.
 
-Hermes one-shot prompts do not dispatch `/xstatus` as an interactive slash command. Verify slash commands in an active CLI or gateway session, and use `hermes -z` for tool-call probes.
+Hermes one-shot prompts do not dispatch `/xstatus` as an interactive slash command. Verify slash commands in an active CLI or gateway session.
+
+Use `hermes -z` for tool-call probes.
 
 Non-interactive installs cannot prompt for credentials; set `XQUIK_API_KEY` in the process environment or `~/.hermes/.env`.
 
@@ -207,7 +299,9 @@ Non-interactive installs cannot prompt for credentials; set `XQUIK_API_KEY` in t
 
 Hermes Tweet reads auth from environment variables and injects it at request time. The model does not receive the API key as a tool argument.
 
-The plugin blocks dashboard-only admin, billing, credit top-up, support-ticket, API-key, and account re-authentication endpoints from the catalog. Private reads and write-like endpoints go through `tweet_action`, which stays hidden unless `HERMES_TWEET_ENABLE_ACTIONS=true`.
+The plugin blocks dashboard-only administrative endpoints from the catalog. It also blocks billing, credits, support, API-key, and reauthentication endpoints.
+
+Private reads and write-like endpoints use `tweet_action`. The tool stays hidden unless `HERMES_TWEET_ENABLE_ACTIONS=true`.
 
 For unattended jobs, keep action tools disabled and use only `tweet_explore` plus `tweet_read`.
 
@@ -290,9 +384,97 @@ For action workflows, require an explicit draft and approval step before enablin
   </Card>
 </CardGroup>
 
-## Relationship To TweetClaw
+## Hermes Agent Twitter FAQ
 
-TweetClaw is the OpenClaw-native npm plugin. Hermes Tweet is the Hermes-native Python plugin. Both use the same Xquik API contract and expose agent-safe catalog discovery before live endpoint calls.
+### What Is Hermes Agent?
+
+Hermes Agent is an open-source agent runtime from Nous Research. It supports tools, skills, plugins, memory, scheduled work, and gateway sessions.
+
+Hermes Tweet extends that runtime with Xquik's Twitter API tools. It does not replace Hermes Agent itself.
+
+### How Do I Install Hermes Tweet?
+
+Install the GitHub package with `hermes plugins install Xquik-dev/hermes-tweet --enable`. This command installs and enables the plugin.
+
+You can also install `hermes-tweet` from PyPI. Install it inside Hermes' Python environment, then enable the plugin.
+
+Restart Hermes after changing environment variables. Run `hermes tools list` before testing a live Twitter workflow.
+
+### Is Hermes Tweet a Hermes Agent Skill or Plugin?
+
+Hermes Tweet is an executable Hermes Agent plugin. It registers `tweet_explore`, `tweet_read`, and `tweet_action`.
+
+The package also bundles a Hermes skill. That skill teaches endpoint discovery, read selection, approvals, and secret handling.
+
+A skill supplies operating guidance. The plugin supplies the Python tools that make API calls.
+
+### How Does Hermes Agent Search Twitter?
+
+Hermes first calls `tweet_explore` with the search goal. The catalog returns a matching method, route, parameters, and response shape.
+
+Hermes then calls `tweet_read` for `GET /api/v1/x/tweets/search`. The `q` parameter contains the keyword, phrase, hashtag, or account query.
+
+The result can include tweets, authors, timestamps, engagement metrics, media, and pagination fields. The exact payload follows the Xquik API response.
+
+### Can Hermes Agent Export Twitter Followers?
+
+Yes. Use `tweet_explore` to find `follower_explorer`, then estimate the requested result count.
+
+Create the extraction only after approval. Poll the extraction and export the completed followers as CSV, JSON, or XLSX.
+
+The same workflow supports `following_explorer`. Choose it when the task needs accounts followed by a profile.
+
+### Can Hermes Agent Export Tweet Replies?
+
+Yes. Use `reply_extractor` for a bounded reply export. Confirm the target tweet ID and result limit before creation.
+
+Store tweet IDs, author IDs, timestamps, reply text, and available metrics. Preserve cursors or job status for reproducible collection.
+
+Use the exported replies for support triage, conversation research, or giveaway review. Apply project-specific privacy and retention rules.
+
+### Can Hermes Agent Monitor X Accounts?
+
+Yes. Account monitors watch selected profiles. Keyword monitors watch matching tweets.
+
+Send monitor events to a verified webhook receiver. Deduplicate events before triggering alerts or downstream actions.
+
+### Does Hermes Tweet Need X Developer Credentials?
+
+No X developer credentials are required. Hermes Tweet authenticates with an Xquik API key.
+
+Keep `XQUIK_API_KEY` in the Hermes runtime environment. Never pass that key through a model-visible tool argument.
+
+### Hermes Agent vs OpenClaw: Which Plugin Should I Use?
+
+Choose Hermes Tweet for Hermes Agent. Choose TweetClaw for OpenClaw.
+
+Hermes Tweet is a Python entry-point plugin. TweetClaw is an npm plugin for OpenClaw.
+
+Both use the Xquik API contract. Both start with catalog discovery before live Twitter calls.
+
+Do not install both for one runtime. Pick the plugin that matches the agent host.
+
+### Is Hermes Tweet an MCP Server?
+
+No. Hermes Tweet runs inside Hermes Agent and registers native Python tools.
+
+Use the [Xquik MCP server](/mcp/overview) when your client supports MCP. Use Hermes Tweet for native Hermes plugin loading.
+
+### Why Are Hermes Tweet Tools Missing?
+
+Confirm installation with `hermes plugins`. Enable the plugin with `hermes plugins enable hermes-tweet`.
+
+Then run `hermes tools list`. Confirm the `hermes-tweet` toolset appears.
+
+Restart Hermes after configuration changes. Check the startup output for a plugin registration failure.
+
+An open Hermes Agent issue reports some import-time failures can remain cached. Restart after fixing the registration error.
+
+### Where Is Hermes Tweet On GitHub?
+
+The official repository is [Xquik-dev/hermes-tweet](https://github.com/Xquik-dev/hermes-tweet). It contains source, tests, release notes, security policy, and plugin metadata.
+
+Use the repository issue tracker for reproducible plugin defects. Use these docs for supported Xquik workflows and API routes.
 
 ## References
 
