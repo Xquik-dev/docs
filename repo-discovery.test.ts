@@ -11216,7 +11216,7 @@ const REQUIRED_MAKE_GUIDE_SNIPPETS = [
   'A Make.com API integration uses an Xquik API key for authentication.',
   'Build a Make scenario automation around one bounded Xquik operation.',
   'A Twitter monitor webhook can route new tweets and replies immediately.',
-  'Place scheduled tweets and replies in an approval queue.',
+  'The approval queue governs every scheduled tweet and reply.',
   '[Make custom app base configuration](https://developers.make.com/custom-apps-documentation/app-components/base)',
   '[Make connection validation guidance](https://developers.make.com/custom-apps-documentation/best-practices/connections)',
   '[Make community decommissioning notice](https://community.make.com/t/make-is-officially-decommissioning-x-formerly-twitter-app/77497)',
@@ -11342,6 +11342,28 @@ const REQUIRED_MAKE_GUIDE_SNIPPETS = [
   '`POST /extractions`',
   '`POST /monitors`',
   '`POST /webhooks`',
+] as const;
+
+const FORBIDDEN_MAKE_GUIDE_SNIPPETS = [
+  'Retry safe reads with backoff.',
+  '`429` errors tell users to wait for `Retry-After`.',
+  'Place scheduled tweets and replies in an approval queue.',
+  'Store the triggering tweet URL beside the profile fields.',
+  'Fix the module mapping.',
+  'Instant trigger maps `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.retweet`.',
+  'Use an instant webhook for replies, quotes, reposts, or new tweets.',
+  'Update the subscription first.',
+  'Make removed its native X app in 2025.',
+  'Make discontinued its native X app in 2025.',
+  'Then expose focused modules for tweets, users, followers, monitors, and webhooks.',
+  'Create a Make webhook URL and register it with Xquik.',
+  'The HTTP module suits a quick private prototype.',
+  'Use Xquik through a private app or the Make HTTP module.',
+  'Upsert the CRM record by immutable X user ID.',
+  'Use Xquik for a Make.com Twitter integration without an X Developer app.',
+  'Create a private Make custom app or use the HTTP module.',
+  'Respect `Retry-After` before retrying.',
+  'Retry safe reads cautiously.',
 ] as const;
 
 const REQUIRED_MAKE_ALTERNATIVE_SNIPPETS = [
@@ -17285,7 +17307,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps the Make guide app shape concrete', (): void => {
-    expect.assertions(2);
+    expect.assertions(3);
 
     const source = readFileSync('guides/make.mdx', 'utf8');
 
@@ -17299,6 +17321,11 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain(
       'Add a separate bounded-pull variant that sends `limit` and omits `cursor`.',
     );
+    expect(
+      FORBIDDEN_MAKE_GUIDE_SNIPPETS.filter((snippet) =>
+        source.includes(snippet),
+      ),
+    ).toStrictEqual([]);
   });
 
   it('keeps the Make alternative focused on source-backed workflow handoffs', (): void => {
