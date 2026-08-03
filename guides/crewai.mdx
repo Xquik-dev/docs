@@ -23,7 +23,7 @@ Build a CrewAI MCP integration through Xquik's remote Twitter MCP server. Give C
 
 ## Why Use CrewAI With MCP for a Twitter API?
 
-CrewAI offers an agent framework for complex tasks with distinct agent roles. Xquik supplies Twitter API operations through `explore` and `xquik`.
+CrewAI offers an agent framework for complex tasks. Give each agent one role. Xquik supplies Twitter API operations through `explore` and `xquik`.
 
 | Boundary | CrewAI control | Benefit |
 | --- | --- | --- |
@@ -67,7 +67,7 @@ xquik-*-handoff.json
 
 ## Build a Typed CrewAI Tweet Search Agent
 
-Define the expected output before building the task. CrewAI validates the final handoff against its Pydantic model.
+Start with the expected output, then build the task. CrewAI validates the final handoff against its Pydantic model.
 
 ```python
 import os
@@ -215,21 +215,25 @@ research_crew = Crew(
 
 The `context` list passes the first result into the second. The analyst cannot fetch unrelated tweets or profiles.
 
-Use hierarchical delegation for independent specialists. Use sequential tasks for cursor-dependent agent collaboration.
+Choose hierarchical delegation when specialists work independently. Use sequential tasks for cursor-dependent agent collaboration.
 
 ## Apply CrewAI MCP Integration Patterns
 
-A CrewAI agent with MCP server access should own one permission boundary. Teams of AI agents must not share write-capable keys.
+Each CrewAI agent with MCP server access gets one permission boundary. Teams of AI agents must not share write-capable keys.
 
 This CrewAI MCP integration connects external APIs through synchronized schemas. Prefer CrewAI tools before building a CrewAI custom tool.
 
+Each `tools` tool entry grants execution permission. That makes agent tools and tool integration boundaries clear.
+
+`import tool` shortcuts and `def run` wrappers duplicate native MCP behavior.
+
 Avoid broad web searches when tweet IDs matter. Set `verbose=True` only while debugging complex tasks.
 
-These controls support real-world AI applications and multi agent systems.
+Real world AI applications need safe multi agent systems.
 
 ## Keep Twitter Actions Outside the Research Crew
 
-The `xquik` tool runs every route allowed by its key. Never give write permissions to autonomous research crews. Use guest `paid_reads` for eligible GET routes. See [guest wallets](/guides/guest-wallets).
+The `xquik` tool runs every route allowed by its key. Never give write permissions to autonomous research crews. Use guest `paid_reads` for eligible GET routes. The [guest wallets guide](/guides/guest-wallets) documents this scope.
 
 ```python
 class TweetWritePlan(BaseModel):
@@ -258,7 +262,7 @@ plan_task = Task(
 )
 ```
 
-`human_input=True` reviews the result. `tools=[]` blocks execution. After approval, send one REST request. Never retry pending writes automatically.
+`human_input=True` reviews the result, while `tools=[]` blocks execution. After approval, send one REST request. Never retry pending writes automatically.
 
 ## Expose Endpoint Discovery Only
 
@@ -283,7 +287,7 @@ This filter cannot execute Twitter API calls. `explore` returns methods, paramet
 
 ## Use One MCP Configuration Per Tenant
 
-Create each `MCPServerHTTP` configuration after resolving its tenant.
+Resolve the tenant first. Then create its `MCPServerHTTP` configuration.
 
 ```python
 def build_tenant_mcp(user_api_key: str) -> MCPServerHTTP:
