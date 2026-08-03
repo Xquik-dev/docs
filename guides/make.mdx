@@ -1,17 +1,53 @@
 ---
-title: "Make X Automation for Tweet Search & Webhooks"
+title: "Make.com Twitter Integration for X API Automation"
 sidebarTitle: "Make"
-description: "Build a private Make custom app for Xquik with API-key auth, search, trends, extraction jobs, monitor webhooks, and X actions. Includes exact API steps."
-keywords: ["make", "make.com", "workflow automation", "twitter", "x", "webhooks", "extractions"]
+description: "Build Make Twitter automation for tweet search, followers, scheduled posts, webhooks, and X API errors. Connect profiles, replies, and monitors through Make."
+keywords: ["make twitter automation", "make.com twitter integration", "make webhook", "twitter api integration", "tweet search automation", "twitter monitor webhook"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use Xquik in Make when a scenario needs X (Twitter) search, account lookups, trends, publishing, extraction jobs, monitors, or webhook automation without an X Developer app.
+Use Xquik for a Make.com Twitter integration without an X Developer app.
+
+Build tweet searches, profile lookups, follower exports, scheduled posts, and monitor alerts.
+The same integration supports replies, trends, extraction jobs, and signed webhooks.
 
 Make discontinued its native X app in 2025. Start with a private Make custom app so your team can keep scenarios focused, test auth safely, and decide later whether to request public app review.
+
+## Choose a Make Twitter Automation Pattern
+
+A Make Twitter automation should start with one clear trigger.
+Use schedules for recurring tweet searches, trends, or follower exports.
+Use an instant webhook for replies, quotes, reposts, or new tweets.
+Use polling when an extraction job can finish after the scenario ends.
+
+Build a Make scenario automation around one bounded Xquik operation.
+Then route normalized tweet or profile fields to each destination.
+This structure keeps the automation workflow observable and easier to retry.
+
+The HTTP module suits a quick private prototype.
+A private custom app suits reusable actions and consistent error handling.
+Both approaches can call the same documented API endpoints.
+
+## Build a Make.com API Integration
+
+A Make.com API integration uses an Xquik API key for authentication.
+It does not require X OAuth or a native Twitter account connection.
+The Make custom app stores the key inside an encrypted connection field.
+
+Use `/account` to validate API keys without changing tweets or profiles.
+Place the base URL, authentication header, and sanitization rules centrally.
+Then expose focused modules for tweets, users, followers, monitors, and webhooks.
+
+A Make Twitter integration should return small, stable output bundles.
+Avoid passing complete API responses into Slack, Sheets, or a CRM.
+The Make API integration should retain IDs, cursors, timestamps, and status fields.
+
+Treat the Make Twitter API layer as a private integration boundary.
+The integration platform can then support drag-and-drop scenario assembly.
+This step-by-step structure keeps every module focused on one result.
 
 ## Prerequisites
 
@@ -128,6 +164,28 @@ Handle status codes consistently:
     Xquik service unavailable. Retry with exponential backoff.
   </Card>
 </CardGroup>
+
+## Control Rate Limiting and Error Handling
+
+Read each endpoint contract before configuring retries.
+Xquik documents status codes per route, not as universal responses.
+
+- A `400` response identifies invalid request fields. Fix the module mapping.
+- A `401` response identifies invalid authentication. Replace the API key.
+- A `402` response identifies billing requirements. Update the subscription first.
+- A `404` response identifies a missing tweet, profile, monitor, or webhook.
+- A `424` response identifies a dependency failure. Retry safe reads with backoff.
+- A `429` response identifies rate limiting. Respect `Retry-After` before retrying.
+- A `502` response identifies a temporary upstream failure. Retry safe reads cautiously.
+
+Never retry a write only because its HTTP status appears temporary.
+Inspect the returned `safeToRetry` field for every write action.
+Use a new idempotency key only when the contract permits another attempt.
+
+Make webhooks can queue bursts before a scenario processes them.
+Set a scenario rate limit that matches the destination's capacity.
+Enable sequential processing when bundle order matters.
+Use incomplete executions for recoverable failures that need operator review.
 
 ## Starter Modules
 
@@ -398,6 +456,84 @@ Fetch the job detail with `GET /extractions/{id}` and loop through `nextCursor` 
     Upsert by user `id`, then follow `hasMore` and `nextCursor` for additional result pages.
   </Card>
 </CardGroup>
+
+## Automate Focused Twitter Workflows
+
+Tweet search automation can collect posts matching a brand or topic query.
+Filter by author, timestamp, language, or engagement before sending alerts.
+Store tweet IDs so repeated searches do not create duplicate messages.
+
+A Twitter monitor webhook can route new tweets and replies immediately.
+Verify its signature before parsing the request body.
+Deduplicate deliveries before posting to Slack or updating a CRM.
+
+Use follower pages for bounded exports to Google Sheets.
+Use extraction jobs for larger follower or following exports.
+Preserve profile IDs because usernames can change.
+
+Social media automation should keep publishing under human control.
+Place scheduled tweets and replies in an approval queue.
+Review text, links, media, and the target account before posting tweets.
+Do not automate unsolicited replies, follows, or direct messages.
+
+## Make.com Twitter Integration Questions
+
+### How Do I Connect the Twitter API to Make?
+
+Create a private Make custom app or use the HTTP module.
+Authenticate each Xquik request with the `x-api-key` header.
+Start with one read endpoint before adding writes or webhooks.
+
+### Does Make.com Still Have a Native Twitter Integration?
+
+Make removed its native X app in 2025.
+Use Xquik through a private app or the Make HTTP module.
+This approach avoids a native Twitter integration dependency.
+
+### How Can I Schedule Tweets Automatically?
+
+Create a scheduled scenario that prepares one draft payload.
+Send the draft through an approval step before publishing.
+Use an idempotency key and inspect the returned write status.
+
+### How Do I Build a Twitter Webhook in Make?
+
+Create a Make webhook URL and register it with Xquik.
+Choose the required monitor event types during webhook registration.
+Verify signatures, reject stale requests, and deduplicate event IDs.
+
+### Can Make Automate Twitter Search Without Coding?
+
+Yes. Install the private Xquik app, then configure its search module.
+Map the query, filters, limit, and cursor through the scenario builder.
+The scenario can append matching tweets to Sheets without custom code.
+
+### How Do I Automate Replies Based on Keywords?
+
+Search recent replies or receive monitored account events.
+Filter each tweet with explicit terms and safety rules.
+Send the proposed reply to an approval queue before publishing.
+
+### How Do I Connect Twitter Activity to a CRM?
+
+Receive a verified monitor event, then fetch its author profile.
+Upsert the CRM record by immutable X user ID.
+Store the triggering tweet URL beside the profile fields.
+
+### Which Twitter Automation Tool Fits Make Scenarios?
+
+Use Xquik when scenarios need tweets, profiles, followers, or monitor webhooks.
+Use Make for scheduling, routing, approvals, and destination integrations.
+Together, they form a focused Twitter API integration.
+
+## Make and Xquik Sources
+
+- [Make custom app base configuration](https://developers.make.com/custom-apps-documentation/app-components/base)
+- [Make connection validation guidance](https://developers.make.com/custom-apps-documentation/best-practices/connections)
+- [Make community decommissioning notice](https://community.make.com/t/make-is-officially-decommissioning-x-formerly-twitter-app/77497)
+- [Make webhook documentation](https://help.make.com/webhooks)
+- [Make scenario scheduling](https://help.make.com/schedule-a-scenario)
+- [Xquik webhook verification](/webhooks/overview)
 
 ## Test Checklist
 
