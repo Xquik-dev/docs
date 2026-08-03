@@ -10246,7 +10246,7 @@ const REQUIRED_HAYSTACK_GUIDE_SNIPPETS = [
   '### Where Is the Haystack AI GitHub Integration?',
   '### Can a Haystack AI Agent Publish Tweets?',
   '### Does This Require a Haystack Enterprise Platform?',
-  'These modes return current searches without promising real time delivery.',
+  'Expect current results, not guaranteed real time delivery.',
 ] as const;
 
 const FORBIDDEN_HAYSTACK_GUIDE_SNIPPETS = [
