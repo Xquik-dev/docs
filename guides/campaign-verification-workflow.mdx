@@ -22,6 +22,11 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 Use this workflow when a campaign needs one reviewable row per participant.
 Choose the narrowest check first. Use a draw when winners need selection.
 
+Campaign verification separates entry collection, rule checks, winner selection,
+and publication. Store one campaign ID across every stage. Keep source Tweet
+IDs, participant user IDs, filters, cursors, timestamps, and verification states.
+Running a giveaway without these checkpoints makes later review unreliable.
+
 <AudienceCommunityApiLinks />
 
 ## Pick the Proof Path
@@ -46,6 +51,16 @@ Choose the narrowest check first. Use a draw when winners need selection.
   </Card>
 </CardGroup>
 
+Translate every published participation rule into one documented check.
+Use follower relationships for follow rules. Use retweeter pages for repost
+rules. Use reply rows for keywords, hashtags, and mentions. Use quote rows when
+quotes define campaign participation. Store the endpoint and checked time beside
+each result. Never infer one campaign activity from another activity.
+
+Complete every required check before winner selection begins. A participant can
+pass one rule and fail another. Preserve accepted and rejected states separately.
+This lets an operator explain every inclusion and rejection later.
+
 ## Choose the Focused Picker Guide
 
 Use the [Twitter giveaway picker guide](/guides/twitter-giveaway-picker) for
@@ -58,6 +73,14 @@ for reply authors, retweeters, hashtags, cursors, and stable user IDs.
 
 Check one relationship at a time. Store both handles, the result, and time.
 
+A follow check proves one source-to-target relationship at one checked time.
+Store the source handle, target handle, stable user IDs, and response state.
+Repeat the same request only when the first read is uncertain.
+Do not treat follower counts as proof for one participant.
+
+Use separate rows when campaigns require several target accounts.
+This prevents one successful relationship from satisfying every follow rule.
+
 ```bash
 curl "https://xquik.com/api/v1/x/followers/check?source=participant_handle&target=username" \
   -H "x-api-key: xq_YOUR_KEY_HERE" | jq
@@ -67,6 +90,14 @@ curl "https://xquik.com/api/v1/x/followers/check?source=participant_handle&targe
 
 Use tweet endpoints when one source tweet defines campaign participation.
 Keep each cursor with its participant page.
+
+Retrieve every available reply, retweeter, or quote page before evaluation.
+Save each page before requesting the next cursor. Normalize participants to
+stable X user IDs. Then join required activities by that stable key.
+
+Remove duplicate authors only when published uniqueness rules require it.
+Keep rejection reasons for missing replies, retweets, quotes, or required text.
+Do not replace missing proof with displayed engagement counts.
 
 <CardGroup cols={3}>
   <Card title="Retweeters" icon="repeat-2">
@@ -89,6 +120,16 @@ Store the campaign ID with every page.
 
 Use the Draws API when campaign rules require winner selection.
 Define every filter before entries close. Never add hidden rules afterward.
+
+Record the number of winners and backup winners before running a giveaway.
+Random selection starts only after every published check completes.
+Do not randomly pick from an unchecked participant list.
+Do not pick multiple winners by repeating uncertain create requests.
+
+Save the original draw request and returned draw ID immediately.
+Poll that stored draw until completion or failure. Export inspected entries and
+selected winners as separate records. Reconcile exported row counts with the
+stored request before publishing results.
 
 ```bash
 curl -X POST https://xquik.com/api/v1/draws \
@@ -117,6 +158,11 @@ curl "https://xquik.com/api/v1/draws/f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345/export
 ## Store One Audit Row
 
 Use stable user IDs as keys. Display names and handles can change.
+
+One audit row should answer who, what, when, and how.
+Store the participant ID, source Tweet ID, proof endpoint, cursor, and state.
+Add the campaign ID and checked timestamp. Keep the published rule that required
+the check. Preserve rejection reasons without exposing private operator notes.
 
 ```json
 {
@@ -147,6 +193,12 @@ Use stable user IDs as keys. Display names and handles can change.
 
 Repeat an uncertain read with the same tweet, filter, and cursor.
 Search draw history before repeating an uncertain create request.
+
+Estimate costs from participant checks and expected pagination.
+Persist completed pages so retries never restart the whole campaign audit.
+Stop on `402 insufficient_credits`. Add credits or narrow the participant set.
+Respect `429` backoff before repeating reads. Never change campaign rules to
+avoid a billing or rate-limit response.
 
 ## Next Steps
 
