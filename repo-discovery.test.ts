@@ -10542,8 +10542,15 @@ const REQUIRED_TWEETCLAW_GUIDE_SNIPPETS = [
 
 const REQUIRED_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS = [
   'title: "Microsoft Agent Framework Twitter MCP Python Guide"',
-  'Build a Microsoft Agent Framework Twitter MCP agent through Xquik.',
+  'Use this Microsoft Agent Framework tutorial to build a production-ready Twitter',
+  'This Microsoft Agent Framework Python example connects to Xquik\'s',
+  'The Microsoft Agent Framework MCP server connection uses Streamable HTTP.',
+  'The Microsoft open-source agent framework provides agents',
+  'Use this Microsoft AI',
+  '## Microsoft Agent Framework Getting Started',
   'python -m pip install "agent-framework==1.13.0"',
+  '## Microsoft Agent Framework Python Example for Tweet Search',
+  'Model Context Protocol (MCP) tool calls',
   'class TweetSearchHandoff(BaseModel):',
   'route_used: Literal["GET /api/v1/x/tweets/search"]',
   'created: int | None',
@@ -10557,8 +10564,10 @@ const REQUIRED_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS = [
   'request.to_function_approval_response(',
   'Message(role="user", contents=responses)',
   'function_invocation_kwargs=run_context',
-  '## Expose Route Discovery Without Execution',
-  '## Keep Tenant Credentials Out of Agent State',
+  '## Scope Microsoft Agent Framework Tools for Discovery',
+  '## Authenticate the Microsoft Agent Framework MCP Client',
+  '## Build Microsoft Multi-Agent Framework Workflows',
+  'A human in the loop must inspect every write-capable tool call.',
   '## Handle Tweet Search Errors and Rate Limits',
   '| `400` | The search query is missing or invalid',
   '| `401` | Authentication cannot complete this request',
@@ -10566,7 +10575,7 @@ const REQUIRED_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS = [
   '| `424` | The upstream X dependency failed',
   '| `429` | The Twitter API rate limit applies',
   '| `502` | The X dependency returned an invalid response',
-  '## Preserve Twitter Workflow Handoffs',
+  '## Preserve Microsoft Agent Framework Workflows and Handoffs',
   '<Card title="Tweet Search Rows" icon="search">',
   '<Card title="Profile and Follower Rows" icon="users">',
   '<Card title="Follower Export Jobs" icon="file-spreadsheet">',
@@ -10576,6 +10585,12 @@ const REQUIRED_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS = [
   '## Microsoft Agent Framework Twitter API Questions',
   '### How Do I Handle Twitter API Rate Limits in Python?',
   '### Can a Microsoft Agent Export Twitter Followers?',
+  '### Is Microsoft Agent Framework an Alternative to MCP?',
+  '### How Does Microsoft Agent Framework MCP Authentication Work?',
+  '### Does the Xquik MCP Server Require OAuth?',
+  '### Where Is the Microsoft Agent Framework Documentation?',
+  '### What Does the Microsoft Agent Framework SDK Provide?',
+  '### Can the Agent Triage Customer Support Mentions?',
 ] as const;
 
 const FORBIDDEN_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS = [
@@ -10586,6 +10601,10 @@ const FORBIDDEN_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS = [
   '| `agent-framework` | 1.11.0+',
   '| `mcp` | 1.24.0+ |',
   'title: "Microsoft Agent Framework for Twitter API Workflows"',
+  'Separate Tweet Research From Analysis',
+  'analyst = Agent(',
+  'analysis = await analyst.run(',
+  ')\n                )\n                )\n                continue',
 ] as const;
 
 const REQUIRED_GOOGLE_ADK_GUIDE_SNIPPETS = [
