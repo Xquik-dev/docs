@@ -10350,7 +10350,7 @@ const REQUIRED_COMPOSIO_MIGRATION_SNIPPETS = [
   'Choose unified APIs or a direct REST API.',
   'Test developer experience through SDK typing, logs, documentation, and rollbacks.',
   'Validate API calls and user profile scope in every AI assisted social media workflow.',
-  'Keep API documentation and production ready rollback steps.',
+  'Can your integration platform support clear API documentation and production ready rollback steps?',
   'Compare pricing, features, free tier, and white-label consent.',
   'Never choose an automation tool by its free tier alone.',
   'Measure real time claims.',
@@ -10427,6 +10427,7 @@ const FORBIDDEN_COMPOSIO_MIGRATION_SNIPPETS = [
   'Compare alternatives to Composio using the exact Twitter workflow being replaced.',
   'No X developer credentials are required.',
   'Ask, "what is Composio AI?"',
+  'Keep API documentation and production ready rollback steps.',
 ] as const;
 
 const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
@@ -10631,7 +10632,10 @@ const REQUIRED_GOOGLE_ADK_GUIDE_SNIPPETS = [
 
 const REQUIRED_CREWAI_GUIDE_SNIPPETS = [
   'title: "CrewAI Twitter MCP Multi-Agent Guide for Python"',
-  'Build a CrewAI Twitter MCP crew through Xquik\'s remote MCP server.',
+  'Build a CrewAI MCP integration through Xquik\'s remote Twitter MCP server.',
+  '## Why Use CrewAI With MCP for a Twitter API?',
+  'CrewAI offers an agent framework for complex tasks with distinct agent roles.',
+  'This CrewAI multi agent pattern fits research, verification, and reporting.',
   'python -m pip install "crewai>=1.15,<1.16"',
   'from pathlib import Path',
   'from crewai.mcp import MCPServerHTTP',
@@ -10648,26 +10652,35 @@ const REQUIRED_CREWAI_GUIDE_SNIPPETS = [
   '## Build a Role-Based Tweet Research Crew',
   'context=[search_task]',
   '## Keep Twitter Actions Outside the Research Crew',
-  '`human_input=True` reviews the task result.',
+  '`human_input=True` reviews the result.',
   'tools=[]',
   'allowed_tool_names=["explore"]',
+  '## Apply CrewAI MCP Integration Patterns',
+  'A CrewAI agent with MCP server access should own one permission boundary.',
+  'Teams of AI agents must not share write-capable keys.',
+  'This CrewAI MCP integration connects external APIs through synchronized schemas.',
+  'Prefer CrewAI tools before building a CrewAI custom tool.',
+  'Avoid broad web searches when tweet IDs matter.',
+  'These controls support real-world AI applications and multi agent systems.',
   '<Card title="Tweet Search Rows" icon="search">',
-  'Store `tweet_id`, `text`, `author_username`, `created`, `url`, `has_more`, `next_cursor`, and the original `q`.',
+  'Store `q`, `tweet_id`, `created`, `has_more`, and `next_cursor`.',
   '<Card title="Follower Exports" icon="users">',
   '<Card title="Monitor Events" icon="radio">',
   '<Card title="Extraction Jobs" icon="database">',
   '<Card title="Approved X Actions" icon="send">',
-  '| `400` | The search query is missing or invalid |',
-  '| `401` | Guest authentication cannot complete this request |',
-  '| `402` | The account lacks credits |',
-  '| `424` | The upstream X dependency failed |',
-  '| `429` | The Twitter API rate limit applies |',
-  '| `502` | The X dependency returned an invalid response |',
+  '| `400` | Missing or invalid query |',
+  '| `401` | Guest authentication failed |',
+  '| `402` | Credits are unavailable |',
+  '| `424` | X dependency failed |',
+  '| `429` | Twitter rate limit applies |',
+  '| `502` | Invalid X response |',
   '| `crewai` | 1.15.10 | `>=1.15,<1.16` |',
   '| `mcp` | 1.28.1 | `>=1.28.1,<1.29` through CrewAI |',
   '### How Do I Search Tweets With Python and CrewAI?',
   '### Can CrewAI Export Twitter Followers?',
   '### How Should CrewAI Handle Twitter API Rate Limits?',
+  '### Why Are CrewAI MCP Tools Missing?',
+  '[CrewAI GitHub issues](https://github.com/crewAIInc/crewAI/issues)',
 ] as const;
 
 const FORBIDDEN_CREWAI_GUIDE_SNIPPETS = [
@@ -10678,6 +10691,8 @@ const FORBIDDEN_CREWAI_GUIDE_SNIPPETS = [
   '119 MCP-compatible',
   '| `crewai` | 1.15.2 |',
   '| `mcp` | 1.26.0 |',
+  'Stop incomplete research before downstream analysis',
+  'Choose CrewAI when separate roles own research, analysis, and reporting.',
 ] as const;
 
 const REQUIRED_PYDANTIC_AI_GUIDE_SNIPPETS = [
