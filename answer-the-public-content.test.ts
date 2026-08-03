@@ -101,15 +101,20 @@ const REQUIRED_PROMPTS_BY_FILE = {
     'Accountless Twitter Scraper',
     'Guest Key Twitter API',
   ],
-  'guides/campaign-verification-workflow.mdx': [
+  'guides/twitter-giveaway-picker.mdx': [
     'What Makes the Best Twitter Giveaway Picker?',
     'How Do I Automate a Twitter Giveaway With an API?',
-    'Automate Twitter Giveaway',
-    'Tweet Draw Tool',
-    'Twitter Giveaway Picker API',
+    'Programmatic Twitter Giveaway Draw Checklist',
+    'How Does a Twitter Random Giveaway Picker Choose Winners?',
+    'How Do I Prove Giveaway Winners Were Eligible?',
+    'What Should I Publish With the Winner?',
+  ],
+  'guides/twitter-comment-retweet-picker.mdx': [
     'How Does a Twitter Comment Picker Work?',
     'How Does a Twitter Retweet Picker Verify Entries?',
-    'How Does a Twitter Random Giveaway Picker Choose Winners?',
+    'How Does a Twitter Hashtag Giveaway Picker Work?',
+    'Can a Comment Picker Verify Likes?',
+    'Combine Comment and Retweet Checks',
   ],
 } as const;
 
