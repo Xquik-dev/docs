@@ -10315,12 +10315,14 @@ const REQUIRED_HAYSTACK_GUIDE_SNIPPETS = [
   '### Can a Haystack AI Agent Publish Tweets?',
   '### Does This Require a Haystack Enterprise Platform?',
   'Expect current results, not guaranteed real time delivery.',
+  'Does your pipeline already return `Document` objects? Add these components directly.',
 ] as const;
 
 const FORBIDDEN_HAYSTACK_GUIDE_SNIPPETS = [
   'pip install git+https://github.com/Xquik-dev/xquik-haystack.git',
   'The package is not published on PyPI yet',
   'Install the current GitHub build',
+  'Use components when your pipeline already returns `Document` objects.',
   'title: "Haystack X API Guide for Tweet Search & RAG"',
   'Store the raw Xquik response',
   'Store the entire MCP result',
