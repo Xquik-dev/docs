@@ -1,8 +1,8 @@
 ---
-title: "Tweet Scraping & Follower Export API Workflow"
+title: "Twitter Scraper API for Tweets, Replies & Followers"
 sidebarTitle: "Extraction workflow"
-description: "Scrape tweets, export followers, estimate credits, start extraction jobs, paginate JSON results, and export CSV, JSON, or XLSX files. Follow exact steps."
-keywords: ["scrape tweets", "tweet scraper", "follower export", "CSV export", "JSON export", "XLSX export", "extraction", "pagination", "MCP"]
+description: "Use the Twitter scraper API to scrape tweets, export follower and following profiles, collect reply authors, paginate JSON, and download CSV, JSON, or XLSX."
+keywords: ["Twitter scraper API", "Twitter scraper", "tweet scraper", "scrape tweets", "Twitter data scraper", "Twitter scrape API", "Twitter follower scraper", "Twitter reply scraper", "follower export API", "tweet replies export", "CSV export", "JSON export", "XLSX export", "pagination", "MCP"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -11,6 +11,11 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 <LlmsDirective />
 
 Run bulk data extractions from X in 5 stages: check credits, estimate costs, run the job, retrieve JSON pages, and export files. Use this workflow to scrape tweets, export followers, pull tweet replies, save CSV/JSON/XLSX files, or hand paginated JSON to a CRM, warehouse, queue, or AI agent.
+
+This tweet scraper runs Twitter scraping through documented extraction jobs.
+Use `reply_extractor` as a Twitter reply scraper for visible reply authors.
+Use `follower_explorer` as a Twitter follower scraper for profile rows.
+The follower export API returns CSV, JSON, or XLSX files.
 
 <AudienceCommunityApiLinks />
 
@@ -647,7 +652,11 @@ All 23 extraction tools grouped by target type. Each requires a specific target 
 
 ### Tweet search filters
 
-`tweet_search_extractor` supports 16 optional filter parameters that are converted to X search operators internally. These filters only apply to `tweet_search_extractor` and are ignored by all other tool types. Use structured fields first for common jobs such as search tweets from a user, search tweet replies, scrape tweets with images, or export posts in a date range. Use `advancedQuery` only when you already know the X search operator string you want to append.
+`tweet_search_extractor` supports 31 optional filter parameters.
+Xquik converts them to X search operators internally.
+Other tool types ignore these filters.
+Use structured fields for authors, replies, media, dates, engagement, and locations.
+Use `advancedQuery` only for a known X search operator string.
 
 <CardGroup cols={2}>
   <Card title="Account filters" icon="at-sign">
@@ -659,17 +668,28 @@ All 23 extraction tools grouped by target type. Each requires a specific target 
     the export with `sinceDate` and `untilDate` in `YYYY-MM-DD` format.
   </Card>
   <Card title="Media and engagement" icon="image">
-    Use `mediaType` for `images`, `videos`, `gifs`, or `media`, then set
-    `minFaves`, `minRetweets`, or `minReplies` for minimum engagement.
+    Use `mediaType` for `images`, `videos`, `gifs`, `media`, `links`, or `none`.
+    Set `minFaves`, `minRetweets`, `minReplies`, or `minQuotes`.
   </Card>
   <Card title="Conversation filters" icon="message-circle">
-    Use `verifiedOnly` for verified authors, `replies` to `include`, `exclude`,
-    or return `only` replies, and `retweets` to `include`, `exclude`, or return
-    `only` retweets.
+    Use `replies`, `retweets`, and `quotes` with `include`, `exclude`, or `only`.
+    Set `verifiedOnly` when only verified authors should match.
   </Card>
   <Card title="Query refinement" icon="sliders-horizontal">
-    Use `exactPhrase` for exact matches, `excludeWords` for comma-separated
-    exclusions, and `advancedQuery` for raw X search operator syntax.
+    Combine `exactPhrase`, `excludeWords`, `anyWords`, `hashtags`, `cashtags`,
+    and `url` for terms, entities, or linked domains.
+  </Card>
+  <Card title="Tweet relationships" icon="git-branch">
+    Use `conversationId`, `inReplyToTweetId`, `quotesOfTweetId`, or
+    `retweetsOfTweetId` for one conversation or source tweet.
+  </Card>
+  <Card title="List and location scopes" icon="map-pin">
+    Use `listId`, `place`, `placeCountry`, `pointRadius`, or `boundingBox`.
+    These fields narrow search results to a list or location.
+  </Card>
+  <Card title="Advanced query" icon="code">
+    Use `advancedQuery` only for raw X search syntax.
+    Prefer the 30 structured fields when one already represents the filter.
   </Card>
 </CardGroup>
 
@@ -718,6 +738,46 @@ console.log(`Job ${extraction.id}: ${extraction.status}`);
 <Tip>
   Combine filters with `resultsLimit` to run targeted, cost-efficient searches. For example, find the top 50 viral tweets about a topic from verified accounts in the last 24 hours.
 </Tip>
+
+## Twitter Scraper API Questions
+
+### What Is a Twitter Scraper API?
+
+A Twitter scraper API collects X posts and profiles through documented requests.
+Xquik creates a job, returns its ID, and exposes cursor-based JSON results.
+It can also generate downloadable files.
+This Twitter data scraper covers tweets, replies, followers, following, communities, and lists.
+It also covers spaces, likes, reposts, quotes, and media posts.
+
+### Can Python Scrape Twitter Without the Official API?
+
+Yes, through Xquik's REST API and the Python examples above.
+You still need an [Xquik API key](/x-api-quickstart).
+You do not need to maintain an X developer application.
+Poll the job, follow every cursor, and save structured tweet or profile rows.
+
+### How Do I Export Twitter Followers?
+
+Run `follower_explorer` with `targetUsername`.
+This Twitter follower scraper returns visible follower profiles.
+Estimate the job before creating it.
+Then poll every JSON page or download a file.
+The follower export API preserves X IDs, usernames, names, counts, and verification fields.
+
+### How Do I Export Tweet Replies?
+
+Use `reply_extractor` with `targetTweetId` for visible reply-author profiles.
+Use `tweet_search_extractor` when the reply posts themselves matter.
+Pass `inReplyToTweetId` to restrict results to one source tweet.
+A tweet replies export can use CSV, JSON, XLSX, or paginated JSON.
+Store the source tweet ID, extraction ID, row IDs, and cursor checkpoint.
+
+### Why Use a Twitter Scrape API Instead of a Custom Web Scraper?
+
+A custom web scraper must maintain selectors, login behavior, retries, and parsers.
+A Twitter scrape API uses documented requests, statuses, cursors, and output fields.
+Choose the API when stable CRM, warehouse, or agent handoffs matter.
+Choose custom code only when your team can maintain its collection logic.
 
 ## MCP equivalent
 
