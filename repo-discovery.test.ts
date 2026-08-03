@@ -6392,7 +6392,12 @@ const FORBIDDEN_USER_MEDIA_API_RAW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
-  'Scrape tweets, export followers, estimate credits, start extraction jobs, paginate JSON results, and export CSV, JSON, or XLSX files',
+  'Use the Twitter scraper API to scrape tweets, export follower and following profiles, collect reply authors, paginate JSON, and download CSV, JSON, or XLSX.',
+  'title: "Twitter Scraper API for Tweets, Replies & Followers"',
+  'This tweet scraper runs Twitter scraping through documented extraction jobs.',
+  'Use `reply_extractor` as a Twitter reply scraper for visible reply authors.',
+  'Use `follower_explorer` as a Twitter follower scraper for profile rows.',
+  'The follower export API returns CSV, JSON, or XLSX files.',
   'Run bulk data extractions from X in 5 stages:',
   'Use this workflow to scrape tweets, export followers, pull tweet replies, save CSV/JSON/XLSX files, or hand paginated JSON to a CRM, warehouse, queue, or AI agent.',
   'Extract visible replies to this tweet: `https://x.com/vercel/status/1893704267862470862`',
@@ -6446,8 +6451,25 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   '"handoff_format": "jsonl"',
   '`xquik-extraction-results.jsonl`',
   'Keep `page_cursor` and `next_cursor` so the job can resume from the last successful page.',
-  'Use structured fields first for common jobs such as search tweets from a user, search tweet replies, scrape tweets with images, or export posts in a date range.',
-  'Use `advancedQuery` only when you already know the X search operator string you want to append.',
+  '`tweet_search_extractor` supports 31 optional filter parameters.',
+  '`minFaves`, `minRetweets`, `minReplies`, or `minQuotes`',
+  '`replies`, `retweets`, and `quotes` with `include`, `exclude`, or `only`',
+  '`exactPhrase`, `excludeWords`, `anyWords`, `hashtags`, `cashtags`',
+  '`conversationId`, `inReplyToTweetId`, `quotesOfTweetId`',
+  '`listId`, `place`, `placeCountry`, `pointRadius`, or `boundingBox`',
+  '## Twitter Scraper API Questions',
+  '### What Is a Twitter Scraper API?',
+  'This Twitter data scraper covers tweets, replies, followers, following, communities, and lists.',
+  '### Can Python Scrape Twitter Without the Official API?',
+  'You do not need to maintain an X developer application.',
+  '### How Do I Export Twitter Followers?',
+  'This Twitter follower scraper returns visible follower profiles.',
+  'The follower export API preserves X IDs, usernames, names, counts, and verification fields.',
+  '### How Do I Export Tweet Replies?',
+  'A tweet replies export can use CSV, JSON, XLSX, or paginated JSON.',
+  '### Why Use a Twitter Scrape API Instead of a Custom Web Scraper?',
+  'A custom web scraper must maintain selectors, login behavior, retries, and parsers.',
+  'A Twitter scrape API uses documented requests, statuses, cursors, and output fields.',
   '`502 x_api_unavailable` means the read service is temporarily unavailable.',
   'Retry with exponential backoff, then contact support if the error persists.',
 ] as const;
@@ -15268,7 +15290,7 @@ describe('repository discovery', (): void => {
         ),
       ],
     ).toStrictEqual([]);
-    expect(source.length).toBeLessThanOrEqual(27_500);
+    expect(source.length).toBeLessThanOrEqual(30_000);
   });
 
   it('keeps response formats and exports source-backed', (): void => {
