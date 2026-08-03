@@ -10632,6 +10632,8 @@ const REQUIRED_TWEETCLAW_GUIDE_SNIPPETS = [
   'For a DM attachment, call POST /api/v1/x/media first, then POST /api/v1/x/dm/{userId} with one media_ids value. Leave reply_to_message_id unset.',
   'Return the complete action record. Read the confirmed resource ID from result.id.',
   'Keep full DM bodies out of shared outputs.',
+  'The package also serves as an OpenClaw X Twitter skill for catalog-guided tasks.',
+  'TweetClaw does not implement MCP.',
   'Only change `baseUrl` for a self-hosted Xquik-compatible API.',
   'TweetClaw exposes 102 agent-callable endpoints across 9 categories.',
   '<Card title="account" icon="user">',
