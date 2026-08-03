@@ -263,7 +263,7 @@ describe('Plugin docs', (): void => {
       '`/xtrends`',
       '## Runtime Diagnostics',
       'hermes tools list',
-      'hermes -z "Use tweet_explore, then read /api/v1/account. Do not call tweet_action." --toolsets hermes-tweet',
+      'hermes -z "Use tweet_explore, then read /api/v1/x/trends. Do not call tweet_action." --toolsets hermes-tweet',
       'Without `XQUIK_API_KEY`, a non-mutating Hermes probe exposes `tweet_explore` only.',
       '`tweet_action` stays hidden or disabled unless `HERMES_TWEET_ENABLE_ACTIONS=true`.',
       'Hermes one-shot prompts do not dispatch `/xstatus` as an interactive slash command.',
