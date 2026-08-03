@@ -9,14 +9,16 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Build Zapier Twitter automation through Xquik without creating an X Developer app. Search tweets, read profiles, export followers, poll extraction jobs, and receive monitor webhooks. Add approved tweet or reply actions only after the read workflows pass.
+Build Zapier Twitter automation through Xquik without an X Developer app. Search
+tweets, export followers, route webhooks, and approve write actions.
 
-Start with a private Zapier Platform CLI integration. Keep its first release focused. Expand only after Zap history proves another route is useful.
+Build a private Zapier Platform CLI integration. Add routes after Zap history
+proves demand.
 
 ## Replace the Retired Zapier Twitter Integration
 
-Zapier retired its native Twitter integration in 2023. Existing Twitter Zaps
-stopped running, and builders could no longer create new ones.
+Zapier retired its native Twitter integration in 2023. Xquik restores those
+workflows through an API-key connection.
 
 Choose an Xquik connection based on the workflow:
 
@@ -39,8 +41,7 @@ Choose an Xquik connection based on the workflow:
   </Card>
 </CardGroup>
 
-This guide builds the private Platform integration. It provides reusable
-Twitter API integration steps without restoring Zapier's retired Twitter app.
+This guide builds the private Platform integration.
 
 ## Prerequisites
 
@@ -81,8 +82,6 @@ npm install
     Completed and Webhook Delivery Failure polling.
   </Card>
 </CardGroup>
-
-This setup provides API-key auth, Xquik REST routes, monitor webhooks, and extraction jobs. It also supports approved X account actions. Avoid hardcoding a route count because the OpenAPI catalog changes.
 
 ## API Key Auth
 
@@ -215,10 +214,8 @@ async function xquikRequest(z, options) {
 }
 ```
 
-Call `xquikRequest(z, options)` for every Xquik request. Zapier otherwise throws
-before the helper can translate documented error responses.
-
-Use each route's response widget as the canonical status list. The shared helper covers every documented error category. These include input, authentication, billing, missing-resource, dependency, rate-limit, and retrieval failures.
+Call `xquikRequest(z, options)` before reading response data. Use each route's
+response widget as the canonical status list.
 
 ## Starter Actions
 
@@ -263,7 +260,9 @@ Use each route's response widget as the canonical status list. The shared helper
 
 ## Result Handoff
 
-Use Zapier samples and `outputFields` so later Zap steps map stable values. Return compact objects from actions and arrays from triggers. Never pass full API responses into Zap history, Slack, CRM rows, or retry queues. Use snake_case storage keys when direct API responses use camelCase.
+Use Zapier samples and `outputFields` so later Zap steps map stable values.
+Use snake_case storage keys when direct API responses use camelCase. Return
+compact objects from actions and arrays from triggers.
 
 <CardGroup cols={2}>
   <Card title="Search Tweets action" icon="search">
@@ -304,7 +303,7 @@ Use Zapier samples and `outputFields` so later Zap steps map stable values. Retu
   </Card>
 </CardGroup>
 
-Map friendly region names to WOEID values in a Zapier dropdown. Then call Xquik.
+Map friendly region names to WOEID values. Then call Xquik.
 
 Example search action:
 
@@ -381,7 +380,7 @@ module.exports = {
 
 ## Trigger 1: New Matching Tweet
 
-Use polling for query-based alerts. Return a stable array of tweet records and let Zapier deduplicate by `id`.
+Poll searches for query alerts. Return stable tweet records with unique IDs.
 
 ```javascript
 async function performNewMatchingTweet(z, bundle) {
@@ -397,21 +396,15 @@ async function performNewMatchingTweet(z, bundle) {
 }
 ```
 
-Return newest tweets first. Zapier deduplicates trigger records by `id`. Never reuse the action's saved cursor across polling runs.
+Return newest tweets first. Never reuse saved cursors across polling runs.
 
 ## Trigger 2: Monitor Event REST Hook
 
-Use REST Hooks for near-real-time monitor events. Zapier can receive tweets, replies, quotes, and retweets.
+Use REST Hooks for near-real-time tweets, replies, quotes, and retweets.
 
 ### Choose a Secure Webhook Path
 
-Zapier logs every HTTP exchange created by `z.request()`. Zapier documents
-automatic censoring for authentication fields. It does not promise censoring
-for arbitrary response properties.
-
-`POST /webhooks` returns the Xquik signing secret once. A direct Zapier
-subscription therefore risks placing that secret in Zapier monitoring logs.
-Use a verification relay for production monitor events.
+Use a verification relay. Keep the one-time signing secret outside Zapier logs.
 
 <CardGroup cols={2}>
   <Card title="Production relay" icon="shield-check">
@@ -447,9 +440,8 @@ async function subscribeHook(z, bundle) {
 }
 ```
 
-Zapier stores this result in `bundle.subscribeData`. Never return `secret` from
-the trigger output. This code demonstrates direct HMAC verification. It is not
-the production relay path.
+Zapier stores this result in `bundle.subscribeData`. Never expose `secret` as
+trigger output. Use this path only for isolated testing.
 
 ### Unsubscribe
 
@@ -556,21 +548,14 @@ function performMonitorEvent(z, bundle) {
 }
 ```
 
-Verify `bundle.rawRequest.content` before using `bundle.cleanedRequest`. Zapier prefixes most inbound raw headers with `Http-`; the helper normalizes that prefix.
+Verify `bundle.rawRequest.content` before using `bundle.cleanedRequest`.
+Zapier prefixes most inbound raw headers with `Http-`; normalize that prefix.
 
-This direct prototype verifies the HMAC and 5-minute timestamp. Zapier
-deduplicates returned `id` values. It does not provide a durable 5-minute nonce
-store for REST Hook code.
-
-Place a durable verification relay before Zapier in production. Verify the raw
-body, timestamp, nonce, and signature there. Store each nonce for 5 minutes.
-Deduplicate `deliveryId` and `streamEventId` before forwarding the event.
-
-The relay owns Xquik delivery acknowledgement. Return `2xx` after accepting an
-already processed delivery or event. Zapier owns responses from
-`bundle.targetUrl`; its trigger code cannot customize that HTTP acknowledgement.
-
-Use `performList` to return one recent monitor event with the same schema. Zapier requires sample output fields that match live webhook payloads.
+Zapier does not provide a durable 5-minute nonce store.
+Place a durable verification relay before Zapier in production.
+Verify HMAC, timestamps, and nonces there.
+Deduplicate `deliveryId` and `streamEventId` before forwarding.
+Zapier owns responses from `bundle.targetUrl`.
 
 ```javascript
 async function performList(z) {
@@ -595,11 +580,9 @@ async function performList(z) {
 }
 ```
 
-Testing a REST Hook calls `performList`, not the live `perform` handler. Keep both outputs identical.
+Testing a REST Hook calls `performList`, not the live `perform` handler.
 
 ## Trigger 3: Extraction Completed
-
-Use polling when users want bulk jobs without webhook setup:
 
 ```javascript
 async function performCompletedExtractions(z) {
@@ -614,8 +597,6 @@ async function performCompletedExtractions(z) {
 ```
 
 ## Trigger 4: Webhook Delivery Failure
-
-Use polling for operations teams that need delivery alerts:
 
 ```javascript
 async function performWebhookFailures(z, bundle) {
@@ -659,18 +640,16 @@ async function performWebhookFailures(z, bundle) {
   </Card>
 </CardGroup>
 
-Use a Zapier Twitter Google Sheets workflow for searchable tweet rows.
-Use Zapier Twitter to Slack for verified alerts in real time.
-Choose Zapier Twitter Discord for matched tweet notifications.
-Build Zapier RSS to Twitter flows from blog posts and an RSS feed.
+Zapier Twitter Google Sheets workflows store searchable tweet rows.
+Zapier Twitter to Slack sends verified alerts in real time.
+Zapier Twitter Discord sends matched tweet notifications.
+Zapier RSS to Twitter converts blog posts from an RSS feed.
 
 Review scheduled tweets and the Twitter account before scheduling posts.
-Every Zapier post to Twitter step needs approval and an idempotency key.
-Keep each automated workflow focused on one search, monitor, export, or write.
+Approve every Zapier post to Twitter step.
+Keep each automated workflow focused.
 
-Zapier is one of several Twitter automation tools that can call Xquik. Use it when business users need visible steps, field mapping, filters, and app handoffs.
-
-Keep tweet, profile, follower, reply, monitor, webhook, and extraction rows separate. This prevents field collisions across later Zap steps.
+Compare other Twitter automation tools before choosing.
 
 ## Test Coverage
 
@@ -737,55 +716,45 @@ zapier-platform test
 zapier-platform validate
 ```
 
-## Launch Checklist
-
-- Keep the first version private. Verify auth, REST Hooks, sample output, and rate-limit behavior first.
-- Use clear Zap editor labels. Prefer Search Tweets, Create Tweet, Monitor Event, and Extraction Completed.
-- Document which actions consume credits before publishing to a broader team.
-- Add more endpoints only when Zap history shows repeated manual API Request steps.
-
 ## Zapier Twitter Automation Questions
 
 ### How Does a Zapier Twitter API Connection Work?
 
-Yes. A private Zapier Platform integration can call Xquik with an API key. Xquik does not require your own X Developer app.
+Yes. A private Platform app calls Xquik with one API key.
 
 ### Why Does the Native Zapier Twitter Integration Not Work?
 
-Zapier retired the native Twitter integration in 2023. Use API by Zapier for a
-small action set. Build a private Platform integration for reusable triggers.
+Zapier retired it in 2023. Use a private Platform integration.
 
 ### What Does a Twitter Zapier Workflow Replace?
 
-A Twitter Zapier workflow replaces repetitive copying between tweets and business apps. Keep each Zap focused on one search, monitor, export, or approved write.
+It replaces manual copying across tweet workflows.
 
 ### Can Zapier Search Tweets by Keyword?
 
-Yes. Call `GET /x/tweets/search` with `q` and `queryType`. Store tweet IDs, authors, timestamps, URLs, and page cursors.
+Yes. Search with `q`; store tweet IDs and cursors.
 
 ### Can Zapier Export Twitter Followers?
 
-Yes. Read follower pages for bounded workflows. Use an extraction job when a durable CSV, JSON, or XLSX file is required.
+Yes. Page small lists; export larger ones.
 
 ### Should a Zap Poll or Use a Twitter Webhook?
 
-Poll tweet searches when delayed discovery is acceptable. Use signed REST Hook events for near-real-time account or keyword monitors.
+Poll delayed searches. Use signed hooks for live monitors.
 
 ### How Does Zapier Verify an Xquik Webhook?
 
-Read `bundle.rawRequest.content` and the prefixed raw headers. Verify HMAC-SHA256 before parsing JSON. Use a durable relay for nonce storage.
+Use a production relay. Verify HMAC over the raw body there.
+Check the timestamp and nonce before parsing JSON. Reject reused nonces.
+Deduplicate delivery and event IDs before forwarding events to Zapier.
 
 ### Can Zapier Post Tweets and Replies?
 
-Yes. Use Zapier to automate tweets only after explicit approval. Send a unique idempotency key. Then confirm the terminal result.
+Yes. Use Zapier to automate tweets only after explicit approval.
 
 ### Can Zapier Schedule Posts From an RSS Feed?
 
-Yes. Read blog posts from the RSS feed. Prepare scheduled tweets for review. Keep approval before publishing or scheduling posts.
-
-### Does Zapier Need Every Xquik Route?
-
-No. Start with searches, followers, monitors, webhooks, extractions, and approved writes. Add another route only after a real workflow needs it.
+Convert RSS items into scheduled tweets. Approve them before publishing.
 
 ## Zapier and Xquik Sources
 
@@ -803,7 +772,5 @@ No. Start with searches, followers, monitors, webhooks, extractions, and approve
 
 ## Next Steps
 
-- Read [API Reference](/api-reference/overview) for auth, rate limits, and errors.
-- Read [Webhooks](/webhooks/overview) for payload shape and retries.
-- Read [Extraction Workflow](/guides/extraction-workflow) for job creation and result pagination.
-- Use [n8n](/guides/n8n) when the team prefers visual workflows without a custom Zapier app.
+Read [API Reference](/api-reference/overview) for statuses, [Webhooks](/webhooks/overview)
+for verification, and [Extraction Workflow](/guides/extraction-workflow) for jobs.
