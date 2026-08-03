@@ -86,7 +86,7 @@ describe('Mintlify accessibility overrides', (): void => {
     const composioGuide = readFileSync('guides/composio-migration.mdx', 'utf8');
 
     expect(composioGuide).toContain(
-      '<a href="https://xquik.com/mcp">Xquik API MCP server</a>',
+      '<a href="/mcp/overview">Xquik API MCP server</a>',
     );
     expect(composioGuide).not.toContain(
       '<code>https://xquik.com/mcp</code>',
