@@ -8655,6 +8655,8 @@ const REQUIRED_TWITTER_COMMENT_RETWEET_PICKER_SNIPPETS = [
   'A random comment picker selects winners from the remaining stable user IDs.',
   '## How Do I Pick a Winner From Twitter Comments?',
   'A Twitter reply picker should freeze eligible user IDs before selection.',
+  'Store giveaway rules beside the eligible user IDs.',
+  'Use that stored draw to pick a random winner from eligible IDs.',
   '## How Does a Twitter Retweet Picker Verify Entries?',
   'Use a Twitter retweet giveaway picker when published entry rules require reposts.',
   '[Get Retweeters](/api-reference/x/retweeters)',
