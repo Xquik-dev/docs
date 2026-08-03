@@ -108,9 +108,132 @@ Use `POST /monitors` for Twitter API monitoring from one username.
 This tweet monitor covers selected posts, replies, quotes, reposts, and profile
 changes. It does not search posts from every public account.
 
-Use [Create Keyword Monitor](/api-reference/monitors/create-keyword) for matching
-queries across many profiles. Use [Search Tweets](/api-reference/x/search-tweets)
-for an on-demand result page without continuous alerts.
+## Choose the Right Twitter Monitoring Surface
+
+Choose one surface from the required alert scope.
+
+| Monitoring need | Xquik surface | Result |
+| --- | --- | --- |
+| Continuous changes from one known account | `POST /monitors` | Selected tweet and profile events from that username. |
+| Specific keywords across many accounts | [Create Keyword Monitor](/api-reference/monitors/create-keyword) | Matching tweet events for one stored query. |
+| Historical or on-demand tweet results | [Search Tweets](/api-reference/x/search-tweets) | One paginated result set without continuous alerts. |
+
+Do not replace one surface with another after collection starts.
+Store the chosen monitor type beside every downstream alert.
+
+## How Do I Monitor a Twitter Account With an API?
+
+Create one active monitor for each username requiring continuous checks.
+Send the username without `@` and choose exact event types.
+Xquik resolves the username to one stable X user ID.
+Store both the monitor ID and resolved user ID.
+
+Teams can monitor Twitter account activity without maintaining a stream connection.
+The account monitor checks selected changes every second.
+Real-time Twitter alerts start after connecting a signed webhook.
+Stored events remain available for later inspection through the Events API.
+
+Use the monitor ID for updates, pauses, deletion, and event joins.
+Use the X user ID for stable account joins.
+Never use a display name as the account key.
+
+## Which Twitter Account Activity Can Trigger Alerts?
+
+Select `tweet.new` for original posts from the monitored account.
+Add `tweet.reply`, `tweet.quote`, or `tweet.retweet` for conversation activity.
+Use format events for media, links, polls, mentions, hashtags, and long posts.
+Each selected event type creates a focused alert stream.
+
+Profile events cover names, usernames, bios, locations, URLs, avatars, and banners.
+They also cover verification, protection, pinned posts, and account availability.
+Use `profile.unavailable.changed` when account availability affects a workflow.
+Keep previous and current profile values with the stored event.
+
+Choose only events that trigger a real downstream action.
+Extra event types create alerts that workers must still review.
+Update the monitor when the required event set changes.
+Do not infer unselected changes from tweet or profile counts.
+
+## How Do Real-Time Twitter Alerts Reach My Application?
+
+Create the account monitor before registering its delivery endpoint.
+Then create an HTTPS webhook with the required event filters.
+Save the one-time webhook secret in a secret manager.
+Send a signed test before accepting production deliveries.
+
+Verify `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` first.
+Compute the signature from the raw request body.
+Reject invalid signatures before parsing or queuing the payload.
+See [Webhook Verification](/webhooks/verification) for complete receiver examples.
+
+Use `deliveryId` for delivery-level idempotency.
+Use `streamEventId` for one-time monitor event processing.
+Store the queue row before returning a successful receiver response.
+Inspect [Webhook Deliveries](/api-reference/webhooks/deliveries) when alerts stop arriving.
+
+## How Do I Monitor Competitor Twitter Account Activity?
+
+Create one account monitor for each competitor username.
+Track new tweets, replies, quotes, reposts, links, and media.
+Add profile events for bio, username, avatar, banner, and pinned-post changes.
+Store each event type, timestamp, monitor ID, and X user ID.
+
+This workflow records concrete account changes.
+It does not calculate sentiment, brand reputation, or share of voice.
+Use a keyword monitor for mentions across unrelated accounts.
+Use tweet search for a retrospective competitor query.
+
+Keep competitor alerts separate from your own account alerts.
+Route each monitor ID to its intended queue or workspace.
+That separation prevents one competitor event from triggering unrelated jobs.
+
+## How Do I Monitor Multiple Twitter Accounts?
+
+Create one monitor request per username.
+Monitors are unlimited, but each active monitor has hourly billing.
+Keep at least 22 credits before creating or restoring each monitor.
+Store every returned monitor ID before creating the next request.
+
+An active duplicate returns `409 monitor_already_exists`.
+Use [List Monitors](/api-reference/monitors/list) to recover its stored ID.
+Use [Update Monitor](/api-reference/monitors/update) to change events or active state.
+Do not create replacement monitors when a pause is sufficient.
+
+Store each resolved X user ID beside the current username.
+This join remains stable when a username-change event arrives.
+Review `nextBillingAt` before keeping large monitor sets active.
+
+## What Does an Account Monitor Not Track?
+
+Account monitors do not emit follower-gained or follower-lost events.
+They also exclude likes, bookmarks, and direct-message activity.
+They do not return a complete historical timeline.
+They do not search specific keywords across every account.
+
+Use [Followers](/api-reference/x/followers) for paginated follower snapshots.
+Use [Following](/api-reference/x/following) for paginated following snapshots.
+Use [User Tweets](/api-reference/x/user-tweets) for timeline retrieval.
+Use [Create Keyword Monitor](/api-reference/monitors/create-keyword) for matching queries.
+
+Never substitute aggregate counts for missing participant or relationship records.
+Choose the endpoint that returns the required tweets, profiles, or relationships.
+
+## How Do I Recover From Monitor and Webhook Failures?
+
+List account monitors before repeating an uncertain create request.
+Reuse the stored monitor when the first request succeeded.
+Retry the same username and event types only when no monitor exists.
+
+Correct invalid usernames or event arrays after a `400` response.
+Replace missing credentials after `401` authentication errors.
+Add credits before retrying a `402 insufficient_credits` response.
+Check the username after a `404 user_not_found` response.
+Reuse the existing monitor after a `409` duplicate response.
+Respect `Retry-After` before repeating a `429` request.
+
+Webhook failures do not require replacing a healthy monitor.
+Fix the receiver, verify its signature code, and send another signed test.
+Then inspect delivery attempts and join `streamEventId` to the stored event.
 
 <CodeGroup>
   ```bash cURL
