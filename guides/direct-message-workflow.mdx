@@ -10,7 +10,11 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
 
 <LlmsDirective />
 
-Use this workflow when a support, sales, community, or agent system needs to read direct message history and send direct messages from a connected X account. Xquik reads a participant-scoped DM conversation with `GET /x/dm/{userId}/history`, sends text DMs with `POST /x/dm/{userId}`, and can attach one uploaded media item with `media_ids`.
+Use this workflow for support, sales, community, or agent systems.
+Read DM history and send messages from a connected X account.
+Xquik reads participant-scoped conversations through `GET /x/dm/{userId}/history`.
+It sends text DMs through `POST /x/dm/{userId}`.
+It can attach one uploaded media item through `media_ids`.
 
 <ConnectedAccountApiLinks />
 
@@ -179,11 +183,13 @@ curl https://xquik.com/api/v1/x/users/username \
 }
 ```
 
-Use the DM write response as the delivery authority.
+Trust the DM write response when recording delivery.
 
 ## Step 2: Read direct message history
 
-Use the sender account as the `account` query parameter. The connected account must be a participant in the conversation, because direct messages are private and user-scoped.
+Use the sender account as the `account` query parameter.
+The connected account must belong to the conversation.
+Direct messages remain private and user-scoped.
 
 ```bash
 curl -G https://xquik.com/api/v1/x/dm/987654321/history \
@@ -375,7 +381,9 @@ The X direct message API sends one-to-one messages from a connected X account.
 Use a numeric user ID for each recipient.
 Send text through `POST /x/dm/{userId}`.
 This Twitter DM API workflow also reads participant-scoped message history.
-Store each returned `messageId` for reconciliation and audit records.
+Store each returned `messageId`.
+Use it for reconciliation and audits.
+Use a connected Twitter account for each private message.
 Reuse the idempotency key only for the identical request.
 Poll non-terminal write actions through their status URL.
 Use a new key only when `safeToRetry` is `true`.
@@ -401,7 +409,7 @@ A Twitter DM history API client should dedupe each message `id`.
 
 A `403` can indicate a disconnected or non-participant account.
 Reconnect accounts that need reauthorization.
-Use a participant account when reading private conversations.
+Read private conversations through an account that belongs to them.
 A `422` means X rejected the request.
 Check recipient permissions, message text, and sender account state.
 Do not retry an unchanged rejected request.
@@ -411,14 +419,15 @@ Do not retry an unchanged rejected request.
 This route accepts one recipient `userId`.
 The current Xquik contract does not create group conversations.
 Do not pass participant arrays to the one-to-one send route.
-Follow the published OpenAPI contract for supported message conversations.
+Check the OpenAPI contract before sending message conversations.
 
 ### How Do I Send a DM With Media?
 
 Upload one image, GIF, or video through `POST /x/media`.
 Use the returned `mediaId` in a one-item `media_ids` array.
 To send DM with media, include non-empty text too.
-The API rejects empty arrays and multiple media IDs.
+Send one media ID.
+Empty or multiple media IDs fail.
 Keep upload and message IDs together for private attachment audits.
 
 ### Is Twitter DM Automation Suitable for Welcome Messages?
