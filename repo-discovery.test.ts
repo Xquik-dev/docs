@@ -8635,6 +8635,8 @@ const REQUIRED_TWITTER_GIVEAWAY_PICKER_SNIPPETS = [
   '## How Do I Automate a Twitter Giveaway With an API?',
   '[Create Draw](/api-reference/draws/create)',
   '## Programmatic Twitter Giveaway Draw Checklist',
+  '## How Do I Pick a Winner From Replies and Retweets?',
+  'Run every published check before any participant is selected randomly.',
   '## How Does a Twitter Random Giveaway Picker Choose Winners?',
   'A Twitter random giveaway picker filters entries before random selection.',
   '## How Do I Prove Giveaway Winners Were Eligible?',
