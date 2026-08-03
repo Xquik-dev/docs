@@ -3,7 +3,7 @@ title: "Twitter Account Monitor API & Real-Time Webhooks"
 sidebarTitle: Create account monitor
 description: "Monitor one X account every second. Track tweets, replies, quotes, reposts, mentions, media, links, and profile changes. Deliver signed webhook alerts."
 api: "POST /monitors"
-keywords: ["Twitter account monitor API", "monitor Twitter account", "Twitter webhook alerts", "real-time Twitter alerts", "monitor tweets", "account monitor", "signed webhooks"]
+keywords: ["Twitter monitor", "monitor Twitter account", "tweet monitor", "Twitter account monitor API", "Twitter webhook", "Twitter webhook alerts", "real-time Twitter alerts", "monitor tweets", "profile change alerts"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -87,7 +87,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <LlmsDirective />
 
 Create a Twitter account monitor for one known profile. Select tweet, profile,
-or availability events. Store the monitor ID. Then connect a signed webhook.
+or availability events. Store the monitor ID. Then connect signed webhooks.
 
 <Callout icon="coins" color="#5c3327">
   **Requires 22 available credits.** The username lookup costs 1 credit. The first active monitor hour costs 21 credits.
@@ -114,7 +114,7 @@ for an on-demand result page without continuous alerts.
 
 <CodeGroup>
   ```bash cURL
-  curl -X POST https://xquik.com/api/v1/monitors \
+  curl --fail-with-body -X POST https://xquik.com/api/v1/monitors \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
     -H "Content-Type: application/json" \
     -d '{
@@ -152,6 +152,9 @@ for an on-demand result page without continuous alerts.
     }),
   });
   const monitor = await response.json();
+  if (!response.ok) {
+    throw new Error(monitor.message || "Twitter monitor creation failed.");
+  }
   const monitorState = {
     monitor_id: monitor.id,
     username: monitor.username,
@@ -184,6 +187,8 @@ for an on-demand result page without continuous alerts.
       },
   )
   monitor = response.json()
+  if not response.ok:
+      raise RuntimeError(monitor.get("message", "Twitter monitor creation failed."))
   monitor_state = {
       "monitor_id": monitor["id"],
       "username": monitor["username"],
@@ -209,6 +214,7 @@ for an on-demand result page without continuous alerts.
   import (
       "bytes"
       "encoding/json"
+      "io"
       "log"
       "net/http"
       "os"
@@ -260,6 +266,14 @@ for an on-demand result page without continuous alerts.
       }
       defer resp.Body.Close()
 
+      if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+          problem, readErr := io.ReadAll(resp.Body)
+          if readErr != nil {
+              log.Fatal(readErr)
+          }
+          log.Fatalf("Twitter monitor creation failed with %d: %s", resp.StatusCode, string(problem))
+      }
+
       var monitor Monitor
       if err := json.NewDecoder(resp.Body).Decode(&monitor); err != nil {
           log.Fatal(err)
@@ -291,10 +305,11 @@ Each code example maps the response to one monitor row. Save the account IDs,
 event filter, active state, next charge time, and monitor routes. The routes
 cover updates, events, webhooks, and delivery checks.
 
-## Account monitor handoff
+## Account Monitor Handoff
 
-Use `POST /monitors` when a queue, CRM, warehouse, Slack alert, or agent tracks
-one X account. It checks selected tweets and profile changes every second.
+Use `POST /monitors` for one X account. Send alerts to a queue, CRM,
+warehouse, Slack, or an agent. It checks selected tweets and profile changes
+every second.
 Create the monitor first. Then create a signed webhook with
 [`POST /webhooks`](/api-reference/webhooks/create). Call
 [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) before enabling
@@ -312,13 +327,14 @@ production alerts.
 
 <CardGroup cols={2}>
   <Card title="Monitor ID" icon="fingerprint">
-    Store `id` as `monitor_id`. Use [Get Monitor](/api-reference/monitors/twitter-account-monitor-status)
-    to verify state, [Update Monitor](/api-reference/monitors/update) to pause
-    or resume, and [Delete Monitor](/api-reference/monitors/delete-twitter-account-monitor) only when
-    the account should stop permanently.
+    Store `id` as `monitor_id`. Verify state with
+    [Get Monitor](/api-reference/monitors/twitter-account-monitor-status).
+    Pause or resume with [Update Monitor](/api-reference/monitors/update). Call
+    [Delete Monitor](/api-reference/monitors/delete-twitter-account-monitor)
+    only when tracking should stop permanently.
   </Card>
   <Card title="Stored Account" icon="user">
-    Store `username` after trimming the `@` prefix and `xUserId` for identity
+    Store `username` after trimming the `@` prefix. Store `xUserId` for stable
     joins, dedupe, and downstream account mapping.
   </Card>
   <Card title="Event Filter" icon="funnel">
@@ -330,10 +346,9 @@ production alerts.
     hourly monitor burn.
   </Card>
   <Card title="Stored Event Join" icon="link">
-    Use `monitorType: "account"`, `monitorId`, and `username` from
-    [List Events](/api-reference/events/list) to join stored events back to the
-    monitored account. Use [Get Event](/api-reference/events/get) for one
-    event's full payload.
+    Read `monitorType: "account"`, `monitorId`, and `username` from
+    [List Events](/api-reference/events/list). Use them to join stored events
+    to the account. Use [Get Event](/api-reference/events/get) for one event.
   </Card>
   <Card title="Webhook Delivery Join" icon="webhook">
     Use `deliveryId` for receiver idempotency and
@@ -359,8 +374,11 @@ You need 22 available credits to create or restore a monitor. That total include
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. You can also authenticate with a session cookie. Create an API
-  key in the [Xquik dashboard](https://xquik.com/dashboard).
+  Send your Xquik API key. Create one in the [Xquik dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
@@ -378,15 +396,9 @@ You need 22 available credits to create or restore a monitor. That total include
   Array of event types to subscribe to. At least 1 required. See [Valid Event Types](#valid-event-types) below.
 </ParamField>
 
-## Valid event types
+## Valid Event Types
 
-Valid account monitor types: `tweet.new`, `tweet.quote`, `tweet.reply`,
-`tweet.retweet`, `tweet.media`, `tweet.link`, `tweet.poll`, `tweet.mention`,
-`tweet.hashtag`, `tweet.longform`, `profile.avatar.changed`,
-`profile.banner.changed`, `profile.name.changed`, `profile.username.changed`,
-`profile.bio.changed`, `profile.location.changed`, `profile.url.changed`,
-`profile.verified.changed`, `profile.protected.changed`,
-`profile.pinned_tweet.changed`, `profile.unavailable.changed`.
+Choose only the exact event types in the goal map below.
 
 ### Match Event Types to Monitor Goals
 
@@ -450,29 +462,29 @@ Valid account monitor types: `tweet.new`, `tweet.quote`, `tweet.reply`,
 ### 400 Invalid Input
 
 ```json
-{ "error": "invalid_input", "message": "Invalid username format or event types" }
+{ "error": "invalid_input", "message": "Invalid input. Check the request body." }
 ```
 Invalid username format or missing/invalid `eventTypes` array.
 
 ### 401 Missing API Key
 
 ```json
-{ "error": "unauthenticated", "message": "Missing or invalid API key" }
+{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }
 ```
-Missing or invalid API key.
+Missing or invalid API key or OAuth bearer token.
 
 ### 402 Payment Required
 
 ```json
-{ "error": "insufficient_credits", "message": "Insufficient credits" }
+{ "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }
 ```
 Keep at least 22 credits available before sending this request. The API may return
-`no_credits` or `insufficient_credits`.
+`insufficient_credits` when the balance is too low.
 
 ### 404 User Not Found
 
 ```json
-{ "error": "user_not_found", "message": "X user not found" }
+{ "error": "user_not_found", "message": "X user not found. Check the username." }
 ```
 Xquik could not find that username. Check the spelling.
 
@@ -492,9 +504,19 @@ An active monitor already tracks this X account. Use
 Too many requests. Wait for the `Retry-After` header before retrying.
 
 <Info>
-  If a monitor for the same account was previously deleted, it will be silently reactivated with the new event types instead of creating a duplicate.
+  A previously deleted monitor is reactivated with new event types. An active
+  duplicate returns `409`.
 </Info>
 
 <Note>
-  **Next steps:** [List Monitors](/api-reference/monitors/list) to see all your monitors, [Get Monitor](/api-reference/monitors/twitter-account-monitor-status) to fetch details, [Update Monitor](/api-reference/monitors/update) to pause or resume, [Create Webhook](/api-reference/webhooks/create) to receive events, [List Webhooks](/api-reference/webhooks/list) to check subscriptions, [List Events](/api-reference/events/list) and [Get Event](/api-reference/events/get) to audit stored events, or [List Deliveries](/api-reference/webhooks/deliveries) to inspect webhook attempts.
+  **Next steps:**
+
+  - [List Monitors](/api-reference/monitors/list) to view account monitors.
+  - [Get Monitor](/api-reference/monitors/twitter-account-monitor-status) to fetch one monitor.
+  - [Update Monitor](/api-reference/monitors/update) to pause or resume checks.
+  - [Create Webhook](/api-reference/webhooks/create) to receive events.
+  - [List Webhooks](/api-reference/webhooks/list) to check subscriptions.
+  - [List Events](/api-reference/events/list) to audit stored events.
+  - [Get Event](/api-reference/events/get) to inspect one event.
+  - [List Deliveries](/api-reference/webhooks/deliveries) to inspect webhook attempts.
 </Note>

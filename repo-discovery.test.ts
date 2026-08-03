@@ -9319,8 +9319,11 @@ const FORBIDDEN_KEYWORD_MONITOR_DELETE_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
+  'title: "Twitter Account Monitor API & Real-Time Webhooks"',
+  'keywords: ["Twitter monitor", "monitor Twitter account", "tweet monitor", "Twitter account monitor API", "Twitter webhook", "Twitter webhook alerts", "real-time Twitter alerts", "monitor tweets", "profile change alerts"]',
   'monitor tweets',
   'signed webhooks',
+  'curl --fail-with-body -X POST https://xquik.com/api/v1/monitors',
   'jq -c \'{',
   'monitor_id: .id',
   'x_user_id: .xUserId',
@@ -9332,6 +9335,7 @@ const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
   'webhooks_endpoint: "/api/v1/webhooks"',
   'deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"',
   'const monitor = await response.json();',
+  'throw new Error(monitor.message || "Twitter monitor creation failed.");',
   'const monitorState = {',
   'monitor_id: monitor.id',
   'x_user_id: monitor.xUserId',
@@ -9346,6 +9350,7 @@ const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
   'process.stdout.write(`${JSON.stringify(monitorState)}\\n`);',
   'import json',
   'monitor = response.json()',
+  'raise RuntimeError(monitor.get("message", "Twitter monitor creation failed."))',
   'monitor_state = {',
   '"monitor_id": monitor["id"]',
   '"x_user_id": monitor["xUserId"]',
@@ -9369,14 +9374,16 @@ const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
   'WebhooksEndpoint           string   `json:"webhooks_endpoint"`',
   'DeliveriesEndpointPattern  string   `json:"deliveries_endpoint_pattern"`',
   'json.NewEncoder(os.Stdout).Encode(state)',
+  'log.Fatalf("Twitter monitor creation failed with %d: %s", resp.StatusCode, string(problem))',
   'Each code example maps the response to one monitor row.',
   'Save the account IDs,',
   'event filter, active state, next charge time, and monitor routes.',
   'The routes',
   'cover updates, events, webhooks, and delivery checks.',
-  '## Account monitor handoff',
+  '## Account Monitor Handoff',
   '`POST /monitors`',
-  'queue, CRM, warehouse, Slack alert, or agent',
+  'Send alerts to a queue, CRM,',
+  'warehouse, Slack, or an agent.',
   '[`POST /webhooks`](/api-reference/webhooks/create)',
   '[`POST /webhooks/{id}/test`](/api-reference/webhooks/test)',
   '<Card title="Monitor ID" icon="fingerprint">',
@@ -9385,7 +9392,8 @@ const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
   '[Update Monitor](/api-reference/monitors/update)',
   '[Delete Monitor](/api-reference/monitors/delete-twitter-account-monitor)',
   '<Card title="Stored Account" icon="user">',
-  'Store `username` after trimming the `@` prefix and `xUserId`',
+  'Store `username` after trimming the `@` prefix.',
+  'Store `xUserId` for stable',
   '<Card title="Event Filter" icon="funnel">',
   '[List Webhooks](/api-reference/webhooks/list)',
   '<Card title="Active State" icon="clock">',
@@ -9421,16 +9429,26 @@ const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
   '<Card title="tweet.retweet" icon="repeat-2">',
   'create stored events and webhook deliveries.',
   '`PATCH /monitors/{id}`',
+  '<ParamField header="Authorization" type="string">',
+  'Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.',
+  '"message": "Invalid input. Check the request body."',
+  '"message": "Authentication required. Provide a valid API key or bearer token."',
+  '"message": "Insufficient credits. Top up or subscribe to continue."',
+  '"message": "X user not found. Check the username."',
   '"message": "Monitor already exists."',
 ] as const;
 
-const FORBIDDEN_ACCOUNT_MONITOR_CREATE_RAW_OUTPUT_SNIPPETS = [
+const FORBIDDEN_ACCOUNT_MONITOR_CREATE_SNIPPETS = [
   "'}' | jq",
   'const data = await response.json();',
   'JSON.stringify(data, null, 2)',
   'data = response.json()',
   'print(data)',
   'fmt.Println(data)',
+  'authenticate with a session cookie',
+  '`no_credits` or `insufficient_credits`',
+  '"message": "Invalid username format or event types"',
+  '"message": "Missing or invalid API key"',
 ] as const;
 
 const REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS = [
@@ -11853,7 +11871,7 @@ const REQUIRED_AGENT_DOCS_PAGE_SIZE_CHECKS = [
   '  - page-size-markdown',
   'content-start-position stays disabled until the bounded afdocs sample starts',
   'Keep the live CI crawl deterministic and bounded',
-  '  maxConcurrency: 6',
+  '  maxConcurrency: 2',
   '  maxLinksToTest: 30',
   '  requestDelay: 100',
   '  requestTimeout: 10000',
@@ -16479,7 +16497,7 @@ describe('repository discovery', (): void => {
           'Create account monitor endpoint page',
           REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS,
         ),
-        ...FORBIDDEN_ACCOUNT_MONITOR_CREATE_RAW_OUTPUT_SNIPPETS.flatMap(
+        ...FORBIDDEN_ACCOUNT_MONITOR_CREATE_SNIPPETS.flatMap(
           (snippet): readonly DiscoveryFinding[] =>
             source.includes(snippet)
               ? [
