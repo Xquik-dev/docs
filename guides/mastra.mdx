@@ -37,6 +37,8 @@ The Mastra AI framework provides agents, model routing, tools, memory, and
 workflows. Xquik supplies Twitter API operations through `explore` and
 `xquik`. Together, they support typed tweet research and approved X actions.
 
+Mastra is an open-source TypeScript framework for building AI applications.
+
 Use each boundary for one responsibility.
 
 | Boundary | Mastra control | Twitter agent benefit |
@@ -202,17 +204,25 @@ The MCP runtime returns normalized snake_case fields through
 The example creates one typed Mastra AI workflow. Its `inputSchema` accepts a
 query. Its `outputSchema` requires the final tweet handoff.
 
+The `inputSchema: z.object(...)` declaration validates every query. An
+`outputSchema: z.object(...)` declaration can define a smaller response. This
+workflow reuses `handoffSchema` and avoids duplicate contracts.
+
+The `import { z } from "zod"` statement provides both workflow schemas.
+
 Mastra core workflows chain steps with `.then()` and finish with `.commit()`.
 `createRun()` creates isolated execution state. `start()` validates the initial
 `inputData` before running the search step.
 
 This pattern keeps model output behind Zod validation. A registered agent can
-also run the workflow through a Mastra application. Add human-in-the-loop
-approval before any workflow step that writes to X.
+also run the workflow through a Mastra instance. Add human-in-the-loop approval
+before any workflow step that writes to X.
 
 Mastra AI workflows should preserve cursors between runs. Store the successful
 `result` outside the model transcript. Tweet search is not a real-time event
 stream. Use [monitors](/api-reference/monitors/create) for stored events.
+
+When running Mastra in production, store each successful handoff immediately.
 
 ## Search Tweets With Precise Operators
 
@@ -525,7 +535,7 @@ Connect a webhook when the receiver can verify signatures.
 
 ### Can Mastra Post Tweets and Replies?
 
-Yes. A connected X account is required. Require approval for every `xquik`
+Yes. Connect an X account before posting. Require approval for every `xquik`
 execution. Validate the account, text, reply ID, and media before approval.
 
 See [create tweet](/api-reference/x-write/create-tweet) for the exact contract.
