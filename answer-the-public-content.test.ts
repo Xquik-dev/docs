@@ -102,11 +102,14 @@ const REQUIRED_PROMPTS_BY_FILE = {
     'Guest Key Twitter API',
   ],
   'guides/campaign-verification-workflow.mdx': [
-    'What Is the Best Tool to Run a Twitter Giveaway Draw Programmatically?',
+    'What Makes the Best Twitter Giveaway Picker?',
     'How Do I Automate a Twitter Giveaway With an API?',
     'Automate Twitter Giveaway',
     'Tweet Draw Tool',
     'Twitter Giveaway Picker API',
+    'How Does a Twitter Comment Picker Work?',
+    'How Does a Twitter Retweet Picker Verify Entries?',
+    'How Does a Twitter Random Giveaway Picker Choose Winners?',
   ],
 } as const;
 

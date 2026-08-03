@@ -6403,7 +6403,8 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   'Tweet search results can filter authors, dates, engagement, media, relationships, lists, and locations.',
   'Run bulk data extractions from X in 5 stages:',
   'Use this workflow to scrape tweets, export followers, pull tweet replies, save CSV/JSON/XLSX files, or hand paginated JSON to a CRM, warehouse, queue, or AI agent.',
-  'The estimate endpoint shows expected rows and credits without consuming credits.',
+  'Use the estimate endpoint first.',
+  'It shows expected rows and credits without charging you.',
   'Available export rows include bios, locations, and engagement counts.',
   'Extract visible replies to this tweet: `https://x.com/vercel/status/1893704267862470862`',
   'Treat `202 Accepted` as a queued run receipt.',
@@ -6987,6 +6988,7 @@ const FORBIDDEN_EXTRACTION_WORKFLOW_SNIPPETS = [
   'quota',
   'Run bulk data extractions from X in 4 steps',
   'The estimate endpoint previews the result count and projected credit usage without consuming credits.',
+  'The estimate endpoint shows expected rows and credits without consuming credits.',
   'Exports include enrichment data such as bios, locations, and engagement metrics.',
   '| `502 x_api_unavailable` | X data source temporarily down | Retry with exponential backoff |',
 ] as const;
@@ -8590,7 +8592,9 @@ const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
   '<Card title="Giveaway Selection" icon="trophy">',
   '`POST /api/v1/draws`',
   '## Twitter Giveaway Automation Questions',
-  '### What Is the Best Tool to Run a Twitter Giveaway Draw Programmatically?',
+  '### What Makes the Best Twitter Giveaway Picker?',
+  'The best Twitter giveaway picker records the complete draw request and proof.',
+  'Use Xquik as a Twitter giveaway tool with reviewable Draws exports.',
   '### How Do I Automate a Twitter Giveaway With an API?',
   '### Automate Twitter Giveaway',
   '### Tweet Draw Tool',
@@ -8599,6 +8603,15 @@ const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
   '## Programmatic Twitter Giveaway Draw Checklist',
   '## Frequently Asked Questions',
   '### How Does the Twitter Giveaway Picker Work?',
+  '### How Does a Twitter Comment Picker Work?',
+  'A random comment picker can randomly select winners from',
+  'The current Draws contract does not accept likes as an eligibility',
+  '### How Does a Twitter Retweet Picker Verify Entries?',
+  'hashtag giveaway picker also checks reply text for each required hashtag.',
+  'a specific hashtag only when the published rules required it.',
+  '### How Does a Twitter Random Giveaway Picker Choose Winners?',
+  'Set the number of winners and backup count in one',
+  'winner picker should store the entry count and draw ID.',
   '### What Should I Publish With the Winner?',
   '## Follow Check',
   'participant_handle',
@@ -8623,6 +8636,13 @@ const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
   'Direct X read endpoints are metered. Budget by participant count and pages.',
   'Draw execution meters the source tweet lookup, replies, optional retweeter',
   'Treat `402 insufficient_credits` as a stopped audit.',
+] as const;
+
+const FORBIDDEN_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
+  'Choose a tool that exposes the complete draw request and evidence.',
+  'Publish the public result URL when the campaign needs participant transparency.',
+  'Keep private API keys and internal review notes outside that public record.',
+  'Driving engagement does not reduce verification requirements.',
 ] as const;
 
 const REQUIRED_TARGET_AUDIENCE_DISCOVERY_WORKFLOW_SNIPPETS = [
@@ -16603,13 +16623,23 @@ describe('repository discovery', (): void => {
       'utf8',
     );
 
-    expect(
-      collectSnippetFindings(
+    expect([
+      ...collectSnippetFindings(
         source,
         'Campaign verification workflow',
         REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS,
       ),
-    ).toStrictEqual([]);
+      ...FORBIDDEN_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Campaign verification workflow contains forbidden stale wording "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the target audience discovery workflow source-backed', (): void => {
