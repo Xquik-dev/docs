@@ -375,7 +375,10 @@ The X direct message API sends one-to-one messages from a connected X account.
 Use a numeric user ID for each recipient.
 Send text through `POST /x/dm/{userId}`.
 This Twitter DM API workflow also reads participant-scoped message history.
-It stores each returned message ID for retries and audits.
+Store each returned `messageId` for reconciliation and audit records.
+Reuse the idempotency key only for the identical request.
+Poll non-terminal write actions through their status URL.
+Use a new key only when `safeToRetry` is `true`.
 
 ### How Do I Send a Twitter DM Through an API?
 
@@ -390,8 +393,8 @@ Store both before any CRM, queue, or agent handoff.
 Xquik reads saved history on demand.
 This route does not register real-time DM events.
 Poll `GET /x/dm/{userId}/history` when the workflow needs new messages.
-Use `next_cursor` only after the first page.
-This prevents invalid first-page cursor requests.
+Omit `cursor` from the first history request.
+Then pass each response's `next_cursor` value as the next request's `cursor`.
 A Twitter DM history API client should dedupe each message `id`.
 
 ### Why Does Sending a DM Return 403 or 422?
@@ -399,7 +402,7 @@ A Twitter DM history API client should dedupe each message `id`.
 A `403` can indicate a disconnected or non-participant account.
 Reconnect accounts that need reauthorization.
 Use a participant account when reading private conversations.
-A `422` means X rejected the unchanged message request.
+A `422` means X rejected the request.
 Check recipient permissions, message text, and sender account state.
 Do not retry an unchanged rejected request.
 
