@@ -11215,6 +11215,8 @@ const REQUIRED_MAKE_GUIDE_SNIPPETS = [
   '## Make and Xquik Sources',
   'A Make.com API integration uses an Xquik API key for authentication.',
   'Build a Make scenario automation around one bounded Xquik operation.',
+  "The 2025 decommissioning removed Make's native X app.",
+  'Instant webhook delivery applies to replies, quotes, reposts, and new tweets.',
   'A Twitter monitor webhook can route new tweets and replies immediately.',
   'The approval queue governs every scheduled tweet and reply.',
   '[Make custom app base configuration](https://developers.make.com/custom-apps-documentation/app-components/base)',
@@ -11364,6 +11366,8 @@ const FORBIDDEN_MAKE_GUIDE_SNIPPETS = [
   'Create a private Make custom app or use the HTTP module.',
   'Respect `Retry-After` before retrying.',
   'Retry safe reads cautiously.',
+  'An instant webhook handles replies, quotes, reposts, or new tweets.',
+  'Make officially decommissioned its native X app in 2025.',
 ] as const;
 
 const REQUIRED_MAKE_ALTERNATIVE_SNIPPETS = [
