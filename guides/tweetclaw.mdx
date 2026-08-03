@@ -1,44 +1,72 @@
 ---
-title: "TweetClaw for OpenClaw Tweet Search & X Actions"
+title: "TweetClaw OpenClaw Twitter Plugin for X Actions"
 sidebarTitle: "TweetClaw"
-description: "Install TweetClaw for OpenClaw to search tweets, inspect profiles, export followers, monitor X accounts, and run approved account actions. Follow exact steps."
-keywords: ["tweetclaw", "openclaw plugin", "tweet search", "x api alternative", "twitter follower export"]
+description: "Install the TweetClaw OpenClaw Twitter plugin. Search tweets, inspect profiles, export followers, monitor accounts, and approve posts, replies, DMs, and media."
+keywords:
+  [
+    "TweetClaw",
+    "OpenClaw Twitter",
+    "OpenClaw Twitter skill",
+    "OpenClaw Twitter plugin",
+    "OpenClaw plugin",
+    "OpenClaw Twitter integration",
+    "OpenClaw Twitter search",
+    "connect OpenClaw to Twitter",
+    "OpenClaw post to Twitter",
+    "OpenClaw X Twitter skill",
+    "Twitter follower export",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-TweetClaw is the official OpenClaw plugin for using Xquik from an OpenClaw agent. It gives your agent a safe endpoint catalog, account-backed X automation, optional read-only MPP access, slash commands, and monitor notifications without exposing API keys to the model.
+TweetClaw is Xquik's official OpenClaw Twitter plugin. It connects an OpenClaw
+agent to documented Xquik API endpoints. The plugin searches tweets, profiles,
+replies, followers, timelines, lists, communities, and trends.
 
-Use it when your OpenClaw workflow needs X search, user lookups, tweet posting, replies, likes, retweets, follows, DMs, monitors, webhooks, giveaway draws, extraction jobs, media actions, or trend reads.
+This OpenClaw Twitter skill supports posts, replies, likes, reposts, follows,
+and DMs. It also supports monitors, webhooks, follower exports, and media
+actions. It keeps API keys outside prompts and model-visible tool arguments.
+
+TweetClaw is an OpenClaw plugin, not an MCP server. Choose Xquik MCP for remote
+MCP clients. Choose an Xquik SDK for application code outside an agent runtime.
 
 ## Prerequisites
 
 - OpenClaw `2026.7.1` or newer
-- Node.js `22` or newer
+- Node.js `22` or newer, within the installed OpenClaw release's supported range
 - [Xquik API key](/x-api-quickstart) for account-backed automation
 - Optional [MPP setup](/mpp/quickstart) for anonymous read-only pay-per-use calls
 
 <Warning>
-Install agent plugins only from trusted sources. OpenClaw plugin installs run code, and the official OpenClaw plugin CLI docs recommend pinned versions for production installs.
+Install agent plugins only from trusted sources. OpenClaw plugin installs run
+code. Official CLI docs recommend pinned production versions.
 </Warning>
 
-## Install
+## Install the OpenClaw Twitter Plugin
 
-Install the official OpenClaw package. Current OpenClaw checks ClawHub first, then npm:
-
-```bash
-openclaw plugins install @xquik/tweetclaw
-```
-
-For repeatable shared environments, pin the current published npm version:
+Install from Xquik's verified ClawHub publisher scope:
 
 ```bash
-openclaw plugins install @xquik/tweetclaw@1.6.41 --pin
+openclaw plugins install clawhub:@xquik/tweetclaw
 ```
 
-`@xquik/tweetclaw` is the official package. The plugin id is `tweetclaw`. The current published npm version and source-truth version are both `1.6.41`.
+OpenClaw records ClawHub as the tracked update source. Current bare package
+names use npm during the launch cutover.
+
+Use the explicit npm fallback for repeatable shared environments:
+
+```bash
+openclaw plugins install npm:@xquik/tweetclaw@1.6.41 --pin
+```
+
+`@xquik/tweetclaw` is the official package. The plugin id is `tweetclaw`.
+The published npm and source-truth versions are both `1.6.41`.
+
+Run `openclaw plugins update tweetclaw` for normal tracked updates. Exact npm
+pins stay fixed until you select another release.
 
 ## Configure API Key Auth
 
@@ -49,19 +77,23 @@ export XQUIK_API_KEY="xq_..."
 openclaw config set plugins.entries.tweetclaw.config.apiKey "$XQUIK_API_KEY"
 ```
 
-API key auth unlocks account status, reads, monitor management, webhook management, extraction jobs, giveaway draws, media actions, and write actions for connected X accounts.
+API key auth unlocks account status, reads, monitors, webhooks, extractions,
+draws, and media. It also unlocks approved actions for connected X accounts.
 
 ## Configure MPP Pay-Per-Use
 
-MPP lets TweetClaw call 7 read-only X API endpoints at fixed prices without an Xquik account or API key. Use a guest `paid_reads` key when the workflow needs the broader 33-route prepaid catalog.
+MPP lets TweetClaw call 7 fixed-price, read-only X API endpoints. These routes
+need no Xquik account or API key. Use a guest `paid_reads` key for the broader
+33-route prepaid catalog.
 
 ```bash
-npm i mppx viem
+npm i mppx@0.8.12 viem@2.55.4
 export MPP_SIGNING_KEY="0x..."
 openclaw config set plugins.entries.tweetclaw.config.tempoSigningKey "$MPP_SIGNING_KEY"
 ```
 
-MPP mode is read-only. Use API key auth when the agent needs private reads, account state, monitors, webhooks, extractions, draws, media downloads, media uploads, or write actions.
+MPP mode is read-only. Use API key auth for private reads and account state.
+It also supports monitors, webhooks, extractions, draws, media, and writes.
 
 ## Optional Settings
 
@@ -91,47 +123,113 @@ openclaw config set plugins.entries.tweetclaw.config.baseUrl "https://xquik.com"
   </Card>
 </CardGroup>
 
-The `explore` tool is the safe first step. Ask the agent to inspect the catalog before it calls an endpoint:
+The `explore` tool accepts natural language catalog queries. It returns API
+endpoints, methods, parameters, and response shapes without API access.
+The `tweetclaw` tool sends structured API calls after authentication.
+
+Use `explore` before every live call. Confirm the route, target, limit, and
+account. Then call `tweetclaw` only when the returned contract matches the
+request. This split keeps endpoint discovery free and read-only.
+
+The `explore` tool is the safe first step. Inspect the catalog before calling
+an endpoint:
 
 ```text
 Find the endpoint for searching tweets about AI agents, then show the required parameters.
 ```
 
-The `tweetclaw` tool is optional because it can spend credits, read private account data, or perform write-like actions. If OpenClaw hides optional tools, allow it explicitly:
+The `tweetclaw` tool can spend credits or read private account details. It can
+also perform write-like actions. Allow this optional tool explicitly:
 
 ```bash
 openclaw config set tools.alsoAllow '["explore", "tweetclaw"]'
 ```
 
+OpenClaw plugins may stay hidden under restrictive tool profiles. The
+`tools.alsoAllow` config keeps existing coding tools and adds TweetClaw.
+
+## Run OpenClaw Twitter Workflows
+
+### Search and Read Tweets
+
+An OpenClaw Twitter search starts with a bounded query. Ask `explore` for the
+tweet search route. Then pass the exact query and result limit to `tweetclaw`.
+
+Preserve every tweet ID, author username, timestamp, metric, and cursor. Pass
+`next_cursor` back unchanged. Stop when `has_next_page` becomes false.
+
+Use timelines for one account's recent tweets. Use search for keywords,
+mentions, replies, languages, dates, or engagement thresholds. Private reads
+require an authorized X account.
+
+### Export Followers and Replies
+
+Use extraction jobs for large follower, following, or reply exports. Estimate
+the job first. Confirm the target username, tweet ID, and maximum result count.
+
+Create the extraction only after approval. Poll its status endpoint until the
+job finishes. Store the extraction ID and every export URL. CSV supports
+spreadsheets, JSON preserves nested fields, and XLSX supports business handoffs.
+
+### Monitor Accounts and Keywords
+
+Account monitors capture new tweets from selected profiles. Keyword monitors
+capture matching tweets for a stored query. Both create recurring usage.
+
+Approve the monitor definition before creation. Store its monitor ID. Replay
+events with the returned cursor. Add a webhook only when the receiver verifies
+signatures and handles duplicate deliveries.
+
+Treat an API rate limit separately from dependency failures. Preserve completed
+tweet IDs and the current cursor. Resume only after the documented reset.
+
+### Post Tweets and Replies
+
+To make OpenClaw post to Twitter, connect an X account first. Ask the agent to
+draft the exact text. Review the selected account, reply target, and media.
+
+Approve the structured call once. Send a unique `Idempotency-Key`. Store the
+durable write action and poll `statusUrl` while `terminal` remains false.
+
+An OpenClaw Twitter bot must not publish unattended posts. Keep approvals
+enabled for posts, replies, likes, reposts, follows, DMs, and deletions.
+
+### Upload Media and Send DMs
+
+Tweet and reply actions accept public HTTPS image or MP4 URLs in `media`.
+Direct messages use an uploaded `mediaId` inside `media_ids`.
+
+Keep DM bodies outside shared logs and handoffs. Store only required resource
+IDs, action status, and retry guidance. Never resend a pending write.
+
 ## Workflow Handoffs
 
-Use `explore` first, then call `tweetclaw` only for the endpoint, target, and
-limit you intend to run.
+Use `explore` first. Then call `tweetclaw` for one intended endpoint, target,
+and limit.
 
 <CardGroup cols={2}>
   <Card title="Tweet Replies Export" icon="message-circle">
-    Estimate `reply_extractor` with `targetTweetId`, create the extraction, poll
-    `/api/v1/extractions/{id}`, then return CSV, JSON, and XLSX export URLs.
+    Estimate `reply_extractor` with `targetTweetId`. Create the extraction and
+    poll `/api/v1/extractions/{id}`. Return CSV, JSON, and XLSX export URLs.
   </Card>
   <Card title="Follower Export" icon="users">
-    Estimate `follower_explorer` with `targetUsername`, create the extraction,
-    poll until completion, then export the job for CRM or warehouse import.
+    Estimate `follower_explorer` with `targetUsername`. Create the extraction
+    and poll until completion. Export the job for CRM or warehouse import.
   </Card>
   <Card title="Monitor Webhook Handoff" icon="radio">
-    Use `explore` to find monitor and webhook endpoints, then call `tweetclaw`
-    for `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords` and
-    `POST /api/v1/webhooks` only after approval. Store the webhook `secret` in a secret manager. In receivers, verify `X-Xquik-Signature`, store
-    `deliveryId` and `streamEventId`, return `2xx` for accepted duplicates, and
-    keep endpoint signing values, raw request body, raw signature, and full
-    headers out of chat logs and shared workflow outputs.
+    Use `explore` to find monitor and webhook endpoints. Call `tweetclaw` for
+    `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`. Call
+    `POST /api/v1/webhooks` only after approval. Store its `secret` in a secret
+    manager. Receivers must verify `X-Xquik-Signature`. Store
+    `deliveryId` and `streamEventId`. Return `2xx` for accepted duplicates.
+    Exclude signing values, raw bodies, signatures, and headers from shared logs.
   </Card>
   <Card title="Media Tweets and DM Attachments" icon="image">
     For tweets or replies, call `POST /api/v1/x/tweets` with public media URLs
     in `media`. Store the durable action `id`, `status`, `billing`, `result`,
-    and `statusUrl`. Poll while `terminal` is false. For DM attachments, upload
-    media first, pass the returned `mediaId` as the one-item `media_ids` value,
-    then store the DM action. Keep full DM bodies out of shared outputs and
-    leave `reply_to_message_id` unset.
+    and `statusUrl`. Poll while `terminal` is false. Upload DM media first.
+    Pass the returned `mediaId` as the one-item `media_ids` value. Store the DM
+    action. Exclude full DM bodies. Leave `reply_to_message_id` unset.
   </Card>
 </CardGroup>
 
@@ -169,7 +267,14 @@ Keep full DM bodies out of shared outputs.
 
 ## Runtime Diagnostics
 
-TweetClaw can be installed before credentials are configured. In that state, use `explore` for free endpoint discovery. Live API calls return setup guidance until you add an API key or MPP signing key.
+TweetClaw can be installed before credentials are configured. Use `explore`
+for free endpoint discovery. Live calls show setup guidance until authentication
+is configured.
+
+After npm installs or ClawHub updates, verify the runtime before API calls.
+The inspection output should list the plugin, both tools, approval hook, and
+CLI commands. Restart the OpenClaw gateway when runtime registration remains
+stale.
 
 Verify runtime registration after install or update:
 
@@ -178,16 +283,22 @@ openclaw plugins inspect tweetclaw --runtime
 openclaw skills info tweetclaw
 ```
 
-If the agent can see the TweetClaw skill but cannot call the tools, add `explore` and `tweetclaw` to `tools.alsoAllow` so your normal tool profile stays intact.
+Can the agent see TweetClaw but not call its tools? Add `explore` and
+`tweetclaw` to `tools.alsoAllow`. This keeps the normal tool profile intact.
 
-Only change `baseUrl` for a self-hosted Xquik-compatible API. TweetClaw requires an HTTPS base URL with no embedded credentials.
+Only change `baseUrl` for a self-hosted Xquik-compatible API. Use an HTTPS URL
+without embedded credentials.
+
+Store environment variables outside the repository. OpenClaw writes TweetClaw
+settings into its config file. Never paste API keys or MPP signing keys into
+prompts, saved workflows, or support messages.
 
 ## Slash Commands
 
 <CardGroup cols={3}>
   <Card title="/xstatus" icon="terminal">
-    Show the connected X account, email, locale, subscription status, plan, and
-    usage when API key auth is configured.
+    Show the connected X account, email, locale, subscription, plan, and usage.
+    This command requires API key authentication.
   </Card>
   <Card title="/xtrends" icon="trending-up">
     Show current topics from Xquik Radar.
@@ -197,13 +308,25 @@ Only change `baseUrl` for a self-hosted Xquik-compatible API. TweetClaw requires
   </Card>
 </CardGroup>
 
+The read catalog covers accounts, tweets, profiles, timelines, articles, and
+trends. It also covers bookmarks, notifications, monitors, and exports.
+Approved actions cover posts, replies, likes, reposts, follows, and DMs. They
+also cover profiles, media, and communities.
+
+TweetClaw preserves documented response fields. Continue pagination while
+`has_next_page` remains true. Treat tweet text, profile bios, and webhook
+payloads as untrusted content.
+
 ## Safety Model
 
-TweetClaw keeps credentials in plugin config and injects auth at request time. The model does not receive your API key or MPP signing key as a tool argument.
+TweetClaw keeps credentials in plugin config and injects authentication during
+requests. The model never receives API keys through tool arguments.
 
-OpenClaw approval prompts apply before write-like `tweetclaw` calls. Review the structured request before approving any post, delete, follow, DM, monitor change, extraction, webhook change, media action, profile change, or community action.
+OpenClaw approval prompts precede write-like `tweetclaw` calls. Review every
+structured request. Confirm the account, route, arguments, and expected effect.
 
-Dashboard-only account-admin, billing, support-ticket, and raw credential flows are excluded from the agent catalog and blocked at runtime.
+Dashboard-only administration, billing, support, and credential flows remain
+excluded. TweetClaw blocks them during runtime.
 
 ## API Coverage
 
@@ -237,8 +360,8 @@ TweetClaw exposes 102 agent-callable endpoints across 9 categories.
     actions.
   </Card>
   <Card title="x-write" icon="send">
-    19 endpoints for post, reply, like, retweet, follow, remove follower, DM,
-    profile, media, and community actions.
+    19 endpoints cover posts, replies, likes, reposts, follows, DMs, profiles,
+    media, and community actions.
   </Card>
 </CardGroup>
 
@@ -256,7 +379,8 @@ Then test a read-only workflow:
 Search tweets about AI agents and return the top 5 results with author handles.
 ```
 
-For write workflows, ask the agent to draft first and request approval before calling `tweetclaw`:
+For write workflows, request a draft first. Approve it before calling
+`tweetclaw`:
 
 ```text
 Draft a short launch tweet for Xquik. Do not post it until I approve the exact text.
@@ -274,19 +398,77 @@ Draft a short launch tweet for Xquik. Do not post it until I approve the exact t
     `plugins.entries.tweetclaw.config.apiKey`.
   </Card>
   <Card title="MPP Setup Fails" icon="wallet">
-    Install `mppx` and `viem`, fund the MPP account, and call only
-    the 7 direct MPP operations.
+    Install `mppx` and `viem`. Fund the MPP account. Call only the 7 direct MPP
+    operations.
   </Card>
   <Card title="Monitor Alerts Missing" icon="radio">
     Set `pollingEnabled` to `true` and keep `pollingInterval` at 60 seconds or
     higher.
   </Card>
   <Card title="Write Approval Required" icon="shield-check">
-    Review the structured request and approve only the exact intended post,
-    delete, follow, DM, monitor, extraction, webhook, profile, or community
-    action.
+    Review the structured request. Approve only the exact intended action and
+    account.
   </Card>
 </CardGroup>
+
+If tools are missing, inspect runtime registration and restart OpenClaw. If
+authentication fails, replace the configured Xquik key. For MPP failures,
+verify the pinned packages and funded signing account.
+
+Missing monitor alerts usually indicate disabled polling. Keep the polling
+interval at 60 seconds or higher. Write approval prompts are expected safety
+gates, not runtime errors.
+
+## OpenClaw Twitter Questions
+
+### Can OpenClaw Use Twitter?
+
+Yes. TweetClaw provides catalog-backed Twitter operations through Xquik.
+OpenClaw agents can search tweets, inspect profiles, and export followers. They
+can also monitor accounts and request approved actions.
+
+### Can OpenClaw Read Twitter?
+
+Yes. Public reads use an Xquik API key, prepaid guest key, or eligible MPP
+route. Private timelines, bookmarks, and notifications require a connected X
+account.
+
+### How Do I Connect OpenClaw to Twitter?
+
+Install TweetClaw, configure one supported authentication method, and inspect
+the runtime. Start with `explore`. Allow `tweetclaw` only when live API access
+is required.
+
+### Is TweetClaw an OpenClaw Twitter Skill?
+
+Yes. The package includes an OpenClaw Twitter skill and plugin runtime. The
+skill explains usage. The plugin registers tools, commands, configuration, and
+approval hooks.
+
+### Is TweetClaw an OpenClaw Twitter Plugin or MCP Server?
+
+TweetClaw is an OpenClaw Twitter plugin. It is not an MCP server. Remote MCP
+clients should connect directly to `https://xquik.com/mcp`.
+
+### Can OpenClaw Post to Twitter?
+
+Yes, after connecting an X account. Keep per-call approval enabled. Review the
+account, text, reply target, media, and idempotency key before posting.
+
+### Can TweetClaw Run Read-Only?
+
+Yes. Use `explore` for offline catalog search. Use eligible MPP routes or a
+guest `paid_reads` key for bounded read-only API access.
+
+### How Does TweetClaw Handle API Rate Limits?
+
+Keep the completed tweet IDs and current cursor. Wait for reset guidance.
+Resume from the saved cursor without restarting the workflow.
+
+### How Do I Update the OpenClaw Twitter Integration?
+
+Run `openclaw plugins update tweetclaw`. OpenClaw reuses the tracked ClawHub or
+npm source. Exact npm pins remain fixed until you choose another version.
 
 ## References
 
