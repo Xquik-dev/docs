@@ -10558,6 +10558,7 @@ const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
   '<Card title="tweet_action" icon="shield-check">',
   'Call write-like or private endpoints only when `HERMES_TWEET_ENABLE_ACTIONS=true`.',
   'It also bundles a reusable Hermes Twitter skill.',
+  'That reusable skill explains supported tweet and profile workflows.',
   'For an existing Hermes Agent install, use the plugin installer:',
   'Hermes records plugin enablement in `~/.hermes/config.yaml`.',
   'New agent runs read the updated environment after restart.',
