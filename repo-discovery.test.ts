@@ -10337,8 +10337,7 @@ const REQUIRED_COMPOSIO_MIGRATION_SNIPPETS = [
   'sidebarTitle: "Composio Migration"',
   '## Evaluate Composio Alternatives for Twitter MCP',
   'Composio AI connects users to pre-built tools, handles OAuth, and exposes AI tools through MCP.',
-  'Ask, "what is Composio AI?"',
-  'Compare authorization, transport, and execution for your Twitter workflow.',
+  'The question "what is Composio AI?" needs three checks: authorization, transport, and execution.',
   'This guide compares AI workflow tools, not enterprise AI automation.',
   'Platforms for building custom AI agents still need X authorization, tweet fields, and retries.',
   'AI-powered workflow builders change only orchestration.',
@@ -10350,6 +10349,8 @@ const REQUIRED_COMPOSIO_MIGRATION_SNIPPETS = [
   'Record tool calls, API endpoints, and side effects.',
   'Choose unified APIs or a direct REST API.',
   'Test developer experience through SDK typing, logs, documentation, and rollbacks.',
+  'Validate API calls and user profile scope in every AI assisted social media workflow.',
+  'Keep API documentation and production ready rollback steps.',
   'Compare pricing, features, free tier, and white-label consent.',
   'Never choose an automation tool by its free tier alone.',
   'Measure real time claims.',
@@ -10425,6 +10426,7 @@ const FORBIDDEN_COMPOSIO_MIGRATION_SNIPPETS = [
   'Its current session MCP endpoints are not decommissioned.',
   'Compare alternatives to Composio using the exact Twitter workflow being replaced.',
   'No X developer credentials are required.',
+  'Ask, "what is Composio AI?"',
 ] as const;
 
 const REQUIRED_HERMES_TWEET_GUIDE_SNIPPETS = [
