@@ -22,10 +22,14 @@ describe('automatic maximum coverage contract', (): void => {
   });
 
   it('preserves pagination, billing, and legacy behavior', (): void => {
-    expect.assertions(5);
+    expect.assertions(8);
 
     const source = readFileSync(
       'snippets/automatic-coverage-pagination.mdx',
+      'utf8',
+    );
+    const search = readFileSync(
+      'api-reference/x/search-tweets.mdx',
       'utf8',
     );
 
@@ -34,6 +38,9 @@ describe('automatic maximum coverage contract', (): void => {
     expect(source).toContain('Billing still counts only returned rows.');
     expect(source).toContain('Use `mode=standard` only');
     expect(source).toContain('409 coverage_cursor_unavailable');
+    expect(search).toContain('return available automatic rows');
+    expect(search).toContain('Xquik uses standard pagination');
+    expect(search).toContain('never switch sources mid-sequence');
   });
 
   it('keeps OpenAPI and MCP guidance aligned', (): void => {

@@ -104,11 +104,9 @@ info:
     item returned, not per request.
 
 
-    Omit `mode` on Tweet, reply, follower, and following reads. Xquik then
-    merges independent views automatically and returns a resumable cursor.
-    Existing unprefixed cursors and `mode=standard` keep legacy pagination.
-    Explicit `mode=coverage` keeps the one-shot diagnostic response where
-    documented.
+    Omit `mode` for automatic coverage on Tweet, reply, follower, and following
+    reads. Pass cursors unchanged. Unprefixed cursors or `mode=standard` stay
+    legacy.
 
 
     ## Authentication
@@ -3139,6 +3137,9 @@ paths:
       operationId: searchTweets
       summary:
         Search tweets by query, Tweet ID, X status URL, or account date window
+      description: >
+        Fresh no-mode requests return automatic or standard results. Coverage
+        cursors stay atomic.
       tags:
         - Tweets
       security:
@@ -6536,6 +6537,10 @@ paths:
     get:
       operationId: getUserTweets
       summary: List recent tweets posted by a user
+      description: >
+        Omit mode for automatic maximum coverage. Pass next_cursor unchanged.
+        Unprefixed cursors use legacy pagination. Shape and billing stay the
+        same.
       tags:
         - Users
       security:
@@ -6549,11 +6554,7 @@ paths:
           schema:
             type: string
           description: X user ID or username
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for user tweets
+        - $ref: '#/components/parameters/AutomaticCoverageCursor'
         - $ref: '#/components/parameters/ResultPageSize'
         - name: includeReplies
           in: query
@@ -6632,14 +6633,19 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
         '424':
           $ref: '#/components/responses/XApiError'
+        '409':
+          $ref: '#/components/responses/CoverageCursorUnavailable'
+        '503':
+          $ref: '#/components/responses/MaximumCoverageBusy'
 
   /x/users/{id}/replies:
     get:
       operationId: getUserReplies
       summary: List a user's With Replies timeline
       description: >-
-        Returns the user's target-authored posts and replies. Conversation
-        context from other authors is excluded.
+        Returns target-authored posts and replies. Omit mode for automatic
+        maximum coverage. Pass next_cursor unchanged. Unprefixed cursors stay
+        legacy. Excludes other-author context.
       tags:
         - Users
       security:
@@ -6653,11 +6659,7 @@ paths:
           schema:
             type: string
           description: Target user ID or username for the replies timeline.
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for user replies
+        - $ref: '#/components/parameters/AutomaticCoverageCursor'
         - $ref: '#/components/parameters/ResultPageSize'
         - name: includeParentTweet
           in: query
@@ -6730,6 +6732,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
         '424':
           $ref: '#/components/responses/XApiError'
+        '409':
+          $ref: '#/components/responses/CoverageCursorUnavailable'
+        '503':
+          $ref: '#/components/responses/MaximumCoverageBusy'
 
   /x/users/{id}/likes:
     get:
@@ -8759,9 +8765,8 @@ components:
         type: string
         enum: [standard, coverage]
       description: >
-        Omit mode for automatic, resumable maximum coverage. Standard keeps
-        legacy single-view pagination. Coverage keeps the one-shot diagnostic
-        response and rejects cursor input.
+        Omit mode for resumable maximum coverage. Standard keeps legacy
+        pagination. Coverage returns diagnostics once and rejects cursors.
     ReplyPageSize:
       name: pageSize
       in: query
@@ -10666,10 +10671,9 @@ components:
           example: pending
     PaginatedTweets:
       description: >
-        Paginated tweets. No-mode search and reply requests merge independent
-        views automatically. Response fields, requested page size, filters,
-        aliases, and per-returned-row billing stay unchanged. Existing
-        unprefixed cursors retain legacy behavior. Follow next_cursor while
+        No-mode search, user Tweet, user reply, and direct reply reads use
+        automatic coverage. Shape, filters, aliases, and billing stay
+        compatible. Unprefixed cursors remain legacy. Follow next_cursor while
         has_next_page is true. An empty filtered page can still have
         has_next_page true.
       type: object
