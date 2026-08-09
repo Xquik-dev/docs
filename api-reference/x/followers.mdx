@@ -8,6 +8,7 @@ keywords: ["Twitter followers", "get Twitter followers", "Twitter follower track
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.mdx";
+import AutomaticCoveragePagination from "/snippets/automatic-coverage-pagination.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
 <Panel>
@@ -64,6 +65,15 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
     ```
   </Tab>
 
+  <Tab title="409" id="response-x-followers-409">
+    ```json
+    {
+      "error": "coverage_cursor_unavailable",
+      "message": "Cursor expired or busy. Retry once, then restart pagination."
+    }
+    ```
+  </Tab>
+
   <Tab title="424" id="response-x-followers-424">
     ```json
     {
@@ -91,6 +101,15 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
     }
     ```
   </Tab>
+
+  <Tab title="503" id="response-x-followers-503">
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Maximum coverage is busy. Retry shortly."
+    }
+    ```
+  </Tab>
 </Tabs>
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
@@ -104,6 +123,8 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 <Info>
   Get followers returns follower profiles for one X account by username or numeric user ID. It is also useful as a Follower Export API, X followers API, or Twitter followers API. The canonical endpoint remains `GET /api/v1/x/users/{id}/followers`.
 </Info>
+
+<AutomaticCoveragePagination />
 
 <CodeGroup>
   ```bash cURL
@@ -342,7 +363,14 @@ partial.
 ## Query parameters
 
 <ParamField query="cursor" type="string">
-  Opaque pagination cursor from `next_cursor` in the previous response. Omit for the first page.
+  Pass `next_cursor` back unchanged. New Xquik cursors resume automatic
+  coverage. Existing unprefixed cursors keep legacy behavior.
+</ParamField>
+
+<ParamField query="mode" type="string">
+  Optional compatibility override. Omit it for automatic maximum coverage.
+  Use `standard` for legacy single-view pagination. Use `coverage` for a
+  one-shot diagnostic response without cursor pagination.
 </ParamField>
 
 <ParamField query="after" type="string">
@@ -354,7 +382,8 @@ partial.
 </ParamField>
 
 <ParamField query="limit" type="number">
-  Legacy page size alias. Use `pageSize`; when both are present, `pageSize` wins.
+  With `mode=coverage`, set a one-shot cap from `1` through `10000`.
+  Otherwise, this is a legacy page size alias. `pageSize` wins.
 </ParamField>
 
 ## Headers

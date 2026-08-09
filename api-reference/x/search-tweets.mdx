@@ -7,6 +7,7 @@ keywords: ["Twitter search", "advanced Twitter search", "Twitter search API", "s
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
+import AutomaticCoveragePagination from "/snippets/automatic-coverage-pagination.mdx";
 import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-params.mdx";
 
@@ -57,6 +58,15 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
     ```
   </Tab>
 
+  <Tab title="409" id="response-x-search-tweets-409">
+    ```json
+    {
+      "error": "coverage_cursor_unavailable",
+      "message": "Cursor expired or busy. Retry once, then restart pagination."
+    }
+    ```
+  </Tab>
+
   <Tab title="424" id="response-x-search-tweets-424">
     ```json
     {
@@ -81,6 +91,15 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
     {
       "error": "x_api_unavailable",
       "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+  </Tab>
+
+  <Tab title="503" id="response-x-search-tweets-503">
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Maximum coverage is busy. Retry shortly."
     }
     ```
   </Tab>
@@ -112,6 +131,8 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
 <Callout icon="coins" color="#5c3327">
   **1 credit per tweet returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 </Callout>
+
+<AutomaticCoveragePagination />
 
 <CodeGroup>
   ```bash cURL
@@ -230,9 +251,9 @@ For account date windows, `sinceTime` and `untilTime` append `since:` and
 `from:username since:2026-05-01 until:2026-05-02`. Use `queryType=Latest` for
 chronological backfills. Add keywords for ranked search.
 
-For bounded `limit`, bare `q=from:username` with no time params is a user
-timeline pull and returns one page with `has_next_page: false`. Add a search
-term or use `fromUser` with a keyword for search pagination.
+Bare `q=from:username` uses automatic timeline and search coverage. Continue
+when the response includes `next_cursor`. Use `mode=standard` only when an old
+integration requires the legacy single-page timeline behavior.
 
 For exact lookups, a plain Tweet ID or X status URL in `q` returns that tweet
 when available. Send no cursor on the first lookup; cursor requests return an
@@ -296,8 +317,15 @@ Tweet search costs 1 credit per tweet returned. Low credit balances can return f
   Sort order for search results. `Top` returns most relevant tweets, `Latest` returns most recent. Defaults to `Latest`.
 </ParamField>
 
+<ParamField query="mode" type="string">
+  Optional compatibility override. Omit it for automatic maximum coverage.
+  Use `standard` for legacy single-view pagination. Use `coverage` for a
+  one-shot diagnostic response without cursor pagination.
+</ParamField>
+
 <ParamField query="cursor" type="string">
-  Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
+  Pass `next_cursor` back unchanged. New Xquik cursors resume automatic
+  coverage. Existing unprefixed cursors keep legacy behavior.
 </ParamField>
 
 <ParamField query="sinceTime" type="string">
@@ -309,9 +337,8 @@ Tweet search costs 1 credit per tweet returned. Low credit balances can return f
 </ParamField>
 
 <ParamField query="limit" type="integer">
-  Maximum number of tweets to collect in one bounded request (1-200). If the
-  response includes `has_next_page: true`, keep the same `limit` when continuing
-  with `cursor`.
+  Maximum Tweets requested per automatic page. Use `1` through `10000`.
+  A page can return fewer. Keep the same limit when continuing with `cursor`.
 </ParamField>
 
 ### Structured filters

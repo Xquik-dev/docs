@@ -65,7 +65,7 @@ info:
     search operators, structured filters like fromUser, mediaType, minFaves,
     hashtags, and verifiedOnly, plus exact lookup for a pasted Tweet ID or X
     status URL. Plain from:user date windows are optimized for timeline
-    completeness. Returns up to 200 tweets per page with cursor-based
+    completeness. Omit mode for automatic maximum coverage with cursor-based
     pagination. Cost: $0.00015 per tweet returned.
 
 
@@ -102,6 +102,13 @@ info:
     `has_more` and `next_cursor`. Pass the cursor back as `?cursor={cursor}`;
     legacy `?after={cursor}` still works. Dynamic-priced endpoints charge per
     item returned, not per request.
+
+
+    Omit `mode` on Tweet, reply, follower, and following reads. Xquik then
+    merges independent views automatically and returns a resumable cursor.
+    Existing unprefixed cursors and `mode=standard` keep legacy pagination.
+    Explicit `mode=coverage` keeps the one-shot diagnostic response where
+    documented.
 
 
     ## Authentication
@@ -1888,203 +1895,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [toolType]
-              properties:
-                toolType:
-                  $ref: '#/components/schemas/ExtractionToolType'
-                  example: follower_explorer
-                targetTweetId:
-                  type: string
-                  example: '1234567890'
-                targetUsername:
-                  type: string
-                  example: elonmusk
-                targetCommunityId:
-                  type: string
-                  description:
-                    Required for community_post_extractor & community_search.
-                  example: '1500000000000000000'
-                targetListId:
-                  type: string
-                  description:
-                    Required for list_follower_explorer, list_member_extractor &
-                    list_post_extractor.
-                  example: '1234567890'
-                targetSpaceId:
-                  type: string
-                  description: Required for space_explorer.
-                  example: '1vOGwMdBqpwGB'
-                resultsLimit:
-                  type: integer
-                  description:
-                    Maximum number of results to extract. When set, the
-                    extraction stops after reaching this limit.
-                  example: 1000
-                searchQuery:
-                  type: string
-                  description:
-                    Required for tweet_search_extractor & community_search.
-                  example: 'AI trends 2025'
-                fromUser:
-                  type: string
-                  description:
-                    Filter by author username (tweet_search_extractor)
-                  example: nasa
-                toUser:
-                  type: string
-                  description:
-                    Filter replies sent to a username (tweet_search_extractor)
-                  example: openai
-                mentioning:
-                  type: string
-                  description:
-                    Filter tweets mentioning a username (tweet_search_extractor)
-                  example: example_user
-                language:
-                  type: string
-                  description: Language code filter (tweet_search_extractor)
-                  example: en
-                sinceDate:
-                  type: string
-                  format: date
-                  description: Start date YYYY-MM-DD (tweet_search_extractor)
-                  example: '2025-01-01'
-                untilDate:
-                  type: string
-                  format: date
-                  description: End date YYYY-MM-DD (tweet_search_extractor)
-                  example: '2025-12-31'
-                mediaType:
-                  type: string
-                  enum: [images, videos, gifs, media, links, none]
-                  description: Media type filter (tweet_search_extractor)
-                  example: images
-                minFaves:
-                  type: integer
-                  minimum: 0
-                  description: Minimum likes threshold (tweet_search_extractor)
-                  example: 10
-                minRetweets:
-                  type: integer
-                  minimum: 0
-                  description:
-                    Minimum retweets threshold (tweet_search_extractor)
-                  example: 5
-                minReplies:
-                  type: integer
-                  minimum: 0
-                  description:
-                    Minimum replies threshold (tweet_search_extractor)
-                  example: 3
-                minQuotes:
-                  type: integer
-                  minimum: 0
-                  description:
-                    Minimum quote count threshold (tweet_search_extractor)
-                  example: 2
-                verifiedOnly:
-                  type: boolean
-                  description: Only verified authors (tweet_search_extractor)
-                  example: false
-                replies:
-                  type: string
-                  enum: [include, exclude, only]
-                  description: Reply mode (tweet_search_extractor)
-                  example: include
-                retweets:
-                  type: string
-                  enum: [include, exclude, only]
-                  description: Retweet mode (tweet_search_extractor)
-                  example: exclude
-                quotes:
-                  type: string
-                  enum: [include, exclude, only]
-                  description: Quote mode (tweet_search_extractor)
-                  example: include
-                exactPhrase:
-                  type: string
-                  description: Exact phrase to match (tweet_search_extractor)
-                  example: 'artificial intelligence'
-                excludeWords:
-                  type: string
-                  description:
-                    Words or quoted phrases to exclude. Separate with spaces,
-                    commas, or lines. (tweet_search_extractor)
-                  example: 'spam'
-                anyWords:
-                  type: string
-                  description:
-                    Words or quoted phrases where any one can match. Separate
-                    with spaces, commas, or lines. (tweet_search_extractor)
-                  example: 'ChatGPT AI model'
-                hashtags:
-                  type: string
-                  description:
-                    Hashtags separated by spaces, commas, or lines.
-                    (tweet_search_extractor)
-                  example: '#AI startups'
-                cashtags:
-                  type: string
-                  description:
-                    Cashtags separated by spaces, commas, or lines.
-                    (tweet_search_extractor)
-                  example: '$TSLA $NVDA'
-                url:
-                  type: string
-                  description:
-                    URL substring or domain filter (tweet_search_extractor)
-                  example: example.com
-                conversationId:
-                  type: string
-                  description: Conversation ID filter (tweet_search_extractor)
-                  example: '1234567890'
-                inReplyToTweetId:
-                  type: string
-                  description:
-                    Only replies to this tweet ID (tweet_search_extractor)
-                  example: '1234567890'
-                quotesOfTweetId:
-                  type: string
-                  description:
-                    Only quotes of this tweet ID (tweet_search_extractor)
-                  example: '1234567890'
-                retweetsOfTweetId:
-                  type: string
-                  description:
-                    Only retweets of this tweet ID (tweet_search_extractor)
-                  example: '1234567890'
-                listId:
-                  type: string
-                  description: Search within a list ID (tweet_search_extractor)
-                  example: '1234567890'
-                place:
-                  type: string
-                  description: Search within a place ID (tweet_search_extractor)
-                  example: '96683cc9126741d1'
-                placeCountry:
-                  type: string
-                  description:
-                    Search within a country code (tweet_search_extractor)
-                  example: US
-                pointRadius:
-                  type: string
-                  description:
-                    Geo point radius, e.g. -73.99 40.73 25mi
-                    (tweet_search_extractor)
-                  example: '-73.99 40.73 25mi'
-                boundingBox:
-                  type: string
-                  description:
-                    Geo bounding box, e.g. -74.1 40.6 -73.9 40.8
-                    (tweet_search_extractor)
-                  example: '-74.1 40.6 -73.9 40.8'
-                advancedQuery:
-                  type: string
-                  description:
-                    Raw advanced search query appended as-is
-                    (tweet_search_extractor)
-                  example: 'min_faves:100'
+              $ref: '#/components/schemas/ExtractionRequest'
             example:
               toolType: follower_explorer
               targetUsername: elonmusk
@@ -2175,236 +1986,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [toolType]
-              properties:
-                toolType:
-                  $ref: '#/components/schemas/ExtractionToolType'
-                  example: follower_explorer
-                targetTweetId:
-                  type: string
-                  example: '1234567890'
-                targetUsername:
-                  type: string
-                  example: elonmusk
-                targetCommunityId:
-                  type: string
-                  description:
-                    Community ID used to price community_post_extractor or
-                    community_search.
-                  example: '1500000000000000000'
-                targetListId:
-                  type: string
-                  description:
-                    List ID used to price list_follower_explorer,
-                    list_member_extractor, or list_post_extractor.
-                  example: '1234567890'
-                targetSpaceId:
-                  type: string
-                  description: Space ID used to price space_explorer.
-                  example: '1vOGwMdBqpwGB'
-                resultsLimit:
-                  type: integer
-                  description:
-                    Maximum number of results to estimate. When set, the
-                    estimate caps projected results to this value.
-                  example: 1000
-                searchQuery:
-                  type: string
-                  description:
-                    Query used to price tweet_search_extractor or
-                    community_search.
-                  example: 'AI trends 2025'
-                fromUser:
-                  type: string
-                  description:
-                    Estimate only tweets from this author username
-                    (tweet_search_extractor)
-                  example: nasa
-                toUser:
-                  type: string
-                  description:
-                    Estimate replies sent to this username
-                    (tweet_search_extractor)
-                  example: openai
-                mentioning:
-                  type: string
-                  description:
-                    Estimate tweets mentioning this username
-                    (tweet_search_extractor)
-                  example: example_user
-                language:
-                  type: string
-                  description:
-                    Language code used for estimate filtering
-                    (tweet_search_extractor)
-                  example: en
-                sinceDate:
-                  type: string
-                  format: date
-                  description:
-                    Estimate start date in YYYY-MM-DD format
-                    (tweet_search_extractor)
-                  example: '2025-01-01'
-                untilDate:
-                  type: string
-                  format: date
-                  description:
-                    Estimate end date in YYYY-MM-DD format
-                    (tweet_search_extractor)
-                  example: '2025-12-31'
-                mediaType:
-                  type: string
-                  enum: [images, videos, gifs, media, links, none]
-                  description:
-                    Media type used for estimate filtering
-                    (tweet_search_extractor)
-                  example: images
-                minFaves:
-                  type: integer
-                  minimum: 0
-                  description:
-                    Minimum likes threshold for estimated results
-                    (tweet_search_extractor)
-                  example: 10
-                minRetweets:
-                  type: integer
-                  minimum: 0
-                  description:
-                    Minimum retweets threshold for estimated results
-                    (tweet_search_extractor)
-                  example: 5
-                minReplies:
-                  type: integer
-                  minimum: 0
-                  description:
-                    Minimum replies threshold for estimated results
-                    (tweet_search_extractor)
-                  example: 3
-                minQuotes:
-                  type: integer
-                  minimum: 0
-                  description:
-                    Minimum quote count threshold for estimated results
-                    (tweet_search_extractor)
-                  example: 2
-                verifiedOnly:
-                  type: boolean
-                  description:
-                    Estimate only verified authors (tweet_search_extractor)
-                  example: false
-                replies:
-                  type: string
-                  enum: [include, exclude, only]
-                  description:
-                    Reply mode used for estimation (tweet_search_extractor)
-                  example: include
-                retweets:
-                  type: string
-                  enum: [include, exclude, only]
-                  description:
-                    Retweet mode used for estimation (tweet_search_extractor)
-                  example: exclude
-                quotes:
-                  type: string
-                  enum: [include, exclude, only]
-                  description:
-                    Quote mode used for estimation (tweet_search_extractor)
-                  example: include
-                exactPhrase:
-                  type: string
-                  description: Exact phrase filter for search estimation
-                  example: 'artificial intelligence'
-                excludeWords:
-                  type: string
-                  description:
-                    Words or quoted phrases excluded from estimated results.
-                    Separate with spaces, commas, or lines.
-                  example: 'spam'
-                anyWords:
-                  type: string
-                  description:
-                    Alternative words or quoted phrases for estimated results.
-                    Separate with spaces, commas, or lines.
-                  example: 'ChatGPT AI model'
-                hashtags:
-                  type: string
-                  description:
-                    Hashtags applied to the estimate, separated by spaces,
-                    commas, or lines.
-                  example: '#AI startups'
-                cashtags:
-                  type: string
-                  description:
-                    Cashtags applied to the estimate, separated by spaces,
-                    commas, or lines.
-                  example: '$TSLA $NVDA'
-                url:
-                  type: string
-                  description:
-                    URL substring or domain filter used for estimation
-                    (tweet_search_extractor)
-                  example: example.com
-                conversationId:
-                  type: string
-                  description:
-                    Conversation ID filter used for estimation
-                    (tweet_search_extractor)
-                  example: '1234567890'
-                inReplyToTweetId:
-                  type: string
-                  description:
-                    Estimate only replies to this tweet ID
-                    (tweet_search_extractor)
-                  example: '1234567890'
-                quotesOfTweetId:
-                  type: string
-                  description:
-                    Estimate only quotes of this tweet ID
-                    (tweet_search_extractor)
-                  example: '1234567890'
-                retweetsOfTweetId:
-                  type: string
-                  description:
-                    Estimate only retweets of this tweet ID
-                    (tweet_search_extractor)
-                  example: '1234567890'
-                listId:
-                  type: string
-                  description:
-                    Estimate search results within this list ID
-                    (tweet_search_extractor)
-                  example: '1234567890'
-                place:
-                  type: string
-                  description:
-                    Estimate search results within this place ID
-                    (tweet_search_extractor)
-                  example: '96683cc9126741d1'
-                placeCountry:
-                  type: string
-                  description:
-                    Estimate search results within this country code
-                    (tweet_search_extractor)
-                  example: US
-                pointRadius:
-                  type: string
-                  description:
-                    Geo point radius used for estimation, e.g. -73.99 40.73 25mi
-                    (tweet_search_extractor)
-                  example: '-73.99 40.73 25mi'
-                boundingBox:
-                  type: string
-                  description:
-                    Geo bounding box used for estimation, e.g. -74.1 40.6 -73.9
-                    40.8 (tweet_search_extractor)
-                  example: '-74.1 40.6 -73.9 40.8'
-                advancedQuery:
-                  type: string
-                  description:
-                    Raw advanced query string appended to the estimate
-                    (tweet_search_extractor)
-                  example: 'min_faves:100'
+              $ref: '#/components/schemas/ExtractionRequest'
             example:
               toolType: follower_explorer
               targetUsername: elonmusk
@@ -2442,6 +2024,7 @@ paths:
                       [
                         followers,
                         following,
+                        collection,
                         paginationCap,
                         posts,
                         quoteCount,
@@ -2495,6 +2078,34 @@ paths:
             maximum: 1000
             default: 100
         - $ref: '#/components/parameters/After'
+        - name: outputMode
+          in: query
+          description: Select compact, full, or raw-compatible result fields.
+          schema:
+            type: string
+            enum: [compact, full, raw]
+            default: full
+        - name: outputPreset
+          in: query
+          description: Keep enrichment nested or merge it into each result.
+          schema:
+            type: string
+            enum: [nested, flat]
+            default: nested
+        - name: fieldStyle
+          in: query
+          description: Preserve source keys or convert result field names.
+          schema:
+            type: string
+            enum: [source, camelCase, snake_case]
+            default: source
+        - name: includeRaw
+          in: query
+          deprecated: true
+          description: Use outputMode=raw instead.
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: Extraction job with results
@@ -2534,6 +2145,8 @@ paths:
                   status: completed
                 results: []
                 hasMore: false
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -2563,6 +2176,78 @@ paths:
           schema:
             type: string
             enum: [csv, json, md, md-document, pdf, txt, xlsx]
+        - name: minFollowers
+          in: query
+          schema: { type: integer }
+          description: Minimum follower count.
+        - name: maxFollowers
+          in: query
+          schema: { type: integer }
+          description: Maximum follower count.
+        - name: minFollowing
+          in: query
+          schema: { type: integer }
+          description: Minimum following count.
+        - name: maxFollowing
+          in: query
+          schema: { type: integer }
+          description: Maximum following count.
+        - name: minPosts
+          in: query
+          schema: { type: integer }
+          description: Minimum post count.
+        - name: maxPosts
+          in: query
+          schema: { type: integer }
+          description: Maximum post count.
+        - name: minLikes
+          in: query
+          schema: { type: integer }
+          description: Minimum like count.
+        - name: minReplies
+          in: query
+          schema: { type: integer }
+          description: Minimum reply count.
+        - name: minRetweets
+          in: query
+          schema: { type: integer }
+          description: Minimum repost count.
+        - name: minViews
+          in: query
+          schema: { type: integer }
+          description: Minimum view count.
+        - name: hasDescription
+          in: query
+          schema: { type: boolean }
+          description: Require a non-empty description.
+        - name: hasLocation
+          in: query
+          schema: { type: boolean }
+          description: Require a non-empty location.
+        - name: hasMedia
+          in: query
+          schema: { type: boolean }
+          description: Require media.
+        - name: verified
+          in: query
+          schema: { type: boolean }
+          description: Filter by verified status.
+        - name: lang
+          in: query
+          schema: { type: string }
+          description: Filter by language code.
+        - name: search
+          in: query
+          schema: { type: string }
+          description: Search exported result text.
+        - name: sinceDate
+          in: query
+          schema: { type: string, format: date }
+          description: Include results on or after this date.
+        - name: untilDate
+          in: query
+          schema: { type: string, format: date }
+          description: Include results on or before this date.
       responses:
         '200':
           description: Exported file
@@ -3201,7 +2886,9 @@ paths:
           description: Comma-separated tweet IDs (max 100)
       responses:
         '200':
-          description: List of tweets
+          description: >-
+            Requested tweets in request order. Partial successful reads recheck
+            unresolved IDs once.
           content:
             application/json:
               schema:
@@ -3222,8 +2909,8 @@ paths:
                       username: 'elonmusk'
                       name: 'Elon Musk'
                       verified: true
-                has_next_page: true
-                next_cursor: 'DAACCgACGRElMJcAAA'
+                has_next_page: false
+                next_cursor: ''
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -3474,11 +3161,8 @@ paths:
             default: Latest
           description:
             Sort order - Latest (chronological) or Top (engagement-ranked)
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor from previous response
+        - $ref: '#/components/parameters/AutomaticCoverageMode'
+        - $ref: '#/components/parameters/AutomaticCoverageCursor'
         - name: sinceTime
           in: query
           schema:
@@ -3494,13 +3178,13 @@ paths:
           required: false
           schema:
             type: integer
-            default: 20
-            maximum: 200
+            minimum: 1
+            maximum: 10000
           description: >
-            Max tweets to return (server paginates internally). Omit for single
-            page (~20). This is an upper bound for paid authenticated calls:
-            remaining credits can reduce the returned page size, and zero
-            affordable results returns 402 insufficient_credits.
+            Result upper bound. Omit it for the existing 20-row page size.
+            Explicit coverage defaults to 2000 and allows 10000. For paid
+            requests, remaining credits can reduce results. Zero affordable
+            results returns 402.
         - $ref: '#/components/parameters/TweetFilterFromUser'
         - $ref: '#/components/parameters/TweetFilterToUser'
         - $ref: '#/components/parameters/TweetFilterMentioning'
@@ -3512,6 +3196,25 @@ paths:
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
+        - $ref: '#/components/parameters/TweetFilterMinViews'
+        - $ref: '#/components/parameters/TweetFilterMinBookmarks'
+        - $ref: '#/components/parameters/TweetFilterMaxFaves'
+        - $ref: '#/components/parameters/TweetFilterMaxRetweets'
+        - $ref: '#/components/parameters/TweetFilterMaxReplies'
+        - $ref: '#/components/parameters/TweetFilterMaxQuotes'
+        - $ref: '#/components/parameters/TweetFilterBlueVerifiedOnly'
+        - $ref: '#/components/parameters/TweetFilterCardName'
+        - $ref: '#/components/parameters/TweetFilterSource'
+        - $ref: '#/components/parameters/TweetFilterExcludeSource'
+        - $ref: '#/components/parameters/TweetFilterGeocode'
+        - $ref: '#/components/parameters/TweetFilterSinceId'
+        - $ref: '#/components/parameters/TweetFilterMaxId'
+        - $ref: '#/components/parameters/TweetFilterNear'
+        - $ref: '#/components/parameters/TweetFilterWithin'
+        - $ref: '#/components/parameters/TweetFilterWithinTime'
+        - $ref: '#/components/parameters/TweetFilterNativeRetweets'
+        - $ref: '#/components/parameters/TweetFilterSafe'
+        - $ref: '#/components/parameters/TweetFilterNews'
         - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
         - $ref: '#/components/parameters/TweetFilterReplies'
         - $ref: '#/components/parameters/TweetFilterRetweets'
@@ -3538,7 +3241,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedTweets'
+                oneOf:
+                  - $ref: '#/components/schemas/PaginatedTweets'
+                  - $ref: '#/components/schemas/TweetSearchCoverageResponse'
               example:
                 tweets:
                   - id: '1234567890'
@@ -3575,6 +3280,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
         '424':
           $ref: '#/components/responses/XApiError'
+        '409':
+          $ref: '#/components/responses/CoverageCursorUnavailable'
+        '503':
+          $ref: '#/components/responses/MaximumCoverageBusy'
 
   /x/articles/{tweetId}:
     get:
@@ -4127,6 +3836,20 @@ paths:
           schema:
             type: string
           description: Pagination cursor for user search
+        - $ref: '#/components/parameters/UserFilterMinFollowers'
+        - $ref: '#/components/parameters/UserFilterMaxFollowers'
+        - $ref: '#/components/parameters/UserFilterMinFollowing'
+        - $ref: '#/components/parameters/UserFilterMaxFollowing'
+        - $ref: '#/components/parameters/UserFilterMinStatuses'
+        - $ref: '#/components/parameters/UserFilterMaxStatuses'
+        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
+        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
+        - $ref: '#/components/parameters/UserFilterVerifiedType'
+        - $ref: '#/components/parameters/UserFilterHasWebsite'
+        - $ref: '#/components/parameters/UserFilterHasLocation'
+        - $ref: '#/components/parameters/UserFilterBioContains'
+        - $ref: '#/components/parameters/UserFilterLocationContains'
+        - $ref: '#/components/parameters/UserFilterUsernameContains'
       responses:
         '200':
           description: User search results
@@ -6775,6 +6498,20 @@ paths:
             type: string
           description: Pagination cursor for favoriters
         - $ref: '#/components/parameters/FollowerPageSize'
+        - $ref: '#/components/parameters/UserFilterMinFollowers'
+        - $ref: '#/components/parameters/UserFilterMaxFollowers'
+        - $ref: '#/components/parameters/UserFilterMinFollowing'
+        - $ref: '#/components/parameters/UserFilterMaxFollowing'
+        - $ref: '#/components/parameters/UserFilterMinStatuses'
+        - $ref: '#/components/parameters/UserFilterMaxStatuses'
+        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
+        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
+        - $ref: '#/components/parameters/UserFilterVerifiedType'
+        - $ref: '#/components/parameters/UserFilterHasWebsite'
+        - $ref: '#/components/parameters/UserFilterHasLocation'
+        - $ref: '#/components/parameters/UserFilterBioContains'
+        - $ref: '#/components/parameters/UserFilterLocationContains'
+        - $ref: '#/components/parameters/UserFilterUsernameContains'
       responses:
         '200':
           description: Visible users who liked the tweet
@@ -6841,6 +6578,25 @@ paths:
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
+        - $ref: '#/components/parameters/TweetFilterMinViews'
+        - $ref: '#/components/parameters/TweetFilterMinBookmarks'
+        - $ref: '#/components/parameters/TweetFilterMaxFaves'
+        - $ref: '#/components/parameters/TweetFilterMaxRetweets'
+        - $ref: '#/components/parameters/TweetFilterMaxReplies'
+        - $ref: '#/components/parameters/TweetFilterMaxQuotes'
+        - $ref: '#/components/parameters/TweetFilterBlueVerifiedOnly'
+        - $ref: '#/components/parameters/TweetFilterCardName'
+        - $ref: '#/components/parameters/TweetFilterSource'
+        - $ref: '#/components/parameters/TweetFilterExcludeSource'
+        - $ref: '#/components/parameters/TweetFilterGeocode'
+        - $ref: '#/components/parameters/TweetFilterSinceId'
+        - $ref: '#/components/parameters/TweetFilterMaxId'
+        - $ref: '#/components/parameters/TweetFilterNear'
+        - $ref: '#/components/parameters/TweetFilterWithin'
+        - $ref: '#/components/parameters/TweetFilterWithinTime'
+        - $ref: '#/components/parameters/TweetFilterNativeRetweets'
+        - $ref: '#/components/parameters/TweetFilterSafe'
+        - $ref: '#/components/parameters/TweetFilterNews'
         - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
         - $ref: '#/components/parameters/TweetFilterReplies'
         - $ref: '#/components/parameters/TweetFilterRetweets'
@@ -6881,7 +6637,9 @@ paths:
     get:
       operationId: getUserReplies
       summary: List a user's With Replies timeline
-      description: Returns the user's timeline with replies included by default.
+      description: >-
+        Returns the user's target-authored posts and replies. Conversation
+        context from other authors is excluded.
       tags:
         - Users
       security:
@@ -6918,6 +6676,25 @@ paths:
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
+        - $ref: '#/components/parameters/TweetFilterMinViews'
+        - $ref: '#/components/parameters/TweetFilterMinBookmarks'
+        - $ref: '#/components/parameters/TweetFilterMaxFaves'
+        - $ref: '#/components/parameters/TweetFilterMaxRetweets'
+        - $ref: '#/components/parameters/TweetFilterMaxReplies'
+        - $ref: '#/components/parameters/TweetFilterMaxQuotes'
+        - $ref: '#/components/parameters/TweetFilterBlueVerifiedOnly'
+        - $ref: '#/components/parameters/TweetFilterCardName'
+        - $ref: '#/components/parameters/TweetFilterSource'
+        - $ref: '#/components/parameters/TweetFilterExcludeSource'
+        - $ref: '#/components/parameters/TweetFilterGeocode'
+        - $ref: '#/components/parameters/TweetFilterSinceId'
+        - $ref: '#/components/parameters/TweetFilterMaxId'
+        - $ref: '#/components/parameters/TweetFilterNear'
+        - $ref: '#/components/parameters/TweetFilterWithin'
+        - $ref: '#/components/parameters/TweetFilterWithinTime'
+        - $ref: '#/components/parameters/TweetFilterNativeRetweets'
+        - $ref: '#/components/parameters/TweetFilterSafe'
+        - $ref: '#/components/parameters/TweetFilterNews'
         - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
         - $ref: '#/components/parameters/TweetFilterReplies'
         - $ref: '#/components/parameters/TweetFilterRetweets'
@@ -6988,6 +6765,25 @@ paths:
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
+        - $ref: '#/components/parameters/TweetFilterMinViews'
+        - $ref: '#/components/parameters/TweetFilterMinBookmarks'
+        - $ref: '#/components/parameters/TweetFilterMaxFaves'
+        - $ref: '#/components/parameters/TweetFilterMaxRetweets'
+        - $ref: '#/components/parameters/TweetFilterMaxReplies'
+        - $ref: '#/components/parameters/TweetFilterMaxQuotes'
+        - $ref: '#/components/parameters/TweetFilterBlueVerifiedOnly'
+        - $ref: '#/components/parameters/TweetFilterCardName'
+        - $ref: '#/components/parameters/TweetFilterSource'
+        - $ref: '#/components/parameters/TweetFilterExcludeSource'
+        - $ref: '#/components/parameters/TweetFilterGeocode'
+        - $ref: '#/components/parameters/TweetFilterSinceId'
+        - $ref: '#/components/parameters/TweetFilterMaxId'
+        - $ref: '#/components/parameters/TweetFilterNear'
+        - $ref: '#/components/parameters/TweetFilterWithin'
+        - $ref: '#/components/parameters/TweetFilterWithinTime'
+        - $ref: '#/components/parameters/TweetFilterNativeRetweets'
+        - $ref: '#/components/parameters/TweetFilterSafe'
+        - $ref: '#/components/parameters/TweetFilterNews'
         - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
         - $ref: '#/components/parameters/TweetFilterReplies'
         - $ref: '#/components/parameters/TweetFilterRetweets'
@@ -7058,6 +6854,25 @@ paths:
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
+        - $ref: '#/components/parameters/TweetFilterMinViews'
+        - $ref: '#/components/parameters/TweetFilterMinBookmarks'
+        - $ref: '#/components/parameters/TweetFilterMaxFaves'
+        - $ref: '#/components/parameters/TweetFilterMaxRetweets'
+        - $ref: '#/components/parameters/TweetFilterMaxReplies'
+        - $ref: '#/components/parameters/TweetFilterMaxQuotes'
+        - $ref: '#/components/parameters/TweetFilterBlueVerifiedOnly'
+        - $ref: '#/components/parameters/TweetFilterCardName'
+        - $ref: '#/components/parameters/TweetFilterSource'
+        - $ref: '#/components/parameters/TweetFilterExcludeSource'
+        - $ref: '#/components/parameters/TweetFilterGeocode'
+        - $ref: '#/components/parameters/TweetFilterSinceId'
+        - $ref: '#/components/parameters/TweetFilterMaxId'
+        - $ref: '#/components/parameters/TweetFilterNear'
+        - $ref: '#/components/parameters/TweetFilterWithin'
+        - $ref: '#/components/parameters/TweetFilterWithinTime'
+        - $ref: '#/components/parameters/TweetFilterNativeRetweets'
+        - $ref: '#/components/parameters/TweetFilterSafe'
+        - $ref: '#/components/parameters/TweetFilterNews'
         - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
         - $ref: '#/components/parameters/TweetFilterReplies'
         - $ref: '#/components/parameters/TweetFilterRetweets'
@@ -7117,6 +6932,20 @@ paths:
             type: string
           description: Pagination cursor for followers-you-know
         - $ref: '#/components/parameters/FollowerPageSize'
+        - $ref: '#/components/parameters/UserFilterMinFollowers'
+        - $ref: '#/components/parameters/UserFilterMaxFollowers'
+        - $ref: '#/components/parameters/UserFilterMinFollowing'
+        - $ref: '#/components/parameters/UserFilterMaxFollowing'
+        - $ref: '#/components/parameters/UserFilterMinStatuses'
+        - $ref: '#/components/parameters/UserFilterMaxStatuses'
+        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
+        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
+        - $ref: '#/components/parameters/UserFilterVerifiedType'
+        - $ref: '#/components/parameters/UserFilterHasWebsite'
+        - $ref: '#/components/parameters/UserFilterHasLocation'
+        - $ref: '#/components/parameters/UserFilterBioContains'
+        - $ref: '#/components/parameters/UserFilterLocationContains'
+        - $ref: '#/components/parameters/UserFilterUsernameContains'
       responses:
         '200':
           description: List of mutual followers
@@ -7678,6 +7507,20 @@ paths:
             Items per page (20-200, default 20). This is an upper bound for paid
             authenticated calls: remaining credits can reduce the returned page
             size, and zero affordable results returns 402 insufficient_credits.
+        - $ref: '#/components/parameters/UserFilterMinFollowers'
+        - $ref: '#/components/parameters/UserFilterMaxFollowers'
+        - $ref: '#/components/parameters/UserFilterMinFollowing'
+        - $ref: '#/components/parameters/UserFilterMaxFollowing'
+        - $ref: '#/components/parameters/UserFilterMinStatuses'
+        - $ref: '#/components/parameters/UserFilterMaxStatuses'
+        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
+        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
+        - $ref: '#/components/parameters/UserFilterVerifiedType'
+        - $ref: '#/components/parameters/UserFilterHasWebsite'
+        - $ref: '#/components/parameters/UserFilterHasLocation'
+        - $ref: '#/components/parameters/UserFilterBioContains'
+        - $ref: '#/components/parameters/UserFilterLocationContains'
+        - $ref: '#/components/parameters/UserFilterUsernameContains'
       responses:
         '200':
           description: List of community members
@@ -7722,6 +7565,20 @@ paths:
           schema:
             type: string
           description: Pagination cursor for community moderators
+        - $ref: '#/components/parameters/UserFilterMinFollowers'
+        - $ref: '#/components/parameters/UserFilterMaxFollowers'
+        - $ref: '#/components/parameters/UserFilterMinFollowing'
+        - $ref: '#/components/parameters/UserFilterMaxFollowing'
+        - $ref: '#/components/parameters/UserFilterMinStatuses'
+        - $ref: '#/components/parameters/UserFilterMaxStatuses'
+        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
+        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
+        - $ref: '#/components/parameters/UserFilterVerifiedType'
+        - $ref: '#/components/parameters/UserFilterHasWebsite'
+        - $ref: '#/components/parameters/UserFilterHasLocation'
+        - $ref: '#/components/parameters/UserFilterBioContains'
+        - $ref: '#/components/parameters/UserFilterLocationContains'
+        - $ref: '#/components/parameters/UserFilterUsernameContains'
       responses:
         '200':
           description: List of community moderators
@@ -7929,6 +7786,20 @@ paths:
             type: string
           description: Pagination cursor for list followers
         - $ref: '#/components/parameters/FollowerPageSize'
+        - $ref: '#/components/parameters/UserFilterMinFollowers'
+        - $ref: '#/components/parameters/UserFilterMaxFollowers'
+        - $ref: '#/components/parameters/UserFilterMinFollowing'
+        - $ref: '#/components/parameters/UserFilterMaxFollowing'
+        - $ref: '#/components/parameters/UserFilterMinStatuses'
+        - $ref: '#/components/parameters/UserFilterMaxStatuses'
+        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
+        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
+        - $ref: '#/components/parameters/UserFilterVerifiedType'
+        - $ref: '#/components/parameters/UserFilterHasWebsite'
+        - $ref: '#/components/parameters/UserFilterHasLocation'
+        - $ref: '#/components/parameters/UserFilterBioContains'
+        - $ref: '#/components/parameters/UserFilterLocationContains'
+        - $ref: '#/components/parameters/UserFilterUsernameContains'
       responses:
         '200':
           description: List of followers
@@ -7981,6 +7852,20 @@ paths:
             maximum: 200
             default: 20
           description: Members per page (20-200, default 20)
+        - $ref: '#/components/parameters/UserFilterMinFollowers'
+        - $ref: '#/components/parameters/UserFilterMaxFollowers'
+        - $ref: '#/components/parameters/UserFilterMinFollowing'
+        - $ref: '#/components/parameters/UserFilterMaxFollowing'
+        - $ref: '#/components/parameters/UserFilterMinStatuses'
+        - $ref: '#/components/parameters/UserFilterMaxStatuses'
+        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
+        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
+        - $ref: '#/components/parameters/UserFilterVerifiedType'
+        - $ref: '#/components/parameters/UserFilterHasWebsite'
+        - $ref: '#/components/parameters/UserFilterHasLocation'
+        - $ref: '#/components/parameters/UserFilterBioContains'
+        - $ref: '#/components/parameters/UserFilterLocationContains'
+        - $ref: '#/components/parameters/UserFilterUsernameContains'
       responses:
         '200':
           description: List of members
@@ -8112,6 +7997,25 @@ paths:
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
+        - $ref: '#/components/parameters/TweetFilterMinViews'
+        - $ref: '#/components/parameters/TweetFilterMinBookmarks'
+        - $ref: '#/components/parameters/TweetFilterMaxFaves'
+        - $ref: '#/components/parameters/TweetFilterMaxRetweets'
+        - $ref: '#/components/parameters/TweetFilterMaxReplies'
+        - $ref: '#/components/parameters/TweetFilterMaxQuotes'
+        - $ref: '#/components/parameters/TweetFilterBlueVerifiedOnly'
+        - $ref: '#/components/parameters/TweetFilterCardName'
+        - $ref: '#/components/parameters/TweetFilterSource'
+        - $ref: '#/components/parameters/TweetFilterExcludeSource'
+        - $ref: '#/components/parameters/TweetFilterGeocode'
+        - $ref: '#/components/parameters/TweetFilterSinceId'
+        - $ref: '#/components/parameters/TweetFilterMaxId'
+        - $ref: '#/components/parameters/TweetFilterNear'
+        - $ref: '#/components/parameters/TweetFilterWithin'
+        - $ref: '#/components/parameters/TweetFilterWithinTime'
+        - $ref: '#/components/parameters/TweetFilterNativeRetweets'
+        - $ref: '#/components/parameters/TweetFilterSafe'
+        - $ref: '#/components/parameters/TweetFilterNews'
         - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
         - $ref: '#/components/parameters/TweetFilterReplies'
         - $ref: '#/components/parameters/TweetFilterRetweets'
@@ -8151,11 +8055,9 @@ paths:
       operationId: getTweetReplies
       summary: List replies to a tweet
       description: >
-        Returns direct replies. Complete mode merges available timeline views,
-        supported rankings, every forward cursor module, labeled hidden-content
-        branches, exact-parent time partitions scaled to the reported reply
-        count, and search. It separates nested replies and returns 424 below 80%
-        coverage.
+        Returns direct replies. Omit mode for automatic maximum coverage with
+        resumable pagination. Complete mode returns nested replies, diagnostics,
+        and 424 when direct coverage stays below 80%.
       tags:
         - Tweets
       security:
@@ -8169,21 +8071,17 @@ paths:
           schema:
             type: string
           description: Tweet ID to get replies
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for tweet replies
+        - $ref: '#/components/parameters/AutomaticCoverageCursor'
         - name: mode
           in: query
           schema:
             type: string
             enum: [standard, complete]
-            default: standard
           description: >
-            Use standard for pagination and filters. Use complete for maximum
-            coverage. Complete mode accepts only limit. Remove other pagination
-            and filter parameters.
+            Optional advanced override. Omit mode for automatic maximum direct
+            reply coverage with pagination. Standard keeps legacy pagination.
+            Complete returns direct and nested replies with diagnostics, scope,
+            depth, sorting, and original-post controls.
         - name: limit
           in: query
           schema:
@@ -8192,9 +8090,41 @@ paths:
             maximum: 25000
           description: >
             With mode=complete, maximum combined direct and nested reply rows
-            (1-25000, default 25000). Without complete mode, this is the
-            deprecated pageSize alias and accepts only 1-100.
+            (1-25000, default 25000). Otherwise this remains the deprecated
+            pageSize alias and accepts only 1-100.
         - $ref: '#/components/parameters/ReplyPageSize'
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum: [all, direct, nested]
+            default: all
+          description: Select all replies, direct replies, or nested replies.
+        - name: maxDepth
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description: Maximum reply depth from the source post.
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [relevance, latest, oldest, likes]
+            default: relevance
+          description: Sort the selected replies before applying limit.
+        - name: excludeOriginalAuthor
+          in: query
+          schema: { type: boolean, default: false }
+          description: Exclude replies written by the source-post author.
+        - name: includeOriginalPost
+          in: query
+          schema: { type: boolean, default: false }
+          description: Include the source post and count it toward limit.
+        - name: hasMediaOnly
+          in: query
+          schema: { type: boolean, default: false }
+          description: Only return replies containing media.
         - name: sinceTime
           in: query
           schema:
@@ -8216,6 +8146,25 @@ paths:
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
+        - $ref: '#/components/parameters/TweetFilterMinViews'
+        - $ref: '#/components/parameters/TweetFilterMinBookmarks'
+        - $ref: '#/components/parameters/TweetFilterMaxFaves'
+        - $ref: '#/components/parameters/TweetFilterMaxRetweets'
+        - $ref: '#/components/parameters/TweetFilterMaxReplies'
+        - $ref: '#/components/parameters/TweetFilterMaxQuotes'
+        - $ref: '#/components/parameters/TweetFilterBlueVerifiedOnly'
+        - $ref: '#/components/parameters/TweetFilterCardName'
+        - $ref: '#/components/parameters/TweetFilterSource'
+        - $ref: '#/components/parameters/TweetFilterExcludeSource'
+        - $ref: '#/components/parameters/TweetFilterGeocode'
+        - $ref: '#/components/parameters/TweetFilterSinceId'
+        - $ref: '#/components/parameters/TweetFilterMaxId'
+        - $ref: '#/components/parameters/TweetFilterNear'
+        - $ref: '#/components/parameters/TweetFilterWithin'
+        - $ref: '#/components/parameters/TweetFilterWithinTime'
+        - $ref: '#/components/parameters/TweetFilterNativeRetweets'
+        - $ref: '#/components/parameters/TweetFilterSafe'
+        - $ref: '#/components/parameters/TweetFilterNews'
         - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
         - $ref: '#/components/parameters/TweetFilterReplies'
         - $ref: '#/components/parameters/TweetFilterRetweets'
@@ -8249,21 +8198,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
         '424':
           $ref: '#/components/responses/RepliesIncomplete'
+        '409':
+          $ref: '#/components/responses/CoverageCursorUnavailable'
         '503':
-          description: Complete reply extraction is temporarily busy.
-          headers:
-            Retry-After:
-              schema:
-                type: integer
-                minimum: 1
-              description: Seconds to wait before retrying.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: 'x_api_unavailable'
-                message: 'Complete reply extraction is busy. Retry shortly.'
+          $ref: '#/components/responses/MaximumCoverageBusy'
 
   /x/tweets/{id}/retweeters:
     get:
@@ -8288,6 +8226,20 @@ paths:
             type: string
           description: Pagination cursor for retweeters
         - $ref: '#/components/parameters/FollowerPageSize'
+        - $ref: '#/components/parameters/UserFilterMinFollowers'
+        - $ref: '#/components/parameters/UserFilterMaxFollowers'
+        - $ref: '#/components/parameters/UserFilterMinFollowing'
+        - $ref: '#/components/parameters/UserFilterMaxFollowing'
+        - $ref: '#/components/parameters/UserFilterMinStatuses'
+        - $ref: '#/components/parameters/UserFilterMaxStatuses'
+        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
+        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
+        - $ref: '#/components/parameters/UserFilterVerifiedType'
+        - $ref: '#/components/parameters/UserFilterHasWebsite'
+        - $ref: '#/components/parameters/UserFilterHasLocation'
+        - $ref: '#/components/parameters/UserFilterBioContains'
+        - $ref: '#/components/parameters/UserFilterLocationContains'
+        - $ref: '#/components/parameters/UserFilterUsernameContains'
       responses:
         '200':
           description: List of retweeters
@@ -8368,11 +8320,8 @@ paths:
           schema:
             type: string
           description: Target user ID or username for follower lookup.
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for followers list
+        - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - $ref: '#/components/parameters/AutomaticCoverageMode'
         - name: after
           in: query
           deprecated: true
@@ -8380,20 +8329,38 @@ paths:
             type: string
           description: Legacy cursor alias. Prefer cursor.
         - $ref: '#/components/parameters/FollowerPageSize'
+        - $ref: '#/components/parameters/UserFilterMinFollowers'
+        - $ref: '#/components/parameters/UserFilterMaxFollowers'
+        - $ref: '#/components/parameters/UserFilterMinFollowing'
+        - $ref: '#/components/parameters/UserFilterMaxFollowing'
+        - $ref: '#/components/parameters/UserFilterMinStatuses'
+        - $ref: '#/components/parameters/UserFilterMaxStatuses'
+        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
+        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
+        - $ref: '#/components/parameters/UserFilterVerifiedType'
+        - $ref: '#/components/parameters/UserFilterHasWebsite'
+        - $ref: '#/components/parameters/UserFilterHasLocation'
+        - $ref: '#/components/parameters/UserFilterBioContains'
+        - $ref: '#/components/parameters/UserFilterLocationContains'
+        - $ref: '#/components/parameters/UserFilterUsernameContains'
         - name: limit
           in: query
-          deprecated: true
           schema:
             type: integer
-          description:
-            Legacy integer page size alias for following lists. Prefer pageSize.
+            minimum: 1
+            maximum: 10000
+          description: >
+            Legacy page-size alias outside explicit coverage mode. Coverage
+            accepts 1-10000. Prefer pageSize.
       responses:
         '200':
           description: List of user followers
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedUsers'
+                oneOf:
+                  - $ref: '#/components/schemas/PaginatedUsers'
+                  - $ref: '#/components/schemas/UserListCoverageResponse'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -8408,6 +8375,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
         '424':
           $ref: '#/components/responses/XApiError'
+        '409':
+          $ref: '#/components/responses/CoverageCursorUnavailable'
+        '503':
+          $ref: '#/components/responses/MaximumCoverageBusy'
 
   /x/users/{id}/following:
     get:
@@ -8426,11 +8397,8 @@ paths:
           schema:
             type: string
           description: User ID or username for following lookup
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for following list
+        - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - $ref: '#/components/parameters/AutomaticCoverageMode'
         - name: after
           in: query
           deprecated: true
@@ -8438,19 +8406,38 @@ paths:
             type: string
           description: Deprecated following cursor alias. Prefer cursor.
         - $ref: '#/components/parameters/FollowerPageSize'
+        - $ref: '#/components/parameters/UserFilterMinFollowers'
+        - $ref: '#/components/parameters/UserFilterMaxFollowers'
+        - $ref: '#/components/parameters/UserFilterMinFollowing'
+        - $ref: '#/components/parameters/UserFilterMaxFollowing'
+        - $ref: '#/components/parameters/UserFilterMinStatuses'
+        - $ref: '#/components/parameters/UserFilterMaxStatuses'
+        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
+        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
+        - $ref: '#/components/parameters/UserFilterVerifiedType'
+        - $ref: '#/components/parameters/UserFilterHasWebsite'
+        - $ref: '#/components/parameters/UserFilterHasLocation'
+        - $ref: '#/components/parameters/UserFilterBioContains'
+        - $ref: '#/components/parameters/UserFilterLocationContains'
+        - $ref: '#/components/parameters/UserFilterUsernameContains'
         - name: limit
           in: query
-          deprecated: true
           schema:
             type: integer
-          description: Legacy page size alias. Prefer pageSize.
+            minimum: 1
+            maximum: 10000
+          description: >
+            Legacy page-size alias outside explicit coverage mode. Coverage
+            accepts 1-10000. Prefer pageSize.
       responses:
         '200':
           description: List of following
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedUsers'
+                oneOf:
+                  - $ref: '#/components/schemas/PaginatedUsers'
+                  - $ref: '#/components/schemas/UserListCoverageResponse'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -8465,6 +8452,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
         '424':
           $ref: '#/components/responses/XApiError'
+        '409':
+          $ref: '#/components/responses/CoverageCursorUnavailable'
+        '503':
+          $ref: '#/components/responses/MaximumCoverageBusy'
 
   /x/users/{id}/mentions:
     get:
@@ -8510,6 +8501,25 @@ paths:
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
+        - $ref: '#/components/parameters/TweetFilterMinViews'
+        - $ref: '#/components/parameters/TweetFilterMinBookmarks'
+        - $ref: '#/components/parameters/TweetFilterMaxFaves'
+        - $ref: '#/components/parameters/TweetFilterMaxRetweets'
+        - $ref: '#/components/parameters/TweetFilterMaxReplies'
+        - $ref: '#/components/parameters/TweetFilterMaxQuotes'
+        - $ref: '#/components/parameters/TweetFilterBlueVerifiedOnly'
+        - $ref: '#/components/parameters/TweetFilterCardName'
+        - $ref: '#/components/parameters/TweetFilterSource'
+        - $ref: '#/components/parameters/TweetFilterExcludeSource'
+        - $ref: '#/components/parameters/TweetFilterGeocode'
+        - $ref: '#/components/parameters/TweetFilterSinceId'
+        - $ref: '#/components/parameters/TweetFilterMaxId'
+        - $ref: '#/components/parameters/TweetFilterNear'
+        - $ref: '#/components/parameters/TweetFilterWithin'
+        - $ref: '#/components/parameters/TweetFilterWithinTime'
+        - $ref: '#/components/parameters/TweetFilterNativeRetweets'
+        - $ref: '#/components/parameters/TweetFilterSafe'
+        - $ref: '#/components/parameters/TweetFilterNews'
         - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
         - $ref: '#/components/parameters/TweetFilterReplies'
         - $ref: '#/components/parameters/TweetFilterRetweets'
@@ -8563,19 +8573,47 @@ paths:
           schema:
             type: string
           description: User ID or username for verified followers
-        - name: cursor
+        - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - $ref: '#/components/parameters/AutomaticCoverageMode'
+        - name: after
           in: query
+          deprecated: true
           schema:
             type: string
-          description: Pagination cursor for verified followers
+          description: Legacy cursor alias. Prefer cursor.
         - $ref: '#/components/parameters/FollowerPageSize'
+        - $ref: '#/components/parameters/UserFilterMinFollowers'
+        - $ref: '#/components/parameters/UserFilterMaxFollowers'
+        - $ref: '#/components/parameters/UserFilterMinFollowing'
+        - $ref: '#/components/parameters/UserFilterMaxFollowing'
+        - $ref: '#/components/parameters/UserFilterMinStatuses'
+        - $ref: '#/components/parameters/UserFilterMaxStatuses'
+        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
+        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
+        - $ref: '#/components/parameters/UserFilterVerifiedType'
+        - $ref: '#/components/parameters/UserFilterHasWebsite'
+        - $ref: '#/components/parameters/UserFilterHasLocation'
+        - $ref: '#/components/parameters/UserFilterBioContains'
+        - $ref: '#/components/parameters/UserFilterLocationContains'
+        - $ref: '#/components/parameters/UserFilterUsernameContains'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10000
+          description: >
+            Legacy page-size alias outside explicit coverage mode. Coverage
+            accepts 1-10000. Prefer pageSize.
       responses:
         '200':
           description: List of verified followers
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedUsers'
+                oneOf:
+                  - $ref: '#/components/schemas/PaginatedUsers'
+                  - $ref: '#/components/schemas/UserListCoverageResponse'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -8590,6 +8628,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
         '424':
           $ref: '#/components/responses/XApiError'
+        '409':
+          $ref: '#/components/responses/CoverageCursorUnavailable'
+        '503':
+          $ref: '#/components/responses/MaximumCoverageBusy'
 
 components:
   securitySchemes:
@@ -8702,15 +8744,33 @@ components:
         minimum: 1
         maximum: 100
         default: 20
+    AutomaticCoverageCursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+      description: >
+        Cursor from the previous response. Xquik cursors resume automatic
+        coverage. Existing unprefixed cursors keep legacy standard behavior.
+    AutomaticCoverageMode:
+      name: mode
+      in: query
+      schema:
+        type: string
+        enum: [standard, coverage]
+      description: >
+        Omit mode for automatic, resumable maximum coverage. Standard keeps
+        legacy single-view pagination. Coverage keeps the one-shot diagnostic
+        response and rejects cursor input.
     ReplyPageSize:
       name: pageSize
       in: query
       description: >
-        Maximum page items in standard mode (1-100, default 20). Omit pageSize
-        when mode=complete. Generated pageSize=20 and the exact default filter
-        bundle are ignored in complete mode. Continue while has_next_page is
-        true. Deprecated limit and count aliases remain accepted in standard
-        mode.
+        Maximum direct replies per automatic or standard page (1-100, default
+        20). Omit pageSize with mode=complete. Generated pageSize=20 and the
+        exact default filter bundle are ignored in complete mode. Continue while
+        has_next_page is true. Deprecated limit and count aliases remain
+        accepted outside complete mode.
       schema:
         type: integer
         minimum: 1
@@ -8720,15 +8780,87 @@ components:
       in: query
       description: >
         Maximum user profiles requested from this page (20-200, default 200).
-        The response can contain fewer profiles because the source returned
-        fewer or remaining credits cover fewer results. Keep requesting
-        next_cursor while has_next_page is true. The deprecated limit and count
+        Source, filters, or credits can return fewer profiles. Automatic
+        coverage can prefetch across independent views. Response shape, page
+        size, and per-returned-profile billing stay unchanged. Keep requesting
+        next_cursor while has_next_page is true. Deprecated limit and count
         aliases remain accepted.
       schema:
         type: integer
         minimum: 20
         maximum: 200
         default: 200
+    UserFilterMinFollowers:
+      name: minFollowers
+      in: query
+      schema: { type: integer, minimum: 0 }
+      description: Minimum follower count. Filtering happens before billing.
+    UserFilterMaxFollowers:
+      name: maxFollowers
+      in: query
+      schema: { type: integer, minimum: 0 }
+      description: Maximum follower count. Missing counts pass this maximum.
+    UserFilterMinFollowing:
+      name: minFollowing
+      in: query
+      schema: { type: integer, minimum: 0 }
+      description: Minimum following count.
+    UserFilterMaxFollowing:
+      name: maxFollowing
+      in: query
+      schema: { type: integer, minimum: 0 }
+      description: Maximum following count.
+    UserFilterMinStatuses:
+      name: minStatuses
+      in: query
+      schema: { type: integer, minimum: 0 }
+      description: Minimum post count. minPosts is also accepted.
+    UserFilterMaxStatuses:
+      name: maxStatuses
+      in: query
+      schema: { type: integer, minimum: 0 }
+      description: Maximum post count. maxPosts is also accepted.
+    UserFilterMinAccountAgeDays:
+      name: minAccountAgeDays
+      in: query
+      schema: { type: integer, minimum: 0 }
+      description: Minimum account age in whole days.
+    UserFilterVerifiedOnly:
+      name: verifiedOnly
+      in: query
+      schema: { type: boolean }
+      description: Only return verified profiles.
+    UserFilterVerifiedType:
+      name: verifiedType
+      in: query
+      schema: { type: string }
+      description: Match the verification type exactly, ignoring case.
+    UserFilterHasWebsite:
+      name: hasWebsite
+      in: query
+      schema: { type: boolean }
+      description: Only return profiles with a website.
+    UserFilterHasLocation:
+      name: hasLocation
+      in: query
+      schema: { type: boolean }
+      description: Only return profiles with a location.
+    UserFilterBioContains:
+      name: bioContains
+      in: query
+      schema: { type: string }
+      description: >
+        Match any comma-separated or line-separated bio term, ignoring case.
+    UserFilterLocationContains:
+      name: locationContains
+      in: query
+      schema: { type: string }
+      description: Match a location substring, ignoring case.
+    UserFilterUsernameContains:
+      name: usernameContains
+      in: query
+      schema: { type: string }
+      description: Match a username substring, ignoring case.
     After:
       name: cursor
       in: query
@@ -8815,6 +8947,114 @@ components:
         type: integer
         minimum: 0
       description: Minimum quote count threshold.
+    TweetFilterMinViews:
+      name: minViews
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+      description: Minimum view count threshold.
+    TweetFilterMinBookmarks:
+      name: minBookmarks
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+      description: Minimum bookmark count threshold.
+    TweetFilterMaxFaves:
+      name: maxFaves
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+      description: Maximum likes threshold. maxLikes is also accepted.
+    TweetFilterMaxRetweets:
+      name: maxRetweets
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+      description: Maximum retweets threshold.
+    TweetFilterMaxReplies:
+      name: maxReplies
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+      description: Maximum replies threshold.
+    TweetFilterMaxQuotes:
+      name: maxQuotes
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+      description: Maximum quotes threshold.
+    TweetFilterBlueVerifiedOnly:
+      name: blueVerifiedOnly
+      in: query
+      schema:
+        type: boolean
+      description: Only return tweets from Blue-verified authors.
+    TweetFilterCardName:
+      name: cardName
+      in: query
+      schema: { type: string }
+      description: Match the Tweet card name.
+    TweetFilterSource:
+      name: source
+      in: query
+      schema: { type: string }
+      description: Match the source application.
+    TweetFilterExcludeSource:
+      name: excludeSource
+      in: query
+      schema: { type: string }
+      description: Exclude a source application.
+    TweetFilterGeocode:
+      name: geocode
+      in: query
+      schema: { type: string }
+      description: Match latitude, longitude, and radius.
+    TweetFilterSinceId:
+      name: sinceId
+      in: query
+      schema: { type: string }
+      description: Return Tweets newer than this Tweet ID.
+    TweetFilterMaxId:
+      name: maxId
+      in: query
+      schema: { type: string }
+      description: Return Tweets older than this Tweet ID.
+    TweetFilterNear:
+      name: near
+      in: query
+      schema: { type: string }
+      description: Match a place name.
+    TweetFilterWithin:
+      name: within
+      in: query
+      schema: { type: string }
+      description: Set the radius for the near filter.
+    TweetFilterWithinTime:
+      name: withinTime
+      in: query
+      schema: { type: string }
+      description: Match Tweets inside a recent time window.
+    TweetFilterNativeRetweets:
+      name: nativeRetweets
+      in: query
+      schema: { type: boolean }
+      description: Only return native reposts.
+    TweetFilterSafe:
+      name: safe
+      in: query
+      schema: { type: boolean }
+      description: Enable the safe-search filter.
+    TweetFilterNews:
+      name: news
+      in: query
+      schema: { type: boolean }
+      description: Only return news results.
     TweetFilterVerifiedOnly:
       name: verifiedOnly
       in: query
@@ -9454,6 +9694,37 @@ components:
             message:
               'Users who liked this post are unavailable. Use retweeters or
               replies instead.'
+    CoverageCursorUnavailable:
+      description: Automatic coverage cursor expired or is already in use.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 1
+          description: Seconds to wait before retrying once.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: 'coverage_cursor_unavailable'
+            message:
+              'Cursor expired or busy. Retry once, then restart pagination.'
+    MaximumCoverageBusy:
+      description: Automatic or explicit maximum coverage is temporarily busy.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 1
+          description: Seconds to wait before retrying.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: 'x_api_unavailable'
+            message: 'Maximum coverage is busy. Retry shortly.'
     RepliesIncomplete:
       description: Incomplete replies
       content:
@@ -10395,10 +10666,12 @@ components:
           example: pending
     PaginatedTweets:
       description: >
-        Paginated tweets. Source visibility, filters, or remaining credits can
-        reduce results. An empty filtered page can still have has_next_page
-        true. Follow next_cursor while has_next_page is true. Zero affordable
-        results returns 402 insufficient_credits.
+        Paginated tweets. No-mode search and reply requests merge independent
+        views automatically. Response fields, requested page size, filters,
+        aliases, and per-returned-row billing stay unchanged. Existing
+        unprefixed cursors retain legacy behavior. Follow next_cursor while
+        has_next_page is true. An empty filtered page can still have
+        has_next_page true.
       type: object
       required: [tweets, has_next_page, next_cursor]
       properties:
@@ -10421,10 +10694,143 @@ components:
         next_cursor:
           type: string
           example: 'DAACCgACGRElMJcAAA'
+    CoverageStopReason:
+      type: string
+      enum:
+        - cursor_failure
+        - deadline
+        - exhausted
+        - failed
+        - page_limit
+        - result_limit
+        - stalled
+    TweetSearchCoverageWindow:
+      description: Non-overlapping time partition used by one strategy.
+      type: object
+      required: [sinceTime, untilTime]
+      properties:
+        sinceTime:
+          type: string
+          format: date-time
+        untilTime:
+          type: string
+          format: date-time
+    TweetSearchCoverageStrategy:
+      type: object
+      required:
+        - duplicateCount
+        - pagesFetched
+        - queryType
+        - stopReason
+        - strategy
+        - uniqueAdded
+      properties:
+        duplicateCount:
+          type: integer
+          minimum: 0
+        pagesFetched:
+          type: integer
+          minimum: 0
+        queryType:
+          type: string
+          enum: [Latest, Top]
+        stopReason:
+          $ref: '#/components/schemas/CoverageStopReason'
+        strategy:
+          type: integer
+          minimum: 1
+          maximum: 8
+        uniqueAdded:
+          type: integer
+          minimum: 0
+        window:
+          $ref: '#/components/schemas/TweetSearchCoverageWindow'
+    TweetSearchCoverageDiagnostic:
+      description: Coverage evidence across parallel search strategies.
+      type: object
+      required:
+        - complete
+        - cursorFailureCount
+        - deadlineReached
+        - duplicateCount
+        - failedStrategyCount
+        - malformedCount
+        - pagesFetched
+        - partitioned
+        - responseTruncated
+        - resultLimitReached
+        - returnedTweets
+        - stalledStrategyCount
+        - strategies
+        - strategyCount
+        - uniqueTweets
+      properties:
+        complete:
+          type: boolean
+          description: True when every strategy exhausted its source.
+        cursorFailureCount:
+          type: integer
+          minimum: 0
+        deadlineReached:
+          type: boolean
+        duplicateCount:
+          type: integer
+          minimum: 0
+        failedStrategyCount:
+          type: integer
+          minimum: 0
+        malformedCount:
+          type: integer
+          minimum: 0
+        pagesFetched:
+          type: integer
+          minimum: 0
+        partitioned:
+          type: boolean
+          description: Whether bounded time windows ran in parallel.
+        responseTruncated:
+          type: boolean
+          description: Whether credits or the requested limit reduced output.
+        resultLimitReached:
+          type: boolean
+        returnedTweets:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        stalledStrategyCount:
+          type: integer
+          minimum: 0
+        strategies:
+          type: array
+          items:
+            $ref: '#/components/schemas/TweetSearchCoverageStrategy'
+        strategyCount:
+          type: integer
+          minimum: 1
+          maximum: 8
+        uniqueTweets:
+          type: integer
+          minimum: 0
+          maximum: 10000
+    TweetSearchCoverageResponse:
+      allOf:
+        - $ref: '#/components/schemas/PaginatedTweets'
+        - type: object
+          required: [diagnostic]
+          properties:
+            has_next_page:
+              type: boolean
+              const: false
+            next_cursor:
+              type: string
+              const: ''
+            diagnostic:
+              $ref: '#/components/schemas/TweetSearchCoverageDiagnostic'
     TweetReplies:
       description: >
-        Reply rows. Complete mode also returns nested replies and coverage
-        diagnostics. Keep nested replies separate from direct coverage.
+        Direct reply rows. No-mode requests use resumable automatic coverage.
+        Complete mode also returns nested replies and coverage diagnostics. Keep
+        nested replies separate from direct coverage.
       allOf:
         - $ref: '#/components/schemas/PaginatedTweets'
         - type: object
@@ -10649,11 +11055,11 @@ components:
           description: Whether the requested row limit truncated safe results.
     PaginatedUsers:
       description: >
-        Paginated user profiles. The item count can be lower than pageSize when
-        the source returns fewer profiles or remaining credits cover fewer
-        results. Follow next_cursor while has_next_page is true. A relationship
-        can naturally contain fewer profiles than requested. Zero affordable
-        results returns 402 insufficient_credits.
+        Paginated user profiles. No-mode follower, following, and verified
+        follower requests merge independent views automatically. Response
+        fields, page size, aliases, filters, and per-returned-profile billing
+        stay unchanged. Existing unprefixed cursors retain legacy behavior.
+        Follow next_cursor while has_next_page is true.
       type: object
       required: [users, has_next_page, next_cursor]
       properties:
@@ -10671,6 +11077,107 @@ components:
         next_cursor:
           type: string
           example: 'DAACCgACGRElMJcAAA'
+    UserListCoverageStrategy:
+      type: object
+      required:
+        - duplicateCount
+        - pagesFetched
+        - stopReason
+        - strategy
+        - uniqueAdded
+      properties:
+        duplicateCount:
+          type: integer
+          minimum: 0
+        pagesFetched:
+          type: integer
+          minimum: 0
+        stopReason:
+          $ref: '#/components/schemas/CoverageStopReason'
+        strategy:
+          type: integer
+          minimum: 1
+          maximum: 8
+        uniqueAdded:
+          type: integer
+          minimum: 0
+    UserListCoverageDiagnostic:
+      description: Coverage evidence across parallel relationship strategies.
+      type: object
+      required:
+        - complete
+        - cursorFailureCount
+        - deadlineReached
+        - duplicateCount
+        - failedStrategyCount
+        - malformedCount
+        - pagesFetched
+        - responseTruncated
+        - resultLimitReached
+        - returnedUsers
+        - stalledStrategyCount
+        - strategies
+        - strategyCount
+        - uniqueUsers
+      properties:
+        complete:
+          type: boolean
+          description: True when every strategy exhausted its source.
+        cursorFailureCount:
+          type: integer
+          minimum: 0
+        deadlineReached:
+          type: boolean
+        duplicateCount:
+          type: integer
+          minimum: 0
+        failedStrategyCount:
+          type: integer
+          minimum: 0
+        malformedCount:
+          type: integer
+          minimum: 0
+        pagesFetched:
+          type: integer
+          minimum: 0
+        responseTruncated:
+          type: boolean
+          description: Whether credits or the requested limit reduced output.
+        resultLimitReached:
+          type: boolean
+        returnedUsers:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        stalledStrategyCount:
+          type: integer
+          minimum: 0
+        strategies:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserListCoverageStrategy'
+        strategyCount:
+          type: integer
+          minimum: 1
+          maximum: 8
+        uniqueUsers:
+          type: integer
+          minimum: 0
+          maximum: 10000
+    UserListCoverageResponse:
+      allOf:
+        - $ref: '#/components/schemas/PaginatedUsers'
+        - type: object
+          required: [diagnostic]
+          properties:
+            has_next_page:
+              type: boolean
+              const: false
+            next_cursor:
+              type: string
+              const: ''
+            diagnostic:
+              $ref: '#/components/schemas/UserListCoverageDiagnostic'
     BatchUsers:
       description: >
         Batch user lookup results. Duplicate requested IDs are ignored while
@@ -11776,6 +12283,487 @@ components:
         - user_likes
         - user_media
         - verified_follower_explorer
+
+    ExtractionRequest:
+      description: One synchronous estimate or asynchronous extraction request.
+      type: object
+      required: [toolType]
+      properties:
+        toolType:
+          $ref: '#/components/schemas/ExtractionToolType'
+          example: follower_explorer
+        targetTweetId:
+          type: string
+          example: '1234567890'
+        targetUsername:
+          type: string
+          example: elonmusk
+        targetCommunityId:
+          type: string
+          description: Required for community_post_extractor & community_search.
+          example: '1500000000000000000'
+        targetListId:
+          type: string
+          description:
+            Required for list_follower_explorer, list_member_extractor &
+            list_post_extractor.
+          example: '1234567890'
+        targetSpaceId:
+          type: string
+          description: Required for space_explorer.
+          example: '1vOGwMdBqpwGB'
+        targetTweetIds:
+          type: array
+          minItems: 1
+          maxItems: 10000
+          uniqueItems: true
+          items:
+            type: string
+          description: Tweet IDs processed as one collection job.
+        targetUsernames:
+          type: array
+          minItems: 1
+          maxItems: 100
+          uniqueItems: true
+          items:
+            type: string
+          description: Usernames processed as one collection job.
+        targetCommunityIds:
+          type: array
+          minItems: 1
+          maxItems: 100
+          uniqueItems: true
+          items:
+            type: string
+          description: Community IDs processed as one collection job.
+        targetListIds:
+          type: array
+          minItems: 1
+          maxItems: 100
+          uniqueItems: true
+          items:
+            type: string
+          description: List IDs processed as one collection job.
+        searchQueries:
+          type: array
+          minItems: 1
+          maxItems: 100
+          uniqueItems: true
+          items:
+            type: string
+          description: Search queries processed as one collection job.
+        targets:
+          type: array
+          maxItems: 10000
+          items:
+            $ref: '#/components/schemas/ExtractionMixedTarget'
+          description: Mixed targets auto-routed within one job.
+        relationTargets:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/ExtractionRelationTarget'
+          description: Profile relations processed within one job.
+        queryType:
+          type: string
+          enum: [Latest, Top, Both]
+          default: Latest
+          description: Search ranking applied to every query.
+        maxItemsPerTarget:
+          type: integer
+          minimum: 1
+          description: Maximum results collected for each target.
+        maxPagesPerTarget:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          description: Reply pages collected for each target.
+        startCursor:
+          type: string
+          minLength: 1
+          description: Resume one reply target from this cursor.
+        dedupeAcrossTargets:
+          type: boolean
+          default: true
+          description: Merge duplicate results across collection targets.
+        dedupeMode:
+          type: string
+          enum: [none, first, merge]
+          description: Keep target duplicates, first rows, or merged overlap.
+        overlapMode:
+          type: boolean
+          default: false
+          description: Shortcut for dedupeMode=merge.
+        includeSearchTerms:
+          type: boolean
+          default: false
+          description: Add matching search terms to collection metadata.
+        includeTargetMetadata:
+          type: boolean
+          default: true
+          description: Add source target metadata to each result.
+        collectionStrategy:
+          type: string
+          enum: [auto, complete, direct, search, thread]
+          default: auto
+          description: Reply collection strategy.
+        scope:
+          type: string
+          enum: [all, direct, nested]
+          default: all
+          description: Reply depth scope.
+        maxDepth:
+          type: integer
+          minimum: 1
+          description: Maximum nested reply depth.
+        sort:
+          type: string
+          enum: [relevance, latest, oldest, likes]
+          default: relevance
+          description: Reply result order.
+        excludeOriginalAuthor:
+          type: boolean
+          default: false
+          description: Exclude replies from the source author.
+        includeOriginalPost:
+          type: boolean
+          default: false
+          description: Include the source post in reply results.
+        hasMediaOnly:
+          type: boolean
+          default: false
+          description: Return only replies with media.
+        sinceTime:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: integer
+          description: Reply start time as ISO 8601 or Unix seconds.
+        untilTime:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: integer
+          description: Reply end time as ISO 8601 or Unix seconds.
+        minViews:
+          type: integer
+          minimum: 0
+          description: Minimum Tweet view count.
+        minBookmarks:
+          type: integer
+          minimum: 0
+          description: Minimum Tweet bookmark count.
+        maxLikes:
+          type: integer
+          minimum: 0
+          description: Maximum Tweet like count.
+        maxRetweets:
+          type: integer
+          minimum: 0
+          description: Maximum Tweet repost count.
+        maxReplies:
+          type: integer
+          minimum: 0
+          description: Maximum Tweet reply count.
+        maxQuotes:
+          type: integer
+          minimum: 0
+          description: Maximum Tweet quote count.
+        blueVerifiedOnly:
+          type: boolean
+          default: false
+          description: Return only Blue-verified Tweet authors.
+        cardName:
+          type: string
+          description: Match the Tweet card name.
+        source:
+          type: string
+          description: Match the source application.
+        excludeSource:
+          type: string
+          description: Exclude a source application.
+        geocode:
+          type: string
+          description: Match latitude, longitude, and radius.
+        sinceId:
+          type: string
+          description: Return Tweets newer than this Tweet ID.
+        maxId:
+          type: string
+          description: Return Tweets older than this Tweet ID.
+        near:
+          type: string
+          description: Match a place name.
+        within:
+          type: string
+          description: Set the radius for the near filter.
+        withinTime:
+          type: string
+          description: Match Tweets inside a recent time window.
+        nativeRetweets:
+          type: boolean
+          default: false
+          description: Only return native reposts.
+        safe:
+          type: boolean
+          default: false
+          description: Enable the safe-search filter.
+        news:
+          type: boolean
+          default: false
+          description: Only return news results.
+        minFollowers:
+          type: integer
+          minimum: 0
+          description: Minimum follower count for profile results.
+        maxFollowers:
+          type: integer
+          minimum: 0
+          description: Maximum follower count for profile results.
+        minFollowing:
+          type: integer
+          minimum: 0
+          description: Minimum following count for profile results.
+        maxFollowing:
+          type: integer
+          minimum: 0
+          description: Maximum following count for profile results.
+        minPosts:
+          type: integer
+          minimum: 0
+          description: Minimum post count for profile results.
+        maxPosts:
+          type: integer
+          minimum: 0
+          description: Maximum post count for profile results.
+        minAccountAgeDays:
+          type: integer
+          minimum: 0
+          description: Minimum profile age in days.
+        verifiedType:
+          type: string
+          description: Exact profile verification type.
+        hasWebsite:
+          type: boolean
+          default: false
+          description: Require a profile website.
+        hasLocation:
+          type: boolean
+          default: false
+          description: Require a profile location.
+        bioContains:
+          type: string
+          description: Bio terms separated by commas or lines.
+        locationContains:
+          type: string
+          description: Required profile location text.
+        usernameContains:
+          type: string
+          description: Required username text.
+        resultsLimit:
+          type: integer
+          description:
+            Maximum number of results to extract. When set, the extraction stops
+            after reaching this limit.
+          example: 1000
+        searchQuery:
+          type: string
+          description: Required for tweet_search_extractor & community_search.
+          example: 'AI trends 2025'
+        fromUser:
+          type: string
+          description: Filter by author username (tweet_search_extractor)
+          example: nasa
+        toUser:
+          type: string
+          description:
+            Filter replies sent to a username (tweet_search_extractor)
+          example: openai
+        mentioning:
+          type: string
+          description:
+            Filter tweets mentioning a username (tweet_search_extractor)
+          example: example_user
+        language:
+          type: string
+          description: Language code filter (tweet_search_extractor)
+          example: en
+        sinceDate:
+          type: string
+          format: date
+          description: Start date YYYY-MM-DD (tweet_search_extractor)
+          example: '2025-01-01'
+        untilDate:
+          type: string
+          format: date
+          description: End date YYYY-MM-DD (tweet_search_extractor)
+          example: '2025-12-31'
+        mediaType:
+          type: string
+          enum: [images, videos, gifs, media, links, none]
+          description: Media type filter (tweet_search_extractor)
+          example: images
+        minFaves:
+          type: integer
+          minimum: 0
+          description: Minimum likes threshold (tweet_search_extractor)
+          example: 10
+        minRetweets:
+          type: integer
+          minimum: 0
+          description: Minimum retweets threshold (tweet_search_extractor)
+          example: 5
+        minReplies:
+          type: integer
+          minimum: 0
+          description: Minimum replies threshold (tweet_search_extractor)
+          example: 3
+        minQuotes:
+          type: integer
+          minimum: 0
+          description: Minimum quote count threshold (tweet_search_extractor)
+          example: 2
+        verifiedOnly:
+          type: boolean
+          description: Only verified authors (tweet_search_extractor)
+          example: false
+        replies:
+          type: string
+          enum: [include, exclude, only]
+          description: Reply mode (tweet_search_extractor)
+          example: include
+        retweets:
+          type: string
+          enum: [include, exclude, only]
+          description: Retweet mode (tweet_search_extractor)
+          example: exclude
+        quotes:
+          type: string
+          enum: [include, exclude, only]
+          description: Quote mode (tweet_search_extractor)
+          example: include
+        exactPhrase:
+          type: string
+          description: Exact phrase to match (tweet_search_extractor)
+          example: 'artificial intelligence'
+        excludeWords:
+          type: string
+          description:
+            Words or quoted phrases to exclude. Separate with spaces, commas, or
+            lines. (tweet_search_extractor)
+          example: 'spam'
+        anyWords:
+          type: string
+          description:
+            Words or quoted phrases where any one can match. Separate with
+            spaces, commas, or lines. (tweet_search_extractor)
+          example: 'ChatGPT AI model'
+        hashtags:
+          type: string
+          description:
+            Hashtags separated by spaces, commas, or lines.
+            (tweet_search_extractor)
+          example: '#AI startups'
+        cashtags:
+          type: string
+          description:
+            Cashtags separated by spaces, commas, or lines.
+            (tweet_search_extractor)
+          example: '$TSLA $NVDA'
+        url:
+          type: string
+          description: URL substring or domain filter (tweet_search_extractor)
+          example: example.com
+        conversationId:
+          type: string
+          description: Conversation ID filter (tweet_search_extractor)
+          example: '1234567890'
+        inReplyToTweetId:
+          type: string
+          description: Only replies to this tweet ID (tweet_search_extractor)
+          example: '1234567890'
+        quotesOfTweetId:
+          type: string
+          description: Only quotes of this tweet ID (tweet_search_extractor)
+          example: '1234567890'
+        retweetsOfTweetId:
+          type: string
+          description: Only retweets of this tweet ID (tweet_search_extractor)
+          example: '1234567890'
+        listId:
+          type: string
+          description: Search within a list ID (tweet_search_extractor)
+          example: '1234567890'
+        place:
+          type: string
+          description: Search within a place ID (tweet_search_extractor)
+          example: '96683cc9126741d1'
+        placeCountry:
+          type: string
+          description: Search within a country code (tweet_search_extractor)
+          example: US
+        pointRadius:
+          type: string
+          description:
+            Geo point radius, e.g. -73.99 40.73 25mi (tweet_search_extractor)
+          example: '-73.99 40.73 25mi'
+        boundingBox:
+          type: string
+          description:
+            Geo bounding box, e.g. -74.1 40.6 -73.9 40.8
+            (tweet_search_extractor)
+          example: '-74.1 40.6 -73.9 40.8'
+        advancedQuery:
+          type: string
+          description:
+            Raw advanced search query appended as-is (tweet_search_extractor)
+          example: 'min_faves:100'
+
+    ExtractionMixedTarget:
+      description: One auto-routed target in a mixed Tweet collection.
+      oneOf:
+        - type: string
+          description: >
+            X URL, numeric Tweet ID, @username, kind:value target, or search.
+        - type: object
+          required: [kind, value]
+          properties:
+            kind:
+              type: string
+              enum:
+                - favoriters
+                - list
+                - profile
+                - profile_likes
+                - profile_media
+                - profile_replies
+                - quotes
+                - replies
+                - retweeters
+                - search
+                - thread
+                - tweet
+            value:
+              type: string
+              minLength: 1
+
+    ExtractionRelationTarget:
+      description: One target and relation in a mixed profile collection.
+      type: object
+      required: [relation, value]
+      properties:
+        relation:
+          type: string
+          enum:
+            - community_members
+            - followers
+            - following
+            - list_followers
+            - list_members
+            - verified_followers
+        value:
+          type: string
+          minLength: 1
 
     ApiKey:
       description: API key metadata returned when listing keys.

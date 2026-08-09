@@ -172,7 +172,7 @@ const PRODUCT_MEDIA_HANDLER_PATH = join(PRODUCT_ROOT, 'lib/media/handler.ts');
 const PRODUCT_X_API_TYPES_PATH = join(PRODUCT_ROOT, 'lib/x-api/types.ts');
 const PRODUCT_READ_RICHNESS_CONTRACT_PATH = join(
   PRODUCT_ROOT,
-  'lib/x-api/twikit/read-data-richness-contract.ts',
+  'lib/x-api/twikit/__tests__/read-data-richness-fields.ts',
 );
 const PRODUCT_PUBLIC_READ_SANITIZER_PATH = join(
   PRODUCT_ROOT,
@@ -1006,7 +1006,7 @@ function productUploadMediaFields(): readonly string[] {
   const helperSource = readFileSync(PRODUCT_ROUTE_HELPERS_PATH, 'utf8');
   if (
     !helperSource.includes('return { mediaUrl: uploaded.url };') ||
-    !helperSource.includes('withImageUploadResponseFieldsFactory(') ||
+    !helperSource.includes('buildPublicMediaResponseFields(') ||
     !helperSource.includes('responseFieldsFactory: async () =>')
   ) {
     throw new Error('Could not verify upload media public URL response field.');
@@ -1175,11 +1175,16 @@ function productSimpleWriteFields(
   bodyKey: string,
 ): readonly string[] {
   const routeSource = readFileSync(routePath, 'utf8');
+  const usesSingleToggle =
+    routeSource.includes('createToggleHandler({') &&
+    routeSource.includes(`${bodyKey}: id`);
+  const usesPairedToggles =
+    routeSource.includes('createToggleRoutes({') &&
+    routeSource.includes(`bodyField: '${bodyKey}'`);
   if (
     !routeSource.includes(`actionType: '${actionType}'`) ||
     !routeSource.includes(`apiPath: '${apiPath}'`) ||
-    !routeSource.includes('createToggleHandler({') ||
-    !routeSource.includes(`${bodyKey}: id`)
+    (!usesSingleToggle && !usesPairedToggles)
   ) {
     throw new Error(`Could not verify ${actionType} route wiring.`);
   }

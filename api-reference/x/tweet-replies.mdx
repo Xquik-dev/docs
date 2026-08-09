@@ -7,6 +7,7 @@ keywords: ["Twitter API get replies", "Twitter API get replies to a tweet", "get
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
+import AutomaticCoveragePagination from "/snippets/automatic-coverage-pagination.mdx";
 import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 
@@ -74,6 +75,15 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
     ```
   </Tab>
 
+  <Tab title="409" id="response-x-tweet-replies-409">
+    ```json
+    {
+      "error": "coverage_cursor_unavailable",
+      "message": "Cursor expired or busy. Retry once, then restart pagination."
+    }
+    ```
+  </Tab>
+
   <Tab title="424" id="response-x-tweet-replies-424">
     ```json
     {
@@ -106,7 +116,7 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
     ```json
     {
       "error": "x_api_unavailable",
-      "message": "Complete reply extraction is busy. Retry shortly."
+      "message": "Maximum coverage is busy. Retry shortly."
     }
     ```
   </Tab>
@@ -123,6 +133,8 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 <Callout icon="coins" color="#5c3327">
   **1 credit per tweet returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
 </Callout>
+
+<AutomaticCoveragePagination />
 
 <Info>
   Get tweet replies returns reply tweets for one X post by numeric tweet ID. Use
@@ -203,7 +215,7 @@ before requesting another cursor. Use `reply_extractor` for fixed
     --data-urlencode "untilTime=1777478400" \
     -H "x-api-key: xq_your_api_key_here" | jq
 
-  # Request maximum reply coverage
+  # Request advanced nested-reply diagnostics
   curl -G "https://xquik.com/api/v1/x/tweets/1893456789012345678/replies" \
     --data-urlencode "mode=complete" \
     --data-urlencode "limit=25000" \
@@ -369,24 +381,25 @@ each conversation branch.
 
 ## Query parameters
 
-<ParamField query="mode" type="string" default="standard">
-  Use `standard` for cursor pages and filters. Use `complete` for maximum
-  direct-reply coverage. Complete mode accepts only `limit`.
+<ParamField query="mode" type="string">
+  Optional advanced override. Omit it for automatic maximum direct-reply
+  coverage. Use `standard` for legacy pagination. Use `complete` for nested
+  replies and detailed diagnostics. Complete mode accepts only `limit`.
 </ParamField>
 
-<ParamField query="limit" type="number" default="25000">
-  Maximum combined direct and nested replies in complete mode. Use `1` through
-  `25000`. In standard mode, this deprecated alias accepts `1` through `100`.
+<ParamField query="limit" type="number">
+  Maximum combined replies in complete mode. Use `1` through `25000`.
+  Complete mode defaults to `25000`. Otherwise, use `1` through `100`.
 </ParamField>
 
 <ParamField query="pageSize" type="number" default="20">
-  Maximum replies requested in standard mode. Use `1` through `100`. Omit this
-  field in complete mode. Deprecated `limit` and `count` aliases remain.
+  Maximum replies per automatic or standard page. Use `1` through `100`. Omit
+  this field in complete mode. Deprecated `limit` and `count` aliases remain.
 </ParamField>
 
 <ParamField query="cursor" type="string">
-  Opaque cursor for standard mode. Omit it initially. Then pass the returned
-  `next_cursor` while `has_next_page` remains `true`.
+  Pass `next_cursor` back unchanged. New Xquik cursors resume automatic
+  coverage. Existing unprefixed cursors keep legacy behavior.
 </ParamField>
 
 <ParamField query="sinceTime" type="string">
@@ -401,9 +414,9 @@ each conversation branch.
 
 ### Tweet result filters
 
-These optional filters apply only in standard mode. They keep the same parent
-tweet and filter rows after retrieval. Selective filters can return fewer rows.
-Remove every filter before requesting complete mode.
+These filters apply to automatic and standard pagination. They keep the same
+parent tweet and filter rows after retrieval. Selective filters can return
+fewer rows. Remove every filter before requesting complete mode.
 
 <TweetResultFilterParams />
 

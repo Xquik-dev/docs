@@ -16,6 +16,7 @@ interface OpenApiParameter {
 
 interface OpenApiDocument {
   readonly components?: Readonly<{
+    readonly parameters?: Readonly<Record<string, OpenApiParameter>>;
     readonly schemas?: Readonly<Record<string, OpenApiSchema>>;
   }>;
   readonly paths?: Readonly<
@@ -188,6 +189,17 @@ function sortedFields(fields: readonly string[]): readonly string[] {
   return [...fields].toSorted((left, right) => left.localeCompare(right));
 }
 
+function parameterName(
+  openApi: Readonly<OpenApiDocument>,
+  parameter: Readonly<OpenApiParameter>,
+): string | undefined {
+  if (parameter.name !== undefined) return parameter.name;
+  const componentName = parameter.$ref?.split('/').at(-1);
+  return componentName === undefined
+    ? undefined
+    : openApi.components?.parameters?.[componentName]?.name;
+}
+
 describe('read data richness documentation', (): void => {
   it('documents every normalized field from the OpenAPI contract', (): void => {
     const fields = [...TWEET_FIELDS, ...PROFILE_FIELDS, ...MEDIA_FIELDS];
@@ -235,9 +247,10 @@ describe('read data richness documentation', (): void => {
     expect.assertions(10);
     const operation =
       PARSED_OPENAPI.paths?.['/x/tweets/{id}/replies']?.get;
-    const parameterNames = operation?.parameters?.flatMap((parameter) =>
-      parameter.name === undefined ? [] : [parameter.name],
-    );
+    const parameterNames = operation?.parameters?.flatMap((parameter) => {
+      const name = parameterName(PARSED_OPENAPI, parameter);
+      return name === undefined ? [] : [name];
+    });
     const parameterRefs = operation?.parameters?.flatMap((parameter) =>
       parameter.$ref === undefined ? [] : [parameter.$ref],
     );

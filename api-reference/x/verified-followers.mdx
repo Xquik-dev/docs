@@ -8,6 +8,7 @@ keywords: ["get verified followers", "verified followers API", "verified followe
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.mdx";
+import AutomaticCoveragePagination from "/snippets/automatic-coverage-pagination.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
 <Panel>
@@ -64,6 +65,15 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
     ```
   </Tab>
 
+  <Tab title="409" id="response-x-verified-followers-409">
+    ```json
+    {
+      "error": "coverage_cursor_unavailable",
+      "message": "Cursor expired or busy. Retry once, then restart pagination."
+    }
+    ```
+  </Tab>
+
   <Tab title="424" id="response-x-verified-followers-424">
     ```json
     {
@@ -91,6 +101,15 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
     }
     ```
   </Tab>
+
+  <Tab title="503" id="response-x-verified-followers-503">
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Maximum coverage is busy. Retry shortly."
+    }
+    ```
+  </Tab>
 </Tabs>
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
@@ -114,6 +133,8 @@ handles, verification types, counts, and pagination cursors.
   X verified followers API, or Twitter verified followers API. The canonical
   endpoint remains `GET /api/v1/x/users/{id}/verified-followers`.
 </Info>
+
+<AutomaticCoveragePagination />
 
 <CodeGroup>
   ```bash Username
@@ -288,8 +309,27 @@ change after collection. Keep the collection time beside every exported row.
 ## Query parameters
 
 <ParamField query="cursor" type="string">
-  Pagination cursor from `next_cursor` in a previous response. Omit for the
-  first page. Pass a cursor only when `has_next_page` is true.
+  Pass `next_cursor` back unchanged. New Xquik cursors resume automatic
+  coverage. Existing unprefixed cursors keep legacy behavior.
+</ParamField>
+
+<ParamField query="mode" type="string">
+  Optional compatibility override. Omit it for automatic maximum coverage.
+  Use `standard` for legacy single-view pagination. Use `coverage` for a
+  one-shot diagnostic response without cursor pagination.
+</ParamField>
+
+<ParamField query="after" type="string">
+  Legacy cursor alias. Use `cursor`; when both are present, `cursor` wins.
+</ParamField>
+
+<ParamField query="pageSize" type="number">
+  Results per page. Range: 20-200. Default: `200`.
+</ParamField>
+
+<ParamField query="limit" type="number">
+  With `mode=coverage`, set a one-shot cap from `1` through `10000`.
+  Otherwise, this is a legacy page size alias. `pageSize` wins.
 </ParamField>
 
 ## Which verified follower endpoint?

@@ -314,7 +314,7 @@ describe('API success response status documentation', (): void => {
 
     expect(findings).toStrictEqual([]);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids).toHaveLength(828);
+    expect(ids).toHaveLength(838);
   });
 
   it('renders every 204 response as an empty body', (): void => {

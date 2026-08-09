@@ -12,7 +12,7 @@ const PRODUCT_MPP_PRICING_PATH = join(PRODUCT_ROOT, 'lib/mpp/pricing.ts');
 const HTTP_METHODS = new Set(['delete', 'get', 'patch', 'post', 'put']);
 const PRODUCT_ROUTE_PATTERN = /'(?<route>[A-Z]+ \/api\/v1[^']+)'/gu;
 const PRODUCT_ROUTE_BLOCK_ENDS = {
-  DIRECT_MPP_ROUTES: 'function getMppPrice',
+  DIRECT_MPP_ROUTES: 'function isDirectMppRoute',
   PAID_READ_ROUTE_KEYS: 'const PAID_READ_ROUTES',
 } as const;
 
