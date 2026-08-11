@@ -133,7 +133,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   Filter by job status. One of: `completed`, `failed`, `running`.
 </ParamField>
 
-<ParamField query="after" type="string">
+<ParamField query="cursor" type="string">
   Cursor for pagination. Use the `nextCursor` value from the previous response to fetch the next page.
 </ParamField>
 
@@ -146,7 +146,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 | Started at | `extractions[].createdAt` | Preserve the collection start time. |
 | Completed at | `extractions[].completedAt` | Measure completed-job duration. |
 | More jobs | `hasMore` | Continue only while this value is `true`. |
-| Next page | `nextCursor` | Pass this value as the next `after` parameter. |
+| Next page | `nextCursor` | Pass this value as the next `cursor` parameter. |
 
 ## Response
 
@@ -164,7 +164,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 </ResponseField>
 <ResponseField name="hasMore" type="boolean">Whether more results exist beyond this page.</ResponseField>
-<ResponseField name="nextCursor" type="string">Cursor to pass as the `after` parameter for the next page. Only present when `hasMore` is `true`.</ResponseField>
+<ResponseField name="nextCursor" type="string">Cursor for the next `cursor` parameter. Only present when `hasMore` is `true`.</ResponseField>
 
 ```json
 {
@@ -216,8 +216,8 @@ Wait for the `Retry-After` value before making another request.
 
 Results are ordered by creation date (newest first). To iterate through all extractions:
 
-1. Make the initial request without the `after` parameter.
-2. Check `hasMore` in the response. If `true`, use `nextCursor` as the `after` value in the next request.
+1. Make the initial request without the `cursor` parameter.
+2. Check `hasMore`. Pass `nextCursor` as the next `cursor` value.
 3. Repeat until `hasMore` is `false`.
 
 ```javascript
@@ -233,7 +233,7 @@ do {
     limit: "100",
     status: "completed",
   });
-  if (cursor) params.set("after", cursor);
+  if (cursor) params.set("cursor", cursor);
   const pageCursor = cursor ?? null;
 
   const response = await fetch(`https://xquik.com/api/v1/extractions?${params}`, {
@@ -275,7 +275,7 @@ do {
 ## Job inventory handoff
 
 Use `GET /extractions` as the job inventory step before fetching details or
-exporting files. Treat `nextCursor` as opaque and pass it back as `after`; do
+exporting files. Treat `nextCursor` as opaque and pass it back as `cursor`; do
 not dump raw job lists into shared logs.
 
 <CardGroup cols={2}>

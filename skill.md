@@ -48,7 +48,10 @@ Reach for Xquik when:
 - **Write**: `POST`, `PUT`, and `PATCH` share a 120 per 60s user bucket.
 - **Delete**: `DELETE` requests use a 60 per 60s user bucket.
 
-Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Retry only on `429` and `5xx` responses.
+Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header.
+Retry safe reads only on `429` and temporary `5xx` responses. For writes, poll
+the returned action. Never resubmit an ambiguous write. Start a new attempt only
+when `safeToRetry` is true.
 
 ### API endpoints (128 documented operations)
 
@@ -85,7 +88,7 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 
 ### Pagination
 
-- **Platform pages**: Events, draws, and extractions use `after`. Drafts use `afterCursor`. Responses include `hasMore` and `nextCursor`.
+- **Platform pages**: Events, draws, and extractions use `cursor`. Radar uses `after`. Drafts use `afterCursor`. Responses include `hasMore` and `nextCursor`.
 - **Unpaginated lists**: Monitors, webhooks, and API keys return up to 200 items.
 - **X endpoints**: X data endpoints use endpoint-specific cursor fields such as `has_next_page` and `next_cursor`.
 - Do not decode or construct cursors manually. Pass returned cursors back unchanged.
@@ -147,8 +150,9 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Re
 
 API MCP v2.6.0 supports MCP `2026-07-28` over Streamable HTTP.
 Current SDKs negotiate with `server/discover`. They attach request metadata
-and headers automatically. Do not call `initialize` or manage sessions for
-modern connections. Stateless 2025-era clients remain compatible.
+and transport headers automatically. Hosted MCP injects required write
+idempotency headers. Do not call `initialize` or manage sessions for modern
+connections. Stateless 2025-era clients remain compatible.
 
 MCP returns normalized snake_case fields, Unix timestamps, structured errors,
 `has_more`, and `next_cursor`. Continue through empty pages while the cursor
@@ -198,7 +202,9 @@ Refunds and disputes reconcile affected-purchase credits only. Unrelated credits
 - Treat IDs as opaque strings. Do not parse X IDs as numbers.
 - Timestamps are ISO 8601 UTC unless an endpoint explicitly documents a different contract.
 - Cursor values are opaque.
-- Retry only `429` and `5xx` responses. Fix other `4xx` responses before retrying.
+- Retry safe reads only after `429` or temporary `5xx` responses.
+- Never resubmit an ambiguous write. Verify state first.
+- Start a new write attempt only when `safeToRetry` is true.
 - Monitor events require an active monitor before webhook delivery can occur.
 - Write actions require connected X accounts.
 - Full account REST and API MCP share account state. Guest keys remain limited to wallet-backed paid reads.

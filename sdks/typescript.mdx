@@ -206,14 +206,14 @@ while (true) {
   await sleep(10000);
 }
 
-let after: string | undefined;
+let cursor: string | undefined;
 const jsonl = await open("xquik-followers.jsonl", "w");
 
 try {
   while (true) {
     const page = await client.extractions.retrieve(job.id, {
       limit: 1000,
-      after,
+      cursor,
     });
 
     for (const row of page.results) {
@@ -224,7 +224,7 @@ try {
       break;
     }
 
-    after = page.nextCursor;
+    cursor = page.nextCursor;
   }
 } finally {
   await jsonl.close();
@@ -240,7 +240,7 @@ const xlsx = await client.extractions.exportResults(job.id, { format: "xlsx" });
 await writeFile("xquik-followers.xlsx", Buffer.from(await xlsx.arrayBuffer()));
 ```
 
-`follower_explorer` requires `targetUsername`. Persist `job.id`, `targetUsername`, `estimate.estimatedResults`, and `estimate.source` before polling so a queue retry, worker restart, or agent handoff can resume the same export. `client.extractions.retrieve` returns `results`, `hasMore`, and `nextCursor`; pass `nextCursor` back as `after` when you need stored JSON pages before exporting files. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+`follower_explorer` requires `targetUsername`. Persist `job.id`, `targetUsername`, `estimate.estimatedResults`, and `estimate.source` before polling so a queue retry, worker restart, or agent handoff can resume the same export. `client.extractions.retrieve` returns `results`, `hasMore`, and `nextCursor`; pass `nextCursor` back as `cursor` when you need stored JSON pages before exporting files. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
 
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
@@ -278,7 +278,7 @@ const xlsx = await client.extractions.exportResults(job.id, { format: "xlsx" });
 await writeFile("xquik-replies.xlsx", Buffer.from(await xlsx.arrayBuffer()));
 ```
 
-`reply_extractor` requires `targetTweetId`. `client.extractions.retrieve` returns `results`, `hasMore`, and `nextCursor`; the shared pagination loop passes `nextCursor` back as `after`. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.extractions.exportResults` supports `csv`, `json`, and `xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
+`reply_extractor` requires `targetTweetId`. `client.extractions.retrieve` returns `results`, `hasMore`, and `nextCursor`; the shared pagination loop passes `nextCursor` back as `cursor`. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.extractions.exportResults` supports `csv`, `json`, and `xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
 
 ## Workflow: Post Media Tweets and DM Attachments
 

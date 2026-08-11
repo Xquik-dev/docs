@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 const PROJECT_ROOT = process.cwd();
 const API_REFERENCE_DIR = join(PROJECT_ROOT, 'api-reference');
 const FRONTMATTER_API_PATTERN = /^api:\s*"([A-Z]+) ([^"]+)"/mu;
+const MDX_IMPORT_PATTERN = /^import\s+\w+\s+from\s+"(\/[^"\n]+\.mdx)";$/gmu;
 
 interface ApiDoc {
   readonly file: string;
@@ -109,10 +110,31 @@ function readApiDocs(): readonly ApiDoc[] {
         file,
         method: match[1].toLowerCase(),
         path: match[2],
-        source,
+        source: expandMdxImports(source),
       },
     ];
   });
+}
+
+function expandMdxImports(
+  source: string,
+  importedFiles = new Set<string>(),
+): string {
+  const imports = [...source.matchAll(MDX_IMPORT_PATTERN)].flatMap(
+    (match): readonly string[] => {
+      const importedPath = match[1];
+      if (importedPath === undefined || importedFiles.has(importedPath)) {
+        return [];
+      }
+      importedFiles.add(importedPath);
+      const importedSource = readFileSync(
+        join(PROJECT_ROOT, importedPath.slice(1)),
+        'utf8',
+      );
+      return [expandMdxImports(importedSource, importedFiles)];
+    },
+  );
+  return [source, ...imports].join('\n');
 }
 
 function documentedFields(
@@ -175,27 +197,27 @@ function schemaFields(
     seenRefs.add(schema.$ref);
     return schemaFields(spec, resolveReference(spec, schema), seenRefs);
   }
-  if (schema.allOf !== undefined) {
-    const schemas = schema.allOf.map((item): SchemaFields =>
-      schemaFields(spec, item, seenRefs),
-    );
-    return {
-      properties: [...new Set(schemas.flatMap((item) => item.properties))],
-      required: [...new Set(schemas.flatMap((item) => item.required))],
-    };
-  }
-  if (schema.oneOf !== undefined || schema.anyOf !== undefined) {
-    const variants = [...(schema.oneOf ?? []), ...(schema.anyOf ?? [])].map(
-      (item): SchemaFields => schemaFields(spec, item, seenRefs),
-    );
-    return {
-      properties: [...new Set(variants.flatMap((item) => item.properties))],
-      required: intersect(variants.map((item) => item.required)),
-    };
-  }
+  const composedFields = (schema.allOf ?? []).map((item): SchemaFields =>
+    schemaFields(spec, item, seenRefs),
+  );
+  const variantFields = [...(schema.oneOf ?? []), ...(schema.anyOf ?? [])].map(
+    (item): SchemaFields => schemaFields(spec, item, seenRefs),
+  );
   return {
-    properties: Object.keys(schema.properties ?? {}),
-    required: [...(schema.required ?? [])],
+    properties: [
+      ...new Set([
+        ...Object.keys(schema.properties ?? {}),
+        ...composedFields.flatMap((item) => item.properties),
+        ...variantFields.flatMap((item) => item.properties),
+      ]),
+    ],
+    required: [
+      ...new Set([
+        ...(schema.required ?? []),
+        ...composedFields.flatMap((item) => item.required),
+        ...intersect(variantFields.map((item) => item.required)),
+      ]),
+    ],
   };
 }
 
@@ -223,24 +245,24 @@ function requestBodyFields(
   };
 }
 
-function requiredOpenApiParameters(
+function openApiParameters(
   spec: OpenApiSpec,
   operation: OpenApiOperation,
   kind: 'path' | 'query',
-): readonly string[] {
+): readonly OpenApiParameter[] {
   return (operation.parameters ?? [])
     .map((parameter): OpenApiParameter => resolveReference(spec, parameter))
     .filter(
       (parameter): boolean =>
         parameter.in === kind &&
-        parameter.required === true &&
         parameter.name !== undefined,
     )
-    .map((parameter): string => parameter.name ?? '')
-    .sort();
+    .sort((left, right): number =>
+      (left.name ?? '').localeCompare(right.name ?? ''),
+    );
 }
 
-function collectRequiredFieldFindings(spec: OpenApiSpec): readonly FieldFinding[] {
+function collectFieldFindings(spec: OpenApiSpec): readonly FieldFinding[] {
   const findings: FieldFinding[] = [];
   for (const apiDoc of readApiDocs()) {
     const operation = getOperation(spec, apiDoc);
@@ -257,25 +279,42 @@ function collectRequiredFieldFindings(spec: OpenApiSpec): readonly FieldFinding[
 
     for (const kind of ['path', 'query'] as const) {
       const docs = documentedFields(apiDoc.source, kind);
-      for (const requiredField of requiredOpenApiParameters(spec, operation, kind)) {
+      const parameters = openApiParameters(spec, operation, kind);
+      for (const parameter of parameters) {
+        const parameterName = parameter.name ?? '';
         const documented = docs.find(
-          (field): boolean => field.name === requiredField,
+          (field): boolean => field.name === parameterName,
         );
         if (documented === undefined) {
           findings.push({
-            field: requiredField,
+            field: parameterName,
             file: apiDoc.file,
-            issue: 'Required OpenAPI parameter is not documented.',
+            issue: 'OpenAPI parameter is not documented.',
             kind,
             operation: operationKey(apiDoc),
           });
           continue;
         }
-        if (!documented.required) {
+        if (parameter.required === true && !documented.required) {
           findings.push({
-            field: requiredField,
+            field: parameterName,
             file: apiDoc.file,
             issue: 'Required OpenAPI parameter lacks the required marker.',
+            kind,
+            operation: operationKey(apiDoc),
+          });
+        }
+      }
+      for (const documented of docs) {
+        if (
+          !parameters.some(
+            (parameter): boolean => parameter.name === documented.name,
+          )
+        ) {
+          findings.push({
+            field: documented.name,
+            file: apiDoc.file,
+            issue: 'Documented parameter is absent from OpenAPI.',
             kind,
             operation: operationKey(apiDoc),
           });
@@ -284,23 +323,24 @@ function collectRequiredFieldFindings(spec: OpenApiSpec): readonly FieldFinding[
     }
 
     const bodyDocs = documentedFields(apiDoc.source, 'body');
-    for (const requiredField of requestBodyFields(spec, operation).required) {
+    const bodyFields = requestBodyFields(spec, operation);
+    for (const bodyField of bodyFields.properties) {
       const documented = bodyDocs.find(
-        (field): boolean => field.name === requiredField,
+        (field): boolean => field.name === bodyField,
       );
       if (documented === undefined) {
         findings.push({
-          field: requiredField,
+          field: bodyField,
           file: apiDoc.file,
-          issue: 'Required OpenAPI body field is not documented.',
+          issue: 'OpenAPI body field is not documented.',
           kind: 'body',
           operation: operationKey(apiDoc),
         });
         continue;
       }
-      if (!documented.required) {
+      if (bodyFields.required.includes(bodyField) && !documented.required) {
         findings.push({
-          field: requiredField,
+          field: bodyField,
           file: apiDoc.file,
           issue: 'Required OpenAPI body field lacks the required marker.',
           kind: 'body',
@@ -363,12 +403,12 @@ function collectDocumentedRequestBodyFieldFindings(
   return findings;
 }
 
-describe('API reference required fields', (): void => {
-  it('documents every required OpenAPI path, query, and body field', (): void => {
+describe('API reference request fields', (): void => {
+  it('documents every OpenAPI path, query, and body field', (): void => {
     expect.assertions(1);
 
     const spec = parseYaml(readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'));
-    expect(collectRequiredFieldFindings(spec)).toStrictEqual([]);
+    expect(collectFieldFindings(spec)).toStrictEqual([]);
   });
 });
 

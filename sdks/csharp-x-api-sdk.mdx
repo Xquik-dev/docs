@@ -270,14 +270,14 @@ while (true)
     await Task.Delay(TimeSpan.FromSeconds(10));
 }
 
-string? after = null;
+string? cursor = null;
 using StreamWriter writer = File.CreateText("xquik-followers.jsonl");
 
 do
 {
     ExtractionRetrieveResponse page = await client.Extractions.Retrieve(
         job.ID,
-        new ExtractionRetrieveParams { After = after, Limit = 1000 }
+        new ExtractionRetrieveParams { Cursor = cursor, Limit = 1000 }
     );
 
     foreach (var follower in page.Results)
@@ -285,8 +285,8 @@ do
         await writer.WriteLineAsync(JsonSerializer.Serialize(follower));
     }
 
-    after = page.HasMore ? page.NextCursor : null;
-} while (!string.IsNullOrEmpty(after));
+    cursor = page.HasMore ? page.NextCursor : null;
+} while (!string.IsNullOrEmpty(cursor));
 
 using HttpResponse csvResponse = await client.Extractions.ExportResults(
     job.ID,
@@ -340,7 +340,7 @@ ExtractionRunResponse job = await client.Extractions.Run(
 using StreamWriter writer = File.CreateText("xquik-replies.jsonl");
 ExtractionRetrieveResponse page = await client.Extractions.Retrieve(
     job.ID,
-    new ExtractionRetrieveParams { After = after, Limit = 1000 }
+    new ExtractionRetrieveParams { Cursor = cursor, Limit = 1000 }
 );
 
 foreach (var reply in page.Results)
@@ -355,7 +355,7 @@ using HttpResponse csvResponse = await client.Extractions.ExportResults(
 await File.WriteAllTextAsync("xquik-replies.csv", await csvResponse.ReadAsString());
 ```
 
-Keep the same `estimate.Allowed` credit branch from the follower export workflow before calling `Run`. Store `job.ID` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `client.Extractions.Retrieve`. Keep `page.NextCursor` as the checkpoint when you stream replies to JSON Lines. Pass it back as `After` on the next `ExtractionRetrieveParams` call.
+Keep the same `estimate.Allowed` credit branch from the follower export workflow before calling `Run`. Store `job.ID` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `client.Extractions.Retrieve`. Keep `page.NextCursor` as the checkpoint when you stream replies to JSON Lines. Pass it back as `Cursor` on the next `ExtractionRetrieveParams` call.
 
 Repeat the export with `new ExtractionExportResultsParams { Format = Format.Json }` and `File.WriteAllTextAsync("xquik-replies.json", await jsonResponse.ReadAsString())`. For XLSX, use `new ExtractionExportResultsParams { Format = Format.Xlsx }`, `File.Create("xquik-replies.xlsx")`, and stream-copy the response body. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. Cost: 1 credit per reply extracted or returned.
 

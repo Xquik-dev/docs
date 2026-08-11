@@ -56,79 +56,62 @@ info:
     ## Common tasks
 
 
-    **Find a tweet** - GET /x/tweets/{id} with a numeric tweet ID. Returns full
-    tweet data: text, author, metrics (likes, retweets, replies, views), media
-    URLs, and creation timestamp. Cost: $0.00015 per lookup.
+    **Find a tweet** - GET /x/tweets/{id}. Returns text, author, metrics, media,
+    and creation time. Cost: $0.00015 per lookup.
 
 
     **Search tweets** - GET /x/tweets/search?q={query}&limit={n}. Supports X
-    search operators, structured filters like fromUser, mediaType, minFaves,
-    hashtags, and verifiedOnly, plus exact lookup for a pasted Tweet ID or X
-    status URL. Plain from:user date windows are optimized for timeline
-    completeness. Omit mode for automatic maximum coverage with cursor-based
-    pagination. Cost: $0.00015 per tweet returned.
+    operators, structured filters, Tweet IDs, and status URLs. Omit mode for
+    automatic coverage. Cost: $0.00015 per returned tweet.
 
 
-    **Find a user** - GET /x/users/{id} where {id} is a numeric user ID or
-    @username. Returns profile data: name, bio, follower/following counts,
-    verification status, join date. Cost: $0.00015 per lookup.
+    **Find a user** - GET /x/users/{id}. Accepts an ID or username. Cost:
+    $0.00015 per lookup.
 
 
-    **Check if A follows B** - GET /x/followers/check?source={a}&target={b}
-    where source and target are usernames, @usernames, or X or Twitter profile
-    URLs. Cost: $0.00075.
+    **Check if A follows B** - GET /x/followers/check?source={a}&target={b}.
+    Accepts usernames or profile URLs. Cost: $0.00075.
 
 
-    **Get trending topics** - GET /trends?woeid={region}&count={n}. WOEID 1 =
-    worldwide, 23424977 = US, 23424975 = UK, 23424969 = Turkey. Cost: $0.00045.
+    **Get trends** - GET /trends?woeid={region}&count={n}. WOEID 1 is worldwide.
+    Cost: $0.00045.
 
 
-    **Download media** - POST /x/media/download with {"tweetIds": ["123",
-    "456"]} body. Returns download URLs for images and videos. Cost: 1 credit
-    per fresh tweet processed with media; cached repeat downloads are free.
+    **Download media** - POST /x/media/download with `tweetIds`. Fresh Tweets
+    cost 1 credit each. Cached repeats are free.
 
 
-    **Read an article** - GET /x/articles/{tweetId} for long-form X Articles.
-    Returns full article HTML, cover image, and metadata. Cost: $0.00075.
+    **Read an article** - GET /x/articles/{tweetId}. Cost: $0.00075.
 
 
     ## Pagination
 
 
-    Default v1 responses keep their existing pagination fields for
-    compatibility. Platform list endpoints return `hasMore` and `nextCursor`; X
-    data endpoints return `has_next_page` and `next_cursor`. Send
-    `xquik-api-contract: 2026-04-29` to receive the unified best-practice fields
-    `has_more` and `next_cursor`. Pass the cursor back as `?cursor={cursor}`;
-    legacy `?after={cursor}` still works. Dynamic-priced endpoints charge per
-    item returned, not per request.
+    Default platform pages return `hasMore` and `nextCursor`. X pages return
+    `has_next_page` and `next_cursor`. The 2026-04-29 contract returns
+    `has_more` and `next_cursor`. Pass cursors through `cursor`; `after` remains
+    compatible. Dynamic pricing counts returned items, not requests.
 
 
-    Omit `mode` for automatic reads. Busy initial requests return data. Pass
-    cursors unchanged. Legacy cursors and `mode=standard` stay legacy. Live
-    coverage cursors stay retryable.
+    Omit `mode` for automatic reads. Pass cursors unchanged. `mode=standard`
+    remains legacy. Retry 409 responses after `Retry-After`. Restart 410
+    responses without a cursor.
 
 
     ## Authentication
 
 
-    Eligible paid read endpoints accept accountless prepaid credit wallets.
-    Fixed-price lookups also accept direct MPP payments. Media downloads, write
-    endpoints, and automation features require authentication. Send an Xquik API
-    key through `x-api-key`, `Xquik-Api-Key`, or `Authorization: Bearer xq_...`.
-    Send an OAuth 2.1 access token through `Authorization: Bearer`.
+    Eligible reads accept guest wallets. Fixed-price lookups also accept MPP.
+    Other features require an API key or OAuth 2.1 bearer token. API keys also
+    support `Authorization: Bearer xq_...`.
 
 
     ## Best-Practice Response Contract
 
 
-    v1 keeps its original response contract by default so existing integrations
-    do not break. Send `xquik-api-contract: 2026-04-29` to opt in to the
-    best-practice contract: snake_case response fields, Unix timestamps in
-    seconds, structured error objects, `has_more` and `next_cursor` pagination
-    fields, `object` resource identifiers, and prefixed IDs where available.
-    Dependency failures that returned 502 in default v1 return 424 in the opt-in
-    contract. Future major API versions should make this contract the default.
+    v1 remains the default. Send `xquik-api-contract: 2026-04-29` for
+    snake_case, Unix timestamps, structured errors, unified pagination, resource
+    objects, and prefixed IDs. Dependency failures use 424 instead of 502.
   contact:
     name: Xquik
     url: https://xquik.com
@@ -1749,7 +1732,12 @@ paths:
         - $ref: '#/components/parameters/After'
         - name: monitorId
           in: query
-          description: Filter events by monitor ID
+          description: Account monitor ID.
+          schema:
+            type: string
+        - name: keywordMonitorId
+          in: query
+          description: Keyword monitor ID.
           schema:
             type: string
         - name: eventType
@@ -1879,8 +1867,7 @@ paths:
       parameters:
         - name: dry_run
           in: query
-          description:
-            Return a cost estimate without creating or running an extraction.
+          description: Estimate cost without creating an extraction.
           schema:
             type: boolean
             default: false
@@ -3283,6 +3270,8 @@ paths:
           $ref: '#/components/responses/XApiError'
         '409':
           $ref: '#/components/responses/CoverageCursorUnavailable'
+        '410':
+          $ref: '#/components/responses/CursorGone'
         '503':
           $ref: '#/components/responses/MaximumCoverageBusy'
 
@@ -6555,7 +6544,7 @@ paths:
             type: string
           description: X user ID or username
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/AutomaticTweetPageSize'
         - name: includeReplies
           in: query
           schema:
@@ -6635,6 +6624,8 @@ paths:
           $ref: '#/components/responses/XApiError'
         '409':
           $ref: '#/components/responses/CoverageCursorUnavailable'
+        '410':
+          $ref: '#/components/responses/CursorGone'
         '503':
           $ref: '#/components/responses/MaximumCoverageBusy'
 
@@ -6660,7 +6651,7 @@ paths:
             type: string
           description: Target user ID or username for the replies timeline.
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/AutomaticTweetPageSize'
         - name: includeParentTweet
           in: query
           schema:
@@ -6734,6 +6725,8 @@ paths:
           $ref: '#/components/responses/XApiError'
         '409':
           $ref: '#/components/responses/CoverageCursorUnavailable'
+        '410':
+          $ref: '#/components/responses/CursorGone'
         '503':
           $ref: '#/components/responses/MaximumCoverageBusy'
 
@@ -8096,9 +8089,9 @@ paths:
             maximum: 25000
           description: >
             With mode=complete, maximum combined direct and nested reply rows
-            (1-25000, default 25000). Otherwise this remains the deprecated
-            pageSize alias and accepts only 1-100.
-        - $ref: '#/components/parameters/ReplyPageSize'
+            (1-25000, default 25000). Automatic pages accept 1-300. Standard
+            pages accept 1-100. Prefer pageSize outside complete mode.
+        - $ref: '#/components/parameters/AutomaticTweetPageSize'
         - name: scope
           in: query
           schema:
@@ -8206,6 +8199,8 @@ paths:
           $ref: '#/components/responses/RepliesIncomplete'
         '409':
           $ref: '#/components/responses/CoverageCursorUnavailable'
+        '410':
+          $ref: '#/components/responses/CursorGone'
         '503':
           $ref: '#/components/responses/MaximumCoverageBusy'
 
@@ -8334,7 +8329,7 @@ paths:
           schema:
             type: string
           description: Legacy cursor alias. Prefer cursor.
-        - $ref: '#/components/parameters/FollowerPageSize'
+        - $ref: '#/components/parameters/AutomaticFollowerPageSize'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
         - $ref: '#/components/parameters/UserFilterMaxFollowers'
         - $ref: '#/components/parameters/UserFilterMinFollowing'
@@ -8383,6 +8378,8 @@ paths:
           $ref: '#/components/responses/XApiError'
         '409':
           $ref: '#/components/responses/CoverageCursorUnavailable'
+        '410':
+          $ref: '#/components/responses/CursorGone'
         '503':
           $ref: '#/components/responses/MaximumCoverageBusy'
 
@@ -8411,7 +8408,7 @@ paths:
           schema:
             type: string
           description: Deprecated following cursor alias. Prefer cursor.
-        - $ref: '#/components/parameters/FollowerPageSize'
+        - $ref: '#/components/parameters/AutomaticFollowerPageSize'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
         - $ref: '#/components/parameters/UserFilterMaxFollowers'
         - $ref: '#/components/parameters/UserFilterMinFollowing'
@@ -8460,6 +8457,8 @@ paths:
           $ref: '#/components/responses/XApiError'
         '409':
           $ref: '#/components/responses/CoverageCursorUnavailable'
+        '410':
+          $ref: '#/components/responses/CursorGone'
         '503':
           $ref: '#/components/responses/MaximumCoverageBusy'
 
@@ -8587,7 +8586,7 @@ paths:
           schema:
             type: string
           description: Legacy cursor alias. Prefer cursor.
-        - $ref: '#/components/parameters/FollowerPageSize'
+        - $ref: '#/components/parameters/AutomaticFollowerPageSize'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
         - $ref: '#/components/parameters/UserFilterMaxFollowers'
         - $ref: '#/components/parameters/UserFilterMinFollowing'
@@ -8636,6 +8635,8 @@ paths:
           $ref: '#/components/responses/XApiError'
         '409':
           $ref: '#/components/responses/CoverageCursorUnavailable'
+        '410':
+          $ref: '#/components/responses/CursorGone'
         '503':
           $ref: '#/components/responses/MaximumCoverageBusy'
 
@@ -8767,33 +8768,41 @@ components:
       description: >
         Omit mode for resumable maximum coverage. Standard keeps legacy
         pagination. Coverage returns diagnostics once and rejects cursors.
-    ReplyPageSize:
+    AutomaticTweetPageSize:
       name: pageSize
       in: query
       description: >
-        Maximum direct replies per automatic or standard page (1-100, default
-        20). Omit pageSize with mode=complete. Generated pageSize=20 and the
-        exact default filter bundle are ignored in complete mode. Continue while
-        has_next_page is true. Deprecated limit and count aliases remain
-        accepted outside complete mode.
+        Automatic pages accept 1-300 Tweets. Standard pages keep 1-100. Default
+        20. Continue while has_next_page is true. Deprecated aliases remain
+        accepted.
       schema:
         type: integer
         minimum: 1
-        maximum: 100
+        maximum: 300
+        default: 20
     FollowerPageSize:
       name: pageSize
       in: query
       description: >
         Maximum user profiles requested from this page (20-200, default 200).
-        Source, filters, or credits can return fewer profiles. Automatic
-        coverage can prefetch across independent views. Response shape, page
-        size, and per-returned-profile billing stay unchanged. Keep requesting
-        next_cursor while has_next_page is true. Deprecated limit and count
-        aliases remain accepted.
+        Source, filters, or credits can return fewer profiles. Keep requesting
+        next_cursor while has_next_page is true. Deprecated aliases remain
+        accepted.
       schema:
         type: integer
         minimum: 20
         maximum: 200
+        default: 200
+    AutomaticFollowerPageSize:
+      name: pageSize
+      in: query
+      description: >
+        Maximum user profiles: automatic 300; standard 200. Sources return fewer
+        profiles. Continue with has_next_page.
+      schema:
+        type: integer
+        minimum: 20
+        maximum: 300
         default: 200
     UserFilterMinFollowers:
       name: minFollowers
@@ -8871,7 +8880,7 @@ components:
       in: query
       schema:
         type: string
-      description: Cursor for keyset pagination from prior response next_cursor
+      description: Previous nextCursor.
     StyleId:
       name: id
       in: path
@@ -9415,11 +9424,10 @@ components:
               'Authentication required. Provide a valid API key or bearer token.'
     AnonymousGuestAuthenticationRequired:
       description: >
-        Authentication required for a non-MPP paid read. The Bearer challenge
-        requests authentication and is not a Payment challenge. Requests without
-        credentials advertise accountless Stripe checkout, but create no
-        checkout. Explicit invalid credentials return the plain error shape.
-        Call an advertised action only after explicit user confirmation.
+        Authentication required for a non-MPP paid read. The challenge requests
+        Bearer authentication, not payment. Missing credentials advertise guest
+        checkout without creating it. Invalid credentials return a plain error.
+        Require user confirmation before calling an advertised action.
       headers:
         Cache-Control:
           description: Prevents storage of the guest checkout action.
@@ -9486,14 +9494,11 @@ components:
             message: 'Resource not found.'
     PaymentRequired:
       description: >
-        Payment required. Fixed-price direct MPP requests return a Machine
-        Payments Protocol problem document and a WWW-Authenticate challenge.
-        Authenticated X data requests return balances and explicit Stripe
-        checkout-creation actions. Guest paid-read keys receive only the
-        accountless guest top-up action. Direct MPP challenges also advertise
-        the Stripe wallet action. Other authenticated endpoints return a legacy
-        error shape. A failed request never creates checkout. Create checkout
-        only after the user confirms a payment option.
+        Payment required. MPP reads return a problem document and
+        `WWW-Authenticate`. Authenticated reads return balances and checkout
+        actions. Guest keys receive only the guest top-up action. Other
+        endpoints may use legacy errors. A failed request never creates
+        checkout. Require user confirmation before creating one.
       headers:
         WWW-Authenticate:
           description:
@@ -9620,12 +9625,11 @@ components:
               persists.'
     WriteRejected:
       description: >
-        X rejected the write or the media URL could not be downloaded. Possible
-        codes: `x_content_too_long`, `x_duplicate_action`,
-        `x_account_suspended`, `x_account_protected`, `x_dm_not_allowed`,
-        `x_target_not_found`, `x_account_feature_required`, `x_rejected`,
-        `media_download_failed` (URL fetch path only - body.url not HTTPS,
-        resolves to private IP, file too large, origin error, or timeout).
+        X rejected the write or media download. Codes include
+        `x_content_too_long`, `x_duplicate_action`, `x_account_suspended`,
+        `x_account_protected`, `x_dm_not_allowed`, `x_target_not_found`,
+        `x_account_feature_required`, `x_rejected`, and `media_download_failed`.
+        The media code covers URL, size, origin, and timeout failures.
       content:
         application/json:
           schema:
@@ -9700,21 +9704,23 @@ components:
               'Users who liked this post are unavailable. Use retweeters or
               replies instead.'
     CoverageCursorUnavailable:
-      description: Automatic coverage cursor expired or is already in use.
+      description: Cursor is in use. Retry `coverage_cursor_unavailable` later.
       headers:
         Retry-After:
           schema:
             type: integer
             minimum: 1
-          description: Seconds to wait before retrying once.
+          description: Seconds to wait.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-          example:
-            error: 'coverage_cursor_unavailable'
-            message:
-              'Cursor expired or busy. Retry once, then restart pagination.'
+    CursorGone:
+      description: Restart without the `coverage_cursor_gone` cursor.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
     MaximumCoverageBusy:
       description: Automatic or explicit maximum coverage is temporarily busy.
       headers:
@@ -9792,10 +9798,9 @@ components:
             message: 'This X account is already connected.'
     ConnectLoginFailed:
       description: >
-        Login could not continue because credentials or account verification
-        require user action. When a cooldown applies, the response includes
-        `retryAfterMs` and a `Retry-After` header in seconds. Returns error code
-        `login_failed` or `passkey_required`.
+        Login requires new credentials or account verification. Cooldowns
+        include `retryAfterMs` and `Retry-After`. Codes are `login_failed` or
+        `passkey_required`.
       headers:
         Retry-After:
           description: Cooldown duration in seconds, when retrying must wait.
@@ -9833,11 +9838,9 @@ components:
             retryAfterMs: 60000
     ConnectRateLimitExceeded:
       description: >
-        Too many requests. Either the generous connection safety limit was
-        exceeded (`rate_limit_exceeded`, `retryAfter` seconds, `Retry-After:
-        900` header) or a prior login attempt triggered a cooldown
-        (`login_cooldown`, `reason`, `retryAfterMs`, `Retry-After` header in
-        seconds).
+        Too many requests. `rate_limit_exceeded` includes `retryAfter` and
+        `Retry-After`. `login_cooldown` also includes `reason` and
+        `retryAfterMs`.
       headers:
         Retry-After:
           description: Required wait in seconds.
@@ -12027,6 +12030,8 @@ components:
                 - checkout_unavailable
                 - connection_challenge_expired
                 - connection_challenge_inactive
+                - coverage_cursor_gone
+                - coverage_cursor_unavailable
                 - draft_not_found
                 - favoriters_unavailable
                 - forbidden
@@ -12036,6 +12041,7 @@ components:
                 - idempotency_conflict
                 - idempotency_key_conflict
                 - invalid_community_id
+                - invalid_coverage_cursor
                 - invalid_idempotency_key
                 - invalid_list_id
                 - invalid_payment_amount
@@ -12150,6 +12156,8 @@ components:
                     - checkout_unavailable
                     - connection_challenge_expired
                     - connection_challenge_inactive
+                    - coverage_cursor_gone
+                    - coverage_cursor_unavailable
                     - draft_not_found
                     - favoriters_unavailable
                     - forbidden
@@ -12159,6 +12167,7 @@ components:
                     - idempotency_conflict
                     - idempotency_key_conflict
                     - invalid_community_id
+                    - invalid_coverage_cursor
                     - invalid_idempotency_key
                     - invalid_list_id
                     - invalid_payment_amount
@@ -14307,12 +14316,9 @@ components:
         health:
           type: string
           description: >
-            Derived connection health. `healthy` = ready to use. `needsReauth` =
-            user must submit fresh credentials. `locked` = X locked the account;
-            unlock on x.com first. `suspended` = X banned the account.
-            `recovering` = cooldown ended; the account can reconnect on its next
-            use. `temporaryIssue` = temporary connection problem; wait before
-            the next use.
+            Derived health. `healthy` is ready. `needsReauth` needs credentials.
+            `locked` must be unlocked on X. `suspended` is banned. `recovering`
+            can reconnect. Wait before using `temporaryIssue`.
           enum:
             [
               healthy,

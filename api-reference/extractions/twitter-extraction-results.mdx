@@ -149,8 +149,24 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   Number of results to return per page. Default: `100`. Maximum: `1000`.
 </ParamField>
 
-<ParamField query="after" type="string">
+<ParamField query="cursor" type="string">
   Result ID cursor for pagination. Use the `nextCursor` value from the previous response to fetch the next page.
+</ParamField>
+
+<ParamField query="outputMode" type="string">
+  Result fields: `compact`, `full`, or `raw`. Defaults to `full`.
+</ParamField>
+
+<ParamField query="outputPreset" type="string">
+  Keep enrichment `nested` or merge it with `flat`.
+</ParamField>
+
+<ParamField query="fieldStyle" type="string">
+  Field names: `source`, `camelCase`, or `snake_case`.
+</ParamField>
+
+<ParamField query="includeRaw" type="boolean">
+  Deprecated. Use `outputMode=raw`.
 </ParamField>
 
 | Extraction result page column | Response source | Export rule |
@@ -163,7 +179,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 | X user ID | `results[].xUserId` | Preserve the stable profile join. |
 | Tweet fields | `tweetId`, `tweetText`, and `tweetCreatedAt` | Store them only when returned. |
 | More pages | `hasMore` | Continue only while this value is `true`. |
-| Next page | `nextCursor` | Pass this value as the next `after` parameter. |
+| Next page | `nextCursor` | Pass this value as the next `cursor` parameter. |
 
 ## Response
 
@@ -213,7 +229,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 </Tip>
 
 <ResponseField name="hasMore" type="boolean">Whether more results exist beyond this page.</ResponseField>
-<ResponseField name="nextCursor" type="string">Cursor to pass as the `after` parameter for the next page. Only present when `hasMore` is `true`.</ResponseField>
+<ResponseField name="nextCursor" type="string">Cursor for the next `cursor` parameter. Only present when `hasMore` is `true`.</ResponseField>
 
 ```json
 {
@@ -284,8 +300,8 @@ Wait for the `Retry-After` value before polling again.
 
 Results are ordered by ID ascending. To iterate through all results for a large extraction:
 
-1. Make the initial request without the `after` parameter.
-2. Check `hasMore` in the response. If `true`, use `nextCursor` as the `after` value in the next request.
+1. Make the initial request without the `cursor` parameter.
+2. Check `hasMore`. Pass `nextCursor` as the next `cursor` value.
 3. Repeat until `hasMore` is `false`.
 
 ```javascript
@@ -299,7 +315,7 @@ let pageIndex = 0;
 
 do {
   const params = new URLSearchParams({ limit: "1000" });
-  if (cursor) params.set("after", cursor);
+  if (cursor) params.set("cursor", cursor);
   const pageCursor = cursor ?? null;
 
   const response = await fetch(
@@ -338,7 +354,7 @@ do {
 
 Use `GET /extractions/{id}` when an integration needs structured JSON rows,
 incremental checkpoints, or more rows than a file export can return. Treat
-`nextCursor` as an opaque checkpoint and pass it back as `after`.
+`nextCursor` as an opaque checkpoint and pass it back as `cursor`.
 
 <CardGroup cols={2}>
   <Card title="Page checkpoint" icon="bookmark">

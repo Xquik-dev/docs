@@ -78,8 +78,15 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
   <Tab title="409" id="response-x-tweet-replies-409">
     ```json
     {
-      "error": "coverage_cursor_unavailable",
-      "message": "Cursor expired or busy. Retry once, then restart pagination."
+      "error": "invalid_input"
+    }
+    ```
+  </Tab>
+
+  <Tab title="410" id="response-x-tweet-replies-410">
+    ```json
+    {
+      "error": "invalid_input"
     }
     ```
   </Tab>
@@ -157,7 +164,8 @@ explains reply coverage and optional response fields.
 ### How Does the Twitter API Get Replies to a Tweet?
 
 Start with the original tweet's numeric ID. Send it through this endpoint's
-path parameter. Set `pageSize` from `1` through `100`.
+path parameter. Automatic pages accept `pageSize` from `1` through `300`.
+Standard pages accept `1` through `100`.
 The response contains reply tweets, author profiles, and engagement counts.
 Store `next_cursor` after writing every page. Continue only while
 `has_next_page` remains `true`.
@@ -389,12 +397,13 @@ each conversation branch.
 
 <ParamField query="limit" type="number">
   Maximum combined replies in complete mode. Use `1` through `25000`.
-  Complete mode defaults to `25000`. Otherwise, use `1` through `100`.
+  Complete mode defaults to `25000`. Automatic pages accept `1` through `300`.
+  Standard pages accept `1` through `100`.
 </ParamField>
 
 <ParamField query="pageSize" type="number" default="20">
-  Maximum replies per automatic or standard page. Use `1` through `100`. Omit
-  this field in complete mode. Deprecated `limit` and `count` aliases remain.
+  Automatic pages accept `1` through `300`. Standard pages accept `1` through
+  `100`. Omit this field in complete mode. Deprecated aliases remain.
 </ParamField>
 
 <ParamField query="cursor" type="string">
@@ -410,6 +419,30 @@ each conversation branch.
 <ParamField query="untilTime" type="string">
   Unix timestamp in seconds. Only return replies before this time. Pair with
   `sinceTime` for closed campaign, support, or audit windows.
+</ParamField>
+
+<ParamField query="scope" type="string">
+  In complete mode, select `all`, `direct`, or `nested` replies.
+</ParamField>
+
+<ParamField query="maxDepth" type="integer">
+  In complete mode, set the maximum reply depth from the source post.
+</ParamField>
+
+<ParamField query="sort" type="string">
+  In complete mode, sort by `relevance`, `latest`, `oldest`, or `likes`.
+</ParamField>
+
+<ParamField query="excludeOriginalAuthor" type="boolean">
+  In complete mode, exclude replies from the source-post author.
+</ParamField>
+
+<ParamField query="includeOriginalPost" type="boolean">
+  In complete mode, include the source post and count it toward `limit`.
+</ParamField>
+
+<ParamField query="hasMediaOnly" type="boolean">
+  In complete mode, only return replies containing media.
 </ParamField>
 
 ### Tweet result filters
