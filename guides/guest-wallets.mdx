@@ -14,7 +14,7 @@ Guest wallets provide prepaid access to 33 eligible X read routes without an acc
 This is accountless access, not anonymous access. Every guest-wallet paid read requires the active guest key returned during wallet creation. Direct MPP reads use a per-request payment credential.
 
 <Warning>
-  A `401` or `402` response never creates a checkout. Show the payment choices and amount first. Create a Payment Link only after the user explicitly confirms. Never submit payment for the user.
+  A `401` or `402` response never creates a checkout. Show the payment choices and amount first. Create a hosted checkout only after the user explicitly confirms. Never submit payment for the user.
 </Warning>
 
 ## Accountless Twitter Scraper API Questions
@@ -106,7 +106,7 @@ approved top-up. Do not create a new wallet when one paid read returns
 | --- | --- | --- | --- | --- |
 | Account API key | Required | Full-scope API key | Full authenticated API | Available account credits; plans add monthly credits |
 | OAuth 2.1 | Required | OAuth Bearer token | Same account capabilities granted by OAuth | Available account credits; plans add monthly credits |
-| Guest wallet | Not required | `paid_reads` API key | Exactly 33 prepaid GET routes | $10-$250 USD Stripe-hosted Payment Link |
+| Guest wallet | Not required | `paid_reads` API key | Exactly 33 prepaid GET routes | $10-$250 USD hosted checkout |
 | MPP | Not required | Per-request payment credential | 7 fixed-price GET operations | Per-request payment |
 
 Guest wallets do not grant write actions, connected-account reads, monitors, webhooks, extractions, draws, account management, billing management, API-key management, or OAuth access. Full account keys and OAuth behavior remain unchanged.
@@ -117,7 +117,7 @@ Guest wallets do not grant write actions, connected-account reads, monitors, web
   <Step title="Confirm the amount">
     Ask the user to choose and explicitly confirm a USD amount from $10 through $250. Represent it in cents as `amount_minor`.
   </Step>
-  <Step title="Create the Payment Link">
+  <Step title="Create Hosted Checkout">
     Call `POST /api/v1/guest-wallets` with `Content-Type: application/json`, a cryptographically random UUID v4 `Idempotency-Key`, and the confirmed amount.
 
     ```bash
@@ -131,13 +131,13 @@ Guest wallets do not grant write actions, connected-account reads, monitors, web
     # Store $api_key and $idempotency_key as secrets. Give only $checkout_url to the user.
     ```
 
-    This request creates a one-use Stripe-hosted Payment Link. It does not charge the user.
+    This request creates a one-use hosted checkout. It does not charge the user.
   </Step>
   <Step title="Store the credentials">
     Store the returned `api_key` and the original `Idempotency-Key` in a secret manager. The key appears only in the initial response and an exact idempotent replay. No email recovery is available.
   </Step>
-  <Step title="Give the user the Stripe URL">
-    Give only `checkout_url` to the user. The user opens and completes Stripe checkout. Pending Payment Links expire after 60 minutes.
+  <Step title="Give the user the checkout URL">
+    Give only `checkout_url` to the user. The user completes hosted checkout. Pending checkouts expire after 60 minutes.
   </Step>
   <Step title="Poll for verified payment">
     After payment, poll `GET /api/v1/guest-wallets/status` every `poll_after_seconds` with the guest key. Stop when `latest_purchase.status` is no longer `pending`.
@@ -147,7 +147,7 @@ Guest wallets do not grant write actions, connected-account reads, monitors, web
       -H "Authorization: Bearer xq_your_guest_key_here" | jq
     ```
 
-    The key remains inactive for paid reads until the status response reports `usable: true`. Stripe checkout completion alone is not proof of activation. Xquik activates credits only after a verified Stripe webhook.
+    The key remains inactive for paid reads until status reports `usable: true`. Checkout completion alone is not proof of activation. Xquik activates credits only after payment is verified.
   </Step>
 </Steps>
 
@@ -178,7 +178,7 @@ Seven routes also accept [direct MPP payment](/mpp/machine-payments-protocol#eli
 
 ## Top up an active wallet
 
-When a guest read returns `402 insufficient_credits`, its `payment_options` advertises only `POST /api/v1/guest-wallets/topups`. Ask the user to choose and confirm a $10-$250 USD amount. Then create a new one-use Stripe-hosted Payment Link with the existing guest key and a new UUID v4 `Idempotency-Key`.
+When a guest read returns `402 insufficient_credits`, its `payment_options` advertises only `POST /api/v1/guest-wallets/topups`. Ask the user to choose and confirm $10-$250 USD. Then create a new one-use hosted checkout with the existing guest key and a new UUID v4 `Idempotency-Key`.
 
 The top-up response keeps the same wallet and key. It never returns a new key. After payment, poll the same status URL every `poll_after_seconds` until `latest_purchase.status` is no longer `pending`.
 
