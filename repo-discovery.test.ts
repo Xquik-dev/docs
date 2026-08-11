@@ -2349,8 +2349,8 @@ const REQUIRED_BILLING_MPP_SNIPPETS = [
   '<Card title="Fixed charge intent" icon="receipt">',
   'Every direct MPP operation advertises one fixed `charge` offer per request.',
   'Guest wallets prepay the 33 eligible GET routes without an account.',
-  '`POST /api/v1/guest-wallets` creates a one-use Stripe-hosted Payment Link and returns a `paid_reads` key.',
-  'The key stays inactive until a verified Stripe webhook.',
+  '`POST /api/v1/guest-wallets` creates a one-use hosted checkout and returns a `paid_reads` key.',
+  'The key stays inactive until payment is verified.',
   'A guest `402` offers only `POST /api/v1/guest-wallets/topups`.',
   'Anonymous non-MPP paid reads return `401` with a Bearer challenge and guest wallet action.',
   'The 7 direct MPP reads return `402` with a Payment challenge and the same action.',
@@ -2367,7 +2367,7 @@ const REQUIRED_GUEST_WALLET_GUIDE_SNIPPETS = [
   'Every guest-wallet paid read requires the active guest key returned during wallet creation.',
   'Direct MPP reads use a per-request payment credential.',
   'A `401` or `402` response never creates a checkout.',
-  'Create a Payment Link only after the user explicitly confirms.',
+  'Create a hosted checkout only after the user explicitly confirms.',
   'The `paid_reads` scope permits exactly the 33 GET routes',
   '## Eligible paid-read routes',
   'Seven routes also accept [direct MPP payment](/mpp/machine-payments-protocol#eligible-endpoints).',
@@ -12296,6 +12296,13 @@ const FORBIDDEN_STALE_CREDIT_COST_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
+  'Payment Link',
+  'payment link',
+  'Stripe',
+  'buy.stripe.com',
+  'cs_live_',
+  'cs_test_',
+  'stripe',
   ['GitHub', 'Trending'].join(' '),
   ['Google', 'Trends'].join(' '),
   ['Hacker', 'News'].join(' '),
@@ -12561,7 +12568,7 @@ function sha256File(file: string): string {
 function collectPublicConfidentialityWordingFindings(): readonly DiscoveryFinding[] {
   const findings: DiscoveryFinding[] = [];
 
-  for (const file of [...listPublicMarkdownFiles(), 'openapi.yaml']) {
+  for (const file of [...listPublicMarkdownFiles(), 'context7.json', 'llms.txt']) {
     const source = readFileSync(file, 'utf8');
 
     for (const snippet of FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING) {

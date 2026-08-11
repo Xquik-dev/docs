@@ -25,7 +25,7 @@ Reach for Xquik when:
 - **Running giveaway draws**: Execute transparent, auditable random draws on tweets with public result pages.
 - **Composing posts**: Get editorial guidance, Radar research suggestions, and deterministic draft checks.
 - **Connecting AI agents**: Use Docs MCP for no-auth docs search and page retrieval, and API MCP for authenticated account actions.
-- **Running accountless reads**: Use a Stripe-funded guest `paid_reads` key on 33 GET routes or direct MPP on 7 fixed-price operations.
+- **Running accountless reads**: Use a prepaid guest `paid_reads` key on 33 GET routes or direct MPP on 7 fixed-price operations.
 - **Analyzing styles**: Analyze tweet styles, compare accounts, track engagement performance, or save drafts.
 - **Writing to X**: Post tweets, like, retweet, follow, send DMs, upload media, or manage community membership from connected accounts.
 - **Trending data**: Access current X trends across 12 regions plus Radar topics.
@@ -98,7 +98,7 @@ when `safeToRetry` is true.
 - **Use the REST API** for backend services, automation scripts, interval polling, file exports, and fine-grained pagination or request control.
 - **Use Docs MCP** for AI agents that need read-only docs search and page retrieval for API parameters, examples, error codes, billing rules, webhook setup, or SDK guidance.
 - **Use API MCP** for AI agents that need authenticated Xquik account actions in Claude, ChatGPT, Cursor, VS Code, Codex, and similar clients.
-- **Use a guest wallet** for prepaid GET reads without an account. Require explicit confirmation before creating a $10-$250 USD Stripe-hosted Payment Link.
+- **Use a guest wallet** for prepaid GET reads without an account. Require explicit confirmation before creating a $10-$250 USD hosted checkout.
 - **Use direct MPP** for anonymous per-request payment on 7 fixed-price reads.
 - **Use webhooks** when monitor events must reach an HTTPS endpoint. Add them when pushed events fit better than polling.
 
@@ -185,10 +185,10 @@ Restart Codex and run `codex mcp list`. Do not run `codex mcp login xquik` while
 1. Ask the user to choose and confirm $10-$250 USD.
 2. Call `POST /api/v1/guest-wallets` through direct REST with the confirmed amount and a random UUID v4 `Idempotency-Key`.
 3. Store `api_key` and the idempotency key before sharing `checkout_url`.
-4. The user completes payment on Stripe. Poll status every `poll_after_seconds` until `latest_purchase.status` is no longer `pending`.
+4. The user completes the hosted checkout. Poll status every `poll_after_seconds` until `latest_purchase.status` is no longer `pending`.
 5. Use the key only when `usable` is `true`. It can call exactly the 33 eligible paid-read GET routes.
 
-The creation request does not charge the user. The key stays inactive until a verified Stripe webhook activates it. Use `POST /api/v1/guest-wallets/topups` only after another explicit confirmation. Never execute guest credential routes through MCP.
+The creation request does not charge the user. The key stays inactive until payment is verified. Use `POST /api/v1/guest-wallets/topups` only after another explicit confirmation. Never execute guest credential routes through MCP.
 
 Refunds and disputes reconcile affected-purchase credits only. Unrelated credits remain usable. Access pauses only during unresolved settlement risk or unrecovered liability, then resumes.
 

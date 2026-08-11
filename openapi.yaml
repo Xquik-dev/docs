@@ -5860,11 +5860,9 @@ paths:
       operationId: createGuestWallet
       summary: Create an accountless prepaid wallet checkout
       description: >
-        Create a one-use Stripe-hosted checkout after the user explicitly
-        confirms a $10-$250 USD amount. This request creates no charge by
-        itself. The user opens checkout_url on Stripe. This endpoint returns the
-        paid-read API key without requiring an Xquik account, email, dashboard,
-        or Xquik web page. An idempotent replay returns the same key.
+        Create a one-use hosted checkout after the user confirms $10-$250 USD.
+        The request creates no charge. It returns a paid-read API key without an
+        Xquik account. Idempotent replays return the same key.
       tags: [Guest Wallets]
       security: []
       parameters:
@@ -5881,8 +5879,7 @@ paths:
               currency: usd
       responses:
         '201':
-          description: >
-            Stripe-hosted checkout, guest API key, and API status URL.
+          description: Hosted checkout, guest API key, and API status URL.
           headers:
             Cache-Control:
               description: Prevents storage of the secret-bearing response.
@@ -5903,7 +5900,7 @@ paths:
                 amount: { amount_minor: 1000, currency: usd }
                 api_key: xq_example_returned_once
                 authorization: { header: Authorization, scheme: Bearer }
-                checkout_url: https://buy.stripe.com/example
+                checkout_url: https://checkout.example/guest/example
                 credential_notice:
                   Store api_key and the Idempotency-Key securely before sharing
                   checkout_url. No email recovery is available.
@@ -5911,8 +5908,8 @@ paths:
                 expires_at: '2026-07-13T13:00:00.000Z'
                 instructions:
                   Give checkout_url to the user. They must complete payment on
-                  Stripe. Never submit payment for them. After payment, poll
-                  status_url every poll_after_seconds until
+                  the hosted checkout page. Never submit payment for them. After
+                  payment, poll status_url every poll_after_seconds until
                   latest_purchase.status is no longer pending.
                 poll_after_seconds: 2
                 purchase_id: gp_example
@@ -5987,10 +5984,9 @@ paths:
       operationId: topUpGuestWallet
       summary: Create another guest wallet checkout
       description: >
-        Create a one-use Stripe-hosted checkout for an existing paid-read guest
-        key after the user explicitly confirms a $10-$250 USD amount. The key
-        remains the same. This request creates no charge by itself and never
-        redirects through an Xquik web page.
+        Create a one-use hosted checkout after the user confirms a $10-$250 USD
+        amount for an existing paid-read guest key. The key remains the same.
+        This request creates no charge and never redirects through Xquik.
       tags: [Guest Wallets]
       security:
         - apiKey: []
@@ -6008,7 +6004,7 @@ paths:
               currency: usd
       responses:
         '201':
-          description: Stripe-hosted checkout and API status URL.
+          description: Hosted checkout and API status URL.
           headers:
             Cache-Control:
               description: Prevents caching the top-up checkout response.
@@ -6027,13 +6023,13 @@ paths:
               example:
                 account_required: false
                 amount: { amount_minor: 1000, currency: usd }
-                checkout_url: https://buy.stripe.com/example
+                checkout_url: https://checkout.example/guest/example
                 credits: '66666'
                 expires_at: '2026-07-13T13:00:00.000Z'
                 instructions:
                   Give checkout_url to the user. They must complete payment on
-                  Stripe. Never submit payment for them. After payment, poll
-                  status_url every poll_after_seconds until
+                  the hosted checkout page. Never submit payment for them. After
+                  payment, poll status_url every poll_after_seconds until
                   latest_purchase.status is no longer pending.
                 poll_after_seconds: 2
                 purchase_id: gp_example
@@ -6110,10 +6106,10 @@ paths:
       operationId: getGuestWalletStatus
       summary: Get guest wallet and payment status
       description: >
-        Poll after Stripe payment. Use usable to decide whether paid reads can
-        run. An active wallet can remain usable while a top-up is pending. A new
-        wallet becomes usable only after verified webhook fulfillment. Send the
-        guest key as Authorization: Bearer.
+        Poll after payment. Use usable to decide whether paid reads can run. An
+        active wallet can remain usable while a top-up is pending. A new wallet
+        becomes usable only after payment is verified. Send the guest key as
+        Authorization: Bearer.
       tags: [Guest Wallets]
       security:
         - apiKey: []
@@ -6222,8 +6218,8 @@ paths:
       operationId: topUpCredits
       summary: Create credit top-up checkout
       description: >
-        Create a Stripe Checkout session only after the user confirms. The
-        request never completes payment or adds credits by itself.
+        Create a hosted checkout only after the user confirms. The request never
+        completes payment or adds credits.
       tags:
         - Subscribe
       security:
@@ -6251,7 +6247,7 @@ paths:
               dollars: 10
       responses:
         '200':
-          description: Top-up payment links
+          description: Top-up checkouts
           content:
             application/json:
               schema:
@@ -6262,20 +6258,18 @@ paths:
                     type: string
                     format: uri
                     description:
-                      Stable first-party Xquik redirect URL for the active
-                      Stripe Checkout session.
-                    example: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=cs_test_123'
+                      Stable Xquik redirect URL for the active checkout.
+                    example: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_example'
                   url:
                     type: string
                     format: uri
-                    description:
-                      Same stable first-party Xquik redirect URL as
-                      redirect_url. The response never exposes a raw Stripe
-                      Checkout URL.
-                    example: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=cs_test_123'
+                    description: >
+                      Same stable Xquik redirect URL as redirect_url. The
+                      response never exposes the hosted checkout URL.
+                    example: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_example'
               example:
-                redirect_url: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=cs_test_123'
-                url: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=cs_test_123'
+                redirect_url: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_example'
+                url: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_example'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -11302,7 +11296,7 @@ components:
           type: string
           const: usd
     GuestWalletCheckoutResponse:
-      description: Pending Stripe checkout and guest wallet purchase details.
+      description: Pending hosted checkout and guest wallet purchase details.
       type: object
       additionalProperties: false
       required:
@@ -11347,9 +11341,8 @@ components:
         checkout_url:
           type: string
           format: uri
-          pattern: '^https://buy\.stripe\.com/'
-          description: Raw Stripe-hosted checkout URL for user interaction.
-          example: https://buy.stripe.com/example
+          description: Hosted checkout URL for user interaction.
+          example: https://checkout.example/guest/example
         credits:
           type: string
           pattern: '^\d+$'
@@ -11367,11 +11360,7 @@ components:
           example: '2026-07-13T13:00:00.000Z'
         instructions:
           type: string
-          const:
-            Give checkout_url to the user. They must complete payment on Stripe.
-            Never submit payment for them. After payment, poll status_url every
-            poll_after_seconds until latest_purchase.status is no longer
-            pending.
+          description: Hosted checkout and status polling instructions.
         poll_after_seconds:
           type: integer
           const: 2
@@ -11429,7 +11418,6 @@ components:
           anyOf:
             - type: string
               format: uri
-              pattern: '^https://buy\.stripe\.com/'
             - type: 'null'
           description: Present only while the purchase is pending.
           example: null
@@ -11559,6 +11547,7 @@ components:
           const: /api/v1/guest-wallets
         provider:
           type: string
+          deprecated: true
           const: stripe
         required_headers:
           type: object
@@ -11631,6 +11620,7 @@ components:
           const: /api/v1/guest-wallets/topups
         provider:
           type: string
+          deprecated: true
           const: stripe
         required_headers:
           type: object
@@ -11667,7 +11657,7 @@ components:
     AnonymousGuestAuthenticationRequired:
       description: >
         Authentication error for a non-MPP anonymous paid read. The response
-        also advertises optional accountless Stripe checkout after confirmation.
+        also offers an optional accountless checkout after confirmation.
       type: object
       additionalProperties: false
       required:
@@ -11760,7 +11750,7 @@ components:
     AuthenticatedPaymentRequired:
       description:
         Authenticated credit or subscription error with confirmation-gated
-        Stripe checkout actions.
+        hosted checkout actions.
       type: object
       additionalProperties: false
       required:
@@ -11843,6 +11833,7 @@ components:
                       const: /api/v1/credits/topup
                     provider:
                       type: string
+                      deprecated: true
                       const: stripe
                     requires_authentication:
                       type: boolean
@@ -11890,6 +11881,7 @@ components:
                       const: /api/v1/subscribe
                     provider:
                       type: string
+                      deprecated: true
                       const: stripe
                     requires_authentication:
                       type: boolean
@@ -11914,7 +11906,7 @@ components:
     MppPaymentRequired:
       description:
         Anonymous payment requirement for a direct MPP operation. The response
-        includes an MPP challenge and an accountless Stripe action.
+        includes an MPP challenge and an accountless checkout action.
       type: object
       required:
         - account_required

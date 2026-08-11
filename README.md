@@ -18,7 +18,7 @@ Use SDK repositories for generated client APIs.
 
 - [Quickstart](https://docs.xquik.com/x-api-quickstart) - make the first authenticated API call.
 - [API Reference](https://docs.xquik.com/api-reference) - browse 128 OpenAPI-backed operations.
-- [Guest wallets](https://docs.xquik.com/guides/guest-wallets) - fund 33 accountless GET routes through a confirmed Stripe Payment Link.
+- [Guest wallets](https://docs.xquik.com/guides/guest-wallets) - fund 33 accountless GET routes through a confirmed hosted checkout.
 - [Direct MPP](https://docs.xquik.com/mpp/machine-payments-protocol) - pay per request on 7 fixed-price GET operations.
 - [SDKs](https://docs.xquik.com/sdks) - use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
 - [Tweet search export](https://docs.xquik.com/guides/tweet-scraper-csv-export) - export tweets by keyword to CSV, JSON, or XLSX.
