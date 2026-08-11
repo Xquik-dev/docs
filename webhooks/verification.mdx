@@ -162,19 +162,20 @@ function verifyWebhook(req, secret) {
     return false;
   }
 
-  // Reject replays.
-  const now = Date.now();
-  for (const [n, exp] of seenNonces) if (exp <= now) seenNonces.delete(n);
-  if (seenNonces.has(nonce)) return false;
-  seenNonces.set(nonce, now + FIVE_MINUTES_MS);
-
   const signingString = `${timestamp}.${nonce}.${rawBody}`;
   const expected =
     "sha256=" + createHmac("sha256", secret).update(signingString).digest("hex");
   const expectedBuffer = Buffer.from(expected);
   const signatureBuffer = Buffer.from(signature);
   if (expectedBuffer.length !== signatureBuffer.length) return false;
-  return timingSafeEqual(expectedBuffer, signatureBuffer);
+  if (!timingSafeEqual(expectedBuffer, signatureBuffer)) return false;
+
+  // Claim the nonce only after authentication succeeds.
+  const now = Date.now();
+  for (const [n, exp] of seenNonces) if (exp <= now) seenNonces.delete(n);
+  if (seenNonces.has(nonce)) return false;
+  seenNonces.set(nonce, now + FIVE_MINUTES_MS);
+  return true;
 }
 
 // Express example
@@ -215,18 +216,20 @@ def verify_webhook(req, secret: str) -> bool:
     if abs(now_ms - ts) > FIVE_MINUTES_MS:
         return False
 
+    signing_string = f"{timestamp}.{nonce}.".encode() + raw_body
+    expected = "sha256=" + hmac.new(
+        secret.encode(), signing_string, hashlib.sha256
+    ).hexdigest()
+    if not hmac.compare_digest(expected, signature):
+        return False
+
     expired = [n for n, exp in _seen_nonces.items() if exp <= now_ms]
     for n in expired:
         _seen_nonces.pop(n, None)
     if nonce in _seen_nonces:
         return False
     _seen_nonces[nonce] = now_ms + FIVE_MINUTES_MS
-
-    signing_string = f"{timestamp}.{nonce}.".encode() + raw_body
-    expected = "sha256=" + hmac.new(
-        secret.encode(), signing_string, hashlib.sha256
-    ).hexdigest()
-    return hmac.compare_digest(expected, signature)
+    return True
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -279,6 +282,14 @@ func verifyWebhook(payload []byte, headers http.Header, secret string) bool {
 		return false
 	}
 
+	signingString := fmt.Sprintf("%s.%s.%s", timestamp, nonce, string(payload))
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(signingString))
+	expected := "sha256=" + hex.EncodeToString(mac.Sum(nil))
+	if !hmac.Equal([]byte(expected), []byte(signature)) {
+		return false
+	}
+
 	seenNonces.Range(func(key, value any) bool {
 		expiresAt, ok := value.(int64)
 		if ok && expiresAt <= nowMs {
@@ -286,15 +297,8 @@ func verifyWebhook(payload []byte, headers http.Header, secret string) bool {
 		}
 		return true
 	})
-	if _, replayed := seenNonces.LoadOrStore(nonce, nowMs+fiveMinutesMs); replayed {
-		return false
-	}
-
-	signingString := fmt.Sprintf("%s.%s.%s", timestamp, nonce, string(payload))
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write([]byte(signingString))
-	expected := "sha256=" + hex.EncodeToString(mac.Sum(nil))
-	return hmac.Equal([]byte(expected), []byte(signature))
+	_, replayed := seenNonces.LoadOrStore(nonce, nowMs+fiveMinutesMs)
+	return !replayed
 }
 
 func webhookHandler(w http.ResponseWriter, r *http.Request) {

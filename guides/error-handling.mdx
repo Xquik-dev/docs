@@ -1,7 +1,7 @@
 ---
 title: "X API Error Handling for Tweet & Follower Workflows"
 sidebarTitle: "Error handling"
-description: "Recover from API key, subscription, credit, rate-limit, validation, cursor, write-action, monitor, webhook, and dependency errors. Follow exact steps."
+description: "Handle Xquik API errors with exact status guidance and safe retries. Recover cursors, confirm writes, repair monitors, restore webhooks, and check dependencies."
 keywords: ["error codes", "retry", "exponential backoff", "rate limit", "error recovery", "write action", "safeToRetry", "pending confirmation"]
 ---
 
@@ -25,7 +25,7 @@ Use each `error` code to choose recovery.
 
 ## Quick reference
 
-Start with the HTTP family. Retry only when a card says so.
+Start with HTTP status. Retry only when stated.
 
 <CardGroup cols={2}>
   <Card title="400 request validation" icon="circle-alert">
@@ -33,7 +33,8 @@ Start with the HTTP family. Retry only when a card says so.
     `invalid_json`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`,
     `invalid_username`, `invalid_user_id`, `invalid_tool_type`,
     `invalid_format`, `invalid_params`, `missing_query`, `missing_ids`,
-    `missing_params`, `too_many_ids`, and `unsupported_field`.
+    `missing_params`, `too_many_ids`, `unsupported_field`, and
+    `invalid_coverage_cursor`.
   </Card>
   <Card title="401 authentication" icon="key-round">
     Retry: no. Check `x-api-key`, regenerate revoked keys, or re-authenticate
@@ -57,9 +58,9 @@ Start with the HTTP family. Retry only when a card says so.
     `article_not_found`, `draft_not_found`, `style_not_found`, and
     `no_cached_style`.
   </Card>
-  <Card title="409 duplicate monitor" icon="copy-check">
-    Retry: no. Use the existing monitor or update it. Covers
-    `monitor_already_exists`.
+  <Card title="409 or 410 cursor state" icon="refresh-cw">
+    Busy cursor: follow `Retry-After` and retry once. Gone cursor: restart
+    cursorless and deduplicate IDs.
   </Card>
   <Card title="422 write validation" icon="message-circle-warning">
     Retry: no. Fix the account capability, target, content, DM permissions, or
@@ -164,6 +165,9 @@ responses also include `message`, `reason`, `retryAfter`, or `retryAfterMs`.
       <Card title="unsupported_field" icon="circle-x">
         Request body contains a field this endpoint does not accept. For tweet
         posts, send public media URLs in `media`, not uploaded media IDs.
+      </Card>
+      <Card title="invalid_coverage_cursor" icon="circle-x">
+        Cursor is malformed. Restart without it and deduplicate stored IDs.
       </Card>
     </CardGroup>
   </Accordion>
@@ -283,16 +287,21 @@ responses also include `message`, `reason`, `retryAfter`, or `retryAfterMs`.
     </CardGroup>
   </Accordion>
 
-  <Accordion title="Conflict errors (409)">
-    A monitor with the same target already exists. Treat the response as a
-    handoff to the existing monitor instead of retrying creation.
+  <Accordion title="Conflict and cursor errors (409/410)">
+    Reuse duplicate monitors. Recover cursors by status and error code.
 
     <CardGroup cols={2}>
       <Card title="monitor_already_exists" icon="copy-check">
         Duplicate account or keyword monitor. List existing monitors, reuse the
-        monitor ID, or update event types with
-        [Update Monitor](/api-reference/monitors/update) or
-        [Update Keyword Monitor](/api-reference/monitors/update-keyword).
+          monitor ID, or update event types with
+          [Update Monitor](/api-reference/monitors/update) or
+          [Update Keyword Monitor](/api-reference/monitors/update-keyword).
+      </Card>
+      <Card title="coverage_cursor_unavailable" icon="timer">
+        Follow the exact `Retry-After` seconds. Retry the same cursor once.
+      </Card>
+      <Card title="coverage_cursor_gone" icon="refresh-cw">
+        No `Retry-After`. Restart cursorless and deduplicate IDs.
       </Card>
     </CardGroup>
   </Accordion>
@@ -504,7 +513,8 @@ When a request is rate limited, Xquik returns `429 Too Many Requests` with a
     Log the status and error code. Never log credentials or private payloads.
   </Accordion>
   <Accordion title="Handle 409 gracefully">
-    `monitor_already_exists` is not a failure. The monitor you need already exists. List monitors to find it instead of treating this as an error.
+    Reuse `monitor_already_exists`. For a busy cursor, follow `Retry-After` and
+    retry once.
   </Accordion>
   <Accordion title="Set request timeouts">
     Set a bounded client timeout. Use status endpoints for long-running jobs.

@@ -242,17 +242,17 @@ while :; do
 done
 ```
 
-The retrieve command returns `.job`, `.results`, `.hasMore`, and `.nextCursor`. When `.hasMore` is true, pass `.nextCursor` back as `--after` to fetch the next saved page.
+The retrieve command returns `.job`, `.results`, `.hasMore`, and `.nextCursor`. When `.hasMore` is true, pass `.nextCursor` back as `--cursor` to fetch the next saved page.
 
 ```bash
 : > xquik-followers.jsonl
-after=""
+cursor=""
 
 while :; do
-  if [ -n "$after" ]; then
+  if [ -n "$cursor" ]; then
     x-twitter-scraper extractions retrieve \
       --id "$job_id" \
-      --after "$after" \
+      --cursor "$cursor" \
       --limit 1000 \
       --format json > followers-page.json
   else
@@ -270,7 +270,7 @@ while :; do
   )"
   [ "$has_more" = "true" ] || break
   [ -n "$next_cursor" ] || break
-  after="$next_cursor"
+  cursor="$next_cursor"
 done
 ```
 
@@ -288,7 +288,8 @@ extraction job exists.
 
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
-Use this workflow when moderation, support, giveaway, research, or AI review needs every reply under one tweet as CSV, JSON, XLSX, or JSONL. Estimate, run `reply_extractor`, poll the stored job, then export the file.
+Use this workflow when you need every reply under one Tweet. Export CSV, JSON,
+or XLSX. Write a local JSON Lines file from paginated JSON rows.
 
 `reply_extractor` requires `targetTweetId`. The CLI flag is `--target-tweet-id`.
 
@@ -323,12 +324,12 @@ next_cursor="$(jq -r '.nextCursor // empty' replies-page.json)"
 
 x-twitter-scraper extractions retrieve \
   --id "$job_id" \
-  --after "$next_cursor" \
+  --cursor "$next_cursor" \
   --limit 100 \
   --format json > replies-next-page.json
 ```
 
-The retrieve command calls `GET /extractions/{id}` and returns `.job`, `.results`, `.hasMore`, and `.nextCursor`. Append `.results[]` to your queue, CRM import, or warehouse load. While `.hasMore` is true, pass `.nextCursor` back as `--after "$next_cursor"`.
+The retrieve command calls `GET /extractions/{id}` and returns `.job`, `.results`, `.hasMore`, and `.nextCursor`. Append `.results[]` to your queue, CRM import, or warehouse load. While `.hasMore` is true, pass `.nextCursor` back as `--cursor "$next_cursor"`.
 
 ```bash
 x-twitter-scraper extractions export-results \

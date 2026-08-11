@@ -36,7 +36,7 @@ Do not force every job through Twitter advanced search.
 | Search tweets by keyword | `GET /x/tweets/search` | `limit` and `cursor` | No connected X account |
 | Export followers or following | `GET /x/users/{id}/followers` or `/following` | `pageSize` and `cursor` | No connected X account |
 | Read the home feed | `GET /x/timeline` | `cursor` and `seenTweetIds` | Connected X account |
-| Save a durable file | `POST /extractions` | `resultsLimit`, then `after` | Depends on the selected tool |
+| Save a durable file | `POST /extractions` | `resultsLimit`, then `cursor` | Depends on the selected tool |
 
 Check each route before reusing a parameter name.
 Twitter API endpoints do not share one page-size parameter.
@@ -130,8 +130,8 @@ Copy the parameter from that endpoint's API reference.
 | Route family | Request parameter | Current range or behavior |
 | --- | --- | --- |
 | Tweet search | `limit` | Up to 200 tweets; the server can paginate internally |
-| User tweets and replies | `pageSize` | 1 to 100; default 20 |
-| Followers and following | `pageSize` | 20 to 200; default 200 |
+| User tweets and replies | `pageSize` | Automatic 1 to 300; standard 1 to 100; default 20 |
+| Followers and following | `pageSize` | Automatic 20 to 300; standard 20 to 200; default 200 |
 | Home timeline | None | The source controls each page size |
 | Extraction results | `limit` | 1 to 1,000 stored rows; default 100 |
 
@@ -159,10 +159,10 @@ They support saved results and repeatable file handoffs.
   </Step>
   <Step title="Poll JSON">
     Poll `GET /api/v1/extractions/{id}` until completion.
-    Pass `nextCursor` back through `after` for more stored rows.
+    Pass `nextCursor` back through `cursor` for more stored rows.
   </Step>
   <Step title="Export">
-    Download CSV, JSON, XLSX, JSONL, Markdown, XML, or PDF.
+    Download CSV, JSON, Markdown, Markdown document, PDF, TXT, or XLSX.
     Check the export page's row and format limits first.
   </Step>
 </Steps>
@@ -203,8 +203,8 @@ Never decode, trim, or construct one.
 ```
 
 Most X reads return `next_cursor` and accept `cursor`.
-Stored extraction pages return `nextCursor` and accept `after`.
-Events, draws, and Radar also accept `after`.
+Stored extraction pages return `nextCursor` and accept `cursor`.
+Events and draws also accept `cursor`. Radar accepts `after`.
 Drafts accept `afterCursor`.
 
 The normalized REST contract uses `has_more` and `next_cursor`.

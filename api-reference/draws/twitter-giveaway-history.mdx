@@ -233,7 +233,7 @@ winners in dashboards or announcements.
   Results per page. Default `50`, max `100`.
 </ParamField>
 
-<ParamField query="after" type="string">
+<ParamField query="cursor" type="string">
   Cursor for pagination. Pass the `nextCursor` value from a previous response to fetch the next page.
 </ParamField>
 
@@ -281,7 +281,7 @@ winners in dashboards or announcements.
   `true` if additional pages exist beyond this result set.
 </ResponseField>
 <ResponseField name="nextCursor" type="string">
-  Pagination cursor. Pass as the `after` query parameter to fetch the next page. Present only when `hasMore` is `true`.
+  Pagination cursor. Pass it as `cursor` for the next page.
 </ResponseField>
 
 ```json
@@ -327,7 +327,7 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 
 ## Paginate Twitter Giveaway History
 
-Draws use **cursor-based pagination**. Each response includes `hasMore` and (when `true`) a `nextCursor` value. Pass `nextCursor` as the `after` query parameter to retrieve the next page.
+Draws use cursor pagination. Pass `nextCursor` as the next `cursor` value.
 
 <CodeGroup>
   ```bash First page
@@ -336,7 +336,7 @@ Draws use **cursor-based pagination**. Each response includes `hasMore` and (whe
   ```
 
   ```bash Next page
-  curl --fail-with-body "https://xquik.com/api/v1/draws?limit=10&after=MjAyNi0wMi0yM1QxNjozMDowMC4wMDBafDY2NjY1" \
+  curl --fail-with-body "https://xquik.com/api/v1/draws?limit=10&cursor=MjAyNi0wMi0yM1QxNjozMDowMC4wMDBafDY2NjY1" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 </CodeGroup>
@@ -348,12 +348,12 @@ Use a stable loop for a complete history export:
 ```javascript Node.js
 const seenCursors = new Set();
 const draws = [];
-let after;
+let cursor;
 
 do {
   const url = new URL("https://xquik.com/api/v1/draws");
   url.searchParams.set("limit", "100");
-  if (after) url.searchParams.set("after", after);
+  if (cursor) url.searchParams.set("cursor", cursor);
 
   const response = await fetch(url, {
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
@@ -370,8 +370,8 @@ do {
   }
 
   if (next) seenCursors.add(next);
-  after = page.hasMore ? next : undefined;
-} while (after);
+  cursor = page.hasMore ? next : undefined;
+} while (cursor);
 
 process.stdout.write(`${JSON.stringify(draws)}\n`);
 ```

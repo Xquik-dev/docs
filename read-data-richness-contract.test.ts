@@ -259,7 +259,9 @@ describe('read data richness documentation', (): void => {
     expect(operation?.description).toContain('80%');
     expect(parameterNames).toContain('cursor');
     expect(parameterNames).toEqual(expect.arrayContaining(['mode', 'limit']));
-    expect(parameterRefs).toContain('#/components/parameters/ReplyPageSize');
+    expect(parameterRefs).toContain(
+      '#/components/parameters/AutomaticTweetPageSize',
+    );
     expect(GUIDE).toContain('mode=complete&limit=25000');
     expect(GUIDE).toContain('coveragePercentage');
     expect(MCP_TOOLS).toContain('mode=complete&limit=25000');

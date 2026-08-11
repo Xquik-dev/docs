@@ -195,7 +195,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: 'api-reference/events/list.mdx',
     snippets: [
       '| Event inventory column | Response source | Pagination rule |',
-      '| Next page | `nextCursor` | Pass this value as the next `after` parameter. |',
+      '| Next page | `nextCursor` | Pass this value as the next `cursor` parameter. |',
     ],
   },
   {
@@ -879,5 +879,67 @@ describe('tweet replies crawler budget', (): void => {
     const source = readFileSync('api-reference/x/tweet-replies.mdx', 'utf8');
 
     expect(Buffer.byteLength(source, 'utf8')).toBeLessThanOrEqual(27_000);
+  });
+});
+
+describe('extraction export format copy', (): void => {
+  it('keeps API exports distinct from local JSON Lines files', (): void => {
+    expect.assertions(4);
+
+    const guide = readFileSync(
+      'guides/request-efficient-api-usage.mdx',
+      'utf8',
+    );
+    const cli = readFileSync('sdks/cli.mdx', 'utf8');
+    const openApi = Bun.YAML.parse(readFileSync('openapi.yaml', 'utf8')) as {
+      readonly paths: {
+        readonly '/extractions/{id}/export': {
+          readonly get: {
+            readonly parameters: readonly {
+              readonly name?: string;
+              readonly schema?: { readonly enum?: readonly string[] };
+            }[];
+          };
+        };
+      };
+    };
+    const format = openApi.paths['/extractions/{id}/export'].get.parameters.find(
+      (parameter): boolean => parameter.name === 'format',
+    );
+
+    expect(format?.schema?.enum).toEqual([
+      'csv',
+      'json',
+      'md',
+      'md-document',
+      'pdf',
+      'txt',
+      'xlsx',
+    ]);
+    expect(guide).toContain(
+      'Download CSV, JSON, Markdown, Markdown document, PDF, TXT, or XLSX.',
+    );
+    expect(guide).not.toContain('JSONL, Markdown, XML');
+    expect(cli).toContain(
+      'Write a local JSON Lines file from paginated JSON rows.',
+    );
+  });
+});
+
+describe('webhook replay verification order', (): void => {
+  it('claims nonces only after signature authentication', (): void => {
+    expect.assertions(3);
+
+    const source = readFileSync('webhooks/verification.mdx', 'utf8');
+
+    expect(source.indexOf('seenNonces.set(nonce')).toBeGreaterThan(
+      source.indexOf('if (!timingSafeEqual'),
+    );
+    expect(source.indexOf('_seen_nonces[nonce]')).toBeGreaterThan(
+      source.indexOf('if not hmac.compare_digest'),
+    );
+    expect(source.indexOf('seenNonces.LoadOrStore(nonce')).toBeGreaterThan(
+      source.indexOf('if !hmac.Equal'),
+    );
   });
 });

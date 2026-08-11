@@ -231,11 +231,11 @@ loop do
   sleep 10
 end
 
-after = nil
+cursor = nil
 
 File.open("xquik-followers.jsonl", "w") do |jsonl|
   loop do
-    page = client.extractions.retrieve(job.id, limit: 1000, after: after)
+    page = client.extractions.retrieve(job.id, limit: 1000, cursor: cursor)
 
     page.results.each do |row|
       jsonl.puts(JSON.generate(row))
@@ -243,7 +243,7 @@ File.open("xquik-followers.jsonl", "w") do |jsonl|
 
     break unless page.has_more && page.next_cursor.to_s != ""
 
-    after = page.next_cursor
+    cursor = page.next_cursor
   end
 end
 
@@ -260,7 +260,7 @@ xlsx_response.rewind
 File.binwrite("xquik-followers.xlsx", xlsx_response.read)
 ```
 
-`follower_explorer` requires `target_username`. Persist `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling so a Sidekiq retry, Rails job retry, or worker restart can resume the same follower export. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; pass `next_cursor` back as `after` when you need stored JSON pages before exporting files. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+`follower_explorer` requires `target_username`. Persist `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling so a Sidekiq retry, Rails job retry, or worker restart can resume the same follower export. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; pass `next_cursor` back as `cursor` when you need stored JSON pages before exporting files. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
 
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
@@ -299,7 +299,7 @@ xlsx_response.rewind
 File.binwrite("xquik-replies.xlsx", xlsx_response.read)
 ```
 
-`reply_extractor` requires `target_tweet_id`. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; the shared pagination loop passes `next_cursor` back as `after`. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.extractions.export_results` supports `:csv`, `:json`, and `:xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
+`reply_extractor` requires `target_tweet_id`. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`; the shared pagination loop passes `next_cursor` back as `cursor`. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.extractions.export_results` supports `:csv`, `:json`, and `:xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
 
 ## Workflow: Post Media Tweets and DM Attachments
 

@@ -256,7 +256,7 @@ if (!$completed) {
   throw new RuntimeException('Follower export did not complete before timeout.');
 }
 
-$after = null;
+$cursor = null;
 $handle = fopen('xquik-followers.jsonl', 'wb');
 
 if (false === $handle) {
@@ -265,7 +265,7 @@ if (false === $handle) {
 
 try {
   do {
-    $page = $client->extractions->retrieve($job->id, after: $after, limit: 1000);
+    $page = $client->extractions->retrieve($job->id, cursor: $cursor, limit: 1000);
 
     foreach ($page->results as $user) {
       fwrite(
@@ -274,8 +274,8 @@ try {
       );
     }
 
-    $after = $page->hasMore ? $page->nextCursor : null;
-  } while (null !== $after && '' !== $after);
+    $cursor = $page->hasMore ? $page->nextCursor : null;
+  } while (null !== $cursor && '' !== $cursor);
 } finally {
   fclose($handle);
 }
@@ -294,7 +294,7 @@ file_put_contents(
 );
 ```
 
-Persist `$job->id`, `$targetUsername`, `$estimate->estimatedResults`, and `$estimate->source` before polling so another queue worker can resume without rerunning the extraction. `$client->extractions->retrieve()` returns `$page->results`, `$page->hasMore`, and `$page->nextCursor`; pass `$page->nextCursor` back as `after` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+Persist `$job->id`, `$targetUsername`, `$estimate->estimatedResults`, and `$estimate->source` before polling so another queue worker can resume without rerunning the extraction. `$client->extractions->retrieve()` returns `$page->results`, `$page->hasMore`, and `$page->nextCursor`; pass `$page->nextCursor` back as `cursor` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
 
 ## Workflow: Tweet Replies to CSV, JSON, or XLSX
 
@@ -337,7 +337,7 @@ file_put_contents(
 );
 ```
 
-Cost: 1 credit per reply extracted or returned. Store `$job->id` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `$client->extractions->retrieve()`. Keep `$page->nextCursor` as the checkpoint and pass it back as `after` when you stream replies to JSON Lines. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff.
+Cost: 1 credit per reply extracted or returned. Store `$job->id` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `$client->extractions->retrieve()`. Keep `$page->nextCursor` as the checkpoint and pass it back as `cursor` when you stream replies to JSON Lines. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff.
 
 ## Workflow: Post Media Tweets and DM Attachments
 

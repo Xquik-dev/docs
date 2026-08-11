@@ -52,7 +52,7 @@ The export endpoint selects a file format. Filter or select columns downstream.
   </Card>
 
   <Card title="Saved JSON Rows" icon="rows-3">
-    Use `GET /api/v1/extractions/{id}?limit=1000&after={nextCursor}` when a
+    Use `GET /api/v1/extractions/{id}?limit=1000&cursor={nextCursor}` when a
     saved extraction job is the source of truth. The response includes `job`,
     `results`, `hasMore`, and optional `nextCursor`.
   </Card>
@@ -78,7 +78,7 @@ The export endpoint selects a file format. Filter or select columns downstream.
   </Card>
 
   <Card title="Worker or Queue" icon="route">
-    Read saved extraction pages, append JSON Lines, and resume with `after`
+    Read saved extraction pages, append JSON Lines, and resume with `cursor`
     when `hasMore` is true.
   </Card>
 
@@ -103,7 +103,7 @@ the same request filters.
 
 Use saved extraction JSON pages when a worker needs incremental processing.
 Append each completed page to JSON Lines through an idempotent sink. Use the
-extraction ID and requested `after` cursor as the page key. Persist the page and
+extraction ID and requested `cursor` value as the page key. Persist the page and
 its `nextCursor` in one atomic commit. A retry must replace or skip an existing
 page key instead of appending duplicate tweets, followers, or replies.
 
@@ -124,14 +124,14 @@ Direct X API pages expose endpoint-specific cursor fields such as
 and only change the cursor parameter documented on that endpoint.
 
 Extraction result pages use `hasMore` and `nextCursor`. Pass `nextCursor` back
-as `after`, and use `limit` up to `1000`; the default is `100`.
+as `cursor`, and use `limit` up to `1000`; the default is `100`.
 
 File exports do not paginate. File exports are capped at 100,000 rows, and PDF
 exports are capped at 10,000 rows. Use extraction JSON pages or JSON Lines when
 you need to process larger jobs incrementally.
 
 For larger extractions, page results through
-`GET /api/v1/extractions/{id}`. Keep `after`, `hasMore`, and `nextCursor` in one
+`GET /api/v1/extractions/{id}`. Keep `cursor`, `hasMore`, and `nextCursor` in one
 checkpoint. Never continue from the downloaded file's last visible value.
 
 The file endpoint returns the first 100,000 rows ordered by result ID. PDF
@@ -270,7 +270,7 @@ expects a simple delimited import.
 ### Can I Export More Than 100,000 Rows?
 
 Process larger extraction jobs through saved JSON pages. Append JSON Lines and
-resume with `after`. One file export stops at 100,000 rows.
+resume with `cursor`. One file export stops at 100,000 rows.
 
 ### Why Does PDF Stop at 10,000 Rows?
 

@@ -257,7 +257,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 These examples emit one stored event row per line. Store `event_id`,
 `monitor_type`, `monitor_id`, `event_type`, `occurred_at`, tweet fields from
 `data`, `event_detail_endpoint`, `delivery_join_key`, and `next_cursor`; pass
-`nextCursor` as `after` until `hasMore` is `false`.
+`nextCursor` as `cursor` until `hasMore` is `false`.
 
 ## Source filter examples
 
@@ -308,7 +308,7 @@ matches account monitor events only.
   return all types.
 </ParamField>
 
-<ParamField query="after" type="string">
+<ParamField query="cursor" type="string">
   Cursor for pagination. Pass the `nextCursor` value from a previous response to fetch the next page.
 </ParamField>
 
@@ -362,7 +362,7 @@ matches account monitor events only.
   `true` if additional pages exist beyond this result set.
 </ResponseField>
 <ResponseField name="nextCursor" type="string">
-  Pagination cursor. Pass as the `after` query parameter to fetch the next page. Present only when `hasMore` is `true`.
+  Pagination cursor. Pass it as `cursor` for the next page.
 </ResponseField>
 
 ```json
@@ -446,7 +446,7 @@ delivery status.
 | Keyword source | `events[].keywordMonitorId` and `query` | Filter one tracked X search. |
 | Tweet fields | `events[].data` | Export tweet text, author, and timestamps. |
 | More pages | `hasMore` | Continue only while this value is `true`. |
-| Next page | `nextCursor` | Pass this value as the next `after` parameter. |
+| Next page | `nextCursor` | Pass this value as the next `cursor` parameter. |
 
 <CardGroup cols={2}>
   <Card title="Event Row" icon="fingerprint">
@@ -480,14 +480,14 @@ delivery status.
   </Card>
 
   <Card title="Cursor Checkpoint" icon="milestone">
-    Store `next_cursor` only when `has_more` is `true`. Pass it as `after` for
+    Store `next_cursor` only when `has_more` is `true`. Pass it as `cursor` for
     the next page and stop when `has_more` is `false`.
   </Card>
 </CardGroup>
 
 ## Pagination
 
-Events use **cursor-based pagination**. Each response includes `hasMore` and (when `true`) a `nextCursor` value. Pass `nextCursor` as the `after` query parameter to retrieve the next page.
+Events use cursor pagination. Pass `nextCursor` as the next `cursor` value.
 
 <CodeGroup>
   ```bash First page
@@ -497,7 +497,7 @@ Events use **cursor-based pagination**. Each response includes `hasMore` and (wh
   ```
 
   ```bash Next page
-  curl "https://xquik.com/api/v1/events?limit=10&monitorId=7&after=MjAyNi0wMi0yNFQxNTowNTozMC4wMDBafDkwMDI=" \
+  curl "https://xquik.com/api/v1/events?limit=10&monitorId=7&cursor=MjAyNi0wMi0yNFQxNTowNTozMC4wMDBafDkwMDI=" \
     -H "x-api-key: xq_YOUR_KEY_HERE" \
     | jq '{event_ids: [.events[].id], has_more: .hasMore, next_cursor: (.nextCursor // null)}'
   ```

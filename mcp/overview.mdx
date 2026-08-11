@@ -146,7 +146,7 @@ The MCP server uses a **code-execution sandbox model** with 2 tools:
   </Card>
 </CardGroup>
 
-The AI agent writes async JavaScript arrow functions that run in a sandboxed environment. Auth is injected automatically.
+The AI agent writes async JavaScript arrow functions that run in a sandboxed environment. Authentication and required idempotency headers are injected automatically.
 
 The code-mode design keeps the endpoint catalog outside the client context. Both tools publish titles and Model Context Protocol safety annotations so clients can distinguish read-only discovery from authenticated execution.
 
@@ -171,6 +171,7 @@ interface EndpointInfo {
   operationId: string;
   category: string; // account, composition, credits, extraction, media, monitoring, support, twitter, x-accounts, x-write
   free: boolean;
+  injectedHeaders?: string[];
   parameters?: Array<{ name: string; in: 'query' | 'path' | 'body'; required: boolean; type: string; description: string }>;
   responseShape?: string;
 }
@@ -193,7 +194,7 @@ declare const xquik: {
 declare const spec: { endpoints: EndpointInfo[] };
 ```
 
-The agent writes code like `async () => xquik.request('/api/v1/radar')` and the server executes it with auth injected.
+The agent writes code like `async () => xquik.request('/api/v1/radar')`. The server injects authentication and required idempotency headers. It reuses each generated key for bounded transient retries. After an unresolved write failure, verify state. Start a new attempt only when `safe_to_retry` is true.
 
 `xquik.request()` automatically uses the normalized v1 contract. Responses use snake_case fields, date-time fields as Unix seconds, structured error objects, `has_more`, and `next_cursor`. A default REST `createdAt` field becomes `created`, not `created_at`, in MCP results.
 
@@ -575,7 +576,7 @@ Once connected, ask:
 - Start watching @elonmusk for new tweets and replies.
 - List the accounts I am currently monitoring.
 - Show monitored account activity from today.
-- Replay stored events for monitor mon_123 using the last next_cursor as after.
+- Replay stored events for monitor mon_123 using the last next_cursor as cursor.
 - Stop tracking @elonmusk.
 
 **Search & Lookup**
