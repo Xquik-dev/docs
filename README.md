@@ -29,7 +29,7 @@ Use SDK repositories for generated client APIs.
 - [MCP Server v2.6.0](https://docs.xquik.com/mcp) - connect AI clients through MCP 2026-07-28, OAuth, or secure API keys.
 - [Webhooks](https://docs.xquik.com/webhooks/overview) - verify HMAC signatures and receive monitor events.
 - [Open Source Assurance](https://docs.xquik.com/guides/open-source-assurance) - review OpenSSF project mapping and public controls.
-- [Apify Actors](https://docs.xquik.com/alternatives/apify) - run X tweet and follower export jobs on Apify.
+- [Apify Actors](https://docs.xquik.com/alternatives/apify) - run focused X data jobs on Apify.
 - [llms.txt](https://docs.xquik.com/llms.txt) - give AI coding agents the docs index.
 
 ## Use With AI Coding Agents
@@ -58,7 +58,7 @@ Use SDK repositories for generated client APIs.
 | How do I verify signed webhooks? | [Webhook Guide](https://docs.xquik.com/webhooks/overview) |
 | How do I post or reply? | [Create Tweet API](https://docs.xquik.com/api-reference/x-write/create-tweet) |
 | How do I send DMs with returned message IDs? | [Direct Message Workflow](https://docs.xquik.com/guides/direct-message-workflow) |
-| How do I run Apify dataset workflows? | [X Tweet Scraper](https://apify.com/xquik/x-tweet-scraper) or [X Follower Scraper](https://apify.com/xquik/x-follower-scraper) |
+| How do I run Apify dataset workflows? | [Xquik on Apify](https://apify.com/xquik) |
 | How does Xquik compare with the X API? | [X API Alternative Guide](https://docs.xquik.com/alternatives/x-api) |
 | How can an AI agent use Xquik? | [MCP Server Guide](https://docs.xquik.com/mcp) |
 
@@ -73,7 +73,7 @@ Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
 - **Guides** - Workflows, error handling, rate limits, billing, trends, extraction workflow, architecture, troubleshooting, types, webhook testing, and framework integrations.
 - **SDKs** - 10 generated client libraries (TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI as Go binary, Terraform provider) with auto-pagination, retry, and typed responses.
 - **Comparisons** - Alternatives for X APIs, tweet scrapers, follower exporters, creator tools, and social suites.
-- **Apify Actors** - Public Apify Actors for tweet and follower dataset workflows before moving deeper workflows to REST, webhooks, SDKs, or MCP.
+- **Apify Actors** - Public Actors for tweets, replies, followers, trends, profiles, communities, lists, and user search.
 - **OpenAPI 3.1** - Machine-readable contract for endpoint pages and SDK generation.
 
 ## Repository Layout

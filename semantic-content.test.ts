@@ -663,10 +663,10 @@ const REQUIRED_QUICK_TOPUP_CONTENT = [
 const REQUIRED_APIFY_COMPARISON_CONTENT = [
   'Xquik vs Apify Twitter scraper',
   'Apify alternative',
-  'Use this guide to compare Apify, Xquik, and Xquik\'s Apify Actors.',
+  'Compare Apify, Xquik, and Xquik\'s Apify Actors.',
   'Export table-like dataset',
-  'Each Actor accepts structured JSON input.',
-  'The running docs describe this Apify flow.',
+  'Each Actor accepts structured JSON input and can produce structured output.',
+  'Choose an Actor, start its run, then read its dataset items.',
   'The dataset docs define each run\'s default dataset as append-only storage.',
   'Apify\'s Store API docs say `/v2/store` lists public Actors.',
   'Match reply rows against',
@@ -857,7 +857,7 @@ describe('quick top-up search intent', (): void => {
 });
 
 describe('Apify comparison search intent', (): void => {
-  it('keeps the comparison focused on tweet and follower jobs', (): void => {
+  it('keeps the comparison focused on public X data jobs', (): void => {
     expect.assertions(1);
 
     const source = readFileSync('alternatives/apify.mdx', 'utf8').replace(
