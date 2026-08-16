@@ -30,7 +30,7 @@ AG2 binds search parameters when a tool is constructed, not when the model calls
 | Tool construction | `XquikSearchToolkit(...)` | Fix `query_type`, `limit`, and time windows outside model control |
 | Model surface | Single `query` argument | The model cannot widen the search window or result limit |
 | Runtime scope | `Variable` | Resolve per-user or per-tenant values at execution time |
-| Delegation | `Agent.as_tool()` | Keep large tweet payloads out of the coordinator's context |
+| Delegation | `Agent.as_tool()` | Keep the searcher's tool-call history out of the coordinator's context |
 | Transport | `base_url`, `timeout` | Point at a proxy or tighten deadlines per deployment |
 
 This suits research, monitoring, and reporting agents. Use direct REST for deterministic jobs that need no model decisions.
@@ -77,6 +77,10 @@ import os
 from ag2 import Agent
 from ag2.config import AnthropicConfig
 from ag2.extensions.tools.search import XquikSearchToolkit
+from dotenv import load_dotenv
+
+load_dotenv()
+config = AnthropicConfig(model="claude-sonnet-4-6")
 
 agent = Agent(
     "x-researcher",
@@ -84,7 +88,7 @@ agent = Agent(
         "Search X for evidence before answering. "
         "Quote tweet text verbatim and keep every tweet ID you receive."
     ),
-    config=AnthropicConfig(model="claude-sonnet-4-6"),
+    config=config,
     tools=[XquikSearchToolkit(api_key=os.environ["XQUIK_API_KEY"])],
 )
 
@@ -175,7 +179,7 @@ toolkit = XquikSearchToolkit(
 
 ## Delegate Search in a Multi-Agent Team
 
-`Agent.as_tool()` exposes an agent as a tool for another agent. Each delegated task runs on its own stream with its own history, so large tweet pages stay out of the coordinator's context.
+`Agent.as_tool()` exposes an agent as a tool for another agent. Each delegated task runs on its own stream with its own history. The coordinator receives the delegate's final answer, not its internal tool-call history.
 
 ```python
 searcher = Agent(
