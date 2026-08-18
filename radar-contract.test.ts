@@ -49,12 +49,12 @@ const REQUIRED_RADAR_PAGE_COPY = [
 const REQUIRED_OPENAPI_COPY = [
   'subredditSubscribers?, sourceFormat, score?, upvoteRatio?',
   'estimatedUpvotes?, estimatedDownvotes?, numberComments?',
-  'Comment bodies are not included.',
+  'Comments are omitted.',
   'enum: [html, json, rss]',
   'Current items use html.',
   'foundedDate?, googleSearchImpressionsLast30Days?',
   'profitMarginLast30Days?, rank?, revenuePerVisitor?',
-  'For the startup growth source, xHandle is the founder\'s X username',
+  'Startup xHandle omits @.',
   'description: Source image. Startup growth items return the logo here.',
 ] as const;
 

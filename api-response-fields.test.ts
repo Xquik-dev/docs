@@ -338,11 +338,30 @@ function schemaByName(spec: OpenApiSpec, name: string): OpenApiSchema {
 }
 
 function resolveSchema(spec: OpenApiSpec, schema: OpenApiSchema): OpenApiSchema {
-  if (schema.$ref === undefined) {
-    return schema;
-  }
-  const name = schema.$ref.replace('#/components/schemas/', '');
-  return schemaByName(spec, name);
+  const resolved = schema.$ref === undefined
+    ? schema
+    : schemaByName(spec, schema.$ref.replace('#/components/schemas/', ''));
+  const composed = [
+    ...(resolved.allOf ?? []),
+    ...(resolved.oneOf ?? []),
+    ...(resolved.anyOf ?? []),
+  ].map((item): OpenApiSchema => resolveSchema(spec, item));
+  return {
+    ...resolved,
+    properties: Object.assign(
+      {},
+      ...composed.map(
+        (item): Record<string, OpenApiSchema> => item.properties ?? {},
+      ),
+      resolved.properties ?? {},
+    ),
+    required: uniqueSorted([
+      ...(resolved.required ?? []),
+      ...(resolved.allOf ?? []).flatMap(
+        (item): readonly string[] => resolveSchema(spec, item).required ?? [],
+      ),
+    ]),
+  };
 }
 
 function responseByName(spec: OpenApiSpec, name: string): OpenApiResponse {
