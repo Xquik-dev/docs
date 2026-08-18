@@ -4,54 +4,17 @@ info:
   version: '1.0'
   description: >-
     Xquik is an independent third-party service. Not affiliated with X Corp.
-    "Twitter" and "X" are trademarks of X Corp. Look up tweets, users, and X
-    trends. Search tweets, check follow relationships, download media, and
-    monitor accounts. 33 paid-read endpoints accept prepaid credits without a
-    subscription. 7 fixed-price lookups also accept direct MPP payments. Write
-    and automation endpoints require an API key or OAuth 2.1 bearer token.
+    "Twitter" and "X" are trademarks of X Corp. Read and automate X. Paid reads
+    accept credits. Some lookups accept MPP. Writes require API key or OAuth
+    2.1.
 
 
-    ## Xquik SDKs
+    ## Client Libraries
 
 
-    Stainless generates each SDK from this OpenAPI schema. Pick a language:
-
-
-    - TypeScript / Node.js: `npm i x-twitter-scraper` -
-      [Xquik-dev/x-twitter-scraper-typescript](https://github.com/Xquik-dev/x-twitter-scraper-typescript)
-
-    - Python: `pip install x-twitter-scraper` -
-      [Xquik-dev/x-twitter-scraper-python](https://github.com/Xquik-dev/x-twitter-scraper-python)
-
-    - Go: `go get github.com/Xquik-dev/x-twitter-scraper-go` -
-      [Xquik-dev/x-twitter-scraper-go](https://github.com/Xquik-dev/x-twitter-scraper-go)
-
-    - Ruby: `gem install x-twitter-scraper` -
-      [Xquik-dev/x-twitter-scraper-ruby](https://github.com/Xquik-dev/x-twitter-scraper-ruby)
-
-    - Java (source build; Maven Central pending) -
-      [Xquik-dev/x-twitter-scraper-java](https://github.com/Xquik-dev/x-twitter-scraper-java)
-
-    - Kotlin (source build; Maven Central pending) -
-      [Xquik-dev/x-twitter-scraper-kotlin](https://github.com/Xquik-dev/x-twitter-scraper-kotlin)
-
-    - C# / .NET: `dotnet add package XTwitterScraper` -
-      [Xquik-dev/x-twitter-scraper-csharp](https://github.com/Xquik-dev/x-twitter-scraper-csharp)
-
-    - PHP: `composer require xquik/x-twitter-scraper` -
-      [Xquik-dev/x-twitter-scraper-php](https://github.com/Xquik-dev/x-twitter-scraper-php)
-
-    - CLI: `go install
-    github.com/Xquik-dev/x-twitter-scraper-cli/cmd/x-twitter-scraper@latest` -
-      [Xquik-dev/x-twitter-scraper-cli](https://github.com/Xquik-dev/x-twitter-scraper-cli)
-
-    - Terraform Provider (Terraform Registry) -
-      [Xquik-dev/terraform-provider-x-twitter-scraper](https://github.com/Xquik-dev/terraform-provider-x-twitter-scraper)
-
-
-    OpenClaw plugin:
-    [Xquik-dev/tweetclaw](https://github.com/Xquik-dev/tweetclaw) (`openclaw
-    plugins install clawhub:@xquik/tweetclaw`).
+    See the current [SDK, CLI, and Terraform
+    guides](https://docs.xquik.com/sdks) and [TweetClaw
+    setup](https://docs.xquik.com/guides/tweetclaw).
   x-guidance: >-
     ## Common tasks
 
@@ -1387,14 +1350,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '404':
-          description: X user not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: 'user_not_found'
-                message: 'X user not found. Check the username.'
+          $ref: '#/components/responses/UserNotFound'
         '409':
           description: Monitor already exists
           content:
@@ -2101,12 +2057,9 @@ paths:
                 required: [job, results, hasMore]
                 properties:
                   job:
-                    type: object
-                    additionalProperties: true
-                    x-stainless-any: true
+                    $ref: '#/components/schemas/PublicMetadata'
                     description:
                       Extraction job metadata - shape varies by tool type (JSON)
-                    x-stainless-terraform-type: string
                     example:
                       id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
                       toolType: follower_explorer
@@ -3125,7 +3078,9 @@ paths:
       summary:
         Search tweets by query, Tweet ID, X status URL, or account date window
       description: >
-        No-mode search maximizes coverage.
+        No-mode search maximizes coverage. New cursorless `Latest` sessions
+        return rows newest-first across cursor pages. Existing cursors preserve
+        their established ordering.
       tags:
         - Tweets
       security:
@@ -3826,6 +3781,7 @@ paths:
           schema:
             type: string
           description: Pagination cursor for user search
+        - $ref: '#/components/parameters/ResultPageSize'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
         - $ref: '#/components/parameters/UserFilterMaxFollowers'
         - $ref: '#/components/parameters/UserFilterMinFollowing'
@@ -3905,14 +3861,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: 'user_not_found'
-                message: 'X user not found. Check the username.'
+          $ref: '#/components/responses/UserNotFound'
         '502':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -6289,6 +6238,9 @@ paths:
           required: true
           schema:
             type: string
+            minLength: 1
+            maxLength: 255
+            pattern: '\S'
           description: Billing session ID returned by the top-up billing flow.
       responses:
         '303':
@@ -6300,22 +6252,40 @@ paths:
                 type: string
                 format: uri
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          description: Missing or invalid top-up billing session ID.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid_input
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: Top-up billing session not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not_found
         '410':
-          description: Top-up payment session is no longer active.
+          description: Top-up billing session is closed or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                closed:
+                  value: { error: closed }
+                expired:
+                  value: { error: expired }
         '502':
           description: Payment page lookup failed.
           content:
             application/json:
               schema:
-                type: object
-                required: [error]
-                properties:
-                  error:
-                    type: string
-                    example: missing_url
+                $ref: '#/components/schemas/Error'
+              example:
+                error: missing_url
   /credits/topup/status:
     get:
       operationId: getCreditTopupStatus
@@ -6609,7 +6579,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/UserNotFound'
         '502':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -6710,7 +6680,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/UserNotFound'
         '502':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -6805,7 +6775,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/UserNotFound'
         '502':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -6894,7 +6864,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/UserNotFound'
         '502':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -7019,17 +6989,11 @@ paths:
                   folders:
                     type: array
                     items:
-                      type: object
-                      required: [id, name]
-                      properties:
-                        id:
-                          type: string
-                          example: '1234567890'
-                        name:
-                          type: string
-                          example: 'Read Later'
+                      $ref: '#/components/schemas/BookmarkFolder'
                     example:
                       - id: '1234567890'
+                        media:
+                          originalImageUrl: 'https://pbs.twimg.com/media/cover.jpg'
                         name: 'Read Later'
                   has_next_page:
                     type: boolean
@@ -7044,6 +7008,8 @@ paths:
               example:
                 folders:
                   - id: '1234567890'
+                    media:
+                      originalImageUrl: 'https://pbs.twimg.com/media/cover.jpg'
                     name: 'Read Later'
                 has_next_page: false
                 next_cursor: ''
@@ -7958,12 +7924,14 @@ paths:
           schema:
             type: string
           description: Numeric tweet ID to get quotes, 15-20 digits
-        - name: cursor
+        - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - name: mode
           in: query
           schema:
             type: string
-          description: Pagination cursor for quote tweets
-        - $ref: '#/components/parameters/ResultPageSize'
+            enum: [standard]
+          description: Optional legacy pagination override.
+        - $ref: '#/components/parameters/AutomaticTweetPageSize'
         - name: sinceTime
           in: query
           schema:
@@ -8278,6 +8246,38 @@ paths:
             type: string
           description: Pagination cursor for thread tweets
         - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/TweetFilterFromUser'
+        - $ref: '#/components/parameters/TweetFilterToUser'
+        - $ref: '#/components/parameters/TweetFilterMentioning'
+        - $ref: '#/components/parameters/TweetFilterLanguage'
+        - $ref: '#/components/parameters/TweetFilterSinceDate'
+        - $ref: '#/components/parameters/TweetFilterUntilDate'
+        - $ref: '#/components/parameters/TweetFilterMediaType'
+        - $ref: '#/components/parameters/TweetFilterMinFaves'
+        - $ref: '#/components/parameters/TweetFilterMinRetweets'
+        - $ref: '#/components/parameters/TweetFilterMinReplies'
+        - $ref: '#/components/parameters/TweetFilterMinQuotes'
+        - $ref: '#/components/parameters/TweetFilterMinViews'
+        - $ref: '#/components/parameters/TweetFilterMinBookmarks'
+        - $ref: '#/components/parameters/TweetFilterMaxFaves'
+        - $ref: '#/components/parameters/TweetFilterMaxRetweets'
+        - $ref: '#/components/parameters/TweetFilterMaxReplies'
+        - $ref: '#/components/parameters/TweetFilterMaxQuotes'
+        - $ref: '#/components/parameters/TweetFilterBlueVerifiedOnly'
+        - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
+        - $ref: '#/components/parameters/TweetFilterReplies'
+        - $ref: '#/components/parameters/TweetFilterRetweets'
+        - $ref: '#/components/parameters/TweetFilterQuotes'
+        - $ref: '#/components/parameters/TweetFilterExactPhrase'
+        - $ref: '#/components/parameters/TweetFilterExcludeWords'
+        - $ref: '#/components/parameters/TweetFilterAnyWords'
+        - $ref: '#/components/parameters/TweetFilterHashtags'
+        - $ref: '#/components/parameters/TweetFilterCashtags'
+        - $ref: '#/components/parameters/TweetFilterUrl'
+        - $ref: '#/components/parameters/TweetFilterConversationId'
+        - $ref: '#/components/parameters/TweetFilterInReplyToTweetId'
+        - $ref: '#/components/parameters/TweetFilterQuotesOfTweetId'
+        - $ref: '#/components/parameters/TweetFilterRetweetsOfTweetId'
       responses:
         '200':
           description: Thread tweets
@@ -8363,7 +8363,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/UserNotFound'
         '502':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -8442,7 +8442,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/UserNotFound'
         '502':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -8547,7 +8547,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/UserNotFound'
         '502':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -8620,7 +8620,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/UserNotFound'
         '502':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -8933,7 +8933,7 @@ components:
       schema:
         type: integer
         minimum: 0
-      description: Minimum likes threshold.
+      description: Minimum likes threshold. minLikes is also accepted.
     TweetFilterMinRetweets:
       name: minRetweets
       in: query
@@ -9418,10 +9418,9 @@ components:
               'Authentication required. Provide a valid API key or bearer token.'
     AnonymousGuestAuthenticationRequired:
       description: >
-        Authentication required for a non-MPP paid read. The challenge requests
-        Bearer authentication, not payment. Missing credentials advertise guest
-        checkout without creating it. Invalid credentials return a plain error.
-        Require user confirmation before calling an advertised action.
+        Non-MPP paid reads require Bearer authentication. Missing credentials
+        advertise guest checkout without creating it. Invalid credentials return
+        a plain error. Confirm before calling an advertised action.
       headers:
         Cache-Control:
           description: Prevents storage of the guest checkout action.
@@ -9486,13 +9485,20 @@ components:
           example:
             error: 'not_found'
             message: 'Resource not found.'
+    UserNotFound:
+      description: X user not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: 'user_not_found'
+            message: 'X user not found. Check the username.'
     PaymentRequired:
       description: >
-        Payment required. MPP reads return a problem document and
-        `WWW-Authenticate`. Authenticated reads return balances and checkout
-        actions. Guest keys receive only the guest top-up action. Other
-        endpoints may use legacy errors. A failed request never creates
-        checkout. Require user confirmation before creating one.
+        Payment required. MPP reads include `WWW-Authenticate`. Authenticated
+        reads include balances and checkout. Guest keys expose guest top-up
+        only. A failed request never creates checkout. Confirm first.
       headers:
         WWW-Authenticate:
           description:
@@ -9619,11 +9625,8 @@ components:
               persists.'
     WriteRejected:
       description: >
-        X rejected the write or media download. Codes include
-        `x_content_too_long`, `x_duplicate_action`, `x_account_suspended`,
-        `x_account_protected`, `x_dm_not_allowed`, `x_target_not_found`,
-        `x_account_feature_required`, `x_rejected`, and `media_download_failed`.
-        The media code covers URL, size, origin, and timeout failures.
+        X rejected the write or download. Read Error.code for the exact reason.
+        Media failures cover URL, size, origin, and timeout.
       content:
         application/json:
           schema:
@@ -9701,6 +9704,7 @@ components:
       description: Cursor is in use. Retry `coverage_cursor_unavailable` later.
       headers:
         Retry-After:
+          required: true
           schema:
             type: integer
             minimum: 1
@@ -9709,12 +9713,20 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'coverage_cursor_unavailable'
+            message: 'Cursor busy. Retry after the indicated delay.'
     CursorGone:
       description: Restart without the `coverage_cursor_gone` cursor.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'coverage_cursor_gone'
+            message:
+              'Cursor finished, expired, or superseded. Restart pagination
+              without cursor.'
     MaximumCoverageBusy:
       description: Automatic or explicit maximum coverage is temporarily busy.
       headers:
@@ -10668,11 +10680,10 @@ components:
           example: pending
     PaginatedTweets:
       description: >
-        No-mode search, user Tweet, user reply, and direct reply reads use
-        automatic coverage. Shape, filters, aliases, and billing stay
-        compatible. Unprefixed cursors remain legacy. Follow next_cursor while
-        has_next_page is true. An empty filtered page can still have
-        has_next_page true.
+        Automatic search, user Tweet, and reply coverage preserves shape,
+        filters, aliases, and billing. Follow next_cursor while has_next_page is
+        true. An empty filtered page can still have has_next_page true.
+        Unprefixed cursors are legacy.
       type: object
       required: [tweets, has_next_page, next_cursor]
       properties:
@@ -11056,11 +11067,9 @@ components:
           description: Whether the requested row limit truncated safe results.
     PaginatedUsers:
       description: >
-        Paginated user profiles. No-mode follower, following, and verified
-        follower requests merge independent views automatically. Response
-        fields, page size, aliases, filters, and per-returned-profile billing
-        stay unchanged. Existing unprefixed cursors retain legacy behavior.
-        Follow next_cursor while has_next_page is true.
+        Profile coverage preserves shape, billing, aliases, and filters. Follow
+        next_cursor while has_next_page is true. Unprefixed cursors remain
+        legacy.
       type: object
       required: [users, has_next_page, next_cursor]
       properties:
@@ -11181,10 +11190,9 @@ components:
               $ref: '#/components/schemas/UserListCoverageDiagnostic'
     BatchUsers:
       description: >
-        Batch user lookup results. Duplicate requested IDs are ignored while
-        preserving first-seen order. unavailable_ids identifies processed IDs
-        with no returned profile. unprocessed_ids identifies IDs skipped when
-        available credits limit processing.
+        Batch lookup preserves first-seen ID order and ignores duplicate IDs.
+        unavailable_ids were processed without profiles. unprocessed_ids were
+        credit-limited.
       type: object
       required:
         [
@@ -11976,7 +11984,7 @@ components:
           oneOf:
             - type: string
               title: LegacyErrorCode
-              enum:
+              enum: &public-error-codes
                 - internal_error
                 - account_already_connected
                 - account_needs_reauth
@@ -11985,6 +11993,7 @@ components:
                 - account_restricted
                 - api_key_limit_reached
                 - article_not_found
+                - closed
                 - dm_not_permitted
                 - invalid_format
                 - invalid_id
@@ -12025,6 +12034,7 @@ components:
                 - coverage_cursor_gone
                 - coverage_cursor_unavailable
                 - draft_not_found
+                - expired
                 - favoriters_unavailable
                 - forbidden
                 - guest_wallet_unavailable
@@ -12033,14 +12043,20 @@ components:
                 - idempotency_conflict
                 - idempotency_key_conflict
                 - invalid_community_id
+                - invalid_complete_replies_request
                 - invalid_coverage_cursor
+                - invalid_coverage_request
                 - invalid_idempotency_key
                 - invalid_list_id
+                - invalid_output_options
                 - invalid_payment_amount
                 - invalid_range
+                - invalid_reply_options
                 - login_rate_limited
+                - login_service_unavailable
                 - missing_idempotency_key
                 - missing_ids
+                - missing_url
                 - no_cached_style
                 - passkey_required
                 - rate_limited
@@ -12049,6 +12065,7 @@ components:
                 - support_media_rate_limit
                 - support_request_rate_limit
                 - too_many_ids
+                - too_many_tweets
                 - unknown_field
                 - unsupported_media_type
                 - webhook_inactive
@@ -12102,110 +12119,7 @@ components:
                 code:
                   type: string
                   title: ErrorCode
-                  enum:
-                    - internal_error
-                    - account_already_connected
-                    - account_needs_reauth
-                    - account_not_found
-                    - account_required
-                    - account_restricted
-                    - api_key_limit_reached
-                    - article_not_found
-                    - dm_not_permitted
-                    - invalid_format
-                    - invalid_id
-                    - invalid_input
-                    - invalid_params
-                    - invalid_tool_type
-                    - invalid_tweet_id
-                    - invalid_tweet_url
-                    - invalid_user_id
-                    - invalid_user_ids
-                    - invalid_username
-                    - invalid_json
-                    - insufficient_credits
-                    - login_cooldown
-                    - login_failed
-                    - media_download_failed
-                    - missing_params
-                    - missing_query
-                    - monitor_already_exists
-                    - monitor_profile_unavailable
-                    - no_media
-                    - no_credits
-                    - no_subscription
-                    - not_found
-                    - payment_failed
-                    - rate_limit_exceeded
-                    - service_unavailable
-                    - style_not_found
-                    - subscription_inactive
-                    - tweet_not_found
-                    - unauthenticated
-                    - unsupported_field
-                    - user_not_found
-                    - body_too_large
-                    - checkout_unavailable
-                    - connection_challenge_expired
-                    - connection_challenge_inactive
-                    - coverage_cursor_gone
-                    - coverage_cursor_unavailable
-                    - draft_not_found
-                    - favoriters_unavailable
-                    - forbidden
-                    - guest_wallet_unavailable
-                    - guest_wallets_disabled
-                    - guest_wallets_unavailable
-                    - idempotency_conflict
-                    - idempotency_key_conflict
-                    - invalid_community_id
-                    - invalid_coverage_cursor
-                    - invalid_idempotency_key
-                    - invalid_list_id
-                    - invalid_payment_amount
-                    - invalid_range
-                    - login_rate_limited
-                    - missing_idempotency_key
-                    - missing_ids
-                    - no_cached_style
-                    - passkey_required
-                    - rate_limited
-                    - read_request_timeout
-                    - replies_incomplete
-                    - support_media_rate_limit
-                    - support_request_rate_limit
-                    - too_many_ids
-                    - unknown_field
-                    - unsupported_media_type
-                    - webhook_inactive
-                    - write_tracking_unavailable
-                    - x_write_unconfirmed
-                    - x_account_feature_required
-                    - x_account_protected
-                    - x_account_suspended
-                    - x_api_rate_limited
-                    - x_api_unavailable
-                    - x_api_unauthorized
-                    - x_auth_failure
-                    - x_content_too_long
-                    - x_daily_limit
-                    - x_dm_not_allowed
-                    - x_duplicate_action
-                    - x_login_auth_failed
-                    - x_login_challenge
-                    - x_login_denied
-                    - x_login_failed
-                    - x_login_proxy_error
-                    - x_login_rate_limited
-                    - x_login_service_unavailable
-                    - x_login_suspended
-                    - x_rate_limited
-                    - x_rejected
-                    - x_target_not_found
-                    - x_transient_error
-                    - x_user_lookup_failed
-                    - x_write_ambiguous
-                    - x_write_failed
+                  enum: *public-error-codes
                   example: invalid_input
         message:
           type: string
@@ -12930,11 +12844,8 @@ components:
           format: date-time
           example: '2025-01-15T12:00:00Z'
         data:
-          type: object
-          additionalProperties: true
-          x-stainless-any: true
+          $ref: '#/components/schemas/PublicMetadata'
           description: Event payload - shape varies by event type (JSON)
-          x-stainless-terraform-type: string
           example:
             tweetId: '1234567890'
         xEventId:
@@ -13088,12 +12999,14 @@ components:
           type: string
           enum: [active, paused, needs_attention]
           description:
-            Endpoint delivery state. needs_attention means delivery stopped
-            after repeated failures.
+            Endpoint delivery state. paused means the user paused delivery.
+            needs_attention marks repeated failures. Delivery attempts continue.
           example: active
         failureHardCap:
           type: integer
-          description: Consecutive delivery failures that pause the endpoint.
+          description:
+            Maximum reported failures before needs_attention. It does not pause
+            delivery.
           example: 200
         createdAt:
           type: string
@@ -13170,91 +13083,63 @@ components:
           type: boolean
 
     TweetMedia:
-      description: Normalized media attached to a tweet.
+      description: Tweet media.
       type: object
       required: [mediaUrl, type, url]
       properties:
-        mediaUrl:
-          type: string
-          description: Media preview URL
-        type:
-          type: string
-          enum: [photo, video, animated_gif]
-        url:
-          type: string
-          description: X media link from the tweet
+        mediaUrl: { type: string, description: Preview URL. }
+        type: { type: string, enum: [photo, video, animated_gif] }
+        url: { type: string, description: Tweet media link. }
+        adultContent: { type: boolean, description: Adult-content warning. }
         allowDownload:
-          type: boolean
-          description: Whether X permits direct media download.
-        altText:
-          type: string
-          description: Accessibility text supplied for the media.
+          { type: boolean, description: Direct download permission. }
+        altText: { type: string, description: Accessibility text. }
         aspectRatio:
           type: array
-          description: Video aspect ratio as width and height.
-          items:
-            type: integer
-        availabilityStatus:
-          type: string
-          description: Media availability state reported by X.
-        displayUrl:
-          type: string
-          description: Display-friendly media URL reported by X.
+          description: Video width and height ratio.
+          items: { type: integer }
+        availabilityReason: { type: string, description: Availability reason. }
+        availabilityStatus: { type: string, description: Availability state. }
+        description: { type: string, description: Media description. }
+        displayUrl: { type: string, description: Display URL. }
         durationMillis:
-          type: integer
-          description: Video duration in milliseconds.
-        expandedUrl:
-          type: string
-          description: Expanded X media URL.
+          { type: integer, description: Video duration in milliseconds. }
+        expandedUrl: { type: string, description: Expanded media URL. }
+        embeddable: { type: boolean, description: Embeddable status. }
         faceRects:
           type: object
-          description: Face-aware crop rectangles grouped by media size.
+          description: Face crop rectangles by size.
           additionalProperties:
             type: array
             items:
               type: object
               required: [x, y, w, h]
               properties:
-                x:
-                  type: integer
-                y:
-                  type: integer
-                w:
-                  type: integer
-                h:
-                  type: integer
+                x: { type: integer }
+                y: { type: integer }
+                w: { type: integer }
+                h: { type: integer }
         focusRects:
           type: array
-          description: Suggested image crops reported by X.
+          description: Suggested image crops.
           items:
             type: object
             required: [x, y, w, h]
             properties:
-              x:
-                type: integer
-              y:
-                type: integer
-              w:
-                type: integer
-              h:
-                type: integer
-        height:
-          type: integer
-          description: Original media height.
-        id:
-          type: string
-          description: X media entity ID.
+              x: { type: integer }
+              y: { type: integer }
+              w: { type: integer }
+              h: { type: integer }
+        grokPostId:
+          { type: string, description: Grok post ID associated with the media. }
+        height: { type: integer, description: Original height. }
+        id: { type: string, description: Media entity ID. }
         indices:
           type: array
-          description: Media entity offsets in the tweet text.
-          items:
-            type: integer
-        mediaKey:
-          type: string
-          description: Stable X media key.
-        monetizable:
-          type: boolean
-          description: Whether X reports the media as monetizable.
+          description: Tweet text offsets.
+          items: { type: integer }
+        mediaKey: { type: string, description: Stable X media key. }
+        monetizable: { type: boolean, description: Monetization status. }
         sizes:
           type: object
           description: Named media renditions and resize modes.
@@ -13262,87 +13147,206 @@ components:
             type: object
             required: [w, h, resize]
             properties:
-              w:
-                type: integer
-              h:
-                type: integer
-              resize:
-                type: string
+              w: { type: integer }
+              h: { type: integer }
+              resize: { type: string }
+        sourceStatusId:
+          { type: string, description: Source tweet ID for copied media. }
+        sourceUserId:
+          { type: string, description: Source profile ID for copied media. }
+        tags:
+          type: array
+          description: Public profiles tagged in the media.
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              screen_name: { type: string }
+              type: { type: string }
+              user_id: { type: string }
+        title: { type: string, description: Media title. }
         videoVariants:
           type: array
-          description: Available video encodings, ordered as returned
+          description: Video encodings in source order.
           items:
             type: object
             required: [contentType, url]
             properties:
-              bitrate:
-                type: integer
-              contentType:
-                type: string
-              url:
-                type: string
-        width:
-          type: integer
-          description: Original media width.
+              bitrate: { type: integer }
+              contentType: { type: string }
+              url: { type: string }
+        watchNowUrl: { type: string, description: Public media action URL. }
+        visitSiteUrl: { type: string, description: Public destination URL. }
+        width: { type: integer, description: Original width. }
+
+    BookmarkFolder:
+      description: Bookmark folder and its optional public cover image.
+      type: object
+      required: [id]
+      properties:
+        id: { type: string, description: Folder ID. }
+        name: { type: string, description: Folder name. }
+        media:
+          type: object
+          description: Public folder cover image metadata.
+          properties:
+            id: { type: string, description: Media object ID. }
+            mediaId: { type: string, description: Media ID. }
+            mediaKey: { type: string, description: Stable media key. }
+            originalImageHeight:
+              { type: integer, description: Original image height. }
+            originalImageUrl: { type: string, description: Original image URL. }
+            originalImageWidth:
+              { type: integer, description: Original image width. }
+            palette:
+              type: array
+              description: Dominant image colors and their proportions.
+              items:
+                type: object
+                properties:
+                  percentage: { type: number }
+                  rgb:
+                    type: object
+                    properties:
+                      blue: { type: number }
+                      green: { type: number }
+                      red: { type: number }
+            type: { type: string, description: Media object type. }
+
+    PublicMetadata:
+      description: Public metadata whose fields are defined by X.
+      type: object
+      additionalProperties: true
+      x-stainless-any: true
+      x-stainless-terraform-type: string
 
     TweetArticleMetadata:
       description: Article metadata attached to a tweet.
       type: object
       properties:
-        id:
-          type: string
-        title:
-          type: string
-        previewText:
-          type: string
-        coverMediaUrl:
-          type: string
+        coverMedia: { $ref: '#/components/schemas/PublicMetadata' }
+        id: { type: string }
+        lifecycleState: { $ref: '#/components/schemas/PublicMetadata' }
+        metadata: { $ref: '#/components/schemas/PublicMetadata' }
+        title: { type: string }
+        previewText: { type: string }
+        coverMediaUrl: { type: string }
 
     TweetCard:
       description: Public card metadata attached to a tweet.
       type: object
       properties:
-        id:
-          type: string
-        name:
-          type: string
-        url:
-          type: string
-        bindingValues:
-          type: object
-          additionalProperties: true
-          x-stainless-any: true
-          x-stainless-terraform-type: string
-
+        id: { type: string }
+        name: { type: string }
+        url: { type: string }
+        bindingValues: { $ref: '#/components/schemas/PublicMetadata' }
+        platform:
+          $ref: '#/components/schemas/PublicMetadata'
+          description: Public card delivery platform metadata.
+        userReferences:
+          { type: array, items: { $ref: '#/components/schemas/UserProfile' } }
     TweetCommunityNote:
       description: Community Note presentation metadata returned by X.
       type: object
       properties:
-        id:
-          type: string
-        title:
-          type: string
-        shortTitle:
-          type: string
-        subtitle:
-          type: string
-        footer:
-          type: string
-        destinationUrl:
-          type: string
-        visualStyle:
-          type: string
+        id: { type: string }
+        title: { type: string }
+        shortTitle: { type: string }
+        subtitle: { type: string }
+        footer: { type: string }
+        destinationUrl: { type: string }
+        visualStyle: { type: string }
+        metadata: { $ref: '#/components/schemas/PublicMetadata' }
 
     TweetEdit:
-      description: Edit history metadata returned by X.
+      description: Tweet edits.
       type: object
       properties:
-        editTweetIds:
+        editTweetIds: { type: array, items: { type: string } }
+        editableUntilMsecs: { type: string }
+        initialTweetId: { type: string }
+
+    TweetEntities:
+      description: Public tweet entities.
+      type: object
+      additionalProperties: true
+      properties:
+        hashtags:
+          { type: array, items: { $ref: '#/components/schemas/TweetHashtag' } }
+        smarttags:
           type: array
-          items:
-            type: string
-        editableUntilMsecs:
-          type: string
+          items: { type: object, additionalProperties: true }
+        symbols:
+          { type: array, items: { $ref: '#/components/schemas/TweetSymbol' } }
+        timestamps:
+          description: Video timestamp entities with indices, seconds, and text.
+          type: array
+          items: { type: object, additionalProperties: true }
+        urls:
+          {
+            type: array,
+            items: { $ref: '#/components/schemas/TweetUrlEntity' },
+          }
+        user_mentions:
+          {
+            type: array,
+            items: { $ref: '#/components/schemas/TweetUserMention' },
+          }
+
+    TweetHashtag:
+      type: object
+      additionalProperties: true
+      required: [text]
+      properties:
+        indices: { type: array, items: { type: integer } }
+        text: { type: string }
+
+    TweetSymbol:
+      description: Public cashtag and market metadata.
+      type: object
+      additionalProperties: true
+      properties:
+        indices:
+          type: array
+          items: { type: integer }
+        text: { type: string }
+        tag:
+          type: object
+          additionalProperties: true
+          properties:
+            info:
+              type: object
+              additionalProperties: true
+              properties:
+                info:
+                  type: object
+                  additionalProperties: true
+                  properties:
+                    name: { type: string }
+                    ticker: { type: string }
+
+    TweetUrlEntity:
+      type: object
+      additionalProperties: true
+      properties:
+        display_url: { type: string }
+        expanded_url: { type: string }
+        indices:
+          type: array
+          items: { type: integer }
+        url: { type: string }
+
+    TweetUserMention:
+      type: object
+      additionalProperties: true
+      required: [screen_name]
+      properties:
+        id_str: { type: string }
+        indices:
+          type: array
+          items: { type: integer }
+        name: { type: string }
+        screen_name: { type: string }
 
     TweetNote:
       description: Complete Note Tweet content and rich-text metadata.
@@ -13356,10 +13360,7 @@ components:
         isExpandable:
           type: boolean
         entities:
-          type: object
-          additionalProperties: true
-          x-stainless-any: true
-          x-stainless-terraform-type: string
+          $ref: '#/components/schemas/TweetEntities'
         richtextTags:
           type: array
           items:
@@ -13395,10 +13396,7 @@ components:
       type: object
       properties:
         boundingBox:
-          type: object
-          additionalProperties: true
-          x-stainless-any: true
-          x-stainless-terraform-type: string
+          $ref: '#/components/schemas/PublicMetadata'
         country:
           type: string
         countryCode:
@@ -13414,11 +13412,32 @@ components:
         url:
           type: string
 
-    EmbeddedTweet:
-      description: >
-        Quoted or retweeted tweet context. Every object includes id, text, and
-        engagement metrics. A zero metric can mean X did not report the count.
-        Author, media, and conversation fields appear when available.
+    TweetTombstone:
+      description: Public visibility notice attached to an available tweet.
+      type: object
+      properties:
+        type: { type: string, description: Visibility notice type. }
+        text:
+          type: object
+          properties:
+            text: { type: string, description: Human-readable notice text. }
+            rtl: { type: boolean, description: Right-to-left text direction. }
+            entities:
+              type: array
+              items:
+                type: object
+                properties:
+                  fromIndex: { type: integer }
+                  toIndex: { type: integer }
+                  ref:
+                    type: object
+                    properties:
+                      type: { type: string }
+                      url: { type: string }
+                      urlType: { type: string }
+
+    TweetPublicData:
+      description: Public fields shared by tweet response shapes.
       type: object
       required:
         [
@@ -13432,79 +13451,76 @@ components:
           bookmarkCount,
         ]
       properties:
-        id:
-          type: string
-        text:
-          type: string
-        type:
-          type: string
-        createdAt:
-          type: string
+        id: { type: string, example: '1234567890' }
+        text: { type: string, example: 'Just launched our new feature!' }
+        type: { type: string, example: tweet }
+        createdAt: { type: string, example: '2025-01-15T12:00:00Z' }
         url:
           type: string
-        lang:
-          type: string
-        retweetCount:
-          type: integer
-        replyCount:
-          type: integer
-        likeCount:
-          type: integer
-        quoteCount:
-          type: integer
-        viewCount:
-          type: integer
-        bookmarkCount:
-          type: integer
-        isReply:
-          type: boolean
-        isLimitedReply:
-          type: boolean
-        isNoteTweet:
-          type: boolean
-        isQuoteStatus:
-          type: boolean
-        inReplyToId:
-          type: string
-        inReplyToUserId:
-          type: string
-        inReplyToUsername:
-          type: string
-        conversationId:
-          type: string
-        source:
-          type: string
+          example: 'https://x.com/example_user/status/1234567890'
+        lang: { type: string, example: en }
+        isReply: { type: boolean, example: false }
+        isLimitedReply: { type: boolean, example: false }
+        isNoteTweet: { type: boolean, example: false }
+        isQuoteStatus: { type: boolean, example: false }
+        quotedTweetId: { type: string, description: Quoted tweet ID. }
+        inReplyToId: { type: string, example: '1234567890' }
+        inReplyToUserId: { type: string, example: '9876543210' }
+        inReplyToUsername: { type: string, example: example_user }
+        conversationId: { type: string, example: '1234567890' }
+        conversationControl:
+          type: object
+          description: Public reply policy and conversation owner.
+          properties:
+            inviteViaMention: { type: boolean }
+            ownerUsername: { type: string }
+            policy: { type: string, example: by_invitation }
+        limitedActions:
+          type: array
+          description: Public interaction restrictions and user-facing prompts.
+          items:
+            type: object
+            properties:
+              action: { type: string, example: Reply }
+              prompt:
+                type: object
+                properties:
+                  ctaType: { type: string, example: SeeConversation }
+                  headline: { type: string }
+                  subtext: { type: string }
+        source: { type: string, example: 'Twitter Web App' }
         displayTextRange:
           type: array
-          items:
-            type: integer
+          items: { type: integer }
+          example: [0, 31]
         contentDisclosure:
           $ref: '#/components/schemas/ContentDisclosure'
         article:
           $ref: '#/components/schemas/TweetArticleMetadata'
         card:
           $ref: '#/components/schemas/TweetCard'
+        communityId: { type: string, description: Community ID. }
         communityNote:
           $ref: '#/components/schemas/TweetCommunityNote'
         edit:
           $ref: '#/components/schemas/TweetEdit'
-        isTranslatable:
-          type: boolean
+        isTranslatable: { type: boolean }
         noteTweet:
           $ref: '#/components/schemas/TweetNote'
         place:
           $ref: '#/components/schemas/TweetPlace'
-        possiblySensitive:
-          type: boolean
+        possiblySensitive: { type: boolean }
         previousCounts:
           $ref: '#/components/schemas/TweetPreviousCounts'
-        viewState:
-          type: string
+        tombstone:
+          $ref: '#/components/schemas/TweetTombstone'
+        unmentionedUserIds:
+          type: array
+          description: User IDs that left this conversation.
+          items: { type: string }
+        viewState: { type: string }
         entities:
-          type: object
-          additionalProperties: true
-          x-stainless-any: true
-          x-stainless-terraform-type: string
+          $ref: '#/components/schemas/TweetEntities'
         quoted_tweet:
           $ref: '#/components/schemas/EmbeddedTweet'
         retweeted_tweet:
@@ -13513,8 +13529,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TweetMedia'
-        author:
-          $ref: '#/components/schemas/UserProfile'
+          description: Attached media items, omitted when unavailable.
+        retweetCount: { type: integer, example: 5 }
+        replyCount: { type: integer, example: 3 }
+        likeCount: { type: integer, example: 42 }
+        quoteCount: { type: integer, example: 1 }
+        viewCount: { type: integer, example: 1500 }
+        bookmarkCount: { type: integer, example: 2 }
+
+    EmbeddedTweet:
+      description: Quoted or retweeted tweet context.
+      allOf:
+        - $ref: '#/components/schemas/TweetPublicData'
+        - type: object
+          properties:
+            author:
+              $ref: '#/components/schemas/UserProfile'
 
     ContentDisclosure:
       description:
@@ -13547,143 +13577,12 @@ components:
       description:
         Full tweet with text, engagement metrics, media, and metadata. A zero
         metric can mean X did not report the count.
-      type: object
-      required:
-        [
-          id,
-          text,
-          retweetCount,
-          replyCount,
-          likeCount,
-          quoteCount,
-          viewCount,
-          bookmarkCount,
-        ]
-      properties:
-        id:
-          type: string
-          example: '1234567890'
-        text:
-          type: string
-          example: 'Just launched our new feature!'
-        createdAt:
-          type: string
-          example: '2025-01-15T12:00:00Z'
-        isNoteTweet:
-          type: boolean
-          description:
-            Whether this is a Note Tweet (long-form post, up to 25,000
-            characters)
-          example: false
-        isReply:
-          type: boolean
-          description: Whether this tweet is a reply to another tweet
-          example: false
-        isLimitedReply:
-          type: boolean
-          description: Whether replies are limited for this tweet
-          example: false
-        isQuoteStatus:
-          type: boolean
-          description: Whether this tweet quotes another tweet
-          example: false
-        conversationId:
-          type: string
-          description: ID of the root tweet in the conversation thread
-          example: '1234567890'
-        source:
-          type: string
-          description: Client application used to post this tweet
-          example: 'Twitter Web App'
-        type:
-          type: string
-          description: Tweet result type
-          example: tweet
-        url:
-          type: string
-          description: Tweet permalink URL
-          example: 'https://x.com/example_user/status/1234567890'
-        lang:
-          type: string
-          description: Tweet language code
-          example: en
-        inReplyToId:
-          type: string
-          description: Tweet ID being replied to
-          example: '1234567890'
-        inReplyToUserId:
-          type: string
-          description: User ID being replied to
-          example: '9876543210'
-        inReplyToUsername:
-          type: string
-          description: Username being replied to
-          example: example_user
-        displayTextRange:
-          type: array
-          items:
-            type: integer
-          description: Start and end offsets for rendered tweet text
-          example: [0, 31]
-        contentDisclosure:
-          $ref: '#/components/schemas/ContentDisclosure'
-        article:
-          $ref: '#/components/schemas/TweetArticleMetadata'
-        card:
-          $ref: '#/components/schemas/TweetCard'
-        communityNote:
-          $ref: '#/components/schemas/TweetCommunityNote'
-        edit:
-          $ref: '#/components/schemas/TweetEdit'
-        isTranslatable:
-          type: boolean
-        noteTweet:
-          $ref: '#/components/schemas/TweetNote'
-        place:
-          $ref: '#/components/schemas/TweetPlace'
-        possiblySensitive:
-          type: boolean
-        previousCounts:
-          $ref: '#/components/schemas/TweetPreviousCounts'
-        viewState:
-          type: string
-        entities:
-          type: object
-          additionalProperties: true
-          x-stainless-any: true
-          x-stainless-terraform-type: string
-          description:
-            Parsed entities from the tweet text (URLs, mentions, hashtags,
-            media)
-        quoted_tweet:
-          $ref: '#/components/schemas/EmbeddedTweet'
-        retweeted_tweet:
-          $ref: '#/components/schemas/EmbeddedTweet'
-        author:
-          $ref: '#/components/schemas/TweetAuthor'
-        media:
-          type: array
-          items:
-            $ref: '#/components/schemas/TweetMedia'
-          description: Attached media items, omitted when the tweet has no media
-        retweetCount:
-          type: integer
-          example: 5
-        replyCount:
-          type: integer
-          example: 3
-        likeCount:
-          type: integer
-          example: 42
-        quoteCount:
-          type: integer
-          example: 1
-        viewCount:
-          type: integer
-          example: 1500
-        bookmarkCount:
-          type: integer
-          example: 2
+      allOf:
+        - $ref: '#/components/schemas/TweetPublicData'
+        - type: object
+          properties:
+            author:
+              $ref: '#/components/schemas/TweetAuthor'
 
     TweetAuthor:
       description:
@@ -13713,140 +13612,12 @@ components:
       description:
         Tweet returned from search results with inline author info. A zero
         metric can mean X did not report the count.
-      type: object
-      required:
-        [
-          id,
-          text,
-          retweetCount,
-          replyCount,
-          likeCount,
-          quoteCount,
-          viewCount,
-          bookmarkCount,
-        ]
-      properties:
-        id:
-          type: string
-          example: '1234567890'
-        text:
-          type: string
-          example: 'Just launched our new feature!'
-        type:
-          type: string
-          example: 'tweet'
-        createdAt:
-          type: string
-          example: '2025-01-15T12:00:00Z'
-        isNoteTweet:
-          type: boolean
-          description:
-            True for Note Tweets (long-form content, up to 25,000 characters)
-          example: false
-        isReply:
-          type: boolean
-          description: True when this search result is a reply
-          example: false
-        isQuoteStatus:
-          type: boolean
-          description: True when this search result quotes another tweet
-          example: false
-        isLimitedReply:
-          type: boolean
-          description: Whether the tweet has limited reply permissions
-          example: false
-        inReplyToId:
-          type: string
-          description: ID of the tweet this result replies to.
-          example: '1234567890'
-        inReplyToUserId:
-          type: string
-          description: ID of the user this result replies to.
-          example: '9876543210'
-        inReplyToUsername:
-          type: string
-          description: Username this result replies to.
-          example: 'example_user'
-        conversationId:
-          type: string
-          description: Root tweet ID for the search result conversation
-          example: '1234567890'
-        source:
-          type: string
-          description: Client application used to post the tweet
-          example: 'Twitter Web App'
-        displayTextRange:
-          type: array
-          items:
-            type: integer
-          description: Rendered text's start and end offsets.
-          example: [0, 31]
-        contentDisclosure:
-          $ref: '#/components/schemas/ContentDisclosure'
-        article:
-          $ref: '#/components/schemas/TweetArticleMetadata'
-        card:
-          $ref: '#/components/schemas/TweetCard'
-        communityNote:
-          $ref: '#/components/schemas/TweetCommunityNote'
-        edit:
-          $ref: '#/components/schemas/TweetEdit'
-        isTranslatable:
-          type: boolean
-        noteTweet:
-          $ref: '#/components/schemas/TweetNote'
-        place:
-          $ref: '#/components/schemas/TweetPlace'
-        possiblySensitive:
-          type: boolean
-        previousCounts:
-          $ref: '#/components/schemas/TweetPreviousCounts'
-        viewState:
-          type: string
-        entities:
-          type: object
-          additionalProperties: true
-          description:
-            Parsed search-result entities including URLs, mentions, hashtags,
-            and media markers
-        quoted_tweet:
-          $ref: '#/components/schemas/EmbeddedTweet'
-        retweeted_tweet:
-          $ref: '#/components/schemas/EmbeddedTweet'
-        media:
-          type: array
-          items:
-            $ref: '#/components/schemas/TweetMedia'
-          description:
-            Search-result media attachments, omitted when no media is present
-        url:
-          type: string
-          description: Search result permalink.
-          example: 'https://x.com/example_user/status/1234567890'
-        lang:
-          type: string
-          description: Search result language code.
-          example: 'en'
-        likeCount:
-          type: integer
-          example: 42
-        retweetCount:
-          type: integer
-          example: 5
-        replyCount:
-          type: integer
-          example: 3
-        quoteCount:
-          type: integer
-          example: 1
-        viewCount:
-          type: integer
-          example: 1500
-        bookmarkCount:
-          type: integer
-          example: 2
-        author:
-          $ref: '#/components/schemas/UserProfile'
+      allOf:
+        - $ref: '#/components/schemas/TweetPublicData'
+        - type: object
+          properties:
+            author:
+              $ref: '#/components/schemas/UserProfile'
 
     UserAffiliateLabel:
       description: Organization affiliation label shown on an X profile.
@@ -13878,12 +13649,25 @@ components:
       description: Identity verification metadata displayed by X.
       type: object
       properties:
-        description:
-          type: string
+        description: { type: string }
         isIdentityVerified:
           type: boolean
         verifiedSinceMsec:
           type: string
+
+    UserTipJar:
+      description: Public payment and creator-support handles shown on X.
+      type: object
+      properties:
+        bandcampHandle: { type: string }
+        bitcoinHandle: { type: string }
+        cashAppHandle: { type: string }
+        ethereumHandle: { type: string }
+        gofundmeHandle: { type: string }
+        isEnabled: { type: boolean }
+        patreonHandle: { type: string }
+        payPalHandle: { type: string }
+        venmoHandle: { type: string }
 
     UserProfile:
       description:
@@ -13963,9 +13747,19 @@ components:
           items:
             type: string
           example: ['DE']
+        withheldScope:
+          type: string
+          description: Whether X withholds a post or user
+          example: user
         possiblySensitive:
           type: boolean
           example: false
+        professional:
+          $ref: '#/components/schemas/PublicMetadata'
+          description: Professional metadata with category display settings
+        grokTranslatedBio:
+          $ref: '#/components/schemas/PublicMetadata'
+          description: Public profile bio translation returned by X
         pinnedTweetIds:
           type: array
           items:
@@ -14016,15 +13810,17 @@ components:
           type: string
         superFollowEligible:
           type: boolean
+        superFollowsUserProfileActive:
+          type: boolean
+          description: Whether X marks the subscription profile as active.
+        tipJar:
+          $ref: '#/components/schemas/UserTipJar'
         communityRole:
           type: string
           description: Community role when returned by community member reads
           example: Member
         profile_bio:
-          type: object
-          additionalProperties: true
-          x-stainless-any: true
-          x-stainless-terraform-type: string
+          $ref: '#/components/schemas/PublicMetadata'
           description: Structured profile bio with entity annotations
           example:
             description: CEO of Tesla, SpaceX, and X
@@ -14214,7 +14010,7 @@ components:
         metadata:
           type: object
           description: |
-            Source-specific fields. Shape varies per source:
+            Source fields vary:
             - reddit: { author, authorId?, subreddit, subredditId?,
               subredditSubscribers?, sourceFormat, score?, upvoteRatio?,
               estimatedUpvotes?, estimatedDownvotes?, numberComments?,
@@ -14223,21 +14019,16 @@ components:
               editedAt?, galleryImageUrls?, redditVideo?, archived?, contestMode?,
               isCrosspostable?, isMeta?, isNsfw?, isOriginalContent?,
               isRobotIndexable?, isSelf?, isSpoiler?, isVideo?, locked?,
-              stickied? }. `score` is Reddit's public net score. Exact public
-              upvote and downvote counts are not available. Estimated counts
-              derive from the public score and upvote ratio, which Reddit may
-              fuzz. Comment bodies are not included. Current items combine
-              public listing discovery with server-rendered post data and use
-              `sourceFormat: html`; `json` and `rss` remain for legacy rows.
-            - github: { starsToday: number }
-            - hacker_news: { points: number, numberComments: number }
-            - google_trends: { approxTraffic: number }
-            - polymarket: { volume24hr: number }
-            - wikipedia: { views: number }
+              stickied? }.
+            - github: { starsToday }
+            - hacker_news: { points, numberComments }
+            - google_trends: { approxTraffic }
+            - polymarket: { volume24hr }
+            - wikipedia: { views }
             - trustmrr: { mrr, growthPercent, last30Days, total, customers, activeSubscriptions, onSale, xHandle?, category?, askingPrice?, country?, foundedDate?, googleSearchImpressionsLast30Days?, growthMrrPercent?, multiple?, paymentProvider?, profitMarginLast30Days?, rank?, revenuePerVisitor?, targetAudience?, visitorsLast30Days? }
-            For the startup growth source, xHandle is the founder's X username
-            without @. The rank field is the source's revenue rank. Result order
-            represents reported 30-day revenue-growth rank.
+            Reddit score is public net. Vote estimates use its fuzzed ratio.
+            Comments are omitted. Startup xHandle omits @. rank is its growth
+            rank.
           properties:
             author:
               type: string

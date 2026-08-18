@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 interface OpenApiSchema {
+  readonly $ref?: string;
+  readonly allOf?: readonly OpenApiSchema[];
   readonly maximum?: number;
   readonly properties?: Readonly<Record<string, unknown>>;
 }
@@ -64,6 +66,8 @@ const TWEET_FIELDS = [
   'inReplyToUsername',
   'displayTextRange',
   'contentDisclosure',
+  'communityId',
+  'conversationControl',
   'article',
   'card',
   'communityNote',
@@ -71,12 +75,16 @@ const TWEET_FIELDS = [
   'isTranslatable',
   'noteTweet',
   'place',
+  'limitedActions',
   'possiblySensitive',
   'previousCounts',
   'viewState',
   'entities',
   'quoted_tweet',
+  'quotedTweetId',
   'retweeted_tweet',
+  'tombstone',
+  'unmentionedUserIds',
   'author',
   'media',
   'retweetCount',
@@ -94,6 +102,7 @@ const PROFILE_FIELDS = [
   'description',
   'followers',
   'following',
+  'grokTranslatedBio',
   'verified',
   'isBlueVerified',
   'isVerified',
@@ -110,7 +119,9 @@ const PROFILE_FIELDS = [
   'hasCustomTimelines',
   'isTranslator',
   'withheldInCountries',
+  'withheldScope',
   'possiblySensitive',
+  'professional',
   'pinnedTweetIds',
   'isAutomated',
   'automatedBy',
@@ -132,11 +143,14 @@ const PROFILE_FIELDS = [
   'profileSortEnabled',
   'profileTranslatorType',
   'superFollowEligible',
+  'superFollowsUserProfileActive',
+  'tipJar',
   'communityRole',
   'profile_bio',
 ] as const;
 
 const MEDIA_FIELDS = [
+  'adultContent',
   'mediaUrl',
   'type',
   'url',
@@ -144,18 +158,28 @@ const MEDIA_FIELDS = [
   'altText',
   'aspectRatio',
   'availabilityStatus',
+  'availabilityReason',
+  'description',
   'displayUrl',
   'durationMillis',
   'expandedUrl',
+  'embeddable',
   'faceRects',
   'focusRects',
   'height',
   'id',
   'indices',
   'mediaKey',
+  'grokPostId',
   'monetizable',
   'sizes',
+  'sourceStatusId',
+  'sourceUserId',
+  'tags',
+  'title',
   'videoVariants',
+  'visitSiteUrl',
+  'watchNowUrl',
   'width',
 ] as const;
 
@@ -180,9 +204,28 @@ function schemaFields(
   if (schema === undefined) {
     throw new Error(`OpenAPI is missing schema ${name}.`);
   }
-  return Object.keys(schema.properties ?? {}).toSorted((left, right) =>
-    left.localeCompare(right),
-  );
+  return schemaFieldNames(openApi, schema);
+}
+
+function schemaFieldNames(
+  openApi: Readonly<OpenApiDocument>,
+  schema: Readonly<OpenApiSchema>,
+): readonly string[] {
+  const referencedName = schema.$ref?.split('/').at(-1);
+  const resolved = referencedName === undefined
+    ? schema
+    : openApi.components?.schemas?.[referencedName];
+  if (resolved === undefined) {
+    throw new Error(`OpenAPI is missing schema ${referencedName}.`);
+  }
+  return [
+    ...new Set([
+      ...Object.keys(resolved.properties ?? {}),
+      ...(resolved.allOf ?? []).flatMap((item) =>
+        schemaFieldNames(openApi, item),
+      ),
+    ]),
+  ].toSorted((left, right) => left.localeCompare(right));
 }
 
 function sortedFields(fields: readonly string[]): readonly string[] {
