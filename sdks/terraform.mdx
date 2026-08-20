@@ -1,5 +1,5 @@
 ---
-title: "Terraform Provider for X Monitors & Webhooks"
+title: "Terraform provider for X monitors & webhooks"
 sidebarTitle: Terraform
 description: "Install Xquik's Terraform provider and manage X monitors, signed webhooks, tweet actions, API keys, and durable automation state as infrastructure across teams."
 keywords: ["Terraform provider", "Xquik Terraform", "Twitter scraper Terraform", "X API Terraform", "monitor tweets Terraform", "webhooks Terraform", "infrastructure as code"]
@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the Terraform provider when Xquik resources need to live beside the rest of your infrastructure code. It is useful when platform teams want repeatable account monitors, HMAC webhooks, API keys, drafts, tweet actions, profile updates, and support workflows in the same review and state process as the rest of their deployment.
+Use the Terraform provider to manage Xquik resources with your infrastructure code. Platform teams can review account monitors, HMAC webhooks, API keys, drafts, tweet actions, profile updates, and support workflows through the same state process.
 
 ## Install
 
@@ -43,7 +43,7 @@ export X_TWITTER_SCRAPER_BEARER_TOKEN="YOUR_OAUTH_TOKEN"
 
 Prefer environment variables for credentials. If you pass credentials through Terraform variables, mark them `sensitive = true` and use an encrypted remote state backend.
 
-## Workflow: Monitor Tweets to Signed Webhooks
+## Workflow: monitor tweets to signed webhooks
 
 Use this workflow when Terraform should own a production tweet monitor and the webhook endpoint that receives signed events for queues, incident tools, social listening dashboards, or CRM enrichment.
 
@@ -89,7 +89,7 @@ output "webhook_secret" {
 }
 ```
 
-### Request Mapping
+### Request mapping
 
 <CardGroup cols={2}>
   <Card title="Monitor resource" icon="radio">
@@ -107,7 +107,7 @@ output "webhook_secret" {
 
 Valid monitor and webhook event types are `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.retweet`. Webhook URLs must be HTTPS and must be reachable from the public internet.
 
-### Returned Data & Handoff
+### Returned data & handoff
 
 After `terraform apply`, hand `monitor_id` to operators who need to pause, update, or delete the monitor through Terraform. Hand `webhook_id` to delivery dashboards and support playbooks. Store `webhook_secret` in a secret manager and use it to verify `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` on every delivery.
 
@@ -117,11 +117,11 @@ Webhook operations are free. Active monitors check every second and cost 21
 credits per monitor-hour. Creating one requires the username lookup cost and
 the first monitor hour. Monitors may pause when credits run out.
 
-### State & Secrets
+### State & secrets
 
 Terraform state can contain the webhook `secret` returned at creation time. Use an encrypted backend, restrict state access, and mark every output that references the secret as `sensitive = true`. If the secret is lost or exposed, delete and recreate the webhook so Terraform receives a new signing secret.
 
-## Workflow: Declare Media Tweets and Replies
+## Workflow: declare media tweets and replies
 
 Use `x-twitter-scraper_x_tweet` when an infrastructure change must create one durable tweet or reply as part of a reviewed apply. The resource maps to `POST /x/tweets`, accepts public media URLs in `media`, and stores the confirmed `tweet_id` in Terraform state.
 
@@ -138,7 +138,7 @@ output "launch_reply_tweet_id" {
 }
 ```
 
-### Tweet Resource Mapping
+### Tweet resource mapping
 
 <CardGroup cols={2}>
   <Card title="Tweet resource" icon="send">
@@ -154,23 +154,23 @@ output "launch_reply_tweet_id" {
 Generated provider docs may list `media_ids` on `x-twitter-scraper_x_tweet`, but `POST /x/tweets` rejects `media_ids`. Use `media` with public image or MP4 URLs for tweets. Reserve uploaded media IDs for one-item DM `media_ids` through REST, MCP tools, or a generated SDK.
 </Warning>
 
-### Tweet Handoff
+### Tweet handoff
 
 After `terraform apply`, hand `tweet_id`, `reply_to_tweet_id`, `account`, and the original `media` URLs to the queue, release record, CRM note, or incident timeline that needs to reconcile the post. Keep the media URLs in your own system so a later state refresh does not become the only audit trail.
 
 Terraform state for `x-twitter-scraper_x_tweet` does not expose durable write action fields, media upload resources, or direct-message send resources. Use the REST API, MCP tools, or a generated SDK when a worker must store lifecycle handoffs, upload local media for one-item DM `media_ids`, or store returned DM `message_id`.
 
-## Error Handling
+## Error handling
 
-Provider errors surface through Terraform plan and apply output. REST API response semantics match the [error handling guide](/guides/error-handling).
+Terraform prints provider errors during plan and apply. REST API response semantics match the [error handling guide](/guides/error-handling).
 
-## State & Pagination
+## State & pagination
 
 Terraform tracks resource state in your configured backend. Data sources and resources use the generated provider schema; review the generated docs in the [provider repository](https://github.com/Xquik-dev/terraform-provider-x-twitter-scraper/tree/main/docs) before adding resources to production state.
 
-Terraform should not be the handoff surface for extraction files. For reply, follower, or tweet search exports, use the REST extraction endpoints, CLI, MCP tools, or generated SDKs to write CSV, JSON, XLSX, or JSON Lines files. Keep Terraform state focused on long-lived resources and IDs that must be reviewed through plan and apply.
+Do not hand off extraction files through Terraform. For reply, follower, or tweet search exports, use the REST extraction endpoints, CLI, MCP tools, or generated SDKs to write CSV, JSON, XLSX, or JSON Lines files. Keep Terraform state focused on long-lived resources and IDs that must be reviewed through plan and apply.
 
-## Webhooks & References
+## Webhooks & references
 
 - [REST API Overview](/api-reference/overview)
 - [API Authentication](/api-reference/authentication)

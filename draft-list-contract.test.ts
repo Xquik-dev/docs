@@ -68,12 +68,12 @@ describe('list tweet drafts documentation', (): void => {
 
     expect(
       [
-        'title: "List Xquik Tweet Drafts with Cursor-Based Pagination"',
+        'title: "List Xquik tweet drafts with cursor-based pagination"',
         '"list tweet drafts"',
         '"tweet draft API"',
-        '## Paginate Through Every Draft',
-        '## Build a Tweet Draft Review Queue',
-        '## Answer Tweet Draft List Questions',
+        '## Paginate through every draft',
+        '## Build a tweet draft review queue',
+        '## Answer tweet draft list questions',
       ].every((snippet) => page.includes(snippet)),
     ).toBe(true);
   });

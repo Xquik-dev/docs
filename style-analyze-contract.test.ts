@@ -91,7 +91,7 @@ describe('analyze tweet writing style documentation', (): void => {
 
     expect({
       focusedTitle: frontmatter.includes(
-        'Tweet Writing Style API for Cached X Profile Samples',
+        'Tweet writing style API for cached X profile samples',
       ),
       keywordsPresent: [
         'tweet writing',

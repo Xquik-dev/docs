@@ -108,7 +108,7 @@ describe('tweet style performance documentation', (): void => {
 
     expect({
       focusedTitle: frontmatter.includes(
-        'Tweet Analytics API for Likes, Replies & Reposts',
+        'Tweet analytics API for likes, replies & reposts',
       ),
       keywordsPresent: [
         'twitter analytics',

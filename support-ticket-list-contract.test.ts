@@ -133,12 +133,12 @@ describe('support ticket list documentation', (): void => {
 
     expect(
       [
-        'title: "Support Ticket API: List Xquik Tickets & Status"',
+        'title: "Support ticket API: list Xquik tickets & status"',
         '"support ticket API"',
         '"list support tickets"',
         '"support ticket status"',
-        '## Read the Support Ticket Inventory',
-        '## Build a Support Ticket Review Queue',
+        '## Read the support ticket inventory',
+        '## Build a support ticket review queue',
       ].every((snippet) => page.includes(snippet)),
     ).toBe(true);
   });

@@ -16,9 +16,9 @@ const NORMALIZED_RADAR_PAGE = RADAR_PAGE.replaceAll(/\s+/gu, ' ');
 const NORMALIZED_TYPES_GUIDE = TYPES_GUIDE.replaceAll(/\s+/gu, ' ');
 
 const REQUIRED_RADAR_PAGE_COPY = [
-  'Social Media Monitoring API for Trending Topics',
-  '## What Is a Social Media Monitoring API?',
-  '## Can Radar Track Brand Mentions and Sentiment?',
+  'Social media monitoring API for trending topics',
+  '## What is a social media monitoring API?',
+  '## Can Radar track brand mentions and sentiment?',
   '`items[].source` and `items[].sourceId`',
   'Interpret the fields documented below for that source.',
   'The `score` value measures relevance, not sentiment.',
@@ -27,7 +27,7 @@ const REQUIRED_RADAR_PAGE_COPY = [
   'Compare trends across sources with Radar. Keep full social listening data in a dedicated platform API.',
   'provides no keyword search volume or long-term history.',
   'Apply the relevant source, category, region, and time window to each request.',
-  '## Is Radar Real-Time for Monitoring Trending Topics?',
+  '## Is Radar real-time for monitoring trending topics?',
   'Start each scheduled poll without `after`.',
   'The contract guarantees neither cross-poll cursor lifetime nor snapshots.',
   'Deduplicate records by `items[].id`.',

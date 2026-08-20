@@ -66,12 +66,12 @@ describe('create tweet draft documentation', (): void => {
 
     expect(
       [
-        'title: "Create a Tweet Draft for Review with the Xquik API"',
+        'title: "Create a tweet draft for review with the Xquik API"',
         '"tweet draft"',
         '"create tweet draft"',
-        '## Choose the Tweet Draft Fields',
-        '## Build a Tweet Draft Review Workflow',
-        '## Answer Tweet Draft Creation Questions',
+        '## Choose the tweet draft fields',
+        '## Build a tweet draft review workflow',
+        '## Answer tweet draft creation questions',
       ].every((snippet) => page.includes(snippet)),
     ).toBe(true);
   });

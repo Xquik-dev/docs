@@ -1,6 +1,6 @@
 ---
-title: "Twitter API Pagination, Batching & Tweet Exports"
-sidebarTitle: "Efficient API Usage"
+title: "Twitter API pagination, batching & tweet exports"
+sidebarTitle: "Efficient API usage"
 description: "Paginate Twitter API tweets, timelines, followers, and searches. Batch IDs, prevent duplicates, resume cursors, manage retries, and export CSV, JSON, or XLSX."
 keywords: ["Twitter API pagination", "X API pagination", "Twitter cursor pagination", "Twitter API usage", "Twitter API endpoints", "Twitter search tweets", "get tweets by user API", "batch tweet lookup", "tweet scraper API", "Twitter API export"]
 ---
@@ -23,7 +23,7 @@ Resume that checkpoint instead of repeating completed pages.
   Search tweets for keywords. Use extractions for saved CSV, JSON, or XLSX.
 </Note>
 
-## Choose the Smallest Twitter API Route
+## Choose the smallest Twitter API route
 
 The smallest matching route reduces duplicate tweets and unnecessary requests.
 Do not force every job through Twitter advanced search.
@@ -62,7 +62,7 @@ Twitter API endpoints do not share one page-size parameter.
   </Card>
 </CardGroup>
 
-## Batch Known Tweet or Profile IDs
+## Batch known tweet or profile IDs
 
 Batch known IDs before starting a cursor loop.
 One batch accepts up to 100 comma-separated IDs.
@@ -94,21 +94,21 @@ Do not treat an unavailable profile as a transient pagination failure.
 Batch lookups are single-page requests.
 Do not send an empty `next_cursor` into another batch request.
 
-## Match Twitter Search, Timeline & Feed Intent
+## Match Twitter search, timeline & feed intent
 
 These routes can return similar tweet objects.
 Their collection intent remains different.
 
 <CardGroup cols={3}>
-  <Card title="Profile Timeline" icon="user-round">
+  <Card title="Profile timeline" icon="user-round">
     Use `/x/users/{id}/tweets` for one account's posts. Add `includeReplies`
     when replies belong in the result.
   </Card>
-  <Card title="Tweet Search" icon="search">
+  <Card title="Tweet search" icon="search">
     Use `/x/tweets/search` for keywords, hashtags, operators, dates, or
     engagement filters.
   </Card>
-  <Card title="Home Timeline" icon="house">
+  <Card title="Home timeline" icon="house">
     Use `/x/timeline` for one connected account's ranked home feed.
     It is not a keyword search route.
   </Card>
@@ -122,7 +122,7 @@ Plain `from:username` date searches can use timeline-oriented collection.
 Add keywords when ranked search semantics matter more.
 Keep `q`, filters, dates, and `queryType` unchanged across pages.
 
-## Use the Correct Page-Size Parameter
+## Use the correct page-size parameter
 
 Page-size names vary across Xquik routes.
 Copy the parameter from that endpoint's API reference.
@@ -143,7 +143,7 @@ Larger pages reduce HTTP calls.
 Smaller pages reduce memory and checkpoint loss after failures.
 Choose the largest size your worker can safely store atomically.
 
-## Use Extraction Jobs for Saved Files
+## Use extraction jobs for saved files
 
 Use extractions for durable Twitter scraper API jobs.
 They support saved results and repeatable file handoffs.
@@ -181,7 +181,7 @@ Extractions suit durable exports, analysts, and asynchronous workflows.
 Store the export format, job ID, row count, and completion state.
 Do not call the export route before the job completes.
 
-## Store Cursor Checkpoints
+## Store cursor checkpoints
 
 Store the request and response cursor together.
 Treat each cursor as an opaque string.
@@ -214,7 +214,7 @@ Write the rows and checkpoint in one database transaction.
 Advance only after the row write succeeds.
 Keep the previous checkpoint until validating its replacement.
 
-## Implement a Bounded Tweet Search Loop
+## Implement a bounded tweet search loop
 
 This TypeScript example preserves query intent across cursor pages.
 It also stops repeated cursors and duplicate tweet rows.
@@ -327,7 +327,7 @@ async function collectTweetSearch(
 Move status-specific recovery outside this collection function.
 Resume only after correcting the failed condition.
 
-## Guard High-Volume Twitter API Pagination
+## Guard high-volume Twitter API pagination
 
 Bound every high-volume tweet scraper loop.
 A filter can produce an empty page before later matches.
@@ -361,7 +361,7 @@ For agent calls, return counts or bounded field projections.
 API MCP output is limited to 24,000 characters.
 Use REST, SDKs, or exports for every complete row.
 
-## Resume Recurring Tweet Collection
+## Resume recurring tweet collection
 
 Do not restart recurring searches from their first page.
 Save the last accepted tweet timestamp and stable ID.
@@ -383,7 +383,7 @@ confirms two durable principles.
 Pagination tokens are opaque. Short pages can still have successors.
 Xquik exposes those principles through its documented cursor fields.
 
-## Recover Without Losing the Cursor
+## Recover without losing the cursor
 
 Use the HTTP status before deciding whether to retry.
 
@@ -401,7 +401,7 @@ Never advance the checkpoint after a failed response.
 Never charge a failed page to the unique-row count.
 Record partial completion when a retry budget expires.
 
-## Control Credits, Requests & Memory
+## Control credits, requests & memory
 
 Estimate work before starting large exports.
 Multiply expected unique rows by the route's documented result cost.
@@ -423,7 +423,7 @@ Use these controls before every large run:
 See [Twitter API rate limits](/guides/rate-limits) for request pacing.
 See [pricing and billing](/guides/billing) for metered result rules.
 
-## Avoid Unnecessary Media Work
+## Avoid unnecessary media work
 
 Pass public media URLs directly when creating tweets.
 One public MP4 URL can also use the `media` field.
@@ -434,51 +434,51 @@ DM writes accept one item in `media_ids`.
 
 Keep tweet media URLs separate from DM media IDs.
 
-## Twitter API Pagination Questions
+## Twitter API pagination questions
 
-### How Do I Paginate Twitter API Tweets?
+### How do I paginate Twitter API tweets?
 
 Read `has_next_page` and save `next_cursor`.
 Send that value as the next request's `cursor`.
 Stop only when the response reports no next page.
 
-### Can I Get Every Tweet in One API Request?
+### Can I get every tweet in one API request?
 
 No. Collection routes return bounded pages.
 Tweet search can request up to 200 results through `limit`.
 Larger collections still require cursors or extraction jobs.
 
-### Why Did the API Return Fewer Tweets Than Requested?
+### Why did the API return fewer tweets than requested?
 
 Page size is an upper bound.
 Filters, source availability, and remaining credits can reduce results.
 Continue whenever `has_next_page` remains true.
 
-### How Do I Get Tweets by One User Efficiently?
+### How do I get tweets by one user efficiently?
 
 Use `GET /x/users/{id}/tweets` with `pageSize` and `cursor`.
 Add `includeReplies=true` only when replies belong in scope.
 Use search when keywords or advanced filters define the job.
 
-### Should I Use a Cursor or a Timestamp?
+### Should I use a cursor or a timestamp?
 
 Use cursors within one continuous collection run.
 Use timestamps to define windows between recurring runs.
 Apply a small overlap and deduplicate by tweet ID.
 
-### How Do I Prevent Duplicate Tweets Across Pages?
+### How do I prevent duplicate tweets across pages?
 
 Store every tweet ID in a unique index.
 Track cursors separately from tweet IDs.
 Reject repeated cursors before requesting another page.
 
-### Should I Use Direct API Pages or a Twitter Export?
+### Should I use direct API pages or a Twitter export?
 
 Use direct pages for live application responses.
 Use extractions for durable CSV, JSON, or XLSX handoffs.
 Use stored extraction pages when streaming beyond file limits.
 
-## Efficient Twitter API Usage Checklist
+## Efficient Twitter API usage checklist
 
 - Choose the route matching IDs, users, search, feed, or export intent.
 - Batch up to 100 known tweet or user IDs.
@@ -494,13 +494,13 @@ Use stored extraction pages when streaming beyond file limits.
 - Keep tweet media URLs separate from uploaded DM media IDs.
 
 <CardGroup cols={3}>
-  <Card title="Tweet Search API" icon="search" href="/api-reference/x/search-tweets">
+  <Card title="Tweet search API" icon="search" href="/api-reference/x/search-tweets">
     Search tweets by keywords, dates, authors, media, or engagement.
   </Card>
-  <Card title="Extraction Workflow" icon="download" href="/guides/extraction-workflow">
+  <Card title="Extraction workflow" icon="download" href="/guides/extraction-workflow">
     Estimate, create, poll, paginate, and export durable jobs.
   </Card>
-  <Card title="Rate Limits" icon="gauge" href="/guides/rate-limits">
+  <Card title="Rate limits" icon="gauge" href="/guides/rate-limits">
     Pace requests and recover from `429` responses safely.
   </Card>
 </CardGroup>

@@ -87,7 +87,7 @@ describe('compare tweet writing profiles documentation', (): void => {
 
     expect({
       focusedTitle: frontmatter.includes(
-        'Compare 2 Cached Tweet Writing Profiles with Xquik',
+        'Compare 2 cached tweet writing profiles with Xquik',
       ),
       keywordsPresent: [
         'tweet writing',

@@ -71,7 +71,7 @@ describe('delete tweet draft documentation', (): void => {
       publishedPostPreserved: normalizedPage.includes(
         'It also does not delete published tweets, scheduled posts, or connected X accounts.',
       ),
-      singleDraftScope: page.includes('## Delete One Saved Tweet Draft'),
+      singleDraftScope: page.includes('## Delete one saved tweet draft'),
     }).toStrictEqual({
       destructive: true,
       nativeDraftPreserved: true,
@@ -85,12 +85,12 @@ describe('delete tweet draft documentation', (): void => {
 
     expect(
       [
-        'title: "Delete Tweet Drafts Safely with the Xquik API"',
+        'title: "Delete tweet drafts safely with the Xquik API"',
         '"tweet draft"',
         '"delete tweet draft"',
-        '## Handle 204 No Content',
-        '## Recover From Draft Deletion Errors',
-        '## Answer Tweet Draft Deletion Questions',
+        '## Handle 204 no content',
+        '## Recover from draft deletion errors',
+        '## Answer tweet draft deletion questions',
       ].every((snippet) => page.includes(snippet)),
     ).toBe(true);
   });

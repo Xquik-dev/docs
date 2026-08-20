@@ -121,7 +121,7 @@ describe('navigation default state', (): void => {
   it('keeps every X API endpoint section complete and expanded', (): void => {
     expect.assertions(2);
 
-    const apiReferenceTab = findTab(docsConfig(), 'API Reference');
+    const apiReferenceTab = findTab(docsConfig(), 'API reference');
     const xApiGroup = findGroup(apiReferenceTab, 'X API');
     const xApiSubgroups = objectItems(xApiGroup.pages);
     const collapsedGroups = xApiSubgroups

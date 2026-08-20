@@ -111,7 +111,7 @@ describe('save custom tweet style documentation', (): void => {
 
     expect({
       focusedTitle: frontmatter.includes(
-        'Save Tweet Writing Samples for a Reusable X Style',
+        'Save tweet writing samples for a reusable X style',
       ),
       keywordsPresent: [
         'tweet writing',

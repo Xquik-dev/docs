@@ -1,4 +1,4 @@
-# Xquik Docs
+# Xquik docs
 
 This repository is the public documentation site. Treat every committed file as
 public-facing unless it is explicitly a standard open-source project file.
@@ -19,7 +19,7 @@ public-facing unless it is explicitly a standard open-source project file.
   implementation details. If a detail is not meant for customers, remove it or
   replace it with generic public wording before committing.
 
-## Docs Workflow
+## Docs workflow
 
 - Pull latest changes and inspect `git status` before edits.
 - Preserve unrelated user changes.

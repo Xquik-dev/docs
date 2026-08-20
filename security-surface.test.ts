@@ -27,13 +27,13 @@ function docsConfig(): DocsConfig {
   return JSON.parse(readFileSync('docs.json', 'utf8')) as DocsConfig;
 }
 
-describe('public security surface', (): void => {
+describe('public security guidance', (): void => {
   it('keeps owner verification and security contacts discoverable', (): void => {
     expect.assertions(10);
 
     const config = docsConfig();
     const trustLinks = config.footer?.links?.find(
-      (group): boolean => group.header === 'Trust & Support',
+      (group): boolean => group.header === 'Trust & support',
     )?.items;
     const securityPage = readFileSync('security.mdx', 'utf8');
     const securityText = readFileSync('security.txt', 'utf8');

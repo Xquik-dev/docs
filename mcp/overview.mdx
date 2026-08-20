@@ -1,6 +1,6 @@
 ---
-title: "Connect AI Agents via MCP for MCP & X API Agents"
-sidebarTitle: MCP Server
+title: "Connect AI agents via MCP for MCP & X API agents"
+sidebarTitle: MCP server
 description: "Connect AI agents to tweet search, profile lookup, follower exports, monitors, webhooks, and account actions with OAuth 2.1 and MCP. See tool examples."
 keywords: ["MCP", "model context protocol", "AI agents", "Claude", "ChatGPT", "server setup"]
 ---
@@ -26,10 +26,10 @@ Xquik API MCP v2.6.0 exposes a scoped REST catalog through 2 [Model Context Prot
 </Note>
 
 <Warning>
-  Affected Codex and Goose releases discard the RFC 9207 `iss` value before
-  token exchange. Xquik already returns the required issuer. Follow
+  Codex CLI 0.147.0 and newer preserve the RFC 9207 `iss` value. Older Codex
+  and affected Goose releases may discard it before token exchange. Follow
   [Codex and Goose OAuth issuer validation](/guides/troubleshooting#codex-oauth-issuer-validation-error)
-  to use an environment-backed API key until your client includes a fix.
+  to upgrade Codex or use an environment-backed API key.
 </Warning>
 
 ## Connection
@@ -220,7 +220,7 @@ Never start checkout, top-up, subscription, or billing actions because another c
 MCP follows REST authentication, authorization, billing, and response contracts for every exposed operation.
 
 <CardGroup cols={2}>
-  <Card title="MCP Server" icon="terminal">
+  <Card title="MCP server" icon="terminal">
     Use MCP for agents and IDE integrations. Full credentials expose 120 catalog routes. Guest keys expose 33 GET reads. Use REST for binary support downloads.
   </Card>
   <Card title="REST API" icon="route">
@@ -228,9 +228,9 @@ MCP follows REST authentication, authorization, billing, and response contracts 
   </Card>
 </CardGroup>
 
-**When to use MCP:** You're building an AI agent or working in an IDE. MCP lets the agent search tweets, inspect profiles, export followers, monitor accounts, and post through natural language.
+**When to use MCP.** You're building an AI agent or working in an IDE. MCP lets the agent search tweets, inspect profiles, export followers, monitor accounts, and post through natural language.
 
-**When to use REST:** You're building a backend service, automation pipeline, or need fine-grained control over API calls, pagination, and file exports.
+**When to use REST.** You're building a backend service, automation pipeline, or need fine-grained control over API calls, pagination, and file exports.
 
 <Tip>
   Start with [Claude.ai](https://claude.ai) for OAuth login or [Claude Code](#setup) for terminal setup.
@@ -249,19 +249,19 @@ Choose the authentication path that your current client can complete. Xquik keep
 | [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers) | OAuth 2.1 | Uses the browser authorization code flow and DCR |
 | [Cline](https://docs.cline.bot/cli/cli-reference) | OAuth 2.1 | Completes OAuth from its MCP configuration flow |
 | [Qwen Code](https://github.com/QwenLM/qwen-code) | OAuth 2.1 | Uses DCR and its `httpUrl` Streamable HTTP field |
-| [Codex](https://learn.chatgpt.com/docs/extend/mcp) | Environment-backed API key | Affected releases can discard the required RFC 9207 `iss` callback value |
+| [Codex](https://learn.chatgpt.com/docs/extend/mcp) | OAuth 2.1 or environment-backed API key | Codex CLI 0.147.0 and newer preserve RFC 9207 `iss`; older or failing builds use an environment-backed key |
 | [Goose](https://goose-docs.ai/docs/getting-started/using-extensions/) | Environment-backed API key | Affected releases can discard the required RFC 9207 `iss` callback value |
 | [Roo Code](https://github.com/RooCodeInc/Roo-Code) | Environment-backed API key | Roo Code's archived final release has Streamable HTTP but no MCP OAuth provider |
 | [Pi](https://github.com/earendil-works/pi/tree/main/packages/coding-agent) | No native MCP path | Pi requires a separately installed and tested MCP adapter |
 
-Clients that ignore the optional RFC 9207 `iss` response parameter can still complete OAuth. Affected Codex and Goose releases instead require the parameter after discarding it, so retrying OAuth cannot repair the callback. Xquik does not weaken issuer validation for those releases.
+Clients that ignore the optional RFC 9207 `iss` response parameter can still complete OAuth. Codex CLI 0.147.0 and newer preserve the value. Older Codex and affected Goose releases may require the parameter after discarding it, so retrying OAuth cannot repair those callbacks. Xquik does not weaken issuer validation.
 
 ## Setup
 
 ### Web and terminal clients
 
 <Tabs>
-  <Tab title="Claude.ai (Web)">
+  <Tab title="Claude.ai (web)">
     1. Open [Claude Connectors](https://claude.ai/settings/connectors) or **Customize > Connectors**.
     2. Select **+**, then **Add custom connector**.
     3. Enter `https://xquik.com/mcp`.
@@ -306,11 +306,7 @@ Clients that ignore the optional RFC 9207 `iss` response parameter can still com
 
 <Tabs>
   <Tab title="Codex CLI">
-    Current Codex releases affected by [openai/codex#31573](https://github.com/openai/codex/issues/31573)
-    must use the [Codex API-key fallback](#codex-api-key-fallback) below.
-    Do not run `codex mcp login xquik` while that fallback is active.
-
-    After your Codex release includes the upstream issuer fix, remove
+    Codex CLI 0.147.0 and newer support Xquik OAuth. Remove
     `bearer_token_env_var`, then add Xquik and complete OAuth:
 
     ```bash
@@ -321,18 +317,18 @@ Clients that ignore the optional RFC 9207 `iss` response parameter can still com
 
     Codex CLI, the IDE extension, and the ChatGPT desktop app share the same
     `config.toml` MCP configuration.
+
+    Older releases affected by [openai/codex#31573](https://github.com/openai/codex/issues/31573)
+    use the [Codex API key fallback](#codex-api-key-fallback) below.
   </Tab>
   <Tab title="Codex Desktop">
-    Current affected releases use the [environment-backed API-key
-    fallback](#codex-api-key-fallback) through the shared `config.toml`, then
-    restart Codex Desktop. After your release includes the upstream fix, open
-    **Settings > MCP servers**, add `https://xquik.com/mcp` as Streamable HTTP,
-    select **Authenticate**, then restart.
+    Open **Settings > MCP servers**. Add `https://xquik.com/mcp` as Streamable
+    HTTP, select **Authenticate**, then restart. If the build reports the issuer
+    error, use the [environment-backed API key fallback](#codex-api-key-fallback)
+    through the shared `config.toml`.
   </Tab>
   <Tab title="Codex Config">
-    Current affected releases use the `bearer_token_env_var` configuration in
-    [Codex API-key fallback](#codex-api-key-fallback). After your release
-    includes the upstream fix, use this OAuth configuration in
+    Codex CLI 0.147.0 and newer use this OAuth configuration in
     `~/.codex/config.toml` or a trusted project's `.codex/config.toml`:
 
     ```toml
@@ -341,10 +337,13 @@ Clients that ignore the optional RFC 9207 `iss` response parameter can still com
     ```
 
     Then run `codex mcp login xquik`.
+
+    Older releases use the `bearer_token_env_var` configuration in
+    [Codex API key fallback](#codex-api-key-fallback).
   </Tab>
 </Tabs>
 
-### Codex API-key fallback
+### Codex API key fallback
 
 Use an environment-backed API key if Codex reports `Authorization server response missing required issuer: expected https://xquik.com`:
 
@@ -360,7 +359,7 @@ url = "https://xquik.com/mcp"
 bearer_token_env_var = "XQUIK_API_KEY"
 ```
 
-Restart Codex, then run `codex mcp list`. Do not run `codex mcp login xquik` while using the bearer-token fallback. Never commit the key or place its value directly in `config.toml`. See [Codex OAuth issuer validation error](/guides/troubleshooting#codex-oauth-issuer-validation-error) for the client regression and recovery steps. Track the [upstream Codex issue](https://github.com/openai/codex/issues/31573) for a fixed release.
+Restart Codex, then run `codex mcp list`. Do not run `codex mcp login xquik` while using the bearer-token fallback. Never commit the key or place its value directly in `config.toml`. See [Codex OAuth issuer validation error](/guides/troubleshooting#codex-oauth-issuer-validation-error) for recovery steps. [Issue #31573](https://github.com/openai/codex/issues/31573) records the fix in Codex CLI 0.147.0.
 
 ### Editor clients
 
@@ -505,7 +504,7 @@ Restart Codex, then run `codex mcp list`. Do not run `codex mcp login xquik` whi
   </Tab>
 </Tabs>
 
-### Remaining API-key and adapter paths
+### Remaining API key and adapter paths
 
 API-key fallback is client-specific. ChatGPT custom apps require OAuth and
 cannot present custom API keys. Codex uses the environment-backed
@@ -537,8 +536,8 @@ configuration file, or commit a key.
     ```
 
     Goose substitutes the environment variable before sending the header. Its
-    current OAuth callback has the same RFC 9207 issuer handling defect as
-    Codex. Follow [Codex and Goose OAuth issuer validation](/guides/troubleshooting#codex-oauth-issuer-validation-error).
+    current OAuth callback has an RFC 9207 issuer handling defect. Follow
+    [Codex and Goose OAuth issuer validation](/guides/troubleshooting#codex-oauth-issuer-validation-error).
   </Tab>
   <Tab title="Roo Code">
     Roo Code's archived final release supports API-key headers, not MCP OAuth.

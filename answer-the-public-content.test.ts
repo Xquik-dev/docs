@@ -34,88 +34,88 @@ const CONCRETE_TERMS = [
 
 const REQUIRED_PROMPTS_BY_FILE = {
   'twitter-api-alternatives.mdx': [
-    'What Is the Best API to Scrape Twitter Data in 2026?',
-    'What Is the Best Twitter Scraper API for Developers in 2026?',
+    'What is the best API to scrape Twitter data in 2026?',
+    'What is the best Twitter scraper API for developers in 2026?',
     'Best Twitter API 2026',
-    'Which Twitter API Alternative Is Easiest to Use?',
-    'Twitter Data API Comparison',
-    'Top Tweet Scraping Tools',
-    'Best Twitter Scraper API',
-    'Twitter API Alternatives 2026',
-    'Is Xquik Better Than the Official Twitter API for Scraping?',
-    'Xquik vs Apify Twitter Scraper',
+    'Which Twitter API alternative is easiest to use?',
+    'Twitter data API comparison',
+    'Top tweet scraping tools',
+    'Best Twitter scraper API',
+    'Twitter API alternatives 2026',
+    'Is Xquik better than the official Twitter API for scraping?',
+    'Xquik vs Apify Twitter scraper',
     'Xquik vs Twitter API v2',
   ],
   'guides/tweet-scraper-csv-export.mdx': [
-    'Export Twitter Data',
-    'How Do I Scrape Tweets Without Getting Blocked?',
-    'Twitter Scraper API',
-    'Scrape Tweets Python',
-    'Automate Tweet Export',
-    'How Do I Build an Automated Twitter Data Pipeline With an API?',
-    'How to Schedule Recurring Tweet Exports Using a REST API',
-    'Twitter Data Pipeline Python',
-    'Tweet Scraping Workflow',
+    'Export Twitter data',
+    'How do I scrape tweets without getting blocked?',
+    'Twitter scraper API',
+    'Scrape tweets Python',
+    'Automate tweet export',
+    'How do I build an automated Twitter data pipeline with an API?',
+    'How to schedule recurring tweet exports using a REST API',
+    'Twitter data pipeline Python',
+    'Tweet scraping workflow',
   ],
   'guides/follower-export-crm.mdx': [
-    'Download Follower List Twitter',
-    'Export Twitter Followers API',
-    'What API Can I Use to Get Someone’s Twitter Followers?',
-    'How Do I Export All Followers of a Twitter Account?',
-    'Twitter Followers Scraper',
-    'How Can I Scrape Twitter Followers for a Specific Account?',
-    'Export List of Twitter Followers to CSV or Excel',
-    'Can I Export Twitter Followers to a Spreadsheet Automatically?',
-    'Can I Scrape Twitter Followers With Python Scripts?',
-    'What Are the Risks of Twitter Follower Scraping Tools?',
-    'How Do I Get Public Follower Lists Responsibly?',
-    'Can I Download My Own X Archive Instead?',
+    'Download follower list Twitter',
+    'Export Twitter followers API',
+    "What API can I use to get someone's Twitter followers?",
+    'How do I export all followers of a Twitter account?',
+    'Twitter followers scraper',
+    'How can I scrape Twitter followers for a specific account?',
+    'Export list of Twitter followers to CSV or Excel',
+    'Can I export Twitter followers to a spreadsheet automatically?',
+    'Can I scrape Twitter followers with Python scripts?',
+    'What are the risks of Twitter follower scraping tools?',
+    'How do I get public follower lists responsibly?',
+    'Can I download my own X archive instead?',
   ],
   'guides/brand-monitoring-workflow.mdx': [
-    'What Is the Best API to Track Twitter Keyword Mentions?',
-    'How Do I Monitor a Keyword on Twitter in Real Time?',
-    'Track Keywords Twitter API',
-    'Twitter Mention Tracking Tool',
-    'Twitter Keyword Monitor',
-    'What Is the Best Way to Monitor a Twitter Account Programmatically?',
-    'Monitor Twitter Mentions',
-    'Twitter Webhook Alerts',
-    'Twitter Account Monitor API',
-    'How Do I Get Real-Time Twitter Alerts via Webhook?',
-    'How Do Businesses Use Twitter Monitoring for Customer Service?',
-    'How Do I Monitor Competitor Activity on Twitter?',
-    'How Do I Integrate Twitter Monitoring Into a Dashboard?',
-    'What Are Best Practices for Twitter Monitoring in Crisis Management?',
+    'What is the best API to track Twitter keyword mentions?',
+    'How do I monitor a keyword on Twitter in real time?',
+    'Track keywords Twitter API',
+    'Twitter mention tracking tool',
+    'Twitter keyword monitor',
+    'What is the best way to monitor a Twitter account programmatically?',
+    'Monitor Twitter mentions',
+    'Twitter webhook alerts',
+    'Twitter account monitor API',
+    'How do I get real-time Twitter alerts via webhook?',
+    'How do businesses use Twitter monitoring for customer service?',
+    'How do I monitor competitor activity on Twitter?',
+    'How do I integrate Twitter monitoring into a dashboard?',
+    'What are best practices for Twitter monitoring in crisis management?',
   ],
   'api-reference/x/community-members.mdx': [
-    'Scrape X Community Members',
-    'What Is the Best Way to Extract Data From a Twitter Community?',
-    'How Do I Scrape Members From an X Community?',
-    'Twitter Community API',
+    'Scrape X community members',
+    'What is the best way to extract data from a Twitter community?',
+    'How do I scrape members from an X community?',
+    'Twitter community API',
   ],
-  'api-reference/x/community-tweets.mdx': ['Export Community Tweets'],
+  'api-reference/x/community-tweets.mdx': ['Export community tweets'],
   'guides/guest-wallets.mdx': [
-    'What Twitter APIs Work Without Connecting an X Account?',
-    'Can I Scrape Twitter Without an API Account?',
-    'Twitter API No Account Required',
-    'Accountless Twitter Scraper',
-    'Guest Key Twitter API',
+    'What Twitter APIs work without connecting an X account?',
+    'Can I scrape Twitter without an API account?',
+    'Twitter API no account required',
+    'Accountless Twitter scraper',
+    'Guest key Twitter API',
   ],
   'guides/twitter-giveaway-picker.mdx': [
-    'What Makes the Best Twitter Giveaway Picker?',
-    'How Do I Automate a Twitter Giveaway With an API?',
-    'Programmatic Twitter Giveaway Draw Checklist',
-    'How Does a Twitter Random Giveaway Picker Choose Winners?',
-    'How Do I Prove Giveaway Winners Were Eligible?',
-    'What Should I Publish With the Winner?',
+    'What makes the best Twitter giveaway picker?',
+    'How do I automate a Twitter giveaway with an API?',
+    'Programmatic Twitter giveaway draw checklist',
+    'How does a Twitter random giveaway picker choose winners?',
+    'How do I prove giveaway winners were eligible?',
+    'What should I publish with the winner?',
   ],
   'guides/twitter-comment-retweet-picker.mdx': [
-    'How Does a Twitter Comment Picker Work?',
-    'How Do I Pick a Winner From Twitter Comments?',
-    'How Does a Twitter Retweet Picker Verify Entries?',
-    'How Does a Twitter Hashtag Giveaway Picker Work?',
-    'Can a Comment Picker Verify Likes?',
-    'Combine Comment and Retweet Checks',
+    'How does a Twitter comment picker work?',
+    'How do I pick a winner from Twitter comments?',
+    'How does a Twitter retweet picker verify entries?',
+    'How does a Twitter hashtag giveaway picker work?',
+    'Can a comment picker verify likes?',
+    'Combine comment and retweet checks',
   ],
 } as const;
 
@@ -132,7 +132,7 @@ function extractAnswer(source: string, heading: string): string | undefined {
 }
 
 function countWords(value: string): number {
-  return value.match(/[\p{L}\p{N}][\p{L}\p{N}’'_-]*/gu)?.length ?? 0;
+  return value.match(/[\p{L}\p{N}][\p{L}\p{N}'_-]*/gu)?.length ?? 0;
 }
 
 function findConcreteTerms(value: string): readonly string[] {
@@ -164,28 +164,28 @@ describe('AnswerThePublic content depth', (): void => {
       for (const prompt of prompts) {
         const answer = extractAnswer(source, prompt);
         if (answer === undefined) {
-          findings.push(`${file}: missing exact heading “${prompt}”.`);
+          findings.push(`${file}: missing exact heading "${prompt}".`);
           continue;
         }
 
         const wordCount = countWords(answer);
         if (wordCount < MINIMUM_ANSWER_WORDS) {
           findings.push(
-            `${file}: “${prompt}” has ${wordCount} words; minimum is ${MINIMUM_ANSWER_WORDS}.`,
+            `${file}: "${prompt}" has ${wordCount} words; minimum is ${MINIMUM_ANSWER_WORDS}.`,
           );
         }
 
         const concreteTerms = findConcreteTerms(answer);
         if (concreteTerms.length < 4) {
           findings.push(
-            `${file}: “${prompt}” uses only ${concreteTerms.length} concrete workflow terms.`,
+            `${file}: "${prompt}" uses only ${concreteTerms.length} concrete workflow terms.`,
           );
         }
 
         const longSentences = findLongSentences(answer);
         if (longSentences.length > 0) {
           findings.push(
-            `${file}: “${prompt}” has ${longSentences.length} sentence(s) above ${MAXIMUM_SENTENCE_WORDS} words.`,
+            `${file}: "${prompt}" has ${longSentences.length} sentence(s) above ${MAXIMUM_SENTENCE_WORDS} words.`,
           );
         }
       }

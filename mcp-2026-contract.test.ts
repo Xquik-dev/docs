@@ -35,8 +35,8 @@ const CHANGELOG = readFileSync(
 const README = readFileSync(join(PROJECT_ROOT, 'README.md'), 'utf8');
 
 describe('MCP 2026-07-28 documentation contract', (): void => {
-  it('publishes the current server version on every setup surface', (): void => {
-    const surfaces = [
+  it('publishes the current server version in every setup document', (): void => {
+    const setupDocuments = [
       OVERVIEW,
       TOOLS,
       AGENT_HANDOFF,
@@ -48,11 +48,11 @@ describe('MCP 2026-07-28 documentation contract', (): void => {
       CONTEXT7,
       README,
     ];
-    expect.assertions(surfaces.length * 2);
+    expect.assertions(setupDocuments.length * 2);
 
-    for (const surface of surfaces) {
-      expect(surface).toContain('2.6.0');
-      expect(surface).not.toContain('2.5.6');
+    for (const document of setupDocuments) {
+      expect(document).toContain('2.6.0');
+      expect(document).not.toContain('2.5.6');
     }
   });
 

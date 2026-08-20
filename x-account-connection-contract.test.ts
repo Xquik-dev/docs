@@ -230,7 +230,7 @@ describe('X account connection documentation contract', (): void => {
     expect(responseFieldsForSection('200 Failed')).toStrictEqual(
       schemaFields('XAccountConnectionAttemptFailed'),
     );
-    expect(responseFieldsForSection('200 Email Code Required')).toStrictEqual(
+    expect(responseFieldsForSection('200 Email code required')).toStrictEqual(
       schemaFields('XAccountConnectionChallenge'),
     );
   });

@@ -1,8 +1,8 @@
-# Security Policy
+# Security policy
 
 Thank you for taking the time to report a vulnerability responsibly.
 
-## Reporting a Vulnerability
+## Reporting a vulnerability
 
 Use [GitHub private vulnerability reporting][private-report].
 
@@ -18,12 +18,12 @@ When reporting, include as much of the following as you can:
 - Impact assessment (data exposure, account takeover, billing bypass, etc.).
 - Any suggested mitigation.
 
-## Response Targets
+## Response targets
 
-- **Acknowledgement:** within 24 hours of receipt.
-- **Initial triage and severity assignment:** within 72 hours.
-- **Fix or mitigation timeline:** communicated after triage. Critical issues are prioritized over all other work.
-- **Progress updates:** at least every 14 days during active remediation.
+- **Acknowledgement.** We respond within 24 hours.
+- **Initial triage and severity assignment.** We complete both within 72 hours.
+- **Fix or mitigation timeline.** We share it after triage. Critical issues take priority.
+- **Progress updates.** We send one at least every 14 days during remediation.
 
 ## Scope
 
@@ -39,7 +39,7 @@ Out of scope (handle through the main repo or normal channels):
 - Typos, broken links, or content suggestions - open a normal GitHub issue or PR on this repository.
 - Findings that affect only the documentation hosting platform.
 
-## Threat Model
+## Threat model
 
 Protected assets include public contract integrity and release metadata.
 
@@ -53,7 +53,7 @@ Contract tests detect drift from the public OpenAPI specification.
 
 Validated fixes require tests, independent review, and coordinated disclosure.
 
-## Safe Harbor
+## Safe harbor
 
 We will not pursue legal action against researchers who:
 
