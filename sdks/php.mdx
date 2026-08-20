@@ -1,5 +1,5 @@
 ---
-title: "PHP SDK for Tweet Search, Exports & X Automation"
+title: "PHP SDK for tweet search, exports & X automation"
 sidebarTitle: PHP
 description: "Use Xquik's PHP SDK to search tweets, export replies to JSON Lines, CSV, or XLSX, post media tweets, upload media, send DMs, and run durable X API workers."
 keywords: ["PHP SDK", "Composer Twitter scraper", "X API PHP", "PHP API client", "tweet search PHP", "tweet replies PHP", "Twitter API PHP", "JSON export", "CSV export", "XLSX export"]
@@ -30,7 +30,7 @@ If your project needs the GitHub source directly, add the repository in `compose
 export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 ```
 
-## Basic Example
+## Basic example
 
 Search tweets and write durable JSON Lines handoff rows:
 
@@ -60,7 +60,7 @@ foreach ($page->tweets as $tweet) {
 }
 ```
 
-## Workflow: Search Tweets to JSON Lines, CSV, or XLSX
+## Workflow: search tweets to JSON Lines, CSV, or XLSX
 
 Use this workflow when a PHP worker, Laravel command, Symfony console command, or cron job needs tweet search results in a durable file for a queue, warehouse loader, analyst CSV export, XLSX workbook, or CRM enrichment step.
 
@@ -166,7 +166,7 @@ try {
 }
 ```
 
-### Request Mapping
+### Request mapping
 
 <CardGroup cols={2}>
   <Card title="q" icon="search">
@@ -189,7 +189,7 @@ try {
   </Card>
 </CardGroup>
 
-### Returned Data & Handoff
+### Returned data & handoff
 
 `$client->x->tweets->search()` returns `PaginatedTweets`. Use `$page->tweets` for the tweet array, `$page->hasNextPage` to decide whether another page exists, and `$page->nextCursor` as the checkpoint for the next request. For bounded pulls that return fewer tweets than `limit`, pass `$page->nextCursor` back as `cursor` with the same query, filters, `queryType`, and `limit`.
 
@@ -197,7 +197,7 @@ Each `SearchTweet` includes typed properties such as `$id`, `$text`, `$author`, 
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, timeouts, 408, 409, 429, and 5xx responses 2 times by default. For explicit `limit` pulls, resume with the same query, filters, `queryType`, and `limit`; only `cursor` changes.
 
-## Workflow: Follower Export to CSV, JSON, or XLSX
+## Workflow: follower export to CSV, JSON, or XLSX
 
 Use this workflow when a PHP worker, Laravel command, Symfony console command, or cron job needs an owned follower list for CRM import, warehouse loading, account scoring, analyst CSV, XLSX delivery, or a resumable JSON handoff.
 
@@ -296,7 +296,7 @@ file_put_contents(
 
 Persist `$job->id`, `$targetUsername`, `$estimate->estimatedResults`, and `$estimate->source` before polling so another queue worker can resume without rerunning the extraction. `$client->extractions->retrieve()` returns `$page->results`, `$page->hasMore`, and `$page->nextCursor`; pass `$page->nextCursor` back as `cursor` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
 
-## Workflow: Tweet Replies to CSV, JSON, or XLSX
+## Workflow: tweet replies to CSV, JSON, or XLSX
 
 Use this workflow when a PHP worker needs every reply on a public tweet in a durable file for moderation review, customer support triage, analyst export, or a warehouse loader.
 
@@ -339,7 +339,7 @@ file_put_contents(
 
 Cost: 1 credit per reply extracted or returned. Store `$job->id` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `$client->extractions->retrieve()`. Keep `$page->nextCursor` as the checkpoint and pass it back as `cursor` when you stream replies to JSON Lines. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff.
 
-## Workflow: Post Media Tweets and DM Attachments
+## Workflow: post media tweets and DM attachments
 
 Use this workflow when a PHP app needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `POST /x/tweets` accepts public media URLs through `media`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB, and do not mix video with other media. For replies, set `replyToTweetID` to the parent tweet ID. `$client->x->media->upload()` maps to `POST /x/media`; use its `$media->mediaID` only for the one-item `mediaIDs` array on `$client->x->dm->send()`.
 
@@ -441,30 +441,30 @@ fwrite(
 
 Store `write_action_id` and `charged_credits`, then poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before retrying a pending tweet or reply. Store `tweet_id` on the CMS, queue job, or agent state after confirmed writes. Store `$dm->messageID`, `$media->mediaID`, `account`, `user_id`, and send status on the support ticket or CRM note. Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies. Leave generated `replyToMessageID` unset even if SDK params expose it; the REST endpoint rejects DM reply threading. Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `$media->mediaID` values to `$client->x->tweets->create()`; that method uses `media` with public media URLs.
 
-## Error Handling
+## Error handling
 
 The SDK throws subclasses of `XTwitterScraper\Core\Exceptions\APIException`.
 
 <CardGroup cols={2}>
-  <Card title="400 Bad Request" icon="triangle-alert">
+  <Card title="400 Bad request" icon="triangle-alert">
     Throws `BadRequestException`.
   </Card>
   <Card title="401 Unauthorized" icon="lock">
     Throws `AuthenticationException`.
   </Card>
-  <Card title="403 Permission Denied" icon="shield">
+  <Card title="403 Permission denied" icon="shield">
     Throws `PermissionDeniedException`.
   </Card>
-  <Card title="404 Not Found" icon="circle-x">
+  <Card title="404 Not found" icon="circle-x">
     Throws `NotFoundException`.
   </Card>
-  <Card title="422 Validation Error" icon="triangle-alert">
+  <Card title="422 Validation error" icon="triangle-alert">
     Throws `UnprocessableEntityException`.
   </Card>
-  <Card title="429 Rate Limited" icon="gauge">
+  <Card title="429 Rate limited" icon="gauge">
     Throws `RateLimitException`.
   </Card>
-  <Card title="5xx Server Error" icon="server">
+  <Card title="5xx server error" icon="server">
     Throws `InternalServerException`.
   </Card>
 </CardGroup>
@@ -498,7 +498,7 @@ if ($page->hasNextPage) {
 }
 ```
 
-## Webhooks & References
+## Webhooks & references
 
 - [Search Tweets](/api-reference/x/search-tweets)
 - [Create Tweet](/api-reference/x-write/create-tweet)

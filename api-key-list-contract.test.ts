@@ -69,13 +69,13 @@ describe('API key list documentation', (): void => {
 
     expect(
       [
-        'title: "X API Key Management: List Active Xquik Keys"',
+        'title: "X API key management: list active Xquik keys"',
         '"X API key"',
         '"Twitter API key"',
         '"API key management"',
         '"list API keys"',
-        '## Distinguish Xquik Keys From Official X Credentials',
-        '## Rotate an Xquik API Key Safely',
+        '## Distinguish Xquik keys from official X credentials',
+        '## Rotate an Xquik API key safely',
       ].every((snippet) => page.includes(snippet)),
     ).toBe(true);
   });

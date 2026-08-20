@@ -72,7 +72,7 @@ describe('get tweet draft documentation', (): void => {
       noPublish: normalizedPage.includes(
         'Reading a draft never sends text to followers or creates likes and replies.',
       ),
-      readScope: page.includes('## Retrieve One Tweet Draft by ID'),
+      readScope: page.includes('## Retrieve one tweet draft by ID'),
     }).toStrictEqual({
       nativeBoundary: true,
       noEdit: true,
@@ -86,12 +86,12 @@ describe('get tweet draft documentation', (): void => {
 
     expect(
       [
-        'title: "Get a Tweet Draft by ID with the Xquik API"',
+        'title: "Get a tweet draft by ID with the Xquik API"',
         '"get tweet draft"',
         '"retrieve tweet draft"',
-        '## Read the Tweet Draft Fields',
-        '## Build a Tweet Draft Review Workflow',
-        '## Answer Tweet Draft Retrieval Questions',
+        '## Read the tweet draft fields',
+        '## Build a tweet draft review workflow',
+        '## Answer tweet draft retrieval questions',
       ].every((snippet) => page.includes(snippet)),
     ).toBe(true);
   });

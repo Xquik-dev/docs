@@ -1,4 +1,4 @@
-# Xquik Docs - X API, 1-Second Monitors & Automation Reference
+# Xquik docs - X API, 1-second monitors & automation reference
 
 > **Xquik is an independent third-party service.** Not affiliated with X Corp.
 > "Twitter" and "X" are trademarks of X Corp.
@@ -8,13 +8,13 @@ platform. Published at **[docs.xquik.com](https://docs.xquik.com)**.
 
 This repository powers the developer reference for the Xquik REST API, webhooks, MCP server, OAuth 2.1, SDKs, glossary, comparison guides, and how-to guides. Use it to find request and response details for tweet search, user lookup, follower exports, media uploads, direct messages, 1-second tweet monitors, signed webhooks, SDK clients, and X automation tasks.
 
-## Choose This Repository
+## Choose this repository
 
 Use hosted docs for current task guidance.
 Use this repository to review source, propose fixes, or validate public contracts.
 Use SDK repositories for generated client APIs.
 
-## Start Here
+## Start here
 
 - [Quickstart](https://docs.xquik.com/x-api-quickstart) - make the first authenticated API call.
 - [API Reference](https://docs.xquik.com/api-reference) - browse 128 OpenAPI-backed operations.
@@ -32,21 +32,21 @@ Use SDK repositories for generated client APIs.
 - [Apify Actors](https://docs.xquik.com/alternatives/apify) - run focused X data jobs on Apify.
 - [llms.txt](https://docs.xquik.com/llms.txt) - give AI coding agents the docs index.
 
-## Use With AI Coding Agents
+## Use with AI coding agents
 
 - [Context7 library](https://context7.com/xquik-dev/xquik-docs) - load indexed Xquik docs in supported coding agents.
 - [llms.txt](https://docs.xquik.com/llms.txt) - discover every public docs page before reading deeper.
 - [MCP Server](https://docs.xquik.com/mcp) - connect Xquik tools through OAuth-first Streamable HTTP.
 - [MCP 2026-07-28](https://docs.xquik.com/mcp/overview#mcp-2026-07-28) - understand `server/discover`, request-scoped calls, and private cache hints.
-- [Codex OAuth troubleshooting](https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error) - if Codex reports `Authorization server response missing required issuer: expected https://xquik.com`, use `bearer_token_env_var = "XQUIK_API_KEY"` until the [upstream Codex issue](https://github.com/openai/codex/issues/31573) identifies a fixed release. Xquik already returns the required RFC 9207 `iss` value.
+- [Codex OAuth troubleshooting](https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error) - Codex CLI 0.147.0 and newer support Xquik OAuth. Upgrade if an older release reports `Authorization server response missing required issuer: expected https://xquik.com`. Use `bearer_token_env_var = "XQUIK_API_KEY"` only when upgrading is unavailable. [Issue #31573](https://github.com/openai/codex/issues/31573) records the fix.
 - [Agent index](https://xquik.com/.well-known/agent-index.json) - discover the API MCP endpoint, manifest, OAuth metadata, and auth.md.
 - [Agent Skills index](https://xquik.com/.well-known/agent-skills/index.json) - discover and verify Xquik's hosted `SKILL.md`.
 - [auth.md](https://xquik.com/auth.md) - read CIMD, DCR, PKCE, and MCP authorization instructions.
 - [OpenAPI spec](https://docs.xquik.com/openapi.yaml) - generate clients or inspect request and response shapes.
 
-## Common Questions
+## Common questions
 
-| Customer Question | Documentation |
+| Customer question | Documentation |
 | --- | --- |
 | How do I search tweets through an API? | [Search Tweets API](https://docs.xquik.com/api-reference/x/search-tweets) |
 | How do I export tweet search results? | [Tweet Search Export](https://docs.xquik.com/guides/tweet-scraper-csv-export) |
@@ -64,7 +64,7 @@ Use SDK repositories for generated client APIs.
 
 Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
 
-## What's Covered
+## What's covered
 
 - **REST API** - 128 operations spanning account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
 - **Webhooks** - HMAC SHA-256 signature verification, retry semantics, payload schemas.
@@ -76,7 +76,7 @@ Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
 - **Apify Actors** - Public Actors for tweets, replies, followers, trends, profiles, communities, lists, and user search.
 - **OpenAPI 3.1** - Machine-readable contract for endpoint pages and SDK generation.
 
-## Repository Layout
+## Repository layout
 
 ```
 api-reference/      128 OpenAPI operations, grouped by resource
@@ -94,7 +94,7 @@ llms.txt            AI-readable site index
 openapi.yaml        OpenAPI 3.1 source of truth
 ```
 
-## Local Development
+## Local development
 
 Install Node.js 22, Bun 1.3.14, and REUSE 6.2.0.
 
@@ -128,7 +128,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for style rules, content conventions, and
 
 To report a vulnerability in the docs site or in any documented endpoint behaviour, see [SECURITY.md](SECURITY.md). Do not file public issues for security findings.
 
-## Related Repositories
+## Related repositories
 
 - **[Xquik](https://xquik.com)** - Main app and dashboard.
 - **[Xquik-dev/x-twitter-scraper-python](https://github.com/Xquik-dev/x-twitter-scraper-python)** - Python SDK.

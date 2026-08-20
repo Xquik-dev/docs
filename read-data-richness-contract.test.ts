@@ -286,7 +286,7 @@ describe('read data richness documentation', (): void => {
     );
   });
 
-  it('documents visible reply coverage on every public surface', (): void => {
+  it('documents visible reply coverage for every public interface', (): void => {
     expect.assertions(10);
     const operation =
       PARSED_OPENAPI.paths?.['/x/tweets/{id}/replies']?.get;

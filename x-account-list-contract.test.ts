@@ -46,7 +46,7 @@ describe('connected X accounts list documentation', (): void => {
 
     expect({
       focusedTitle: frontmatter.includes(
-        'Connected X Accounts API, Health & Write Readiness',
+        'Connected X accounts API, health & write readiness',
       ),
       keywordsPresent: [
         'Twitter account API',

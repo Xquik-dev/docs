@@ -1,5 +1,5 @@
 ---
-title: "Tweet Metadata, Profile & Media API Field Guide"
+title: "Tweet metadata, profile & media API field guide"
 sidebarTitle: "API field guide"
 description: "Map Twitter API fields for tweets, profiles, media, replies, engagement metrics, IDs, cursors, exports, REST, SDK, MCP, and Actor responses with JSON examples."
 keywords:
@@ -50,7 +50,7 @@ The MCP contract normalizes names for agent use.
 Most fields use `snake_case`. REST `createdAt` becomes MCP `created`.
 It does not become `created_at`.
 
-## Choose the Object Before Mapping Fields
+## Choose the object before mapping fields
 
 | Need | Primary object | Stable join key |
 | --- | --- | --- |
@@ -65,15 +65,15 @@ It does not become `created_at`.
 Do not flatten every object into one unversioned row. Nested tweets and authors
 have their own IDs. Store those IDs before building joins.
 
-## Field Presence Rules
+## Field presence rules
 
 <CardGroup cols={2}>
-  <Card title="Required Fields" icon="badge-check">
+  <Card title="Required fields" icon="badge-check">
     Tweet objects require `id`, `text`, and documented engagement counts.
     Profile objects require `id`, `username`, and `name`.
   </Card>
 
-  <Card title="Optional Fields" icon="circle-dashed">
+  <Card title="Optional fields" icon="circle-dashed">
     Optional fields are omitted when X does not supply them. Absence is not an
     empty string, false value, or zero count.
   </Card>
@@ -83,7 +83,7 @@ have their own IDs. Store those IDs before building joins.
     can lose precision in spreadsheet or JavaScript number types.
   </Card>
 
-  <Card title="Count Snapshots" icon="chart-no-axes-column">
+  <Card title="Count snapshots" icon="chart-no-axes-column">
     Likes, replies, reposts, quotes, views, bookmarks, followers, and following
     counts can change after collection. Store `collected_at` downstream.
   </Card>
@@ -94,7 +94,7 @@ have their own IDs. Store those IDs before building joins.
   zero as a measured absence.
 </Warning>
 
-## Tweet Fields
+## Tweet fields
 
 Every tweet includes its ID, text, metrics, and available author profile.
 These optional fields preserve additional X metadata.
@@ -132,7 +132,7 @@ Core tweet fields group into these roles:
 
 Tweets also include available entities, disclosures, nested tweets, and media.
 
-### Tweet Metadata Example
+### Tweet metadata example
 
 ```json
 {
@@ -173,7 +173,7 @@ Tweets also include available entities, disclosures, nested tweets, and media.
 The example illustrates field placement. Read the endpoint response for actual
 values. Never copy example IDs into a production join.
 
-### Map Replies, Quotes, and Reposts
+### Map replies, quotes, and reposts
 
 Use `isReply` to identify a reply. Use `inReplyToId` for its direct parent.
 Use `conversationId` for the root conversation. These IDs can differ.
@@ -188,7 +188,7 @@ joins.
 Keep original tweets separate from outer repost records.
 
 <CardGroup cols={2}>
-  <Card title="Direct Reply" icon="reply">
+  <Card title="Direct reply" icon="reply">
     Join `inReplyToId` to the parent tweet. Keep `conversationId` for the full
     thread.
   </Card>
@@ -203,13 +203,13 @@ Keep original tweets separate from outer repost records.
     snapshots.
   </Card>
 
-  <Card title="Note Tweet" icon="notebook-tabs">
+  <Card title="Note tweet" icon="notebook-tabs">
     Check `isNoteTweet` and `noteTweet`. Preserve long-form text and rich-text
     metadata when present.
   </Card>
 </CardGroup>
 
-### Interpret Tweet Engagement Fields
+### Interpret tweet engagement fields
 
 `likeCount`, `replyCount`, `retweetCount`, `quoteCount`, `viewCount`, and
 `bookmarkCount` are count snapshots. They can change after collection.
@@ -221,7 +221,7 @@ growth.
 `previousCounts` can preserve pre-edit engagement counts. `edit` can describe
 edit history. Keep both objects when analyzing edited tweets.
 
-### Map Entities and Content Labels
+### Map entities and content labels
 
 Read `entities` for URLs, mentions, hashtags, and other parsed text markers.
 Read `displayTextRange` before slicing rendered text. Preserve the original
@@ -231,7 +231,7 @@ Read `contentDisclosure` for documented content labels. Read
 `possiblySensitive` for the returned sensitivity state. Never infer either
 field when it is absent.
 
-## Profile Fields
+## Profile fields
 
 Every profile includes `id`, `username`, and `name`.
 Counts, verification, images, bios, and other metadata appear when X supplies them.
@@ -279,7 +279,7 @@ Keep pinned tweet IDs as strings.
 Xquik removes account-specific actions, permissions, and relationships from
 public reads. Use dedicated write routes or X for account state.
 
-### Twitter Profile API Example
+### Twitter profile API example
 
 ```json
 {
@@ -307,7 +307,7 @@ public reads. Use dedicated write routes or X for account state.
 Use `id` as the profile join key. Usernames can change. Display names are not
 unique. Keep the observed username and collection time beside each snapshot.
 
-### Interpret Profile Counts
+### Interpret profile counts
 
 Use `followers` for the returned follower count. Use `following` for accounts
 the profile follows. Use `statusesCount` for the returned post count. Use
@@ -316,7 +316,7 @@ the profile follows. Use `statusesCount` for the returned post count. Use
 Do not calculate follower growth from one response. Store dated profile
 snapshots. Compare the same X user ID across collection times.
 
-### Keep Verification Fields Separate
+### Keep verification fields separate
 
 Preserve `verified`, `isVerified`, `isBlueVerified`, and `verifiedType` as
 distinct fields. X can return different verification signals. Do not collapse
@@ -325,7 +325,7 @@ them into one custom boolean.
 `identityVerification` and `affiliatesHighlightedLabel` provide separate
 profile metadata. Preserve those objects when present.
 
-### Handle Protected or Unavailable Profiles
+### Handle protected or unavailable profiles
 
 Use `protected` for the returned privacy state. Use `unavailable` and
 `unavailableReason` for unavailable profiles. Do not replace omitted profile
@@ -334,7 +334,7 @@ fields with invented values.
 Keep `withheldInCountries` and `possiblySensitive` when returned. These fields
 describe public response state. They do not grant access to hidden content.
 
-## Media Fields
+## Media fields
 
 Media rows keep their URL and type. These optional fields add detail.
 The Twitter media API field section covers returned photos, videos, and GIFs.
@@ -373,7 +373,7 @@ Every media object includes `mediaUrl`, `type`, and `url`.
 | `watchNowUrl`        | Public media action URL      |
 | `width`              | Media width                  |
 
-### Map Photos, Videos, and GIFs
+### Map photos, videos, and GIFs
 
 Read `type` before selecting a media workflow. Supported values are `photo`,
 `video`, and `animated_gif`. Keep the original type with every media row.
@@ -391,7 +391,7 @@ variant.
 Use `allowDownload` and `availabilityStatus` when returned. Check both before a
 media handoff. A media object does not guarantee permanent file availability.
 
-### Store a Media Join Row
+### Store a media join row
 
 ```json
 {
@@ -410,7 +410,7 @@ media handoff. A media object does not guarantee permanent file availability.
 Create one row per media object. Join it back through `tweet_id`. Keep all
 variants in a child table or structured column.
 
-## Reply Coverage
+## Reply coverage
 
 Reply coverage depends on X. X can hide, rank, or omit counted replies.
 
@@ -428,7 +428,7 @@ Complete mode requires 80% of X's current reported direct replies. HTTP 424
 Inspect `coveragePercentage`, strategy results, cursor failures, and fallback.
 Disclose that reply coverage depends on X.
 
-### Store Reply Relationships
+### Store reply relationships
 
 Keep these fields for each collected reply:
 
@@ -443,7 +443,7 @@ Do not infer a direct parent from array position. Use `inReplyToId`. Keep
 `nested_replies` separate from direct replies when measuring first-level
 coverage.
 
-## Twitter API Pagination Fields
+## Twitter API pagination fields
 
 Tweet, profile, follower, reply, list, and timeline routes can return page
 envelopes. Keep each endpoint's documented field names.
@@ -457,7 +457,7 @@ back as `cursor`. Do not mix REST cursors with extraction cursors.
 Commit rows and their next cursor together. A retry must upsert by tweet ID,
 user ID, or media ID before advancing.
 
-## Field Mapping Handoff
+## Field mapping handoff
 
 ```json
 {
@@ -487,9 +487,9 @@ user ID, or media ID before advancing.
 Use this checkpoint when building CSV, warehouse, search-index, or CRM rows.
 Keep nested JSON when flattening would erase relationships.
 
-## Surface Mapping
+## Interface mapping
 
-| Surface | Field style | Contract |
+| Interface | Field style | Contract |
 | ------- | ----------- | -------- |
 | REST API | Mostly `camelCase` | `quoted_tweet`, `retweeted_tweet`, and `profile_bio` are documented exceptions |
 | Generated SDKs | Language-native names | Generated OpenAPI models |
@@ -500,7 +500,7 @@ Keep nested JSON when flattening would erase relationships.
   Xquik omits unavailable optional fields. It never invents missing X values.
 </Info>
 
-### Keep Surface Names Explicit
+### Keep interface names explicit
 
 Do not assume one casing rule covers every field. REST uses mostly camel case.
 The documented nested exceptions keep their public names.
@@ -511,7 +511,7 @@ property names for that SDK version. Do not hand-convert them from REST.
 MCP tools normalize most response names for agents. REST `createdAt` becomes
 MCP `created`. Actor datasets follow each Actor's documented output mode.
 
-## Avoid Tweet Metadata Mapping Errors
+## Avoid tweet metadata mapping errors
 
 <AccordionGroup>
   <Accordion title="Large IDs become rounded numbers">
@@ -543,92 +543,92 @@ MCP `created`. Actor datasets follow each Actor's documented output mode.
   </Accordion>
 </AccordionGroup>
 
-## Tweet Metadata and Profile API Questions
+## Tweet metadata and profile API questions
 
-### How Do I Get Tweet Metadata?
+### How do I get tweet metadata?
 
 Call the route matching your tweet, timeline, profile, or reply task.
 Read the returned API response through its documented schema.
 Keep IDs, counts, relationships, and cursors without inventing missing fields.
 
-### Which Twitter API Fields Should I Store?
+### Which Twitter API fields should I store?
 
 Start with IDs, text, timestamps, authors, engagement counts, media, and
 relationships.
 Add optional fields only when X supplies them.
 Store collection time beside mutable counts.
 
-### Which Twitter API User Fields Identify a Profile?
+### Which Twitter API user fields identify a profile?
 
 Use `id` as the stable profile key.
 Keep `username`, `name`, bio, images, verification, followers, and following.
 Record collection time beside changing profile counts.
 
-### How Do I Read Twitter API Response Fields?
+### How do I read Twitter API response fields?
 
 Follow each Xquik route's response schema in the API reference.
-Use the field names documented for each surface.
+Use the field names documented for each interface.
 Apply only documented mappings between REST, SDK, MCP, and Actor names.
 
-### How Do I Read Twitter API Pagination Fields?
+### How do I read Twitter API pagination fields?
 
 Twitter API pagination uses the response envelope documented for each route.
 Read `has_next_page` with `next_cursor` for REST pages.
 Read `hasMore` with `nextCursor` for extraction result pages.
 Never mix cursors between those response envelopes.
 
-### What Metadata Does a Tweet Include?
+### What metadata does a tweet include?
 
 A tweet includes its ID, text, counts, URL, language, and relationship fields.
 It can also include author, media, entities, labels, and edit objects. Article,
 place, quote, repost, and Note Tweet objects can also appear.
 
-### How Do I Find a Tweet ID?
+### How do I find a tweet ID?
 
 Read the response `id` field. Keep it as a string. Use it for lookups, joins,
 dedupe, exports, and engagement snapshots.
 
-### What Is a Twitter Conversation ID?
+### What is a Twitter conversation ID?
 
 `conversationId` identifies the root tweet for the returned conversation.
 `inReplyToId` identifies one reply's direct parent. Preserve both fields.
 
-### How Do I Know Whether a Tweet Is a Reply?
+### How do I know whether a tweet is a reply?
 
 Check `isReply`. Then read `inReplyToId`, `inReplyToUserId`, and
 `inReplyToUsername` when present.
 
-### How Do Quotes Differ From Reposts?
+### How do quotes differ from reposts?
 
 Quotes can add new outer tweet text and `quoted_tweet` context. Reposts expose
 original context through `retweeted_tweet`. Keep both tweet IDs separate.
 
-### Which Fields Contain Twitter Engagement Metrics?
+### Which fields contain Twitter engagement metrics?
 
 Use `likeCount`, `replyCount`, `retweetCount`, `quoteCount`, `viewCount`, and
 `bookmarkCount`. Store collection time because these counts can change.
 
-### Does the Twitter Profile API Include Follower Counts?
+### Does the Twitter profile API include follower counts?
 
 Yes. Read `followers` and `following` when supplied. Store dated snapshots for
 growth tracking. Join snapshots through the profile `id`.
 
-### Why Is a Tweet or Profile Field Missing?
+### Why is a tweet or profile field missing?
 
 The field is optional and X did not supply it for that response. Preserve the
 absence. Never replace it with an invented value.
 
-### How Do I Get Tweet Media Metadata?
+### How do I get tweet media metadata?
 
 Read the tweet's `media` array. Use `type`, URLs, dimensions, alt text,
 duration, availability, and video variants when present.
 
-### Can I Export Tweet Metadata to CSV?
+### Can I export tweet metadata to CSV?
 
 Yes. Flatten selected scalar fields and keep stable IDs. Store nested author,
 media, quote, and repost objects separately. Use linked rows or JSON columns.
 
-### Do REST, SDK, MCP, and Actor Fields Match Exactly?
+### Do REST, SDK, MCP, and actor fields match exactly?
 
 They share the documented contract but can expose different field naming.
 Follow the OpenAPI model, MCP response shape, or Actor dataset schema directly.

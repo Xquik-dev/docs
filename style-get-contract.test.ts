@@ -85,7 +85,7 @@ describe('get tweet style documentation', (): void => {
 
     expect({
       focusedTitle: frontmatter.includes(
-        'Get Cached Tweet Style Samples with the Xquik API',
+        'Get cached tweet style samples with the Xquik API',
       ),
       keywordsPresent: [
         'cached tweet style',

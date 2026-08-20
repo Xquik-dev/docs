@@ -13,7 +13,7 @@ describe('OpenSSF shared-site assurance', (): void => {
     const docsConfig = readFileSync('docs.json', 'utf8');
 
     const requiredSnippets = [
-      'title: "Xquik Open Source Docs, MIT License & OpenSSF"',
+      'title: "Xquik open source docs, MIT license & OpenSSF"',
       'Xquik publishes its API documentation source under the MIT License.',
       'This license does not make the hosted Xquik platform open source.',
       'It has no separate badge entry today.',
@@ -24,7 +24,7 @@ describe('OpenSSF shared-site assurance', (): void => {
       'npm run check:response-examples',
       'reuse lint',
       'The MIT License lets you use',
-      '### Is the Xquik API Open Source?',
+      '### Is the Xquik API open source?',
       'The hosted Xquik platform is not open source.',
       'https://github.com/Xquik-dev/xquik-docs/security/advisories/new',
       'Do not claim Gold until each project has verified public evidence.',
@@ -59,7 +59,7 @@ describe('OpenSSF shared-site assurance', (): void => {
       'https://github.com/Xquik-dev/xquik-docs/security/advisories/new',
     );
     expect(security).toContain('at least every 14 days');
-    expect(security).toContain('## Threat Model');
+    expect(security).toContain('## Threat model');
     expect(securityPage).toContain('Pinned workflows and lockfile integrity');
   });
 

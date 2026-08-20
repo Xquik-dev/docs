@@ -6,7 +6,7 @@ metadata:
   version: "1.0"
 ---
 
-# Xquik Skill
+# Xquik skill
 
 > **Xquik is an independent third-party service.** Not affiliated with X Corp.
 > "Twitter" and "X" are trademarks of X Corp.
@@ -19,34 +19,34 @@ Xquik is an X data platform with 128 documented REST operations, webhooks, Docs 
 
 Reach for Xquik when:
 
-- **Extracting X data**: Pull followers, replies, retweets, likes, community members, list data, or search results from public accounts, tweets, lists, communities, or Spaces.
-- **Monitoring accounts**: Check specific X accounts every second for supported events.
-- **Setting up webhooks**: Receive monitor events through HMAC-signed HTTPS payloads.
-- **Running giveaway draws**: Execute transparent, auditable random draws on tweets with public result pages.
-- **Composing posts**: Get editorial guidance, Radar research suggestions, and deterministic draft checks.
-- **Connecting AI agents**: Use Docs MCP for no-auth docs search and page retrieval, and API MCP for authenticated account actions.
-- **Running accountless reads**: Use a prepaid guest `paid_reads` key on 33 GET routes or direct MPP on 7 fixed-price operations.
-- **Analyzing styles**: Analyze tweet styles, compare accounts, track engagement performance, or save drafts.
-- **Writing to X**: Post tweets, like, retweet, follow, send DMs, upload media, or manage community membership from connected accounts.
-- **Trending data**: Access current X trends across 12 regions plus Radar topics.
+- **Extracting X data.** Pull followers, replies, retweets, likes, community members, list data, or search results from public accounts, tweets, lists, communities, or Spaces.
+- **Monitoring accounts.** Check specific X accounts every second for supported events.
+- **Setting up webhooks.** Receive monitor events through HMAC-signed HTTPS payloads.
+- **Running giveaway draws.** Run random tweet draws with public result pages.
+- **Composing posts.** Get editorial guidance, Radar research suggestions, and deterministic draft checks.
+- **Connecting AI agents.** Use Docs MCP for no-auth docs search and page retrieval, and API MCP for authenticated account actions.
+- **Running accountless reads.** Use a prepaid guest `paid_reads` key on 33 GET routes or direct MPP on 7 fixed-price operations.
+- **Analyzing styles.** Analyze tweet styles, compare accounts, track engagement performance, or save drafts.
+- **Writing to X.** Post tweets, like, retweet, follow, send DMs, upload media, or manage community membership from connected accounts.
+- **Trending data.** Access current X trends across 12 regions plus Radar topics.
 
 ## Quick reference
 
 ### Authentication
 
-- **OAuth 2.1**: Browser-based MCP clients keep account access granted by OAuth scopes. Add `https://xquik.com/mcp` and complete the client-opened login and consent flow. Xquik supports CIMD and DCR; let the client use its documented registration flow.
-- **Full account key**: Send `x-api-key: xq_your_api_key_here` or `Authorization: Bearer xq_your_api_key_here`.
-- **Guest key**: Send `Authorization: Bearer xq_your_guest_key_here`. Scope is fixed to `paid_reads`.
-- **Key format**: `xq_` prefix plus 64 hex characters
-- **Generation**: Dashboard > API Keys > Create new key
-- **Revocation**: Dashboard. The API route requires a same-origin dashboard session
-- **OAuth discovery**: Read protected-resource metadata, authorization-server metadata, or `https://xquik.com/auth.md`.
+- **OAuth 2.1.** Browser-based MCP clients keep account access granted by OAuth scopes. Add `https://xquik.com/mcp` and complete the client-opened login and consent flow. Xquik supports CIMD and DCR; let the client use its documented registration flow.
+- **Full account key.** Send `x-api-key: xq_your_api_key_here` or `Authorization: Bearer xq_your_api_key_here`.
+- **Guest key.** Send `Authorization: Bearer xq_your_guest_key_here`. Scope is fixed to `paid_reads`.
+- **Key format.** `xq_` prefix plus 64 hex characters
+- **Generation.** Dashboard > API Keys > Create new key
+- **Revocation.** Dashboard. The API route requires a same-origin dashboard session
+- **OAuth discovery.** Read protected-resource metadata, authorization-server metadata, or `https://xquik.com/auth.md`.
 
 ### Rate limits
 
-- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 300 per 1s user bucket.
-- **Write**: `POST`, `PUT`, and `PATCH` share a 120 per 60s user bucket.
-- **Delete**: `DELETE` requests use a 60 per 60s user bucket.
+- **Read.** `GET`, `HEAD`, and `OPTIONS` share a 300 per 1s user bucket.
+- **Write.** `POST`, `PUT`, and `PATCH` share a 120 per 60s user bucket.
+- **Delete.** `DELETE` requests use a 60 per 60s user bucket.
 
 Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header.
 Retry safe reads only on `429` and temporary `5xx` responses. For writes, poll
@@ -55,29 +55,29 @@ when `safeToRetry` is true.
 
 ### API endpoints (128 documented operations)
 
-- **Monitors and Events**: Create account and keyword monitors, retrieve events, and manage webhooks.
-- **Extractions**: 23 tools for bulk data extraction.
-- **Draws**: Run giveaway draws with transparent results.
-- **X Data**: User lookups, tweet search, trends, media downloads, threads, replies, quotes, and relationships.
-- **X Write**: Post tweets, like, retweet, follow, DM, update profiles, upload media, and manage communities.
-- **Account and Billing**: Account info, credits, API keys, drafts, styles, and subscriptions.
-- **Compose**: Editorial guidance, source-specific Radar suggestions, and deterministic draft checks.
-- **Styles**: Analyze tweet styles, compare accounts, and track performance.
-- **Radar**: Trending topics and news from Xquik's own infrastructure.
+- **Monitors and Events.** Create account and keyword monitors, retrieve events, and manage webhooks.
+- **Extractions.** 23 tools for bulk data extraction.
+- **Draws.** Run giveaway draws with transparent results.
+- **X Data.** User lookups, tweet search, trends, media downloads, threads, replies, quotes, and relationships.
+- **X Write.** Post tweets, like, retweet, follow, DM, update profiles, upload media, and manage communities.
+- **Account and Billing.** Account info, credits, API keys, drafts, styles, and subscriptions.
+- **Compose.** Editorial guidance, source-specific Radar suggestions, and deterministic draft checks.
+- **Styles.** Analyze tweet styles, compare accounts, and track performance.
+- **Radar.** Trending topics and news from Xquik's own infrastructure.
 
 ### Extraction tool types (23 total)
 
-**Tweet-based**: `reply_extractor`, `repost_extractor`, `quote_extractor`, `favoriters`, `thread_extractor`, `article_extractor`
+**Tweet-based.** `reply_extractor`, `repost_extractor`, `quote_extractor`, `favoriters`, `thread_extractor`, `article_extractor`
 
-**User-based**: `follower_explorer`, `following_explorer`, `verified_follower_explorer`, `mention_extractor`, `post_extractor`, `user_likes`, `user_media`
+**User-based.** `follower_explorer`, `following_explorer`, `verified_follower_explorer`, `mention_extractor`, `post_extractor`, `user_likes`, `user_media`
 
 **Community target** (`targetCommunityId`): `community_extractor`, `community_moderator_explorer`, `community_post_extractor`, `community_search`
 
 `community_search` also requires `searchQuery`. It searches matching posts within the selected community.
 
-**List**: `list_member_extractor`, `list_post_extractor`, `list_follower_explorer`
+**List.** `list_member_extractor`, `list_post_extractor`, `list_follower_explorer`
 
-**Other**: `people_search`, `space_explorer`, `tweet_search_extractor`
+**Other.** `people_search`, `space_explorer`, `tweet_search_extractor`
 
 ### Event types
 
@@ -88,9 +88,9 @@ when `safeToRetry` is true.
 
 ### Pagination
 
-- **Platform pages**: Events, draws, and extractions use `cursor`. Radar uses `after`. Drafts use `afterCursor`. Responses include `hasMore` and `nextCursor`.
-- **Unpaginated lists**: Monitors, webhooks, and API keys return up to 200 items.
-- **X endpoints**: X data endpoints use endpoint-specific cursor fields such as `has_next_page` and `next_cursor`.
+- **Platform pages.** Events, draws, and extractions use `cursor`. Radar uses `after`. Drafts use `afterCursor`. Responses include `hasMore` and `nextCursor`.
+- **Unpaginated lists.** Monitors, webhooks, and API keys return up to 200 items.
+- **X endpoints.** X data endpoints use endpoint-specific cursor fields such as `has_next_page` and `next_cursor`.
 - Do not decode or construct cursors manually. Pass returned cursors back unchanged.
 
 ## Decision guidance
@@ -162,7 +162,7 @@ API-key lifecycle, saved-payment quick top-up, the account top-up redirect, and 
 
 ### Recover from the Codex OAuth issuer error
 
-If Codex reports `Authorization server response missing required issuer: expected https://xquik.com`, do not retry the same OAuth flow. Affected Codex releases discard the RFC 9207 `iss` value before token exchange. Xquik already returns that value. Track https://github.com/openai/codex/issues/31573 for the fixed release.
+Codex CLI 0.147.0 and newer preserve the RFC 9207 `iss` value. Upgrade first. Older releases may report `Authorization server response missing required issuer: expected https://xquik.com`. Xquik already returns the value. Issue https://github.com/openai/codex/issues/31573 records the defect and fix.
 
 Set the API key in the environment:
 

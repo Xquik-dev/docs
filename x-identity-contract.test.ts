@@ -63,12 +63,12 @@ describe('set X identity documentation', (): void => {
 
     expect(
       [
-        'title: "Set a Twitter Handle for Xquik Tweet Style Analysis"',
+        'title: "Set a Twitter handle for Xquik tweet style analysis"',
         '"twitter handle"',
         '"X username"',
-        '## Understand Handle, Display Name, and User ID',
-        '## Apply the Identity to Tweet Style Analysis',
-        '## Answer X Username Questions',
+        '## Understand handle, display name, and user ID',
+        '## Apply the identity to tweet style analysis',
+        '## Answer X username questions',
       ].every((snippet) => page.includes(snippet)),
     ).toBe(true);
   });

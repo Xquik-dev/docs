@@ -1,5 +1,5 @@
 ---
-title: "Pipedream Automation for Twitter API & Webhooks"
+title: "Pipedream automation for Twitter API & webhooks"
 sidebarTitle: "Pipedream"
 description: "Build Pipedream workflow automation for tweet search, follower exports, Twitter monitors, signed webhooks, scheduled reads, and approved posts through Xquik."
 keywords: ["pipedream automation", "pipedream workflow automation", "pipedream automation platform", "pipedream twitter", "pipedream twitter integration", "twitter automation", "twitter webhook", "workflow automation", "serverless api integration", "event driven workflows", "custom api integration", "custom javascript automation", "twitter automation workflow", "tweet search automation", "twitter monitor webhook"]
@@ -15,7 +15,7 @@ Xquik supplies one REST API and one API key for every workflow.
 The initial package contains one app file, eight actions, and two sources.
 Add another action after workflows repeatedly need the same HTTP request.
 
-## Choose a Pipedream Automation Pattern
+## Choose a Pipedream automation pattern
 
 Pipedream Workflows combine one trigger with actions or code steps.
 An HTTP trigger receives signed Xquik monitor events.
@@ -29,8 +29,8 @@ Keep one output per workflow: tweet alerts, profile rows, or approved posts.
 
 Pipedream workflow automation becomes fragile when unrelated jobs share one trigger.
 Split searches, monitor events, follower exports, and approved writes.
-These boundaries turn complex workflows into small, testable paths.
-They also make error handling and rate limits easier to inspect.
+These boundaries create small, testable paths.
+Separate workflows expose each job's errors and rate limits.
 
 This Pipedream automation platform can replace manual tasks like copying tweets.
 It should never hide approval for tweets, replies, or direct messages.
@@ -39,7 +39,7 @@ Review every write payload before the workflow sends it.
 This guide calls Xquik routes directly.
 It does not require Pipedream's native Twitter integration.
 
-## Build a Serverless Twitter API Integration
+## Build a serverless Twitter API integration
 
 This serverless API integration runs without a dedicated workflow server.
 Start every Xquik request at `https://xquik.com/api/v1`.
@@ -79,7 +79,7 @@ npm install -g @pipedream/cli
 pd login
 ```
 
-## Component Shape
+## Component shape
 
 <CardGroup cols={2}>
   <Card title="App" icon="app-window">
@@ -102,7 +102,7 @@ pd login
   </Card>
 </CardGroup>
 
-## App File
+## App file
 
 Create the shared app component first:
 
@@ -141,7 +141,7 @@ that calls `xquik.request`.
 Use `GET /account` as the first authentication check.
 It verifies the API key without changing an X account.
 
-## Shared Error Handling
+## Shared error handling
 
 Wrap requests so every action and source reports the same remediation:
 
@@ -165,7 +165,7 @@ function xquikErrorMessage(status: number, body: unknown, headers: Record<string
 Call the helper once per request.
 Export a short `$summary` so each workflow run stays scannable.
 
-## Control Errors, Retries, and Rate Limits
+## Control errors, retries, and rate limits
 
 Route each documented Xquik status before a Pipedream step exports anything.
 A `400` response means the request needs different fields.
@@ -192,31 +192,31 @@ Persist a page cursor only after downstream processing succeeds.
 The workflow can rerun a failed page and upsert by tweet or profile ID.
 This strategy protects Slack alerts, CRM rows, and warehouse loads.
 
-## Starter Actions
+## Starter actions
 
 <CardGroup cols={2}>
-  <Card title="Get Tweet" icon="message-square">
+  <Card title="Get tweet" icon="message-square">
     Call `GET /x/tweets/{id}` and return one tweet.
   </Card>
-  <Card title="Search Tweets" icon="search">
+  <Card title="Search tweets" icon="search">
     Call `GET /x/tweets/search` and return an array of tweets.
   </Card>
-  <Card title="Get User" icon="user">
+  <Card title="Get user" icon="user">
     Call `GET /x/users/{id}` and return one user.
   </Card>
-  <Card title="Get Trends" icon="trending-up">
+  <Card title="Get trends" icon="trending-up">
     Call `GET /x/trends` and return a trend list.
   </Card>
-  <Card title="Create Tweet" icon="send">
+  <Card title="Create tweet" icon="send">
     Call `POST /x/tweets` and return created tweet metadata.
   </Card>
-  <Card title="Create Extraction" icon="database">
+  <Card title="Create extraction" icon="database">
     Call `POST /extractions` and return the job ID and status.
   </Card>
-  <Card title="Create Monitor" icon="radio">
+  <Card title="Create monitor" icon="radio">
     Call `POST /monitors` and return the monitor ID and status.
   </Card>
-  <Card title="Create Webhook" icon="webhook">
+  <Card title="Create webhook" icon="webhook">
     Call `POST /webhooks` and return the webhook ID and signing secret.
   </Card>
 </CardGroup>
@@ -255,13 +255,13 @@ export default {
 };
 ```
 
-## Result Handoff
+## Result handoff
 
 Pipedream exports and source metadata pass stable fields between workflow steps.
 Destinations should receive normalized fields, not complete API responses.
 
 <CardGroup cols={2}>
-  <Card title="Search Tweets action" icon="search">
+  <Card title="Search tweets action" icon="search">
     Export `tweet_count`, `has_more`, and `next_cursor`; return tweet rows with `tweet_id`, `text`, `author_username`, `created_at`, and optional `url`.
   </Card>
   <Card title="User profile action" icon="users">
@@ -282,7 +282,7 @@ Destinations should receive normalized fields, not complete API responses.
   <Card title="Monitor event source" icon="fingerprint">
     Emit `deliveryId` for endpoint-level retry de-dupe, `streamEventId` for event-level de-dupe across endpoint changes, and `occurredAt` as `ts`.
   </Card>
-  <Card title="Stored Event Replay" icon="activity">
+  <Card title="Stored event replay" icon="activity">
     Call `GET /api/v1/events` with `cursor` when a workflow needs replay. Export `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, and `next_cursor`.
   </Card>
   <Card title="Receiver acceptance" icon="copy-check">
@@ -293,7 +293,7 @@ Destinations should receive normalized fields, not complete API responses.
   </Card>
 </CardGroup>
 
-## Source 1: Monitor Event Webhook
+## Source 1: monitor event webhook
 
 This source delivers immediate tweet, reply, quote, and repost alerts.
 
@@ -310,10 +310,10 @@ Payload mapping:
   <Card title="Event ID" icon="fingerprint">
     Map Pipedream `id` to `streamEventId` for event-level de-dupe, or `deliveryId` for endpoint-level de-dupe.
   </Card>
-  <Card title="Event Type" icon="bell">
+  <Card title="Event type" icon="bell">
     Map `eventType` to route `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.retweet` events.
   </Card>
-  <Card title="Occurred At" icon="calendar-clock">
+  <Card title="Occurred at" icon="calendar-clock">
     Map `occurredAt` as the event timestamp.
   </Card>
   <Card title="Username" icon="at-sign">
@@ -325,14 +325,14 @@ Payload mapping:
   <Card title="Text" icon="type">
     Map `data.text` as the tweet body.
   </Card>
-  <Card title="Author Username" icon="user-round">
+  <Card title="Author username" icon="user-round">
     Map `data.author.userName` when present. Use `username` as the monitored-account fallback.
   </Card>
 </CardGroup>
 
 Keep the webhook secret returned by Xquik and verify `x-xquik-signature` before emitting events.
 
-## Build Event-Driven Twitter Workflows
+## Build event-driven Twitter workflows
 
 Event driven workflows start when Xquik delivers a monitor event.
 Account monitors can identify new tweets, replies, quotes, and reposts.
@@ -356,7 +356,7 @@ A Twitter monitor webhook should send only verified event fields downstream.
 Keep raw bodies and signature headers out of workflow exports.
 Use stored event replay when a destination recovers after downtime.
 
-## Source 2: Extraction Completed Polling
+## Source 2: extraction completed polling
 
 Use this when teams want batch jobs without webhook setup.
 
@@ -396,58 +396,58 @@ export default {
 
 ## Recipes
 
-### Search Tweets To Slack
+### Search tweets to Slack
 
 <CardGroup cols={2}>
-  <Card title="Schedule Trigger" icon="calendar-clock">
+  <Card title="Schedule trigger" icon="calendar-clock">
     Run the workflow on the reporting cadence.
   </Card>
-  <Card title="Xquik Search Tweets" icon="search">
+  <Card title="Xquik search tweets" icon="search">
     Call the Search Tweets action and return recent matching posts.
   </Card>
-  <Card title="Engagement Filter" icon="funnel">
+  <Card title="Engagement filter" icon="funnel">
     Keep only tweets that meet the minimum engagement threshold.
   </Card>
-  <Card title="Slack Send Message" icon="message-square">
+  <Card title="Slack send message" icon="message-square">
     Send the selected tweet text, author, and link to the channel.
   </Card>
 </CardGroup>
 
-### Monitor Events To CRM
+### Monitor events to CRM
 
 <CardGroup cols={2}>
-  <Card title="Monitor Event Source" icon="radio">
+  <Card title="Monitor event source" icon="radio">
     Receive Xquik monitor events from the webhook source.
   </Card>
-  <Card title="Event Type Filter" icon="funnel">
+  <Card title="Event type filter" icon="funnel">
     Route `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.retweet` events separately.
   </Card>
-  <Card title="Get User Enrichment" icon="user">
+  <Card title="Get user enrichment" icon="user">
     Enrich the event with the Get User action before CRM routing.
   </Card>
-  <Card title="CRM Upsert" icon="database">
+  <Card title="CRM upsert" icon="database">
     Upsert by user ID to avoid duplicate account records.
   </Card>
 </CardGroup>
 
-### Extraction To Warehouse
+### Extraction to warehouse
 
 <CardGroup cols={2}>
-  <Card title="Create Extraction" icon="database">
+  <Card title="Create extraction" icon="database">
     Start the extraction job with `POST /extractions`.
   </Card>
-  <Card title="Extraction Completed Source" icon="radio">
+  <Card title="Extraction completed source" icon="radio">
     Poll for completed jobs before loading rows downstream.
   </Card>
-  <Card title="Fetch Extraction Detail" icon="file-text">
+  <Card title="Fetch extraction detail" icon="file-text">
     Fetch the completed extraction detail and result rows.
   </Card>
-  <Card title="Warehouse Destination" icon="database">
+  <Card title="Warehouse destination" icon="database">
     Send normalized rows to the warehouse destination.
   </Card>
 </CardGroup>
 
-## Automate Focused Twitter Workflows
+## Automate focused Twitter workflows
 
 Use tweet search automation for scheduled brand, topic, or competitor searches.
 Send matched tweets to Slack only after an engagement filter passes.
@@ -474,30 +474,30 @@ The final action can then publish with an idempotency key.
 These automation tools should reduce repetitive copying.
 They should not automate unsolicited replies, follows, or direct messages.
 
-## Test Coverage
+## Test coverage
 
 Add focused tests before sharing the component package:
 
 <CardGroup cols={2}>
-  <Card title="Auth Injection" icon="shield-check">
+  <Card title="Auth injection" icon="shield-check">
     Every request includes `x-api-key` and never logs the key.
   </Card>
-  <Card title="Invalid Key" icon="key-round">
+  <Card title="Invalid key" icon="key-round">
     `401` produces "Authentication failed. Check the Xquik API key."
   </Card>
-  <Card title="Rate Limit" icon="timer">
+  <Card title="Rate limit" icon="timer">
     `429` includes `Retry-After` when present.
   </Card>
-  <Card title="Search Action" icon="search">
+  <Card title="Search action" icon="search">
     Returns an array with stable tweet IDs.
   </Card>
-  <Card title="Create Webhook" icon="webhook">
+  <Card title="Create webhook" icon="webhook">
     Sends callback URL and selected event types.
   </Card>
-  <Card title="Webhook Source" icon="radio">
+  <Card title="Webhook source" icon="radio">
     Emits one event per payload with a stable ID.
   </Card>
-  <Card title="Polling Source" icon="database">
+  <Card title="Polling source" icon="database">
     Emits only completed extraction jobs.
   </Card>
 </CardGroup>
@@ -509,69 +509,69 @@ npm test
 pd publish components/xquik/actions/search-tweets/search-tweets.ts
 ```
 
-## Pipedream Twitter Automation Questions
+## Pipedream Twitter automation questions
 
-### What Is Pipedream Automation?
+### What is Pipedream automation?
 
 Pipedream automation connects triggers, API calls, code, and cloud applications.
 Xquik adds tweet, profile, follower, monitor, and publishing operations.
 
-### How Do I Set Up Pipedream Workflow Automation?
+### How do I set up Pipedream workflow automation?
 
 Create one trigger, add an Xquik action, then test its output.
 Add the destination only after the Xquik response is stable.
 
-### How Do I Connect a Twitter Webhook to Custom Code?
+### How do I connect a Twitter webhook to custom code?
 
 Use an HTTP source or trigger that preserves the exact request body.
 Verify HMAC, timestamp, and nonce before running custom code.
 
-### Which Trigger Fits Tweet Search Automation?
+### Which trigger fits tweet search automation?
 
 Use a schedule for periodic searches.
 Use a monitor webhook for near-real-time account or keyword events.
 
-### Can Pipedream Connect Twitter Events to Cloud Apps?
+### Can Pipedream connect Twitter events to cloud apps?
 
 Pipedream can send verified events to Slack, Sheets, CRMs, or warehouses.
 Each handoff should normalize tweet and profile fields.
 
-### How Do Serverless API Integrations Handle Rate Limits?
+### How do serverless API integrations handle rate limits?
 
 Honor `Retry-After`, cap concurrency, and retry only safe operations.
 Persist cursors after the destination confirms success.
 
-### Can Pipedream Run Scheduled Twitter Tasks?
+### Can Pipedream run scheduled Twitter tasks?
 
 Pipedream can schedule searches, trend reads, and extraction polling.
 Place tweet publishing behind a separate human approval step.
 
-### How Do Pipedream CRM Integrations Avoid Duplicate Leads?
+### How do Pipedream CRM integrations avoid duplicate leads?
 
 CRM integrations should upsert profiles by X user ID.
 Deduplicate monitor events by `streamEventId` before creating CRM activity.
 
-### Does This Pipedream Twitter Guide Need a Native Twitter App?
+### Does this Pipedream Twitter guide need a native Twitter app?
 
 The component calls Xquik's REST API with an Xquik API key.
 The workflow does not depend on a native Twitter app.
 
-### When Should I Create a Private Pipedream Component?
+### When should I create a private Pipedream component?
 
 Create one when team members repeat the same authenticated request.
 Use inline code for a single experimental workflow.
 
-### How Should Pipedream Store Webhook Deduplication Keys?
+### How should Pipedream store webhook deduplication keys?
 
 Store delivery and event IDs separately with suitable expiration times.
 Keep downstream writes idempotent because store operations are not transactional.
 
-### What Are Common Pipedream Twitter Automation Use Cases?
+### What are common Pipedream Twitter automation use cases?
 
 Common cases include searches, profile enrichment, follower exports, and monitor alerts.
 Other cases include trend reports, extraction loads, and approved posts.
 
-## Pipedream and Xquik Sources
+## Pipedream and Xquik sources
 
 - [Pipedream Workflows](https://pipedream.com/docs/workflows)
 - [Pipedream HTTP requests](https://pipedream.com/docs/workflows/building-workflows/http)
@@ -581,7 +581,7 @@ Other cases include trend reports, extraction loads, and approved posts.
 - [Pipedream workflow errors](https://pipedream.com/docs/workflows/building-workflows/errors)
 - [Pipedream concurrency and throttling](https://pipedream.com/docs/workflows/building-workflows/settings/concurrency-and-throttling)
 
-## Next Steps
+## Next steps
 
 - Read [API Reference](/api-reference/overview) for auth, rate limits, and errors.
 - Read [Webhooks](/webhooks/overview) for payload shape and retries.

@@ -1,5 +1,5 @@
 ---
-title: "Twitter API CSV, JSON & XLSX Export Formats"
+title: "Twitter API CSV, JSON & XLSX export formats"
 sidebarTitle: "Export formats"
 description: "Export tweets, followers, following, replies, profiles, and draw rows through JSON pages or CSV, JSON, XLSX, Markdown, PDF, and TXT files with checkpoints."
 keywords:
@@ -41,35 +41,35 @@ Read [Read Data Richness](/guides/tweet-profile-api-fields) before choosing colu
 downstream. It lists every optional tweet, profile, and media field.
 The export endpoint selects a file format. Filter or select columns downstream.
 
-## Choose the Output Shape
+## Choose the output shape
 
 <CardGroup cols={2}>
-  <Card title="Live JSON Page" icon="radio">
+  <Card title="Live JSON page" icon="radio">
     Use endpoints such as `GET /api/v1/x/tweets/search`,
     `GET /api/v1/x/users/{id}/tweets`, and
     `GET /api/v1/x/users/{id}/followers` when your app needs fresh API results
     and endpoint-specific cursors.
   </Card>
 
-  <Card title="Saved JSON Rows" icon="rows-3">
+  <Card title="Saved JSON rows" icon="rows-3">
     Use `GET /api/v1/extractions/{id}?limit=1000&cursor={nextCursor}` when a
     saved extraction job is the source of truth. The response includes `job`,
     `results`, `hasMore`, and optional `nextCursor`.
   </Card>
 
-  <Card title="File Export" icon="download">
+  <Card title="File export" icon="download">
     Use `GET /api/v1/extractions/{id}/export?format=csv` when a downstream
     tool needs a downloaded file. Supported formats are `csv`, `json`, `xlsx`,
     `md`, `md-document`, `pdf`, and `txt`.
   </Card>
 
-  <Card title="Draw Export" icon="trophy">
+  <Card title="Draw export" icon="trophy">
     Use `GET /api/v1/draws/{id}/export?format=csv&type=winners` when you need
     giveaway winners or entry rows. Set `type` to `winners` or `entries`.
   </Card>
 </CardGroup>
 
-## Output Decision Map
+## Output decision map
 
 <CardGroup cols={2}>
   <Card title="App UI" icon="monitor">
@@ -77,22 +77,22 @@ The export endpoint selects a file format. Filter or select columns downstream.
     that produced the page.
   </Card>
 
-  <Card title="Worker or Queue" icon="route">
+  <Card title="Worker or queue" icon="route">
     Read saved extraction pages, append JSON Lines, and resume with `cursor`
     when `hasMore` is true.
   </Card>
 
-  <Card title="CRM or Spreadsheet" icon="table">
+  <Card title="CRM or spreadsheet" icon="table">
     Download CSV for simple imports, or XLSX when analysts need a workbook.
   </Card>
 
-  <Card title="Archive or Report" icon="archive">
+  <Card title="Archive or report" icon="archive">
     Download JSON for replay, Markdown or TXT for text archives, and PDF for a
     shareable report file.
   </Card>
 </CardGroup>
 
-## Match the Format to the Handoff
+## Match the format to the handoff
 
 Choose a format from the next consumer's exact requirements. Do not convert a
 file twice when Xquik already returns the required format.
@@ -117,7 +117,7 @@ They also neutralize spreadsheet formula prefixes in result cells.
 Use XLSX when analysts need an Excel workbook. Use Markdown, PDF, or TXT when
 people need a readable review artifact instead of an import file.
 
-## Pagination and Cursor Map
+## Pagination and cursor map
 
 Direct X API pages expose endpoint-specific cursor fields such as
 `has_next_page` and `next_cursor`. Keep the same query filters between requests
@@ -138,7 +138,7 @@ The file endpoint returns the first 100,000 rows ordered by result ID. PDF
 returns the first 10,000 rows. A successful file response does not prove the
 extraction contains no additional rows.
 
-## Format Map
+## Format map
 
 <CardGroup cols={2}>
   <Card title="CSV" icon="table">
@@ -146,7 +146,7 @@ extraction contains no additional rows.
     `text/csv; charset=utf-8`.
   </Card>
 
-  <Card title="JSON File" icon="braces">
+  <Card title="JSON file" icon="braces">
     Best for replay, durable archives, and application handoffs. The file is a
     JSON array containing the extraction tool's documented columns. The
     response content type is `application/json; charset=utf-8`.
@@ -174,7 +174,7 @@ extraction contains no additional rows.
   </Card>
 </CardGroup>
 
-## Download and Validate an Export
+## Download and validate an export
 
 Use the server filename from `Content-Disposition`. `curl` can apply that
 filename without parsing the header yourself.
@@ -198,7 +198,7 @@ Validate these properties before handing the file to another system:
 Do not assume a filename proves the format. Verify the response header and
 parser result. Never print CSV, JSON, XLSX, PDF, or TXT bytes to shared logs.
 
-## Handoff Checkpoint
+## Handoff checkpoint
 
 Store enough context to resume a job, verify filters, and download the right
 format later.
@@ -234,7 +234,7 @@ format later.
 `local_sha256` is calculated by your workflow after download. Xquik does not
 return that field in the export response.
 
-## Handle Export Failures
+## Handle export failures
 
 - `400 invalid_format`: Use one of the 7 documented format values.
 - `401 unauthenticated`: Replace the missing or invalid credential.
@@ -245,54 +245,54 @@ For draw exports, also validate `type=winners` or `type=entries`. Do not retry
 an unchanged `400`, `401`, or `404` request. Retry `429` after the documented
 delay.
 
-## Twitter API Export Questions
+## Twitter API export questions
 
-### How Do I Export Twitter API Results to CSV?
+### How do I export Twitter API results to CSV?
 
 Run an extraction for tweets, followers, following rows, replies, or profiles.
 After completion, request its export endpoint with `format=csv`.
 
-### Can I Export Tweets as JSON?
+### Can I export tweets as JSON?
 
 Yes. Use live JSON pages for incremental processing. Use `format=json` for one
 saved extraction file within the 100,000-row cap.
 
-### Should I Use CSV or JSON for Twitter Results?
+### Should I use CSV or JSON for Twitter results?
 
 Use CSV for CRM and spreadsheet imports. Use JSON for applications, replay,
 and structured result fields. Choose before building the downstream parser.
 
-### When Should I Use XLSX Instead of CSV?
+### When should I use XLSX instead of CSV?
 
 Use XLSX when analysts need an Excel workbook. Use CSV when another system
 expects a simple delimited import.
 
-### Can I Export More Than 100,000 Rows?
+### Can I export more than 100,000 rows?
 
 Process larger extraction jobs through saved JSON pages. Append JSON Lines and
 resume with `cursor`. One file export stops at 100,000 rows.
 
-### Why Does PDF Stop at 10,000 Rows?
+### Why does PDF stop at 10,000 rows?
 
 PDF uses the documented 10,000-row cap. Choose CSV, JSON, XLSX, Markdown, or
 TXT for file exports up to 100,000 rows.
 
-### What Is the Difference Between `md` and `md-document`?
+### What is the difference between `md` and `md-document`?
 
 `md` returns a Markdown table. `md-document` returns numbered result sections
 with labeled fields. Both use the Markdown response content type.
 
-### Does This Download Twitter Images or Videos?
+### Does this download Twitter images or videos?
 
 No. This guide exports documented result fields. Use returned media URLs when
 your workflow separately processes tweet images or videos.
 
-### Does This Export My Private X Account Archive?
+### Does this export my private X account archive?
 
 No. These endpoints export Xquik extraction or draw results. Use X's account
 archive process for your private account archive.
 
-## Safety Checklist
+## Safety checklist
 
 <Check>
   Do not print downloaded export bytes to shared logs.
@@ -313,22 +313,22 @@ archive process for your private account archive.
   downstream task.
 </Check>
 
-## Next Steps
+## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Extraction Workflow" icon="workflow" href="/guides/extraction-workflow">
+  <Card title="Extraction workflow" icon="workflow" href="/guides/extraction-workflow">
     Build saved extraction jobs, poll results, and export finished rows.
   </Card>
 
-  <Card title="Export Extraction" icon="download" href="/api-reference/extractions/export">
+  <Card title="Export extraction" icon="download" href="/api-reference/extractions/export">
     Download saved extraction rows as CSV, JSON, XLSX, Markdown, PDF, or TXT.
   </Card>
 
-  <Card title="Export Draw" icon="trophy" href="/api-reference/draws/export">
+  <Card title="Export draw" icon="trophy" href="/api-reference/draws/export">
     Download giveaway winners or entries.
   </Card>
 
-  <Card title="Follower Export CRM" icon="users" href="/guides/follower-export-crm">
+  <Card title="Follower export CRM" icon="users" href="/guides/follower-export-crm">
     Move follower data into CSV and CRM workflows.
   </Card>
 </CardGroup>

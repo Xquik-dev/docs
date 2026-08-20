@@ -1,5 +1,5 @@
 ---
-title: "C# SDK for Tweet Search, Exports & X Automation"
+title: "C# SDK for tweet search, exports & X automation"
 sidebarTitle: C# / .NET
 description: Use the Xquik C# SDK to search tweets, export tweet replies to JSON Lines, CSV, or XLSX, post media tweets, upload media, send DMs, and run .NET X API workers.
 keywords: ["C# SDK", ".NET Twitter scraper SDK", "NuGet X API", "X API C#", "tweet search C#", "tweet replies C#", "Twitter API C#", "JSON export", "CSV export", "XLSX export"]
@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the C# SDK for typed .NET Standard 2.0+ access to Xquik from services, workers, console tools, and ASP.NET backends. It is useful when a .NET job needs to search tweets, scrape tweets or replies to JSON Lines, CSV, or XLSX, export followers, monitor tweets, post media tweets, upload media, send direct messages, or hand X API data to queues, CRMs, and reporting systems.
+Use the C# SDK for typed .NET Standard 2.0+ access from services, workers, console tools, and ASP.NET backends. A .NET job can search or scrape tweets, export followers, monitor tweets, post media, send direct messages, or hand X API data to queues, CRMs, and reports.
 
 | C# worker task | SDK call | Durable checkpoint |
 | --- | --- | --- |
@@ -37,7 +37,7 @@ export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 
 `new XTwitterScraperClient()` reads `X_TWITTER_SCRAPER_API_KEY`, `X_TWITTER_SCRAPER_BEARER_TOKEN`, and `X_TWITTER_SCRAPER_BASE_URL`.
 
-## Basic Example
+## Basic example
 
 Search tweets and write durable JSON Lines handoff rows:
 
@@ -71,7 +71,7 @@ foreach (SearchTweet tweet in page.Tweets)
 }
 ```
 
-## Workflow: Search Tweets to JSON Lines, CSV, or XLSX
+## Workflow: search tweets to JSON Lines, CSV, or XLSX
 
 Use this workflow when a .NET worker, console job, or ASP.NET background service needs tweet search results in a durable handoff format for a queue, data lake, analyst CSV export, XLSX workbook, or CRM enrichment step.
 
@@ -175,7 +175,7 @@ static async Task WriteCsvRow(StreamWriter writer, IEnumerable<object?> values)
 }
 ```
 
-### Request Mapping
+### Request mapping
 
 <CardGroup cols={2}>
   <Card title="Q" icon="search">
@@ -198,7 +198,7 @@ static async Task WriteCsvRow(StreamWriter writer, IEnumerable<object?> values)
   </Card>
 </CardGroup>
 
-### Returned Data & Handoff
+### Returned data & handoff
 
 `client.X.Tweets.Search` returns `PaginatedTweets`. Use `page.Tweets` for the tweet array, `page.HasNextPage` to decide whether another page exists, and `page.NextCursor` as the checkpoint for the next request. For bounded pulls that return fewer tweets than `Limit`, pass `page.NextCursor` back as `Cursor` with the same query, filters, `QueryType`, and `Limit`.
 
@@ -206,7 +206,7 @@ Each `SearchTweet` includes typed properties such as `ID`, `Text`, `Author`, `Cr
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `Limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, 408, 409, 429, and 5xx responses 2 times by default. For explicit `Limit` pulls, resume with the same query, filters, `QueryType`, and `Limit`; only `Cursor` changes.
 
-## Workflow: Follower Export to CSV, JSON, or XLSX
+## Workflow: follower export to CSV, JSON, or XLSX
 
 Use this workflow when a .NET worker, console job, or ASP.NET background service needs an owned follower list for a CRM import, warehouse load, analyst CSV file, XLSX workbook, or resumable JSON handoff.
 
@@ -314,7 +314,7 @@ await xlsxStream.CopyToAsync(xlsxFile);
 
 Cost: 1 credit per follower extracted or returned. Persist `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling so a queue retry, Windows service restart, or worker restart can resume the same follower export. Keep `page.NextCursor` as the checkpoint when you stream followers to JSON Lines, and map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Exports are free after the extraction job exists.
 
-## Workflow: Tweet Replies to CSV, JSON, or XLSX
+## Workflow: tweet replies to CSV, JSON, or XLSX
 
 Use this workflow when a .NET worker needs every reply on a public tweet in a durable file for moderation review, customer support triage, analyst export, or a warehouse loader.
 
@@ -362,7 +362,7 @@ Keep the same `estimate.Allowed` credit branch from the follower export workflow
 
 Repeat the export with `new ExtractionExportResultsParams { Format = Format.Json }` and `File.WriteAllTextAsync("xquik-replies.json", await jsonResponse.ReadAsString())`. For XLSX, use `new ExtractionExportResultsParams { Format = Format.Xlsx }`, `File.Create("xquik-replies.xlsx")`, and stream-copy the response body. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. Cost: 1 credit per reply extracted or returned.
 
-## Workflow: Post Media Tweets and DM Attachments
+## Workflow: post media tweets and DM attachments
 
 Use this workflow when a .NET worker needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `client.X.Tweets.Create` maps to `POST /x/tweets`; pass public media URLs through `Media`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB, and do not mix video with other media. For replies, set `ReplyToTweetID` to the parent tweet ID. `client.X.Media.Upload` maps to `POST /x/media`; use `media.MediaID` only for the one-item `MediaIds` handoff on `client.X.Dm.Send`.
 
@@ -491,12 +491,12 @@ Keep DM body text in private systems. Shared logs and handoffs should store `mes
 
 Use public media URLs with `client.X.Tweets.Create`. Do not pass uploaded `media.MediaID` values to tweet creation.
 
-## Error Handling
+## Error handling
 
 The C# SDK throws generated exception types for non-success responses and connection failures.
 
 <CardGroup cols={2}>
-  <Card title="400 Bad Request" icon="triangle-alert">
+  <Card title="400 Bad request" icon="triangle-alert">
     Throws `XTwitterScraperBadRequestException`.
   </Card>
   <Card title="401 Unauthorized" icon="lock">
@@ -505,16 +505,16 @@ The C# SDK throws generated exception types for non-success responses and connec
   <Card title="403 Forbidden" icon="shield">
     Throws `XTwitterScraperForbiddenException`.
   </Card>
-  <Card title="404 Not Found" icon="circle-x">
+  <Card title="404 Not found" icon="circle-x">
     Throws `XTwitterScraperNotFoundException`.
   </Card>
-  <Card title="422 Validation Error" icon="triangle-alert">
+  <Card title="422 Validation error" icon="triangle-alert">
     Throws `XTwitterScraperUnprocessableEntityException`.
   </Card>
-  <Card title="429 Rate Limited" icon="gauge">
+  <Card title="429 Rate limited" icon="gauge">
     Throws `XTwitterScraperRateLimitException`.
   </Card>
-  <Card title="5xx Server Error" icon="server">
+  <Card title="5xx server error" icon="server">
     Throws `XTwitterScraper5xxException`.
   </Card>
 </CardGroup>
@@ -532,7 +532,7 @@ if (tweets.HasNextPage)
 }
 ```
 
-## Webhooks & References
+## Webhooks & references
 
 - [Search Tweets](/api-reference/x/search-tweets)
 - [Create Tweet](/api-reference/x-write/create-tweet)

@@ -1,5 +1,5 @@
 ---
-title: "Twitter API Rate Limits, Errors & Webhook Events"
+title: "Twitter API rate limits, errors & webhook events"
 sidebarTitle: "API error checklist"
 description: "Handle Xquik REST API calls with authentication, pagination, HTTP errors, Twitter API rate limits, webhook events, durable writes, and normalized responses."
 keywords: ["Twitter API rate limits", "REST API call", "API error handling", "API pagination", "webhook events"]
@@ -18,7 +18,7 @@ Use API pagination for complete tweet, follower, reply, and event collections.
 Treat HTTP status codes as control flow. Protect durable API writes with
 idempotency keys and status polling.
 
-## Integration Readiness Checklist
+## Integration readiness checklist
 
 Run this checklist before connecting a production client, workflow builder, or agent to the API.
 
@@ -43,7 +43,7 @@ Run this checklist before connecting a production client, workflow builder, or a
   </Card>
 </CardGroup>
 
-## Validate Every HTTP Request
+## Validate every HTTP request
 
 Match each HTTP request to its documented API endpoint. Use the listed HTTP
 methods, path parameters, query parameters, and headers. Send `GET` for reads.
@@ -63,7 +63,7 @@ Check the complete URL before release. The base URL is
 `https://xquik.com/api/v1`. Keep the version segment in every API endpoint.
 Do not send production credentials to test hosts.
 
-## Classify API Responses
+## Classify API responses
 
 Read the HTTP status code before parsing API responses. A successful response
 does not always use `200`. Creation routes can return `201`. Accepted work can
@@ -82,14 +82,14 @@ Keep the machine-readable error code with each failed request. Show human-readab
 error messages where a person must act. Never replace exact codes with guessed
 messages. When an error occurs, inspect the code before choosing a retry.
 
-## Separate Client and Server Errors
+## Separate client and server errors
 
 Fix client-side errors before retrying. A repeated invalid query produces the
 same response. Correct the field, type, identifier, or authentication header.
 Do not hide validation failures behind automatic retries.
 
 Treat temporary server errors differently. Retry `424` and `502` failures with
-bounded exponential backoff. Stop after the configured attempt limit. Surface
+bounded exponential backoff. Stop after the configured attempt limit. Return
 the final failure with its original status and error code.
 
 Never retry every `4xx` response. A `401` needs a valid credential. A `402`
@@ -100,7 +100,7 @@ Preserve request context without logging secrets. Record the method, route,
 status, retry count, and returned code. Remove API keys, bearer tokens, webhook
 secrets, cookies, and payment credentials.
 
-## Page Through Tweets, Followers & Replies
+## Page through tweets, followers & replies
 
 API pagination uses opaque cursors. Store each cursor exactly as returned.
 Never decode, trim, or construct it. Use stable tweet and profile IDs to remove
@@ -122,7 +122,7 @@ Store partial tweets, followers, following profiles, replies, or events before
 requesting the next page. Resume from the last confirmed cursor after a
 temporary failure.
 
-## Recover From Twitter API Rate Limits
+## Recover from Twitter API rate limits
 
 Treat Twitter API rate limits as method-specific Xquik buckets. Reads share one
 window. Writes share another. Deletes use their own window. One busy workflow
@@ -143,7 +143,7 @@ reaches its bucket repeatedly.
 Never treat a `429` as an authentication or billing failure. Keep its recovery
 path separate from `401` and `402` handling.
 
-## Process Webhook Events Safely
+## Process webhook events safely
 
 Accept webhook events only on HTTPS. Save the one-time secret during webhook
 creation. Verify the HMAC signature before trusting a tweet or profile event.
@@ -165,7 +165,7 @@ enabling real-time monitor traffic.
 Use [webhook verification](/webhooks/verification) for signature code. Use
 [webhook testing](/guides/twitter-webhook-testing) for delivery and retry checks.
 
-## Protect Durable API Writes
+## Protect durable API writes
 
 Send a unique `Idempotency-Key` with each new write intent. Keep that key with
 the submitted action. Do not reuse it for a different tweet, like, follow,
@@ -186,7 +186,7 @@ automatic retry loop.
 Verify the final action result before updating local state. A submitted request
 does not prove that X accepted the write.
 
-## Test Production Edge Cases
+## Test production edge cases
 
 Test success and failure paths before launch. Use a valid API key, then an
 invalid key. Send one malformed request body. Request one missing tweet or
@@ -228,7 +228,7 @@ pagination, response, webhook, or write-contract changes.
     { "error": "error_code" }
     ```
 
-    **Common errors:**
+    **Common errors.**
 
     <CardGroup cols={2}>
       <Card title="400 validation" icon="circle-alert">
@@ -299,7 +299,7 @@ pagination, response, webhook, or write-contract changes.
         ```
       </Tab>
     </Tabs>
-    Cursors are opaque strings. Do not decode or construct them. Continue through empty pages while the response says more data exists. Stop and surface a pagination error when the next cursor is missing, unchanged, or already seen. Monitors, webhooks, and API keys return up to 200 items without pagination.
+    Cursors are opaque strings. Do not decode or construct them. Continue through empty pages while the response says more data exists. Return a pagination error when the next cursor is missing, unchanged, or already seen. Monitors, webhooks, and API keys return up to 200 items without pagination.
   </Accordion>
   <Accordion title="Opt-in response contract">
     v1 keeps the default response contract unchanged for existing clients. Send `xquik-api-contract: 2026-04-29` to opt in to the normalized v1 response contract.
@@ -338,9 +338,9 @@ pagination, response, webhook, or write-contract changes.
   </Accordion>
 </AccordionGroup>
 
-## Event Types
+## Event types
 
-### Monitor Events
+### Monitor events
 
 Monitors, webhooks, and events share these event types:
 
