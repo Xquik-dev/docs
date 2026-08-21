@@ -83,7 +83,7 @@ const REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_README_SNIPPETS = [
-  '# Xquik docs - X API, 1-second monitors & automation reference',
+  '# Xquik docs for X API, 1-second monitors & automation',
   'tweet search',
   'user lookup',
   'follower exports',
@@ -95,21 +95,21 @@ const REQUIRED_README_SNIPPETS = [
   'SDK clients',
   'X automation',
   '[Quickstart](https://docs.xquik.com/x-api-quickstart)',
-  '[API Reference](https://docs.xquik.com/api-reference)',
-  'browse 128 OpenAPI-backed operations',
-  '**REST API** - 128 operations',
+  '[API reference](https://docs.xquik.com/api-reference)',
+  'Browse 128 OpenAPI-backed operations',
+  '**REST API.** 128 operations',
   '[SDKs](https://docs.xquik.com/sdks)',
   '[Tweet search export](https://docs.xquik.com/guides/tweet-scraper-csv-export)',
-  'export tweets by keyword to CSV, JSON, or XLSX',
+  'Export tweets by keyword to CSV, JSON, or XLSX',
   '[Tweet replies export](https://docs.xquik.com/guides/tweet-replies-export)',
-  'export replies to CSV, JSON, or XLSX',
+  'Export replies to CSV, JSON, or XLSX',
   '[Follower export](https://docs.xquik.com/guides/follower-export-crm)',
-  'export X followers to CRM or warehouse',
+  'Export X followers to CRM or warehouse',
   '[Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow)',
-  'send DMs and store returned message IDs',
+  'Send DMs and store returned message IDs',
   '[Prefect](https://docs.xquik.com/guides/prefect)',
-  'schedule tweet, user, timeline, and trend reads in Prefect flows',
-  '[MCP Server](https://docs.xquik.com/mcp)',
+  'Schedule tweet, user, timeline, and trend reads in Prefect flows',
+  '[MCP server v2.6.0](https://docs.xquik.com/mcp)',
   '[Webhooks](https://docs.xquik.com/webhooks/overview)',
   '[Apify Actors](https://docs.xquik.com/alternatives/apify)',
   'Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.',
@@ -1605,7 +1605,7 @@ const FORBIDDEN_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_LLMS_SNIPPETS = [
-  '## Agent Entry Points',
+  '## Agent entry points',
   'https://context7.com/xquik-dev/xquik-docs',
   '[Xquik Skill](https://docs.xquik.com/skill.md)',
   'Docs `https://docs.xquik.com/mcp` (docs, no auth)',
@@ -1633,7 +1633,7 @@ const REQUIRED_LLMS_SNIPPETS = [
 ] as const;
 
 const REQUIRED_LLMS_RUNTIME_CONTRACT_SNIPPETS = [
-  '## Monitor Event Types (21)',
+  '## Monitor event types (21)',
   'Account monitors and webhooks accept all 21. Keyword monitors accept only the 10 tweet types.',
   'Retry: up to 10 attempts. Backoff starts at 1s and caps at 60s.',
   'Default responses always include `error`.',
@@ -2129,10 +2129,10 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   'Store the endpoint path, request parameters, returned IDs, `has_more`,',
   '`next_cursor`, export route, or webhook replay route before ending the',
   '## Quick connect',
-  '**Copy MCP Server URL**',
-  '**Copy MCP Install Command**',
-  '**Connect to Cursor**',
-  '**Connect to VS Code**',
+  '**Copy MCP Server URL.**',
+  '**Copy MCP Install Command.**',
+  '**Connect to Cursor.**',
+  '**Connect to VS Code.**',
   '<Tab title="Claude.ai (web)">',
   'URL: `https://docs.xquik.com/mcp`',
   '<Tab title="Claude Code">',

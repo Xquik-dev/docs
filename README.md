@@ -1,48 +1,45 @@
-# Xquik docs - X API, 1-second monitors & automation reference
+# Xquik docs for X API, 1-second monitors & automation
 
 > **Xquik is an independent third-party service.** Not affiliated with X Corp.
 > "Twitter" and "X" are trademarks of X Corp.
 
-Public documentation for [Xquik](https://xquik.com), an X data and automation
+Documentation for [Xquik](https://xquik.com), an X data and automation
 platform. Published at **[docs.xquik.com](https://docs.xquik.com)**.
 
-This repository powers the developer reference for the Xquik REST API, webhooks, MCP server, OAuth 2.1, SDKs, glossary, comparison guides, and how-to guides. Use it to find request and response details for tweet search, user lookup, follower exports, media uploads, direct messages, 1-second tweet monitors, signed webhooks, SDK clients, and X automation tasks.
+This repository contains the Xquik REST API, webhook, MCP, OAuth 2.1, and SDK docs. Find request and response details for tweet search, user lookup, follower exports, media uploads, direct messages, 1-second tweet monitors, signed webhooks, SDK clients, and X automation.
 
 ## Choose this repository
 
-Use hosted docs for current task guidance.
-Use this repository to review source, propose fixes, or validate public contracts.
-Use SDK repositories for generated client APIs.
+Use the hosted site for current guidance. Review this repository when proposing
+fixes or validating contracts. Generated client APIs live in the SDK repositories.
 
 ## Start here
 
-- [Quickstart](https://docs.xquik.com/x-api-quickstart) - make the first authenticated API call.
-- [API Reference](https://docs.xquik.com/api-reference) - browse 128 OpenAPI-backed operations.
-- [Guest wallets](https://docs.xquik.com/guides/guest-wallets) - fund 33 accountless GET routes through a confirmed hosted checkout.
-- [Direct MPP](https://docs.xquik.com/mpp/machine-payments-protocol) - pay per request on 7 fixed-price GET operations.
-- [SDKs](https://docs.xquik.com/sdks) - use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
-- [Tweet search export](https://docs.xquik.com/guides/tweet-scraper-csv-export) - export tweets by keyword to CSV, JSON, or XLSX.
-- [Tweet replies export](https://docs.xquik.com/guides/tweet-replies-export) - export replies to CSV, JSON, or XLSX.
-- [Follower export](https://docs.xquik.com/guides/follower-export-crm) - export X followers to CRM or warehouse.
-- [Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow) - send DMs and store returned message IDs.
-- [Prefect](https://docs.xquik.com/guides/prefect) - schedule tweet, user, timeline, and trend reads in Prefect flows.
-- [MCP Server v2.6.0](https://docs.xquik.com/mcp) - connect AI clients through MCP 2026-07-28, OAuth, or secure API keys.
-- [Webhooks](https://docs.xquik.com/webhooks/overview) - verify HMAC signatures and receive monitor events.
-- [Open Source Assurance](https://docs.xquik.com/guides/open-source-assurance) - review OpenSSF project mapping and public controls.
-- [Apify Actors](https://docs.xquik.com/alternatives/apify) - run focused X data jobs on Apify.
-- [llms.txt](https://docs.xquik.com/llms.txt) - give AI coding agents the docs index.
+- [Quickstart](https://docs.xquik.com/x-api-quickstart). Make the first authenticated API call.
+- [API reference](https://docs.xquik.com/api-reference). Browse 128 OpenAPI-backed operations.
+- [Guest wallets](https://docs.xquik.com/guides/guest-wallets). Fund 33 accountless GET routes through a confirmed hosted checkout.
+- [Direct MPP](https://docs.xquik.com/mpp/machine-payments-protocol). Pay per request on 7 fixed-price GET operations.
+- [SDKs](https://docs.xquik.com/sdks). Use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
+- [Tweet search export](https://docs.xquik.com/guides/tweet-scraper-csv-export). Export tweets by keyword to CSV, JSON, or XLSX.
+- [Tweet replies export](https://docs.xquik.com/guides/tweet-replies-export). Export replies to CSV, JSON, or XLSX.
+- [Follower export](https://docs.xquik.com/guides/follower-export-crm). Export X followers to CRM or warehouse.
+- [Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow). Send DMs and store returned message IDs.
+- [Prefect](https://docs.xquik.com/guides/prefect). Schedule tweet, user, timeline, and trend reads in Prefect flows.
+- [Webhooks](https://docs.xquik.com/webhooks/overview). Verify HMAC signatures and receive monitor events.
+- [Open source assurance](https://docs.xquik.com/guides/open-source-assurance). Review OpenSSF project mapping and controls.
+- [Apify Actors](https://docs.xquik.com/alternatives/apify). Run focused X data jobs on Apify.
 
 ## Use with AI coding agents
 
-- [Context7 library](https://context7.com/xquik-dev/xquik-docs) - load indexed Xquik docs in supported coding agents.
-- [llms.txt](https://docs.xquik.com/llms.txt) - discover every public docs page before reading deeper.
-- [MCP Server](https://docs.xquik.com/mcp) - connect Xquik tools through OAuth-first Streamable HTTP.
-- [MCP 2026-07-28](https://docs.xquik.com/mcp/overview#mcp-2026-07-28) - understand `server/discover`, request-scoped calls, and private cache hints.
-- [Codex OAuth troubleshooting](https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error) - Codex CLI 0.147.0 and newer support Xquik OAuth. Upgrade if an older release reports `Authorization server response missing required issuer: expected https://xquik.com`. Use `bearer_token_env_var = "XQUIK_API_KEY"` only when upgrading is unavailable. [Issue #31573](https://github.com/openai/codex/issues/31573) records the fix.
-- [Agent index](https://xquik.com/.well-known/agent-index.json) - discover the API MCP endpoint, manifest, OAuth metadata, and auth.md.
-- [Agent Skills index](https://xquik.com/.well-known/agent-skills/index.json) - discover and verify Xquik's hosted `SKILL.md`.
-- [auth.md](https://xquik.com/auth.md) - read CIMD, DCR, PKCE, and MCP authorization instructions.
-- [OpenAPI spec](https://docs.xquik.com/openapi.yaml) - generate clients or inspect request and response shapes.
+- [Context7 library](https://context7.com/xquik-dev/xquik-docs). Load indexed Xquik docs in supported coding agents.
+- [llms.txt](https://docs.xquik.com/llms.txt). Discover every docs page before reading deeper.
+- [MCP server v2.6.0](https://docs.xquik.com/mcp). Connect Xquik tools through OAuth-first Streamable HTTP.
+- [MCP 2026-07-28](https://docs.xquik.com/mcp/overview#mcp-2026-07-28). Understand `server/discover`, request-scoped calls, and private cache hints.
+- [Codex OAuth troubleshooting](https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error). Codex CLI 0.147.0 and newer support Xquik OAuth. Upgrade if an older release reports `Authorization server response missing required issuer: expected https://xquik.com`. Use `bearer_token_env_var = "XQUIK_API_KEY"` only when upgrading is unavailable. [Issue #31573](https://github.com/openai/codex/issues/31573) records the fix.
+- [Agent index](https://xquik.com/.well-known/agent-index.json). Discover the API MCP endpoint, manifest, OAuth metadata, and auth.md.
+- [Agent Skills index](https://xquik.com/.well-known/agent-skills/index.json). Discover and verify Xquik's hosted `SKILL.md`.
+- [auth.md](https://xquik.com/auth.md). Read CIMD, DCR, PKCE, and MCP authorization instructions.
+- [OpenAPI spec](https://docs.xquik.com/openapi.yaml). Generate clients or inspect request and response shapes.
 
 ## Common questions
 
@@ -66,15 +63,15 @@ Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
 
 ## What's covered
 
-- **REST API** - 128 operations spanning account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
-- **Webhooks** - HMAC SHA-256 signature verification, retry semantics, payload schemas.
-- **MCP server** - 120 full-scope catalog routes or 33 guest `paid_reads` GET routes through 2 code-mode tools. Binary support downloads use REST.
-- **OAuth 2.1** - Automatic discovery, CIMD, DCR fallback, Authorization Code + PKCE, and token refresh.
-- **Guides** - Workflows, error handling, rate limits, billing, trends, extraction workflow, architecture, troubleshooting, types, webhook testing, and framework integrations.
-- **SDKs** - 10 generated client libraries (TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI as Go binary, Terraform provider) with auto-pagination, retry, and typed responses.
-- **Comparisons** - Alternatives for X APIs, tweet scrapers, follower exporters, creator tools, and social suites.
-- **Apify Actors** - Public Actors for tweets, replies, followers, trends, profiles, communities, lists, and user search.
-- **OpenAPI 3.1** - Machine-readable contract for endpoint pages and SDK generation.
+- **REST API.** 128 operations span account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
+- **Webhooks.** HMAC SHA-256 signature verification, retry semantics, and payload schemas.
+- **MCP server.** 120 full-scope catalog routes or 33 guest `paid_reads` GET routes through 2 code-mode tools. Binary support downloads use REST.
+- **OAuth 2.1.** Automatic discovery, CIMD, DCR fallback, Authorization Code + PKCE, and token refresh.
+- **Guides.** Workflows, error handling, rate limits, billing, trends, extractions, architecture, troubleshooting, types, webhook testing, and framework integrations.
+- **SDKs.** 10 generated clients support TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform.
+- **Comparisons.** Alternatives for X APIs, tweet scrapers, follower exporters, creator tools, and social suites.
+- **Apify Actors.** Actors cover tweets, replies, followers, trends, profiles, communities, lists, and user search.
+- **OpenAPI 3.1.** Machine-readable contract for endpoint pages and SDK generation.
 
 ## Repository layout
 
@@ -86,7 +83,6 @@ mcp/                MCP server overview + tool reference
 oauth/              OAuth 2.1 setup + flow
 sdks/               Per-language SDK landing pages
 alternatives/       Comparison and migration guides
-introduction.mdx    Platform overview
 x-api-quickstart.mdx      2-minute quickstart
 docs.json           Navigation + theme config
 custom.css          Custom styling
@@ -130,9 +126,9 @@ To report a vulnerability in the docs site or in any documented endpoint behavio
 
 ## Related repositories
 
-- **[Xquik](https://xquik.com)** - Main app and dashboard.
-- **[Xquik-dev/x-twitter-scraper-python](https://github.com/Xquik-dev/x-twitter-scraper-python)** - Python SDK.
-- **[Xquik-dev/x-twitter-scraper-typescript](https://github.com/Xquik-dev/x-twitter-scraper-typescript)** - TypeScript SDK.
+- **[Xquik](https://xquik.com).** Main app and dashboard.
+- **[Xquik-dev/x-twitter-scraper-python](https://github.com/Xquik-dev/x-twitter-scraper-python).** Python SDK.
+- **[Xquik-dev/x-twitter-scraper-typescript](https://github.com/Xquik-dev/x-twitter-scraper-typescript).** TypeScript SDK.
 - Other generated SDKs are listed under the [Xquik-dev](https://github.com/Xquik-dev) org.
 
 ## License
