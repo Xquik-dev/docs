@@ -1,7 +1,7 @@
 ---
 title: "Delete Twitter keyword monitor & stop webhooks"
 sidebarTitle: Delete keyword monitor
-description: "Delete a keyword monitor, stop polling its X search query, and prevent new matching tweet events and webhook deliveries. Includes signature and retry examples."
+description: "Stop a Twitter keyword monitor and future query checks. Remove stored events in bounded batches. Poll the status URL until deletion finishes. Keep its query."
 api: "DELETE /monitors/keywords/{id}"
 keywords: ["keyword monitor", "delete", "remove", "stop tracking"]
 ---
@@ -11,9 +11,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES START */}
 <Panel>
 <Tabs defaultTabIndex={0} sync={false}>
-  <Tab title="200" id="response-monitors-delete-keyword-200">
+  <Tab title="202" id="response-monitors-delete-keyword-202">
     ```json
     {
+      "deletionStatus": "deleting",
+      "statusUrl": "/api/v1/monitors/42",
       "success": true
     }
     ```
@@ -86,7 +88,7 @@ Pause it instead when future monitoring might resume.
   const deletionReceipt = {
     keyword_monitor_id: monitorId,
     success: result.success === true,
-    verify_endpoint: `/api/v1/monitors/keywords/${monitorId}`,
+    verify_endpoint: result.statusUrl,
     list_endpoint: "/api/v1/monitors/keywords",
   };
   process.stdout.write(`${JSON.stringify(deletionReceipt)}\n`);
@@ -105,7 +107,7 @@ Pause it instead when future monitoring might resume.
   deletion_receipt = {
       "keyword_monitor_id": monitor_id,
       "success": result["success"] is True,
-      "verify_endpoint": f"/api/v1/monitors/keywords/{monitor_id}",
+      "verify_endpoint": result["statusUrl"],
       "list_endpoint": "/api/v1/monitors/keywords",
   }
   print(json.dumps(deletion_receipt))
@@ -122,7 +124,8 @@ Pause it instead when future monitoring might resume.
   )
 
   type DeleteResult struct {
-      Success bool `json:"success"`
+      StatusURL string `json:"statusUrl"`
+      Success   bool   `json:"success"`
   }
 
   type KeywordMonitorDeletion struct {
@@ -157,7 +160,7 @@ Pause it instead when future monitoring might resume.
       receipt := KeywordMonitorDeletion{
           KeywordMonitorID: monitorID,
           Success:          result.Success,
-          VerifyEndpoint:   "/api/v1/monitors/keywords/" + monitorID,
+          VerifyEndpoint:   result.StatusURL,
           ListEndpoint:     "/api/v1/monitors/keywords",
       }
       if err := json.NewEncoder(os.Stdout).Encode(receipt); err != nil {
@@ -167,10 +170,9 @@ Pause it instead when future monitoring might resume.
   ```
 </CodeGroup>
 
-The Node.js, Python, and Go examples convert the delete response into one receipt row.
-Store `keyword_monitor_id`, `success`, `verify_endpoint`, and `list_endpoint`, then verify
-that the deleted ID no longer appears in the list and that the verify endpoint
-returns `404`.
+The examples store a deletion receipt. Poll `verify_endpoint` while it returns
+`200`. Deletion finishes when it returns `404`. Respect `Retry-After` between
+requests.
 
 ## Remove one keyword without deleting the monitor
 
@@ -198,13 +200,22 @@ delete the monitor to remove one unwanted keyword.
 
 ## Response
 
-### 200 OK
+### 202 Accepted
 
-<ResponseField name="success" type="boolean">Always `true` on successful deletion.</ResponseField>
+<ResponseField name="deletionStatus" type="string">Returns `deleting` while cleanup runs.</ResponseField>
+<ResponseField name="statusUrl" type="string">Poll this URL until it returns `404`.</ResponseField>
+<ResponseField name="success" type="boolean">Always `true` when deletion starts.</ResponseField>
 
 ```json
-{ "success": true }
+{
+  "deletionStatus": "deleting",
+  "statusUrl": "/api/v1/monitors/keywords/21",
+  "success": true
+}
 ```
+
+The response includes `Location` and `Retry-After` headers. Poll `Location`
+after the stated interval.
 
 ### 400 Invalid ID
 
@@ -243,14 +254,13 @@ available.
 
 <CardGroup cols={2}>
   <Card title="Permanent remove" icon="trash-2">
-    Delete removes the keyword monitor. Store returned `success` before treating
-    the deleted ID as permanently removed. The deleted ID cannot be fetched,
-    updated, resumed, or billed again.
+    Delete stops the monitor immediately. Poll `statusUrl` until it returns
+    `404`. The deleted ID cannot be updated or resumed.
   </Card>
 
   <Card title="Stored history" icon="database">
     Stored events and webhook delivery records tied to this keyword monitor are
-    removed with it. Export or reconcile records before deletion.
+    removed in bounded batches. Export required records before deletion.
   </Card>
 
   <Card title="Pause instead" icon="circle-pause">

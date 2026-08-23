@@ -1,7 +1,7 @@
 ---
 title: "Delete Twitter account monitor & stop monitoring"
 sidebarTitle: "Delete account monitor"
-description: "Delete one Xquik Twitter account monitor, stop future tweet and profile checks, and safely remove its stored events without deleting the tracked X account."
+description: "Stop one Xquik account monitor and future checks. Remove stored events in bounded batches. Poll the status URL until deletion finishes. Keep X unchanged."
 api: "DELETE /monitors/{id}"
 keywords: ["delete twitter account monitor", "stop account monitoring", "twitter monitor api", "pause twitter monitoring", "stored tweet events"]
 ---
@@ -11,9 +11,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES START */}
 <Panel>
 <Tabs defaultTabIndex={0} sync={false}>
-  <Tab title="200" id="response-monitors-delete-twitter-account-monitor-200">
+  <Tab title="202" id="response-monitors-delete-twitter-account-monitor-202">
     ```json
     {
+      "deletionStatus": "deleting",
+      "statusUrl": "/api/v1/monitors/42",
       "success": true
     }
     ```
@@ -60,10 +62,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-This endpoint deletes one saved Xquik account monitor. It stops future tweet
-and profile checks. It removes stored events and linked webhook delivery
-records. The tracked X account and its profile remain unchanged. Its tweets,
-followers, and following list also remain unchanged.
+This endpoint stops one account monitor immediately. It then removes stored
+events and linked webhook deliveries in bounded batches. The tracked X account
+and its public data remain unchanged.
 
 <Warning>
   This operation is permanent. Pause the monitor when its alerts may resume.
@@ -80,7 +81,7 @@ followers, and following list also remain unchanged.
     jq -c '{
       monitor_id: "7",
       success: .success == true,
-      verify_endpoint: "/api/v1/monitors/7",
+      verify_endpoint: .statusUrl,
       list_endpoint: "/api/v1/monitors",
       events_endpoint: "/api/v1/events?monitorId=7",
       event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
@@ -101,7 +102,7 @@ followers, and following list also remain unchanged.
   const deletionReceipt = {
     monitor_id: monitorId,
     success: result.success === true,
-    verify_endpoint: `/api/v1/monitors/${monitorId}`,
+    verify_endpoint: result.statusUrl,
     list_endpoint: "/api/v1/monitors",
     events_endpoint: `/api/v1/events?monitorId=${monitorId}`,
     event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
@@ -124,7 +125,7 @@ followers, and following list also remain unchanged.
   deletion_receipt = {
       "monitor_id": monitor_id,
       "success": result["success"] is True,
-      "verify_endpoint": f"/api/v1/monitors/{monitor_id}",
+      "verify_endpoint": result["statusUrl"],
       "list_endpoint": "/api/v1/monitors",
       "events_endpoint": f"/api/v1/events?monitorId={monitor_id}",
       "event_detail_endpoint_pattern": "/api/v1/events/{event_id}",
@@ -145,7 +146,8 @@ followers, and following list also remain unchanged.
   )
 
   type DeleteResult struct {
-      Success bool `json:"success"`
+      StatusURL string `json:"statusUrl"`
+      Success   bool   `json:"success"`
   }
 
   type AccountMonitorDeletion struct {
@@ -184,7 +186,7 @@ followers, and following list also remain unchanged.
       receipt := AccountMonitorDeletion{
           MonitorID:                 monitorID,
           Success:                   result.Success,
-          VerifyEndpoint:            "/api/v1/monitors/" + monitorID,
+          VerifyEndpoint:            result.StatusURL,
           ListEndpoint:              "/api/v1/monitors",
           EventsEndpoint:            "/api/v1/events?monitorId=" + monitorID,
           EventDetailEndpointPattern: "/api/v1/events/{event_id}",
@@ -198,11 +200,9 @@ followers, and following list also remain unchanged.
   ```
 </CodeGroup>
 
-The cURL, Node.js, Python, and Go examples convert the delete response into one
-receipt row. Store `monitor_id`, `success`, `verify_endpoint`, `list_endpoint`,
-`events_endpoint`, `event_detail_endpoint_pattern`, `webhooks_endpoint`, and
-`deliveries_endpoint_pattern`, then verify that the deleted ID no longer appears
-in the list and that the verify endpoint returns `404`.
+The examples store a deletion receipt. Poll `verify_endpoint` while it returns
+`200`. Deletion finishes when it returns `404`. Respect `Retry-After` between
+requests.
 
 ## Delete a Twitter account monitor safely
 
@@ -229,13 +229,22 @@ keyword monitors when their checks must continue.
 
 ## Response
 
-### 200 OK
+### 202 Accepted
 
-<ResponseField name="success" type="boolean">Always `true` on successful deletion.</ResponseField>
+<ResponseField name="deletionStatus" type="string">Returns `deleting` while cleanup runs.</ResponseField>
+<ResponseField name="statusUrl" type="string">Poll this URL until it returns `404`.</ResponseField>
+<ResponseField name="success" type="boolean">Always `true` when deletion starts.</ResponseField>
 
 ```json
-{ "success": true }
+{
+  "deletionStatus": "deleting",
+  "statusUrl": "/api/v1/monitors/7",
+  "success": true
+}
 ```
+
+The response includes `Location` and `Retry-After` headers. Poll `Location`
+after the stated interval.
 
 ### 400 Invalid ID
 
@@ -305,8 +314,8 @@ monitors remain active.
 ## How do I verify monitor deletion?
 
 1. Save the monitor ID before sending `DELETE`.
-2. Require `200` with `{ "success": true }`.
-3. Read the same monitor and expect `404 not_found`.
+2. Require `202` with `deletionStatus: "deleting"` and `success: true`.
+3. Poll `statusUrl` until it returns `404 not_found`.
 4. List monitors and confirm the ID is absent.
 5. Treat another `DELETE` response of `404` as already removed.
 
@@ -321,7 +330,7 @@ you only need to pause alerts and keep the monitor available.
 
 | Account monitor deletion check | Source | Completion rule |
 | --- | --- | --- |
-| Delete receipt | `success` | Continue only when the response is `true`. |
+| Delete receipt | `deletionStatus`, `statusUrl`, `success` | Continue only after `202` with `success: true`. |
 | Monitor inventory | `GET /monitors` | Confirm the deleted monitor ID is absent. |
 | Detail lookup | `GET /monitors/{id}` | Expect `404 not_found` after deletion. |
 | Stored events | `GET /events?monitorId={id}` | Save required tweet and profile events first. |
@@ -330,8 +339,8 @@ you only need to pause alerts and keep the monitor available.
 
 ## Plan retention before monitor deletion
 
-Deletion cascades through stored events and linked delivery records. Decide
-which records your team must keep before sending `DELETE`.
+Cleanup removes stored events and linked delivery records in bounded batches.
+Decide which records your team must keep before sending `DELETE`.
 
 Export required tweet events, profile events, and relationship events first. Keep
 each event's `id`, `type`, `monitorId`, `username`, and `occurredAt`. Preserve
@@ -397,8 +406,8 @@ types. Test the endpoint before depending on new alerts.
 
 ## Handle every delete response
 
-A `200` response confirms the deletion. Require `success: true` before closing
-the workflow. Store the monitor ID beside that receipt.
+A `202` response starts deletion. Require `success: true`, then poll
+`statusUrl`. Close the workflow when that URL returns `404`.
 
 A `400` response means the ID format is invalid. Correct the path value before
 another request. Do not substitute an X username for the monitor ID.
@@ -425,9 +434,8 @@ List account monitors as a second check. Confirm that the deleted ID is absent.
 Do not rely on an empty event search alone. An event filter can be wrong while
 the monitor still exists.
 
-Repeated deletion leaves the final state unchanged. However, the response
-changes. The first completed request returns `200`; later requests return
-`404` because the monitor no longer exists.
+Repeated deletion leaves the final state unchanged. The first accepted request
+returns `202`. Later requests return `404` after cleanup finishes.
 
 ## Recreate monitoring after deletion
 
@@ -453,8 +461,8 @@ returning `404`.
 3. Export every required tweet and profile event.
 4. Preserve required webhook delivery attempts and receiver results.
 5. Obtain approval for permanent removal.
-6. Send `DELETE` and require `200` with `success: true`.
-7. Read the deleted ID and require `404 not_found`.
+6. Send `DELETE` and require `202` with `success: true`.
+7. Poll `statusUrl` and require `404 not_found`.
 8. List monitors and confirm that the ID is absent.
 9. Update downstream references to the removed monitor.
 
