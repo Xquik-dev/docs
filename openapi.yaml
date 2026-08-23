@@ -1543,6 +1543,9 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     delete:
       operationId: deleteKeywordMonitor
+      description:
+        Stops one keyword monitor, then removes its stored events in bounded
+        batches. Poll statusUrl until the monitor returns 404.
       summary: Delete keyword monitor
       tags: [Monitors]
       security:
@@ -1551,8 +1554,8 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
-        '200':
-          $ref: '#/components/responses/Success'
+        '202':
+          $ref: '#/components/responses/MonitorDeletionAccepted'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -1655,6 +1658,9 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     delete:
       operationId: deleteMonitor
+      description:
+        Stops one account monitor, then removes its stored events in bounded
+        batches. Poll statusUrl until the monitor returns 404.
       summary: Delete monitor
       tags: [Monitors]
       security:
@@ -1663,8 +1669,8 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
-        '200':
-          $ref: '#/components/responses/Success'
+        '202':
+          $ref: '#/components/responses/MonitorDeletionAccepted'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -9392,6 +9398,39 @@ components:
                 const: true
                 example: true
           example:
+            success: true
+    MonitorDeletionAccepted:
+      description: Monitor deletion started
+      headers:
+        Location:
+          description: Monitor URL that reports deletion progress.
+          schema:
+            type: string
+        Retry-After:
+          description: Wait this many seconds before polling again.
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [deletionStatus, statusUrl, success]
+            properties:
+              deletionStatus:
+                type: string
+                const: deleting
+              statusUrl:
+                type: string
+                description: Poll this monitor URL until it returns 404.
+                example: /api/v1/monitors/42
+              success:
+                type: boolean
+                const: true
+          example:
+            deletionStatus: deleting
+            statusUrl: /api/v1/monitors/42
             success: true
     NoContent:
       description: Deleted
