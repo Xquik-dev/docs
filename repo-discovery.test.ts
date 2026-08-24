@@ -1838,7 +1838,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'Write and media responses also use the MCP-normalized snake_case contract.',
   'Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `xquik.request()` results.',
   'REST and generated SDK pages may show camelCase fields such as `tweetId`, `writeActionId`, `chargedCredits`, `mediaId`, and `messageId`; keep MCP agents on snake_case when reading tool results.',
-  'Search the authenticated catalog. Full credentials see 118 routes. Guest keys see 33 GET routes.',
+  'Search the X/Twitter API catalog. No network calls or credits.',
   'The call uses no credits. MCP authentication remains required.',
   'Search the authenticated API catalog. `search` makes no network calls and uses no credits.',
   'has_more',
