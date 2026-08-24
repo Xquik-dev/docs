@@ -1774,7 +1774,9 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     post:
       operationId: createExtraction
-      description: Starts a saved extraction for the selected public X resource.
+      description:
+        Starts an asynchronous extraction. Poll statusUrl after pollAfterMs
+        until job status is terminal.
       summary: Create extraction
       tags: [Extractions]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
@@ -1812,16 +1814,26 @@ paths:
                 estimatedResults: 1000
                 source: followers
         '202':
-          description: Extraction started
+          description: Extraction started. Location identifies its result URL.
+          headers:
+            Location:
+              description: Relative extraction result URL.
+              schema: { type: string }
+            Retry-After:
+              description: Seconds before polling statusUrl.
+              schema: { type: integer, minimum: 0 }
           content:
             application/json:
               schema:
                 type: object
-                required: [id, toolType, status]
+                required: [id, pollAfterMs, status, statusUrl, toolType]
                 properties:
                   id:
                     type: string
                     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+                  pollAfterMs: { type: integer, minimum: 0, example: 1000 }
+                  statusUrl:
+                    { type: string, example: '/api/v1/extractions/a1b2c3d4' }
                   toolType:
                     type: string
                     $ref: '#/components/schemas/ExtractionToolType'
@@ -1832,6 +1844,8 @@ paths:
                     example: running
               example:
                 id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+                pollAfterMs: 1000
+                statusUrl: '/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890'
                 toolType: follower_explorer
                 status: running
         '400':
@@ -1930,7 +1944,9 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     get:
       operationId: getExtraction
-      description: Returns extraction status, progress, and available results.
+      description:
+        Returns status and up to 1,000 results. Follow nextCursor when hasMore
+        is true.
       summary: Get extraction results
       tags: [Extractions]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
@@ -1938,12 +1954,12 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
         - name: limit
           in: query
-          description: Maximum number of results to return (1-1000, default 10)
+          description: Maximum results per page (1-1000, default 1000).
           schema:
             type: integer
             minimum: 1
             maximum: 1000
-            default: 10
+            default: 1000
         - $ref: '#/components/parameters/After'
         - name: outputMode
           in: query

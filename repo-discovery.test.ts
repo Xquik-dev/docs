@@ -6653,25 +6653,14 @@ const FORBIDDEN_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
   '| `space_explorer` | `targetSpaceId` |',
 ] as const;
 
-const REQUIRED_EXTRACTION_CREATE_RECEIPT_SNIPPETS = [
-  '## Run receipt handoff',
-  'Treat the `202 Accepted` body as a run receipt, not as extracted data.',
-  '"receipt_format": "extraction_job"',
-  '"poll_path": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890"',
-  '"inventory_path": "/api/v1/extractions?status=completed&toolType=reply_extractor"',
-  '"export_path_after_complete": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=csv"',
-  '<Card title="Receipt fields" icon="clipboard-check">',
-  'Store `id`, `toolType`, and `status`.',
-  '`totalResults`, `createdAt`, `hasMore`, or `nextCursor` in this response.',
-  '<Card title="Poll results" icon="rotate-cw">',
-  'to read `job.status`, paginated `results`, `hasMore`, and `nextCursor`.',
-  '<Card title="Find later" icon="list">',
-  'Use [List Extractions](/api-reference/extractions/twitter-scraping-job-history) with `status` and',
-  '<Card title="Export after completion" icon="download">',
-  'Use [Export Extraction](/api-reference/extractions/export) after the detail',
+const REQUIRED_EXTRACTION_CREATE_LIFECYCLE_SNIPPETS = [
+  '<ResponseField name="pollAfterMs" type="number">',
+  '<ResponseField name="statusUrl" type="string">',
+  'Poll `statusUrl` after `pollAfterMs`.',
+  '`Location` and `Retry-After` headers.',
 ] as const;
 
-const FORBIDDEN_EXTRACTION_CREATE_RECEIPT_SNIPPETS = [
+const FORBIDDEN_EXTRACTION_CREATE_LIFECYCLE_SNIPPETS = [
   '"results": [',
   '"hasMore": true',
   'const results = data.results',
@@ -15477,7 +15466,7 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain('|-----------|---------------|-------------|');
   });
 
-  it('keeps extraction create response framed as a run receipt', (): void => {
+  it('documents the extraction polling lifecycle', (): void => {
     expect.assertions(1);
 
     const source = readFileSync('api-reference/extractions/create.mdx', 'utf8');
@@ -15485,15 +15474,15 @@ describe('repository discovery', (): void => {
     expect([
       ...collectSnippetFindings(
         source,
-        'Extraction create run receipt',
-        REQUIRED_EXTRACTION_CREATE_RECEIPT_SNIPPETS,
+        'Extraction create lifecycle',
+        REQUIRED_EXTRACTION_CREATE_LIFECYCLE_SNIPPETS,
       ),
-      ...FORBIDDEN_EXTRACTION_CREATE_RECEIPT_SNIPPETS.flatMap(
+      ...FORBIDDEN_EXTRACTION_CREATE_LIFECYCLE_SNIPPETS.flatMap(
         (snippet): readonly DiscoveryFinding[] =>
           source.includes(snippet)
             ? [
                 {
-                  issue: `Extraction create response should stay a receipt and not include result data "${snippet}".`,
+                  issue: `Extraction create response includes result data "${snippet}".`,
                 },
               ]
             : [],
