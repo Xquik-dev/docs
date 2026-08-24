@@ -1,6 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
 const PROJECT_ROOT = process.cwd();
@@ -337,10 +336,14 @@ function schemaByName(spec: OpenApiSpec, name: string): OpenApiSchema {
   return schema;
 }
 
-function resolveSchema(spec: OpenApiSpec, schema: OpenApiSchema): OpenApiSchema {
-  const resolved = schema.$ref === undefined
-    ? schema
-    : schemaByName(spec, schema.$ref.replace('#/components/schemas/', ''));
+function resolveSchema(
+  spec: OpenApiSpec,
+  schema: OpenApiSchema,
+): OpenApiSchema {
+  const resolved =
+    schema.$ref === undefined
+      ? schema
+      : schemaByName(spec, schema.$ref.replace('#/components/schemas/', ''));
   const composed = [
     ...(resolved.allOf ?? []),
     ...(resolved.oneOf ?? []),
@@ -383,7 +386,10 @@ function resolveResponse(
   return responseByName(spec, name);
 }
 
-function schemaPropertyNames(spec: OpenApiSpec, name: string): readonly string[] {
+function schemaPropertyNames(
+  spec: OpenApiSpec,
+  name: string,
+): readonly string[] {
   const schema = resolveSchema(spec, schemaByName(spec, name));
   return Object.keys(schema.properties ?? {}).sort((left, right): number =>
     left.localeCompare(right),
@@ -449,11 +455,10 @@ function responseSchema(
   method: string,
   status = '200',
 ): OpenApiSchema {
-  const schema =
-    resolveResponse(
-      spec,
-      spec.paths?.[path]?.[method]?.responses?.[status] ?? {},
-    ).content?.['application/json']?.schema;
+  const schema = resolveResponse(
+    spec,
+    spec.paths?.[path]?.[method]?.responses?.[status] ?? {},
+  ).content?.['application/json']?.schema;
   if (schema === undefined) {
     throw new Error(
       `Missing ${status} JSON response schema: ${method} ${path}`,
@@ -555,12 +560,19 @@ function productReturnFieldsFromPath(
   const body = mapFunctionBody(source, functionName);
   const responseFields = returnedResponseFields(body);
   if (responseFields.length > 0) return responseFields;
+  const definedFields = [...body.matchAll(/\[\s*'(?<field>[^']+)'\s*,/gu)]
+    .map((match): string => match.groups?.['field'] ?? '')
+    .filter((field): boolean => field.length > 0);
   const start = body.indexOf('return {');
   const end = body.indexOf('};', start);
   if (start < 0 || end < 0) {
-    throw new Error(`Could not locate return object: ${functionName}`);
+    if (definedFields.length > 0) return uniqueSorted(definedFields);
+    throw new Error(`Could not locate return fields: ${functionName}`);
   }
-  return objectLiteralPropertyFields(body.slice(start, end + 1));
+  return uniqueSorted([
+    ...definedFields,
+    ...objectLiteralPropertyFields(body.slice(start, end + 1)),
+  ]);
 }
 
 function productDmMessageFields(): readonly string[] {
@@ -581,9 +593,7 @@ function productDmMessageFields(): readonly string[] {
   ]
     .map((match): string => match.groups?.['field'] ?? '')
     .filter((field): boolean => field.length > 0);
-  const optionalFields = [
-    ...body.matchAll(/\[\s*'(?<field>[^']+)'\s*,/gu),
-  ]
+  const optionalFields = [...body.matchAll(/\[\s*'(?<field>[^']+)'\s*,/gu)]
     .map((match): string => match.groups?.['field'] ?? '')
     .filter((field): boolean => field.length > 0);
   return uniqueSorted([...initialFields, ...assignedFields, ...optionalFields]);
@@ -600,9 +610,7 @@ function productNotificationFields(): readonly string[] {
   const directFields = objectLiteralPropertyFields(
     body.slice(inlineStart, inlineEnd + 1),
   );
-  const optionalFields = [
-    ...body.matchAll(/\[\s*'(?<field>[^']+)'\s*,/gu),
-  ]
+  const optionalFields = [...body.matchAll(/\[\s*'(?<field>[^']+)'\s*,/gu)]
     .map((match): string => match.groups?.['field'] ?? '')
     .filter((field): boolean => field.length > 0);
   return uniqueSorted([...directFields, ...optionalFields]);
@@ -650,7 +658,10 @@ function productArticleContentFields(): readonly string[] {
 }
 
 function productInterfaceFields(interfaceName: string): readonly string[] {
-  return productInterfaceFieldsFromPath(PRODUCT_X_API_TYPES_PATH, interfaceName);
+  return productInterfaceFieldsFromPath(
+    PRODUCT_X_API_TYPES_PATH,
+    interfaceName,
+  );
 }
 
 function productConstStringArrayFields(
@@ -716,7 +727,9 @@ function productMediaDownloadFields(): readonly string[] {
   const singleStart = source.indexOf(
     'return NextResponse.json({ cacheHit: !outcome.fresh, galleryUrl, tweetId });',
   );
-  const bulkStart = source.indexOf('return NextResponse.json({\n    galleryUrl,');
+  const bulkStart = source.indexOf(
+    'return NextResponse.json({\n    galleryUrl,',
+  );
   if (singleStart < 0 || bulkStart < 0) {
     throw new Error('Could not locate media download success responses.');
   }
@@ -729,10 +742,19 @@ function productMediaDownloadFields(): readonly string[] {
 }
 
 function productBookmarkFolderFields(): readonly string[] {
-  return productReturnFieldsFromPath(
-    PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH,
-    'buildBookmarkFoldersResponse',
-  );
+  const source = readFileSync(PRODUCT_BOOKMARK_FOLDERS_ROUTE_PATH, 'utf8');
+  const start = source.indexOf('return NextResponse.json({');
+  const end = source.indexOf('});', start);
+  if (start < 0 || end < 0) {
+    throw new Error('Could not locate bookmark folder response.');
+  }
+  return uniqueSorted([
+    ...objectLiteralFields(source.slice(start, end + 1)),
+    ...productInterfaceFieldsFromPath(
+      join(PRODUCT_ROOT, 'lib/x-api/twikit/types.ts'),
+      'TransformedBookmarkFolder',
+    ),
+  ]);
 }
 
 function productXTrendsFields(): readonly string[] {
@@ -886,7 +908,9 @@ function productCreditsTopupStatusFields(): readonly string[] {
 function productCreditsQuickTopupFields(): readonly string[] {
   const source = readFileSync(PRODUCT_CREDITS_QUICK_TOPUP_ROUTE_PATH, 'utf8');
   const responseStarts = [
-    source.indexOf("return NextResponse.json({ outcome: 'no_payment_method' });"),
+    source.indexOf(
+      "return NextResponse.json({ outcome: 'no_payment_method' });",
+    ),
     source.indexOf('return NextResponse.json({\n              clientSecret:'),
     source.indexOf('return NextResponse.json({\n            balance:'),
   ];
@@ -982,7 +1006,9 @@ function verifyProductWriteActionContract(): void {
     (snippet): boolean => !source.includes(snippet),
   );
   if (missing.length > 0) {
-    throw new Error(`Missing canonical write response wiring: ${missing.join(', ')}`);
+    throw new Error(
+      `Missing canonical write response wiring: ${missing.join(', ')}`,
+    );
   }
 }
 
@@ -1145,7 +1171,9 @@ function productCreateCommunityFields(): readonly string[] {
       "return { attempts: 0, status: 'success', communityId: result.communityId };",
     )
   ) {
-    throw new Error('Could not verify create community write-client operation.');
+    throw new Error(
+      'Could not verify create community write-client operation.',
+    );
   }
   return ['communityId', 'communityName', 'success'];
 }
@@ -1168,7 +1196,9 @@ function productDeleteCommunityFields(): readonly string[] {
     ) ||
     !writeSource.includes("return { attempts: 0, status: 'success' };")
   ) {
-    throw new Error('Could not verify delete community write-client operation.');
+    throw new Error(
+      'Could not verify delete community write-client operation.',
+    );
   }
   return ['success'];
 }
@@ -1331,24 +1361,22 @@ function productBulkRetryFields(): readonly string[] {
 
 function productStylePerformanceFields(): readonly string[] {
   const source = readFileSync(PRODUCT_STYLE_PERFORMANCE_ROUTE_PATH, 'utf8');
-  const responseStart = source.indexOf('return NextResponse.json({\n        tweets,');
+  const responseStart = source.indexOf(
+    'return NextResponse.json({\n        tweets,',
+  );
   if (responseStart < 0) {
     throw new Error('Could not locate style performance success response.');
   }
   const responseEnd = source.indexOf('});', responseStart);
-  const tweetTypeStart = source.indexOf('const tweets: Array<{');
-  if (tweetTypeStart < 0) {
+  const resultsStart = source.indexOf('const results =');
+  const tweetStart = source.indexOf('return {', resultsStart);
+  const tweetEnd = source.indexOf('};', tweetStart);
+  if (resultsStart < 0 || tweetStart < 0 || tweetEnd < 0) {
     throw new Error('Could not locate style performance tweet fields.');
   }
-  const tweetTypeEnd = source.indexOf('}> = [];', tweetTypeStart);
-  if (tweetTypeEnd < 0) {
-    throw new Error('Could not locate style performance tweet field end.');
-  }
-  const tweetFields = [
-    ...source
-      .slice(tweetTypeStart, tweetTypeEnd)
-      .matchAll(/readonly (?<field>[A-Za-z_]\w*):/gu),
-  ].map((match): string => match.groups?.['field'] ?? '');
+  const tweetFields = objectLiteralPropertyFields(
+    source.slice(tweetStart, tweetEnd + 1),
+  );
 
   return uniqueSorted([
     ...objectLiteralFields(source.slice(responseStart, responseEnd + 1)),
@@ -1370,7 +1398,9 @@ function productSuccessResponseFields(): readonly string[] {
 function productXAccountDisconnectFields(): readonly string[] {
   const source = readFileSync(PRODUCT_X_ACCOUNTS_ID_ROUTE_PATH, 'utf8');
   if (!source.includes('return successResponse();')) {
-    throw new Error('X account disconnect route no longer uses successResponse.');
+    throw new Error(
+      'X account disconnect route no longer uses successResponse.',
+    );
   }
   return productSuccessResponseFields();
 }
@@ -1448,7 +1478,9 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     ...propertyNames(accountGetResponse.properties?.['creditInfo']),
     ...propertyNames(accountGetResponse.properties?.['monitorBilling']),
   ]);
-  const accountUpdate = propertyNames(responseSchema(spec, '/account', 'patch'));
+  const accountUpdate = propertyNames(
+    responseSchema(spec, '/account', 'patch'),
+  );
   const accountXIdentity = propertyNames(
     responseSchema(spec, '/account/x-identity', 'put'),
   );
@@ -1496,7 +1528,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const articleAuthor = propertyNames(
     resolveSchema(spec, articleResponse.properties?.['author'] ?? {}),
   );
-  const dmHistoryResponse = responseSchema(spec, '/x/dm/{userId}/history', 'get');
+  const dmHistoryResponse = responseSchema(
+    spec,
+    '/x/dm/{userId}/history',
+    'get',
+  );
   const dmHistory = propertyNames(dmHistoryResponse);
   const dmMessage = itemPropertyNamesFromProperty(
     spec,
@@ -1678,11 +1714,7 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       page: SUBSCRIBE_PAGE,
       requiredFields: subscribe,
     },
-    {
-      allowedFields: credits,
-      page: CREDITS_PAGE,
-      requiredFields: credits,
-    },
+    { allowedFields: credits, page: CREDITS_PAGE, requiredFields: credits },
     {
       allowedFields: creditsTopup,
       page: CREDITS_TOPUP_PAGE,
@@ -1735,11 +1767,7 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       page: DM_HISTORY_PAGE,
       requiredFields: uniqueSorted([...dmHistory, ...dmMessage]),
     },
-    {
-      allowedFields: sendDm,
-      page: SEND_DM_PAGE,
-      requiredFields: sendDm,
-    },
+    { allowedFields: sendDm, page: SEND_DM_PAGE, requiredFields: sendDm },
     {
       allowedFields: uploadMedia,
       page: UPLOAD_MEDIA_PAGE,
@@ -1800,11 +1828,7 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       page: UNLIKE_TWEET_PAGE,
       requiredFields: unlikeTweet,
     },
-    {
-      allowedFields: retweet,
-      page: RETWEET_PAGE,
-      requiredFields: retweet,
-    },
+    { allowedFields: retweet, page: RETWEET_PAGE, requiredFields: retweet },
     {
       allowedFields: unretweet,
       page: UNRETWEET_PAGE,
@@ -2092,10 +2116,17 @@ describe('API response field docs', (): void => {
     );
     const openApiDmHistoryFields = uniqueSorted([
       ...propertyNames(dmHistoryResponseSchema),
-      ...itemPropertyNamesFromProperty(spec, dmHistoryResponseSchema, 'messages'),
+      ...itemPropertyNamesFromProperty(
+        spec,
+        dmHistoryResponseSchema,
+        'messages',
+      ),
     ]);
     const productDmHistoryResponseFields = productDmHistoryFields();
-    const canonicalWriteActionFields = schemaPropertyNames(spec, 'XWriteAction');
+    const canonicalWriteActionFields = schemaPropertyNames(
+      spec,
+      'XWriteAction',
+    );
     verifyProductWriteActionContract();
     const sendDmFields = propertyNames(
       responseSchema(spec, '/x/dm/{userId}', 'post'),
@@ -2195,10 +2226,11 @@ describe('API response field docs', (): void => {
       PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
       'formatSanitizedAccount',
     );
-    const productXAccountConnectionChallengeFields = productReturnFieldsFromPath(
-      PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
-      'formatConnectionChallenge',
-    );
+    const productXAccountConnectionChallengeFields =
+      productReturnFieldsFromPath(
+        PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
+        'formatConnectionChallenge',
+      );
     const bulkRetryFields = propertyNames(
       responseSchema(spec, '/x/accounts/bulk-retry', 'post'),
     );
@@ -2228,7 +2260,9 @@ describe('API response field docs', (): void => {
       responseSchema(spec, '/subscribe', 'post'),
     );
     const productSubscribeResponseFields = productSubscribeFields();
-    const creditsFields = propertyNames(responseSchema(spec, '/credits', 'get'));
+    const creditsFields = propertyNames(
+      responseSchema(spec, '/credits', 'get'),
+    );
     const productCreditsResponseFields = productCreditsFields();
     const creditsTopupFields = propertyNames(
       responseSchema(spec, '/credits/topup', 'post'),
@@ -2258,10 +2292,16 @@ describe('API response field docs', (): void => {
       responseSchema(spec, '/api-keys/{id}', 'delete'),
     );
     const productApiKeyRevokeResponseFields = productApiKeyRevokeFields();
-    const publicTweetFields = productConstStringArrayFields(
-      PRODUCT_READ_RICHNESS_CONTRACT_PATH,
-      'PUBLIC_TWEET_DATA_FIELDS',
-    );
+    const publicTweetFields = uniqueSorted([
+      ...productConstStringArrayFields(
+        PRODUCT_READ_RICHNESS_CONTRACT_PATH,
+        'PUBLIC_TWEET_DATA_FIELDS',
+      ),
+      ...productConstStringArrayFields(
+        PRODUCT_X_API_TYPES_PATH,
+        'PUBLIC_TWEET_PASSTHROUGH_FIELDS',
+      ),
+    ]);
     const publicProfileFields = productConstStringArrayFields(
       PRODUCT_READ_RICHNESS_CONTRACT_PATH,
       'PUBLIC_PROFILE_DATA_FIELDS',
@@ -2310,32 +2350,24 @@ describe('API response field docs', (): void => {
       ).map((field): string => `Notification is missing ${field}.`),
       ...setDifference(
         propertyNames(
-          responseSchema(
-            spec,
-            '/x/communities/{id}/info',
-            'get',
-          ).properties?.['community'],
+          responseSchema(spec, '/x/communities/{id}/info', 'get').properties?.[
+            'community'
+          ],
         ),
         publicCommunityInfoFields,
-      ).map(
-        (field): string => `Community info has no product field ${field}.`,
-      ),
+      ).map((field): string => `Community info has no product field ${field}.`),
       ...setDifference(
         publicCommunityInfoFields,
         propertyNames(
-          responseSchema(
-            spec,
-            '/x/communities/{id}/info',
-            'get',
-          ).properties?.['community'],
+          responseSchema(spec, '/x/communities/{id}/info', 'get').properties?.[
+            'community'
+          ],
         ),
       ).map((field): string => `Community info is missing ${field}.`),
       ...setDifference(
         propertyNames(responseSchema(spec, '/x/media/download', 'post')),
         productMediaDownloadFields(),
-      ).map(
-        (field): string => `Media download has no product field ${field}.`,
-      ),
+      ).map((field): string => `Media download has no product field ${field}.`),
       ...setDifference(
         productMediaDownloadFields(),
         propertyNames(responseSchema(spec, '/x/media/download', 'post')),
@@ -2394,20 +2426,16 @@ describe('API response field docs', (): void => {
         productFollowCheckFields(),
         propertyNames(responseSchema(spec, '/x/followers/check', 'get')),
       ).map((field): string => `Follow check is missing ${field}.`),
-      ...setDifference(
-        accountGetFields,
-        productAccountGetResponseFields,
-      ).map((field): string => `Account info has no product field ${field}.`),
-      ...setDifference(
-        productAccountGetResponseFields,
-        accountGetFields,
-      ).map((field): string => `Account info is missing ${field}.`),
+      ...setDifference(accountGetFields, productAccountGetResponseFields).map(
+        (field): string => `Account info has no product field ${field}.`,
+      ),
+      ...setDifference(productAccountGetResponseFields, accountGetFields).map(
+        (field): string => `Account info is missing ${field}.`,
+      ),
       ...setDifference(
         accountUpdateFields,
         productAccountUpdateResponseFields,
-      ).map(
-        (field): string => `Account update has no product field ${field}.`,
-      ),
+      ).map((field): string => `Account update has no product field ${field}.`),
       ...setDifference(
         productAccountUpdateResponseFields,
         accountUpdateFields,
@@ -2422,22 +2450,18 @@ describe('API response field docs', (): void => {
         productAccountXIdentityResponseFields,
         accountXIdentityFields,
       ).map((field): string => `Account X identity is missing ${field}.`),
-      ...setDifference(
-        subscribeFields,
-        productSubscribeResponseFields,
-      ).map((field): string => `Subscribe has no product field ${field}.`),
-      ...setDifference(
-        productSubscribeResponseFields,
-        subscribeFields,
-      ).map((field): string => `Subscribe is missing ${field}.`),
-      ...setDifference(
-        creditsFields,
-        productCreditsResponseFields,
-      ).map((field): string => `Credits has no product field ${field}.`),
-      ...setDifference(
-        productCreditsResponseFields,
-        creditsFields,
-      ).map((field): string => `Credits is missing ${field}.`),
+      ...setDifference(subscribeFields, productSubscribeResponseFields).map(
+        (field): string => `Subscribe has no product field ${field}.`,
+      ),
+      ...setDifference(productSubscribeResponseFields, subscribeFields).map(
+        (field): string => `Subscribe is missing ${field}.`,
+      ),
+      ...setDifference(creditsFields, productCreditsResponseFields).map(
+        (field): string => `Credits has no product field ${field}.`,
+      ),
+      ...setDifference(productCreditsResponseFields, creditsFields).map(
+        (field): string => `Credits is missing ${field}.`,
+      ),
       ...setDifference(
         creditsTopupFields,
         productCreditsTopupResponseFields,
@@ -2468,14 +2492,12 @@ describe('API response field docs', (): void => {
         productCreditsQuickTopupResponseFields,
         creditsQuickTopupFields,
       ).map((field): string => `Credits quick top-up is missing ${field}.`),
-      ...setDifference(
-        apiKeyListFields,
-        productApiKeyListResponseFields,
-      ).map((field): string => `API key list has no product field ${field}.`),
-      ...setDifference(
-        productApiKeyListResponseFields,
-        apiKeyListFields,
-      ).map((field): string => `API key list is missing ${field}.`),
+      ...setDifference(apiKeyListFields, productApiKeyListResponseFields).map(
+        (field): string => `API key list has no product field ${field}.`,
+      ),
+      ...setDifference(productApiKeyListResponseFields, apiKeyListFields).map(
+        (field): string => `API key list is missing ${field}.`,
+      ),
       ...setDifference(
         apiKeyCreateFields,
         productApiKeyCreateResponseFields,
@@ -2500,28 +2522,22 @@ describe('API response field docs', (): void => {
         productDmHistoryResponseFields,
         openApiDmHistoryFields,
       ).map((field): string => `DM history is missing ${field}.`),
-      ...setDifference(
-        sendDmFields,
-        productSendDmResponseFields,
-      ).map((field): string => `Send DM has no product field ${field}.`),
-      ...setDifference(
-        productSendDmResponseFields,
-        sendDmFields,
-      ).map((field): string => `Send DM is missing ${field}.`),
-      ...setDifference(
-        uploadMediaFields,
-        productUploadMediaResponseFields,
-      ).map((field): string => `Upload media has no product field ${field}.`),
-      ...setDifference(
-        productUploadMediaResponseFields,
-        uploadMediaFields,
-      ).map((field): string => `Upload media is missing ${field}.`),
+      ...setDifference(sendDmFields, productSendDmResponseFields).map(
+        (field): string => `Send DM has no product field ${field}.`,
+      ),
+      ...setDifference(productSendDmResponseFields, sendDmFields).map(
+        (field): string => `Send DM is missing ${field}.`,
+      ),
+      ...setDifference(uploadMediaFields, productUploadMediaResponseFields).map(
+        (field): string => `Upload media has no product field ${field}.`,
+      ),
+      ...setDifference(productUploadMediaResponseFields, uploadMediaFields).map(
+        (field): string => `Upload media is missing ${field}.`,
+      ),
       ...setDifference(
         updateProfileFields,
         productUpdateProfileResponseFields,
-      ).map(
-        (field): string => `Update profile has no product field ${field}.`,
-      ),
+      ).map((field): string => `Update profile has no product field ${field}.`),
       ...setDifference(
         productUpdateProfileResponseFields,
         updateProfileFields,
@@ -2573,67 +2589,55 @@ describe('API response field docs', (): void => {
       ...setDifference(
         leaveCommunityFields,
         productLeaveCommunityResponseFields,
-      ).map((field): string => `Leave community has no product field ${field}.`),
+      ).map(
+        (field): string => `Leave community has no product field ${field}.`,
+      ),
       ...setDifference(
         productLeaveCommunityResponseFields,
         leaveCommunityFields,
       ).map((field): string => `Leave community is missing ${field}.`),
-      ...setDifference(
-        createTweetFields,
-        productCreateTweetResponseFields,
-      ).map((field): string => `Create tweet has no product field ${field}.`),
-      ...setDifference(
-        productCreateTweetResponseFields,
-        createTweetFields,
-      ).map((field): string => `Create tweet is missing ${field}.`),
-      ...setDifference(
-        deleteTweetFields,
-        productDeleteTweetResponseFields,
-      ).map((field): string => `Delete tweet has no product field ${field}.`),
-      ...setDifference(
-        productDeleteTweetResponseFields,
-        deleteTweetFields,
-      ).map((field): string => `Delete tweet is missing ${field}.`),
-      ...setDifference(
-        likeTweetFields,
-        productLikeTweetResponseFields,
-      ).map((field): string => `Like tweet has no product field ${field}.`),
-      ...setDifference(
-        productLikeTweetResponseFields,
-        likeTweetFields,
-      ).map((field): string => `Like tweet is missing ${field}.`),
-      ...setDifference(
-        unlikeTweetFields,
-        productUnlikeTweetResponseFields,
-      ).map((field): string => `Unlike tweet has no product field ${field}.`),
-      ...setDifference(
-        productUnlikeTweetResponseFields,
-        unlikeTweetFields,
-      ).map((field): string => `Unlike tweet is missing ${field}.`),
-      ...setDifference(
-        retweetFields,
-        productRetweetResponseFields,
-      ).map((field): string => `Retweet has no product field ${field}.`),
-      ...setDifference(
-        productRetweetResponseFields,
-        retweetFields,
-      ).map((field): string => `Retweet is missing ${field}.`),
-      ...setDifference(
-        unretweetFields,
-        productUnretweetResponseFields,
-      ).map((field): string => `Unretweet has no product field ${field}.`),
-      ...setDifference(
-        productUnretweetResponseFields,
-        unretweetFields,
-      ).map((field): string => `Unretweet is missing ${field}.`),
-      ...setDifference(
-        followUserFields,
-        productFollowUserResponseFields,
-      ).map((field): string => `Follow user has no product field ${field}.`),
-      ...setDifference(
-        productFollowUserResponseFields,
-        followUserFields,
-      ).map((field): string => `Follow user is missing ${field}.`),
+      ...setDifference(createTweetFields, productCreateTweetResponseFields).map(
+        (field): string => `Create tweet has no product field ${field}.`,
+      ),
+      ...setDifference(productCreateTweetResponseFields, createTweetFields).map(
+        (field): string => `Create tweet is missing ${field}.`,
+      ),
+      ...setDifference(deleteTweetFields, productDeleteTweetResponseFields).map(
+        (field): string => `Delete tweet has no product field ${field}.`,
+      ),
+      ...setDifference(productDeleteTweetResponseFields, deleteTweetFields).map(
+        (field): string => `Delete tweet is missing ${field}.`,
+      ),
+      ...setDifference(likeTweetFields, productLikeTweetResponseFields).map(
+        (field): string => `Like tweet has no product field ${field}.`,
+      ),
+      ...setDifference(productLikeTweetResponseFields, likeTweetFields).map(
+        (field): string => `Like tweet is missing ${field}.`,
+      ),
+      ...setDifference(unlikeTweetFields, productUnlikeTweetResponseFields).map(
+        (field): string => `Unlike tweet has no product field ${field}.`,
+      ),
+      ...setDifference(productUnlikeTweetResponseFields, unlikeTweetFields).map(
+        (field): string => `Unlike tweet is missing ${field}.`,
+      ),
+      ...setDifference(retweetFields, productRetweetResponseFields).map(
+        (field): string => `Retweet has no product field ${field}.`,
+      ),
+      ...setDifference(productRetweetResponseFields, retweetFields).map(
+        (field): string => `Retweet is missing ${field}.`,
+      ),
+      ...setDifference(unretweetFields, productUnretweetResponseFields).map(
+        (field): string => `Unretweet has no product field ${field}.`,
+      ),
+      ...setDifference(productUnretweetResponseFields, unretweetFields).map(
+        (field): string => `Unretweet is missing ${field}.`,
+      ),
+      ...setDifference(followUserFields, productFollowUserResponseFields).map(
+        (field): string => `Follow user has no product field ${field}.`,
+      ),
+      ...setDifference(productFollowUserResponseFields, followUserFields).map(
+        (field): string => `Follow user is missing ${field}.`,
+      ),
       ...setDifference(
         unfollowUserFields,
         productUnfollowUserResponseFields,
@@ -2645,7 +2649,9 @@ describe('API response field docs', (): void => {
       ...setDifference(
         removeFollowerFields,
         productRemoveFollowerResponseFields,
-      ).map((field): string => `Remove follower has no product field ${field}.`),
+      ).map(
+        (field): string => `Remove follower has no product field ${field}.`,
+      ),
       ...setDifference(
         productRemoveFollowerResponseFields,
         removeFollowerFields,
@@ -2653,23 +2659,25 @@ describe('API response field docs', (): void => {
       ...setDifference(
         openApiArticleResponseFields,
         productArticleResponseFields,
-      ).map((field): string => `Article response has no product field ${field}.`),
+      ).map(
+        (field): string => `Article response has no product field ${field}.`,
+      ),
       ...setDifference(
         productArticleResponseFields,
         openApiArticleResponseFields,
       ).map((field): string => `Article response is missing ${field}.`),
-      ...setDifference(
-        openApiArticleFields,
-        productArticleFields,
-      ).map((field): string => `Article has no product field ${field}.`),
-      ...setDifference(
-        productArticleFields,
-        openApiArticleFields,
-      ).map((field): string => `Article is missing ${field}.`),
+      ...setDifference(openApiArticleFields, productArticleFields).map(
+        (field): string => `Article has no product field ${field}.`,
+      ),
+      ...setDifference(productArticleFields, openApiArticleFields).map(
+        (field): string => `Article is missing ${field}.`,
+      ),
       ...setDifference(
         openApiArticleContentFields,
         productArticleContentFields(),
-      ).map((field): string => `Article content has no product field ${field}.`),
+      ).map(
+        (field): string => `Article content has no product field ${field}.`,
+      ),
       ...setDifference(
         productArticleContentFields(),
         openApiArticleContentFields,
@@ -2678,7 +2686,8 @@ describe('API response field docs', (): void => {
         openApiArticleInlineStyleFields,
         productInterfaceFields('TwitterApiArticleInlineStyle'),
       ).map(
-        (field): string => `Article inline style has no product field ${field}.`,
+        (field): string =>
+          `Article inline style has no product field ${field}.`,
       ),
       ...setDifference(
         productInterfaceFields('TwitterApiArticleInlineStyle'),
@@ -2731,19 +2740,18 @@ describe('API response field docs', (): void => {
       ).map(
         (field): string => `XAccountConnectionChallenge is missing ${field}.`,
       ),
-      ...setDifference(
-        bulkRetryFields,
-        productBulkRetryResponseFields,
-      ).map((field): string => `Bulk retry has no product field ${field}.`),
-      ...setDifference(
-        productBulkRetryResponseFields,
-        bulkRetryFields,
-      ).map((field): string => `Bulk retry is missing ${field}.`),
+      ...setDifference(bulkRetryFields, productBulkRetryResponseFields).map(
+        (field): string => `Bulk retry has no product field ${field}.`,
+      ),
+      ...setDifference(productBulkRetryResponseFields, bulkRetryFields).map(
+        (field): string => `Bulk retry is missing ${field}.`,
+      ),
       ...setDifference(
         xAccountDisconnectFields,
         productXAccountDisconnectResponseFields,
       ).map(
-        (field): string => `X account disconnect has no product field ${field}.`,
+        (field): string =>
+          `X account disconnect has no product field ${field}.`,
       ),
       ...setDifference(
         productXAccountDisconnectResponseFields,

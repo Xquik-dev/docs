@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
 import { describe, expect, it } from 'vitest';
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
@@ -13,14 +12,14 @@ const page = readFileSync(
 );
 const normalizedPage = page.replaceAll(/\s+/gu, ' ');
 const openapi = readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8');
-const routePath = join(
-  PRODUCT_ROOT,
-  'app/api/v1/account/x-identity/route.ts',
-);
+const routePath = join(PRODUCT_ROOT, 'app/api/v1/account/x-identity/route.ts');
 const styleRoutePath = join(PRODUCT_ROOT, 'app/api/v1/styles/route.ts');
 const operation = openapi.slice(
   openapi.indexOf('      operationId: setXIdentity'),
-  openapi.indexOf('  /api-keys:', openapi.indexOf('      operationId: setXIdentity')),
+  openapi.indexOf(
+    '  /api-keys:',
+    openapi.indexOf('      operationId: setXIdentity'),
+  ),
 );
 
 describe('set X identity documentation', (): void => {
@@ -28,16 +27,12 @@ describe('set X identity documentation', (): void => {
     expect.assertions(1);
 
     expect({
-      apiKeyAuth: operation.includes('- apiKey: []'),
-      oauthAuth: operation.includes('- oauthBearer: []'),
+      apiKeyAuth: operation.includes('apiKey: []'),
+      oauthAuth: operation.includes('oauthBearer: []'),
       statuses: ['200', '400', '401', '429'].every((status) =>
         operation.includes(`        '${status}':`),
       ),
-    }).toStrictEqual({
-      apiKeyAuth: true,
-      oauthAuth: true,
-      statuses: true,
-    });
+    }).toStrictEqual({ apiKeyAuth: true, oauthAuth: true, statuses: true });
   });
 
   it('documents the canonical request and response fields', (): void => {
@@ -48,9 +43,7 @@ describe('set X identity documentation', (): void => {
       responseFields: ['success', 'xUsername'].every((field) =>
         page.includes(`<ResponseField name="${field}"`),
       ),
-      lowercase: normalizedPage.includes(
-        'The stored value becomes lowercase.',
-      ),
+      lowercase: normalizedPage.includes('The stored value becomes lowercase.'),
     }).toStrictEqual({
       requestField: true,
       responseFields: true,

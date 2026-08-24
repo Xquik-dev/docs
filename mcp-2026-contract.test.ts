@@ -1,37 +1,24 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
 const PROJECT_ROOT = process.cwd();
-const OVERVIEW = readFileSync(
-  join(PROJECT_ROOT, 'mcp/overview.mdx'),
-  'utf8',
-);
+const OVERVIEW = readFileSync(join(PROJECT_ROOT, 'mcp/overview.mdx'), 'utf8');
 const TOOLS = readFileSync(join(PROJECT_ROOT, 'mcp/tools.mdx'), 'utf8');
 const AGENT_HANDOFF = readFileSync(
   join(PROJECT_ROOT, 'mcp/agent-handoff.mdx'),
   'utf8',
 );
-const DOCS_MCP = readFileSync(
-  join(PROJECT_ROOT, 'mcp/docs-mcp.mdx'),
-  'utf8',
-);
+const DOCS_MCP = readFileSync(join(PROJECT_ROOT, 'mcp/docs-mcp.mdx'), 'utf8');
 const QUICKSTART = readFileSync(
   join(PROJECT_ROOT, 'x-api-quickstart.mdx'),
   'utf8',
 );
-const INTRODUCTION = readFileSync(
-  join(PROJECT_ROOT, 'index.mdx'),
-  'utf8',
-);
+const INTRODUCTION = readFileSync(join(PROJECT_ROOT, 'index.mdx'), 'utf8');
 const SKILL = readFileSync(join(PROJECT_ROOT, 'skill.md'), 'utf8');
 const LLMS = readFileSync(join(PROJECT_ROOT, 'llms.txt'), 'utf8');
 const CONTEXT7 = readFileSync(join(PROJECT_ROOT, 'context7.json'), 'utf8');
-const CHANGELOG = readFileSync(
-  join(PROJECT_ROOT, 'changelog.mdx'),
-  'utf8',
-);
+const CHANGELOG = readFileSync(join(PROJECT_ROOT, 'changelog.mdx'), 'utf8');
 const README = readFileSync(join(PROJECT_ROOT, 'README.md'), 'utf8');
 
 describe('MCP 2026-07-28 documentation contract', (): void => {
@@ -51,7 +38,7 @@ describe('MCP 2026-07-28 documentation contract', (): void => {
     expect.assertions(setupDocuments.length * 2);
 
     for (const document of setupDocuments) {
-      expect(document).toContain('2.6.31');
+      expect(document).toContain('2.6.32');
       expect(document).not.toContain('2.5.6');
     }
   });

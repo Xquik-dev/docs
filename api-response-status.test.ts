@@ -1,6 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -78,14 +77,7 @@ function readApiDocs(): readonly ApiDoc[] {
     if (match?.[1] === undefined || match[2] === undefined) {
       return [];
     }
-    return [
-      {
-        file,
-        method: match[1].toLowerCase(),
-        path: match[2],
-        source,
-      },
-    ];
+    return [{ file, method: match[1].toLowerCase(), path: match[2], source }];
   });
 }
 
@@ -136,15 +128,11 @@ function generatedResponseTabs(
   if (generated === undefined) return [];
 
   return [
-    ...generated.matchAll(
-      /^  <Tab title="(\d{3})" id="([^"]+)">$/gmu,
-    ),
-  ].map(
-    (match): GeneratedResponseTab => ({
-      id: match[2] ?? '',
-      title: match[1] ?? '',
-    }),
-  );
+    ...generated.matchAll(/^  <Tab title="(\d{3})" id="([^"]+)">$/gmu),
+  ].map((match): GeneratedResponseTab => ({
+    id: match[2] ?? '',
+    title: match[1] ?? '',
+  }));
 }
 
 function generatedJsonResponse(
@@ -269,14 +257,18 @@ describe('API success response status documentation', (): void => {
   it('keeps endpoint success response tabs aligned with OpenAPI status codes', (): void => {
     expect.assertions(1);
 
-    const spec = parseYaml(readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'));
+    const spec = parseYaml(
+      readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'),
+    );
     expect(collectResponseStatusFindings(spec)).toStrictEqual([]);
   });
 
   it('keeps fully audited endpoint response tabs aligned with OpenAPI status codes', (): void => {
     expect.assertions(1);
 
-    const spec = parseYaml(readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'));
+    const spec = parseYaml(
+      readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'),
+    );
     expect(collectAuditedResponseStatusFindings(spec)).toStrictEqual([]);
   });
 
@@ -314,7 +306,7 @@ describe('API success response status documentation', (): void => {
 
     expect(findings).toStrictEqual([]);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids).toHaveLength(849);
+    expect(ids).toHaveLength(854);
   });
 
   it('renders every 204 response as an empty body', (): void => {

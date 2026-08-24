@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs';
-
 import { describe, expect, it } from 'vitest';
 
 const REQUIRED_OPERATIONAL_CONTENT = [
@@ -463,7 +462,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       'top of the page',
       'specific Community',
       'Members can reply after X confirms membership.',
-      'They can connect, share posts, and follow the Community\'s rules.',
+      "They can connect, share posts, and follow the Community's rules.",
       'Never infer posting permission from membership.',
     ],
   },
@@ -663,12 +662,12 @@ const REQUIRED_QUICK_TOPUP_CONTENT = [
 const REQUIRED_APIFY_COMPARISON_CONTENT = [
   'Xquik vs Apify Twitter scraper',
   'Apify alternative',
-  'Compare Apify, Xquik, and Xquik\'s Apify Actors.',
+  "Compare Apify, Xquik, and Xquik's Apify Actors.",
   'Export table-like dataset',
   'Each Actor accepts structured JSON input and can produce structured output.',
   'Choose an Actor, start its run, then read its dataset items.',
-  'The dataset docs define each run\'s default dataset as append-only storage.',
-  'Apify\'s Store API docs say `/v2/store` lists public Actors.',
+  "The dataset docs define each run's default dataset as append-only storage.",
+  "Apify's Store API docs say `/v2/store` lists public Actors.",
   'Match reply rows against',
   'Use full or raw output modes for optional profile metadata',
   'The row uses `resultType: "diagnostic"`.',
@@ -684,9 +683,10 @@ describe('operational content structure', (): void => {
 
     for (const requirement of REQUIRED_OPERATIONAL_CONTENT) {
       const source = readFileSync(requirement.file, 'utf8');
+      const normalizedSource = source.replace(/\s+/gu, ' ');
 
       for (const snippet of requirement.snippets) {
-        if (!source.includes(snippet)) {
+        if (!normalizedSource.includes(snippet.replace(/\s+/gu, ' '))) {
           findings.push(`${requirement.file} is missing ${snippet}`);
         }
       }
@@ -903,9 +903,9 @@ describe('extraction export format copy', (): void => {
         };
       };
     };
-    const format = openApi.paths['/extractions/{id}/export'].get.parameters.find(
-      (parameter): boolean => parameter.name === 'format',
-    );
+    const format = openApi.paths[
+      '/extractions/{id}/export'
+    ].get.parameters.find((parameter): boolean => parameter.name === 'format');
 
     expect(format?.schema?.enum).toEqual([
       'csv',

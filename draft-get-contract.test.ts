@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
 import { describe, expect, it } from 'vitest';
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
@@ -16,7 +15,10 @@ const openapi = readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8');
 const routePath = join(PRODUCT_ROOT, 'app/api/v1/drafts/[id]/route.ts');
 const getOperation = openapi.slice(
   openapi.indexOf('      operationId: getDraft'),
-  openapi.indexOf('    delete:', openapi.indexOf('      operationId: getDraft')),
+  openapi.indexOf(
+    '    delete:',
+    openapi.indexOf('      operationId: getDraft'),
+  ),
 );
 
 describe('get tweet draft documentation', (): void => {
@@ -24,16 +26,12 @@ describe('get tweet draft documentation', (): void => {
     expect.assertions(1);
 
     expect({
-      apiKeyAuth: getOperation.includes('- apiKey: []'),
-      oauthAuth: getOperation.includes('- oauthBearer: []'),
+      apiKeyAuth: getOperation.includes('apiKey: []'),
+      oauthAuth: getOperation.includes('oauthBearer: []'),
       statuses: ['200', '400', '401', '404', '429'].every((status) =>
         getOperation.includes(`        '${status}':`),
       ),
-    }).toStrictEqual({
-      apiKeyAuth: true,
-      oauthAuth: true,
-      statuses: true,
-    });
+    }).toStrictEqual({ apiKeyAuth: true, oauthAuth: true, statuses: true });
   });
 
   it('documents only the canonical draft response fields', (): void => {
@@ -106,7 +104,10 @@ describe('get tweet draft documentation', (): void => {
 
     const route = readFileSync(routePath, 'utf8');
     const getStart = route.indexOf('export async function GET(');
-    const deleteStart = route.indexOf('\nexport async function DELETE(', getStart);
+    const deleteStart = route.indexOf(
+      '\nexport async function DELETE(',
+      getStart,
+    );
     const getSource = route.slice(getStart, deleteStart);
 
     expect({

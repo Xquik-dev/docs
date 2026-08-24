@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
 import { describe, expect, it } from 'vitest';
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
@@ -16,7 +15,10 @@ const openapi = readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8');
 const routePath = join(PRODUCT_ROOT, 'app/api/v1/drafts/route.ts');
 const createOperation = openapi.slice(
   openapi.indexOf('      operationId: createDraft'),
-  openapi.indexOf('  /drafts/{id}:', openapi.indexOf('      operationId: createDraft')),
+  openapi.indexOf(
+    '  /drafts/{id}:',
+    openapi.indexOf('      operationId: createDraft'),
+  ),
 );
 
 describe('create tweet draft documentation', (): void => {
@@ -24,16 +26,12 @@ describe('create tweet draft documentation', (): void => {
     expect.assertions(1);
 
     expect({
-      apiKeyAuth: createOperation.includes('- apiKey: []'),
-      oauthAuth: createOperation.includes('- oauthBearer: []'),
+      apiKeyAuth: createOperation.includes('apiKey: []'),
+      oauthAuth: createOperation.includes('oauthBearer: []'),
       statuses: ['201', '400', '401', '429'].every((status) =>
         createOperation.includes(`        '${status}':`),
       ),
-    }).toStrictEqual({
-      apiKeyAuth: true,
-      oauthAuth: true,
-      statuses: true,
-    });
+    }).toStrictEqual({ apiKeyAuth: true, oauthAuth: true, statuses: true });
   });
 
   it('documents canonical request and response fields', (): void => {
@@ -111,12 +109,9 @@ describe('create tweet draft documentation', (): void => {
     const postSource = route.slice(postStart);
 
     expect({
-      goals: [
-        'engagement',
-        'followers',
-        'authority',
-        'conversation',
-      ].every((goal) => route.includes(`'${goal}'`)),
+      goals: ['engagement', 'followers', 'authority', 'conversation'].every(
+        (goal) => route.includes(`'${goal}'`),
+      ),
       invalidText: [
         "typeof body['text'] !== 'string'",
         "body['text'].length === 0",

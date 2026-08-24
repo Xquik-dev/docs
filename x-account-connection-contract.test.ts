@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
 interface OpenApiSchema {
@@ -22,9 +21,7 @@ interface OpenApiSchema {
 
 interface OpenApiResponse {
   readonly content: {
-    readonly 'application/json': {
-      readonly schema: OpenApiSchema;
-    };
+    readonly 'application/json': { readonly schema: OpenApiSchema };
   };
   readonly headers?: Readonly<Record<string, unknown>>;
 }
@@ -35,19 +32,13 @@ interface OpenApiDocument {
   };
   readonly paths: {
     readonly '/x/account-connection-attempts/{id}': {
-      readonly get: {
-        readonly responses: {
-          readonly '200': OpenApiResponse;
-        };
-      };
+      readonly get: { readonly responses: { readonly '200': OpenApiResponse } };
     };
     readonly '/x/accounts': {
       readonly post: {
         readonly requestBody: {
           readonly content: {
-            readonly 'application/json': {
-              readonly schema: OpenApiSchema;
-            };
+            readonly 'application/json': { readonly schema: OpenApiSchema };
           };
         };
         readonly responses: {
@@ -82,10 +73,7 @@ const X_ACCOUNT_PAGES = [
     readFileSync(join(PROJECT_ROOT, 'api-reference/x-accounts', file), 'utf8'),
   )
   .join('\n');
-const OPENAPI_SOURCE = readFileSync(
-  join(PROJECT_ROOT, 'openapi.yaml'),
-  'utf8',
-);
+const OPENAPI_SOURCE = readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8');
 const DOCS_CONFIG = readFileSync(join(PROJECT_ROOT, 'docs.json'), 'utf8');
 const LLMS_INDEX = readFileSync(join(PROJECT_ROOT, 'llms.txt'), 'utf8');
 const PRIVATE_CONNECTION_COPY =
@@ -139,14 +127,12 @@ describe('X account connection documentation contract', (): void => {
     const status =
       openapi.paths['/x/account-connection-attempts/{id}'].get.responses['200'];
 
-    expect(connect['201'].content['application/json'].schema.type).toBe(
-      'object',
+    expect(connect['201'].content['application/json'].schema.$ref).toBe(
+      '#/components/schemas/SanitizedXAccount',
     );
     expect(
-      (connect['201'].content['application/json'].schema.allOf ?? []).map(
-        (item) => item.$ref,
-      ),
-    ).toStrictEqual(['#/components/schemas/SanitizedXAccount']);
+      connect['201'].content['application/json'].schema.type,
+    ).toBeUndefined();
     expect(
       refs(
         connect['201'].content['application/json'].schema[
@@ -194,12 +180,12 @@ describe('X account connection documentation contract', (): void => {
     const status =
       openapi.paths['/x/account-connection-attempts/{id}'].get.responses['200'];
 
-    expect(
-      schemas['XAccountConnectionAttemptPending']?.required,
-    ).toStrictEqual(['object', 'id', 'status', 'pollAfterMs']);
-    expect(
-      schemas['XAccountConnectionAttemptSuccess']?.required,
-    ).toStrictEqual(['object', 'id', 'status']);
+    expect(schemas['XAccountConnectionAttemptPending']?.required).toStrictEqual(
+      ['object', 'id', 'status', 'pollAfterMs'],
+    );
+    expect(schemas['XAccountConnectionAttemptSuccess']?.required).toStrictEqual(
+      ['object', 'id', 'status'],
+    );
     expect(schemas['XAccountConnectionAttemptFailed']?.required).toStrictEqual([
       'object',
       'id',

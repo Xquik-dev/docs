@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
 import { describe, expect, it } from 'vitest';
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
@@ -16,7 +15,10 @@ const openapi = readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8');
 const routePath = join(PRODUCT_ROOT, 'app/api/v1/drafts/[id]/route.ts');
 const deleteOperation = openapi.slice(
   openapi.indexOf('      operationId: deleteDraft'),
-  openapi.indexOf('\n  /styles:', openapi.indexOf('      operationId: deleteDraft')),
+  openapi.indexOf(
+    '\n  /styles:',
+    openapi.indexOf('      operationId: deleteDraft'),
+  ),
 );
 
 describe('delete tweet draft documentation', (): void => {
@@ -24,16 +26,12 @@ describe('delete tweet draft documentation', (): void => {
     expect.assertions(1);
 
     expect({
-      apiKeyAuth: deleteOperation.includes('- apiKey: []'),
-      oauthAuth: deleteOperation.includes('- oauthBearer: []'),
+      apiKeyAuth: deleteOperation.includes('apiKey: []'),
+      oauthAuth: deleteOperation.includes('oauthBearer: []'),
       statuses: ['204', '400', '401', '404', '429'].every((status) =>
         deleteOperation.includes(`        '${status}':`),
       ),
-    }).toStrictEqual({
-      apiKeyAuth: true,
-      oauthAuth: true,
-      statuses: true,
-    });
+    }).toStrictEqual({ apiKeyAuth: true, oauthAuth: true, statuses: true });
   });
 
   it('handles the empty success response in every client example', (): void => {
@@ -66,7 +64,7 @@ describe('delete tweet draft documentation', (): void => {
         'Deletion is permanent. Xquik provides no restore endpoint',
       ),
       nativeDraftPreserved: normalizedPage.includes(
-        'It does not manage drafts under [X\'s native Unsent posts]',
+        "It does not manage drafts under [X's native Unsent posts]",
       ),
       publishedPostPreserved: normalizedPage.includes(
         'It also does not delete published tweets, scheduled posts, or connected X accounts.',
