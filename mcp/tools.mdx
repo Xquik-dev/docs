@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik API MCP v2.6.37 exposes 118 JSON or text routes through 2 tools. `explore` searches. `xquik` runs authenticated calls. Active guest `paid_reads` keys see exactly 33 GET routes.
+Xquik API MCP v2.6.38 exposes 118 JSON or text routes through 2 tools. `explore` searches. `xquik` runs authenticated calls. Active guest `paid_reads` keys see exactly 33 GET routes.
 
 Modern clients negotiate MCP `2026-07-28` through `server/discover`.
 Current SDKs add request metadata and HTTP headers automatically.
@@ -134,6 +134,9 @@ MCP preserves every safe field that X supplies. Optional fields stay absent.
 See [Read Data Richness](/guides/tweet-profile-api-fields) for the REST field map.
 
 List and search responses use `has_more` and `next_cursor`, even when REST shows `has_next_page` or `hasMore`. Pass `next_cursor` unchanged as `cursor` for X reads, draws, extractions, and events. Never replace an extraction cursor with `offset`. Use `after` for `/api/v1/radar` and `afterCursor` for drafts.
+
+Hosted MCP returns at most 100 saved extraction rows per detail call.
+Pass `next_cursor` unchanged for later pages.
 
 Omit `mode` for tweet search, replies, followers, following, and verified
 followers. Those operations use automatic maximum coverage. Pass
@@ -652,12 +655,8 @@ async () => {
 
 ## Agent handoff patterns
 
-MCP returns JSON. Use extraction export endpoints when you need Xquik to generate
-CSV, JSON, XLSX, Markdown, or PDF files. For agent queues, CRMs, and
-warehouses, return a small object with the original job, the route used,
-normalized rows or IDs to store, and the next cursor or write action to poll.
-Avoid returning raw `tweets` or `users` pages when the next agent or worker
-needs durable handoff rows.
+Use extraction exports for generated files. Keep agent handoffs small. Include the job, route, stored row IDs, next cursor, and poll action.
+Avoid raw pages when later workers need durable rows.
 
 <CardGroup cols={2}>
   <Card title="Search tweets to JSON" icon="search">

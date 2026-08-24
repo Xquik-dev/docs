@@ -33,7 +33,7 @@ fixes or validating contracts. Generated client APIs live in the SDK repositorie
 
 - [Context7 library](https://context7.com/xquik-dev/xquik-docs). Load indexed Xquik docs in supported coding agents.
 - [llms.txt](https://docs.xquik.com/llms.txt). Discover every docs page before reading deeper.
-- [MCP server v2.6.37](https://docs.xquik.com/mcp). Connect Xquik tools through OAuth-first Streamable HTTP.
+- [MCP server v2.6.38](https://docs.xquik.com/mcp). Connect Xquik tools through OAuth-first Streamable HTTP.
 - [MCP 2026-07-28](https://docs.xquik.com/mcp/overview#mcp-2026-07-28). Understand `server/discover`, request-scoped calls, and private cache hints.
 - [Codex OAuth troubleshooting](https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error). Codex CLI 0.147.0 and newer support Xquik OAuth. Upgrade if an older release reports `Authorization server response missing required issuer: expected https://xquik.com`. Use `bearer_token_env_var = "XQUIK_API_KEY"` only when upgrading is unavailable. [Issue #31573](https://github.com/openai/codex/issues/31573) records the fix.
 - [Agent index](https://xquik.com/.well-known/agent-index.json). Discover the API MCP endpoint, manifest, OAuth metadata, and auth.md.
