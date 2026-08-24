@@ -6374,12 +6374,9 @@ const FORBIDDEN_USER_MEDIA_API_RAW_SNIPPETS = [
 const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   'Use the Twitter scraper API to scrape tweets, export follower and following profiles, collect reply authors, paginate JSON, and download CSV, JSON, or XLSX.',
   'title: "Twitter scraper API for tweets, replies & followers"',
-  'This tweet scraper runs Twitter scraping through documented extraction jobs.',
-  'Use `reply_extractor` as a Twitter reply scraper for visible reply authors.',
-  'Use `follower_explorer` as a Twitter follower scraper for profile rows.',
-  'The follower export API returns CSV, JSON, or XLSX files.',
-  'Each job returns structured data for tweets, replies, followers, and following.',
-  'Other jobs cover communities, lists, likes, reposts, quotes, and media posts.',
+  'Use `reply_extractor` for reply authors and `follower_explorer` for profiles.',
+  'Jobs also cover posts, communities, lists, likes, reposts, quotes, and media.',
+  'Retrieve structured JSON or export CSV, JSON, or XLSX files.',
   'Tweet search results can filter authors, dates, engagement, media, relationships, lists, and locations.',
   'Run bulk data extractions from X in 5 stages:',
   'Use this workflow to scrape tweets, export followers, pull tweet replies, save CSV/JSON/XLSX files, or hand paginated JSON to a CRM, warehouse, queue, or AI agent.',
@@ -6395,6 +6392,7 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   'An active plan is not required when enough',
   '<Step title="Export files">',
   'Submit the extraction job, store the `202 Accepted` receipt, then poll before handoff.',
+  'An exact retry returns the original job with `Idempotency-Replayed: true`.',
   '## End-to-end agent handoff',
   'Store one checkpoint per extraction run so another worker can resume without rereading logs:',
   '"workflow": "reply_extractor_to_csv"',
@@ -6656,8 +6654,9 @@ const FORBIDDEN_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
 const REQUIRED_EXTRACTION_CREATE_LIFECYCLE_SNIPPETS = [
   '<ResponseField name="pollAfterMs" type="number">',
   '<ResponseField name="statusUrl" type="string">',
-  'Poll `statusUrl` after `pollAfterMs`.',
-  '`Location` and `Retry-After` headers.',
+  'Poll `statusUrl` after `pollAfterMs` while the job runs.',
+  'New jobs include `Location`',
+  'A terminal replay',
 ] as const;
 
 const FORBIDDEN_EXTRACTION_CREATE_LIFECYCLE_SNIPPETS = [

@@ -12,12 +12,9 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 
 Run bulk data extractions from X in 5 stages: check credits, estimate costs, run the job, retrieve JSON pages, and export files. Use this workflow to scrape tweets, export followers, pull tweet replies, save CSV/JSON/XLSX files, or hand paginated JSON to a CRM, warehouse, queue, or AI agent.
 
-This tweet scraper runs Twitter scraping through documented extraction jobs.
-Use `reply_extractor` as a Twitter reply scraper for visible reply authors.
-Use `follower_explorer` as a Twitter follower scraper for profile rows.
-The follower export API returns CSV, JSON, or XLSX files.
-Each job returns structured data for tweets, replies, followers, and following.
-Other jobs cover communities, lists, likes, reposts, quotes, and media posts.
+Use `reply_extractor` for reply authors and `follower_explorer` for profiles.
+Jobs also cover posts, communities, lists, likes, reposts, quotes, and media.
+Retrieve structured JSON or export CSV, JSON, or XLSX files.
 Tweet search results can filter authors, dates, engagement, media, relationships, lists, and locations.
 
 <AudienceCommunityApiLinks />
@@ -194,26 +191,13 @@ print(f"Estimated results: {estimate['estimatedResults']}")
 }
 ```
 
-<CardGroup cols={2}>
-  <Card title="Allowed" icon="circle-check">
-    `allowed` tells you whether the job can start with the current credit balance.
-  </Card>
-  <Card title="Estimate source" icon="database">
-    `source` names the count used for the estimate, such as `replyCount`, `followers`, or `resultsLimit`.
-  </Card>
-  <Card title="Estimated results" icon="hash">
-    `estimatedResults` is the approximate number of records the job will return.
-  </Card>
-  <Card title="Credits required" icon="credit-card">
-    `creditsRequired` is the projected credit usage for this extraction.
-  </Card>
-  <Card title="Credits available" icon="coins">
-    `creditsAvailable` is your current balance when the estimate runs.
-  </Card>
-  <Card title="Resolved X user ID" icon="user-check">
-    `resolvedXUserId` appears when `targetUsername` resolves to an X user ID.
-  </Card>
-</CardGroup>
+The estimate reports:
+
+- `allowed`: whether the current balance can fund the job.
+- `source`: the count source, such as `replyCount` or `resultsLimit`.
+- `estimatedResults`: the expected row count.
+- `creditsRequired` and `creditsAvailable`: the projected cost and balance.
+- `resolvedXUserId`: the ID found for a supplied `targetUsername`.
 
 <Warning>
   If `allowed` is `false`, the extraction will return `402`. Top up credits or run a smaller job.
@@ -229,8 +213,10 @@ Submit the job with the same parameters you used for the estimate.
 
 <CodeGroup>
 ```bash cURL
+IDEMPOTENCY_KEY=$(uuidgen)
 curl -X POST https://xquik.com/api/v1/extractions \
   -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Idempotency-Key: $IDEMPOTENCY_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "toolType": "reply_extractor",
@@ -239,10 +225,12 @@ curl -X POST https://xquik.com/api/v1/extractions \
 ```
 
 ```javascript Node.js
+const idempotencyKey = crypto.randomUUID();
 const extraction = await fetch("https://xquik.com/api/v1/extractions", {
   method: "POST",
   headers: {
     "x-api-key": "xq_YOUR_KEY_HERE",
+    "Idempotency-Key": idempotencyKey,
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -255,9 +243,11 @@ console.log(`Job ${extraction.id}: ${extraction.status}`);
 ```
 
 ```python Python
+from uuid import uuid4
+
 extraction = requests.post(
     "https://xquik.com/api/v1/extractions",
-    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    headers={"x-api-key": "xq_YOUR_KEY_HERE", "Idempotency-Key": str(uuid4())},
     json={
         "toolType": "reply_extractor",
         "targetTweetId": "1893704267862470862",
@@ -274,12 +264,17 @@ print(f"Job {extraction['id']}: {extraction['status']}")
 ```json
 {
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "pollAfterMs": 1000,
+  "statusUrl": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "toolType": "reply_extractor",
   "status": "running"
 }
 ```
 
-The endpoint returns `202 Accepted` with the job in `running` status.
+The endpoint returns `202 Accepted`. Save the key with the job ID. Reuse that
+key only after a timeout or lost response. An exact retry returns the original
+job with `Idempotency-Replayed: true`. A changed request returns `409`. A
+terminal replay sets `pollAfterMs` to `0` and omits `Retry-After`.
 
 ## Step 4: retrieve results
 
@@ -701,10 +696,10 @@ Use `advancedQuery` only for a known X search operator string.
 
 **Example: Search for popular English tweets with images from the last week**
 
-<CodeGroup>
 ```bash cURL
 curl -X POST https://xquik.com/api/v1/extractions \
   -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Idempotency-Key: $(uuidgen)" \
   -H "Content-Type: application/json" \
   -d '{
     "toolType": "tweet_search_extractor",
@@ -717,29 +712,6 @@ curl -X POST https://xquik.com/api/v1/extractions \
     "retweets": "exclude"
   }' | jq
 ```
-
-```javascript Node.js
-const extraction = await fetch("https://xquik.com/api/v1/extractions", {
-  method: "POST",
-  headers: {
-    "x-api-key": "xq_YOUR_KEY_HERE",
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    toolType: "tweet_search_extractor",
-    searchQuery: "artificial intelligence",
-    language: "en",
-    mediaType: "images",
-    minFaves: 100,
-    sinceDate: "2026-03-06",
-    untilDate: "2026-03-13",
-    retweets: "exclude",
-  }),
-}).then((r) => r.json());
-
-console.log(`Job ${extraction.id}: ${extraction.status}`);
-```
-</CodeGroup>
 
 <Tip>
   Combine filters with `resultsLimit` to run targeted, cost-efficient searches. For example, find the top 50 viral tweets about a topic from verified accounts in the last 24 hours.

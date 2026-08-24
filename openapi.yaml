@@ -1781,6 +1781,7 @@ paths:
       tags: [Extractions]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
+        - $ref: '#/components/parameters/ExtractionIdempotencyKey'
         - name: dry_run
           in: query
           description: Estimate cost without creating an extraction.
@@ -1822,6 +1823,9 @@ paths:
             Retry-After:
               description: Seconds before polling statusUrl.
               schema: { type: integer, minimum: 0 }
+            Idempotency-Replayed:
+              description: Present as true when returning the original job.
+              schema: { type: string, const: 'true' }
           content:
             application/json:
               schema:
@@ -1840,7 +1844,7 @@ paths:
                     example: follower_explorer
                   status:
                     type: string
-                    const: running
+                    enum: [pending, running, canceled, completed, failed]
                     example: running
               example:
                 id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
@@ -1856,6 +1860,15 @@ paths:
           $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Idempotency-Key was reused with another request.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example:
+                error: idempotency_conflict
+                message:
+                  Idempotency-Key belongs to another request. Use a new key.
         '424':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -8162,6 +8175,18 @@ components:
         retrying the exact same account, action, target, and payload. A reused
         key returns the original action. Reusing it with different input returns
         409. Replay protection remains active for at least 90 days.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 255
+        pattern: '^[!-~]{1,255}$'
+    ExtractionIdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: >
+        Generate one unique value for each intended extraction. Reuse it only
+        when retrying the same request. Exact retries return the original job.
       schema:
         type: string
         minLength: 1
