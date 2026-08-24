@@ -38,7 +38,7 @@ describe('MCP 2026-07-28 documentation contract', (): void => {
     expect.assertions(setupDocuments.length * 2);
 
     for (const document of setupDocuments) {
-      expect(document).toContain('2.6.35');
+      expect(document).toContain('2.6.36');
       expect(document).not.toContain('2.5.6');
     }
   });
