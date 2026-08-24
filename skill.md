@@ -13,7 +13,7 @@ metadata:
 
 ## Product summary
 
-Xquik is an X data platform with 128 documented REST operations, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover 33 prepaid GET reads. Seven fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Primary docs: https://docs.xquik.com
+Xquik is an X data platform with 129 documented REST operations, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover 33 prepaid GET reads. Seven fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Primary docs: https://docs.xquik.com
 
 ## When to use
 
@@ -53,7 +53,7 @@ Retry safe reads only on `429` and temporary `5xx` responses. For writes, poll
 the returned action. Never resubmit an ambiguous write. Start a new attempt only
 when `safeToRetry` is true.
 
-### API endpoints (128 documented operations)
+### API endpoints (129 documented operations)
 
 - **Monitors and Events.** Create account and keyword monitors, retrieve events, and manage webhooks.
 - **Extractions.** 23 tools for bulk data extraction.
@@ -145,10 +145,10 @@ when `safeToRetry` is true.
 
 1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only docs search and page retrieval.
 2. Configure API MCP at `https://xquik.com/mcp` for live authenticated calls.
-3. Use full credentials for 120 catalog routes. Of these, 119 return JSON or text. Use REST for private support downloads. Guest keys expose 33 GET routes.
+3. Use full credentials for 118 JSON or text routes. Use REST for excluded downloads. Guest keys expose 33 GET routes.
 4. Use `explore` to search the scoped catalog and `xquik` to run allowed requests.
 
-API MCP v2.6.0 supports MCP `2026-07-28` over Streamable HTTP.
+API MCP v2.6.31 supports MCP `2026-07-28` over Streamable HTTP.
 Current SDKs negotiate with `server/discover`. They attach request metadata
 and transport headers automatically. Hosted MCP injects required write
 idempotency headers. Do not call `initialize` or manage sessions for modern
