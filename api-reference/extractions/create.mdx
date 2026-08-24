@@ -28,6 +28,8 @@ import ExtractionRequestParams from "/snippets/extraction-request-params.mdx";
     ```json
     {
       "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "pollAfterMs": 1000,
+      "statusUrl": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       "toolType": "follower_explorer",
       "status": "running"
     }
@@ -272,19 +274,24 @@ works with every type when you want to cap returned rows.
 ### 202 Accepted
 
 <ResponseField name="id" type="string">Unique extraction job ID (UUID).</ResponseField>
+<ResponseField name="pollAfterMs" type="number">Milliseconds to wait before polling.</ResponseField>
+<ResponseField name="statusUrl" type="string">Relative URL for status and results.</ResponseField>
 <ResponseField name="toolType" type="string">Tool type used for this extraction.</ResponseField>
 <ResponseField name="status" type="string">Job status. `running` when first created.</ResponseField>
 
 ```json
 {
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "pollAfterMs": 1000,
+  "statusUrl": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "toolType": "reply_extractor",
   "status": "running"
 }
 ```
 
 <Info>
-  Extraction runs asynchronously. Poll [Get Extraction](/api-reference/extractions/twitter-extraction-results) until status is `completed` or `failed`.
+  Extraction runs asynchronously. Poll `statusUrl` after `pollAfterMs`. The
+  same values appear in the `Location` and `Retry-After` headers.
 </Info>
 
 ### 400 Invalid input
@@ -347,43 +354,6 @@ Wait for the `Retry-After` value before retrying the extraction request.
 { "error": "x_api_unavailable", "message": "X data source temporarily unavailable" }
 ```
 The read service is temporarily unavailable. Retry with exponential backoff.
-
-## Run receipt handoff
-
-Treat the `202 Accepted` body as a run receipt, not as extracted data. Store the
-job ID immediately, then poll or list jobs until the job reaches `completed` or
-`failed`.
-
-```json
-{
-  "extraction_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "tool_type": "reply_extractor",
-  "status": "running",
-  "receipt_format": "extraction_job",
-  "poll_path": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "inventory_path": "/api/v1/extractions?status=completed&toolType=reply_extractor",
-  "export_path_after_complete": "/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=csv"
-}
-```
-
-<CardGroup cols={2}>
-  <Card title="Receipt fields" icon="clipboard-check">
-    Store `id`, `toolType`, and `status`. Do not wait for `results`,
-    `totalResults`, `createdAt`, `hasMore`, or `nextCursor` in this response.
-  </Card>
-  <Card title="Poll results" icon="rotate-cw">
-    Use [Get Extraction](/api-reference/extractions/twitter-extraction-results) with the returned `id`
-    to read `job.status`, paginated `results`, `hasMore`, and `nextCursor`.
-  </Card>
-  <Card title="Find later" icon="list">
-    Use [List Extractions](/api-reference/extractions/twitter-scraping-job-history) with `status` and
-    `toolType` filters when a worker needs to resume from job inventory.
-  </Card>
-  <Card title="Export after completion" icon="download">
-    Use [Export Extraction](/api-reference/extractions/export) after the detail
-    response reports `job.status` as `completed`.
-  </Card>
-</CardGroup>
 
 <Note>
   **Next steps.** [Get Extraction](/api-reference/extractions/twitter-extraction-results) to retrieve results with pagination, [Export Extraction](/api-reference/extractions/export) to download as CSV/XLSX/Markdown, or [Estimate Extraction](/api-reference/extractions/twitter-scraping-cost-estimator) to check costs before running.
