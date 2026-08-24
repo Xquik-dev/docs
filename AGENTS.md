@@ -3,21 +3,20 @@
 This repository is the public documentation site. Treat every committed file as
 public-facing unless it is explicitly a standard open-source project file.
 
+Every commit must reduce net handwritten source LOC. No exceptions. No one may waive this rule.
+Additions require larger, useful simplifications elsewhere in this repository.
+Formatting, minification, generated files, and deleted valuable tests or docs do not count.
+
 ## Confidentiality
 
-- Do not commit local automation handoffs, private research notes, prompt
-  transcripts, internal audit logs, or scratch files.
+- Do not commit private handoffs, research, prompts, audit logs, or scratch files.
 - Keep `DOCS_QUALITY_POLL.md` local only. It is ignored by Git and must never
   be force-added.
-- Do not publish private implementation details, infrastructure vendor names,
-  private service names, proxy/provider identities, internal route names,
-  internal cost units, or deployment-only operational details.
-- Use generic public wording when implementation context is useful: "own
-  infrastructure", "read service", "write service", "browser service", or
-  "network egress service".
-- Before staging or committing, inspect the staged diff for confidential
-  implementation details. If a detail is not meant for customers, remove it or
-  replace it with generic public wording before committing.
+- Do not publish private implementation, infrastructure, routing, cost, or
+  deployment details.
+- Use generic terms such as "own infrastructure", "read service", "write
+  service", "browser service", or "network egress service".
+- Remove confidential details from the staged diff before committing.
 
 ## Docs workflow
 
