@@ -22,7 +22,7 @@ const CHANGELOG = readFileSync(join(PROJECT_ROOT, 'changelog.mdx'), 'utf8');
 const README = readFileSync(join(PROJECT_ROOT, 'README.md'), 'utf8');
 
 describe('MCP 2026-07-28 documentation contract', (): void => {
-  it('publishes the current server version in every setup document', (): void => {
+  it('keeps volatile server versions out of setup documents', (): void => {
     const setupDocuments = [
       OVERVIEW,
       TOOLS,
@@ -35,11 +35,10 @@ describe('MCP 2026-07-28 documentation contract', (): void => {
       CONTEXT7,
       README,
     ];
-    expect.assertions(setupDocuments.length * 2);
+    expect.assertions(setupDocuments.length);
 
     for (const document of setupDocuments) {
-      expect(document).toContain('2.6.42');
-      expect(document).not.toContain('2.5.6');
+      expect(document).not.toMatch(/\b(?:API )?MCP (?:server )?v\d+\.\d+\.\d+\b/u);
     }
   });
 
