@@ -2,14 +2,14 @@
 title: "MCP tools for tweet search, followers & X actions"
 sidebarTitle: "Tweet search MCP tools"
 description: "Choose API MCP tools for tweet search, profile lookup, follower exports, monitors, webhooks, account actions, pagination, and sandbox work. See tool examples."
-keywords: ["MCP tools", "explore", "xquik", "sandbox", "code execution", "API spec"]
+keywords: ["MCP tools", "docs", "search", "execute", "sandbox", "code execution", "API spec"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik API MCP v2.6.38 exposes 118 JSON or text routes through 2 tools. `explore` searches. `xquik` runs authenticated calls. Active guest `paid_reads` keys see exactly 33 GET routes.
+Xquik API MCP v2.6.39 exposes documentation search and 118 JSON or text routes through 3 tools. `docs` searches public docs. `search` searches OpenAPI. `execute` runs authenticated calls. Active guest `paid_reads` keys see exactly 33 GET routes.
 
 Modern clients negotiate MCP `2026-07-28` through `server/discover`.
 Current SDKs add request metadata and HTTP headers automatically.
@@ -17,7 +17,8 @@ See [MCP 2026-07-28](/mcp/overview#mcp-2026-07-28).
 
 | Agent task | MCP call | Durable output |
 | --- | --- | --- |
-| Discover tweet routes | `explore` over `spec.endpoints` | Save the chosen method, path, parameters, and cost. |
+| Search product docs | `docs` with a documentation query | Keep source links with cited guidance. |
+| Discover tweet routes | `search` over `spec.endpoints` | Save the chosen method, path, and parameters. |
 | Search tweets | `xquik.request('/api/v1/x/tweets/search')` | Preserve tweet IDs, authors, timestamps, and `next_cursor`. |
 | Export followers | `xquik.request('/api/v1/extractions')` | Persist the extraction ID before polling or exporting. |
 | Extract replies | `xquik.request('/api/v1/extractions')` | Store the target tweet ID and extraction ID together. |
@@ -25,9 +26,15 @@ See [MCP 2026-07-28](/mcp/overview#mcp-2026-07-28).
 | Replay events | `xquik.request('/api/v1/events')` | Keep event IDs and the next page cursor. |
 | Run write actions | `xquik.request()` with the write route | Store `write_action_id`, `status_url`, and `charged_credits`. |
 
-## explore
+## docs
 
-Search the authenticated API catalog. `explore` makes no network calls and uses no credits. Full credentials search 118 routes. Guest keys search 33 GET routes.
+Search canonical public documentation. `docs` is read-only and uses no credits.
+
+**Input.** Pass a non-empty `query` string of up to 500 characters.
+
+## search
+
+Search the authenticated API catalog. `search` makes no network calls and uses no credits. Full credentials search 118 routes. Guest keys search 33 GET routes.
 
 **Input.**
 
@@ -92,13 +99,9 @@ async () => {
 }
 ```
 
-## xquik
+## execute
 
 Execute API calls allowed by the authenticated credential. Full account keys and OAuth tokens keep their existing account capabilities. Guest keys can execute only the 33 eligible GET reads. Authentication and required idempotency headers are injected automatically.
-
-Keep only constraints the user states. A topic plus a like minimum includes every language, reply, repost, and quote. Use `Top` only for best, most-liked, or highest-engagement requests; otherwise omit it.
-
-Use `GET /api/v1/x/tweets/search` for 20 Tweet rows or fewer, including exactly 20. A count alone never requests an extraction. The catalog labels extractions for saved output or requests above 20. Explicit extraction requests remain valid. The create route handles required preflight.
 
 **Input.**
 
@@ -160,16 +163,7 @@ Tool output is limited to 24,000 characters. Xquik first shortens long string va
 
 ### Scope and unavailable operations
 
-The REST contract documents 129 operations. Full credentials expose 118 JSON or text routes. Eleven stay outside:
-
-- Create, list, or revoke account API keys
-- Start account top-ups or charge a saved payment method
-- Create, poll, or top up a guest wallet
-- Download support attachments or draw and extraction exports
-
-The guest wallet routes are direct REST only. Never call `/api/v1/guest-wallets`, `/api/v1/guest-wallets/topups`, or `/api/v1/guest-wallets/status` through `xquik.request()`. Follow the [accountless guest wallet guide](/guides/guest-wallets) outside MCP.
-
-A guest `paid_reads` key receives a separate 33-operation catalog. Every entry is an [eligible paid-read GET route](/guides/guest-wallets#eligible-paid-read-routes). The sandbox cannot execute mutations or noneligible routes.
+The [MCP operation boundary](/mcp/overview#mcp-operation-boundary) lists excluded operations. Guest wallet credential routes and file downloads use REST. Guest keys expose only [eligible paid-read GET routes](/guides/guest-wallets#eligible-paid-read-routes).
 
 A `402` creates no checkout. Report its `payment_options`, ask the user to choose an amount and option, then wait for explicit confirmation. Full account MCP sessions may call only an advertised account checkout action present in their catalog. Guest wallet creation and top-up remain direct REST after confirmation.
 
@@ -763,15 +757,15 @@ The REST API documents 129 operations. The full MCP catalog exposes 118 across 1
   </Card>
 </CardGroup>
 
-Use `explore` to browse all 118 catalog routes and their response shapes.
+Use `search` to query all 118 catalog routes and their response shapes.
 
-With a guest `paid_reads` key, `explore` and `xquik` expose exactly 33 `twitter` GET operations. Use the [guest paid-read route inventory](/guides/guest-wallets#eligible-paid-read-routes) as the public route list.
+With a guest `paid_reads` key, `search` and `execute` expose exactly 33 `twitter` GET operations. The `docs` tool remains available. Use the [guest paid-read route inventory](/guides/guest-wallets#eligible-paid-read-routes) as the public route list.
 
 ## Cost summary
 
 <CardGroup cols={2}>
   <Card title="Always free discovery" icon="sparkles">
-    `explore` is free. Use it to find endpoints, parameters, and response shapes before making API calls.
+    `docs` and `search` are free. They return documentation and API contract details.
   </Card>
   <Card title="Free account and stored records" icon="circle-check">
     Compose, cached styles, drafts, radar, subscribe, account, support, credits, X account management, webhooks, stored monitors, stored events, and existing extraction or draw reads are free.

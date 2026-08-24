@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik API MCP v2.6.38 exposes a scoped REST catalog through 2 [Model Context Protocol](https://modelcontextprotocol.io) tools. Full credentials see 118 JSON or text routes. Private support media downloads use REST. Guest `paid_reads` keys see exactly 33 GET routes.
+Xquik API MCP v2.6.39 exposes documentation search and a scoped REST catalog through 3 [Model Context Protocol](https://modelcontextprotocol.io) tools. Full credentials see 118 JSON or text routes. Private support media downloads use REST. Guest `paid_reads` keys see exactly 33 GET routes.
 
 <Note>
   Public tweet, profile, follower, reply, timeline, community, and list reads
@@ -42,7 +42,7 @@ Xquik API MCP v2.6.38 exposes a scoped REST catalog through 2 [Model Context Pro
     Connect clients to `https://xquik.com/mcp`.
   </Card>
   <Card title="Server version" icon="badge-check">
-    Current API MCP server version: `2.6.38`.
+    Current API MCP server version: `2.6.39`.
   </Card>
   <Card title="Authentication" icon="key-round">
     Prefer OAuth 2.1. API keys remain available for clients with secure header
@@ -135,28 +135,34 @@ OAuth and full account API key behavior remain unchanged. A pending guest key ca
 
 ## How it works
 
-The MCP server uses a **code-execution sandbox model** with 2 tools:
+The MCP server uses 3 tools. API discovery and execution run in isolated sandboxes:
 
-<CardGroup cols={2}>
-  <Card title="explore" icon="search">
+<CardGroup cols={3}>
+  <Card title="docs" icon="book-open">
+    Search canonical public documentation. Read-only. No credits.
+  </Card>
+  <Card title="search" icon="search">
     Search the authenticated catalog. Full credentials see 118 routes. Guest keys see 33 GET routes. No network calls. No credits.
   </Card>
-  <Card title="xquik" icon="terminal">
+  <Card title="execute" icon="terminal">
     Execute authenticated API calls. Cost follows the endpoint.
   </Card>
 </CardGroup>
 
 `server/discover` sends no global model instructions. Tool descriptions explain code mechanics only.
-`explore` reads the OpenAPI-derived catalog. OpenAPI and these docs define endpoint behavior.
+`docs` searches the public documentation server. `search` reads the OpenAPI-derived catalog. OpenAPI and these docs define endpoint behavior.
 
 | Tool | Title | Safety annotations |
 | --- | --- | --- |
-| `explore` | Explore Xquik API | Read-only, idempotent, closed-world, non-destructive |
-| `xquik` | Run Xquik API Calls | May mutate data, may access live services, not idempotent |
+| `docs` | Search Xquik documentation | Read-only, idempotent, open-world, non-destructive |
+| `search` | Search Xquik API specification | Read-only, idempotent, closed-world, non-destructive |
+| `execute` | Execute Xquik API requests | May mutate data, may access live services, not idempotent |
 
-For a guest `paid_reads` session, `xquik` is read-only, idempotent, and limited to live calls across the 33 eligible GET routes.
+For a guest `paid_reads` session, `execute` is read-only, idempotent, and limited to live calls across the 33 eligible GET routes.
 
-### `explore` tool
+`docs` searches canonical Xquik documentation. Pass a non-empty `query` string.
+
+### `search` tool
 
 Searches the 118-route full account catalog. The call uses no credits. MCP authentication remains required. The sandbox provides:
 
@@ -178,7 +184,7 @@ interface EndpointInfo {
 declare const spec: { endpoints: EndpointInfo[] };
 ```
 
-### `xquik` tool
+### `execute` tool
 
 Executes API calls. The sandbox provides:
 

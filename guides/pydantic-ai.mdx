@@ -27,7 +27,7 @@ every durable handoff with a Pydantic model.
 ## Why use Pydantic AI with a Twitter API?
 
 Pydantic AI combines model tool calls with typed Python output. Xquik supplies
-the Twitter API routes through two MCP tools: `explore` and `xquik`.
+the Twitter API routes through 3 MCP tools: `docs`, `search`, and `execute`.
 
 Use each strength at the correct boundary.
 
@@ -134,7 +134,7 @@ async def main() -> None:
     xquik_mcp = MCP(
         "https://xquik.com/mcp",
         headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
-        allowed_tools=["explore", "xquik"],
+        allowed_tools=["docs", "search", "execute"],
     )
 
     agent = Agent(
@@ -165,7 +165,7 @@ asyncio.run(main())
 `MCP` is Pydantic AI's primary MCP entry point. The connection runs locally
 unless you configure another execution mode. Headers, hooks, and traces remain
 inside your Python process. The URL selects Streamable HTTP. The allowed list
-contains only the public `explore` and `xquik` tools.
+contains only the public `docs`, `search`, and `execute` tools.
 
 Model Context Protocol (MCP) turns Xquik routes into model-callable tools.
 Pydantic builds JSON schemas from `output_type`. Use explicit keyword arguments
@@ -174,7 +174,7 @@ for `headers`, `allowed_tools`, `capabilities`, and `output_type`.
 Pydantic AI opens and closes the connection automatically. Enter
 `async with agent` when several runs should share one connection.
 
-The agent discovers `explore` and `xquik`. Discover route requirements before
+The agent discovers `docs`, `search`, and `execute`. Discover route requirements before
 selecting an unfamiliar endpoint. The Xquik sandbox invokes
 `xquik.request(...)` with validated route values. Xquik injects authentication
 separately.
@@ -292,8 +292,8 @@ Read-only agents can search tweets automatically. Write-capable agents need a
 human decision before every X action. Review posts, replies, likes, reposts,
 follows, and direct messages.
 
-Xquik exposes all API calls through one aggregate `xquik` tool. Review and
-approve each validated Xquik tool invocation. Leave `explore` available without
+Xquik exposes all API calls through one aggregate `execute` tool. Review and
+approve each validated Xquik tool invocation. Leave `search` available without
 approval.
 
 ```python
@@ -315,7 +315,7 @@ xquik = MCPToolset(
     headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
 )
 reviewed_xquik = xquik.approval_required(
-    lambda _ctx, tool_def, _args: tool_def.name == "xquik"
+    lambda _ctx, tool_def, _args: tool_def.name == "execute"
 )
 
 write_agent = Agent(
@@ -385,7 +385,7 @@ agent = Agent(
 )
 ```
 
-Prefix tools when another server also exposes `explore` or `xquik`.
+Prefix tools when another server also exposes `docs`, `search`, or `execute`.
 
 ```python
 twitter_tools = MCPToolset(
@@ -399,7 +399,7 @@ agent = Agent(
 )
 ```
 
-The resulting names become `twitter_explore` and `twitter_xquik`. Update any
+The resulting names become `twitter_search` and `twitter_execute`. Update any
 approval predicate after adding a prefix.
 
 ## Choose Pydantic AI MCP or the REST API
@@ -409,7 +409,7 @@ layer over documented Twitter API routes.
 
 | Requirement | Choose | Reason |
 | --- | --- | --- |
-| A model selects tweet or profile operations | Pydantic AI MCP | The agent discovers `explore` and `xquik` |
+| A model selects tweet or profile operations | Pydantic AI MCP | The agent discovers `docs`, `search`, and `execute` |
 | Application code calls one known route | REST API | The request stays deterministic |
 | A human must review an X action | Pydantic AI MCP | Deferred tool approval pauses execution |
 | A scheduled follower export runs without a model | REST API | No model decision is required |
@@ -444,7 +444,7 @@ recommended Streamable HTTP transport.
 
 Your Python application registers local Pydantic AI tools.
 MCP tools come from a connected server and can change independently. Xquik
-publishes `explore` and `xquik` through MCP.
+publishes `docs`, `search`, and `execute` through MCP.
 
 ### Is Pydantic AI better than LangChain for a Twitter agent?
 
@@ -491,7 +491,7 @@ connected X account.
 
 ### How do I post a tweet with Pydantic AI?
 
-Use the matching X write route through `xquik`.
+Use the matching X write route through `execute`.
 Validate and approve each requested X write operation.
 Store the idempotency key and returned action ID.
 

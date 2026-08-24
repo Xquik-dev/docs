@@ -35,7 +35,7 @@ preserve tweet IDs, profile IDs, cursors, and job IDs.
 
 Google's Agent Development Kit (ADK) manages Gemini calls, tools, sessions,
 and agent handoffs. Model Context Protocol, or MCP, defines interoperable tool
-schemas. Xquik exposes both `explore` and `xquik` as remote MCP tools.
+schemas. Xquik exposes `docs`, `search`, and `execute` as remote MCP tools.
 
 This Google ADK guide assigns one responsibility to each boundary. The Agent
 Development Kit MCP client loads Xquik route schemas during startup.
@@ -46,7 +46,7 @@ Development Kit MCP client loads Xquik route schemas during startup.
 | Final response | Pydantic `output_schema` | Reject malformed tweet rows and pagination state |
 | Session continuity | `InMemoryRunner` or a durable session service | Resume with the same tweet IDs and cursors |
 | Agent handoff | `output_key` and sub-agents | Separate research, review, and publishing |
-| X actions | `require_confirmation` | Pause before the `xquik` execution tool runs |
+| X actions | `require_confirmation` | Pause before the `execute` execution tool runs |
 | Tenant credentials | `header_provider` | Resolve one Xquik key for each tenant |
 
 Choose ADK when Gemini already powers the surrounding workflow. Choose a
@@ -95,7 +95,7 @@ implementation. Never place either key inside an agent instruction.
 This Google Agent Development Kit MCP server setup uses Xquik remotely. ADK
 is the MCP client, while Xquik hosts the remote server.
 
-`McpToolset` discovers `explore` and `xquik` through standard tool calling.
+`McpToolset` discovers `docs`, `search`, and `execute` through standard tool calling.
 These Google ADK tools cover tweets, profiles, followers, monitors, and X
 actions. The separation keeps agent workflows independent from route schemas.
 
@@ -153,7 +153,7 @@ async def main() -> None:
             timeout=15,
             sse_read_timeout=120,
         ),
-        tool_filter=["explore", "xquik"],
+        tool_filter=["docs", "search", "execute"],
     )
 
     agent = Agent(
@@ -245,14 +245,14 @@ when `has_more` is false, the requested limit is met, or a cursor repeats.
 
 ## Separate tweet research from X actions
 
-Xquik intentionally exposes one `xquik` execution tool. MCP tool-name filters
+Xquik intentionally exposes one `execute` execution tool. MCP tool-name filters
 cannot distinguish GET, POST, and DELETE requests inside that tool.
 
 This Google ADK multi agent pattern separates research from publishing. Use
 separate credentials and confirmation rules across multi agent systems.
 
 Use separate ADK agents. Let the research agent read tweets and profiles. Make
-the publishing agent confirm every `xquik` execution.
+the publishing agent confirm every `execute` execution.
 
 ```python
 import os
@@ -273,12 +273,12 @@ def connection() -> StreamableHTTPConnectionParams:
 
 research_tools = McpToolset(
     connection_params=connection(),
-    tool_filter=["explore", "xquik"],
+    tool_filter=["docs", "search", "execute"],
 )
 
 approved_write_tools = McpToolset(
     connection_params=connection(),
-    tool_filter=["xquik"],
+    tool_filter=["execute"],
     require_confirmation=True,
 )
 
@@ -318,7 +318,7 @@ ADK CLI and ADK Web can present confirmation requests. A custom interface must
 return ADK's confirmation `FunctionResponse`. Treat confirmation as a product
 workflow, not a prompt sentence.
 
-Confirm every `xquik` write call. A code-string inspection does not authorize
+Confirm every `execute` write call. A code-string inspection does not authorize
 an action.
 
 For public research, a guest `paid_reads` key allows eligible GET routes only.
@@ -326,20 +326,20 @@ For public research, a guest `paid_reads` key allows eligible GET routes only.
 
 ## Discovery-Only tool filtering
 
-Expose only `explore` when an agent should inspect endpoint schemas.
+Expose only `search` when an agent should inspect endpoint schemas.
 
 ```python
 discovery_tools = McpToolset(
     connection_params=connection(),
-    tool_filter=["explore"],
+    tool_filter=["search"],
 )
 ```
 
-This setup blocks Twitter API execution. Adding `xquik` enables key-authorized
-reads and writes. Because `xquik` wraps methods, name filtering cannot enforce
+This setup blocks Twitter API execution. Adding `execute` enables key-authorized
+reads and writes. Because `execute` wraps methods, name filtering cannot enforce
 read-only access.
 
-Use `explore` before unfamiliar operations. It returns routes, methods,
+Use `search` before unfamiliar operations. It returns routes, methods,
 parameters, and response fields without calling X.
 
 ## Store tweet IDs and cursors in ADK state
@@ -383,7 +383,7 @@ tenant_tools = McpToolset(
         url="https://xquik.com/mcp",
     ),
     header_provider=tenant_headers,
-    tool_filter=["explore", "xquik"],
+    tool_filter=["docs", "search", "execute"],
 )
 ```
 
@@ -485,7 +485,7 @@ Pin a tested minor range. Review ADK 2.x release notes before widening it.
 ### Does Google ADK support MCP?
 
 Yes. Python ADK connects to remote Streamable HTTP servers through
-`McpToolset`. Xquik publishes `explore` and `xquik` at
+`McpToolset`. Xquik publishes `docs`, `search`, and `execute` at
 `https://xquik.com/mcp`.
 
 ### How does Google Agent Development Kit differ from MCP?
@@ -513,7 +513,7 @@ Private routes still require a connected X account.
 
 ### Can Google ADK post tweets and replies?
 
-Yes. A connected X account is required. Route every `xquik` execution through
+Yes. A connected X account is required. Route every `execute` execution through
 ADK confirmation. Validate the selected account, text, reply ID, and media.
 
 See [create tweet](/api-reference/x-write/create-tweet) for the exact contract.
@@ -550,6 +550,6 @@ Do not create one `McpToolset` per prompt.
 
 ### Does tool filtering make the Twitter API read-only?
 
-Only `explore` without `xquik` blocks execution. The `xquik` tool can run every
+Only `search` without `execute` blocks execution. The `execute` tool can run every
 operation authorized by its key. Separate agents and approvals protect X
 actions.
