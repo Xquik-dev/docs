@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik API MCP v2.6.33 exposes 118 JSON or text routes through 2 tools. `explore` searches. `xquik` runs authenticated calls. Active guest `paid_reads` keys see exactly 33 GET routes.
+Xquik API MCP v2.6.34 exposes 118 JSON or text routes through 2 tools. `explore` searches. `xquik` runs authenticated calls. Active guest `paid_reads` keys see exactly 33 GET routes.
 
 Modern clients negotiate MCP `2026-07-28` through `server/discover`.
 Current SDKs add request metadata and HTTP headers automatically.
@@ -100,9 +100,8 @@ Keep only constraints the user states. A topic plus a like minimum includes ever
 language, reply, repost, and quote. Never add unrequested filters. Use `Top` only
 for best, most-liked, or highest-engagement requests; otherwise omit it.
 
-Use `GET /api/v1/x/tweets/search` for up to 20 Tweet rows. For more than 20,
-estimate once, then start `tweet_search_extractor`. Do not explore or run the
-direct read first when the extraction route is already known.
+Use `GET /api/v1/x/tweets/search` for 20 Tweet rows or fewer, including exactly 20. A count alone never requests an extraction.
+Use extractions only above 20, for saved output, or when explicitly requested. The create route handles required preflight.
 
 **Input.**
 
@@ -399,22 +398,6 @@ async () => {
     resultsLimit: 500
   };
 
-  const estimate = await xquik.request('/api/v1/extractions/estimate', {
-    method: 'POST',
-    body
-  });
-
-  if (estimate.allowed === false) {
-    return {
-      source: 'xquik_mcp',
-      job: 'reply_extraction',
-      status: 'blocked',
-      error: estimate.error,
-      credits_required: estimate.credits_required,
-      credits_available: estimate.credits_available
-    };
-  }
-
   const extraction = await xquik.request('/api/v1/extractions', {
     method: 'POST',
     body
@@ -427,8 +410,6 @@ async () => {
     status: extraction.status,
     target_tweet_id: body.targetTweetId,
     results_limit: body.resultsLimit,
-    estimated_results: estimate.estimated_results,
-    credits_required: estimate.credits_required,
     poll: `/api/v1/extractions/${extraction.id}`,
     export_csv: `/api/v1/extractions/${extraction.id}/export?format=csv`,
     export_json: `/api/v1/extractions/${extraction.id}/export?format=json`,
@@ -653,22 +634,6 @@ async () => {
 
   // Add optional filters only when the user requests them.
 
-  const estimate = await xquik.request('/api/v1/extractions/estimate', {
-    method: 'POST',
-    body
-  });
-
-  if (estimate.allowed === false) {
-    return {
-      source: 'xquik_mcp',
-      job: 'tweet_search_extraction',
-      status: 'blocked',
-      error: estimate.error,
-      credits_required: estimate.credits_required,
-      credits_available: estimate.credits_available
-    };
-  }
-
   const job = await xquik.request('/api/v1/extractions', {
     method: 'POST',
     body
@@ -682,8 +647,6 @@ async () => {
     status: job.status,
     query: body.searchQuery,
     results_limit: body.resultsLimit,
-    estimated_results: estimate.estimated_results,
-    credits_required: estimate.credits_required,
     poll: `/api/v1/extractions/${job.id}`,
     export_after_complete: `/api/v1/extractions/${job.id}/export?format=json`
   };
@@ -704,7 +667,7 @@ needs durable handoff rows.
     Call `GET /api/v1/x/tweets/search` with keywords, operators, a Tweet ID, or an X status URL in `q`. Valid time bounds apply to every page. The start is inclusive and the end is exclusive. Store `tweets[].id`, `tweets[].text`, `tweets[].author`, `tweets[].created`, `has_more`, `next_cursor`, and the original `q`. Cost: 1 credit per tweet returned.
   </Card>
   <Card title="Scrape tweet replies to files" icon="messages-square">
-    Call `POST /api/v1/extractions/estimate`, then `POST /api/v1/extractions` with `reply_extractor` and `targetTweetId`. Poll `GET /api/v1/extractions/{id}`, export CSV/JSON/XLSX with `GET /api/v1/extractions/{id}/export`, and store reply rows plus `has_more` and `next_cursor`. Cost: 1 credit per reply extracted or returned.
+    Call `POST /api/v1/extractions` with `reply_extractor` and `targetTweetId`. The create route handles required preflight. Poll `GET /api/v1/extractions/{id}`, export CSV/JSON/XLSX with `GET /api/v1/extractions/{id}/export`, and store reply rows plus `has_more` and `next_cursor`. Cost: 1 credit per reply extracted or returned.
   </Card>
   <Card title="Export followers to CRM" icon="users">
     Call `GET /api/v1/x/users/{id}/followers` or `POST /api/v1/extractions` with `follower_explorer`. Store `users[].id`, `users[].username`, `users[].name`, `users[].followers`, `has_more`, and `next_cursor`. Cost: 1 credit per follower returned or extracted.
