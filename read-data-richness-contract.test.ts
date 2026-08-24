@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
 interface OpenApiSchema {
@@ -68,6 +67,7 @@ const TWEET_FIELDS = [
   'contentDisclosure',
   'communityId',
   'conversationControl',
+  'jetfuelAttachment',
   'article',
   'card',
   'communityNote',
@@ -76,9 +76,11 @@ const TWEET_FIELDS = [
   'noteTweet',
   'place',
   'limitedActions',
+  'postCta',
   'possiblySensitive',
   'previousCounts',
   'viewState',
+  'scopes',
   'entities',
   'quoted_tweet',
   'quotedTweetId',
@@ -96,6 +98,7 @@ const TWEET_FIELDS = [
 ] as const;
 
 const PROFILE_FIELDS = [
+  'accountBasedIn',
   'id',
   'username',
   'name',
@@ -166,12 +169,14 @@ const MEDIA_FIELDS = [
   'embeddable',
   'faceRects',
   'focusRects',
+  'graphicViolence',
   'height',
   'id',
   'indices',
   'mediaKey',
   'grokPostId',
   'monetizable',
+  'otherSensitiveContent',
   'sizes',
   'sourceStatusId',
   'sourceUserId',
@@ -212,9 +217,10 @@ function schemaFieldNames(
   schema: Readonly<OpenApiSchema>,
 ): readonly string[] {
   const referencedName = schema.$ref?.split('/').at(-1);
-  const resolved = referencedName === undefined
-    ? schema
-    : openApi.components?.schemas?.[referencedName];
+  const resolved =
+    referencedName === undefined
+      ? schema
+      : openApi.components?.schemas?.[referencedName];
   if (resolved === undefined) {
     throw new Error(`OpenAPI is missing schema ${referencedName}.`);
   }
@@ -288,8 +294,7 @@ describe('read data richness documentation', (): void => {
 
   it('documents visible reply coverage for every public interface', (): void => {
     expect.assertions(10);
-    const operation =
-      PARSED_OPENAPI.paths?.['/x/tweets/{id}/replies']?.get;
+    const operation = PARSED_OPENAPI.paths?.['/x/tweets/{id}/replies']?.get;
     const parameterNames = operation?.parameters?.flatMap((parameter) => {
       const name = parameterName(PARSED_OPENAPI, parameter);
       return name === undefined ? [] : [name];

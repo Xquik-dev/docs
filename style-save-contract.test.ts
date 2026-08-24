@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs';
-
 import { describe, expect, it } from 'vitest';
 
 const productRoot =
@@ -20,7 +19,9 @@ describe('save custom tweet style documentation', (): void => {
 
     expect({
       apiKeyDocumented: source.includes('Send `x-api-key`'),
-      bearerDocumented: source.includes('OAuth clients can send a bearer token'),
+      bearerDocumented: source.includes(
+        'OAuth clients can send a bearer token',
+      ),
       responseTabs: [...source.matchAll(/<Tab title="(\d{3})"/gu)].map(
         ([, status]) => status,
       ),
@@ -39,8 +40,8 @@ describe('save custom tweet style documentation', (): void => {
         source.includes('"xUsername": "professional voice"') &&
         source.includes('"isOwnAccount": false') &&
         source.includes('"authorUsername": "professional voice"'),
-      nestedFields: ['id', 'text', 'authorUsername', 'createdAt'].every((field) =>
-        source.includes(`<ResponseField name="${field}"`),
+      nestedFields: ['id', 'text', 'authorUsername', 'createdAt'].every(
+        (field) => source.includes(`<ResponseField name="${field}"`),
       ),
       topLevelFields: [
         'xUsername',
@@ -65,8 +66,8 @@ describe('save custom tweet style documentation', (): void => {
       bodyControlsKey: source.includes(
         'The body `label` controls the stored profile key.',
       ),
-      mismatchNotReconciled: source.includes(
-        'The current PUT route does not reconcile `{id}` with `label`.',
+      mismatchRejected: source.includes(
+        'The PUT route rejects a `{id}` that differs from `label`, ignoring case.',
       ),
       replacementIsComplete: source.includes(
         'Sending the same label replaces the entire saved Tweet array.',
@@ -76,7 +77,7 @@ describe('save custom tweet style documentation', (): void => {
       ),
     }).toStrictEqual({
       bodyControlsKey: true,
-      mismatchNotReconciled: true,
+      mismatchRejected: true,
       replacementIsComplete: true,
       renameDenied: true,
     });
@@ -84,9 +85,10 @@ describe('save custom tweet style documentation', (): void => {
 
   it('documents input limits and every validation branch', (): void => {
     expect.assertions(1);
+    const normalizedSource = source.replace(/\s+/gu, ' ');
 
     expect({
-      blankTweetRejected: source.includes(
+      blankTweetRejected: normalizedSource.includes(
         '| Missing, non-string, or blank `text` | Send non-empty text for every object. |',
       ),
       labelLimit: source.includes('Profile label containing 1-50 characters.'),
@@ -147,27 +149,30 @@ describe('save custom tweet style documentation', (): void => {
         putRoute.includes('const label = body.label.trim().toLowerCase()'),
       composeReturnsSavedSamples:
         compose === undefined ||
-        compose.includes('return { ...result, styleTweets: [...style.tweets] }'),
-      pathRemainsUnreconciled:
+        compose.includes(
+          'return { ...result, styleTweets: [...style.tweets] }',
+        ),
+      pathMustMatchLabel:
         putRoute === undefined ||
-        (putRoute.includes('await params;') &&
-          !putRoute.includes('const { id') &&
-          !putRoute.includes('body.label ===')),
+        (putRoute.includes('const { id } = await params;') &&
+          putRoute.includes('styleIdMatchesLabel(id, label)')),
       replacementRemainsAccountScoped:
         putRoute === undefined ||
         (putRoute.includes(
           'target: [tweetStyleCache.userId, tweetStyleCache.xUsername]',
-        ) && putRoute.includes('.onConflictDoUpdate({')),
+        ) &&
+          putRoute.includes('.onConflictDoUpdate({')),
       sampleIdsRemainLocal:
         putRoute === undefined || putRoute.includes('id: String(index)'),
       sampleLimitRemains100:
         constants === undefined || constants.includes('MAX_STYLE_TWEETS = 100'),
       underscoresRemainAccepted:
-        validator === undefined || validator.includes('const LABEL_PATTERN = /^\\w'),
+        validator === undefined ||
+        validator.includes('const LABEL_PATTERN = /^\\w'),
     }).toStrictEqual({
       bodyLabelRemainsKey: true,
       composeReturnsSavedSamples: true,
-      pathRemainsUnreconciled: true,
+      pathMustMatchLabel: true,
       replacementRemainsAccountScoped: true,
       sampleIdsRemainLocal: true,
       sampleLimitRemains100: true,

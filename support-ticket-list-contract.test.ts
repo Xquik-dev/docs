@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
 import { describe, expect, it } from 'vitest';
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
@@ -34,9 +33,7 @@ describe('support ticket list documentation', (): void => {
       fullDetailBoundary: normalizedPage.includes(
         'when you need message bodies or attachment metadata.',
       ),
-      messageCount: page.includes(
-        '| Conversation size | `messageCount` |',
-      ),
+      messageCount: page.includes('| Conversation size | `messageCount` |'),
       publicId: page.includes('| Ticket ID | `publicId` |'),
       status: page.includes('| Current state | `status` |'),
       subject: page.includes('| Reported issue | `subject` |'),
@@ -57,7 +54,7 @@ describe('support ticket list documentation', (): void => {
     expect.assertions(1);
 
     expect({
-      apiKeyAuth: listOperation.includes('- apiKey: []'),
+      apiKeyAuth: listOperation.includes('apiKey: []'),
       documentedApiKey: normalizedPage.includes(
         'Your Xquik API key. Generate one from the',
       ),
@@ -67,7 +64,7 @@ describe('support ticket list documentation', (): void => {
       noSessionCookieClaim: !normalizedPage.includes(
         'Session cookie authentication',
       ),
-      oauthAuth: listOperation.includes('- oauthBearer: []'),
+      oauthAuth: listOperation.includes('oauthBearer: []'),
       statuses: ['200', '401', '429'].every((status) =>
         listOperation.includes(`        '${status}':`),
       ),
@@ -93,10 +90,7 @@ describe('support ticket list documentation', (): void => {
       documentedOrder: normalizedPage.includes(
         'It sorts the newest `updatedAt` value first.',
       ),
-    }).toStrictEqual({
-      documentedLimit: true,
-      documentedOrder: true,
-    });
+    }).toStrictEqual({ documentedLimit: true, documentedOrder: true });
   });
 
   it('matches product ordering when product source is available', (): void => {

@@ -148,7 +148,7 @@ when `safeToRetry` is true.
 3. Use full credentials for 118 JSON or text routes. Use REST for excluded downloads. Guest keys expose 33 GET routes.
 4. Use `explore` to search the scoped catalog and `xquik` to run allowed requests.
 
-API MCP v2.6.31 supports MCP `2026-07-28` over Streamable HTTP.
+API MCP v2.6.32 supports MCP `2026-07-28` over Streamable HTTP.
 Current SDKs negotiate with `server/discover`. They attach request metadata
 and transport headers automatically. Hosted MCP injects required write
 idempotency headers. Do not call `initialize` or manage sessions for modern
@@ -194,6 +194,9 @@ Refunds and disputes reconcile affected-purchase credits only. Unrelated credits
 
 ## Common gotchas
 
+- Keep only filters the user states. Never infer language or post type.
+- A like minimum does not request `Top`. Use `Top` only when the user asks for
+  best, most-liked, or highest-engagement results.
 - API keys are shown once. Store them securely immediately after creation.
 - Guest wallet `Idempotency-Key` values can recover the initial key. Store them as secrets.
 - Use the lowercase `x-api-key` header.

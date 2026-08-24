@@ -14,7 +14,9 @@ info:
 
     See the current [SDK, CLI, and Terraform
     guides](https://docs.xquik.com/sdks) and [TweetClaw
-    setup](https://docs.xquik.com/guides/tweetclaw).
+    setup](https://docs.xquik.com/guides/tweetclaw). Review the public
+    [deprecation policy](https://xquik.com/deprecation-policy.md) before
+    adopting a versioned operation.
   x-guidance: >-
     ## Common tasks
 
@@ -95,9 +97,7 @@ x-discovery:
   ownershipProofs:
     - 'dns:xquik.com'
 
-security:
-  - apiKey: []
-  - oauthBearer: []
+security: [{ apiKey: [] }, { oauthBearer: [] }]
 
 tags:
   - name: API Keys
@@ -145,11 +145,12 @@ paths:
   /account:
     get:
       operationId: getAccount
+      description:
+        Returns plan, credit, monitoring, and account settings for the
+        authenticated user.
       summary: Get account info
       tags: [Account]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       responses:
         '200':
           description: Account info
@@ -302,11 +303,11 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     patch:
       operationId: updateAccount
+      description:
+        Changes the locale used for account responses and notifications.
       summary: Update account locale
       tags: [Account]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: true
         description: Locale preference for the account.
@@ -335,11 +336,10 @@ paths:
   /account/x-identity:
     put:
       operationId: setXIdentity
+      description: Links an X username to the authenticated Xquik account.
       summary: Set linked X username
       tags: [Account]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: true
         description: X username to link to this account.
@@ -384,10 +384,10 @@ paths:
   /api-keys:
     get:
       operationId: listApiKeys
+      description: Returns API key metadata without exposing secret key values.
       summary: List API keys
       tags: [API Keys]
-      security:
-        - cookieSession: []
+      security: [{ cookieSession: [] }]
       responses:
         '200':
           description: API key list
@@ -410,10 +410,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     post:
       operationId: createApiKey
+      description: Creates a revocable API key and returns its secret once.
       summary: Create API key
       tags: [API Keys]
-      security:
-        - cookieSession: []
+      security: [{ cookieSession: [] }]
       requestBody:
         required: true
         description: Optional display name for the new API key.
@@ -488,10 +488,10 @@ paths:
   /api-keys/{id}:
     delete:
       operationId: revokeApiKey
+      description: Permanently revokes the selected API key.
       summary: Revoke API key
       tags: [API Keys]
-      security:
-        - cookieSession: []
+      security: [{ cookieSession: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -515,9 +515,7 @@ paths:
         Create a subscription checkout or billing-management URL only after the
         user confirms. The request never completes payment by itself.
       tags: [Subscribe]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: false
         description: Optional subscription tier to pre-select at checkout.
@@ -569,13 +567,11 @@ paths:
       summary: Build, refine, or check a post draft
       description: >
         Run one step of Xquik's three-step writing workflow. Compose returns
-        questions, editorial rules, and source-specific Radar recommendations.
-        Refine returns goal-specific guidance. Score applies deterministic text
-        checks. It does not predict reach or expose X ranking weights.
+        questions and facts from xai-org/x-algorithm. Refine applies only those
+        facts to the requested goal. Score checks that text exists. It never
+        predicts reach or converts source weights into engagement counts.
       tags: [Composition]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: true
         description: Send exactly one workflow step and its required fields.
@@ -602,33 +598,17 @@ paths:
                   - $ref: '#/components/schemas/ComposeScoreResult'
               example:
                 checklist:
-                  - factor: No external links in body
-                    passed: true
-                  - factor: No hashtags
-                    passed: true
-                  - factor: No excessive capitalization
-                    passed: true
-                  - factor: Length between 50 and 280 characters
-                    passed: true
-                  - factor: No excessive punctuation
-                    passed: true
-                  - factor: No emojis
-                    passed: true
-                  - factor: No em dashes or double dashes
-                    passed: true
-                  - factor: Sufficient substance
-                    passed: true
-                  - factor: Link-in-reply strategy
+                  - factor: Draft contains text
                     passed: true
                 nextStep: >
-                  All 9 checks passed. Get an account from GET
-                  /api/v1/x/accounts. Then send the draft to POST
-                  /api/v1/x/tweets. The intentUrl also supports one-click
-                  posting.
+                  Draft accepted. Publish through POST /api/v1/x/tweets or use
+                  intentUrl.
                 passed: true
-                passedCount: 9
-                topSuggestion: All Xquik editorial checks passed.
-                totalChecks: 9
+                passedCount: 1
+                topSuggestion: >-
+                  No deterministic ranking score exists. Ranking uses per-viewer
+                  predictions.
+                totalChecks: 1
                 intentUrl: >-
                   https://x.com/intent/tweet?text=PostgreSQL%2018%20reduced%20query%20latency
         '400':
@@ -640,11 +620,10 @@ paths:
   /drafts:
     get:
       operationId: listDrafts
+      description: Returns saved drafts owned by the authenticated account.
       summary: List saved drafts
       tags: [Composition]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/Limit'
         - name: afterCursor
@@ -681,11 +660,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     post:
       operationId: createDraft
+      description: Saves editable post text as an account draft.
       summary: Save a tweet draft
       tags: [Composition]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: true
         description: Draft text with optional topic and optimization goal.
@@ -732,11 +710,10 @@ paths:
   /drafts/{id}:
     get:
       operationId: getDraft
+      description: Returns one saved draft owned by the authenticated account.
       summary: Get draft by ID
       tags: [Composition]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -763,11 +740,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     delete:
       operationId: deleteDraft
+      description: Permanently removes one saved draft.
       summary: Delete a draft
       tags: [Composition]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -785,11 +761,10 @@ paths:
   /styles:
     get:
       operationId: listStyles
+      description: Returns cached writing style profiles for the account.
       summary: List cached style profiles
       tags: [Composition]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       responses:
         '200':
           description: Style profile list
@@ -812,11 +787,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     post:
       operationId: analyzeStyle
+      description: Builds a writing style profile from recent public posts.
       summary: Analyze writing style from recent tweets
       tags: [Composition]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: true
         description: X username whose recent tweets define the style.
@@ -873,11 +847,11 @@ paths:
   /styles/compare:
     get:
       operationId: compareStyles
+      description:
+        Compares language and engagement signals across two style profiles.
       summary: Compare two style profiles
       tags: [Composition]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - name: username1
           in: query
@@ -905,7 +879,7 @@ paths:
                   style2:
                     $ref: '#/components/schemas/StyleProfile'
               example:
-                style1:
+                style1: &style-profile-example
                   xUsername: 'elonmusk'
                   tweetCount: 50
                   isOwnAccount: true
@@ -933,11 +907,10 @@ paths:
   /styles/{id}:
     get:
       operationId: getStyle
+      description: Returns one cached writing style profile.
       summary: Get cached style profile
       tags: [Composition]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/StyleId'
       responses:
@@ -963,11 +936,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     put:
       operationId: saveStyle
+      description: Creates or replaces a style profile from supplied posts.
       summary: Save style profile with custom tweets
       tags: [Composition]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/StyleId'
       requestBody:
@@ -981,7 +953,8 @@ paths:
               properties:
                 label:
                   type: string
-                  description: Display label for the style
+                  description:
+                    Display label. Must match the path ID, ignoring case.
                   example: 'Professional Voice'
                 tweets:
                   type: array
@@ -1025,11 +998,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     delete:
       operationId: deleteStyle
+      description: Permanently removes one cached style profile.
       summary: Delete a style profile
       tags: [Composition]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/StyleId'
       responses:
@@ -1045,11 +1017,10 @@ paths:
   /styles/{id}/performance:
     get:
       operationId: getStylePerformance
+      description: Returns engagement metrics for an analyzed public X profile.
       summary: Get engagement metrics for style tweets
       tags: [Composition]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/StyleId'
       responses:
@@ -1120,17 +1091,18 @@ paths:
           $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/InvalidInput'
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
 
   /radar:
     get:
       operationId: getRadar
+      description: Returns current topics and sources for writing research.
       summary: Get trending topics from curated sources
       tags: [Composition]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - name: after
           in: query
@@ -1231,11 +1203,10 @@ paths:
   /monitors:
     get:
       operationId: listMonitors
+      description: Returns account monitors with their current operating states.
       summary: List monitors
       tags: [Monitors]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       responses:
         '200':
           description: Monitor list
@@ -1269,9 +1240,7 @@ paths:
         deliveries are included. Creation requires available credits for the
         first hourly charge and username lookup.
       tags: [Monitors]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: true
         description: Target X username and event types to monitor.
@@ -1285,7 +1254,8 @@ paths:
                   type: string
                   description: X username (without @)
                   example: elonmusk
-                eventTypes:
+                eventTypes: &event-types
+                  type: array
                   $ref: '#/components/schemas/EventTypeArray'
                   example: [tweet.new, tweet.reply]
             example:
@@ -1318,9 +1288,7 @@ paths:
                   xUserId:
                     type: string
                     example: '1234567890'
-                  eventTypes:
-                    $ref: '#/components/schemas/EventTypeArray'
-                    example: [tweet.new, tweet.reply]
+                  eventTypes: *event-types
                   isActive:
                     type: boolean
                     example: true
@@ -1366,11 +1334,10 @@ paths:
   /monitors/keywords:
     get:
       operationId: listKeywordMonitors
+      description: Returns keyword monitors with their current operating states.
       summary: List keyword monitors
       tags: [Monitors]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       responses:
         '200':
           description: Keyword monitor list
@@ -1404,9 +1371,7 @@ paths:
         webhook deliveries are included. Creation requires available credits for
         the first hourly charge.
       tags: [Monitors]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: true
         description: Search query and event types to monitor.
@@ -1423,7 +1388,8 @@ paths:
                   description:
                     X search query to monitor. Whitespace is normalized.
                   example: 'xquik OR "x api"'
-                eventTypes:
+                eventTypes: &single-event-type
+                  type: array
                   $ref: '#/components/schemas/EventTypeArray'
                   example: [tweet.new]
             example:
@@ -1464,11 +1430,10 @@ paths:
   /monitors/keywords/{id}:
     get:
       operationId: getKeywordMonitor
+      description: Returns configuration and status for one keyword monitor.
       summary: Get keyword monitor
       tags: [Monitors]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -1495,11 +1460,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     patch:
       operationId: updateKeywordMonitor
+      description: Updates mutable settings for an existing keyword monitor.
       summary: Update keyword monitor
       tags: [Monitors]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
@@ -1510,9 +1474,7 @@ paths:
             schema:
               type: object
               properties:
-                eventTypes:
-                  $ref: '#/components/schemas/EventTypeArray'
-                  example: [tweet.new]
+                eventTypes: *single-event-type
                 isActive:
                   type: boolean
                   example: true
@@ -1548,9 +1510,7 @@ paths:
         batches. Poll statusUrl until the monitor returns 404.
       summary: Delete keyword monitor
       tags: [Monitors]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -1568,11 +1528,10 @@ paths:
   /monitors/{id}:
     get:
       operationId: getMonitor
+      description: Returns configuration and status for one account monitor.
       summary: Get monitor
       tags: [Monitors]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -1600,11 +1559,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     patch:
       operationId: updateMonitor
+      description: Updates mutable settings for an existing account monitor.
       summary: Update monitor
       tags: [Monitors]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
@@ -1615,9 +1573,7 @@ paths:
             schema:
               type: object
               properties:
-                eventTypes:
-                  $ref: '#/components/schemas/EventTypeArray'
-                  example: [tweet.new]
+                eventTypes: *single-event-type
                 isActive:
                   type: boolean
                   example: true
@@ -1663,9 +1619,7 @@ paths:
         batches. Poll statusUrl until the monitor returns 404.
       summary: Delete monitor
       tags: [Monitors]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -1684,11 +1638,10 @@ paths:
   /events:
     get:
       operationId: listEvents
+      description: Returns monitor events with cursor pagination and filters.
       summary: List events
       tags: [Events]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/After'
@@ -1737,11 +1690,10 @@ paths:
   /events/{id}:
     get:
       operationId: getEvent
+      description: Returns one monitor event owned by the account.
       summary: Get event
       tags: [Events]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -1773,11 +1725,10 @@ paths:
   /extractions:
     get:
       operationId: listExtractions
+      description: Returns extraction jobs with status and result counts.
       summary: List extraction jobs
       tags: [Extractions]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/After'
@@ -1791,7 +1742,7 @@ paths:
           description: Filter by job status
           schema:
             type: string
-            enum: [running, completed, failed]
+            enum: [pending, running, canceled, completed, failed]
       responses:
         '200':
           description: Extraction job list
@@ -1815,17 +1766,19 @@ paths:
               example:
                 extractions: []
                 hasMore: false
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
     post:
       operationId: createExtraction
+      description:
+        Starts a bounded extraction for the selected public X resource.
       summary: Run extraction
       tags: [Extractions]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - name: dry_run
           in: query
@@ -1852,34 +1805,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  [
-                    allowed,
-                    creditsAvailable,
-                    creditsRequired,
-                    estimatedResults,
-                    source,
-                  ]
-                properties:
-                  allowed:
-                    type: boolean
-                  creditsAvailable:
-                    type: string
-                  creditsRequired:
-                    type: string
-                  estimatedResults:
-                    type: integer
-                  resolvedXUserId:
-                    type: string
-                  source:
-                    type: string
+                $ref: '#/components/schemas/ExtractionEstimate'
               example:
                 allowed: true
                 creditsAvailable: '10000'
                 creditsRequired: '1000'
                 estimatedResults: 1000
-                source: profile
+                source: followers
         '202':
           description: Extraction started
           content:
@@ -1892,6 +1824,7 @@ paths:
                     type: string
                     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
                   toolType:
+                    type: string
                     $ref: '#/components/schemas/ExtractionToolType'
                     example: follower_explorer
                   status:
@@ -1920,11 +1853,10 @@ paths:
   /extractions/estimate:
     post:
       operationId: estimateExtraction
+      description: Estimates extraction cost without creating a job.
       summary: Estimate extraction cost
       tags: [Extractions]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: true
         description:
@@ -1943,47 +1875,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  [
-                    estimatedResults,
-                    creditsRequired,
-                    creditsAvailable,
-                    allowed,
-                    source,
-                  ]
-                properties:
-                  estimatedResults:
-                    type: integer
-                    example: 500
-                  creditsRequired:
-                    type: string
-                    example: '500'
-                  creditsAvailable:
-                    type: string
-                    example: '50000'
-                  allowed:
-                    type: boolean
-                    example: true
-                  source:
-                    type: string
-                    enum:
-                      [
-                        followers,
-                        following,
-                        collection,
-                        paginationCap,
-                        posts,
-                        quoteCount,
-                        replyCount,
-                        resultsLimit,
-                        retweetCount,
-                        unknown,
-                      ]
-                    example: 'replyCount'
-                  resolvedXUserId:
-                    type: string
-                    example: '123456'
+                $ref: '#/components/schemas/ExtractionEstimate'
               example:
                 estimatedResults: 500
                 creditsRequired: '500'
@@ -2002,28 +1894,57 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
 
   /extractions/{id}:
+    delete:
+      operationId: cancelExtraction
+      description: Cancels an active extraction without charging or saving rows.
+      summary: Cancel extraction
+      tags: [Extractions]
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Extraction canceled
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, status]
+                properties:
+                  id: { type: string, example: 'aB3dE6gH9jK2' }
+                  status: { type: string, const: canceled }
+              example:
+                id: 'aB3dE6gH9jK2'
+                status: canceled
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Extraction already reached a terminal state
+          content:
+            {
+              application/json:
+                { schema: { $ref: '#/components/schemas/Error' } },
+            }
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
     get:
       operationId: getExtraction
+      description: Returns extraction status, progress, and available results.
       summary: Get extraction results
       tags: [Extractions]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Extraction public ID (UUID)
+        - $ref: '#/components/parameters/ResourceId'
         - name: limit
           in: query
-          description: Maximum number of results to return (1-1000, default 100)
+          description: Maximum number of results to return (1-1000, default 10)
           schema:
             type: integer
             minimum: 1
             maximum: 1000
-            default: 100
+            default: 10
         - $ref: '#/components/parameters/After'
         - name: outputMode
           in: query
@@ -2063,13 +1984,7 @@ paths:
                 required: [job, results, hasMore]
                 properties:
                   job:
-                    $ref: '#/components/schemas/PublicMetadata'
-                    description:
-                      Extraction job metadata - shape varies by tool type (JSON)
-                    example:
-                      id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-                      toolType: follower_explorer
-                      status: completed
+                    $ref: '#/components/schemas/ExtractionJob'
                   results:
                     type: array
                     items:
@@ -2084,9 +1999,11 @@ paths:
                     example: 'abc123'
               example:
                 job:
-                  id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+                  id: 'aB3dE6gH9jK2'
                   toolType: follower_explorer
                   status: completed
+                  totalResults: 500
+                  createdAt: '2026-08-23T10:00:00Z'
                 results: []
                 hasMore: false
         '400':
@@ -2101,11 +2018,11 @@ paths:
   /extractions/{id}/export:
     get:
       operationId: exportExtraction
+      description:
+        Downloads completed extraction results in the requested format.
       summary: Export extraction results
       tags: [Extractions]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - name: id
           in: path
@@ -2213,11 +2130,10 @@ paths:
   /draws:
     get:
       operationId: listDraws
+      description: Returns giveaway draws owned by the authenticated account.
       summary: List draws
       tags: [Draws]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/After'
@@ -2257,9 +2173,7 @@ paths:
         candidate. Remaining credits cap how many replies and retweeters can be
         inspected before filters and winner selection run.
       tags: [Draws]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: true
         description:
@@ -2388,11 +2302,10 @@ paths:
   /draws/{id}:
     get:
       operationId: getDraw
+      description: Returns draw rules, status, candidates, and selected winners.
       summary: Get draw details
       tags: [Draws]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/DrawId'
       responses:
@@ -2405,8 +2318,9 @@ paths:
                 required: [draw, winners]
                 properties:
                   draw:
+                    type: object
                     $ref: '#/components/schemas/DrawDetail'
-                    example:
+                    example: &draw-detail-example
                       id: 'f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345'
                       tweetUrl: 'https://x.com/elonmusk/status/1234567890'
                       tweetId: '1234567890'
@@ -2451,11 +2365,10 @@ paths:
   /draws/{id}/export:
     get:
       operationId: exportDraw
+      description: Downloads draw evidence in the requested format.
       summary: Export draw data
       tags: [Draws]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/DrawId'
         - name: format
@@ -2495,11 +2408,10 @@ paths:
   /webhooks:
     get:
       operationId: listWebhooks
+      description: Returns configured webhook endpoints and delivery states.
       summary: List webhooks
       tags: [Webhooks]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       responses:
         '200':
           description: Webhook list
@@ -2522,11 +2434,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     post:
       operationId: createWebhook
+      description: Registers an endpoint for signed event deliveries.
       summary: Create webhook
       tags: [Webhooks]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: true
         description: HTTPS callback URL and event types to subscribe to.
@@ -2541,9 +2452,7 @@ paths:
                   format: uri
                   description: HTTPS URL
                   example: 'https://example.com/webhook'
-                eventTypes:
-                  $ref: '#/components/schemas/EventTypeArray'
-                  example: [tweet.new, tweet.reply]
+                eventTypes: *event-types
             example:
               url: 'https://example.com/webhook'
               eventTypes: [tweet.new, tweet.reply]
@@ -2568,9 +2477,7 @@ paths:
                     description:
                       Plaintext HMAC signing secret returned only at creation.
                     example: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
-                  eventTypes:
-                    $ref: '#/components/schemas/EventTypeArray'
-                    example: [tweet.new, tweet.reply]
+                  eventTypes: *event-types
                   createdAt:
                     type: string
                     format: date-time
@@ -2590,11 +2497,10 @@ paths:
   /webhooks/{id}:
     patch:
       operationId: updateWebhook
+      description: Updates an endpoint, event selection, or delivery settings.
       summary: Update webhook
       tags: [Webhooks]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
@@ -2609,9 +2515,7 @@ paths:
                   type: string
                   format: uri
                   example: 'https://example.com/webhook'
-                eventTypes:
-                  $ref: '#/components/schemas/EventTypeArray'
-                  example: [tweet.new]
+                eventTypes: *single-event-type
                 isActive:
                   type: boolean
                   example: true
@@ -2644,11 +2548,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     delete:
       operationId: deleteWebhook
+      description: Stops future deliveries to the selected webhook.
       summary: Deactivate webhook
       tags: [Webhooks]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -2666,11 +2569,10 @@ paths:
   /webhooks/{id}/deliveries:
     get:
       operationId: listWebhookDeliveries
+      description: Returns recent delivery attempts and response outcomes.
       summary: List webhook deliveries
       tags: [Webhooks]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -2701,11 +2603,10 @@ paths:
   /webhooks/{id}/test:
     post:
       operationId: testWebhook
+      description: Sends a signed test event to the configured endpoint.
       summary: Test webhook endpoint
       tags: [Webhooks]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -2741,11 +2642,10 @@ paths:
   /webhooks/{id}/resume:
     post:
       operationId: resumeWebhook
+      description: Tests the endpoint before resuming a manually paused webhook.
       summary: Test and resume webhook endpoint
       tags: [Webhooks]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -2814,13 +2714,11 @@ paths:
   /x/tweets:
     get:
       operationId: getBatchTweets
+      description: Returns public tweet records for the requested IDs.
       summary: Get multiple tweets by IDs
       tags:
         - Tweets
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: ids
           in: query
@@ -2869,12 +2767,11 @@ paths:
           $ref: '#/components/responses/XApiError'
     post:
       operationId: createTweet
+      description: Publishes a post through a connected X account.
       x-write-action: create_tweet
       summary: Create tweet
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
       requestBody:
@@ -2918,37 +2815,36 @@ paths:
               account: '@elonmusk'
               text: 'Just launched our new feature!'
       responses:
-        '200':
+        '200': &write-completed
           $ref: '#/components/responses/WriteActionCompleted'
-        '202':
+        '202': &write-accepted
           $ref: '#/components/responses/WriteActionAccepted'
-        '409':
+        '409': &write-conflict
           $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
+        '400': &write-invalid
           $ref: '#/components/responses/WriteInvalidInput'
-        '401':
+        '401': &write-unauthenticated
           $ref: '#/components/responses/Unauthenticated'
-        '402':
+        '402': &write-payment-required
           $ref: '#/components/responses/PaymentRequired'
-        '403':
+        '403': &write-auth-error
           $ref: '#/components/responses/AccountAuthError'
-        '422':
+        '422': &write-rejected
           $ref: '#/components/responses/WriteRejected'
-        '429':
+        '429': &write-rate-limited
           $ref: '#/components/responses/WriteRateLimited'
-        '503':
+        '503': &write-tracking-unavailable
           $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
+        '500': &write-error
           $ref: '#/components/responses/WriteError'
 
   /x/write-actions/{id}:
     get:
       operationId: getWriteActionStatus
+      description: Returns the current state of an asynchronous write action.
       summary: Get write action status
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - name: id
           in: path
@@ -2971,13 +2867,11 @@ paths:
   /x/trends:
     get:
       operationId: getXTrends
+      description: Returns current X trends for the requested region.
       summary: Get trending hashtags and topics from X by region
       tags:
         - Trends
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       x-payment-info:
         offers:
           - amount: '450'
@@ -3086,13 +2980,10 @@ paths:
       description: >
         No-mode search maximizes coverage. New cursorless `Latest` sessions
         return rows newest-first across cursor pages. Existing cursors preserve
-        their established ordering.
+        their established ordering. Do not add filters.
       tags:
         - Tweets
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: q
           in: query
@@ -3100,7 +2991,8 @@ paths:
           schema:
             type: string
           description:
-            Query, Tweet ID, or status URL. Valid inline bounds apply per page.
+            Caller query, Tweet ID, or status URL. Valid inline bounds apply per
+            page. Do not add terms or filters.
         - name: queryType
           in: query
           required: false
@@ -3112,16 +3004,8 @@ paths:
             Sort order - Latest (chronological) or Top (engagement-ranked)
         - $ref: '#/components/parameters/AutomaticCoverageMode'
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
-        - name: sinceTime
-          in: query
-          schema:
-            type: string
-          description: Inclusive ISO bound.
-        - name: untilTime
-          in: query
-          schema:
-            type: string
-          description: Exclusive ISO bound.
+        - $ref: '#/components/parameters/TweetSinceTime'
+        - $ref: '#/components/parameters/TweetUntilTime'
         - name: limit
           in: query
           required: false
@@ -3141,7 +3025,7 @@ paths:
         - $ref: '#/components/parameters/TweetFilterSinceDate'
         - $ref: '#/components/parameters/TweetFilterUntilDate'
         - $ref: '#/components/parameters/TweetFilterMediaType'
-        - $ref: '#/components/parameters/TweetFilterMinFaves'
+        - $ref: '#/components/parameters/TweetFilterMinLikes'
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
@@ -3246,10 +3130,7 @@ paths:
         an X Article.
       tags:
         - Articles
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       x-payment-info:
         offers:
           - amount: '750'
@@ -3397,13 +3278,11 @@ paths:
   /x/tweets/{id}:
     get:
       operationId: lookupTweet
+      description: Returns one public tweet with author, metrics, and media.
       summary: Get tweet with full text, author, metrics and media
       tags:
         - Tweets
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       x-payment-info:
         offers:
           - amount: '150'
@@ -3429,6 +3308,7 @@ paths:
                   tweet:
                     $ref: '#/components/schemas/TweetDetail'
                   author:
+                    type: object
                     $ref: '#/components/schemas/TweetAuthor'
                     example:
                       id: '9876543210'
@@ -3439,20 +3319,13 @@ paths:
               example:
                 tweet:
                   id: '1234567890'
-                  text: 'Just launched our new feature!'
-                  createdAt: '2025-01-15T12:00:00Z'
+                  text: 'New feature'
                   retweetCount: 5
                   replyCount: 3
                   likeCount: 42
                   quoteCount: 1
                   viewCount: 1500
                   bookmarkCount: 2
-                author:
-                  id: '9876543210'
-                  username: 'elonmusk'
-                  name: 'Elon Musk'
-                  followers: 150000000
-                  verified: true
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -3476,12 +3349,11 @@ paths:
           $ref: '#/components/responses/XApiError'
     delete:
       operationId: deleteTweet
+      description: Deletes an authored post through a connected X account.
       x-write-action: delete_tweet
       summary: Delete tweet
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
@@ -3526,12 +3398,11 @@ paths:
   /x/tweets/{id}/like:
     post:
       operationId: likeTweet
+      description: Likes a post through a connected X account.
       x-write-action: like
       summary: Like tweet
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
@@ -3574,12 +3445,11 @@ paths:
           $ref: '#/components/responses/WriteError'
     delete:
       operationId: unlikeTweet
+      description: Removes a like through a connected X account.
       x-write-action: unlike
       summary: Unlike tweet
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
@@ -3622,12 +3492,11 @@ paths:
   /x/tweets/{id}/retweet:
     post:
       operationId: retweet
+      description: Reposts a tweet through a connected X account.
       x-write-action: retweet
       summary: Retweet
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
@@ -3668,12 +3537,11 @@ paths:
           $ref: '#/components/responses/WriteError'
     delete:
       operationId: unretweet
+      description: Removes a repost through a connected X account.
       x-write-action: unretweet
       summary: Unretweet
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
@@ -3716,13 +3584,11 @@ paths:
   /x/users/batch:
     get:
       operationId: getBatchUsers
+      description: Returns public profiles for the requested user IDs.
       summary: Look up multiple users by IDs in one call
       tags:
         - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: ids
           in: query
@@ -3732,6 +3598,10 @@ paths:
           description:
             Comma-separated numeric user IDs (1-100 values). Duplicate IDs are
             ignored while preserving first-seen order.
+        - $ref: '#/components/parameters/UserFilterMinFollowers'
+        - $ref: '#/components/parameters/UserFilterMaxFollowers'
+        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
+        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
       responses:
         '200':
           description:
@@ -3768,13 +3638,11 @@ paths:
   /x/users/search:
     get:
       operationId: searchUsers
+      description: Returns public profiles matching a name or username.
       summary: Search users by name or username
       tags:
         - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: q
           in: query
@@ -3825,13 +3693,12 @@ paths:
   /x/users/{id}:
     get:
       operationId: getUser
+      description:
+        Returns one public profile with counts and verification details.
       summary: Get user profile with follower counts and verification
       tags:
         - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       x-payment-info:
         offers:
           - amount: '150'
@@ -3878,12 +3745,11 @@ paths:
   /x/users/{id}/follow:
     post:
       operationId: followUser
+      description: Follows a user through a connected X account.
       x-write-action: follow
       summary: Follow user
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
@@ -3900,36 +3766,24 @@ paths:
             schema:
               $ref: '#/components/schemas/XAccountBody'
       responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/WriteRateLimited'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+        '200': *write-completed
+        '202': *write-accepted
+        '409': *write-conflict
+        '400': *write-invalid
+        '401': *write-unauthenticated
+        '402': *write-payment-required
+        '403': *write-auth-error
+        '422': *write-rejected
+        '429': *write-rate-limited
+        '503': *write-tracking-unavailable
+        '500': *write-error
     delete:
       operationId: unfollowUser
+      description: Unfollows a user through a connected X account.
       x-write-action: unfollow
       summary: Unfollow user
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
@@ -3946,38 +3800,26 @@ paths:
             schema:
               $ref: '#/components/schemas/XAccountBody'
       responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/WriteRateLimited'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+        '200': *write-completed
+        '202': *write-accepted
+        '409': *write-conflict
+        '400': *write-invalid
+        '401': *write-unauthenticated
+        '402': *write-payment-required
+        '403': *write-auth-error
+        '422': *write-rejected
+        '429': *write-rate-limited
+        '503': *write-tracking-unavailable
+        '500': *write-error
 
   /x/users/{id}/remove-follower:
     post:
       operationId: removeFollower
+      description: Removes a follower from a connected X account.
       x-write-action: remove_follower
       summary: Remove follower
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: id
@@ -3994,39 +3836,26 @@ paths:
             schema:
               $ref: '#/components/schemas/XAccountBody'
       responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/WriteRateLimited'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+        '200': *write-completed
+        '202': *write-accepted
+        '409': *write-conflict
+        '400': *write-invalid
+        '401': *write-unauthenticated
+        '402': *write-payment-required
+        '403': *write-auth-error
+        '422': *write-rejected
+        '429': *write-rate-limited
+        '503': *write-tracking-unavailable
+        '500': *write-error
 
   /x/followers/check:
     get:
       operationId: checkFollow
+      description: Returns whether one public account follows another.
       summary: Check if one user follows another
       tags:
         - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       x-payment-info:
         offers:
           - amount: '750'
@@ -4095,12 +3924,11 @@ paths:
   /x/dm/{userId}:
     post:
       operationId: sendDm
+      description: Sends a direct message through a connected X account.
       x-write-action: send_dm
       summary: Send direct message
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
         - name: userId
@@ -4139,38 +3967,26 @@ paths:
               text: 'Example text content'
               media_ids: ['1234567890123456789']
       responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/WriteRateLimited'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+        '200': *write-completed
+        '202': *write-accepted
+        '409': *write-conflict
+        '400': *write-invalid
+        '401': *write-unauthenticated
+        '402': *write-payment-required
+        '403': *write-auth-error
+        '422': *write-rejected
+        '429': *write-rate-limited
+        '503': *write-tracking-unavailable
+        '500': *write-error
 
   /x/media:
     post:
       operationId: uploadMedia
+      description: Uploads media and returns an identifier for later writes.
       x-write-action: upload_media
       summary: Upload media
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
       requestBody:
@@ -4222,40 +4038,28 @@ paths:
               account: '@elonmusk'
               url: 'https://example.com/image.png'
       responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '404':
+        '200': *write-completed
+        '202': *write-accepted
+        '409': *write-conflict
+        '400': *write-invalid
+        '401': *write-unauthenticated
+        '402': *write-payment-required
+        '403': *write-auth-error
+        '404': &write-account-not-found
           $ref: '#/components/responses/XAccountNotFound'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/WriteRateLimited'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+        '422': *write-rejected
+        '429': *write-rate-limited
+        '503': *write-tracking-unavailable
+        '500': *write-error
 
   /x/media/download:
     post:
       operationId: downloadMedia
+      description: Downloads images and videos attached to selected tweets.
       summary: Download images and videos from tweets
       tags:
         - Media
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: true
         description:
@@ -4343,12 +4147,11 @@ paths:
   /x/profile:
     patch:
       operationId: updateProfile
+      description: Updates editable fields on a connected X profile.
       x-write-action: update_profile
       summary: Update X profile
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
       requestBody:
@@ -4387,40 +4190,27 @@ paths:
               location: 'location_value'
               url: 'https://xquik.com/example'
       responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '404':
-          $ref: '#/components/responses/XAccountNotFound'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/WriteRateLimited'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+        '200': *write-completed
+        '202': *write-accepted
+        '409': *write-conflict
+        '400': *write-invalid
+        '401': *write-unauthenticated
+        '402': *write-payment-required
+        '403': *write-auth-error
+        '404': *write-account-not-found
+        '422': *write-rejected
+        '429': *write-rate-limited
+        '503': *write-tracking-unavailable
+        '500': *write-error
 
   /x/profile/avatar:
     patch:
       operationId: updateAvatar
+      description: Replaces the avatar on a connected X profile.
       x-write-action: update_avatar
       summary: Update profile avatar
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
       requestBody:
@@ -4464,40 +4254,27 @@ paths:
               account: '@elonmusk'
               url: 'https://example.com/avatar.png'
       responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '404':
-          $ref: '#/components/responses/XAccountNotFound'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/WriteRateLimited'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+        '200': *write-completed
+        '202': *write-accepted
+        '409': *write-conflict
+        '400': *write-invalid
+        '401': *write-unauthenticated
+        '402': *write-payment-required
+        '403': *write-auth-error
+        '404': *write-account-not-found
+        '422': *write-rejected
+        '429': *write-rate-limited
+        '503': *write-tracking-unavailable
+        '500': *write-error
 
   /x/profile/banner:
     patch:
       operationId: updateBanner
+      description: Replaces the banner on a connected X profile.
       x-write-action: update_banner
       summary: Update profile banner
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
       requestBody:
@@ -4541,40 +4318,27 @@ paths:
               account: '@elonmusk'
               url: 'https://example.com/banner.png'
       responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '404':
-          $ref: '#/components/responses/XAccountNotFound'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/WriteRateLimited'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+        '200': *write-completed
+        '202': *write-accepted
+        '409': *write-conflict
+        '400': *write-invalid
+        '401': *write-unauthenticated
+        '402': *write-payment-required
+        '403': *write-auth-error
+        '404': *write-account-not-found
+        '422': *write-rejected
+        '429': *write-rate-limited
+        '503': *write-tracking-unavailable
+        '500': *write-error
 
   /x/communities:
     post:
       operationId: createCommunity
+      description: Creates an X Community through a connected account.
       x-write-action: create_community
       summary: Create community
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
       requestBody:
@@ -4604,40 +4368,27 @@ paths:
               name: 'Example Name'
               description: 'A community for Tesla enthusiasts'
       responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '404':
-          $ref: '#/components/responses/XAccountNotFound'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/WriteRateLimited'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+        '200': *write-completed
+        '202': *write-accepted
+        '409': *write-conflict
+        '400': *write-invalid
+        '401': *write-unauthenticated
+        '402': *write-payment-required
+        '403': *write-auth-error
+        '404': *write-account-not-found
+        '422': *write-rejected
+        '429': *write-rate-limited
+        '503': *write-tracking-unavailable
+        '500': *write-error
 
   /x/communities/{id}:
     delete:
       operationId: deleteCommunity
+      description: Deletes an owned X Community through a connected account.
       x-write-action: delete_community
       summary: Delete community
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
         - $ref: '#/components/parameters/ResourceId'
@@ -4663,40 +4414,27 @@ paths:
               account: '@elonmusk'
               community_name: 'Tesla Fans'
       responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '404':
-          $ref: '#/components/responses/XAccountNotFound'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/WriteRateLimited'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+        '200': *write-completed
+        '202': *write-accepted
+        '409': *write-conflict
+        '400': *write-invalid
+        '401': *write-unauthenticated
+        '402': *write-payment-required
+        '403': *write-auth-error
+        '404': *write-account-not-found
+        '422': *write-rejected
+        '429': *write-rate-limited
+        '503': *write-tracking-unavailable
+        '500': *write-error
 
   /x/communities/{id}/join:
     post:
       operationId: joinCommunity
+      description: Joins an X Community through a connected account.
       x-write-action: join_community
       summary: Join community
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
         - $ref: '#/components/parameters/ResourceId'
@@ -4708,38 +4446,25 @@ paths:
             schema:
               $ref: '#/components/schemas/XAccountBody'
       responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '404':
-          $ref: '#/components/responses/XAccountNotFound'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/WriteRateLimited'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+        '200': *write-completed
+        '202': *write-accepted
+        '409': *write-conflict
+        '400': *write-invalid
+        '401': *write-unauthenticated
+        '402': *write-payment-required
+        '403': *write-auth-error
+        '404': *write-account-not-found
+        '422': *write-rejected
+        '429': *write-rate-limited
+        '503': *write-tracking-unavailable
+        '500': *write-error
     delete:
       operationId: leaveCommunity
+      description: Leaves an X Community through a connected account.
       x-write-action: leave_community
       summary: Leave community
       tags: [X Write]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
         - $ref: '#/components/parameters/ResourceId'
@@ -4751,40 +4476,28 @@ paths:
             schema:
               $ref: '#/components/schemas/XAccountBody'
       responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '404':
-          $ref: '#/components/responses/XAccountNotFound'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/WriteRateLimited'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+        '200': *write-completed
+        '202': *write-accepted
+        '409': *write-conflict
+        '400': *write-invalid
+        '401': *write-unauthenticated
+        '402': *write-payment-required
+        '403': *write-auth-error
+        '404': *write-account-not-found
+        '422': *write-rejected
+        '429': *write-rate-limited
+        '503': *write-tracking-unavailable
+        '500': *write-error
 
   # ── X Accounts ───────────────────────────────────────────
   /x/accounts:
     get:
       operationId: listXAccounts
+      description:
+        Returns X accounts connected to the authenticated Xquik account.
       summary: List connected X accounts
       tags: [X Accounts]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       responses:
         '200':
           description: X account list
@@ -4821,11 +4534,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     post:
       operationId: connectXAccount
+      description: Starts a secure X account connection flow.
       summary: Connect X account
       tags: [X Accounts]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: true
         description:
@@ -4865,9 +4577,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                allOf:
-                  - $ref: '#/components/schemas/SanitizedXAccount'
+                $ref: '#/components/schemas/SanitizedXAccount'
                 x-stainless-override-schema:
                   x-stainless-naming:
                     csharp:
@@ -4875,6 +4585,15 @@ paths:
                   oneOf:
                     - $ref: '#/components/schemas/SanitizedXAccount'
                     - $ref: '#/components/schemas/XAccountConnectionContinuation'
+              example:
+                {
+                  id: '42',
+                  xUserId: '9876543210',
+                  xUsername: elonmusk,
+                  status: active,
+                  health: healthy,
+                  createdAt: '2025-01-15T12:00:00Z',
+                }
         '202':
           description: Connection continues or needs an email code
           headers:
@@ -4892,8 +4611,7 @@ paths:
                 example: '/api/v1/x/account-connection-attempts/xatt_0123456789abcdef0123456789abcdef'
             Retry-After:
               description:
-                Seconds before checking again. Present when the response status
-                is `pending`.
+                Seconds before the next poll when the attempt remains pending.
               schema:
                 type: integer
                 minimum: 0
@@ -4920,11 +4638,10 @@ paths:
   /x/account-connection-attempts/{id}:
     get:
       operationId: getXAccountConnectionAttempt
+      description: Returns progress for an X account connection attempt.
       summary: Get X account connection status
       tags: [X Accounts]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ConnectionAttemptId'
       responses:
@@ -4977,11 +4694,10 @@ paths:
   /x/account-connection-challenges/{id}/submit:
     post:
       operationId: submitXAccountConnectionChallenge
+      description: Submits the email code requested during X account connection.
       summary: Submit X account email verification code
       tags: [X Accounts]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
@@ -5046,11 +4762,10 @@ paths:
   /x/accounts/{id}:
     get:
       operationId: getXAccount
+      description: Returns one connected X account and its current status.
       summary: Get X account details
       tags: [X Accounts]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -5070,11 +4785,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     delete:
       operationId: disconnectXAccount
+      description: Disconnects one X account and removes stored session access.
       summary: Disconnect X account
       tags: [X Accounts]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -5092,11 +4806,11 @@ paths:
   /x/accounts/{id}/reauth:
     post:
       operationId: reauthXAccount
+      description:
+        Starts re-authentication for an existing X account connection.
       summary: Re-authenticate X account
       tags: [X Accounts]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
@@ -5155,9 +4869,7 @@ paths:
         transient or automated failure reasons, making them eligible for retry
         on next use.
       tags: [X Accounts]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       responses:
         '200':
           description: Accounts cleared for retry
@@ -5182,13 +4894,12 @@ paths:
   /trends:
     get:
       operationId: getTrends
+      description:
+        Returns current regional trends through the compatibility route.
       summary: Get trending hashtags and topics by region (alias)
       tags:
         - Trends
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       x-payment-info:
         offers:
           - amount: '450'
@@ -5239,20 +4950,18 @@ paths:
                         promotedContent:
                           type: [string, 'null']
                           description:
-                            Promotion identifier from X. Null for organic
-                            trends.
+                            Promotion ID for this trend, or null when organic.
                         rank:
                           type: integer
                           example: 1
                         tweetVolume:
                           type: [integer, 'null']
-                          description:
-                            Approximate public post volume when X supplies it.
+                          description: Estimated post volume for this trend.
                           example: 250000
                         url:
                           type: string
                           format: uri
-                          description: X search URL for the trend.
+                          description: Search URL associated with this trend.
                     example:
                       - name: '#AI'
                         rank: 1
@@ -5295,9 +5004,7 @@ paths:
         Streams an authenticated user's support image or video. Video requests
         support one standard byte range for seeking and resumable playback.
       tags: [Support]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - name: id
           in: path
@@ -5347,11 +5054,10 @@ paths:
   /support/tickets:
     post:
       operationId: createTicket
+      description: Creates a support ticket with an initial message.
       summary: Create a support ticket
       tags: [Support]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/SupportIdempotencyKey'
       requestBody:
@@ -5360,22 +5066,9 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [subject, body]
-              properties:
-                subject:
-                  type: string
-                  minLength: 1
-                  maxLength: 500
-                  pattern: '.*\S.*'
-                  example: 'Cannot connect X account'
-                body:
-                  type: string
-                  minLength: 1
-                  maxLength: 10000
-                  pattern: '.*\S.*'
-                  title: TicketContent
-                  example: 'I am unable to connect my X account. Please help.'
+              allOf:
+                - $ref: '#/components/schemas/SupportMessageSubmission'
+                - $ref: '#/components/schemas/SupportTicketSubjectSubmission'
             example:
               subject: 'Cannot connect X account'
               body: 'I am unable to connect my X account. Please help.'
@@ -5385,32 +5078,9 @@ paths:
               body: 'I am unable to connect my X account.'
               attachments: ['screen.png']
             schema:
-              type: object
-              required: [subject]
-              anyOf:
-                - required: [body]
-                - required: [attachments]
-              properties:
-                subject:
-                  type: string
-                  minLength: 1
-                  maxLength: 500
-                  pattern: '.*\S.*'
-                  example: 'Cannot connect X account'
-                body:
-                  type: string
-                  minLength: 1
-                  maxLength: 10000
-                  pattern: '.*\S.*'
-                  example: 'I am unable to connect my X account.'
-                attachments:
-                  type: array
-                  minItems: 1
-                  maxItems: 4
-                  example: ['screen.png']
-                  items:
-                    type: string
-                    format: binary
+              allOf:
+                - $ref: '#/components/schemas/SupportMultipartSubmission'
+                - $ref: '#/components/schemas/SupportTicketSubjectSubmission'
       responses:
         '200':
           description: Original ticket replayed after a safe retry
@@ -5474,11 +5144,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     get:
       operationId: listTickets
+      description: Returns support tickets owned by the authenticated user.
       summary: List user's support tickets
       tags: [Support]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       responses:
         '200':
           description: List of tickets
@@ -5546,11 +5215,10 @@ paths:
   /support/tickets/{id}:
     get:
       operationId: getTicket
+      description: Returns one support ticket with its message history.
       summary: Get ticket with all messages
       tags: [Support]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - name: id
           in: path
@@ -5632,11 +5300,10 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     patch:
       operationId: updateTicketStatus
+      description: Changes the open or closed state of a support ticket.
       summary: Update ticket status
       tags: [Support]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - name: id
           in: path
@@ -5690,11 +5357,10 @@ paths:
   /support/tickets/{id}/messages:
     post:
       operationId: addTicketMessage
+      description: Adds a message to an existing support ticket.
       summary: Reply to a support ticket
       tags: [Support]
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - name: id
           in: path
@@ -5710,16 +5376,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [body]
-              properties:
-                body:
-                  type: string
-                  minLength: 1
-                  maxLength: 10000
-                  pattern: '.*\S.*'
-                  title: MessageContent
-                  example: 'Thank you for the update.'
+              $ref: '#/components/schemas/SupportMessageSubmission'
             example:
               body: 'Thank you for the update.'
           multipart/form-data:
@@ -5727,25 +5384,7 @@ paths:
               body: 'Thank you for the update.'
               attachments: ['details.png']
             schema:
-              type: object
-              anyOf:
-                - required: [body]
-                - required: [attachments]
-              properties:
-                body:
-                  type: string
-                  minLength: 1
-                  maxLength: 10000
-                  pattern: '.*\S.*'
-                  example: 'Thank you for the update.'
-                attachments:
-                  type: array
-                  minItems: 1
-                  maxItems: 4
-                  example: ['details.png']
-                  items:
-                    type: string
-                    format: binary
+              $ref: '#/components/schemas/SupportMultipartSubmission'
       responses:
         '200':
           description: Original message replayed after a safe retry
@@ -5943,8 +5582,7 @@ paths:
         amount for an existing paid-read guest key. The key remains the same.
         This request creates no charge and never redirects through Xquik.
       tags: [Guest Wallets]
-      security:
-        - apiKey: []
+      security: [{ apiKey: [] }]
       parameters:
         - $ref: '#/components/parameters/GuestIdempotencyKey'
       requestBody:
@@ -6066,8 +5704,7 @@ paths:
         becomes usable only after payment is verified. Send the guest key as
         Authorization: Bearer.
       tags: [Guest Wallets]
-      security:
-        - apiKey: []
+      security: [{ apiKey: [] }]
       responses:
         '200':
           description: Guest wallet status without exposing the API key.
@@ -6106,12 +5743,11 @@ paths:
   /credits:
     get:
       operationId: getCredits
+      description: Returns the account credit balance and usage context.
       summary: Get credits balance
       tags:
         - Subscribe
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       responses:
         '200':
           description: Credits balance and usage
@@ -6177,9 +5813,7 @@ paths:
         completes payment or adds credits.
       tags:
         - Subscribe
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: true
         description: Confirmed dollar amount for the credit top-up checkout.
@@ -6234,6 +5868,7 @@ paths:
   /credits/topup/redirect:
     get:
       operationId: redirectCreditTopupCheckout
+      description: Redirects to the active hosted top-up checkout.
       summary: Redirect to an active top-up payment page
       tags:
         - Subscribe
@@ -6295,12 +5930,11 @@ paths:
   /credits/topup/status:
     get:
       operationId: getCreditTopupStatus
+      description: Returns verification status for a credit top-up.
       summary: Get top-up billing status
       tags:
         - Subscribe
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - name: session_id
           in: query
@@ -6347,11 +5981,12 @@ paths:
   /credits/quick-topup:
     post:
       operationId: quickTopUpCredits
+      description:
+        Charges a saved payment method only after explicit confirmation.
       summary: Charge saved card for credits
       tags:
         - Subscribe
-      security:
-        - cookieSession: []
+      security: [{ cookieSession: [] }]
       requestBody:
         required: true
         description: Dollar amount to charge the saved payment method.
@@ -6441,10 +6076,7 @@ paths:
         empty success.
       tags:
         - Tweets
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: id
           in: path
@@ -6502,10 +6134,7 @@ paths:
         same.
       tags:
         - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: id
           in: path
@@ -6515,12 +6144,7 @@ paths:
           description: X user ID or username
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
         - $ref: '#/components/parameters/AutomaticTweetPageSize'
-        - name: includeReplies
-          in: query
-          schema:
-            type: boolean
-            default: false
-          description: Include reply tweets
+        - $ref: '#/components/parameters/TweetIncludeReplies'
         - name: includeParentTweet
           in: query
           schema:
@@ -6534,7 +6158,7 @@ paths:
         - $ref: '#/components/parameters/TweetFilterSinceDate'
         - $ref: '#/components/parameters/TweetFilterUntilDate'
         - $ref: '#/components/parameters/TweetFilterMediaType'
-        - $ref: '#/components/parameters/TweetFilterMinFaves'
+        - $ref: '#/components/parameters/TweetFilterMinLikes'
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
@@ -6609,10 +6233,7 @@ paths:
         legacy. Excludes other-author context.
       tags:
         - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: id
           in: path
@@ -6635,7 +6256,7 @@ paths:
         - $ref: '#/components/parameters/TweetFilterSinceDate'
         - $ref: '#/components/parameters/TweetFilterUntilDate'
         - $ref: '#/components/parameters/TweetFilterMediaType'
-        - $ref: '#/components/parameters/TweetFilterMinFaves'
+        - $ref: '#/components/parameters/TweetFilterMinLikes'
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
@@ -6703,13 +6324,11 @@ paths:
   /x/users/{id}/likes:
     get:
       operationId: getUserLikes
+      description: Returns visible tweets liked by the selected user.
       summary: List tweets liked by a user
       tags:
         - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: id
           in: path
@@ -6730,7 +6349,7 @@ paths:
         - $ref: '#/components/parameters/TweetFilterSinceDate'
         - $ref: '#/components/parameters/TweetFilterUntilDate'
         - $ref: '#/components/parameters/TweetFilterMediaType'
-        - $ref: '#/components/parameters/TweetFilterMinFaves'
+        - $ref: '#/components/parameters/TweetFilterMinLikes'
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
@@ -6792,13 +6411,11 @@ paths:
   /x/users/{id}/media:
     get:
       operationId: getUserMedia
+      description: Returns public media posts from the selected user.
       summary: List media tweets posted by a user
       tags:
         - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: id
           in: path
@@ -6819,7 +6436,7 @@ paths:
         - $ref: '#/components/parameters/TweetFilterSinceDate'
         - $ref: '#/components/parameters/TweetFilterUntilDate'
         - $ref: '#/components/parameters/TweetFilterMediaType'
-        - $ref: '#/components/parameters/TweetFilterMinFaves'
+        - $ref: '#/components/parameters/TweetFilterMinLikes'
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
@@ -6881,13 +6498,11 @@ paths:
   /x/users/{id}/followers-you-know:
     get:
       operationId: getFollowersYouKnow
+      description: Returns mutual profiles visible to the connected X account.
       summary: List mutual followers between you and a user
       tags:
         - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: id
           in: path
@@ -6938,12 +6553,11 @@ paths:
   /x/bookmarks:
     get:
       operationId: getBookmarks
+      description: Returns bookmarks from the connected X account.
       summary: Get bookmarked tweets
       tags:
         - Tweets
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - name: folderId
           in: query
@@ -6977,12 +6591,11 @@ paths:
   /x/bookmarks/folders:
     get:
       operationId: getBookmarkFolders
+      description: Returns bookmark folders from the connected X account.
       summary: Get bookmark folders
       tags:
         - Tweets
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       responses:
         '200':
           description: List of bookmark folders
@@ -7003,13 +6616,11 @@ paths:
                         name: 'Read Later'
                   has_next_page:
                     type: boolean
-                    description:
-                      Always false for the current bookmark folder route
+                    description: Whether another folder page is available
                     example: false
                   next_cursor:
                     type: string
-                    description:
-                      Always empty for the current bookmark folder route
+                    description: Cursor for the next folder page
                     example: ''
               example:
                 folders:
@@ -7033,12 +6644,11 @@ paths:
   /x/notifications:
     get:
       operationId: getNotifications
+      description: Returns notifications for the connected X account.
       summary: Get notifications
       tags:
         - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - name: type
           in: query
@@ -7113,12 +6723,11 @@ paths:
   /x/timeline:
     get:
       operationId: getTimeline
+      description: Returns the home timeline for the connected X account.
       summary: Get home timeline
       tags:
         - Tweets
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - name: seenTweetIds
           in: query
@@ -7153,12 +6762,12 @@ paths:
   /x/dm/{userId}/history:
     get:
       operationId: getDmHistory
+      description:
+        Returns message history with one user for the connected X account.
       summary: Get DM conversation history
       tags:
         - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - name: userId
           in: path
@@ -7315,13 +6924,12 @@ paths:
   /x/communities/{id}/info:
     get:
       operationId: getCommunityInfo
+      description:
+        Returns public identity and membership counts for one community.
       summary: Get community name, description and member count
       tags:
         - Communities
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       x-payment-info:
         offers:
           - amount: '150'
@@ -7329,12 +6937,7 @@ paths:
             intent: charge
             method: tempo
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Community ID
+        - $ref: '#/components/parameters/CommunityPathId'
       responses:
         '200':
           description: Community details
@@ -7442,36 +7045,15 @@ paths:
   /x/communities/{id}/members:
     get:
       operationId: getCommunityMembers
+      description: Returns public member profiles for one community.
       summary: List members of a community
       tags:
         - Communities
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Community ID for member lookup
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor
-        - name: pageSize
-          in: query
-          schema:
-            type: integer
-            minimum: 20
-            maximum: 200
-            default: 20
-          description: >
-            Items per page (20-200, default 20). This is an upper bound for paid
-            authenticated calls: remaining credits can reduce the returned page
-            size, and zero affordable results returns 402 insufficient_credits.
+        - $ref: '#/components/parameters/CommunityPathId'
+        - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/LegacyUserPageSize'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
         - $ref: '#/components/parameters/UserFilterMaxFollowers'
         - $ref: '#/components/parameters/UserFilterMinFollowing'
@@ -7511,25 +7093,14 @@ paths:
   /x/communities/{id}/moderators:
     get:
       operationId: getCommunityModerators
+      description: Returns public moderator profiles for one community.
       summary: List moderators of a community
       tags:
         - Communities
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Community ID for moderator lookup
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for community moderators
+        - $ref: '#/components/parameters/CommunityPathId'
+        - $ref: '#/components/parameters/CollectionCursor'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
         - $ref: '#/components/parameters/UserFilterMaxFollowers'
         - $ref: '#/components/parameters/UserFilterMinFollowing'
@@ -7569,26 +7140,24 @@ paths:
   /x/communities/{id}/tweets:
     get:
       operationId: getCommunityTweets
+      description: Returns public tweets posted within one community.
       summary: List tweets posted in a community
       tags:
         - Communities
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Community ID for tweet lookup
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for community tweets
+        - $ref: '#/components/parameters/CommunityPathId'
+        - $ref: '#/components/parameters/CollectionCursor'
         - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/TweetFilterLanguage'
+        - $ref: '#/components/parameters/TweetFilterSinceDate'
+        - $ref: '#/components/parameters/TweetFilterUntilDate'
+        - $ref: '#/components/parameters/TweetFilterMediaType'
+        - $ref: '#/components/parameters/TweetFilterMinLikes'
+        - $ref: '#/components/parameters/TweetFilterMinRetweets'
+        - $ref: '#/components/parameters/TweetFilterMinReplies'
+        - $ref: '#/components/parameters/TweetFilterMinViews'
+        - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
       responses:
         '200':
           description: List of community tweets
@@ -7619,44 +7188,25 @@ paths:
         Returns tweets, not community records. Requires a Community ID.
       tags:
         - Communities
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
-      parameters:
-        - name: communityId
-          in: query
-          required: true
-          schema:
-            type: string
-            pattern: '^\d+$'
-          description: Numeric ID of the community whose posts to search
-        - name: q
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Search query
-        - name: queryType
-          in: query
-          schema:
-            type: string
-            enum: [Latest, Top]
-            default: Latest
-          description: Sort order (Latest or Top)
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for community search
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
+      parameters: &communitySearchParameters
+        - $ref: '#/components/parameters/CommunityId'
+        - $ref: '#/components/parameters/CommunityQuery'
+        - $ref: '#/components/parameters/CommunityQueryType'
+        - $ref: '#/components/parameters/CommunityCursor'
         - $ref: '#/components/parameters/ResultPageSize'
-      responses:
+        - $ref: '#/components/parameters/TweetFilterLanguage'
+        - $ref: '#/components/parameters/TweetFilterSinceDate'
+        - $ref: '#/components/parameters/TweetFilterUntilDate'
+        - $ref: '#/components/parameters/TweetFilterMediaType'
+        - $ref: '#/components/parameters/TweetFilterMinLikes'
+        - $ref: '#/components/parameters/TweetFilterMinRetweets'
+        - $ref: '#/components/parameters/TweetFilterMinReplies'
+        - $ref: '#/components/parameters/TweetFilterMinViews'
+        - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
+      responses: &communitySearchResponses
         '200':
-          description: Tweet search results from the selected X Community
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedTweets'
+          $ref: '#/components/responses/CommunityTweetSearchResults'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -7677,79 +7227,21 @@ paths:
       description: Requires a Community ID and keyword query.
       tags:
         - Communities
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
-      parameters:
-        - name: communityId
-          in: query
-          required: true
-          schema:
-            type: string
-            pattern: '^\d+$'
-          description: Numeric ID of the community to search
-        - name: q
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Keyword query within the selected community
-        - name: queryType
-          in: query
-          schema:
-            type: string
-            enum: [Latest, Top]
-            default: Latest
-          description: Sort order for community results (Latest or Top)
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for community results
-        - $ref: '#/components/parameters/ResultPageSize'
-      responses:
-        '200':
-          description: Paginated matching tweets from the selected community
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedTweets'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '424':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
+      parameters: *communitySearchParameters
+      responses: *communitySearchResponses
 
   /x/lists/{id}/followers:
     get:
       operationId: getListFollowers
+      description: Returns public profiles following one X List.
       summary: List followers of an X List
       tags:
         - Lists
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: List ID
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for list followers
+        - $ref: '#/components/parameters/ListPathId'
+        - $ref: '#/components/parameters/CollectionCursor'
         - $ref: '#/components/parameters/FollowerPageSize'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
         - $ref: '#/components/parameters/UserFilterMaxFollowers'
@@ -7790,33 +7282,15 @@ paths:
   /x/lists/{id}/members:
     get:
       operationId: getListMembers
+      description: Returns public profiles belonging to one X List.
       summary: List members of an X List
       tags:
         - Lists
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: List ID for member lookup
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for list members
-        - name: pageSize
-          in: query
-          schema:
-            type: integer
-            minimum: 20
-            maximum: 200
-            default: 20
-          description: Members per page (20-200, default 20)
+        - $ref: '#/components/parameters/ListPathId'
+        - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/LegacyUserPageSize'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
         - $ref: '#/components/parameters/UserFilterMaxFollowers'
         - $ref: '#/components/parameters/UserFilterMinFollowing'
@@ -7857,40 +7331,47 @@ paths:
     get:
       operationId: getListTweets
       summary: List tweets from an X List
+      description: >
+        Omit mode for resumable maximum coverage. Pass next_cursor unchanged.
+        Standard keeps legacy pagination.
       tags:
         - Lists
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: List ID for tweet lookup
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for list tweets
-        - $ref: '#/components/parameters/ResultPageSize'
-        - name: sinceTime
-          in: query
-          schema:
-            type: string
-          description: Unix timestamp - filter after
-        - name: untilTime
-          in: query
-          schema:
-            type: string
-          description: Unix timestamp - filter before
-        - name: includeReplies
-          in: query
-          schema:
-            type: boolean
-          description: Include replies (default false)
+        - $ref: '#/components/parameters/ListPathId'
+        - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - $ref: '#/components/parameters/AutomaticCoverageMode'
+        - $ref: '#/components/parameters/AutomaticTweetPageSize'
+        - $ref: '#/components/parameters/TweetSinceTime'
+        - $ref: '#/components/parameters/TweetUntilTime'
+        - $ref: '#/components/parameters/TweetIncludeReplies'
+        - $ref: '#/components/parameters/TweetFilterFromUser'
+        - $ref: '#/components/parameters/TweetFilterToUser'
+        - $ref: '#/components/parameters/TweetFilterMentioning'
+        - $ref: '#/components/parameters/TweetFilterLanguage'
+        - $ref: '#/components/parameters/TweetFilterSinceDate'
+        - $ref: '#/components/parameters/TweetFilterUntilDate'
+        - $ref: '#/components/parameters/TweetFilterMediaType'
+        - $ref: '#/components/parameters/TweetFilterMinLikes'
+        - $ref: '#/components/parameters/TweetFilterMinRetweets'
+        - $ref: '#/components/parameters/TweetFilterMinReplies'
+        - $ref: '#/components/parameters/TweetFilterMinQuotes'
+        - $ref: '#/components/parameters/TweetFilterMinViews'
+        - $ref: '#/components/parameters/TweetFilterMinBookmarks'
+        - $ref: '#/components/parameters/TweetFilterMaxFaves'
+        - $ref: '#/components/parameters/TweetFilterMaxRetweets'
+        - $ref: '#/components/parameters/TweetFilterMaxReplies'
+        - $ref: '#/components/parameters/TweetFilterMaxQuotes'
+        - $ref: '#/components/parameters/TweetFilterBlueVerifiedOnly'
+        - $ref: '#/components/parameters/TweetFilterNativeRetweets'
+        - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
+        - $ref: '#/components/parameters/TweetFilterReplies'
+        - $ref: '#/components/parameters/TweetFilterRetweets'
+        - $ref: '#/components/parameters/TweetFilterExactPhrase'
+        - $ref: '#/components/parameters/TweetFilterExcludeWords'
+        - $ref: '#/components/parameters/TweetFilterAnyWords'
+        - $ref: '#/components/parameters/TweetFilterHashtags'
+        - $ref: '#/components/parameters/TweetFilterCashtags'
       responses:
         '200':
           description: List tweets
@@ -7912,17 +7393,21 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
         '502':
           $ref: '#/components/responses/XApiError'
+        '409':
+          $ref: '#/components/responses/CoverageCursorUnavailable'
+        '410':
+          $ref: '#/components/responses/CursorGone'
+        '503':
+          $ref: '#/components/responses/MaximumCoverageBusy'
 
   /x/tweets/{id}/quotes:
     get:
       operationId: getTweetQuotes
+      description: Returns public posts quoting the selected tweet.
       summary: List quote tweets of a tweet
       tags:
         - Tweets
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: id
           in: path
@@ -7938,21 +7423,9 @@ paths:
             enum: [standard]
           description: Optional legacy pagination override.
         - $ref: '#/components/parameters/AutomaticTweetPageSize'
-        - name: sinceTime
-          in: query
-          schema:
-            type: string
-          description: Unix timestamp - return quotes posted after this time
-        - name: untilTime
-          in: query
-          schema:
-            type: string
-          description: Unix timestamp - return quotes posted before this time
-        - name: includeReplies
-          in: query
-          schema:
-            type: boolean
-          description: Include reply quotes (default false)
+        - $ref: '#/components/parameters/TweetSinceTime'
+        - $ref: '#/components/parameters/TweetUntilTime'
+        - $ref: '#/components/parameters/TweetIncludeReplies'
         - $ref: '#/components/parameters/TweetFilterFromUser'
         - $ref: '#/components/parameters/TweetFilterToUser'
         - $ref: '#/components/parameters/TweetFilterMentioning'
@@ -7960,7 +7433,7 @@ paths:
         - $ref: '#/components/parameters/TweetFilterSinceDate'
         - $ref: '#/components/parameters/TweetFilterUntilDate'
         - $ref: '#/components/parameters/TweetFilterMediaType'
-        - $ref: '#/components/parameters/TweetFilterMinFaves'
+        - $ref: '#/components/parameters/TweetFilterMinLikes'
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
@@ -8027,10 +7500,7 @@ paths:
         and 424 when direct coverage stays below 80%.
       tags:
         - Tweets
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: id
           in: path
@@ -8092,16 +7562,8 @@ paths:
           in: query
           schema: { type: boolean, default: false }
           description: Only return replies containing media.
-        - name: sinceTime
-          in: query
-          schema:
-            type: string
-          description: Unix timestamp - return replies posted after this time
-        - name: untilTime
-          in: query
-          schema:
-            type: string
-          description: Unix timestamp - return replies posted before this time
+        - $ref: '#/components/parameters/TweetSinceTime'
+        - $ref: '#/components/parameters/TweetUntilTime'
         - $ref: '#/components/parameters/TweetFilterFromUser'
         - $ref: '#/components/parameters/TweetFilterToUser'
         - $ref: '#/components/parameters/TweetFilterMentioning'
@@ -8109,7 +7571,7 @@ paths:
         - $ref: '#/components/parameters/TweetFilterSinceDate'
         - $ref: '#/components/parameters/TweetFilterUntilDate'
         - $ref: '#/components/parameters/TweetFilterMediaType'
-        - $ref: '#/components/parameters/TweetFilterMinFaves'
+        - $ref: '#/components/parameters/TweetFilterMinLikes'
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
@@ -8175,13 +7637,11 @@ paths:
   /x/tweets/{id}/retweeters:
     get:
       operationId: getTweetRetweeters
+      description: Returns public profiles that reposted the selected tweet.
       summary: List users who retweeted a tweet
       tags:
         - Tweets
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: id
           in: path
@@ -8232,13 +7692,11 @@ paths:
   /x/tweets/{id}/thread:
     get:
       operationId: getTweetThread
+      description: Returns visible posts from the selected conversation thread.
       summary: Get full conversation thread for a tweet
       tags:
         - Tweets
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: id
           in: path
@@ -8259,7 +7717,7 @@ paths:
         - $ref: '#/components/parameters/TweetFilterSinceDate'
         - $ref: '#/components/parameters/TweetFilterUntilDate'
         - $ref: '#/components/parameters/TweetFilterMediaType'
-        - $ref: '#/components/parameters/TweetFilterMinFaves'
+        - $ref: '#/components/parameters/TweetFilterMinLikes'
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
@@ -8307,13 +7765,11 @@ paths:
   /x/users/{id}/followers:
     get:
       operationId: getUserFollowers
+      description: Returns public follower profiles for the selected user.
       summary: List followers of a user
       tags:
         - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: id
           in: path
@@ -8350,18 +7806,15 @@ paths:
             type: integer
             minimum: 1
             maximum: 10000
-          description: >
-            Legacy page-size alias outside explicit coverage mode. Coverage
-            accepts 1-10000. Prefer pageSize.
+          description:
+            Legacy follower limit. Coverage accepts 1-10000. Prefer pageSize.
       responses:
         '200':
           description: List of user followers
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/PaginatedUsers'
-                  - $ref: '#/components/schemas/UserListCoverageResponse'
+                $ref: '#/components/schemas/UserListResult'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -8386,13 +7839,11 @@ paths:
   /x/users/{id}/following:
     get:
       operationId: getUserFollowing
+      description: Returns public profiles followed by the selected user.
       summary: List accounts a user follows
       tags:
         - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: id
           in: path
@@ -8438,9 +7889,7 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/PaginatedUsers'
-                  - $ref: '#/components/schemas/UserListCoverageResponse'
+                $ref: '#/components/schemas/UserListResult'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -8465,13 +7914,11 @@ paths:
   /x/users/{id}/mentions:
     get:
       operationId: getUserMentions
+      description: Returns public posts mentioning the selected user.
       summary: List tweets mentioning a user
       tags:
         - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: id
           in: path
@@ -8485,16 +7932,8 @@ paths:
             type: string
           description: Pagination cursor for mentions
         - $ref: '#/components/parameters/ResultPageSize'
-        - name: sinceTime
-          in: query
-          schema:
-            type: string
-          description: Unix timestamp - return mentions after this time
-        - name: untilTime
-          in: query
-          schema:
-            type: string
-          description: Unix timestamp - return mentions before this time
+        - $ref: '#/components/parameters/TweetSinceTime'
+        - $ref: '#/components/parameters/TweetUntilTime'
         - $ref: '#/components/parameters/TweetFilterFromUser'
         - $ref: '#/components/parameters/TweetFilterToUser'
         - $ref: '#/components/parameters/TweetFilterMentioning'
@@ -8502,7 +7941,7 @@ paths:
         - $ref: '#/components/parameters/TweetFilterSinceDate'
         - $ref: '#/components/parameters/TweetFilterUntilDate'
         - $ref: '#/components/parameters/TweetFilterMediaType'
-        - $ref: '#/components/parameters/TweetFilterMinFaves'
+        - $ref: '#/components/parameters/TweetFilterMinLikes'
         - $ref: '#/components/parameters/TweetFilterMinRetweets'
         - $ref: '#/components/parameters/TweetFilterMinReplies'
         - $ref: '#/components/parameters/TweetFilterMinQuotes'
@@ -8564,13 +8003,11 @@ paths:
   /x/users/{id}/verified-followers:
     get:
       operationId: getUserVerifiedFollowers
+      description: Returns verified public profiles following the selected user.
       summary: List verified followers of a user
       tags:
         - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - name: id
           in: path
@@ -8585,7 +8022,7 @@ paths:
           deprecated: true
           schema:
             type: string
-          description: Legacy cursor alias. Prefer cursor.
+          description: Legacy verified-follower cursor alias. Prefer cursor.
         - $ref: '#/components/parameters/AutomaticFollowerPageSize'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
         - $ref: '#/components/parameters/UserFilterMaxFollowers'
@@ -8607,18 +8044,16 @@ paths:
             type: integer
             minimum: 1
             maximum: 10000
-          description: >
-            Legacy page-size alias outside explicit coverage mode. Coverage
-            accepts 1-10000. Prefer pageSize.
+          description:
+            Legacy verified-follower page-size alias. Coverage accepts 1-10000.
+            Prefer pageSize.
       responses:
         '200':
           description: List of verified followers
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/PaginatedUsers'
-                  - $ref: '#/components/schemas/UserListCoverageResponse'
+                $ref: '#/components/schemas/UserListResult'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -8663,6 +8098,45 @@ components:
       description: Secure Xquik browser session cookie.
 
   parameters:
+    CollectionCursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+      description: Pagination cursor for collection results.
+    CommunityPathId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+      description: X Community ID.
+    ListPathId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+      description: X List ID.
+    CommunityId:
+      name: communityId
+      in: query
+      required: true
+      schema: { type: string, pattern: '^\d+$' }
+      description: Numeric ID of the community whose posts to search
+    CommunityQuery:
+      name: q
+      in: query
+      required: true
+      schema: { type: string }
+      description: Search query
+    CommunityQueryType:
+      name: queryType
+      in: query
+      schema: { type: string, enum: [Latest, Top], default: Latest }
+      description: Sort order (Latest or Top)
+    CommunityCursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+      description: Pagination cursor for community search
     WriteIdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -8780,19 +8254,43 @@ components:
         minimum: 1
         maximum: 300
         default: 20
+    TweetSinceTime:
+      name: sinceTime
+      in: query
+      schema: { type: string }
+      description: Inclusive ISO bound for Tweet creation time.
+    TweetUntilTime:
+      name: untilTime
+      in: query
+      schema: { type: string }
+      description: Exclusive ISO bound for Tweet creation time.
+    TweetIncludeReplies:
+      name: includeReplies
+      in: query
+      schema: { type: boolean, default: false }
+      description: Include reply tweets.
     FollowerPageSize:
       name: pageSize
       in: query
       description: >
-        Maximum user profiles requested from this page (20-200, default 200).
+        Maximum user profiles requested from this page (1-200, default 200).
         Source, filters, or credits can return fewer profiles. Keep requesting
         next_cursor while has_next_page is true. Deprecated aliases remain
         accepted.
       schema:
         type: integer
-        minimum: 20
+        minimum: 1
         maximum: 200
         default: 200
+    LegacyUserPageSize:
+      name: pageSize
+      in: query
+      description: Maximum user profiles per page (1-200, default 20).
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 20
     AutomaticFollowerPageSize:
       name: pageSize
       in: query
@@ -8801,7 +8299,7 @@ components:
         profiles. Continue with has_next_page.
       schema:
         type: integer
-        minimum: 20
+        minimum: 1
         maximum: 300
         default: 200
     UserFilterMinFollowers:
@@ -8818,12 +8316,12 @@ components:
       name: minFollowing
       in: query
       schema: { type: integer, minimum: 0 }
-      description: Minimum following count.
+      description: Profiles must follow at least this many accounts.
     UserFilterMaxFollowing:
       name: maxFollowing
       in: query
       schema: { type: integer, minimum: 0 }
-      description: Maximum following count.
+      description: Profiles may follow at most this many accounts.
     UserFilterMinStatuses:
       name: minStatuses
       in: query
@@ -8911,7 +8409,7 @@ components:
       in: query
       schema:
         type: string
-      description: Language code filter, e.g. en or tr.
+      description: Only when the caller requests a language.
     TweetFilterSinceDate:
       name: sinceDate
       in: query
@@ -8933,13 +8431,13 @@ components:
         type: string
         enum: [images, videos, gifs, media, links, none]
       description: Filter by media type.
-    TweetFilterMinFaves:
-      name: minFaves
+    TweetFilterMinLikes:
+      name: minLikes
       in: query
       schema:
         type: integer
         minimum: 0
-      description: Minimum likes threshold. minLikes is also accepted.
+      description: Minimum likes threshold. minFaves is also accepted.
     TweetFilterMinRetweets:
       name: minRetweets
       in: query
@@ -9081,21 +8579,21 @@ components:
       schema:
         type: string
         enum: [include, exclude, only]
-      description: Reply mode.
+      description: Only when the caller requests a reply mode.
     TweetFilterRetweets:
       name: retweets
       in: query
       schema:
         type: string
         enum: [include, exclude, only]
-      description: Retweet mode.
+      description: Only when the caller requests a repost mode.
     TweetFilterQuotes:
       name: quotes
       in: query
       schema:
         type: string
         enum: [include, exclude, only]
-      description: Quote mode.
+      description: Only when the caller requests a quote mode.
     TweetFilterExactPhrase:
       name: exactPhrase
       in: query
@@ -9198,6 +8696,12 @@ components:
       description: Raw advanced search query appended as-is.
 
   responses:
+    CommunityTweetSearchResults:
+      description: Tweet search results from the selected X Community
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PaginatedTweets'
     WriteActionCompleted:
       description: Write reached a terminal state.
       headers:
@@ -9478,8 +8982,10 @@ components:
               - $ref: '#/components/schemas/AnonymousGuestAuthenticationRequired'
               - allOf:
                   - $ref: '#/components/schemas/Error'
-                  - not:
-                      required: [payment_options]
+                  - type: object
+                    propertyNames:
+                      not: { const: payment_options, type: string }
+                      type: string
           example:
             account_required: false
             error: unauthenticated
@@ -9554,8 +9060,10 @@ components:
               - $ref: '#/components/schemas/GuestPaymentRequired'
               - allOf:
                   - $ref: '#/components/schemas/Error'
-                  - not:
-                      required: [payment_options]
+                  - type: object
+                    propertyNames:
+                      not: { const: payment_options, type: string }
+                      type: string
           example:
             balance: '0'
             dashboard: '/dashboard/account'
@@ -9971,7 +9479,9 @@ components:
 
   schemas:
     ComposePrepareRequest:
+      description: Inputs for preparing source-backed post guidance.
       type: object
+      example: { step: compose, topic: PostgreSQL query planning }
       required: [step, topic]
       properties:
         step:
@@ -9986,13 +9496,15 @@ components:
           type: string
           enum: [engagement, followers, authority, conversation]
           default: engagement
-          description: Editorial goal used to order the rules and questions.
+          description: User goal used for one follow-up question.
         styleUsername:
           type: string
           minLength: 1
           description: Username from a style analysis saved to this account.
+          example: example_user
       additionalProperties: true
     ComposeRefineRequest:
+      description: Inputs for refining a post plan.
       type: object
       required: [step, topic, goal, tone]
       properties:
@@ -10002,11 +9514,11 @@ components:
         topic:
           type: string
           minLength: 1
-          description: Subject for the post.
+          description: Subject to refine into a post.
         goal:
           type: string
           enum: [engagement, followers, authority, conversation]
-          description: Editorial goal for the guidance.
+          description: User goal interpreted against published ranking signals.
         tone:
           type: string
           minLength: 1
@@ -10026,6 +9538,7 @@ components:
           description: Audience, constraints, sources, or other writing context.
       additionalProperties: true
     ComposeScoreRequest:
+      description: Inputs for checking a post draft.
       type: object
       required: [step, draft]
       properties:
@@ -10035,27 +9548,36 @@ components:
         draft:
           type: string
           minLength: 1
-          description: Full post text for deterministic editorial checks.
+          description:
+            Full post text. The endpoint never assigns a ranking score.
         hasLink:
           type: boolean
-          description: True when a separate link card is attached.
+          deprecated: true
+          x-stainless-deprecation-message: Ignored. Remove this field.
+          description: Accepted for backward compatibility. No guidance uses it.
           default: false
         hasMedia:
           type: boolean
           deprecated: true
           x-stainless-deprecation-message: >-
-            Ignored. Remove this field. Use hasLink for a separate link card.
+            Ignored. Remove this field.
           description: >
             Accepted for backward compatibility. Text checks ignore this field.
       additionalProperties: true
     ComposeContentRule:
+      description: One source-backed ranking fact returned during preparation.
       type: object
       required: [rule]
+      example:
+        { rule: Ranking is viewer-specific. Text alone cannot predict reach. }
       properties:
         rule:
           type: string
+          example: Ranking is viewer-specific. Text alone cannot predict reach.
       additionalProperties: false
     ComposeRadarRecommendation:
+      deprecated: true
+      description: Deprecated compatibility schema. The response array is empty.
       type: object
       required: [endpoint, guidance, source, useFor]
       properties:
@@ -10082,6 +9604,7 @@ components:
           description: Current-topic research this source supports.
       additionalProperties: false
     ComposeSignalLabel:
+      description: One ranking signal and its source-value limit.
       type: object
       required: [action, multiplier]
       properties:
@@ -10090,23 +9613,26 @@ components:
           description: Human-readable published signal name.
         multiplier:
           type: string
-          const: Production weight not published by X
+          const: Source default; production value can vary
       additionalProperties: false
     ComposeScorerSignal:
+      description: One source ranking signal without a production claim.
       type: object
       required: [context, signal, weight]
       properties:
         context:
           type: string
-          description: Signal direction and publication limit.
+          description: Signal direction and production limit.
         signal:
           type: string
           description: Signal name from X's public ranking repository.
         weight:
           type: 'null'
-          description: X does not publish the production weight.
+          const: null
+          description: Null prevents source defaults becoming production claims.
       additionalProperties: false
     ComposeSavedStyle:
+      description: A saved username style and analyzed post count.
       type: object
       required: [tweetCount, username]
       properties:
@@ -10117,6 +9643,7 @@ components:
           type: string
       additionalProperties: false
     ComposePrepareResult:
+      description: Rules, questions, and research guidance for drafting a post.
       type: object
       required:
         - contentRules
@@ -10132,20 +9659,19 @@ components:
       properties:
         contentRules:
           type: array
-          minItems: 18
-          maxItems: 18
+          minItems: 10
+          maxItems: 10
           items:
             $ref: '#/components/schemas/ComposeContentRule'
-          description: Xquik editorial heuristics, ordered for the goal.
+          description: Facts derived only from xai-org/x-algorithm.
         engagementMultipliers:
           type: array
-          minItems: 19
-          maxItems: 19
+          minItems: 26
+          maxItems: 26
           items:
             $ref: '#/components/schemas/ComposeSignalLabel'
           description: >
-            Published engagement signal names. Production multipliers are not
-            published.
+            Source ranking signals. Repository defaults may vary in production.
         engagementVelocity:
           type: string
           description: Publication limit for timing and decay claims.
@@ -10163,25 +9689,26 @@ components:
           type: string
         radarRecommendations:
           type: array
-          minItems: 7
-          maxItems: 7
+          deprecated: true
+          minItems: 0
+          maxItems: 0
           items:
             $ref: '#/components/schemas/ComposeRadarRecommendation'
-          description: Sources and guidance for researching a fresh post angle.
+          description: Deprecated compatibility field. Always empty.
         scorerWeights:
           type: array
-          minItems: 19
-          maxItems: 19
+          minItems: 26
+          maxItems: 26
           items:
             $ref: '#/components/schemas/ComposeScorerSignal'
-          description: Published signal names with unpublished weights as null.
+          description: Source signals with production values withheld as null.
         source:
           type: string
           description: Signal source and evidence limits.
         topPenalties:
           type: array
-          minItems: 4
-          maxItems: 4
+          minItems: 5
+          maxItems: 5
           items:
             type: string
           description: Negative engagement predictions in the public model.
@@ -10200,6 +9727,8 @@ components:
           description: Next action when no cached style is available.
       additionalProperties: false
     ComposeExamplePattern:
+      deprecated: true
+      description: Deprecated compatibility schema. The response array is empty.
       type: object
       required: [description, pattern]
       properties:
@@ -10209,6 +9738,7 @@ components:
           type: string
       additionalProperties: false
     ComposeRefineResult:
+      description: Source-backed guidance for refining a post.
       type: object
       required: [compositionGuidance, examplePatterns, intentUrl, nextStep]
       properties:
@@ -10216,21 +9746,23 @@ components:
           type: array
           items:
             type: string
-          description: Goal, tone, media, and editorial guidance.
+          description: Request context and xai-org/x-algorithm guidance.
         examplePatterns:
           type: array
-          minItems: 3
-          maxItems: 3
+          deprecated: true
+          minItems: 0
+          maxItems: 0
           items:
             $ref: '#/components/schemas/ComposeExamplePattern'
         intentUrl:
           type: string
           format: uri
-          description: X post intent seeded with the topic.
+          description: X post intent generated for the refined topic.
         nextStep:
           type: string
       additionalProperties: false
     ComposeScoreCheck:
+      description: One deterministic draft check.
       type: object
       required: [factor, passed]
       properties:
@@ -10243,17 +9775,18 @@ components:
           description: Present only when the check fails.
       additionalProperties: false
     ComposeScoreResult:
+      description: Posting validation without a fabricated ranking score.
       type: object
       required:
         [checklist, nextStep, passed, passedCount, topSuggestion, totalChecks]
       properties:
         checklist:
           type: array
-          minItems: 9
-          maxItems: 9
+          minItems: 1
+          maxItems: 1
           items:
             $ref: '#/components/schemas/ComposeScoreCheck'
-          description: Deterministic editorial checks. Not a reach prediction.
+          description: Deterministic input validation. Not a reach prediction.
         intentUrl:
           type: string
           format: uri
@@ -10265,12 +9798,12 @@ components:
         passedCount:
           type: integer
           minimum: 0
-          maximum: 9
+          maximum: 1
         topSuggestion:
           type: string
         totalChecks:
           type: integer
-          const: 9
+          const: 1
       additionalProperties: false
     XWriteActionBilling:
       type: object
@@ -10466,7 +9999,7 @@ components:
         pollAfterMs:
           type: [integer, 'null']
           minimum: 0
-          example: null
+          example: 1000
         charged:
           type: boolean
           example: true
@@ -10664,6 +10197,50 @@ components:
           required: [error, message]
       description: >
         Durable failed write action with the applicable payment guidance.
+    SupportMessageBody:
+      description: Non-empty support message text.
+      type: string
+      minLength: 1
+      maxLength: 10000
+      pattern: '.*\S.*'
+      example: 'Thank you for the update.'
+    SupportTicketSubject:
+      description: Non-empty support ticket subject.
+      type: string
+      minLength: 1
+      maxLength: 500
+      pattern: '.*\S.*'
+      example: 'Cannot connect X account'
+    SupportAttachmentUploads:
+      description: One to four support image or video uploads.
+      type: array
+      minItems: 1
+      maxItems: 4
+      example: ['screen.png']
+      items: { type: string, format: binary }
+    SupportMessageSubmission:
+      description: Support submission containing a message body.
+      type: object
+      required: [body]
+      properties:
+        body: { $ref: '#/components/schemas/SupportMessageBody' }
+    SupportAttachmentSubmission:
+      description: Support submission containing one or more attachments.
+      type: object
+      required: [attachments]
+      properties:
+        attachments: { $ref: '#/components/schemas/SupportAttachmentUploads' }
+    SupportMultipartSubmission:
+      description: Multipart support submission with a body or attachments.
+      anyOf:
+        - $ref: '#/components/schemas/SupportMessageSubmission'
+        - $ref: '#/components/schemas/SupportAttachmentSubmission'
+    SupportTicketSubjectSubmission:
+      description: Support submission containing a ticket subject.
+      type: object
+      required: [subject]
+      properties:
+        subject: { $ref: '#/components/schemas/SupportTicketSubject' }
     SupportAttachment:
       description: Downloadable image or video attached to a support message.
       type: object
@@ -10724,8 +10301,12 @@ components:
         true. An empty filtered page can still have has_next_page true.
         Unprefixed cursors are legacy.
       type: object
+      example: { tweets: [], has_next_page: false, next_cursor: '' }
       required: [tweets, has_next_page, next_cursor]
       properties:
+        filtered_count:
+          type: integer
+          minimum: 0
         tweets:
           type: array
           items:
@@ -10746,6 +10327,7 @@ components:
           type: string
           example: 'DAACCgACGRElMJcAAA'
     CoverageStopReason:
+      description: Reason a coverage strategy stopped.
       type: string
       enum:
         - cursor_failure
@@ -10767,6 +10349,7 @@ components:
           type: string
           format: date-time
     TweetSearchCoverageStrategy:
+      description: Result counts and stop reason for one Tweet search strategy.
       type: object
       required:
         - duplicateCount
@@ -10796,8 +10379,8 @@ components:
           minimum: 0
         window:
           $ref: '#/components/schemas/TweetSearchCoverageWindow'
-    TweetSearchCoverageDiagnostic:
-      description: Coverage evidence across parallel search strategies.
+    CoverageDiagnosticBase:
+      description: Shared maximum-coverage counts and completion state.
       type: object
       required:
         - complete
@@ -10807,18 +10390,14 @@ components:
         - failedStrategyCount
         - malformedCount
         - pagesFetched
-        - partitioned
         - responseTruncated
         - resultLimitReached
-        - returnedTweets
         - stalledStrategyCount
-        - strategies
         - strategyCount
-        - uniqueTweets
       properties:
         complete:
           type: boolean
-          description: True when every strategy exhausted its source.
+          description: True after all active strategies exhaust their sources.
         cursorFailureCount:
           type: integer
           minimum: 0
@@ -10836,34 +10415,42 @@ components:
         pagesFetched:
           type: integer
           minimum: 0
-        partitioned:
-          type: boolean
-          description: Whether bounded time windows ran in parallel.
         responseTruncated:
           type: boolean
-          description: Whether credits or the requested limit reduced output.
+          description: True when credits or the requested limit reduce output.
         resultLimitReached:
           type: boolean
-        returnedTweets:
-          type: integer
-          minimum: 0
-          maximum: 10000
         stalledStrategyCount:
           type: integer
           minimum: 0
-        strategies:
-          type: array
-          items:
-            $ref: '#/components/schemas/TweetSearchCoverageStrategy'
         strategyCount:
           type: integer
           minimum: 1
           maximum: 8
-        uniqueTweets:
-          type: integer
-          minimum: 0
-          maximum: 10000
+    TweetSearchCoverageDiagnostic:
+      description: Coverage evidence across parallel search strategies.
+      allOf:
+        - $ref: '#/components/schemas/CoverageDiagnosticBase'
+        - type: object
+          required: [partitioned, returnedTweets, strategies, uniqueTweets]
+          properties:
+            partitioned:
+              type: boolean
+              description: Whether bounded time windows ran in parallel.
+            returnedTweets:
+              type: integer
+              minimum: 0
+              maximum: 10000
+            strategies:
+              type: array
+              items:
+                $ref: '#/components/schemas/TweetSearchCoverageStrategy'
+            uniqueTweets:
+              type: integer
+              minimum: 0
+              maximum: 10000
     TweetSearchCoverageResponse:
+      description: Terminal Tweet search coverage response with diagnostics.
       allOf:
         - $ref: '#/components/schemas/PaginatedTweets'
         - type: object
@@ -10882,6 +10469,7 @@ components:
         Direct reply rows. No-mode requests use resumable automatic coverage.
         Complete mode also returns nested replies and coverage diagnostics. Keep
         nested replies separate from direct coverage.
+      example: { tweets: [], has_next_page: false, next_cursor: '' }
       allOf:
         - $ref: '#/components/schemas/PaginatedTweets'
         - type: object
@@ -10894,6 +10482,7 @@ components:
             diagnostic:
               $ref: '#/components/schemas/ReplyCoverageDiagnostic'
     IncompleteTweetReplies:
+      description: Partial reply results with a safe diagnostic.
       allOf:
         - $ref: '#/components/schemas/TweetReplies'
         - type: object
@@ -10911,6 +10500,7 @@ components:
               type: string
               const: ''
     ReplyCoverageStrategy:
+      description: Result counts and stop reason for one reply strategy.
       type: object
       required:
         - name
@@ -11110,8 +10700,12 @@ components:
         next_cursor while has_next_page is true. Unprefixed cursors remain
         legacy.
       type: object
+      example: { users: [], has_next_page: false, next_cursor: '' }
       required: [users, has_next_page, next_cursor]
       properties:
+        filtered_count:
+          type: integer
+          minimum: 0
         users:
           type: array
           items:
@@ -11127,6 +10721,7 @@ components:
           type: string
           example: 'DAACCgACGRElMJcAAA'
     UserListCoverageStrategy:
+      description: Result counts and stop reason for one relationship strategy.
       type: object
       required:
         - duplicateCount
@@ -11152,68 +10747,25 @@ components:
           minimum: 0
     UserListCoverageDiagnostic:
       description: Coverage evidence across parallel relationship strategies.
-      type: object
-      required:
-        - complete
-        - cursorFailureCount
-        - deadlineReached
-        - duplicateCount
-        - failedStrategyCount
-        - malformedCount
-        - pagesFetched
-        - responseTruncated
-        - resultLimitReached
-        - returnedUsers
-        - stalledStrategyCount
-        - strategies
-        - strategyCount
-        - uniqueUsers
-      properties:
-        complete:
-          type: boolean
-          description: True when every strategy exhausted its source.
-        cursorFailureCount:
-          type: integer
-          minimum: 0
-        deadlineReached:
-          type: boolean
-        duplicateCount:
-          type: integer
-          minimum: 0
-        failedStrategyCount:
-          type: integer
-          minimum: 0
-        malformedCount:
-          type: integer
-          minimum: 0
-        pagesFetched:
-          type: integer
-          minimum: 0
-        responseTruncated:
-          type: boolean
-          description: Whether credits or the requested limit reduced output.
-        resultLimitReached:
-          type: boolean
-        returnedUsers:
-          type: integer
-          minimum: 0
-          maximum: 10000
-        stalledStrategyCount:
-          type: integer
-          minimum: 0
-        strategies:
-          type: array
-          items:
-            $ref: '#/components/schemas/UserListCoverageStrategy'
-        strategyCount:
-          type: integer
-          minimum: 1
-          maximum: 8
-        uniqueUsers:
-          type: integer
-          minimum: 0
-          maximum: 10000
+      allOf:
+        - $ref: '#/components/schemas/CoverageDiagnosticBase'
+        - type: object
+          required: [returnedUsers, strategies, uniqueUsers]
+          properties:
+            returnedUsers:
+              type: integer
+              minimum: 0
+              maximum: 10000
+            strategies:
+              type: array
+              items:
+                $ref: '#/components/schemas/UserListCoverageStrategy'
+            uniqueUsers:
+              type: integer
+              minimum: 0
+              maximum: 10000
     UserListCoverageResponse:
+      description: Terminal relationship coverage response with diagnostics.
       allOf:
         - $ref: '#/components/schemas/PaginatedUsers'
         - type: object
@@ -11227,6 +10779,12 @@ components:
               const: ''
             diagnostic:
               $ref: '#/components/schemas/UserListCoverageDiagnostic'
+    UserListResult:
+      description: A standard or terminal maximum-coverage relationship page.
+      example: { users: [], has_next_page: false, next_cursor: '' }
+      oneOf:
+        - $ref: '#/components/schemas/PaginatedUsers'
+        - $ref: '#/components/schemas/UserListCoverageResponse'
     BatchUsers:
       description: >
         Batch lookup preserves first-seen ID order and ignores duplicate IDs.
@@ -11245,6 +10803,11 @@ components:
           unprocessed_ids,
         ]
       properties:
+        filtered_count:
+          type: integer
+          minimum: 0
+          description: Profiles rejected by the requested filters.
+          example: 0
         users:
           type: array
           example:
@@ -11467,7 +11030,7 @@ components:
               format: uri
             - type: 'null'
           description: Present only while the purchase is pending.
-          example: null
+          example: https://checkout.xquik.com/session/example
         credits:
           type: string
           pattern: '^\d+$'
@@ -12243,33 +11806,29 @@ components:
         - verified_follower_explorer
 
     ExtractionRequest:
-      description: One synchronous estimate or asynchronous extraction request.
+      description: One estimate or extraction. Omit unrequested filters.
       type: object
+      example: { toolType: follower_explorer, targetUsername: elonmusk }
       required: [toolType]
       properties:
         toolType:
+          type: string
           $ref: '#/components/schemas/ExtractionToolType'
-          example: follower_explorer
         targetTweetId:
           type: string
-          example: '1234567890'
         targetUsername:
           type: string
-          example: elonmusk
         targetCommunityId:
           type: string
           description: Required for community_post_extractor & community_search.
-          example: '1500000000000000000'
         targetListId:
           type: string
           description:
             Required for list_follower_explorer, list_member_extractor &
             list_post_extractor.
-          example: '1234567890'
         targetSpaceId:
           type: string
           description: Required for space_explorer.
-          example: '1vOGwMdBqpwGB'
         targetTweetIds:
           type: array
           minItems: 1
@@ -12324,9 +11883,9 @@ components:
           description: Profile relations processed within one job.
         queryType:
           type: string
-          enum: [Latest, Top, Both]
+          enum: [Latest, Top, Both, relevance]
           default: Latest
-          description: Search ranking applied to every query.
+          description: Use Top for engagement. The relevance alias maps to Top.
         maxItemsPerTarget:
           type: integer
           minimum: 1
@@ -12433,43 +11992,43 @@ components:
           description: Return only Blue-verified Tweet authors.
         cardName:
           type: string
-          description: Match the Tweet card name.
+          description: Require Tweet cards whose name matches this value.
         source:
           type: string
-          description: Match the source application.
+          description: Require Tweets from this source application.
         excludeSource:
           type: string
-          description: Exclude a source application.
+          description: Drop Tweets from this source application.
         geocode:
           type: string
-          description: Match latitude, longitude, and radius.
+          description: Restrict Tweets by latitude, longitude, and radius.
         sinceId:
           type: string
-          description: Return Tweets newer than this Tweet ID.
+          description: Require Tweets newer than this ID.
         maxId:
           type: string
-          description: Return Tweets older than this Tweet ID.
+          description: Require Tweets older than this ID.
         near:
           type: string
-          description: Match a place name.
+          description: Restrict Tweet search to this place name.
         within:
           type: string
-          description: Set the radius for the near filter.
+          description: Set the radius around the requested place.
         withinTime:
           type: string
-          description: Match Tweets inside a recent time window.
+          description: Restrict Tweets to this recent time window.
         nativeRetweets:
           type: boolean
           default: false
-          description: Only return native reposts.
+          description: Require native repost results.
         safe:
           type: boolean
           default: false
-          description: Enable the safe-search filter.
+          description: Apply safe-search filtering to Tweet results.
         news:
           type: boolean
           default: false
-          description: Only return news results.
+          description: Require news-classified Tweet results.
         minFollowers:
           type: integer
           minimum: 0
@@ -12523,159 +12082,158 @@ components:
           description:
             Maximum number of results to extract. When set, the extraction stops
             after reaching this limit.
-          example: 1000
         searchQuery:
           type: string
-          description: Required for tweet_search_extractor & community_search.
-          example: 'AI trends 2025'
+          description:
+            Required for tweet_search_extractor & community_search. Do not add
+            terms or filters.
         fromUser:
           type: string
           description: Filter by author username (tweet_search_extractor)
-          example: nasa
         toUser:
           type: string
-          description:
-            Filter replies sent to a username (tweet_search_extractor)
-          example: openai
+          description: Replies to this username (tweet_search_extractor).
         mentioning:
           type: string
-          description:
-            Filter tweets mentioning a username (tweet_search_extractor)
-          example: example_user
+          description: Mentions this username (tweet_search_extractor).
         language:
           type: string
-          description: Language code filter (tweet_search_extractor)
-          example: en
+          description: Only when requested (tweet_search_extractor).
         sinceDate:
           type: string
           format: date
           description: Start date YYYY-MM-DD (tweet_search_extractor)
-          example: '2025-01-01'
         untilDate:
           type: string
           format: date
           description: End date YYYY-MM-DD (tweet_search_extractor)
-          example: '2025-12-31'
         mediaType:
           type: string
           enum: [images, videos, gifs, media, links, none]
           description: Media type filter (tweet_search_extractor)
-          example: images
         minFaves:
           type: integer
           minimum: 0
           description: Minimum likes threshold (tweet_search_extractor)
-          example: 10
         minRetweets:
           type: integer
           minimum: 0
           description: Minimum retweets threshold (tweet_search_extractor)
-          example: 5
         minReplies:
           type: integer
           minimum: 0
           description: Minimum replies threshold (tweet_search_extractor)
-          example: 3
         minQuotes:
           type: integer
           minimum: 0
           description: Minimum quote count threshold (tweet_search_extractor)
-          example: 2
         verifiedOnly:
           type: boolean
           description: Only verified authors (tweet_search_extractor)
-          example: false
         replies:
           type: string
           enum: [include, exclude, only]
-          description: Reply mode (tweet_search_extractor)
-          example: include
+          description: Only when requested (tweet_search_extractor).
         retweets:
           type: string
           enum: [include, exclude, only]
-          description: Retweet mode (tweet_search_extractor)
-          example: exclude
+          description: Only when requested (tweet_search_extractor).
         quotes:
           type: string
           enum: [include, exclude, only]
-          description: Quote mode (tweet_search_extractor)
-          example: include
+          description: Only when requested (tweet_search_extractor).
         exactPhrase:
           type: string
           description: Exact phrase to match (tweet_search_extractor)
-          example: 'artificial intelligence'
         excludeWords:
           type: string
-          description:
-            Words or quoted phrases to exclude. Separate with spaces, commas, or
-            lines. (tweet_search_extractor)
-          example: 'spam'
+          description: Excluded terms or phrases (tweet_search_extractor).
         anyWords:
           type: string
-          description:
-            Words or quoted phrases where any one can match. Separate with
-            spaces, commas, or lines. (tweet_search_extractor)
-          example: 'ChatGPT AI model'
+          description: Any matching term or phrase (tweet_search_extractor).
         hashtags:
           type: string
-          description:
-            Hashtags separated by spaces, commas, or lines.
-            (tweet_search_extractor)
-          example: '#AI startups'
+          description: Matching hashtags (tweet_search_extractor).
         cashtags:
           type: string
-          description:
-            Cashtags separated by spaces, commas, or lines.
-            (tweet_search_extractor)
-          example: '$TSLA $NVDA'
+          description: Matching cashtags (tweet_search_extractor).
         url:
           type: string
           description: URL substring or domain filter (tweet_search_extractor)
-          example: example.com
         conversationId:
           type: string
           description: Conversation ID filter (tweet_search_extractor)
-          example: '1234567890'
         inReplyToTweetId:
           type: string
           description: Only replies to this tweet ID (tweet_search_extractor)
-          example: '1234567890'
         quotesOfTweetId:
           type: string
           description: Only quotes of this tweet ID (tweet_search_extractor)
-          example: '1234567890'
         retweetsOfTweetId:
           type: string
           description: Only retweets of this tweet ID (tweet_search_extractor)
-          example: '1234567890'
         listId:
           type: string
           description: Search within a list ID (tweet_search_extractor)
-          example: '1234567890'
         place:
           type: string
           description: Search within a place ID (tweet_search_extractor)
-          example: '96683cc9126741d1'
         placeCountry:
           type: string
           description: Search within a country code (tweet_search_extractor)
-          example: US
         pointRadius:
           type: string
           description:
             Geo point radius, e.g. -73.99 40.73 25mi (tweet_search_extractor)
-          example: '-73.99 40.73 25mi'
         boundingBox:
           type: string
           description:
             Geo bounding box, e.g. -74.1 40.6 -73.9 40.8
             (tweet_search_extractor)
-          example: '-74.1 40.6 -73.9 40.8'
         advancedQuery:
           type: string
           description:
             Raw advanced search query appended as-is (tweet_search_extractor)
-          example: 'min_faves:100'
+
+    ExtractionEstimate:
+      description: Free credit estimate. It never creates a job or charges.
+      type: object
+      required:
+        [allowed, creditsAvailable, creditsRequired, estimatedResults, source]
+      properties:
+        allowed:
+          type: boolean
+          description: Whether the balance covers the full estimate.
+          example: true
+        creditsAvailable:
+          type: string
+          example: '50000'
+        creditsRequired:
+          type: string
+          example: '500'
+        estimatedResults:
+          type: integer
+          description: Credit calculation row count, not source availability.
+          example: 500
+        resolvedXUserId:
+          type: string
+          example: '123456'
+        source:
+          type: string
+          enum:
+            [
+              followers,
+              following,
+              collection,
+              paginationCap,
+              posts,
+              quoteCount,
+              replyCount,
+              resultsLimit,
+              retweetCount,
+              unknown,
+            ]
+          example: replyCount
 
     ExtractionMixedTarget:
       description: One auto-routed target in a mixed Tweet collection.
@@ -12758,9 +12316,7 @@ components:
         xUserId:
           type: string
           example: '9876543210'
-        eventTypes:
-          $ref: '#/components/schemas/EventTypeArray'
-          example: ['tweet.new', 'tweet.reply']
+        eventTypes: *event-types
         isActive:
           type: boolean
           example: true
@@ -12777,10 +12333,12 @@ components:
           type: string
           enum: [x_user_not_found]
           description: Why Xquik automatically paused this monitor.
+          example: x_user_not_found
         pausedAt:
           type: string
           format: date-time
           description: When Xquik automatically paused this monitor.
+          example: '2025-01-15T12:00:00Z'
 
     KeywordMonitor:
       description: Keyword monitor that tracks matching public X activity.
@@ -12793,9 +12351,7 @@ components:
         query:
           type: string
           example: 'xquik OR "x api"'
-        eventTypes:
-          $ref: '#/components/schemas/EventTypeArray'
-          example: ['tweet.new']
+        eventTypes: *single-event-type
         isActive:
           type: boolean
           example: true
@@ -12855,6 +12411,7 @@ components:
           type: string
           example: '42'
         type:
+          type: string
           $ref: '#/components/schemas/EventType'
           example: 'tweet.new'
         username:
@@ -12883,6 +12440,7 @@ components:
           format: date-time
           example: '2025-01-15T12:00:00Z'
         data:
+          type: object
           $ref: '#/components/schemas/PublicMetadata'
           description: Event payload - shape varies by event type (JSON)
           example:
@@ -12894,6 +12452,13 @@ components:
     ExtractionJob:
       description: Extraction job tracking status, tool type, and result count.
       type: object
+      example:
+        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+        toolType: follower_explorer
+        status: completed
+        totalResults: 500
+        completionReason: requested_limit_reached
+        createdAt: '2026-08-23T10:00:00Z'
       required: [id, toolType, status, totalResults, createdAt]
       properties:
         id:
@@ -12902,9 +12467,31 @@ components:
           $ref: '#/components/schemas/ExtractionToolType'
         status:
           type: string
-          enum: [running, completed, failed]
+          enum: [pending, running, canceled, completed, failed]
         totalResults:
           type: integer
+        resultsLimit:
+          type: integer
+          minimum: 1
+          description: Requested result limit.
+        effectiveResultsLimit:
+          type: integer
+          minimum: 0
+          description: Result limit after affordability checks.
+        completionReason:
+          type: string
+          enum:
+            [
+              budget_limited,
+              canceled,
+              failed,
+              requested_limit_reached,
+              source_exhausted,
+            ]
+          description: Why a terminal job stopped.
+        errorMessage:
+          type: string
+          description: Safe error code for a failed job.
         createdAt:
           type: string
           format: date-time
@@ -12939,55 +12526,33 @@ components:
 
     DrawDetail:
       description: Full giveaway draw with tweet metrics, entries, and timing.
-      type: object
-      required:
-        - id
-        - tweetUrl
-        - tweetId
-        - tweetText
-        - tweetAuthorUsername
-        - status
-        - totalEntries
-        - validEntries
-        - tweetLikeCount
-        - tweetRetweetCount
-        - tweetReplyCount
-        - tweetQuoteCount
-        - createdAt
-      properties:
-        id:
-          type: string
-          description: Draw public ID.
-          example: 'f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345'
-        tweetUrl:
-          type: string
-          format: uri
-        tweetId:
-          type: string
-        tweetText:
-          type: string
-        tweetAuthorUsername:
-          type: string
-        status:
-          type: string
-        totalEntries:
-          type: integer
-        validEntries:
-          type: integer
-        tweetLikeCount:
-          type: integer
-        tweetRetweetCount:
-          type: integer
-        tweetReplyCount:
-          type: integer
-        tweetQuoteCount:
-          type: integer
-        createdAt:
-          type: string
-          format: date-time
-        drawnAt:
-          type: string
-          format: date-time
+      example: *draw-detail-example
+      allOf:
+        - $ref: '#/components/schemas/DrawListItem'
+        - type: object
+          required:
+            - tweetId
+            - tweetText
+            - tweetAuthorUsername
+            - tweetLikeCount
+            - tweetRetweetCount
+            - tweetReplyCount
+            - tweetQuoteCount
+          properties:
+            tweetId:
+              type: string
+            tweetText:
+              type: string
+            tweetAuthorUsername:
+              type: string
+            tweetLikeCount:
+              type: integer
+            tweetRetweetCount:
+              type: integer
+            tweetReplyCount:
+              type: integer
+            tweetQuoteCount:
+              type: integer
 
     Winner:
       description: Giveaway draw winner with position and backup flag.
@@ -13023,9 +12588,7 @@ components:
           type: string
           format: uri
           example: 'https://example.com/webhooks/xquik'
-        eventTypes:
-          $ref: '#/components/schemas/EventTypeArray'
-          example: ['tweet.new', 'tweet.reply']
+        eventTypes: *event-types
         isActive:
           type: boolean
           example: true
@@ -13171,6 +12734,8 @@ components:
               h: { type: integer }
         grokPostId:
           { type: string, description: Grok post ID associated with the media. }
+        graphicViolence:
+          { type: boolean, description: Graphic-violence warning. }
         height: { type: integer, description: Original height. }
         id: { type: string, description: Media entity ID. }
         indices:
@@ -13179,6 +12744,7 @@ components:
           items: { type: integer }
         mediaKey: { type: string, description: Stable X media key. }
         monetizable: { type: boolean, description: Monetization status. }
+        otherSensitiveContent: { type: boolean }
         sizes:
           type: object
           description: Named media renditions and resize modes.
@@ -13255,12 +12821,12 @@ components:
     PublicMetadata:
       description: Public metadata whose fields are defined by X.
       type: object
+      example: {}
       additionalProperties: true
       x-stainless-any: true
       x-stainless-terraform-type: string
 
     TweetArticleMetadata:
-      description: Article metadata attached to a tweet.
       type: object
       properties:
         coverMedia: { $ref: '#/components/schemas/PublicMetadata' }
@@ -13272,7 +12838,6 @@ components:
         coverMediaUrl: { type: string }
 
     TweetCard:
-      description: Public card metadata attached to a tweet.
       type: object
       properties:
         id: { type: string }
@@ -13281,7 +12846,17 @@ components:
         bindingValues: { $ref: '#/components/schemas/PublicMetadata' }
         platform:
           $ref: '#/components/schemas/PublicMetadata'
-          description: Public card delivery platform metadata.
+        userReferenceErrors:
+          description: Unresolved card user references.
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: string
+              reason:
+                type: string
+          example: [{ message: User unavailable, reason: Suspended }]
         userReferences:
           { type: array, items: { $ref: '#/components/schemas/UserProfile' } }
     TweetCommunityNote:
@@ -13298,7 +12873,6 @@ components:
         metadata: { $ref: '#/components/schemas/PublicMetadata' }
 
     TweetEdit:
-      description: Tweet edits.
       type: object
       properties:
         editTweetIds: { type: array, items: { type: string } }
@@ -13306,21 +12880,16 @@ components:
         initialTweetId: { type: string }
 
     TweetEntities:
-      description: Public tweet entities.
       type: object
-      additionalProperties: true
       properties:
         hashtags:
           { type: array, items: { $ref: '#/components/schemas/TweetHashtag' } }
         smarttags:
-          type: array
-          items: { type: object, additionalProperties: true }
+          { type: array, items: { $ref: '#/components/schemas/TweetSymbol' } }
         symbols:
           { type: array, items: { $ref: '#/components/schemas/TweetSymbol' } }
         timestamps:
-          description: Video timestamp entities with indices, seconds, and text.
-          type: array
-          items: { type: object, additionalProperties: true }
+          { type: array, items: { $ref: '#/components/schemas/TweetSymbol' } }
         urls:
           {
             type: array,
@@ -13334,39 +12903,32 @@ components:
 
     TweetHashtag:
       type: object
-      additionalProperties: true
       required: [text]
       properties:
         indices: { type: array, items: { type: integer } }
         text: { type: string }
 
     TweetSymbol:
-      description: Public cashtag and market metadata.
+      description: Indexed smart-tag, cashtag, or video timestamp metadata.
       type: object
-      additionalProperties: true
       properties:
-        indices:
-          type: array
-          items: { type: integer }
+        indices: { type: array, items: { type: integer } }
+        seconds: { type: number }
         text: { type: string }
         tag:
           type: object
-          additionalProperties: true
           properties:
             info:
               type: object
-              additionalProperties: true
               properties:
                 info:
                   type: object
-                  additionalProperties: true
                   properties:
                     name: { type: string }
                     ticker: { type: string }
 
     TweetUrlEntity:
       type: object
-      additionalProperties: true
       properties:
         display_url: { type: string }
         expanded_url: { type: string }
@@ -13377,7 +12939,6 @@ components:
 
     TweetUserMention:
       type: object
-      additionalProperties: true
       required: [screen_name]
       properties:
         id_str: { type: string }
@@ -13431,7 +12992,6 @@ components:
           type: integer
 
     TweetPlace:
-      description: Public place metadata attached to a tweet.
       type: object
       properties:
         boundingBox:
@@ -13475,8 +13035,8 @@ components:
                       url: { type: string }
                       urlType: { type: string }
 
-    TweetPublicData:
-      description: Public fields shared by tweet response shapes.
+    TweetPublicDataBase:
+      description: Public tweet fields without nested tweet context.
       type: object
       required:
         [
@@ -13526,6 +13086,7 @@ components:
                 properties:
                   ctaType: { type: string, example: SeeConversation }
                   headline: { type: string }
+                  metadata: { $ref: '#/components/schemas/PublicMetadata' }
                   subtext: { type: string }
         source: { type: string, example: 'Twitter Web App' }
         displayTextRange:
@@ -13544,10 +13105,12 @@ components:
         edit:
           $ref: '#/components/schemas/TweetEdit'
         isTranslatable: { type: boolean }
+        jetfuelAttachment: { $ref: '#/components/schemas/PublicMetadata' }
         noteTweet:
           $ref: '#/components/schemas/TweetNote'
         place:
           $ref: '#/components/schemas/TweetPlace'
+        postCta: { $ref: '#/components/schemas/PublicMetadata' }
         possiblySensitive: { type: boolean }
         previousCounts:
           $ref: '#/components/schemas/TweetPreviousCounts'
@@ -13560,10 +13123,7 @@ components:
         viewState: { type: string }
         entities:
           $ref: '#/components/schemas/TweetEntities'
-        quoted_tweet:
-          $ref: '#/components/schemas/EmbeddedTweet'
-        retweeted_tweet:
-          $ref: '#/components/schemas/EmbeddedTweet'
+        scopes: { $ref: '#/components/schemas/PublicMetadata' }
         media:
           type: array
           items:
@@ -13576,14 +13136,61 @@ components:
         viewCount: { type: integer, example: 1500 }
         bookmarkCount: { type: integer, example: 2 }
 
+    TweetPublicData:
+      description: Public fields shared by tweet response shapes.
+      allOf:
+        - $ref: '#/components/schemas/TweetPublicDataBase'
+        - type: object
+          properties:
+            quoted_tweet:
+              $ref: '#/components/schemas/EmbeddedTweet'
+            retweeted_tweet:
+              $ref: '#/components/schemas/EmbeddedTweet'
+
     EmbeddedTweet:
       description: Quoted or retweeted tweet context.
       allOf:
-        - $ref: '#/components/schemas/TweetPublicData'
+        - $ref: '#/components/schemas/TweetPublicDataBase'
         - type: object
           properties:
             author:
               $ref: '#/components/schemas/UserProfile'
+            quoted_tweet:
+              $ref: '#/components/schemas/EmbeddedTweetLevel2'
+            retweeted_tweet:
+              $ref: '#/components/schemas/EmbeddedTweetLevel2'
+
+    EmbeddedTweetLevel2:
+      description: Nested tweet context at depth 2.
+      allOf:
+        - $ref: '#/components/schemas/TweetPublicDataBase'
+        - type: object
+          properties:
+            author: { $ref: '#/components/schemas/UserProfile' }
+            quoted_tweet:
+              $ref: '#/components/schemas/EmbeddedTweetLevel3'
+            retweeted_tweet:
+              $ref: '#/components/schemas/EmbeddedTweetLevel3'
+
+    EmbeddedTweetLevel3:
+      description: Nested tweet context at depth 3.
+      allOf:
+        - $ref: '#/components/schemas/TweetPublicDataBase'
+        - type: object
+          properties:
+            author: { $ref: '#/components/schemas/UserProfile' }
+            quoted_tweet:
+              $ref: '#/components/schemas/EmbeddedTweetLevel4'
+            retweeted_tweet:
+              $ref: '#/components/schemas/EmbeddedTweetLevel4'
+
+    EmbeddedTweetLevel4:
+      description: Final nested tweet context at depth 4.
+      allOf:
+        - $ref: '#/components/schemas/TweetPublicDataBase'
+        - type: object
+          properties:
+            author: { $ref: '#/components/schemas/UserProfile' }
 
     ContentDisclosure:
       description:
@@ -13616,6 +13223,17 @@ components:
       description:
         Full tweet with text, engagement metrics, media, and metadata. A zero
         metric can mean X did not report the count.
+      example:
+        {
+          id: '1234567890',
+          text: 'New feature',
+          retweetCount: 5,
+          replyCount: 3,
+          likeCount: 42,
+          quoteCount: 1,
+          viewCount: 1500,
+          bookmarkCount: 2,
+        }
       allOf:
         - $ref: '#/components/schemas/TweetPublicData'
         - type: object
@@ -13666,6 +13284,10 @@ components:
           type: string
         description:
           type: string
+        longDescription:
+          type: object
+          $ref: '#/components/schemas/PublicMetadata'
+          description: Public text, ranges, references, and mention data.
         url:
           type: string
         urlType:
@@ -13708,10 +13330,24 @@ components:
         payPalHandle: { type: string }
         venmoHandle: { type: string }
 
+    AccountBasedIn:
+      description: >-
+        X's best-effort public label inferred from aggregated account-access IP
+        addresses. It does not state nationality, residence, identity,
+        registration, post location, or exact location.
+      type: object
+      required: [value, level, observedAt]
+      properties:
+        value: { type: string, example: United States }
+        level: { type: string, enum: [country, region], example: country }
+        observedAt:
+          { type: string, format: date-time, example: '2026-08-21T10:00:00Z' }
+
     UserProfile:
       description:
         X user profile with bio, follower counts, and verification status.
       type: object
+      example: { id: '9876543210', username: elonmusk, name: 'Elon Musk' }
       required: [id, username, name]
       properties:
         id:
@@ -13755,7 +13391,12 @@ components:
           example: 'https://pbs.twimg.com/profile_banners/example.jpg'
         location:
           type: string
+          description: Account owner's public profile location text
           example: 'Austin, TX'
+        accountBasedIn:
+          anyOf:
+            - $ref: '#/components/schemas/AccountBasedIn'
+            - type: 'null'
         createdAt:
           type: string
           example: '2009-06-02T20:12:29Z'
@@ -13794,9 +13435,11 @@ components:
           type: boolean
           example: false
         professional:
+          type: object
           $ref: '#/components/schemas/PublicMetadata'
           description: Professional metadata with category display settings
         grokTranslatedBio:
+          type: object
           $ref: '#/components/schemas/PublicMetadata'
           description: Public profile bio translation returned by X
         pinnedTweetIds:
@@ -13859,6 +13502,7 @@ components:
           description: Community role when returned by community member reads
           example: Member
         profile_bio:
+          type: object
           $ref: '#/components/schemas/PublicMetadata'
           description: Structured profile bio with entity annotations
           example:
@@ -13891,29 +13535,15 @@ components:
 
     DraftDetail:
       description: Full tweet draft including update timestamp.
-      type: object
-      required: [id, text, createdAt, updatedAt]
-      properties:
-        id:
-          type: string
-          example: '42'
-        text:
-          type: string
-          example: 'Draft tweet about AI trends'
-        topic:
-          type: string
-          example: 'Technology'
-        goal:
-          type: string
-          example: 'Engagement'
-        createdAt:
-          type: string
-          format: date-time
-          example: '2025-01-15T12:00:00Z'
-        updatedAt:
-          type: string
-          format: date-time
-          example: '2025-01-16T09:30:00Z'
+      allOf:
+        - $ref: '#/components/schemas/Draft'
+        - type: object
+          required: [updatedAt]
+          properties:
+            updatedAt:
+              type: string
+              format: date-time
+              example: '2025-01-16T09:30:00Z'
 
     StyleProfileSummary:
       description: Style profile summary with tweet count and ownership flag.
@@ -13937,43 +13567,33 @@ components:
     StyleProfile:
       description:
         Full style profile with sampled tweets used for tone analysis.
-      type: object
-      required: [xUsername, tweetCount, isOwnAccount, fetchedAt, tweets]
-      properties:
-        xUsername:
-          type: string
-          example: 'elonmusk'
-        tweetCount:
-          type: integer
-          example: 50
-        isOwnAccount:
-          type: boolean
-          example: true
-        fetchedAt:
-          type: string
-          format: date-time
-          example: '2025-01-15T12:00:00Z'
-        tweets:
-          type: array
-          items:
-            type: object
-            required: [id, text]
-            properties:
-              id:
-                type: string
-                example: '1234567890'
-              text:
-                type: string
-                example: 'Just launched our new feature!'
-              createdAt:
-                type: string
-                example: '2025-01-15T12:00:00Z'
-              authorUsername:
-                type: string
-                example: 'elonmusk'
-          example:
-            - id: '1234567890'
-              text: 'Just launched our new feature!'
+      example: *style-profile-example
+      allOf:
+        - $ref: '#/components/schemas/StyleProfileSummary'
+        - type: object
+          required: [tweets]
+          properties:
+            tweets:
+              type: array
+              items:
+                type: object
+                required: [id, text]
+                properties:
+                  id:
+                    type: string
+                    example: '1234567890'
+                  text:
+                    type: string
+                    example: 'Just launched our new feature!'
+                  createdAt:
+                    type: string
+                    example: '2025-01-15T12:00:00Z'
+                  authorUsername:
+                    type: string
+                    example: 'elonmusk'
+              example:
+                - id: '1234567890'
+                  text: 'Just launched our new feature!'
 
     RadarItem:
       description:
@@ -14195,6 +13815,13 @@ components:
 
     XAccountConnectionContinuation:
       description: The connection is still running or needs an email code.
+      example:
+        {
+          object: x_account_connection_attempt,
+          id: xatt_0123456789abcdef0123456789abcdef,
+          status: pending,
+          pollAfterMs: 3000,
+        }
       oneOf:
         - $ref: '#/components/schemas/XAccountConnectionAttemptPending'
         - $ref: '#/components/schemas/XAccountConnectionChallenge'

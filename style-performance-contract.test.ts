@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs';
-
 import { describe, expect, it } from 'vitest';
 
 const productRoot =
@@ -20,14 +19,16 @@ describe('tweet style performance documentation', (): void => {
 
     expect({
       apiKeyDocumented: source.includes('Send `x-api-key`'),
-      bearerDocumented: source.includes('OAuth clients can send a bearer token'),
+      bearerDocumented: source.includes(
+        'OAuth clients can send a bearer token',
+      ),
       responseTabs: [...source.matchAll(/<Tab title="(\d{3})"/gu)].map(
         ([, status]) => status,
       ),
     }).toStrictEqual({
       apiKeyDocumented: true,
       bearerDocumented: true,
-      responseTabs: ['200', '401', '402', '404', '429'],
+      responseTabs: ['200', '401', '402', '404', '422', '429'],
     });
   });
 

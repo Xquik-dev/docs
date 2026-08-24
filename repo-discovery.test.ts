@@ -1,12 +1,9 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
-import {
-  stripGeneratedResponseExamples,
-} from './scripts/lib/generated-response-examples';
+import { stripGeneratedResponseExamples } from './scripts/lib/generated-response-examples';
 
 interface DiscoveryFinding {
   readonly file?: string;
@@ -109,7 +106,7 @@ const REQUIRED_README_SNIPPETS = [
   'Send DMs and store returned message IDs',
   '[Prefect](https://docs.xquik.com/guides/prefect)',
   'Schedule tweet, user, timeline, and trend reads in Prefect flows',
-  '[MCP server v2.6.31](https://docs.xquik.com/mcp)',
+  '[MCP server v2.6.32](https://docs.xquik.com/mcp)',
   '[Webhooks](https://docs.xquik.com/webhooks/overview)',
   '[Apify Actors](https://docs.xquik.com/alternatives/apify)',
   'Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.',
@@ -1852,7 +1849,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'Pass `next_cursor` as `cursor` for tweet, profile, follower, reply, timeline, community, and list pages.',
   'Use `q` for keywords and X search operators, or pass a plain Tweet ID or X',
   'status URL when the agent receives a single stored link.',
-  'API MCP v2.6.31 sends that contract',
+  'API MCP v2.6.32 sends that contract',
   '## Agent handoff patterns',
   'MCP returns JSON.',
   'Use extraction export endpoints when you need Xquik to generate',
@@ -1904,7 +1901,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'request_hash: result.request.hash',
   'poll: result.terminal ? null : result.status_url',
   'tweet_id: result.result?.id ?? result.tweet_id ?? null',
-  "> Upload media for a DM (credits required)",
+  '> Upload media for a DM (credits required)',
   "source_url = 'https://example.com/image.png'",
   'media_ids: [media.media_id]',
   "job: 'dm_media'",
@@ -2028,8 +2025,8 @@ const REQUIRED_MCP_EXAMPLE_PROMPT_SNIPPETS = [
 const FORBIDDEN_MCP_EXAMPLE_PROMPT_SNIPPETS = [
   '- "Can you',
   '- "What',
-  'What\'s',
-  'don\'t',
+  "What's",
+  "don't",
   'Upload this image and tweet it',
 ] as const;
 
@@ -2098,7 +2095,7 @@ const FORBIDDEN_CURRENT_MCP_CLIENT_SETUP_SNIPPETS = [
   'Scan tools',
   'Custom MCP apps are web-only.',
   '"Authorization": "Bearer ${XQUIK_API_KEY}"',
-  'Claude\'s CIMD client',
+  "Claude's CIMD client",
   'Free accounts can add 1 custom connector.',
   'copilot mcp add --transport http xquik https://xquik.com/mcp',
   'Older Gemini CLI builds also accept the legacy `httpUrl` field.',
@@ -2597,9 +2594,7 @@ const REQUIRED_AUTHENTICATION_ACCOUNT_SNIPPETS = [
   '`GET /account` accepts `x-api-key`. Use it to check plan, credit balance, and monitor billing from server-side integrations.',
 ] as const;
 
-const FORBIDDEN_AUTHENTICATION_ACCOUNT_SNIPPETS = [
-  'monitor quota',
-] as const;
+const FORBIDDEN_AUTHENTICATION_ACCOUNT_SNIPPETS = ['monitor quota'] as const;
 
 const REQUIRED_X_API_INTEGRATION_CHECKLIST_SNIPPETS = [
   '## Integration readiness checklist',
@@ -3019,7 +3014,7 @@ const REQUIRED_DELETE_TWEET_API_SNIPPETS = [
   '## Verify tweet deletion',
   '## Handle delete tweet errors',
   '## Twitter API delete tweet questions',
-  '### Can the API delete another user\'s tweet?',
+  "### Can the API delete another user's tweet?",
   '### Can the API delete all tweets at once?',
   '### Can I schedule a tweet deletion?',
   '<ParamField header="Authorization" type="string">',
@@ -3194,7 +3189,7 @@ const REQUIRED_UNRETWEET_TWEET_API_SNIPPETS = [
   '## Twitter undo retweet questions',
   '### How do I undo a retweet on Twitter with an API?',
   '### Can I undo recent, old, or several retweets?',
-  '### Why can\'t I undo a retweet on Twitter?',
+  "### Why can't I undo a retweet on Twitter?",
   '### What happens to the tweet, engagement, and notifications?',
   '### Do I use a Twitter archive, retweet icon, or delete button?',
   'It has no bulk unretweet body.',
@@ -4184,7 +4179,7 @@ const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   'These filters apply to automatic and standard pagination.',
   'Remove every filter before requesting complete mode.',
   '## Which replies endpoint?',
-  'Use `GET /api/v1/x/tweets/{id}/replies` for one tweet\'s replies as JSON rows.',
+  "Use `GET /api/v1/x/tweets/{id}/replies` for one tweet's replies as JSON rows.",
   'Use [`reply_extractor`](/guides/tweet-replies-export) when you need saved CSV, JSON, or XLSX exports.',
   'Use `GET /api/v1/x/tweets/search` when you need keyword, operator, structured-filter, or `queryType` search.',
   'Use `GET /api/v1/x/tweets/{id}/thread` when you need ordered thread context around a tweet.',
@@ -4481,7 +4476,7 @@ const REQUIRED_X_TRENDS_API_HANDOFF_SNIPPETS = [
   'Preserve `rank`, `description`, and `query` when the response includes them.',
   'Keep missing values unset. Preserve `tweetVolume` as null when X returns null.',
   'Send a full Xquik account API key.',
-  '`paid_reads` guest keys through the API-key scheme\'s Bearer alias.',
+  "`paid_reads` guest keys through the API-key scheme's Bearer alias.",
   'Account keys receive account payment options.',
   'Guest keys receive only the guest top-up action.',
   'Anonymous calls receive `WWW-Authenticate: Payment` plus a guest wallet action.',
@@ -4493,7 +4488,7 @@ const REQUIRED_X_TRENDS_API_HANDOFF_SNIPPETS = [
   '### How do I authenticate to the Twitter trends API?',
   '### How much does a trends request cost?',
   '### How do I build trend tracking into an app?',
-  '### Does this replace X\'s official API?',
+  "### Does this replace X's official API?",
   'Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns 502.',
 ] as const;
 
@@ -4546,7 +4541,7 @@ const REQUIRED_TRENDS_API_HANDOFF_SNIPPETS = [
   '### Does the API return historical Twitter trends?',
   '### How do I authenticate to the Twitter trends API?',
   '### Is the Twitter trends API free?',
-  '### Does this replace X\'s official API?',
+  "### Does this replace X's official API?",
   'Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns 502.',
 ] as const;
 
@@ -4737,7 +4732,7 @@ const REQUIRED_RETWEETERS_API_HANDOFF_SNIPPETS = [
   '`following_count`, `verified`, `verified_type`, and `profile_image_url`',
   '## Retweeter questions',
   '### Can I see who retweeted my tweet?',
-  '### Why can\'t I see every retweeter?',
+  "### Why can't I see every retweeter?",
   '### Do retweeters include quote tweets?',
   '### How do I export retweeters?',
   '### How can I analyze retweeters?',
@@ -5054,7 +5049,7 @@ const FORBIDDEN_COMMUNITY_SEARCH_API_RAW_OUTPUT_SNIPPETS = [
 
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   'title: "Twitter followers API, profile export & cursors"',
-  'Get an X account\'s followers by username or user ID',
+  "Get an X account's followers by username or user ID",
   'Follower Export API',
   'X followers API',
   'Twitter followers API',
@@ -5626,10 +5621,10 @@ const REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS = [
   '[`mentions`](/api-reference/extractions/create)',
   'CSV/JSON/XLSX file export',
   '## Which timeline endpoint?',
-  'Use `GET /api/v1/x/users/{id}/mentions` for one user\'s mentions timeline.',
-  'Use `GET /api/v1/x/users/{id}/tweets` for one user\'s profile timeline.',
+  "Use `GET /api/v1/x/users/{id}/mentions` for one user's mentions timeline.",
+  "Use `GET /api/v1/x/users/{id}/tweets` for one user's profile timeline.",
   'Use `GET /api/v1/x/tweets/search` for keyword, operator, or advanced search.',
-  'Use `GET /api/v1/x/timeline` for the authenticated account\'s home timeline.',
+  "Use `GET /api/v1/x/timeline` for the authenticated account's home timeline.",
   'const mentionRows = page.tweets.map',
   'mentioned_user_id_or_username: userIdOrUsername',
   'tweet_id: tweet.id',
@@ -5969,7 +5964,6 @@ const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   '[Tweet Search Export Workflow](/guides/tweet-scraper-csv-export)',
   'saved CSV, JSON, or XLSX files',
   '1 credit per tweet returned',
-  'A plain Tweet ID or X status URL returns the exact tweet when available.',
   '`402 insufficient_credits`',
   '`Retry-After`',
 ] as const;
@@ -6012,34 +6006,19 @@ const HIGH_VALUE_ROW_HANDOFF_API_PAGES = [
     file: 'api-reference/x/user-tweets.mdx',
     label: 'User tweets endpoint page',
   },
-  {
-    file: 'api-reference/x/user-likes.mdx',
-    label: 'User likes endpoint page',
-  },
-  {
-    file: 'api-reference/x/user-media.mdx',
-    label: 'User media endpoint page',
-  },
+  { file: 'api-reference/x/user-likes.mdx', label: 'User likes endpoint page' },
+  { file: 'api-reference/x/user-media.mdx', label: 'User media endpoint page' },
   {
     file: 'api-reference/x/user-mentions.mdx',
     label: 'User mentions endpoint page',
   },
-  {
-    file: 'api-reference/x/bookmarks.mdx',
-    label: 'Bookmarks endpoint page',
-  },
-  {
-    file: 'api-reference/x/timeline.mdx',
-    label: 'Timeline endpoint page',
-  },
+  { file: 'api-reference/x/bookmarks.mdx', label: 'Bookmarks endpoint page' },
+  { file: 'api-reference/x/timeline.mdx', label: 'Timeline endpoint page' },
   {
     file: 'api-reference/x/tweet-replies.mdx',
     label: 'Tweet replies endpoint page',
   },
-  {
-    file: 'api-reference/x/followers.mdx',
-    label: 'Followers endpoint page',
-  },
+  { file: 'api-reference/x/followers.mdx', label: 'Followers endpoint page' },
   {
     file: 'api-reference/x-write/create-tweet.mdx',
     label: 'Create tweet endpoint page',
@@ -6048,10 +6027,7 @@ const HIGH_VALUE_ROW_HANDOFF_API_PAGES = [
     file: 'api-reference/x-write/upload-media.mdx',
     label: 'Upload media endpoint page',
   },
-  {
-    file: 'api-reference/x-write/send-dm.mdx',
-    label: 'Send DM endpoint page',
-  },
+  { file: 'api-reference/x-write/send-dm.mdx', label: 'Send DM endpoint page' },
 ] as const;
 
 const FORBIDDEN_HIGH_VALUE_ROW_HANDOFF_RAW_RESPONSE_SNIPPETS = [
@@ -6221,20 +6197,20 @@ const REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS = [
   '## User timeline handoff',
   '`GET /x/users/{id}/tweets`',
   'CRM, queue worker, or warehouse job needs',
-  'one user\'s profile timeline.',
+  "one user's profile timeline.",
   'This endpoint accepts either a username or numeric',
   'username or numeric user ID',
   'The examples above write JSON Lines rows',
   'source profile, tweet ID,',
   '## Which timeline endpoint?',
-  'Use `GET /api/v1/x/users/{id}/tweets` for one user\'s profile timeline. It',
+  "Use `GET /api/v1/x/users/{id}/tweets` for one user's profile timeline. It",
   'returns original profile posts by default.',
   'Add `includeReplies=true` when the sync needs replies, and add',
   '`includeParentTweet=true` when reply rows need parent context.',
   'Use `GET /api/v1/x/users/{id}/media` when every returned row should contain',
   'profile media.',
   'Use `GET /api/v1/x/tweets/search` for keyword, operator, or advanced search.',
-  'Use `GET /api/v1/x/timeline` for the authenticated account\'s home timeline.',
+  "Use `GET /api/v1/x/timeline` for the authenticated account's home timeline.",
   'follower count, verified state, profile',
   'image URL, reply context, engagement counts, media URLs,',
   'resume from the last saved `next_cursor`',
@@ -6468,7 +6444,7 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   '"handoff_format": "jsonl"',
   '`xquik-extraction-results.jsonl`',
   'Keep `page_cursor` and `next_cursor` so the job can resume from the last successful page.',
-  '`tweet_search_extractor` supports 31 optional filter parameters.',
+  'Only `tweet_search_extractor` accepts the 31 optional filters.',
   '`minFaves`, `minRetweets`, `minReplies`, or `minQuotes`',
   '`replies`, `retweets`, and `quotes` with `include`, `exclude`, or `only`',
   '`exactPhrase`, `excludeWords`, `anyWords`, `hashtags`, `cashtags`',
@@ -7795,7 +7771,7 @@ const FORBIDDEN_WEBHOOK_DELETE_RAW_OUTPUT_SNIPPETS = [
 const REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS = [
   '## Operational handoff',
   'It returns the 100 most recent delivery records for one webhook, newest first.',
-  'jq \'[.deliveries[] | {',
+  "jq '[.deliveries[] | {",
   'delivery_id: .id',
   'stream_event_id: .streamEventId',
   'receiver_status: (.lastStatusCode // null)',
@@ -8260,7 +8236,7 @@ const REQUIRED_DM_HISTORY_API_SNIPPETS = [
   'X DM history API',
   'This Twitter API DM endpoint reads participant-scoped conversation history.',
   'Pass the connected participant account through `account`.',
-  '[X\'s Direct Messages lookup guide](https://docs.x.com/x-api/direct-messages/lookup/introduction)',
+  "[X's Direct Messages lookup guide](https://docs.x.com/x-api/direct-messages/lookup/introduction)",
   'Requires a connected X account passed via the `account` query parameter.',
   'DM history is participant-scoped',
   'DM history requires a connected participant account.',
@@ -8318,7 +8294,7 @@ const REQUIRED_DM_HISTORY_API_SNIPPETS = [
   '`page_next_cursor` for each page.',
   'Keep `message_text` only in private systems',
   '<ParamField query="account" type="string" required>',
-  'Use the previous response\'s `next_cursor` to fetch older messages.',
+  "Use the previous response's `next_cursor` to fetch older messages.",
   'Legacy pagination cursor. Use `cursor` for new integrations.',
   'messages',
   'has_next_page',
@@ -8815,7 +8791,7 @@ const REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS = [
   '## Build a brand mention triage queue',
   'Avoid automatic public replies from a brand monitoring event.',
   '## Maintain account and keyword monitors',
-  'Compare each monitor\'s event types with webhook subscriptions.',
+  "Compare each monitor's event types with webhook subscriptions.",
   '## Cost and retry notes',
   'Active account and keyword monitors check every 1 second and cost 21 credits',
   'Stored event listing is free.',
@@ -9008,15 +8984,15 @@ const REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS = [
   '## Choose the smallest Twitter API route',
   'Use `GET /api/v1/x/tweets?ids=...` for up to 100 comma-separated tweet IDs in one request.',
   'Use `GET /api/v1/x/users/batch?ids=...` for up to 100 comma-separated user IDs in one request.',
-  'Use `GET /api/v1/x/users/{id}/tweets` for one user\'s profile timeline.',
+  "Use `GET /api/v1/x/users/{id}/tweets` for one user's profile timeline.",
   'Use `GET /api/v1/x/tweets/search` for keywords, hashtags, operators, date filters, and advanced search pages.',
-  'Use `GET /api/v1/x/timeline` for the connected account\'s home timeline.',
+  "Use `GET /api/v1/x/timeline` for the connected account's home timeline.",
   'Inspect `requested_count`, `processed_count`, and `returned_count`.',
   'Batch lookups are single-page requests.',
   '## Match Twitter search, timeline & feed intent',
-  'Use `/x/users/{id}/tweets` for one account\'s posts.',
+  "Use `/x/users/{id}/tweets` for one account's posts.",
   'Use `/x/tweets/search` for keywords, hashtags, operators, dates, or',
-  'Use `/x/timeline` for one connected account\'s ranked home feed.',
+  "Use `/x/timeline` for one connected account's ranked home feed.",
   '## Use the correct page-size parameter',
   '| Tweet search | `limit` | Up to 200 tweets; the server can paginate internally |',
   '| User tweets and replies | `pageSize` | Automatic 1 to 300; standard 1 to 100; default 20 |',
@@ -9058,7 +9034,7 @@ const FORBIDDEN_REQUEST_EFFICIENT_API_USAGE_SNIPPETS = [
 const REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS = [
   'monitor tweets',
   'signed webhooks',
-  'jq -c \'{',
+  "jq -c '{",
   'keyword_monitor_id: .id',
   'verify_endpoint: "/api/v1/monitors/keywords/\\(.id)"',
   'update_endpoint: "/api/v1/monitors/keywords/\\(.id)"',
@@ -9172,7 +9148,7 @@ const FORBIDDEN_NESTED_QUOTED_KEYWORD_QUERY_SNIPPETS = [
 ] as const;
 
 const REQUIRED_KEYWORD_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
-  'jq -c \'.monitors[] | {',
+  "jq -c '.monitors[] | {",
   'keyword_monitor_id: .id',
   'events_endpoint: "/api/v1/events?keywordMonitorId=\\(.id)"',
   'event_detail_endpoint_pattern: "/api/v1/events/{event_id}"',
@@ -9273,7 +9249,7 @@ const FORBIDDEN_KEYWORD_MONITOR_LIST_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_KEYWORD_MONITOR_GET_API_HANDOFF_SNIPPETS = [
-  'jq -c \'{',
+  "jq -c '{",
   'keyword_monitor_id: .id',
   'update_endpoint: "/api/v1/monitors/keywords/\\(.id)"',
   'delete_endpoint: "/api/v1/monitors/keywords/\\(.id)"',
@@ -9364,7 +9340,7 @@ const FORBIDDEN_KEYWORD_MONITOR_GET_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_KEYWORD_MONITOR_UPDATE_API_HANDOFF_SNIPPETS = [
-  'jq -c \'{',
+  "jq -c '{",
   'keyword_monitor_id: .id',
   'verify_endpoint: "/api/v1/monitors/keywords/\\(.id)"',
   'delete_endpoint: "/api/v1/monitors/keywords/\\(.id)"',
@@ -9520,7 +9496,7 @@ const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
   '## What does an account monitor not track?',
   '## How do I recover from monitor and webhook failures?',
   'curl --fail-with-body -X POST https://xquik.com/api/v1/monitors',
-  'jq -c \'{',
+  "jq -c '{",
   'monitor_id: .id',
   'x_user_id: .xUserId',
   'verify_endpoint: "/api/v1/monitors/\\(.id)"',
@@ -9944,7 +9920,7 @@ const REQUIRED_ACCOUNT_MONITOR_UPDATE_API_HANDOFF_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_ACCOUNT_MONITOR_UPDATE_RAW_OUTPUT_SNIPPETS = [
-  '}\' | jq\n',
+  "}' | jq\n",
   'const data = await response.json();',
   'data = response.json()',
   'fmt.Println(data)',
@@ -9961,7 +9937,7 @@ const FORBIDDEN_MONITOR_DELETE_INLINE_SUCCESS_JSON_SNIPPETS = [
 ] as const;
 
 const REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
-  'jq -c \'{',
+  "jq -c '{",
   'monitor_id: "7"',
   'events_endpoint: "/api/v1/events?monitorId=7"',
   'event_detail_endpoint_pattern: "/api/v1/events/{event_id}"',
@@ -10626,7 +10602,7 @@ const REQUIRED_COMPOSIO_MIGRATION_SNIPPETS = [
   'Choose unified APIs or a direct REST API.',
   'Test developer experience through SDK typing, logs, documentation, and rollbacks.',
   'Validate API calls and user profile scope in every AI assisted social media workflow.',
-  'Can developers find the integration platform\'s API documentation?',
+  "Can developers find the integration platform's API documentation?",
   'Can operators run production-ready rollback steps?',
   'Compare pricing, features, free tier, and white-label consent.',
   'Never choose an automation tool by its free tier alone.',
@@ -10842,7 +10818,7 @@ const REQUIRED_TWEETCLAW_GUIDE_SNIPPETS = [
 const REQUIRED_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS = [
   'title: "Microsoft Agent Framework Twitter MCP Python guide"',
   'Use this Microsoft Agent Framework tutorial to build a production-ready Twitter',
-  'This Microsoft Agent Framework Python example connects to Xquik\'s',
+  "This Microsoft Agent Framework Python example connects to Xquik's",
   'Connect the Microsoft Agent Framework MCP server client through Streamable HTTP.',
   'The Microsoft open-source agent framework provides agents',
   'Use this Microsoft AI',
@@ -10952,7 +10928,7 @@ const REQUIRED_GOOGLE_ADK_GUIDE_SNIPPETS = [
 
 const REQUIRED_CREWAI_GUIDE_SNIPPETS = [
   'title: "CrewAI Twitter MCP multi-agent guide for Python"',
-  'Build a CrewAI MCP integration through Xquik\'s remote Twitter MCP server.',
+  "Build a CrewAI MCP integration through Xquik's remote Twitter MCP server.",
   '## Why use CrewAI with MCP for a Twitter API?',
   'CrewAI offers an agent framework for complex tasks.',
   'This CrewAI multi agent pattern fits research, verification, and reporting.',
@@ -11171,7 +11147,7 @@ const FORBIDDEN_LANGCHAIN_GUIDE_SNIPPETS = [
 
 const REQUIRED_MASTRA_GUIDE_SNIPPETS = [
   'title: "Mastra AI Twitter MCP agent guide for TypeScript"',
-  'Build a Mastra AI Twitter MCP agent through Xquik\'s remote MCP server.',
+  "Build a Mastra AI Twitter MCP agent through Xquik's remote MCP server.",
   'This Mastra AI tutorial combines agent tools, one typed workflow, and a strict handoff.',
   '"Mastra Twitter agent"',
   '"Twitter MCP server"',
@@ -12157,7 +12133,7 @@ const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
   '`resultType`, `sourceTweetId`,',
   '`xquik/x-follower-scraper` writes compact user rows by default.',
   'raw output modes for optional profile metadata',
-  'Use Apify\'s max cost per run or API `maxTotalChargeUsd`',
+  "Use Apify's max cost per run or API `maxTotalChargeUsd`",
   '`maxItems` only when you want a smaller row cap',
   '`resultType: "diagnostic"`',
   '`no-input`,',
@@ -12285,26 +12261,13 @@ const FORBIDDEN_PUBLIC_APIFY_MARKETPLACE_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_STALE_CREDIT_COST_SNIPPETS = [
-  [
-    'Credits',
-    'are',
-    'deducted',
-    'per',
-    'API',
-    'call',
-    '(1-10',
-    'credits',
-  ].join(' '),
+  ['Credits', 'are', 'deducted', 'per', 'API', 'call', '(1-10', 'credits'].join(
+    ' ',
+  ),
   ['Each', 'operation', 'costs', '1-10', 'credits'].join(' '),
-  [
-    'The',
-    'API',
-    'uses',
-    'credit-based',
-    'billing',
-    '(1-10',
-    'credits',
-  ].join(' '),
+  ['The', 'API', 'uses', 'credit-based', 'billing', '(1-10', 'credits'].join(
+    ' ',
+  ),
   ['Extractions', 'consume', '1-10', 'credits', 'per', 'result'].join(' '),
 ] as const;
 
@@ -12319,12 +12282,31 @@ const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
   ['GitHub', 'Trending'].join(' '),
   ['Google', 'Trends'].join(' '),
   ['Hacker', 'News'].join(' '),
-  ['Trending', 'topics', 'and', 'news', 'aggregated', 'from', '7', 'sources'].join(' '),
+  [
+    'Trending',
+    'topics',
+    'and',
+    'news',
+    'aggregated',
+    'from',
+    '7',
+    'sources',
+  ].join(' '),
   ['Trending', 'topics', 'and', 'news', 'from', '7', 'sources'].join(' '),
   'TrustMRR',
   [['browser', 'service'].join('-'), 'capacity'].join(' '),
   ['declared', 'proxy', 'region', 'was', 'unavailable'].join(' '),
-  ['login', 'fell', 'back', 'to', 'a', 'single', 'US', 'consumer', 'device'].join(' '),
+  [
+    'login',
+    'fell',
+    'back',
+    'to',
+    'a',
+    'single',
+    'US',
+    'consumer',
+    'device',
+  ].join(' '),
   ['one-time', 'US', 'browser', 'session'].join(' '),
   [['one', 'time'].join('-'), 'US', 'fallback'].join(' '),
   ['proxy', 'service'].join(' '),
@@ -12334,7 +12316,7 @@ const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
   ['whose', 'session', 'reads'].join(' '),
 ] as const;
 
-const EXPECTED_OPENAPI_OPERATION_COUNT = 128;
+const EXPECTED_OPENAPI_OPERATION_COUNT = 129;
 
 const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
   ['100+', 'REST', 'API', 'endpoints'].join(' '),
@@ -12508,9 +12490,10 @@ function listPublicMarkdownFiles(root = '.'): readonly string[] {
 function collectReadmeDiscoveryFindings(): readonly DiscoveryFinding[] {
   const source = readFileSync('README.md', 'utf8');
   const findings: DiscoveryFinding[] = [];
+  const normalizedSource = normalizeEvidence(source);
 
   for (const snippet of REQUIRED_README_SNIPPETS) {
-    if (!source.includes(snippet)) {
+    if (!normalizedSource.includes(normalizeEvidence(snippet))) {
       findings.push({ issue: `README is missing "${snippet}".` });
     }
   }
@@ -12525,7 +12508,9 @@ function collectReadmeDiscoveryFindings(): readonly DiscoveryFinding[] {
 
   for (const snippet of FORBIDDEN_README_SNIPPETS) {
     if (source.includes(snippet)) {
-      findings.push({ issue: `README contains retired badge snippet "${snippet}".` });
+      findings.push({
+        issue: `README contains retired badge snippet "${snippet}".`,
+      });
     }
   }
 
@@ -12577,7 +12562,11 @@ function sha256File(file: string): string {
 function collectPublicConfidentialityWordingFindings(): readonly DiscoveryFinding[] {
   const findings: DiscoveryFinding[] = [];
 
-  for (const file of [...listPublicMarkdownFiles(), 'context7.json', 'llms.txt']) {
+  for (const file of [
+    ...listPublicMarkdownFiles(),
+    'context7.json',
+    'llms.txt',
+  ]) {
     const source = readFileSync(file, 'utf8');
 
     for (const snippet of FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING) {
@@ -12718,14 +12707,23 @@ function collectSnippetFindings(
   snippets: readonly string[],
 ): readonly DiscoveryFinding[] {
   const findings: DiscoveryFinding[] = [];
+  const normalizedSource = normalizeEvidence(source);
 
   for (const snippet of snippets) {
-    if (!source.includes(snippet)) {
+    if (!normalizedSource.includes(normalizeEvidence(snippet))) {
       findings.push({ issue: `${label} is missing "${snippet}".` });
     }
   }
 
   return findings;
+}
+
+function normalizeEvidence(value: string): string {
+  return value
+    .replace(/\s+/gu, ' ')
+    .replace(/["']/gu, "'")
+    .replace(/>\s+/gu, '>')
+    .replace(/\s+</gu, '<');
 }
 
 function hasPaymentRequiredSection(source: string): boolean {
@@ -12991,9 +12989,7 @@ describe('repository discovery', (): void => {
           return source.includes(
             'Download the OpenAPI schema: `curl -o openapi.json https://xquik.com/openapi.json`',
           ) &&
-            !source.includes(
-              '[OpenAPI JSON](https://xquik.com/openapi.json)',
-            )
+            !source.includes('[OpenAPI JSON](https://xquik.com/openapi.json)')
             ? []
             : [
                 {
@@ -13045,25 +13041,23 @@ describe('repository discovery', (): void => {
 
     const introduction = readFileSync('index.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          introduction,
-          'Introduction public radar copy',
-          ["Free trending topics and news from Xquik's own infrastructure."],
-        ),
-        ...FORBIDDEN_INTRODUCTION_CONFIDENTIALITY_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            introduction.includes(snippet)
-              ? [
-                  {
-                    issue: `Introduction contains private radar source wording "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        introduction,
+        'Introduction public radar copy',
+        ["Free trending topics and news from Xquik's own infrastructure."],
+      ),
+      ...FORBIDDEN_INTRODUCTION_CONFIDENTIALITY_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          introduction.includes(snippet)
+            ? [
+                {
+                  issue: `Introduction contains private radar source wording "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps agent-docs checks covering generated HTML size and markdown fallbacks', (): void => {
@@ -13092,25 +13086,23 @@ describe('repository discovery', (): void => {
 
     const skill = readFileSync('skill.md', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          skill,
-          'Public skill rate limits',
-          REQUIRED_SKILL_RATE_LIMIT_SNIPPETS,
-        ),
-        ...FORBIDDEN_SKILL_RATE_LIMIT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            skill.includes(snippet)
-              ? [
-                  {
-                    issue: `Public skill rate limits contain table snippet "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        skill,
+        'Public skill rate limits',
+        REQUIRED_SKILL_RATE_LIMIT_SNIPPETS,
+      ),
+      ...FORBIDDEN_SKILL_RATE_LIMIT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          skill.includes(snippet)
+            ? [
+                {
+                  issue: `Public skill rate limits contain table snippet "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps public read rate limits aligned with product source truth', (): void => {
@@ -13122,16 +13114,15 @@ describe('repository discovery', (): void => {
 
         return [
           ...collectSnippetFindings(source, file, required),
-          ...forbidden.flatMap(
-            (snippet): readonly DiscoveryFinding[] =>
-              source.includes(snippet)
-                ? [
-                    {
-                      file,
-                      issue: `Public read rate limits contain stale snippet "${snippet}".`,
-                    },
-                  ]
-                : [],
+          ...forbidden.flatMap((snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    file,
+                    issue: `Public read rate limits contain stale snippet "${snippet}".`,
+                  },
+                ]
+              : [],
           ),
         ];
       },
@@ -13145,25 +13136,23 @@ describe('repository discovery', (): void => {
 
     const skill = readFileSync('skill.md', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          skill,
-          'Public skill decision guidance',
-          REQUIRED_SKILL_DECISION_GUIDANCE_SNIPPETS,
-        ),
-        ...FORBIDDEN_SKILL_DECISION_GUIDANCE_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            skill.includes(snippet)
-              ? [
-                  {
-                    issue: `Public skill decision guidance contains table snippet "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        skill,
+        'Public skill decision guidance',
+        REQUIRED_SKILL_DECISION_GUIDANCE_SNIPPETS,
+      ),
+      ...FORBIDDEN_SKILL_DECISION_GUIDANCE_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          skill.includes(snippet)
+            ? [
+                {
+                  issue: `Public skill decision guidance contains table snippet "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the public skill clear about direct message handoffs', (): void => {
@@ -13185,25 +13174,23 @@ describe('repository discovery', (): void => {
 
     const skill = readFileSync('skill.md', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          skill,
-          'Public skill MCP handoff',
-          REQUIRED_SKILL_MCP_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_SKILL_MCP_HANDOFF_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            skill.includes(snippet)
-              ? [
-                  {
-                    issue: `Public skill MCP handoff contains stale single-server wording "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        skill,
+        'Public skill MCP handoff',
+        REQUIRED_SKILL_MCP_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_SKILL_MCP_HANDOFF_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          skill.includes(snippet)
+            ? [
+                {
+                  issue: `Public skill MCP handoff contains stale single-server wording "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the public skill clear of private radar source names', (): void => {
@@ -13211,23 +13198,21 @@ describe('repository discovery', (): void => {
 
     const skill = readFileSync('skill.md', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          skill,
-          'Public skill confidentiality wording',
-          REQUIRED_SKILL_CONFIDENTIALITY_SNIPPETS,
-        ),
-        ...(FORBIDDEN_SKILL_CONFIDENTIALITY_PATTERN.test(skill)
-          ? [
-              {
-                issue:
-                  'Public skill confidentiality wording contains a private radar source list.',
-              },
-            ]
-          : []),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        skill,
+        'Public skill confidentiality wording',
+        REQUIRED_SKILL_CONFIDENTIALITY_SNIPPETS,
+      ),
+      ...(FORBIDDEN_SKILL_CONFIDENTIALITY_PATTERN.test(skill)
+        ? [
+            {
+              issue:
+                'Public skill confidentiality wording contains a private radar source list.',
+            },
+          ]
+        : []),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the quickstart concrete and aligned with monitor response fields', (): void => {
@@ -13254,26 +13239,19 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('sdks.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'SDK overview docs',
-          REQUIRED_SDK_OVERVIEW_SNIPPETS,
-        ),
-        ...FORBIDDEN_SDK_OVERVIEW_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    label: 'SDK overview docs',
-                    snippet,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'SDK overview docs',
+        REQUIRED_SDK_OVERVIEW_SNIPPETS,
+      ),
+      ...FORBIDDEN_SDK_OVERVIEW_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [{ label: 'SDK overview docs', snippet }]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the TypeScript SDK page useful for tweet search handoffs', (): void => {
@@ -13283,26 +13261,19 @@ describe('repository discovery', (): void => {
 
     expect(source.length).toBeLessThanOrEqual(19_050);
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'TypeScript SDK workflow docs',
-          REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS,
-        ),
-        ...FORBIDDEN_TYPESCRIPT_SDK_RAW_SEARCH_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    label: 'TypeScript SDK workflow docs',
-                    snippet,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'TypeScript SDK workflow docs',
+        REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS,
+      ),
+      ...FORBIDDEN_TYPESCRIPT_SDK_RAW_SEARCH_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [{ label: 'TypeScript SDK workflow docs', snippet }]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the Go SDK page useful for tweet search handoffs', (): void => {
@@ -13312,25 +13283,23 @@ describe('repository discovery', (): void => {
 
     expect(source.length).toBeLessThanOrEqual(20_100);
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Go SDK workflow docs',
-          REQUIRED_GO_SDK_WORKFLOW_SNIPPETS,
-        ),
-        ...FORBIDDEN_GO_SDK_WEAK_SEARCH_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Go SDK workflow docs contain weak search output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Go SDK workflow docs',
+        REQUIRED_GO_SDK_WORKFLOW_SNIPPETS,
+      ),
+      ...FORBIDDEN_GO_SDK_WEAK_SEARCH_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Go SDK workflow docs contain weak search output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the Python SDK page useful for tweet search handoffs', (): void => {
@@ -13340,26 +13309,19 @@ describe('repository discovery', (): void => {
 
     expect(source.length).toBeLessThanOrEqual(20_400);
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Python SDK workflow docs',
-          REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS,
-        ),
-        ...FORBIDDEN_PYTHON_SDK_RAW_SEARCH_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    label: 'Python SDK workflow docs',
-                    snippet,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Python SDK workflow docs',
+        REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS,
+      ),
+      ...FORBIDDEN_PYTHON_SDK_RAW_SEARCH_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [{ label: 'Python SDK workflow docs', snippet }]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the Ruby SDK page useful for tweet search handoffs', (): void => {
@@ -13369,26 +13331,19 @@ describe('repository discovery', (): void => {
 
     expect(source.length).toBeLessThanOrEqual(17_950);
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Ruby SDK workflow docs',
-          REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS,
-        ),
-        ...FORBIDDEN_RUBY_SDK_WEAK_SEARCH_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    label: 'Ruby SDK workflow docs',
-                    snippet,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Ruby SDK workflow docs',
+        REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS,
+      ),
+      ...FORBIDDEN_RUBY_SDK_WEAK_SEARCH_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [{ label: 'Ruby SDK workflow docs', snippet }]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the CLI SDK page useful for tweet search, follower export, and replies handoffs', (): void => {
@@ -13398,25 +13353,23 @@ describe('repository discovery', (): void => {
 
     expect(source.length).toBeLessThanOrEqual(18_950);
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'CLI SDK workflow docs',
-          REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS,
-        ),
-        ...FORBIDDEN_CLI_SDK_WORKFLOW_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `CLI SDK workflow docs contain unsupported generated CLI flag "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'CLI SDK workflow docs',
+        REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS,
+      ),
+      ...FORBIDDEN_CLI_SDK_WORKFLOW_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `CLI SDK workflow docs contain unsupported generated CLI flag "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the C# SDK page useful for tweet search handoffs', (): void => {
@@ -13426,25 +13379,23 @@ describe('repository discovery', (): void => {
 
     expect(source.length).toBeLessThanOrEqual(23_100);
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'C# SDK workflow docs',
-          REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS,
-        ),
-        ...FORBIDDEN_CSHARP_SDK_WEAK_SEARCH_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `C# SDK workflow docs contain weak search output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'C# SDK workflow docs',
+        REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS,
+      ),
+      ...FORBIDDEN_CSHARP_SDK_WEAK_SEARCH_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `C# SDK workflow docs contain weak search output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the PHP SDK page useful for tweet search handoffs', (): void => {
@@ -13454,26 +13405,19 @@ describe('repository discovery', (): void => {
 
     expect(source.length).toBeLessThanOrEqual(20_150);
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'PHP SDK workflow docs',
-          REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS,
-        ),
-        ...FORBIDDEN_PHP_SDK_WEAK_SEARCH_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    label: 'PHP SDK workflow docs',
-                    snippet,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'PHP SDK workflow docs',
+        REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS,
+      ),
+      ...FORBIDDEN_PHP_SDK_WEAK_SEARCH_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [{ label: 'PHP SDK workflow docs', snippet }]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the Java SDK page useful for tweet search handoffs', (): void => {
@@ -13483,20 +13427,18 @@ describe('repository discovery', (): void => {
 
     expect(source.length).toBeLessThanOrEqual(27_500);
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Java SDK workflow docs',
-          REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS,
-        ),
-        ...FORBIDDEN_JAVA_SDK_WEAK_SEARCH_SNIPPETS.flatMap((snippet) =>
-          source.includes(snippet)
-            ? [`Java SDK workflow docs still contains weak snippet: ${snippet}`]
-            : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Java SDK workflow docs',
+        REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS,
+      ),
+      ...FORBIDDEN_JAVA_SDK_WEAK_SEARCH_SNIPPETS.flatMap((snippet) =>
+        source.includes(snippet)
+          ? [`Java SDK workflow docs still contains weak snippet: ${snippet}`]
+          : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the Kotlin SDK page useful for tweet search handoffs', (): void => {
@@ -13506,42 +13448,40 @@ describe('repository discovery', (): void => {
 
     expect(source.length).toBeLessThanOrEqual(25_800);
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Kotlin SDK workflow docs',
-          REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS,
-        ),
-        ...FORBIDDEN_KOTLIN_SDK_WEAK_SEARCH_SNIPPETS.flatMap((snippet) =>
-          source.includes(snippet)
-            ? [
-                `Kotlin SDK workflow docs still contains weak snippet: ${snippet}`,
-              ]
-            : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Kotlin SDK workflow docs',
+        REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS,
+      ),
+      ...FORBIDDEN_KOTLIN_SDK_WEAK_SEARCH_SNIPPETS.flatMap((snippet) =>
+        source.includes(snippet)
+          ? [`Kotlin SDK workflow docs still contains weak snippet: ${snippet}`]
+          : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps tweet search cursor loops separate from bounded limit pulls', (): void => {
     expect.assertions(1);
 
-    const findings = listPublicMarkdownFiles().flatMap((file): readonly DiscoveryFinding[] => {
-      const source = readFileSync(file, 'utf8');
+    const findings = listPublicMarkdownFiles().flatMap(
+      (file): readonly DiscoveryFinding[] => {
+        const source = readFileSync(file, 'utf8');
 
-      return FORBIDDEN_TWEET_SEARCH_CURSOR_LIMIT_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? [
-                {
-                  file,
-                  issue: `Public Markdown contains stale tweet search pagination wording "${snippet}". Keep simple cursor loops separate from bounded limit resumes.`,
-                },
-              ]
-            : [],
-      );
-    });
+        return FORBIDDEN_TWEET_SEARCH_CURSOR_LIMIT_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    file,
+                    issue: `Public Markdown contains stale tweet search pagination wording "${snippet}". Keep simple cursor loops separate from bounded limit resumes.`,
+                  },
+                ]
+              : [],
+        );
+      },
+    );
 
     expect(findings).toStrictEqual([]);
   });
@@ -13549,21 +13489,23 @@ describe('repository discovery', (): void => {
   it('keeps authored tweet search date-window docs aligned with route behavior', (): void => {
     expect.assertions(1);
 
-    const findings = listPublicMarkdownFiles().flatMap((file): readonly DiscoveryFinding[] => {
-      const source = readFileSync(file, 'utf8');
+    const findings = listPublicMarkdownFiles().flatMap(
+      (file): readonly DiscoveryFinding[] => {
+        const source = readFileSync(file, 'utf8');
 
-      return FORBIDDEN_TWEET_SEARCH_DATE_WINDOW_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? [
-                {
-                  file,
-                  issue: `Public Markdown contains stale tweet search date-window wording "${snippet}". Date params stay on search as operators until product OpenAPI says otherwise.`,
-                },
-              ]
-            : [],
-      );
-    });
+        return FORBIDDEN_TWEET_SEARCH_DATE_WINDOW_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    file,
+                    issue: `Public Markdown contains stale tweet search date-window wording "${snippet}". Date params stay on search as operators until product OpenAPI says otherwise.`,
+                  },
+                ]
+              : [],
+        );
+      },
+    );
 
     expect(findings).toStrictEqual([]);
   });
@@ -13596,16 +13538,14 @@ describe('repository discovery', (): void => {
             : [],
       );
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Terraform provider workflow docs',
-          REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS,
-        ),
-        ...forbiddenFindings,
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Terraform provider workflow docs',
+        REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS,
+      ),
+      ...forbiddenFindings,
+    ]).toStrictEqual([]);
   });
 
   it('keeps llms.txt below the agent score size threshold with headroom', (): void => {
@@ -13645,13 +13585,13 @@ describe('repository discovery', (): void => {
       readFileSync('mcp/tools.mdx', 'utf8'),
       readFileSync('guides/x-api-typescript-types.mdx', 'utf8'),
     ].join('\n');
-    const findings: DiscoveryFinding[] = [];
-
-    for (const snippet of REQUIRED_MCP_CONTRACT_SNIPPETS) {
-      if (!source.includes(snippet)) {
-        findings.push({ issue: `MCP contract docs are missing "${snippet}".` });
-      }
-    }
+    const findings = [
+      ...collectSnippetFindings(
+        source,
+        'MCP contract docs',
+        REQUIRED_MCP_CONTRACT_SNIPPETS,
+      ),
+    ];
 
     for (const snippet of FORBIDDEN_MCP_CONTRACT_SNIPPETS) {
       if (source.includes(snippet)) {
@@ -13699,7 +13639,9 @@ describe('repository discovery', (): void => {
     const geminiSource = source.slice(geminiStart, geminiEnd);
 
     if (geminiStart < 0 || geminiEnd < 0) {
-      findings.push({ issue: 'MCP client setup is missing the Gemini CLI tab.' });
+      findings.push({
+        issue: 'MCP client setup is missing the Gemini CLI tab.',
+      });
     } else if (
       !geminiSource.includes('"httpUrl": "https://xquik.com/mcp"') ||
       geminiSource.includes('"type": "http"') ||
@@ -13749,9 +13691,7 @@ describe('repository discovery', (): void => {
         required.push(CODEX_OAUTH_TROUBLESHOOTING_ANCHOR);
       }
 
-      findings.push(
-        ...collectSnippetFindings(source, file, required),
-      );
+      findings.push(...collectSnippetFindings(source, file, required));
     }
 
     expect(findings).toStrictEqual([]);
@@ -13894,25 +13834,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('guides/troubleshooting.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Troubleshooting MCP handoff',
-          REQUIRED_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Troubleshooting MCP handoff contains stale single-server wording "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Troubleshooting MCP handoff',
+        REQUIRED_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Troubleshooting MCP handoff contains stale single-server wording "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps billing recovery steps concrete for 402 failures', (): void => {
@@ -13922,40 +13860,38 @@ describe('repository discovery', (): void => {
 
     expect(billing.length).toBeLessThanOrEqual(18_950);
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          billing,
-          'Billing guide',
-          REQUIRED_BILLING_RECOVERY_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          billing,
-          'Billing guide',
-          REQUIRED_BILLING_MONITOR_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          billing,
-          'Billing guide',
-          REQUIRED_BILLING_CARRYOVER_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          billing,
-          'Billing guide',
-          REQUIRED_BILLING_MPP_SNIPPETS,
-        ),
-        ...FORBIDDEN_BILLING_CARRYOVER_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            billing.includes(snippet)
-              ? [
-                  {
-                    issue: `Billing guide contains stale carry-over wording "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        billing,
+        'Billing guide',
+        REQUIRED_BILLING_RECOVERY_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        billing,
+        'Billing guide',
+        REQUIRED_BILLING_MONITOR_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        billing,
+        'Billing guide',
+        REQUIRED_BILLING_CARRYOVER_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        billing,
+        'Billing guide',
+        REQUIRED_BILLING_MPP_SNIPPETS,
+      ),
+      ...FORBIDDEN_BILLING_CARRYOVER_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          billing.includes(snippet)
+            ? [
+                {
+                  issue: `Billing guide contains stale carry-over wording "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the guest wallet boundary and settlement invariant explicit', (): void => {
@@ -14031,25 +13967,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('guides/glossary.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Glossary credit carry-over',
-          REQUIRED_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS,
-        ),
-        ...FORBIDDEN_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Glossary credit carry-over contains stale wording "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Glossary credit carry-over',
+        REQUIRED_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS,
+      ),
+      ...FORBIDDEN_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Glossary credit carry-over contains stale wording "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps glossary API key links aligned with dashboard routing', (): void => {
@@ -14071,25 +14005,19 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('guides/glossary.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'X API glossary',
-          REQUIRED_X_API_GLOSSARY_SNIPPETS,
-        ),
-        ...FORBIDDEN_X_API_GLOSSARY_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `X API glossary contains stale wording "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'X API glossary',
+        REQUIRED_X_API_GLOSSARY_SNIPPETS,
+      ),
+      ...FORBIDDEN_X_API_GLOSSARY_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [{ issue: `X API glossary contains stale wording "${snippet}".` }]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps account usage fields aligned with monitor billing behavior', (): void => {
@@ -14098,7 +14026,11 @@ describe('repository discovery', (): void => {
     const source = readFileSync('api-reference/account/get.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(source, 'Account API docs', REQUIRED_ACCOUNT_API_SNIPPETS),
+      collectSnippetFindings(
+        source,
+        'Account API docs',
+        REQUIRED_ACCOUNT_API_SNIPPETS,
+      ),
     ).toStrictEqual([]);
   });
 
@@ -14107,25 +14039,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/authentication.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Authentication account check docs',
-          REQUIRED_AUTHENTICATION_ACCOUNT_SNIPPETS,
-        ),
-        ...FORBIDDEN_AUTHENTICATION_ACCOUNT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Authentication docs contain stale wording "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Authentication account check docs',
+        REQUIRED_AUTHENTICATION_ACCOUNT_SNIPPETS,
+      ),
+      ...FORBIDDEN_AUTHENTICATION_ACCOUNT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Authentication docs contain stale wording "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps quick top-up examples aligned with PAYG credit conversion', (): void => {
@@ -14136,35 +14066,33 @@ describe('repository discovery', (): void => {
     );
     const billing = readFileSync('guides/billing.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          quickTopupPage,
-          'Quick top-up API docs',
-          REQUIRED_QUICK_TOPUP_PAGE_SNIPPETS,
-        ),
-        ...FORBIDDEN_TOPUP_EXAMPLE_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            quickTopupPage.includes(snippet) || billing.includes(snippet)
-              ? [
-                  {
-                    issue: `Credit top-up docs contain stale example value ${snippet}.`,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_QUICK_TOPUP_CLIENT_SECRET_LOG_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            quickTopupPage.includes(snippet)
-              ? [
-                  {
-                    issue: `Quick top-up API docs can print a payment client secret with "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        quickTopupPage,
+        'Quick top-up API docs',
+        REQUIRED_QUICK_TOPUP_PAGE_SNIPPETS,
+      ),
+      ...FORBIDDEN_TOPUP_EXAMPLE_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          quickTopupPage.includes(snippet) || billing.includes(snippet)
+            ? [
+                {
+                  issue: `Credit top-up docs contain stale example value ${snippet}.`,
+                },
+              ]
+            : [],
+      ),
+      ...FORBIDDEN_QUICK_TOPUP_CLIENT_SECRET_LOG_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          quickTopupPage.includes(snippet)
+            ? [
+                {
+                  issue: `Quick top-up API docs can print a payment client secret with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps create API key examples from logging the one-time full key', (): void => {
@@ -14172,25 +14100,23 @@ describe('repository discovery', (): void => {
 
     const createApiKeyPage = readFileSync(API_KEYS_CREATE_PAGE, 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          createApiKeyPage,
-          'Create API key docs',
-          REQUIRED_API_KEYS_CREATE_PAGE_SNIPPETS,
-        ),
-        ...FORBIDDEN_API_KEYS_CREATE_LOG_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            createApiKeyPage.includes(snippet)
-              ? [
-                  {
-                    issue: `Create API key docs can print the one-time fullKey with "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        createApiKeyPage,
+        'Create API key docs',
+        REQUIRED_API_KEYS_CREATE_PAGE_SNIPPETS,
+      ),
+      ...FORBIDDEN_API_KEYS_CREATE_LOG_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          createApiKeyPage.includes(snippet)
+            ? [
+                {
+                  issue: `Create API key docs can print the one-time fullKey with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the X API integration checklist concrete', (): void => {
@@ -14201,25 +14127,23 @@ describe('repository discovery', (): void => {
       'utf8',
     );
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'X API integration checklist',
-          REQUIRED_X_API_INTEGRATION_CHECKLIST_SNIPPETS,
-        ),
-        ...FORBIDDEN_API_OVERVIEW_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `X API integration checklist contains stale read-service wording "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'X API integration checklist',
+        REQUIRED_X_API_INTEGRATION_CHECKLIST_SNIPPETS,
+      ),
+      ...FORBIDDEN_API_OVERVIEW_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `X API integration checklist contains stale read-service wording "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps public Search Tweets links on the q query parameter', (): void => {
@@ -14236,25 +14160,23 @@ describe('repository discovery', (): void => {
       readFileSync('guides/rate-limits.mdx', 'utf8'),
     ].join('\n');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Rate-limit troubleshooting docs',
-          REQUIRED_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS,
-        ),
-        ...FORBIDDEN_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Rate-limit troubleshooting docs contain stale wording "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Rate-limit troubleshooting docs',
+        REQUIRED_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS,
+      ),
+      ...FORBIDDEN_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Rate-limit troubleshooting docs contain stale wording "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the Twitter API rate-limit guide source-backed', (): void => {
@@ -14262,25 +14184,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('guides/rate-limits.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Twitter API rate-limit guide',
-          REQUIRED_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS,
-        ),
-        ...FORBIDDEN_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Twitter API rate-limit guide contains stale wording "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Twitter API rate-limit guide',
+        REQUIRED_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS,
+      ),
+      ...FORBIDDEN_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Twitter API rate-limit guide contains stale wording "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps troubleshooting recovery handoffs source-backed', (): void => {
@@ -14314,76 +14234,77 @@ describe('repository discovery', (): void => {
   it('keeps write confirmation recovery current in error handling', (): void => {
     expect.assertions(2);
 
-    const errorHandlingSource = readFileSync('guides/error-handling.mdx', 'utf8');
+    const errorHandlingSource = readFileSync(
+      'guides/error-handling.mdx',
+      'utf8',
+    );
     const source = [
       errorHandlingSource,
       readFileSync('guides/troubleshooting.mdx', 'utf8'),
     ].join('\n');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Error handling guide',
-          REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          source,
-          'Service error guide wording',
-          REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          source,
-          'Validation error guide wording',
-          REQUIRED_VALIDATION_ERROR_GUIDE_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          source,
-          'Authentication error guide wording',
-          REQUIRED_AUTHENTICATION_ERROR_GUIDE_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          source,
-          'Billing error guide wording',
-          REQUIRED_BILLING_ERROR_GUIDE_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          source,
-          'Permission error guide wording',
-          REQUIRED_PERMISSION_ERROR_GUIDE_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          source,
-          'Not found error guide wording',
-          REQUIRED_NOT_FOUND_ERROR_GUIDE_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          source,
-          'Conflict error guide wording',
-          REQUIRED_CONFLICT_ERROR_GUIDE_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          source,
-          'Rate limit error guide wording',
-          REQUIRED_RATE_LIMIT_ERROR_GUIDE_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          source,
-          'Write validation error guide wording',
-          REQUIRED_WRITE_VALIDATION_ERROR_GUIDE_SNIPPETS,
-        ),
-        ...FORBIDDEN_ERROR_HANDLING_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Error handling guide contains stale recovery wording "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Error handling guide',
+        REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        source,
+        'Service error guide wording',
+        REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        source,
+        'Validation error guide wording',
+        REQUIRED_VALIDATION_ERROR_GUIDE_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        source,
+        'Authentication error guide wording',
+        REQUIRED_AUTHENTICATION_ERROR_GUIDE_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        source,
+        'Billing error guide wording',
+        REQUIRED_BILLING_ERROR_GUIDE_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        source,
+        'Permission error guide wording',
+        REQUIRED_PERMISSION_ERROR_GUIDE_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        source,
+        'Not found error guide wording',
+        REQUIRED_NOT_FOUND_ERROR_GUIDE_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        source,
+        'Conflict error guide wording',
+        REQUIRED_CONFLICT_ERROR_GUIDE_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        source,
+        'Rate limit error guide wording',
+        REQUIRED_RATE_LIMIT_ERROR_GUIDE_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        source,
+        'Write validation error guide wording',
+        REQUIRED_WRITE_VALIDATION_ERROR_GUIDE_SNIPPETS,
+      ),
+      ...FORBIDDEN_ERROR_HANDLING_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Error handling guide contains stale recovery wording "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
     expect(errorHandlingSource.length).toBeLessThanOrEqual(23_000);
   });
 
@@ -14496,7 +14417,10 @@ describe('repository discovery', (): void => {
   it('keeps the get user API handoff concrete', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/x/twitter-profile-lookup.mdx', 'utf8');
+    const source = readFileSync(
+      'api-reference/x/twitter-profile-lookup.mdx',
+      'utf8',
+    );
 
     expect(
       collectSnippetFindings(
@@ -14766,10 +14690,7 @@ describe('repository discovery', (): void => {
   it('keeps the community tweets API handoff concrete', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync(
-      'api-reference/x/community-tweets.mdx',
-      'utf8',
-    );
+    const source = readFileSync('api-reference/x/community-tweets.mdx', 'utf8');
 
     expect(
       collectSnippetFindings(
@@ -15112,7 +15033,10 @@ describe('repository discovery', (): void => {
   it('keeps the verified followers API handoff concrete', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/x/verified-followers.mdx', 'utf8');
+    const source = readFileSync(
+      'api-reference/x/verified-followers.mdx',
+      'utf8',
+    );
 
     expect([
       ...collectSnippetFindings(
@@ -15136,7 +15060,10 @@ describe('repository discovery', (): void => {
   it('keeps the followers you know API handoff concrete', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/x/followers-you-know.mdx', 'utf8');
+    const source = readFileSync(
+      'api-reference/x/followers-you-know.mdx',
+      'utf8',
+    );
 
     expect([
       ...collectSnippetFindings(
@@ -15184,25 +15111,23 @@ describe('repository discovery', (): void => {
       readFileSync('api-reference/x/search-tweets.mdx', 'utf8'),
     );
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Search tweets endpoint page',
-          REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_SEARCH_TWEETS_DIRECT_FILE_EXPORT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Search tweets endpoint page should distinguish direct JSON pages from saved file exports: "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Search tweets endpoint page',
+        REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_SEARCH_TWEETS_DIRECT_FILE_EXPORT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Search tweets endpoint page should distinguish direct JSON pages from saved file exports: "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
     expect(source.length).toBeLessThanOrEqual(19_000);
   });
 
@@ -15249,25 +15174,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/x/bookmarks.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Bookmarks endpoint page',
-          REQUIRED_BOOKMARKS_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_BOOKMARKS_API_RAW_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Bookmarks endpoint page should map bookmark rows instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Bookmarks endpoint page',
+        REQUIRED_BOOKMARKS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_BOOKMARKS_API_RAW_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Bookmarks endpoint page should map bookmark rows instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the timeline API handoff concrete', (): void => {
@@ -15275,25 +15198,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/x/timeline.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Timeline endpoint page',
-          REQUIRED_TIMELINE_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_TIMELINE_API_RAW_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Timeline endpoint page should map timeline rows instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Timeline endpoint page',
+        REQUIRED_TIMELINE_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_TIMELINE_API_RAW_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Timeline endpoint page should map timeline rows instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the user tweets API handoff concrete', (): void => {
@@ -15301,25 +15222,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/x/user-tweets.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'User tweets endpoint page',
-          REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_USER_TWEETS_API_RAW_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `User tweets endpoint page should map timeline rows instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'User tweets endpoint page',
+        REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_USER_TWEETS_API_RAW_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `User tweets endpoint page should map timeline rows instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the user likes API handoff concrete', (): void => {
@@ -15327,25 +15246,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/x/user-likes.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'User likes endpoint page',
-          REQUIRED_USER_LIKES_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_USER_LIKES_API_RAW_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `User likes endpoint page should map liked tweet rows instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'User likes endpoint page',
+        REQUIRED_USER_LIKES_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_USER_LIKES_API_RAW_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `User likes endpoint page should map liked tweet rows instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the user media API handoff concrete', (): void => {
@@ -15353,25 +15270,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/x/user-media.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'User media endpoint page',
-          REQUIRED_USER_MEDIA_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_USER_MEDIA_API_RAW_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `User media endpoint page should map media tweet rows instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'User media endpoint page',
+        REQUIRED_USER_MEDIA_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_USER_MEDIA_API_RAW_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `User media endpoint page should map media tweet rows instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the extraction workflow concrete for credits, JSON, and file handoffs', (): void => {
@@ -15379,25 +15294,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('guides/extraction-workflow.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Extraction workflow guide',
-          REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS,
-        ),
-        ...FORBIDDEN_EXTRACTION_WORKFLOW_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Extraction workflow guide contains stale wording "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Extraction workflow guide',
+        REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS,
+      ),
+      ...FORBIDDEN_EXTRACTION_WORKFLOW_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Extraction workflow guide contains stale wording "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
     expect(source.length).toBeLessThanOrEqual(30_000);
   });
 
@@ -15428,53 +15341,55 @@ describe('repository discovery', (): void => {
   it('keeps the get extraction page cursor-safe for JSON handoffs', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/extractions/twitter-extraction-results.mdx', 'utf8');
+    const source = readFileSync(
+      'api-reference/extractions/twitter-extraction-results.mdx',
+      'utf8',
+    );
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Get extraction cursor handoff',
-          REQUIRED_EXTRACTION_GET_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_EXTRACTION_GET_HANDOFF_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Get extraction page contains stale single-page accumulation "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Get extraction cursor handoff',
+        REQUIRED_EXTRACTION_GET_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_EXTRACTION_GET_HANDOFF_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Get extraction page contains stale single-page accumulation "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the list extractions page cursor-safe for job inventory handoffs', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/extractions/twitter-scraping-job-history.mdx', 'utf8');
+    const source = readFileSync(
+      'api-reference/extractions/twitter-scraping-job-history.mdx',
+      'utf8',
+    );
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'List extractions job inventory handoff',
-          REQUIRED_EXTRACTION_LIST_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_EXTRACTION_LIST_HANDOFF_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `List extractions page contains stale single-page accumulation "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'List extractions job inventory handoff',
+        REQUIRED_EXTRACTION_LIST_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_EXTRACTION_LIST_HANDOFF_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `List extractions page contains stale single-page accumulation "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps trends WOEID regions mobile friendly', (): void => {
@@ -15492,25 +15407,23 @@ describe('repository discovery', (): void => {
     ] as const;
 
     expect(
-      trendPages.flatMap(
-        ({ label, source }): readonly DiscoveryFinding[] => [
-          ...collectSnippetFindings(
-            source,
-            label,
-            REQUIRED_TRENDS_REGION_SNIPPETS,
-          ),
-          ...FORBIDDEN_TRENDS_REGION_SNIPPETS.flatMap(
-            (snippet): readonly DiscoveryFinding[] =>
-              source.includes(snippet)
-                ? [
-                    {
-                      issue: `${label} contains stale regions table or cache wording "${snippet}".`,
-                    },
-                  ]
-                : [],
-          ),
-        ],
-      ),
+      trendPages.flatMap(({ label, source }): readonly DiscoveryFinding[] => [
+        ...collectSnippetFindings(
+          source,
+          label,
+          REQUIRED_TRENDS_REGION_SNIPPETS,
+        ),
+        ...FORBIDDEN_TRENDS_REGION_SNIPPETS.flatMap(
+          (snippet): readonly DiscoveryFinding[] =>
+            source.includes(snippet)
+              ? [
+                  {
+                    issue: `${label} contains stale regions table or cache wording "${snippet}".`,
+                  },
+                ]
+              : [],
+        ),
+      ]),
     ).toStrictEqual([]);
     expect(
       collectSnippetFindings(
@@ -15537,7 +15450,9 @@ describe('repository discovery', (): void => {
         REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS,
       ),
     ).toStrictEqual([]);
-    expect(source).not.toContain('| Format | Content-Type | Filename Example |');
+    expect(source).not.toContain(
+      '| Format | Content-Type | Filename Example |',
+    );
     expect(source).not.toContain('const blob = await response.blob();');
   });
 
@@ -15549,25 +15464,23 @@ describe('repository discovery', (): void => {
       readFileSync('snippets/extraction-request-params.mdx', 'utf8'),
     ].join('\n');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Extraction create tool types',
-          REQUIRED_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS,
-        ),
-        ...FORBIDDEN_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Extraction create tool types contain stale table copy "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Extraction create tool types',
+        REQUIRED_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS,
+      ),
+      ...FORBIDDEN_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Extraction create tool types contain stale table copy "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
     expect(source).not.toContain('|-----------|---------------|-------------|');
   });
 
@@ -15576,51 +15489,50 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/extractions/create.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Extraction create run receipt',
-          REQUIRED_EXTRACTION_CREATE_RECEIPT_SNIPPETS,
-        ),
-        ...FORBIDDEN_EXTRACTION_CREATE_RECEIPT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Extraction create response should stay a receipt and not include result data "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Extraction create run receipt',
+        REQUIRED_EXTRACTION_CREATE_RECEIPT_SNIPPETS,
+      ),
+      ...FORBIDDEN_EXTRACTION_CREATE_RECEIPT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Extraction create response should stay a receipt and not include result data "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps extraction estimate framed as a decision checkpoint', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/extractions/twitter-scraping-cost-estimator.mdx', 'utf8');
+    const source = readFileSync(
+      'api-reference/extractions/twitter-scraping-cost-estimator.mdx',
+      'utf8',
+    );
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Extraction estimate decision handoff',
-          REQUIRED_EXTRACTION_ESTIMATE_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_EXTRACTION_ESTIMATE_HANDOFF_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Extraction estimate should stay a decision checkpoint and not include job output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Extraction estimate decision handoff',
+        REQUIRED_EXTRACTION_ESTIMATE_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_EXTRACTION_ESTIMATE_HANDOFF_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Extraction estimate should stay a decision checkpoint and not include job output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps draw export response formats mobile friendly', (): void => {
@@ -15689,25 +15601,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/extractions/export.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Extraction export columns',
-          REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS,
-        ),
-        ...FORBIDDEN_EXTRACTION_EXPORT_COLUMNS_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Extraction export columns contain stale table or column copy "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Extraction export columns',
+        REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS,
+      ),
+      ...FORBIDDEN_EXTRACTION_EXPORT_COLUMNS_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Extraction export columns contain stale table or column copy "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
     expect(source).not.toContain('|--------|-------------|');
   });
 
@@ -15733,7 +15643,10 @@ describe('repository discovery', (): void => {
   it('keeps the upload media API handoff concrete', (): void => {
     expect.assertions(2);
 
-    const source = readFileSync('api-reference/x-write/upload-media.mdx', 'utf8');
+    const source = readFileSync(
+      'api-reference/x-write/upload-media.mdx',
+      'utf8',
+    );
 
     expect(
       collectSnippetFindings(
@@ -15778,25 +15691,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('guides/direct-message-workflow.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Direct message workflow guide',
-          REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS,
-        ),
-        ...FORBIDDEN_DIRECT_MESSAGE_WORKFLOW_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Direct message workflow guide contains unsupported text limit "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Direct message workflow guide',
+        REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS,
+      ),
+      ...FORBIDDEN_DIRECT_MESSAGE_WORKFLOW_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Direct message workflow guide contains unsupported text limit "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps DM history examples on raw REST until generated clients expose account query support', (): void => {
@@ -15810,25 +15721,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/x/dm-history.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'DM history API docs',
-          REQUIRED_DM_HISTORY_API_SNIPPETS,
-        ),
-        ...FORBIDDEN_DM_HISTORY_LOG_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `DM history API docs log private message bodies with "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'DM history API docs',
+        REQUIRED_DM_HISTORY_API_SNIPPETS,
+      ),
+      ...FORBIDDEN_DM_HISTORY_LOG_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `DM history API docs log private message bodies with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps shared monitor types aligned with account and keyword monitor APIs', (): void => {
@@ -15864,25 +15773,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/events/list.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'List events API docs',
-          REQUIRED_EVENT_LIST_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_EVENT_LIST_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `List events API docs print raw event responses with "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'List events API docs',
+        REQUIRED_EVENT_LIST_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_EVENT_LIST_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `List events API docs print raw event responses with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the get event API page useful for detail row handoff', (): void => {
@@ -15890,25 +15797,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/events/get.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Get event API docs',
-          REQUIRED_EVENT_GET_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_EVENT_GET_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Get event API docs print raw event responses with "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Get event API docs',
+        REQUIRED_EVENT_GET_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_EVENT_GET_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Get event API docs print raw event responses with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps shared draft types aligned with draft API formatting', (): void => {
@@ -15998,294 +15903,247 @@ describe('repository discovery', (): void => {
       'utf8',
     );
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          createWebhookApi,
-          'Create webhook API docs',
-          REQUIRED_WEBHOOK_CREATE_API_SNIPPETS,
-        ),
-        ...FORBIDDEN_WEBHOOK_CREATE_SECRET_LOG_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            createWebhookApi.includes(snippet)
-              ? [
-                  {
-                    issue: `Create webhook API docs can print the one-time webhook secret with "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...collectSnippetFindings(
-          listWebhookApi,
-          'List webhook API docs',
-          REQUIRED_WEBHOOK_LIST_API_SNIPPETS,
-        ),
-        ...FORBIDDEN_WEBHOOK_LIST_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            listWebhookApi.includes(snippet)
-              ? [
-                  {
-                    issue: `List webhook API docs print raw webhook responses with "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...collectSnippetFindings(
-          updateWebhookApi,
-          'Update webhook API docs',
-          REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS,
-        ),
-        ...FORBIDDEN_WEBHOOK_UPDATE_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            updateWebhookApi.includes(snippet)
-              ? [
-                  {
-                    issue: `Update webhook API docs print raw webhook responses with "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...collectSnippetFindings(
-          deleteWebhookApi,
-          'Delete webhook API docs',
-          REQUIRED_WEBHOOK_DELETE_API_SNIPPETS,
-        ),
-        ...FORBIDDEN_WEBHOOK_DELETE_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            deleteWebhookApi.includes(snippet)
-              ? [
-                  {
-                    issue: `Delete webhook API docs print raw delete responses with "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...collectSnippetFindings(
-          testWebhookApi,
-          'Test webhook API docs',
-          REQUIRED_WEBHOOK_TEST_API_SNIPPETS,
-        ),
-        ...FORBIDDEN_WEBHOOK_TEST_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            testWebhookApi.includes(snippet)
-              ? [
-                  {
-                    issue: `Test webhook API docs print raw test responses with "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...collectSnippetFindings(
-          resumeWebhookApi,
-          'Resume webhook API docs',
-          REQUIRED_WEBHOOK_RESUME_API_SNIPPETS,
-        ),
-        ...FORBIDDEN_WEBHOOK_RESUME_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            resumeWebhookApi.includes(snippet)
-              ? [
-                  {
-                    issue: `Resume webhook API docs print raw resume responses with "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...collectSnippetFindings(
-          deliveriesApi,
-          'Webhook deliveries API docs',
-          REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS,
-        ),
-        ...FORBIDDEN_WEBHOOK_DELIVERIES_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            deliveriesApi.includes(snippet)
-              ? [
-                  {
-                    issue: `Webhook deliveries API docs print raw delivery responses with "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...collectSnippetFindings(
-          overview,
-          'Webhook overview',
-          REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          architecture,
-          'Architecture guide webhook retries',
-          REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          architecture,
-          'Architecture guide components',
-          REQUIRED_ARCHITECTURE_COMPONENT_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          architecture,
-          'Architecture guide authentication',
-          REQUIRED_ARCHITECTURE_AUTHENTICATION_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          architecture,
-          'Architecture guide data isolation',
-          REQUIRED_ARCHITECTURE_DATA_ISOLATION_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          architecture,
-          'Architecture guide rate limits',
-          REQUIRED_ARCHITECTURE_RATE_LIMIT_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          architecture,
-          'Architecture guide usage billing',
-          REQUIRED_ARCHITECTURE_BILLING_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          architecture,
-          'Architecture guide usage categories',
-          REQUIRED_ARCHITECTURE_USAGE_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          architecture,
-          'Architecture guide platform limitations',
-          REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS,
-        ),
-        ...FORBIDDEN_ARCHITECTURE_COMPONENT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            architecture.includes(snippet)
-              ? [
-                  {
-                    label: 'Architecture guide components',
-                    snippet,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_ARCHITECTURE_AUTHENTICATION_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            architecture.includes(snippet)
-              ? [
-                  {
-                    label: 'Architecture guide authentication',
-                    snippet,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_ARCHITECTURE_DATA_ISOLATION_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            architecture.includes(snippet)
-              ? [
-                  {
-                    label: 'Architecture guide data isolation',
-                    snippet,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_ARCHITECTURE_RATE_LIMIT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            architecture.includes(snippet)
-              ? [
-                  {
-                    label: 'Architecture guide rate limits',
-                    snippet,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_ARCHITECTURE_BILLING_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            architecture.includes(snippet)
-              ? [
-                  {
-                    label: 'Architecture guide usage billing',
-                    snippet,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_ARCHITECTURE_USAGE_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            architecture.includes(snippet)
-              ? [
-                  {
-                    label: 'Architecture guide usage categories',
-                    snippet,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_WEBHOOK_ARCHITECTURE_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            architecture.includes(snippet)
-              ? [
-                  {
-                    issue: `Architecture guide contains stale webhook architecture table wording "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_ARCHITECTURE_LIMITATION_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            architecture.includes(snippet)
-              ? [
-                  {
-                    label: 'Architecture guide platform limitations',
-                    snippet,
-                  },
-                ]
-              : [],
-        ),
-        ...collectSnippetFindings(
-          types,
-          'Types guide webhook payload',
-          REQUIRED_WEBHOOK_TYPES_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          testing,
-          'Webhook testing guide',
-          REQUIRED_WEBHOOK_TESTING_SNIPPETS,
-        ),
-        ...collectSnippetFindings(
-          verification,
-          'Webhook verification guide',
-          REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS,
-        ),
-        ...FORBIDDEN_WEBHOOK_VERIFICATION_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            verification.includes(snippet)
-              ? [
-                  {
-                    issue: `Webhook verification guide references undefined helper "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_WEBHOOK_ARCHITECTURE_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            architecture.includes(snippet)
-              ? [
-                  {
-                    label: 'Architecture guide webhook retries',
-                    snippet,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_WEBHOOK_OVERVIEW_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            overview.includes(snippet)
-              ? [
-                  {
-                    label: 'Webhook overview',
-                    snippet,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        createWebhookApi,
+        'Create webhook API docs',
+        REQUIRED_WEBHOOK_CREATE_API_SNIPPETS,
+      ),
+      ...FORBIDDEN_WEBHOOK_CREATE_SECRET_LOG_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          createWebhookApi.includes(snippet)
+            ? [
+                {
+                  issue: `Create webhook API docs can print the one-time webhook secret with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...collectSnippetFindings(
+        listWebhookApi,
+        'List webhook API docs',
+        REQUIRED_WEBHOOK_LIST_API_SNIPPETS,
+      ),
+      ...FORBIDDEN_WEBHOOK_LIST_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          listWebhookApi.includes(snippet)
+            ? [
+                {
+                  issue: `List webhook API docs print raw webhook responses with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...collectSnippetFindings(
+        updateWebhookApi,
+        'Update webhook API docs',
+        REQUIRED_WEBHOOK_UPDATE_API_SNIPPETS,
+      ),
+      ...FORBIDDEN_WEBHOOK_UPDATE_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          updateWebhookApi.includes(snippet)
+            ? [
+                {
+                  issue: `Update webhook API docs print raw webhook responses with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...collectSnippetFindings(
+        deleteWebhookApi,
+        'Delete webhook API docs',
+        REQUIRED_WEBHOOK_DELETE_API_SNIPPETS,
+      ),
+      ...FORBIDDEN_WEBHOOK_DELETE_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          deleteWebhookApi.includes(snippet)
+            ? [
+                {
+                  issue: `Delete webhook API docs print raw delete responses with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...collectSnippetFindings(
+        testWebhookApi,
+        'Test webhook API docs',
+        REQUIRED_WEBHOOK_TEST_API_SNIPPETS,
+      ),
+      ...FORBIDDEN_WEBHOOK_TEST_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          testWebhookApi.includes(snippet)
+            ? [
+                {
+                  issue: `Test webhook API docs print raw test responses with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...collectSnippetFindings(
+        resumeWebhookApi,
+        'Resume webhook API docs',
+        REQUIRED_WEBHOOK_RESUME_API_SNIPPETS,
+      ),
+      ...FORBIDDEN_WEBHOOK_RESUME_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          resumeWebhookApi.includes(snippet)
+            ? [
+                {
+                  issue: `Resume webhook API docs print raw resume responses with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...collectSnippetFindings(
+        deliveriesApi,
+        'Webhook deliveries API docs',
+        REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS,
+      ),
+      ...FORBIDDEN_WEBHOOK_DELIVERIES_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          deliveriesApi.includes(snippet)
+            ? [
+                {
+                  issue: `Webhook deliveries API docs print raw delivery responses with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...collectSnippetFindings(
+        overview,
+        'Webhook overview',
+        REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        architecture,
+        'Architecture guide webhook retries',
+        REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        architecture,
+        'Architecture guide components',
+        REQUIRED_ARCHITECTURE_COMPONENT_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        architecture,
+        'Architecture guide authentication',
+        REQUIRED_ARCHITECTURE_AUTHENTICATION_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        architecture,
+        'Architecture guide data isolation',
+        REQUIRED_ARCHITECTURE_DATA_ISOLATION_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        architecture,
+        'Architecture guide rate limits',
+        REQUIRED_ARCHITECTURE_RATE_LIMIT_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        architecture,
+        'Architecture guide usage billing',
+        REQUIRED_ARCHITECTURE_BILLING_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        architecture,
+        'Architecture guide usage categories',
+        REQUIRED_ARCHITECTURE_USAGE_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        architecture,
+        'Architecture guide platform limitations',
+        REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS,
+      ),
+      ...FORBIDDEN_ARCHITECTURE_COMPONENT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          architecture.includes(snippet)
+            ? [{ label: 'Architecture guide components', snippet }]
+            : [],
+      ),
+      ...FORBIDDEN_ARCHITECTURE_AUTHENTICATION_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          architecture.includes(snippet)
+            ? [{ label: 'Architecture guide authentication', snippet }]
+            : [],
+      ),
+      ...FORBIDDEN_ARCHITECTURE_DATA_ISOLATION_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          architecture.includes(snippet)
+            ? [{ label: 'Architecture guide data isolation', snippet }]
+            : [],
+      ),
+      ...FORBIDDEN_ARCHITECTURE_RATE_LIMIT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          architecture.includes(snippet)
+            ? [{ label: 'Architecture guide rate limits', snippet }]
+            : [],
+      ),
+      ...FORBIDDEN_ARCHITECTURE_BILLING_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          architecture.includes(snippet)
+            ? [{ label: 'Architecture guide usage billing', snippet }]
+            : [],
+      ),
+      ...FORBIDDEN_ARCHITECTURE_USAGE_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          architecture.includes(snippet)
+            ? [{ label: 'Architecture guide usage categories', snippet }]
+            : [],
+      ),
+      ...FORBIDDEN_WEBHOOK_ARCHITECTURE_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          architecture.includes(snippet)
+            ? [
+                {
+                  issue: `Architecture guide contains stale webhook architecture table wording "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...FORBIDDEN_ARCHITECTURE_LIMITATION_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          architecture.includes(snippet)
+            ? [{ label: 'Architecture guide platform limitations', snippet }]
+            : [],
+      ),
+      ...collectSnippetFindings(
+        types,
+        'Types guide webhook payload',
+        REQUIRED_WEBHOOK_TYPES_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        testing,
+        'Webhook testing guide',
+        REQUIRED_WEBHOOK_TESTING_SNIPPETS,
+      ),
+      ...collectSnippetFindings(
+        verification,
+        'Webhook verification guide',
+        REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS,
+      ),
+      ...FORBIDDEN_WEBHOOK_VERIFICATION_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          verification.includes(snippet)
+            ? [
+                {
+                  issue: `Webhook verification guide references undefined helper "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...FORBIDDEN_WEBHOOK_ARCHITECTURE_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          architecture.includes(snippet)
+            ? [{ label: 'Architecture guide webhook retries', snippet }]
+            : [],
+      ),
+      ...FORBIDDEN_WEBHOOK_OVERVIEW_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          overview.includes(snippet)
+            ? [{ label: 'Webhook overview', snippet }]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the Send DM endpoint page clear about media attachments', (): void => {
@@ -16645,55 +16503,53 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('guides/workflows.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Workflows overview',
-          REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS,
-        ),
-        ...FORBIDDEN_WORKFLOW_SECRET_LOG_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Workflows guide logs the one-time webhook secret with "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_WORKFLOW_OVERVIEW_BLOAT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Workflows guide reintroduced duplicate deep tutorial content with "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_WORKFLOW_OVERVIEW_STALE_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Workflows guide reintroduced stale pagination copy with "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_WORKFLOW_ENDPOINT_FINDER_TABLE_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Workflows endpoint finder reintroduced a mobile-clipping table with "${snippet}". Use the bullet finder format instead.`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Workflows overview',
+        REQUIRED_WORKFLOW_OVERVIEW_SNIPPETS,
+      ),
+      ...FORBIDDEN_WORKFLOW_SECRET_LOG_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Workflows guide logs the one-time webhook secret with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...FORBIDDEN_WORKFLOW_OVERVIEW_BLOAT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Workflows guide reintroduced duplicate deep tutorial content with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...FORBIDDEN_WORKFLOW_OVERVIEW_STALE_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Workflows guide reintroduced stale pagination copy with "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...FORBIDDEN_WORKFLOW_ENDPOINT_FINDER_TABLE_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Workflows endpoint finder reintroduced a mobile-clipping table with "${snippet}". Use the bullet finder format instead.`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the campaign verification workflow source-backed', (): void => {
@@ -16802,10 +16658,7 @@ describe('repository discovery', (): void => {
   it('keeps the tweet metadata field guide source-backed', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync(
-      'guides/tweet-profile-api-fields.mdx',
-      'utf8',
-    );
+    const source = readFileSync('guides/tweet-profile-api-fields.mdx', 'utf8');
 
     expect(
       collectSnippetFindings(
@@ -16827,27 +16680,28 @@ describe('repository discovery', (): void => {
   it('keeps request-efficient API usage source-backed', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('guides/request-efficient-api-usage.mdx', 'utf8');
+    const source = readFileSync(
+      'guides/request-efficient-api-usage.mdx',
+      'utf8',
+    );
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Request-efficient API usage guide',
-          REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS,
-        ),
-        ...FORBIDDEN_REQUEST_EFFICIENT_API_USAGE_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Request-efficient API usage guide contains stale wording "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Request-efficient API usage guide',
+        REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS,
+      ),
+      ...FORBIDDEN_REQUEST_EFFICIENT_API_USAGE_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Request-efficient API usage guide contains stale wording "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the keyword monitor API handoff concrete', (): void => {
@@ -16857,45 +16711,43 @@ describe('repository discovery', (): void => {
       readFileSync('api-reference/monitors/create-keyword.mdx', 'utf8'),
     );
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Create keyword monitor endpoint page',
-          REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_KEYWORD_MONITOR_INLINE_WEBHOOK_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Create keyword monitor endpoint page should link to webhook-specific signature docs instead of inlining "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_NESTED_QUOTED_KEYWORD_QUERY_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Create keyword monitor endpoint page should use a plain query example instead of nested quoted query "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_KEYWORD_MONITOR_CREATE_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Create keyword monitor endpoint page should map state rows instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Create keyword monitor endpoint page',
+        REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_KEYWORD_MONITOR_INLINE_WEBHOOK_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Create keyword monitor endpoint page should link to webhook-specific signature docs instead of inlining "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...FORBIDDEN_NESTED_QUOTED_KEYWORD_QUERY_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Create keyword monitor endpoint page should use a plain query example instead of nested quoted query "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...FORBIDDEN_KEYWORD_MONITOR_CREATE_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Create keyword monitor endpoint page should map state rows instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the keyword monitor list API handoff concrete', (): void => {
@@ -16906,25 +16758,23 @@ describe('repository discovery', (): void => {
       'utf8',
     );
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'List keyword monitor API page',
-          REQUIRED_KEYWORD_MONITOR_LIST_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_KEYWORD_MONITOR_LIST_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `List keyword monitor API page should map inventory rows instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'List keyword monitor API page',
+        REQUIRED_KEYWORD_MONITOR_LIST_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_KEYWORD_MONITOR_LIST_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `List keyword monitor API page should map inventory rows instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the keyword monitor get API handoff concrete', (): void => {
@@ -16935,25 +16785,23 @@ describe('repository discovery', (): void => {
       'utf8',
     );
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Get keyword monitor API page',
-          REQUIRED_KEYWORD_MONITOR_GET_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_KEYWORD_MONITOR_GET_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Get keyword monitor API page should map state snapshots instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Get keyword monitor API page',
+        REQUIRED_KEYWORD_MONITOR_GET_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_KEYWORD_MONITOR_GET_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Get keyword monitor API page should map state snapshots instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the keyword monitor update API handoff concrete', (): void => {
@@ -16963,35 +16811,33 @@ describe('repository discovery', (): void => {
       readFileSync('api-reference/monitors/update-keyword.mdx', 'utf8'),
     );
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Update keyword monitor API page',
-          REQUIRED_KEYWORD_MONITOR_UPDATE_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_NESTED_QUOTED_KEYWORD_QUERY_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Update keyword monitor API page should use a plain query example instead of nested quoted query "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_KEYWORD_MONITOR_UPDATE_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Update keyword monitor API page should map state rows instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Update keyword monitor API page',
+        REQUIRED_KEYWORD_MONITOR_UPDATE_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_NESTED_QUOTED_KEYWORD_QUERY_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Update keyword monitor API page should use a plain query example instead of nested quoted query "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...FORBIDDEN_KEYWORD_MONITOR_UPDATE_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Update keyword monitor API page should map state rows instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the keyword monitor delete API handoff concrete', (): void => {
@@ -17002,45 +16848,43 @@ describe('repository discovery', (): void => {
       'utf8',
     );
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Delete keyword monitor API page',
-          REQUIRED_KEYWORD_MONITOR_DELETE_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_MONITOR_DELETE_INLINE_SUCCESS_JSON_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Delete keyword monitor API page should keep inline card prose out of JSON shape "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_KEYWORD_MONITOR_DELETE_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Delete keyword monitor API page should map deletion receipts instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_ACCOUNT_MONITOR_DELETE_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Delete account monitor API page should map deletion receipts instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Delete keyword monitor API page',
+        REQUIRED_KEYWORD_MONITOR_DELETE_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_MONITOR_DELETE_INLINE_SUCCESS_JSON_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Delete keyword monitor API page should keep inline card prose out of JSON shape "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...FORBIDDEN_KEYWORD_MONITOR_DELETE_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Delete keyword monitor API page should map deletion receipts instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...FORBIDDEN_ACCOUNT_MONITOR_DELETE_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Delete account monitor API page should map deletion receipts instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the account monitor API handoff concrete', (): void => {
@@ -17048,61 +16892,60 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/monitors/create.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Create account monitor endpoint page',
-          REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_ACCOUNT_MONITOR_CREATE_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Create account monitor API page should map state rows instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Create account monitor endpoint page',
+        REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_ACCOUNT_MONITOR_CREATE_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Create account monitor API page should map state rows instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the account monitor get API handoff concrete', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/monitors/twitter-account-monitor-status.mdx', 'utf8');
+    const source = readFileSync(
+      'api-reference/monitors/twitter-account-monitor-status.mdx',
+      'utf8',
+    );
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Get account monitor API page',
-          REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_ACCOUNT_MONITOR_GET_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Get account monitor API page should map state snapshots instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_ACCOUNT_MONITOR_GET_EVENT_TYPE_CLAIMS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Get account monitor API page must not claim unsupported ${snippet}.`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Get account monitor API page',
+        REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_ACCOUNT_MONITOR_GET_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Get account monitor API page should map state snapshots instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...FORBIDDEN_ACCOUNT_MONITOR_GET_EVENT_TYPE_CLAIMS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Get account monitor API page must not claim unsupported ${snippet}.`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the account monitor list API handoff concrete', (): void => {
@@ -17110,25 +16953,23 @@ describe('repository discovery', (): void => {
 
     const source = readFileSync('api-reference/monitors/list.mdx', 'utf8');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'List account monitor API page',
-          REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_ACCOUNT_MONITOR_LIST_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `List account monitor API page should map inventory rows instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'List account monitor API page',
+        REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_ACCOUNT_MONITOR_LIST_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `List account monitor API page should map inventory rows instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the account monitor update API handoff concrete', (): void => {
@@ -17137,87 +16978,86 @@ describe('repository discovery', (): void => {
     const source = readFileSync('api-reference/monitors/update.mdx', 'utf8');
     const legacyImplementationWording = ['real-time', 'stream'].join(' ');
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Update account monitor API page',
-          REQUIRED_ACCOUNT_MONITOR_UPDATE_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_ACCOUNT_MONITOR_UPDATE_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Update account monitor API page should map state rows instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...FORBIDDEN_ACCOUNT_MONITOR_UPDATE_FULL_EVENT_TYPE_EXAMPLES.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Update account monitor API page should keep examples short instead of repeating the full event type list "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...(source.includes(legacyImplementationWording)
-          ? [
-              {
-                issue:
-                  'Update account monitor API page should avoid legacy implementation wording.',
-              },
-            ]
-          : []),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Update account monitor API page',
+        REQUIRED_ACCOUNT_MONITOR_UPDATE_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_ACCOUNT_MONITOR_UPDATE_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Update account monitor API page should map state rows instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...FORBIDDEN_ACCOUNT_MONITOR_UPDATE_FULL_EVENT_TYPE_EXAMPLES.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Update account monitor API page should keep examples short instead of repeating the full event type list "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...(source.includes(legacyImplementationWording)
+        ? [
+            {
+              issue:
+                'Update account monitor API page should avoid legacy implementation wording.',
+            },
+          ]
+        : []),
+    ]).toStrictEqual([]);
   });
 
   it('keeps the account monitor delete API handoff concrete', (): void => {
     expect.assertions(1);
 
-    const source = readFileSync('api-reference/monitors/delete-twitter-account-monitor.mdx', 'utf8');
+    const source = readFileSync(
+      'api-reference/monitors/delete-twitter-account-monitor.mdx',
+      'utf8',
+    );
 
-    expect(
-      [
-        ...collectSnippetFindings(
-          source,
-          'Delete account monitor API page',
-          REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS,
-        ),
-        ...FORBIDDEN_MONITOR_DELETE_INLINE_SUCCESS_JSON_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Delete account monitor API page should keep inline card prose out of JSON shape "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-        ...(source.includes('-H "x-api-key: xq_YOUR_KEY_HERE" | jq\n')
-          ? [
-              {
-                issue:
-                  'Delete account monitor API page should map cURL output into a deletion receipt.',
-              },
-            ]
-          : []),
-        ...FORBIDDEN_ACCOUNT_MONITOR_DELETE_RAW_OUTPUT_SNIPPETS.flatMap(
-          (snippet): readonly DiscoveryFinding[] =>
-            source.includes(snippet)
-              ? [
-                  {
-                    issue: `Delete account monitor API page should map deletion receipts instead of raw response output "${snippet}".`,
-                  },
-                ]
-              : [],
-        ),
-      ],
-    ).toStrictEqual([]);
+    expect([
+      ...collectSnippetFindings(
+        source,
+        'Delete account monitor API page',
+        REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS,
+      ),
+      ...FORBIDDEN_MONITOR_DELETE_INLINE_SUCCESS_JSON_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Delete account monitor API page should keep inline card prose out of JSON shape "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+      ...(source.includes('-H "x-api-key: xq_YOUR_KEY_HERE" | jq\n')
+        ? [
+            {
+              issue:
+                'Delete account monitor API page should map cURL output into a deletion receipt.',
+            },
+          ]
+        : []),
+      ...FORBIDDEN_ACCOUNT_MONITOR_DELETE_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Delete account monitor API page should map deletion receipts instead of raw response output "${snippet}".`,
+                },
+              ]
+            : [],
+      ),
+    ]).toStrictEqual([]);
   });
 
   it('keeps Zapier comparison workflow details source-backed', (): void => {
@@ -17453,7 +17293,11 @@ describe('repository discovery', (): void => {
     const source = readFileSync('guides/crewai.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(source, 'CrewAI guide', REQUIRED_CREWAI_GUIDE_SNIPPETS),
+      collectSnippetFindings(
+        source,
+        'CrewAI guide',
+        REQUIRED_CREWAI_GUIDE_SNIPPETS,
+      ),
     ).toStrictEqual([]);
     expect(source).not.toContain('raw data');
     expect(source).not.toContain('Raw tweet data');
@@ -17566,11 +17410,7 @@ describe('repository discovery', (): void => {
     const source = readFileSync('guides/n8n.mdx', 'utf8');
 
     expect(
-      collectSnippetFindings(
-        source,
-        'n8n guide',
-        REQUIRED_N8N_GUIDE_SNIPPETS,
-      ),
+      collectSnippetFindings(source, 'n8n guide', REQUIRED_N8N_GUIDE_SNIPPETS),
     ).toStrictEqual([]);
   });
 
@@ -17639,7 +17479,9 @@ describe('repository discovery', (): void => {
     expect(source).not.toContain(
       '| Sector | Start with | Choose Xquik when | Output to test |',
     );
-    expect(collectAlternativesOverviewCardParagraphFindings()).toStrictEqual([]);
+    expect(collectAlternativesOverviewCardParagraphFindings()).toStrictEqual(
+      [],
+    );
   });
 
   it('keeps the Brandwatch alternative focused on concrete social listening handoffs', (): void => {

@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik API MCP v2.6.31 exposes 118 JSON or text routes through 2 tools. `explore` searches. `xquik` runs authenticated calls. Active guest `paid_reads` keys see exactly 33 GET routes.
+Xquik API MCP v2.6.32 exposes 118 JSON or text routes through 2 tools. `explore` searches. `xquik` runs authenticated calls. Active guest `paid_reads` keys see exactly 33 GET routes.
 
 Modern clients negotiate MCP `2026-07-28` through `server/discover`.
 Current SDKs add request metadata and HTTP headers automatically.
@@ -95,6 +95,15 @@ async () => {
 ## xquik
 
 Execute API calls allowed by the authenticated credential. Full account keys and OAuth tokens keep their existing account capabilities. Guest keys can execute only the 33 eligible GET reads. Authentication and required idempotency headers are injected automatically.
+
+Keep only constraints the user states. A topic plus a like minimum includes every
+language, reply, repost, and quote. Never add unrequested filters. A minimum is
+not `Top`. Use `Top` only for best, most-liked, or highest-engagement requests.
+Otherwise, omit `queryType`.
+
+Use `GET /api/v1/x/tweets/search` for up to 20 Tweet rows. For more than 20,
+estimate once, then start `tweet_search_extractor`. Do not explore or run the
+direct read first when the extraction route is already known.
 
 **Input.**
 
@@ -182,7 +191,7 @@ async () => {
   // Use radar_recommendations when fresh context helps.
   // Step 2: Pass selected facts through additionalContext when refining.
   // Step 3: After drafting: { step: 'score', draft }
-  // The score step runs 9 deterministic editorial checks.
+  // The score step checks that the draft contains text.
 }
 ```
 
@@ -642,6 +651,8 @@ async () => {
     searchQuery: 'launch announcement',
     resultsLimit: 500
   };
+
+  // Add optional filters only when the user requests them.
 
   const estimate = await xquik.request('/api/v1/extractions/estimate', {
     method: 'POST',

@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs';
-
 import { describe, expect, it } from 'vitest';
 
 const page = readFileSync('api-reference/api-keys/list.mdx', 'utf8');
@@ -48,7 +47,7 @@ describe('API key list documentation', (): void => {
     expect.assertions(1);
 
     expect({
-      cookieSession: listOperation.includes('- cookieSession: []'),
+      cookieSession: listOperation.includes('cookieSession: []'),
       listOperation: listOperation.includes('operationId: listApiKeys'),
       sessionOnlyCopy: page.includes(
         'This management endpoint requires a same-origin dashboard session.',
