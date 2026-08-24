@@ -34,7 +34,7 @@ middleware, and workflows. It supports Python and .NET. Use this Microsoft AI
 agent framework when Microsoft chat clients fit your stack.
 
 These building blocks support single-agent tasks and multi-agent systems. Xquik
-publishes Twitter API operations through two MCP tools: `explore` and `xquik`.
+publishes Twitter API operations through 3 MCP tools: `docs`, `search`, and `execute`.
 
 Use each boundary for one responsibility.
 
@@ -43,9 +43,9 @@ Use each boundary for one responsibility.
 | Remote MCP | `MCPStreamableHTTPTool` | Connect agents to tweet, profile, follower, and monitor routes |
 | Final response | Pydantic `response_format` | Reject malformed tweet rows and pagination state |
 | Tenant context | `header_provider` | Resolve one Xquik key for each agent run |
-| X actions | MCP `approval_mode` | Pause before the shared `xquik` execution tool runs |
+| X actions | MCP `approval_mode` | Pause before the shared `execute` execution tool runs |
 | Agent handoff | `AgentSession` and typed models | Preserve IDs without copying whole transcripts |
-| Tool scope | `allowed_tools` | Expose discovery alone or both MCP tools |
+| Tool scope | `allowed_tools` | Expose documentation, contract search, or execution tools |
 
 Choose it for Python services requiring model-selected tool calls. Choose direct
 REST for fixed jobs without model choices.
@@ -135,7 +135,7 @@ async def main() -> None:
         name="xquik-twitter-api",
         url="https://xquik.com/mcp",
         description="Search tweets, profiles, followers, monitors, and exports.",
-        allowed_tools=["explore", "xquik"],
+        allowed_tools=["docs", "search", "execute"],
         header_provider=lambda kwargs: {
             "x-api-key": kwargs["xquik_api_key"],
         },
@@ -173,7 +173,7 @@ asyncio.run(main())
 ```
 
 `allowed_tools` names the available remote tools. The agent receives only
-`explore` and `xquik` from Xquik's MCP server.
+`docs`, `search`, and `execute` from Xquik's MCP server.
 
 The agent framework import loads `Agent` and `MCPStreamableHTTPTool`.
 
@@ -211,11 +211,11 @@ resumed results by `tweet_id`.
 
 ## Add human-in-the-loop approval for Twitter actions
 
-Xquik exposes one `xquik` execution tool. It runs routes authorized by the API
+Xquik exposes one `execute` execution tool. It runs routes authorized by the API
 key.
 
-Tool-name checks cannot distinguish routes inside `xquik`. Apply approval to
-`xquik` whenever a key authorizes writes.
+Tool-name checks cannot distinguish routes inside `execute`. Apply approval to
+`execute` whenever a key authorizes writes.
 
 Ask a human in the loop to inspect every write-capable request.
 
@@ -225,10 +225,10 @@ from agent_framework import Agent, MCPStreamableHTTPTool, Message
 approved_mcp = MCPStreamableHTTPTool(
     name="xquik-twitter-api",
     url="https://xquik.com/mcp",
-    allowed_tools=["explore", "xquik"],
+    allowed_tools=["docs", "search", "execute"],
     approval_mode={
-        "never_require_approval": ["explore"],
-        "always_require_approval": ["xquik"],
+        "never_require_approval": ["search"],
+        "always_require_approval": ["execute"],
     },
     header_provider=lambda kwargs: {
         "x-api-key": kwargs["xquik_api_key"],
@@ -287,23 +287,23 @@ permissions](/guides/guest-wallets) before granting autonomous access.
 
 ## Scope Microsoft Agent Framework tools for discovery
 
-Expose only `explore` when an agent should inspect endpoint schemas.
+Expose only `search` when an agent should inspect endpoint schemas.
 
 ```python
 discovery_mcp = MCPStreamableHTTPTool(
     name="xquik-route-discovery",
     url="https://xquik.com/mcp",
-    allowed_tools=["explore"],
+    allowed_tools=["search"],
     header_provider=lambda kwargs: {
         "x-api-key": kwargs["xquik_api_key"],
     },
 )
 ```
 
-This configuration cannot execute Twitter API operations. Adding `xquik`
+This configuration cannot execute Twitter API operations. Adding `execute`
 enables every operation authorized by the key.
 
-Use `explore` before an unfamiliar operation. It returns routes, parameters,
+Use `search` before an unfamiliar operation. It returns routes, parameters,
 and response fields. Discovery never executes an X operation.
 
 ## Authenticate the Microsoft Agent Framework MCP client
@@ -319,7 +319,7 @@ def tenant_headers(kwargs: dict[str, object]) -> dict[str, str]:
 tenant_mcp = MCPStreamableHTTPTool(
     name="tenant-xquik-twitter-api",
     url="https://xquik.com/mcp",
-    allowed_tools=["explore", "xquik"],
+    allowed_tools=["docs", "search", "execute"],
     header_provider=tenant_headers,
 )
 
@@ -472,7 +472,7 @@ widening the range.
 ### Does Microsoft Agent Framework support MCP?
 
 Yes. Python agents connect through `MCPStreamableHTTPTool`. Xquik publishes
-`explore` and `xquik` at `https://xquik.com/mcp`.
+`docs`, `search`, and `execute` at `https://xquik.com/mcp`.
 
 ### Is Microsoft Agent Framework an alternative to MCP?
 
@@ -511,7 +511,7 @@ Ask the agent to call `GET /api/v1/x/tweets/search`. Supply an exact `q`,
 
 ### Can Microsoft Agent Framework post tweets and replies?
 
-Yes. Connect an X account first. Apply approval to every `xquik` request.
+Yes. Connect an X account first. Apply approval to every `execute` request.
 Validate the selected account, text, reply ID, and media.
 
 See [create tweet](/api-reference/x-write/create-tweet) for the exact contract.
@@ -538,7 +538,7 @@ before classifying urgency. Keep every reply behind human approval.
 
 ### Does tool filtering make the Twitter API read-only?
 
-Only when `allowed_tools` contains `explore` without `xquik`. The `xquik` tool
+Only when `allowed_tools` contains `search` without `execute`. The `execute` tool
 can run every operation authorized by its API key.
 
 ### Why does my MCP agent lose authentication between calls?
