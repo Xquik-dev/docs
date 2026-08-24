@@ -57,9 +57,9 @@ Search the authenticated API catalog. `search` makes no network calls and uses n
     10,000 characters.
   </Card>
   <Card title="Spec access" icon="search">
-    The function runs against `spec.endpoints` so agents can filter endpoint
-    paths, parameters, categories, costs, and response shapes before making a
-    live call.
+    The function reads `spec.endpoints`. Filter paths, parameters, categories,
+    costs, and response shapes. Pass the chosen `endpoint.path` unchanged to
+    `xquik.request()`.
   </Card>
 </CardGroup>
 
@@ -132,18 +132,18 @@ Execute API calls allowed by the authenticated credential. Full account keys and
 
 ```typescript
 declare const xquik: {
-  request(path: string, options?: {
-    method?: string;  // default: 'GET'
+  request<T = unknown>(path: string, options?: {
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     body?: unknown;
-    query?: Record<string, string | number | boolean>;
-  }): Promise<unknown>;
+    query?: Record<string, string | number | boolean | undefined>;
+  }): Promise<T>;
 };
 declare const spec: { endpoints: EndpointInfo[] };
 ```
 
 **Response contract.**
 
-`xquik.request()` sends the normalized contract automatically. Hosted MCP injects a unique `Idempotency-Key` for routes that require it. The sandbox reuses that key for bounded transient retries. After an unresolved write failure, verify state. Start a new attempt only when `safe_to_retry` is true. Responses use snake_case fields, date-time fields as Unix seconds, and structured error objects. A default REST `createdAt` field becomes `created`, while fields such as `publishedAt` become `published_at`.
+`xquik.request()` resolves directly to the endpoint response body. It does not add a `data` or `result` wrapper. It sends the normalized contract automatically. Hosted MCP injects a unique `Idempotency-Key` for routes that require it. The sandbox reuses that key for bounded transient retries. After an unresolved write failure, verify state. Start a new attempt only when `safe_to_retry` is true. Responses use snake_case fields, date-time fields as Unix seconds, and structured error objects. A default REST `createdAt` field becomes `created`, while fields such as `publishedAt` become `published_at`.
 
 MCP preserves every safe field that X supplies. Optional fields stay absent.
 See [Read Data Richness](/guides/tweet-profile-api-fields) for the REST field map.
@@ -190,10 +190,6 @@ async () => {
     body: { step: 'compose', topic: 'AI agents' }
   });
   return compose;
-  // Use radar_recommendations when fresh context helps.
-  // Step 2: Pass selected facts through additionalContext when refining.
-  // Step 3: After drafting: { step: 'score', draft }
-  // The score step checks that the draft contains text.
 }
 ```
 
