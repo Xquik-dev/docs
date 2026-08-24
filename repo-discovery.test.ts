@@ -1853,7 +1853,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'status URL when the agent receives a single stored link.',
   'API MCP v2.6.38 sends that contract',
   '## Agent handoff patterns',
-  'Hosted MCP returns at most 100 saved extraction rows per detail call.',
+  'Hosted MCP preserves each requested `limit`. REST enforces documented bounds.',
   'Use extraction exports for generated files.',
   'Keep agent handoffs small.',
   'Include the job, route, stored row IDs, next cursor, and poll action.',
