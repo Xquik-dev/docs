@@ -148,7 +148,7 @@ when `safeToRetry` is true.
 3. Use full credentials for 118 JSON or text routes. Use REST for excluded downloads. Guest keys expose 33 GET routes.
 4. Use `explore` to search the scoped catalog and `xquik` to run allowed requests.
 
-API MCP v2.6.36 supports MCP `2026-07-28` over Streamable HTTP.
+API MCP v2.6.37 supports MCP `2026-07-28` over Streamable HTTP.
 Current SDKs negotiate with `server/discover`. They attach request metadata
 and transport headers automatically. Hosted MCP injects required write
 idempotency headers. Do not call `initialize` or manage sessions for modern
