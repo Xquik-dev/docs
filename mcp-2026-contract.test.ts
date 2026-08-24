@@ -38,7 +38,7 @@ describe('MCP 2026-07-28 documentation contract', (): void => {
     expect.assertions(setupDocuments.length * 2);
 
     for (const document of setupDocuments) {
-      expect(document).toContain('2.6.41');
+      expect(document).toContain('2.6.42');
       expect(document).not.toContain('2.5.6');
     }
   });
@@ -66,5 +66,17 @@ describe('MCP 2026-07-28 documentation contract', (): void => {
     expect(CHANGELOG).toContain('API MCP v2.6.0');
     expect(CHANGELOG).toContain('MCP `2026-07-28`');
     expect(CHANGELOG).toContain('private cache hints');
+  });
+
+  it('documents optional OpenAPI-native tools without changing the default', (): void => {
+    expect.assertions(7);
+
+    expect(OVERVIEW).toContain('https://xquik.com/mcp?codemode=false');
+    expect(OVERVIEW).toContain('Code Mode is the default');
+    expect(OVERVIEW).toContain('one tool per OpenAPI operation');
+    expect(TOOLS).toContain('119 tools');
+    expect(TOOLS).toContain('34 tools');
+    expect(TOOLS).toContain('embeds no model prompt');
+    expect(README).toContain('OpenAPI-native tools');
   });
 });

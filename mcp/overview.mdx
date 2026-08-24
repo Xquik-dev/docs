@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik API MCP v2.6.41 exposes documentation search and a scoped REST catalog through 3 [Model Context Protocol](https://modelcontextprotocol.io) tools. Full credentials see 118 JSON or text routes. Private support media downloads use REST. Guest `paid_reads` keys see exactly 33 GET routes.
+Xquik API MCP v2.6.42 exposes the REST API through [Model Context Protocol](https://modelcontextprotocol.io). Code Mode is the default. Native mode exposes one tool per OpenAPI operation. Full credentials see 118 JSON or text routes. Private support media downloads use REST. Guest `paid_reads` keys see exactly 33 GET routes.
 
 <Note>
   Public tweet, profile, follower, reply, timeline, community, and list reads
@@ -42,7 +42,7 @@ Xquik API MCP v2.6.41 exposes documentation search and a scoped REST catalog thr
     Connect clients to `https://xquik.com/mcp`.
   </Card>
   <Card title="Server version" icon="badge-check">
-    Current API MCP server version: `2.6.41`.
+    Current API MCP server version: `2.6.42`.
   </Card>
   <Card title="Authentication" icon="key-round">
     Prefer OAuth 2.1. API keys remain available for clients with secure header
@@ -133,9 +133,15 @@ lifetimes, client registration, and implementation details.
 
 OAuth and full account API key behavior remain unchanged. A pending guest key cannot execute paid reads until verified payment activates it.
 
-## How it works
+## Choose a tool mode
 
-The MCP server uses 3 tools. API discovery and execution run in isolated sandboxes:
+Use the default endpoint for Code Mode:
+
+```text
+https://xquik.com/mcp
+```
+
+Code Mode uses 3 tools. API discovery and execution run in isolated sandboxes:
 
 <CardGroup cols={3}>
   <Card title="docs" icon="book-open">
@@ -159,6 +165,26 @@ The MCP server uses 3 tools. API discovery and execution run in isolated sandbox
 | `execute` | Execute Xquik API requests | May mutate data, may access live services, not idempotent |
 
 For a guest `paid_reads` session, `execute` is read-only, idempotent, and limited to live calls across the 33 eligible GET routes.
+
+Use native mode when a client cannot run Code Mode or needs ordinary MCP tools:
+
+```text
+https://xquik.com/mcp?codemode=false
+```
+
+Native mode serves an OpenAPI-derived catalog. It validates only the called
+tool. Full credentials receive `docs` plus 118 OpenAPI operations. Guest keys
+receive `docs` plus 33 eligible GET operations.
+
+Each native tool uses its OpenAPI `operationId` as its stable name. Its input
+schema, title, description, HTTP method, path, query parameters, and JSON body
+come from the same OpenAPI contract as REST and the generated SDKs. The server
+injects authentication and required idempotency headers. It rejects unknown
+routes, custom headers, redirects, traversal, and unsupported binary responses.
+
+Native mode does not expose `search` or `execute`. It also sends no global model
+instructions. The larger tool catalog uses more model context than Code Mode.
+Choose Code Mode when the client supports it.
 
 `docs` searches canonical Xquik documentation. Pass a non-empty `query` string.
 
