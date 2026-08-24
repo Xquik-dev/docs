@@ -147,8 +147,9 @@ when `safeToRetry` is true.
 2. Configure API MCP at `https://xquik.com/mcp` for live authenticated calls.
 3. Use full credentials for 118 JSON or text routes. Use REST for excluded downloads. Guest keys expose 33 GET routes.
 4. Use `docs` for guidance, `search` for contracts, and `execute` for allowed requests.
+5. Add `?codemode=false` only when the client needs OpenAPI-native tools.
 
-API MCP v2.6.41 supports MCP `2026-07-28` over Streamable HTTP.
+API MCP v2.6.42 supports MCP `2026-07-28` over Streamable HTTP.
 Current SDKs negotiate with `server/discover`. They attach request metadata
 and transport headers automatically. Hosted MCP injects required write
 idempotency headers. Do not call `initialize` or manage sessions for modern
