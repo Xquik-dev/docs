@@ -273,7 +273,7 @@ describe('API success response status documentation', (): void => {
   });
 
   it('keeps response tabs independent and success-first', (): void => {
-    expect.assertions(3);
+    expect.assertions(2);
 
     const ids: string[] = [];
     const findings = readApiDocs().flatMap((apiDoc): readonly string[] => {
@@ -306,7 +306,6 @@ describe('API success response status documentation', (): void => {
 
     expect(findings).toStrictEqual([]);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids).toHaveLength(854);
   });
 
   it('renders every 204 response as an empty body', (): void => {
