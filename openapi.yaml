@@ -1798,9 +1798,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ExtractionRequest'
-            example:
-              toolType: follower_explorer
-              targetUsername: elonmusk
       responses:
         '200':
           description: Dry-run estimate
@@ -1808,12 +1805,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExtractionEstimate'
-              example:
-                allowed: true
-                creditsAvailable: '10000'
-                creditsRequired: '1000'
-                estimatedResults: 1000
-                source: followers
         '202':
           description: Extraction started. Location identifies its result URL.
           headers:
@@ -1846,13 +1837,6 @@ paths:
                     type: string
                     enum: [pending, running, canceled, completed, failed]
                     example: running
-              example:
-                id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-                pollAfterMs: 1000
-                statusUrl: '/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-                waitUrl: '/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890?wait=10'
-                toolType: follower_explorer
-                status: running
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -1894,9 +1878,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ExtractionRequest'
-            example:
-              toolType: follower_explorer
-              targetUsername: elonmusk
       responses:
         '200':
           description: Extraction estimate
@@ -1904,12 +1885,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExtractionEstimate'
-              example:
-                estimatedResults: 500
-                creditsRequired: '500'
-                creditsAvailable: '50000'
-                allowed: true
-                source: 'replyCount'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -1941,9 +1916,6 @@ paths:
                 properties:
                   id: { type: string, example: 'aB3dE6gH9jK2' }
                   status: { type: string, const: canceled }
-              example:
-                id: 'aB3dE6gH9jK2'
-                status: canceled
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -1982,7 +1954,9 @@ paths:
           schema: { type: integer, minimum: 0, maximum: 10, default: 0 }
         - name: outputMode
           in: query
-          description: Select compact, full, or raw-compatible result fields.
+          description:
+            Use compact for core fields and tweet counts, full for nested
+            enrichment, or raw for a source copy.
           schema:
             type: string
             enum: [compact, full, raw]
@@ -2020,9 +1994,7 @@ paths:
                   job: { $ref: '#/components/schemas/ExtractionJob' }
                   results:
                     type: array
-                    items:
-                      type: object
-                      additionalProperties: true
+                    items: { $ref: '#/components/schemas/ExtractionResult' }
                     example: []
                   hasMore: { type: boolean, example: false }
                   pollAfterMs: { type: integer, minimum: 0, example: 0 }
@@ -2030,16 +2002,11 @@ paths:
                     { type: string, example: '/api/v1/extractions/id?wait=10' }
                   nextCursor: { type: string, example: 'abc123' }
               example:
-                job:
-                  id: 'aB3dE6gH9jK2'
-                  toolType: follower_explorer
-                  status: completed
-                  totalResults: 500
-                  createdAt: '2026-08-23T10:00:00Z'
+                job: { id: id, toolType: follower_explorer, status: completed, totalResults: 0, createdAt: '2026-08-23T10:00:00Z' }
                 results: []
                 hasMore: false
                 pollAfterMs: 0
-                waitUrl: '/api/v1/extractions/aB3dE6gH9jK2?wait=10'
+                waitUrl: '/api/v1/extractions/id?wait=10'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -12499,11 +12466,10 @@ components:
       description: Extraction job tracking status, tool type, and result count.
       type: object
       example:
-        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+        id: id
         toolType: follower_explorer
         status: completed
-        totalResults: 500
-        completionReason: requested_limit_reached
+        totalResults: 0
         createdAt: '2026-08-23T10:00:00Z'
       required: [id, toolType, status, totalResults, createdAt]
       properties:
@@ -12538,12 +12504,32 @@ components:
         errorMessage:
           type: string
           description: Safe error code for a failed job.
-        createdAt:
-          type: string
-          format: date-time
-        completedAt:
-          type: string
-          format: date-time
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time }
+
+    ExtractionResult:
+      type: object
+      required: [id, xUserId, createdAt]
+      additionalProperties: true
+      properties:
+        id: { type: string }
+        xUserId: { type: string }
+        xUsername: { type: string }
+        xDisplayName: { type: string }
+        xFollowersCount: { type: integer }
+        xVerified: { type: boolean }
+        xProfileImageUrl: { type: string, format: uri }
+        tweetId: { type: string }
+        tweetText: { type: string }
+        tweetCreatedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        bookmarkCount: { type: integer }
+        likeCount: { type: integer }
+        quoteCount: { type: integer }
+        replyCount: { type: integer }
+        retweetCount: { type: integer }
+        viewCount: { type: integer }
+        enrichmentData: { $ref: '#/components/schemas/PublicMetadata' }
 
     DrawListItem:
       description: Giveaway draw summary with entry counts and status.
