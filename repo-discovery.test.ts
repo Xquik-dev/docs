@@ -5923,7 +5923,7 @@ const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   '`has_next_page` and `next_cursor`',
   '<Card title="File exports" icon="file-spreadsheet">',
   'Use `tweet_search_extractor` when the output must be saved CSV, JSON, or XLSX.',
-  'Maximum Tweets requested per automatic page. Use `1` through `10000`.',
+  'Maximum Tweets per automatic page. Use `count` as an alias.',
   'For explicit `limit` pulls, treat `limit` as a batch-size upper bound.',
   'response returns fewer tweets than `limit` and `has_next_page` is `true`',
   'continue with the same `q`, structured filters, `queryType`,',
