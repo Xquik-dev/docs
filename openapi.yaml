@@ -1824,8 +1824,7 @@ paths:
                 required:
                   [id, pollAfterMs, status, statusUrl, toolType, waitUrl]
                 properties:
-                  id:
-                    { type: string, example: 'ext_123' }
+                  id: { type: string, example: 'ext_123' }
                   pollAfterMs: { type: integer, minimum: 0, example: 1000 }
                   statusUrl:
                     { type: string, example: '/api/v1/extractions/a1b2c3d4' }
@@ -2002,7 +2001,14 @@ paths:
                     { type: string, example: '/api/v1/extractions/id?wait=10' }
                   nextCursor: { type: string, example: 'abc123' }
               example:
-                job: { id: id, toolType: follower_explorer, status: completed, totalResults: 0, createdAt: '2026-08-23T10:00:00Z' }
+                job:
+                  {
+                    id: id,
+                    toolType: follower_explorer,
+                    status: completed,
+                    totalResults: 0,
+                    createdAt: '2026-08-23T10:00:00Z',
+                  }
                 results: []
                 hasMore: false
                 pollAfterMs: 0
@@ -3015,10 +3021,10 @@ paths:
             minimum: 1
             maximum: 10000
           description: >
-            Result upper bound. Omit it for the existing 20-row page size.
-            Explicit coverage defaults to 2000 and allows 10000. For paid
-            requests, remaining credits can reduce results. Zero affordable
-            results returns 402.
+            Unique result upper bound. Omit it for a 20-row page. Explicit
+            coverage defaults to 2000 and accepts up to 10000. Paid usage
+            follows returned rows. Remaining credits may reduce results. Zero
+            affordable results returns 402.
         - $ref: '#/components/parameters/TweetFilterFromUser'
         - $ref: '#/components/parameters/TweetFilterToUser'
         - $ref: '#/components/parameters/TweetFilterMentioning'
@@ -12092,14 +12098,16 @@ components:
           description: Required username text.
         resultsLimit:
           type: integer
-          description:
-            Maximum number of results to extract. When set, the extraction stops
-            after reaching this limit.
+          minimum: 1
+          default: 10000
+          description: >
+            Maximum unique results to emit. Billing follows emitted results, not
+            this upper bound.
         searchQuery:
           type: string
           description:
-            Required for tweet_search_extractor & community_search. Do not add
-            terms or filters.
+            Required for tweet_search_extractor & community_search. Passed
+            unchanged.
         fromUser:
           type: string
           description: Filter by author username (tweet_search_extractor)
@@ -12520,6 +12528,9 @@ components:
         xVerified: { type: boolean }
         xProfileImageUrl: { type: string, format: uri }
         tweetId: { type: string }
+        tweetUrl:
+          type: string
+          format: uri
         tweetText: { type: string }
         tweetCreatedAt: { type: string, format: date-time }
         createdAt: { type: string, format: date-time }
