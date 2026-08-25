@@ -15,16 +15,16 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     ```json
     {
       "job": {
-        "id": "aB3dE6gH9jK2",
+        "id": "id",
         "toolType": "follower_explorer",
         "status": "completed",
-        "totalResults": 500,
+        "totalResults": 0,
         "createdAt": "2026-08-23T10:00:00Z"
       },
       "results": [],
       "hasMore": false,
       "pollAfterMs": 0,
-      "waitUrl": "/api/v1/extractions/aB3dE6gH9jK2?wait=10"
+      "waitUrl": "/api/v1/extractions/id?wait=10"
     }
     ```
   </Tab>
@@ -162,7 +162,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 </ParamField>
 
 <ParamField query="outputMode" type="string">
-  Result fields: `compact`, `full`, or `raw`. Defaults to `full`.
+  Use `compact` for core fields and tweet counts. Use `full` for nested enrichment. Use `raw` for a source copy. Defaults to `full`.
 </ParamField>
 
 <ParamField query="outputPreset" type="string">
@@ -218,6 +218,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   </Info>
 
   **Result object fields.**
+    <Info>
+      Compact and flat output expose tweet counts here. Full nested output uses `enrichmentData.tweet`.
+    </Info>
     <ResponseField name="id" type="string" required>Unique result ID.</ResponseField>
     <ResponseField name="xUserId" type="string" required>X user ID.</ResponseField>
     <ResponseField name="xUsername" type="string">X username (handle). Omitted if unavailable.</ResponseField>
@@ -228,8 +231,14 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     <ResponseField name="tweetId" type="string">Tweet ID. Omitted for non-tweet-based extractions.</ResponseField>
     <ResponseField name="tweetText" type="string">Tweet text content. Omitted for non-tweet-based extractions.</ResponseField>
     <ResponseField name="tweetCreatedAt" type="string">ISO 8601 timestamp of the tweet. Omitted for non-tweet-based extractions.</ResponseField>
+    <ResponseField name="likeCount" type="number">Likes. Omitted when unavailable.</ResponseField>
+    <ResponseField name="retweetCount" type="number">Reposts. Omitted when unavailable.</ResponseField>
+    <ResponseField name="replyCount" type="number">Replies. Omitted when unavailable.</ResponseField>
+    <ResponseField name="quoteCount" type="number">Quotes. Omitted when unavailable.</ResponseField>
+    <ResponseField name="viewCount" type="number">Views. Omitted when unavailable.</ResponseField>
+    <ResponseField name="bookmarkCount" type="number">Bookmarks. Omitted when unavailable.</ResponseField>
     <ResponseField name="createdAt" type="string">ISO 8601 timestamp of when the result was created.</ResponseField>
-    <ResponseField name="enrichmentData" type="object">Additional profile, tweet, and article metadata. Omitted when unavailable. Contains nested user fields (`description`, `location`, `coverPicture`, `followingCount`, `favouritesCount`, `mediaCount`, `statusesCount`), tweet fields (`likeCount`, `replyCount`, `repostCount`, `quoteCount`, `viewCount`, `bookmarkCount`, `conversationId`, `lang`, `source`), and article fields (`title`, `bodyText`, `previewText`).</ResponseField>
+    <ResponseField name="enrichmentData" type="object">Additional profile, tweet, and article metadata. Compact output omits this object. Full output keeps it nested. Flat output merges its fields into the result.</ResponseField>
 
 </ResponseField>
 <ResponseField name="hasMore" type="boolean">Whether more results exist beyond this page.</ResponseField>
@@ -237,49 +246,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <ResponseField name="waitUrl" type="string">Relative URL that waits up to 10 seconds for progress.</ResponseField>
 <ResponseField name="nextCursor" type="string">Cursor for the next `cursor` parameter. Only present when `hasMore` is `true`.</ResponseField>
 
-```json
-{
-  "job": {
-    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "toolType": "reply_extractor",
-    "status": "completed",
-    "totalResults": 150,
-    "targetTweetId": "1893704267862470862",
-    "createdAt": "2026-02-24T10:00:00.000Z",
-    "completedAt": "2026-02-24T10:00:12.000Z"
-  },
-  "results": [
-    {
-      "id": "b2c3d4e5-f6a1-7890-abcd-ef2345678901",
-      "xUserId": "44196397",
-      "xUsername": "elonmusk",
-      "xDisplayName": "Elon Musk",
-      "xFollowersCount": 210500000,
-      "xVerified": true,
-      "xProfileImageUrl": "https://pbs.twimg.com/profile_images/el0n.jpg",
-      "tweetId": "1893710452812718080",
-      "tweetText": "This is a great thread, thanks for sharing.",
-      "tweetCreatedAt": "2026-02-24T10:05:00.000Z",
-      "createdAt": "2026-02-24T10:00:05.000Z"
-    },
-    {
-      "id": "c3d4e5f6-a1b2-7890-abcd-ef3456789012",
-      "xUserId": "1849726401547751424",
-      "xUsername": "xquik_",
-      "xDisplayName": "Xquik",
-      "xFollowersCount": 2400,
-      "xVerified": false,
-      "xProfileImageUrl": "https://pbs.twimg.com/profile_images/xquik.jpg",
-      "tweetId": "1893712000288563200",
-      "tweetText": "Agreed, very useful tool.",
-      "tweetCreatedAt": "2026-02-24T10:08:30.000Z",
-      "createdAt": "2026-02-24T10:00:06.000Z"
-    }
-  ],
-  "hasMore": true,
-  "nextCursor": "c3d4e5f6-a1b2-7890-abcd-ef3456789012"
-}
-```
+With `outputMode=compact`, tweet results keep `likeCount`, `retweetCount`,
+`replyCount`, `quoteCount`, `viewCount`, and `bookmarkCount`. Compact output
+omits `xProfileImageUrl` and `enrichmentData`.
 
 ### 401 Unauthenticated
 
@@ -312,9 +281,6 @@ Results are ordered by ID ascending. To iterate through all results for a large 
 
 ```javascript
 import { appendFile } from "node:fs/promises";
-
-
-
 const extractionId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 let cursor = undefined;
 let pageIndex = 0;
