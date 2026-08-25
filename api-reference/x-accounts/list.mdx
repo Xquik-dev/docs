@@ -1,7 +1,7 @@
 ---
 title: "Connected X accounts API, health & write readiness"
 sidebarTitle: "List X accounts"
-description: "List every connected X account, read its Xquik ID and username, inspect login health, and choose whether to write, reauthenticate, wait, or retry safely."
+description: "Page through connected X accounts, inspect login health, and select the correct Xquik connection before Tweets, replies, DMs, likes, follows, or profile writes."
 api: "GET /x/accounts"
 keywords: ["connected X accounts", "Twitter account API", "Twitter API account", "X account health", "X account status", "multiple Twitter accounts", "list X accounts", "X account write readiness"]
 ---
@@ -22,7 +22,17 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           "status": "active",
           "health": "healthy"
         }
-      ]
+      ],
+      "hasMore": false
+    }
+    ```
+  </Tab>
+
+  <Tab title="400" id="response-x-accounts-list-400">
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid account list cursor or limit."
     }
     ```
   </Tab>
@@ -54,103 +64,69 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   **Free.** This endpoint does not consume credits.
 </Callout>
 
-List every X account connected to the authenticated Xquik account. Read each
-local connection ID, X username, X user ID, and login health before writes.
+List X accounts connected to the authenticated Xquik account. Read each local
+ID, username, and health before a write.
 
-This endpoint lists your Xquik connections. It does not search public Twitter
-accounts. Use [Search Users](/api-reference/x/search-users) for public profile
-search.
+It does not search public Twitter
+accounts. Use [Search Users](/api-reference/x/search-users) for public profiles.
 
 <Info>
-  Check `accounts[].health` before scheduling writes.
-  `healthy` can write now.
-  `recovering` can reconnect on the next account use.
-  `temporaryIssue` is still paused by a transient cooldown.
-  `needsReauth` requires credentials, TOTP, or a completed security challenge.
-  `locked` and `suspended` stay blocked until the account is fixed on X.
+  Check `accounts[].health` before every write. Use only a ready connection.
 </Info>
 
-## When to list connected X accounts
+## Common uses
 
 | Workflow | Use the response for |
 | --- | --- |
-| Before a Tweet, reply, DM, like, follow, or profile update | Select `accounts[].id` and require acceptable health |
-| After connecting an account | Confirm the new username and local connection ID |
-| After reauthentication | Confirm that `health` changed before resuming writes |
-| Before scheduled automation | Exclude blocked accounts and defer temporary cooldowns |
-| During account support | Compare username, X user ID, timestamps, status, and health |
+| Before a Tweet, reply, DM, like, or follow | Select `accounts[].id` |
+| After connection or reauthentication | Confirm username and health |
+| Before scheduled work | Exclude blocked accounts |
+| During support | Compare status, health, and timestamps |
 
 ## Scope, ordering & pagination
 
 The response contains only connections owned by the authenticated Xquik
-account. It returns every matching connection in one array.
+account. Accounts are ordered by `createdAt` from earliest to latest. Equal
+timestamps use the connection ID as a stable tiebreaker.
 
-The endpoint accepts no query parameters. It does not paginate, search, or
-filter. Accounts are ordered by `createdAt` from earliest to latest.
+Send `limit` to enable cursor pagination. The default is 50. The maximum is
+100. Pass `nextCursor` unchanged as `cursor` while `hasMore` is true.
 
-An Xquik account without connected X profiles receives `{"accounts": []}`.
-Connect one account before calling write endpoints.
+The best-practice contract paginates by default. Send this header:
+
+```http
+xquik-api-contract: 2026-04-29
+```
+
+That contract returns `has_more` and `next_cursor`. The examples below show
+the default v1 camelCase fields.
+
+Legacy calls without `limit` or `cursor` return up to 10,000 connections. This
+keeps existing clients working. Larger lists receive cursor fields. New
+integrations should always paginate.
+
+An account without connections receives `{"accounts": [], "hasMore": false}`
+when pagination is active.
+
+## Request
 
 <CodeGroup>
   ```bash cURL
-  curl -X GET https://xquik.com/api/v1/x/accounts \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+  curl "https://xquik.com/api/v1/x/accounts?limit=50" \
+    -H "x-api-key: xq_YOUR_KEY_HERE"
   ```
 
   ```javascript Node.js
-  const response = await fetch("https://xquik.com/api/v1/x/accounts", {
-    method: "GET",
-    headers: {
-      "x-api-key": "xq_YOUR_KEY_HERE",
-    },
-  });
-  const data = await response.json();
-  ```
-
-  ```python Python
-  import requests
-
-  response = requests.get(
-      "https://xquik.com/api/v1/x/accounts",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-  )
-  data = response.json()
-  ```
-
-  ```go Go
-  package main
-
-  import (
-      "encoding/json"
-      "fmt"
-      "net/http"
-  )
-
-  func main() {
-      req, err := http.NewRequest("GET", "https://xquik.com/api/v1/x/accounts", nil)
-      if err != nil {
-          panic(err)
-      }
-      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-
-      resp, err := http.DefaultClient.Do(req)
-      if err != nil {
-          panic(err)
-      }
-      defer resp.Body.Close()
-
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-          panic(err)
-      }
-      fmt.Println(data)
-  }
+  const response = await fetch(
+    "https://xquik.com/api/v1/x/accounts?limit=50",
+    { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
+  );
+  if (!response.ok) throw new Error(`List failed: ${response.status}`);
+  const page = await response.json();
   ```
 </CodeGroup>
 
 ## Headers
-
-Send an Xquik API key or OAuth 2.1 bearer token.
 
 <ParamField header="x-api-key" type="string">
   Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
@@ -160,12 +136,51 @@ Send an Xquik API key or OAuth 2.1 bearer token.
   OAuth bearer token using `Bearer YOUR_TOKEN`.
 </ParamField>
 
+## Query parameters
+
+<ParamField query="limit" type="integer" default="50">
+  Page size from 1 through 100. Larger values are capped at 100.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Opaque `nextCursor` from the previous page. Do not decode or change it.
+</ParamField>
+
+## Read every page
+
+```javascript
+let cursor;
+
+do {
+  const query = new URLSearchParams({ limit: "100" });
+  if (cursor) query.set("cursor", cursor);
+
+  const response = await fetch(
+    `https://xquik.com/api/v1/x/accounts?${query}`,
+    { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
+  );
+  if (!response.ok) throw new Error(`List failed: ${response.status}`);
+
+  const page = await response.json();
+  for (const account of page.accounts) {
+    console.log(account.id, account.xUsername, account.health);
+  }
+  cursor = page.hasMore ? page.nextCursor : undefined;
+} while (cursor);
+```
+
 ## Response
 
-### 200 OK
-
 <ResponseField name="accounts" type="object[]" required>
-  Account-scoped connected X profiles. Empty when no connection exists.
+  Connected X accounts. Empty when no connection exists.
+</ResponseField>
+
+<ResponseField name="hasMore" type="boolean">
+  `true` when another cursor page exists. Present on paginated responses.
+</ResponseField>
+
+<ResponseField name="nextCursor" type="string">
+  Opaque cursor for the next page. Present only when another page exists.
 </ResponseField>
 
 <ResponseField name="accounts[].id" type="string" required>
@@ -173,33 +188,31 @@ Send an Xquik API key or OAuth 2.1 bearer token.
 </ResponseField>
 
 <ResponseField name="accounts[].xUsername" type="string" required>
-  Connected X username without a leading `@`.
+  Connected X username without `@`.
 </ResponseField>
 
 <ResponseField name="accounts[].xUserId" type="string" required>
-  Stable X user ID as a string. This is not the Xquik connection ID.
+  Stable X user ID. This is not the Xquik connection ID.
 </ResponseField>
 
 <ResponseField name="accounts[].status" type="string" required>
-  Stored connection status. The documented response example uses `active`.
+  Stored connection status. Read `health` before writes.
 </ResponseField>
 
 <ResponseField name="accounts[].health" type="string" required>
-  Derived login/cookie health. One of `healthy`, `locked`, `needsReauth`,
-  `recovering`, `suspended`, or `temporaryIssue`. See
-  [Account Health](#account-health) below.
+  Current write readiness. See [Account health](#account-health).
 </ResponseField>
 
 <ResponseField name="accounts[].cookiesObtainedAt" type="string">
-  ISO 8601 time when the stored X session was obtained. Omitted before login.
+  ISO 8601 session acquisition time. Omitted before login.
 </ResponseField>
 
 <ResponseField name="accounts[].createdAt" type="string" required>
-  ISO 8601 time when this Xquik connection was created.
+  ISO 8601 connection creation time.
 </ResponseField>
 
 <ResponseField name="accounts[].updatedAt" type="string" required>
-  ISO 8601 time when this connection row last changed.
+  ISO 8601 time when the connection last changed.
 </ResponseField>
 
 ```json
@@ -207,176 +220,66 @@ Send an Xquik API key or OAuth 2.1 bearer token.
   "accounts": [
     {
       "id": "3",
-      "xUsername": "elonmusk",
+      "xUsername": "example",
       "xUserId": "44196397",
       "status": "active",
       "health": "healthy",
       "cookiesObtainedAt": "2026-02-20T08:15:00.000Z",
       "createdAt": "2026-02-20T08:15:00.000Z",
       "updatedAt": "2026-02-20T08:15:00.000Z"
-    },
-    {
-      "id": "5",
-      "xUsername": "xquik_",
-      "xUserId": "1234567890",
-      "status": "active",
-      "health": "healthy",
-      "cookiesObtainedAt": "2026-02-22T12:00:00.000Z",
-      "createdAt": "2026-02-22T12:00:00.000Z",
-      "updatedAt": "2026-02-22T12:00:00.000Z"
     }
-  ]
+  ],
+  "hasMore": true,
+  "nextCursor": "MjAyNi0wMi0yMFQwODoxNTowMC4wMDBafDM="
 }
 ```
 
-## Choose the correct account identifier
+## Choose the correct identifier
 
-| Field | Identifier scope | Use |
+| Field | Scope | Use |
 | --- | --- | --- |
-| `id` | Xquik connection | Pass as `accountId` for Tweets, replies, DMs, likes, follows, and profile writes |
-| `xUserId` | X platform account | Compare X identities or correlate read responses |
-| `xUsername` | Public X handle | Display the account and confirm operator intent |
+| `id` | Xquik connection | Pass as `accountId` to write endpoints |
+| `xUserId` | X account | Correlate public read responses |
+| `xUsername` | Public handle | Confirm operator intent |
 
-Do not send `xUserId` where a write endpoint requires `accountId`. Reconnecting
-after disconnection creates a new Xquik connection ID.
+Do not send `xUserId` where a write endpoint requires `accountId`.
 
-## Preflight a write
+## Account health
 
-1. List connected X accounts.
-2. Match the intended `xUsername` or `xUserId`.
-3. Read `health` before selecting the local `id`.
-4. Continue immediately only when the account is ready.
-5. Reauthenticate, wait, or retry according to the health table.
+The `status` field alone is insufficient. Gate writes on `health`.
 
-The `status` field alone is insufficient. An `active` connection can still need
-reauthentication or an X-side recovery.
+| Health | Write readiness | Next action |
+| --- | --- | --- |
+| `healthy` | Ready | Continue with the intended write |
+| `recovering` | Retry on use | Let the next action reconnect |
+| `temporaryIssue` | Wait | Respect the cooldown |
+| `needsReauth` | Blocked | Reauthenticate with current credentials |
+| `locked` | Blocked | Complete recovery on X, then reauthenticate |
+| `suspended` | Blocked | Resolve the suspension on X |
+
+**Recovery details.** `needsReauth` covers credentials, TOTP, email
+verification, passkeys, and other security challenges. Use
+[reauth](/api-reference/x-accounts/reauth) after resolving X-side prompts.
+`locked` can require account-side verification. `suspended` stays blocked
+until X restores the account. `recovering` reconnects on the next use.
+`temporaryIssue` stays paused during a transient cooldown.
+
+Use [Bulk Retry](/api-reference/x-accounts/bulk-retry) only for eligible temporary
+failures. It cannot fix credentials, locks, or suspensions.
+
+## Errors
+
+### 400 Invalid input
+
+The cursor or limit is invalid. Restart without a cursor or send a valid limit.
 
 ### 401 Unauthenticated
 
-```json
-{
-  "error": "unauthenticated",
-  "message": "Authentication required. Provide a valid API key or bearer token."
-}
-```
 Send a valid Xquik API key or OAuth bearer token.
 
 ### 429 Rate limited
 
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 60
-}
-```
-Wait for the `Retry-After` value before listing accounts again.
-
-<Note>
-  **Related.** [Connect X Account](/api-reference/x-accounts/connect) to add a new account, or [Get X Account](/api-reference/x-accounts/get) to fetch details for a specific account.
-</Note>
-
-## Account health
-
-The `health` field is derived from recent connection state. Read it before
-writes. Your workflow can proceed, wait, or request an operator action.
-
-<CardGroup cols={2}>
-  <Card title="healthy" icon="circle-check">
-    Cookies are valid. Writes can proceed.
-  </Card>
-
-  <Card title="needsReauth" icon="refresh-cw">
-    Credentials, TOTP, email verification, passkey, or another security
-    challenge blocked login. Use [reauth](/api-reference/x-accounts/reauth)
-    with current credentials and a valid TOTP secret before retrying writes.
-  </Card>
-
-  <Card title="locked" icon="lock">
-    X locked the account or requires account-side verification. Complete the X
-    check, then reauth or reconnect after the account works again.
-  </Card>
-
-  <Card title="suspended" icon="circle-x">
-    X suspended the account. Appeal on X. Writes stay paused until the account
-    is restored.
-  </Card>
-
-  <Card title="recovering" icon="activity">
-    The transient cooldown ended. The account can reconnect on its next use.
-  </Card>
-
-  <Card title="temporaryIssue" icon="triangle-alert">
-    Transient or automated cooldown is still active. Wait for recovery, or use
-    [bulk retry](/api-reference/x-accounts/bulk-retry) for temporary failures.
-  </Card>
-</CardGroup>
-
-## Account health decisions
-
-| Health | Write readiness | Next action |
-| --- | --- | --- |
-| `healthy` | Ready | Use `id` with the intended write endpoint |
-| `recovering` | Retry on next use | Let the next account action reconnect |
-| `temporaryIssue` | Wait | Respect the cooldown or clear eligible failures with Bulk Retry |
-| `needsReauth` | Blocked | Send current credentials and the saved TOTP secret |
-| `locked` | Blocked | Complete the required recovery on X, then reauthenticate |
-| `suspended` | Blocked | Resolve the suspension on X before another Xquik write |
-
-Health is derived from recent connection state. It can change after a failed
-login, cooldown expiry, reauthentication, or X-side recovery.
-
-## Connected X account questions
-
-### Does this endpoint search Twitter accounts?
-
-No. It lists only X accounts connected to your Xquik account. Use
-[Search Users](/api-reference/x/search-users) to find public profiles. Use
-[Profile Lookup](/api-reference/x/twitter-profile-lookup) for one username.
-
-### Can I list multiple Twitter accounts?
-
-Yes. The `accounts` array contains every connection owned by the authenticated
-Xquik account. The endpoint returns them in connection order. It has no page
-cursor, search term, status filter, or health filter.
-
-Filter the returned array locally when your workflow manages several accounts.
-Always keep the selected `id` paired with its `xUsername`.
-
-### Why is an active account not ready to write?
-
-`status` stores the connection state. `health` interprets recent login results.
-An active row can still be locked, suspended, cooling down, or awaiting new
-credentials. Gate writes on `health`, not `status` alone.
-
-### What is the difference between ID and X user ID?
-
-`id` identifies the Xquik connection. `xUserId` identifies the account on X.
-Write endpoints use the Xquik connection ID as `accountId`. Public read
-responses can use an X user ID for profile or Tweet relationships.
-
-### Why is cookiesObtainedAt missing?
-
-The field is optional. It is omitted when the connection has not obtained a
-stored X session. Check `health` and complete the requested login action.
-
-### Which bearer token does this endpoint accept?
-
-Send an OAuth bearer token accepted by Xquik. Do not send an app-only token
-from the X developer platform. See [Authentication](/api-reference/authentication)
-for the Xquik authorization flow.
-
-### When should I reauthenticate instead of bulk retry?
-
-Use reauthentication for `needsReauth`. Supply current credentials and the
-saved Authenticator App TOTP secret. Use Bulk Retry only for eligible temporary
-failures. It cannot fix passwords, TOTP, passkeys, locks, or suspensions.
-
-### How do I confirm recovery?
-
-Call this endpoint after the operator finishes the required action. Confirm the
-expected username and health. Resume writes only when the returned state fits
-your retry policy.
+Wait for `Retry-After`, then request the same page again.
 
 <Note>
   **Next steps.** [Connect X Account](/api-reference/x-accounts/connect),
