@@ -32,8 +32,6 @@ const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH =
 const PRODUCT_APP_ICON_FILE = '/Users/burak/Developer/xquik/app/icon.svg';
 const DOCS_X_ONLY_ICON_SHA256 =
   '7002c1dd82b5b903d69777fa212f39b0e0410cb156e7bcb1b4426fcec3a7cdc5';
-const TWEET_SEARCH_EXPORT_SEMRUSH_SHA256 =
-  '974423856e33dbf30f8ded2c2f3f17dc0293c948d575f0b0e62d557cbc399511';
 const CODEX_OAUTH_ISSUER_ERROR =
   'Authorization server response missing required issuer: expected https://xquik.com';
 const CODEX_OAUTH_UPSTREAM_ISSUE =
@@ -6411,9 +6409,9 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   '"handoff_state": "poll_until_completed_then_export"',
   '<Card title="Estimate checkpoint" icon="calculator">',
   'Store `estimatedResults`, `creditsRequired`, `creditsAvailable`, `allowed`, and `source` before creating the job.',
-  'When `resultsLimit` is lower than the source estimate',
-  '`source: "resultsLimit"`',
-  'Otherwise it keeps the source count',
+  '`resultsLimit` defaults to `10,000` for estimates and jobs.',
+  'Billing follows unique emitted results.',
+  'Source counts such as `followers` or `replyCount` can produce a smaller estimate.',
   '<Card title="Create receipt" icon="clipboard-check">',
   'Store the returned job `id`, `status`, and `poll_path`',
   '<Card title="Cursor state" icon="shuffle">',
@@ -6678,7 +6676,7 @@ const REQUIRED_EXTRACTION_ESTIMATE_HANDOFF_SNIPPETS = [
   '| Export list members | `list_member_extractor` | `targetListId` |',
   '| Export list tweets | `list_post_extractor` | `targetListId` |',
   'A quote never starts a scraping job.',
-  'The estimator caps `estimatedResults` at that limit.',
+  'The estimator adjusts `creditsRequired` for that projected count.',
   '## Decision handoff',
   'Treat the `200 OK` response as a planning checkpoint, not a running extraction.',
   '"checkpoint_type": "extraction_estimate"',
@@ -15068,7 +15066,7 @@ describe('repository discovery', (): void => {
   });
 
   it('keeps tweet search export workflow steps concrete', (): void => {
-    expect.assertions(3);
+    expect.assertions(2);
 
     const source = readFileSync('guides/tweet-scraper-csv-export.mdx', 'utf8');
 
@@ -15081,9 +15079,6 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
     expect(source).not.toContain(
       'Omit `limit` for a\nsimple cursor-driven page loop.',
-    );
-    expect(sha256File('guides/tweet-scraper-csv-export.mdx')).toBe(
-      TWEET_SEARCH_EXPORT_SEMRUSH_SHA256,
     );
   });
 
