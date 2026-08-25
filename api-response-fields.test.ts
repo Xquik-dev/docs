@@ -1591,6 +1591,7 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     responseSchema(spec, '/x/write-actions/{id}', 'get'),
   );
   const xAccount = schemaPropertyNames(spec, 'XAccount');
+  const xAccountList = propertyNames(responseSchema(spec, '/x/accounts', 'get'));
   const xAccountDetail = schemaPropertyNames(spec, 'XAccountDetail');
   const sanitizedXAccount = schemaPropertyNames(spec, 'SanitizedXAccount');
   const xAccountConnectionChallenge = schemaPropertyNames(
@@ -1856,7 +1857,7 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     },
     {
       allowedFields: uniqueSorted([
-        'accounts',
+        ...xAccountList,
         ...prefixedFields('accounts[].', xAccount),
       ]),
       page: X_ACCOUNT_LIST_PAGE,

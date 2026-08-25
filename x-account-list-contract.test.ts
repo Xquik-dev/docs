@@ -34,7 +34,7 @@ describe('connected X accounts list documentation', (): void => {
     }).toStrictEqual({
       apiKeyDocumented: true,
       bearerDocumented: true,
-      responseTabs: ['200', '401', '429'],
+      responseTabs: ['200', '400', '401', '429'],
       sessionCookieClaim: false,
     });
   });
@@ -67,7 +67,7 @@ describe('connected X accounts list documentation', (): void => {
     });
   });
 
-  it('explains scope, ordering, empty lists, and account identifiers', (): void => {
+  it('explains scope, ordering, pagination, and account identifiers', (): void => {
     expect.assertions(1);
 
     expect({
@@ -77,9 +77,14 @@ describe('connected X accounts list documentation', (): void => {
       earliestFirst: source.includes(
         'Accounts are ordered by `createdAt` from earliest to latest.',
       ),
-      emptyList: source.includes('receives `{"accounts": []}`.'),
-      noPagination: source.includes(
-        'The endpoint accepts no query parameters. It does not paginate, search, or',
+      emptyList: source.includes(
+        'receives `{"accounts": [], "hasMore": false}`',
+      ),
+      pagination: source.includes(
+        'Pass `nextCursor` unchanged as `cursor` while `hasMore` is true.',
+      ),
+      legacyCompatible: source.includes(
+        'Legacy calls without `limit` or `cursor` return up to 10,000 connections.',
       ),
       xUserIdBoundary: source.includes(
         'Do not send `xUserId` where a write endpoint requires `accountId`.',
@@ -88,7 +93,8 @@ describe('connected X accounts list documentation', (): void => {
       accountScoped: true,
       earliestFirst: true,
       emptyList: true,
-      noPagination: true,
+      legacyCompatible: true,
+      pagination: true,
       xUserIdBoundary: true,
     });
   });
@@ -109,7 +115,7 @@ describe('connected X accounts list documentation', (): void => {
         'The `status` field alone is insufficient.',
       ),
       retryBoundary: source.includes(
-        'Use Bulk Retry only for eligible temporary\nfailures.',
+        'Use [Bulk Retry](/api-reference/x-accounts/bulk-retry) only for eligible temporary\nfailures.',
       ),
     }).toStrictEqual({
       healthRows: true,
@@ -127,27 +133,31 @@ describe('connected X accounts list documentation', (): void => {
     expect({
       accountScopedQuery:
         route === undefined ||
-        route.includes('.where(eq(connectedXAccounts.userId, userId))'),
+        route.includes('eq(connectedXAccounts.userId, userId)') &&
+          route.includes('.where(and(...conditions))'),
       createdAscending:
         route === undefined ||
-        route.includes(
-          '.orderBy(sql`${connectedXAccounts.createdAt} ASC`)',
-        ),
+        route.includes('connectedXAccounts.createdAt} ASC') &&
+          route.includes('connectedXAccounts.id} ASC'),
+      cursorBounded:
+        route === undefined ||
+        route.includes("'asc'") && route.includes('rows.limit(query.fetchCount)'),
       listUsesV1Auth:
         route === undefined ||
         route.includes("withV1Auth(request, 'Failed to list X accounts'"),
       optionalCookieTimestamp:
         handler === undefined ||
         handler.includes('row.cookiesObtainedAt?.toISOString()'),
-      resultMapsEveryRow:
+      resultMapsPage:
         handler === undefined ||
-        handler.includes('accounts: rows.map((row) => formatAccount(row))'),
+        handler.includes('accounts: page.items.map((row) => formatAccount(row))'),
     }).toStrictEqual({
       accountScopedQuery: true,
       createdAscending: true,
+      cursorBounded: true,
       listUsesV1Auth: true,
       optionalCookieTimestamp: true,
-      resultMapsEveryRow: true,
+      resultMapsPage: true,
     });
   });
 });
