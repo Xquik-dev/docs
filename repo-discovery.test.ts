@@ -6654,9 +6654,11 @@ const FORBIDDEN_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
 const REQUIRED_EXTRACTION_CREATE_LIFECYCLE_SNIPPETS = [
   '<ResponseField name="pollAfterMs" type="number">',
   '<ResponseField name="statusUrl" type="string">',
-  'Poll `statusUrl` after `pollAfterMs` while the job runs.',
+  '<ResponseField name="waitUrl" type="string">',
+  'Prefer `waitUrl` while the job runs.',
+  'Use `statusUrl` for immediate checks.',
   'New jobs include `Location`',
-  'A terminal replay',
+  'Terminal replays return',
 ] as const;
 
 const FORBIDDEN_EXTRACTION_CREATE_LIFECYCLE_SNIPPETS = [
