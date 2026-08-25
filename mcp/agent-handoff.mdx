@@ -65,18 +65,14 @@ A `402` creates no checkout. Report its payment choices, ask the user to choose 
 
 ```javascript
 async () => {
-  const matches = spec.endpoints.filter((endpoint) =>
-    endpoint.path.includes('/x/tweets/search') ||
-    endpoint.summary.toLowerCase().includes('followers')
+  return Object.entries(spec.paths).flatMap(([path, methods]) =>
+    Object.entries(methods).flatMap(([method, operation]) =>
+      path.includes('/x/tweets/search') ||
+      operation?.summary?.toLowerCase().includes('followers')
+        ? [{ method: method.toUpperCase(), path, ...operation }]
+        : []
+    )
   );
-
-  return matches.map(({ method, path, summary, parameters, responseShape }) => ({
-    method,
-    path,
-    summary,
-    parameters,
-    responseShape
-  }));
 }
 ```
 

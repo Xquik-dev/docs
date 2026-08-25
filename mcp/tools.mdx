@@ -31,7 +31,7 @@ lifecycle operations remain REST-only in both modes.
 | Agent task | MCP call | Durable output |
 | --- | --- | --- |
 | Search product docs | `docs` with a documentation query | Keep source links with cited guidance. |
-| Discover tweet routes | `search` over `spec.endpoints` | Save the chosen method, path, and parameters. |
+| Discover tweet routes | `search` over `spec.paths` | Save the chosen method, path, and parameters. |
 | Search tweets | `xquik.request('/api/v1/x/tweets/search')` | Preserve tweet IDs, authors, timestamps, and `next_cursor`. |
 | Export followers | `xquik.request('/api/v1/extractions')` | Persist the extraction ID before polling or exporting. |
 | Extract replies | `xquik.request('/api/v1/extractions')` | Store the target tweet ID and extraction ID together. |
@@ -57,59 +57,47 @@ Search the authenticated API catalog. `search` makes no network calls and uses n
     10,000 characters.
   </Card>
   <Card title="Spec access" icon="search">
-    The function reads `spec.endpoints`. Filter paths, parameters, categories,
-    costs, and response shapes. Pass the chosen `endpoint.path` unchanged to
-    `xquik.request()`.
+    The function reads `spec.paths`. Each path groups its allowed HTTP methods.
+    OpenAPI references are resolved inline.
   </Card>
 </CardGroup>
 
 **Sandbox API.**
 
 ```typescript
-interface EndpointInfo {
-  method: string;
-  path: string;
-  summary: string;
-  category: string; // account, composition, credits, extraction, media, monitoring, support, twitter, x-accounts, x-write
-  free: boolean;
-  injectedHeaders?: string[];
-  parameters?: Array<{
-    name: string;
-    in: 'query' | 'path' | 'body';
-    required: boolean;
-    type: string;
-    description: string;
-  }>;
-  responseShape?: string;
+interface OperationInfo {
+  operationId: string;
+  summary?: string;
+  description?: string;
+  tags?: string[];
+  parameters?: unknown[];
+  requestBody?: unknown;
+  responses?: Record<string, unknown>;
 }
 
-declare const spec: { endpoints: EndpointInfo[] };
+interface PathItem {
+  get?: OperationInfo;
+  post?: OperationInfo;
+  put?: OperationInfo;
+  patch?: OperationInfo;
+  delete?: OperationInfo;
+}
+
+declare const spec: { paths: Record<string, PathItem> };
 ```
 
 **Examples.**
 
-> Find all free endpoints
-
-```javascript
-async () => {
-  return spec.endpoints.filter(e => e.free);
-}
-```
-
-> Find endpoints by category
-
-```javascript
-async () => {
-  return spec.endpoints.filter(e => e.category === 'composition');
-}
-```
-
 > Search by keyword
 
 ```javascript
-async () => {
-  return spec.endpoints.filter(e => e.summary.toLowerCase().includes('tweet'));
-}
+async () => Object.entries(spec.paths).flatMap(([path, methods]) =>
+  Object.entries(methods).flatMap(([method, operation]) =>
+    operation?.summary?.toLowerCase().includes('tweet')
+      ? [{ method: method.toUpperCase(), path, ...operation }]
+      : []
+  )
+)
 ```
 
 ## execute
@@ -138,7 +126,6 @@ declare const xquik: {
     query?: Record<string, string | number | boolean | undefined>;
   }): Promise<T>;
 };
-declare const spec: { endpoints: EndpointInfo[] };
 ```
 
 **Response contract.**
