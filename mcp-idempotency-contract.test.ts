@@ -8,15 +8,13 @@ function read(path: string): string {
 
 describe('hosted MCP idempotency contract', () => {
   it('documents automatic required-header injection without a header input', () => {
-    expect.assertions(14);
+    expect.assertions(12);
 
     const overview = read('mcp/overview.mdx');
     const tools = read('mcp/tools.mdx');
     const handoff = read('mcp/agent-handoff.mdx');
     const skill = read('skill.md');
 
-    expect(overview).toContain('injectedHeaders?: string[];');
-    expect(tools).toContain('injectedHeaders?: string[];');
     expect(overview).toMatch(/required idempotency headers (?:are )?injected/);
     expect(tools).toMatch(/required idempotency headers (?:are )?injected/);
     expect(handoff).toContain(

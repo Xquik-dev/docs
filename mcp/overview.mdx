@@ -189,22 +189,28 @@ uses more model context. Choose Code Mode when supported.
 
 Searches the 118-route full account catalog. The call uses no credits. MCP authentication remains required. The sandbox provides:
 
-With a guest `paid_reads` key, `spec.endpoints` contains only the 33 eligible GET read routes.
+With a guest `paid_reads` key, `spec.paths` contains only 33 eligible GET routes.
 
 ```typescript
-interface EndpointInfo {
-  method: string;
-  path: string;
-  summary: string;
+interface OperationInfo {
   operationId: string;
-  category: string; // account, composition, credits, extraction, media, monitoring, support, twitter, x-accounts, x-write
-  free: boolean;
-  injectedHeaders?: string[];
-  parameters?: Array<{ name: string; in: 'query' | 'path' | 'body'; required: boolean; type: string; description: string }>;
-  responseShape?: string;
+  summary?: string;
+  description?: string;
+  tags?: string[];
+  parameters?: unknown[];
+  requestBody?: unknown;
+  responses?: Record<string, unknown>;
 }
 
-declare const spec: { endpoints: EndpointInfo[] };
+interface PathItem {
+  get?: OperationInfo;
+  post?: OperationInfo;
+  put?: OperationInfo;
+  patch?: OperationInfo;
+  delete?: OperationInfo;
+}
+
+declare const spec: { paths: Record<string, PathItem> };
 ```
 
 ### `execute` tool
@@ -219,7 +225,6 @@ declare const xquik: {
     query?: Record<string, string | number | boolean>;
   }): Promise<unknown>;
 };
-declare const spec: { endpoints: EndpointInfo[] };
 ```
 
 The agent writes code like `async xquik => xquik.request('/api/v1/radar')`. Authentication is injected, and required idempotency headers are injected automatically. The server reuses each generated key for bounded transient retries. After an unresolved write failure, verify state. Start a new attempt only when `safe_to_retry` is true.

@@ -263,8 +263,12 @@ The `search` tool finds authenticated routes without running them. Ask it for ro
 
 ```javascript
 async () => {
-  return spec.endpoints.filter((endpoint) =>
-    endpoint.summary.toLowerCase().includes("followers"),
+  return Object.entries(spec.paths).flatMap(([path, methods]) =>
+    Object.entries(methods).flatMap(([method, operation]) =>
+      operation?.summary?.toLowerCase().includes("followers")
+        ? [{ method: method.toUpperCase(), path, ...operation }]
+        : [],
+    ),
   );
 }
 ```
