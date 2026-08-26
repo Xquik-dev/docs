@@ -12290,6 +12290,7 @@ const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
 ] as const;
 
 const EXPECTED_OPENAPI_OPERATION_COUNT = 129;
+const NON_REST_OPERATION_IDS = new Set(['searchXquikDocumentation']);
 
 const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
   ['100+', 'REST', 'API', 'endpoints'].join(' '),
@@ -12576,7 +12577,9 @@ function collectStaleSearchTweetsQueryParamFindings(): readonly DiscoveryFinding
 
 function getOpenApiOperationCount(): number {
   const openApi = readFileSync('openapi.yaml', 'utf8');
-  return openApi.match(/^\s+operationId:/gmu)?.length ?? 0;
+  return [...openApi.matchAll(/^\s+operationId:\s*(?<id>\S+)/gmu)].filter(
+    ({ groups }) => !NON_REST_OPERATION_IDS.has(groups?.id ?? ''),
+  ).length;
 }
 
 function collectStaleOperationCountFindings(): readonly DiscoveryFinding[] {
@@ -17899,5 +17902,18 @@ describe('repository discovery', (): void => {
     expect.assertions(1);
 
     expect(collectComparisonPositioningFindings()).toStrictEqual([]);
+  });
+
+  it('documents the public NLWeb route and streaming contract', (): void => {
+    expect.assertions(4);
+    const page = readFileSync('mcp/docs-mcp.mdx', 'utf8');
+    const contract = readFileSync('openapi.yaml', 'utf8');
+
+    expect(page).toContain('`POST https://xquik.com/ask`');
+    expect(page).toContain('Streams emit `start`, `result`, and `complete`.');
+    expect(contract).toContain(
+      'operationId: searchXquikDocumentation\n',
+    );
+    expect(contract).toContain('text/event-stream:');
   });
 });
