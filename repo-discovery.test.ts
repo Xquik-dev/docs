@@ -1981,7 +1981,14 @@ const REQUIRED_OAUTH_AGENT_DISCOVERY_SNIPPETS = [
   '"resource_documentation": "https://docs.xquik.com/mcp/overview"',
   '"registration_endpoint": "https://xquik.com/api/oauth/register"',
   '"response_types_supported": ["code"]',
-  '"grant_types_supported": ["authorization_code", "refresh_token"]',
+  '"grant_types_supported": [',
+  '"urn:workos:agent-auth:grant-type:claim"',
+  '"urn:ietf:params:oauth:grant-type:jwt-bearer"',
+  '"agent_auth": {',
+  '"claim_endpoint": "https://xquik.com/agent/identity/claim"',
+  '"identity_endpoint": "https://xquik.com/agent/identity"',
+  '"identity_types_supported": ["service_auth"]',
+  '"skill": "https://xquik.com/auth.md"',
   '"token_endpoint_auth_methods_supported": ["none", "client_secret_post", "private_key_jwt"]',
   '"token_endpoint_auth_signing_alg_values_supported": ["RS256"]',
   '"revocation_endpoint_auth_methods_supported": ["none", "client_secret_post", "private_key_jwt"]',
@@ -1994,7 +2001,6 @@ const REQUIRED_OAUTH_AGENT_DISCOVERY_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_OAUTH_AGENT_DISCOVERY_SNIPPETS = [
-  '"agent_auth": {',
   '"expires_in": 86400',
   '| Access token | 24 hours |',
   '| `client_name` | string | Yes |',

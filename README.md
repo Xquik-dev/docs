@@ -38,7 +38,7 @@ fixes or validating contracts. Generated client APIs live in the SDK repositorie
 - [Codex OAuth troubleshooting](https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error). Codex CLI 0.147.0 and newer support Xquik OAuth. Upgrade if an older release reports `Authorization server response missing required issuer: expected https://xquik.com`. Use `bearer_token_env_var = "XQUIK_API_KEY"` only when upgrading is unavailable. [Issue #31573](https://github.com/openai/codex/issues/31573) records the fix.
 - [Agent index](https://xquik.com/.well-known/agent-index.json). Discover the API MCP endpoint, manifest, OAuth metadata, and auth.md.
 - [Agent Skills index](https://xquik.com/.well-known/agent-skills/index.json). Discover and verify Xquik's hosted `SKILL.md`.
-- [auth.md](https://xquik.com/auth.md). Read CIMD, DCR, PKCE, and MCP authorization instructions.
+- [auth.md](https://xquik.com/auth.md). Read interactive and claimed agent authorization instructions.
 - [OpenAPI spec](https://docs.xquik.com/openapi.yaml). Generate clients or inspect request and response shapes.
 
 ## Common questions
@@ -66,7 +66,7 @@ Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
 - **REST API.** 129 operations span account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
 - **Webhooks.** HMAC SHA-256 signature verification, retry semantics, and payload schemas.
 - **MCP server.** Use 3 Code Mode tools or `docs` plus 118 OpenAPI-native tools. Guest keys receive 33 read operations. Binary downloads use REST.
-- **OAuth 2.1.** Automatic discovery, CIMD, DCR fallback, Authorization Code + PKCE, and token refresh.
+- **OAuth 2.1.** Automatic discovery, PKCE, client registration, claimed service identities, and token refresh.
 - **Guides.** Workflows, error handling, rate limits, billing, trends, extractions, architecture, troubleshooting, types, webhook testing, and framework integrations.
 - **SDKs.** 10 generated clients support TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform.
 - **Comparisons.** Alternatives for X APIs, tweet scrapers, follower exporters, creator tools, and social suites.
