@@ -1,7 +1,7 @@
 ---
 title: "OAuth 2.1 for MCP & X API agent authorization"
 sidebarTitle: OAuth 2.1
-description: "Authorize MCP clients and agents with OAuth 2.1, PKCE, claimed service identities, rotating refresh tokens, discovery metadata, and revocation examples."
+description: "Authorize MCP clients and agents with OAuth 2.1, PKCE, claimed service identities, interactive refresh tokens, discovery metadata, and revocation examples."
 keywords: ["OAuth", "OAuth 2.1", "PKCE", "MCP", "agent authentication", "authorization", "token", "refresh token", "CIMD", "dynamic client registration"]
 ---
 
@@ -339,7 +339,7 @@ can show a concrete `client_id`.
 | Authorization code | 60 seconds | Single-use. Exchange immediately |
 | Claim token | 24 hours | Registers one claimed service identity |
 | User code | 10 minutes | Refresh it while the claim token remains active |
-| Identity assertion | 1 hour | Exchanges only for its active registration |
+| Identity assertion | 1 hour | Reuse it to mint agent access tokens |
 
 ## Claimed agent registration
 
@@ -387,12 +387,12 @@ issues anonymous agent credentials.
     ```
 
     Handle `authorization_pending`, `slow_down`, `access_denied`, and
-    `expired_token`. Success returns an access token and rotating refresh
-    token. It also returns `identity_assertion`.
+    `expired_token`. Success returns an access token and
+    `identity_assertion`. It never returns a refresh token.
   </Step>
 
   <Step title="Exchange an identity assertion">
-    Exchange a current assertion only when a fresh OAuth pair is required.
+    Reuse a current assertion when a fresh access token is required.
 
     ```bash
     curl -X POST https://xquik.com/api/oauth/token \
@@ -453,9 +453,8 @@ curl -X POST https://xquik.com/api/oauth/revoke \
 
 Returns `200` with an empty body on success. If the token is already revoked or invalid, the server still returns `200` (per RFC 7009).
 
-For claimed agent registration, use `client_id=urn:xquik:agent-auth`. Revoke
-the current refresh token to revoke the full registration. Revoking only an
-access token leaves its refresh family active.
+For claimed agent access tokens, use `client_id=urn:xquik:agent-auth`. The
+identity assertion remains usable until it expires.
 
 **Revocation errors.**
 
