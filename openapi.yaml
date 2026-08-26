@@ -167,6 +167,7 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/NlwebAskRequest'
+      # oxfmt-ignore
       responses: &nlweb-ask-responses
         '200':
           description: Documentation results.
@@ -174,6 +175,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NlwebAnswer'
+              example: { _meta: { response_format: conv_search, response_type: Answer, version: '0.55' }, results: [] }
             text/event-stream:
               schema:
                 type: string
@@ -183,18 +185,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NlwebFailure'
+              example: { _meta: { response_type: Failure, version: '0.55' }, error: { code: INVALID_REQUEST, message: 'Request is invalid. Send a valid NLWeb query.' } }
         '413':
           description: Request body exceeds 8 KiB.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NlwebFailure'
+              example: { _meta: { response_type: Failure, version: '0.55' }, error: { code: INVALID_REQUEST, message: 'Request is too large. Send less context.' } }
         '502':
           description: Documentation search is unavailable.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NlwebFailure'
+              example: { _meta: { response_type: Failure, version: '0.55' }, error: { code: SEARCH_UNAVAILABLE, message: 'Search is unavailable. Retry later.' } }
     get:
       operationId: searchXquikDocumentationWithQuery
       summary: Search Xquik documentation with query parameters
@@ -203,11 +208,11 @@ paths:
       security: []
       # oxfmt-ignore
       parameters:
-        - { name: query, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 500 } }
-        - { name: site, in: query, schema: { type: string, enum: [docs.xquik.com, xquik.com] } }
-        - { name: mode, in: query, schema: { type: string, const: list } }
-        - { name: response_format, in: query, schema: { type: string, enum: [chatgpt_app, conv_search, conversational_search] } }
-        - { name: streaming, in: query, schema: { type: boolean, default: true } }
+        - { name: query, in: query, required: true, description: Natural-language docs query., schema: { type: string, minLength: 1, maxLength: 500 } }
+        - { name: site, in: query, description: Optional docs host., schema: { type: string, enum: [docs.xquik.com, xquik.com] } }
+        - { name: mode, in: query, description: List result mode., schema: { type: string, const: list } }
+        - { name: response_format, in: query, description: NLWeb response shape., schema: { type: string, enum: [chatgpt_app, conv_search, conversational_search] } }
+        - { name: streaming, in: query, description: Return SSE when true., schema: { type: boolean, default: true } }
       responses: *nlweb-ask-responses
 
   # ── Account ──────────────────────────────────────────────
@@ -8802,6 +8807,7 @@ components:
             message: 'X account not found.'
 
   schemas:
+    # oxfmt-ignore
     NlwebAskRequest:
       description: Public NLWeb documentation search request.
       type: object
@@ -8810,6 +8816,7 @@ components:
       additionalProperties: true
       properties:
         query:
+          example: How does MCP OAuth work?
           oneOf:
             - type: string
               minLength: 1
@@ -8824,13 +8831,15 @@ components:
                   type: string
                   enum: [docs.xquik.com, xquik.com]
         site:
+          example: docs.xquik.com
           type: string
           enum: [docs.xquik.com, xquik.com]
-        streaming: { type: boolean, default: true }
+        streaming: { type: boolean, default: true, example: false }
         response_format:
+          example: conv_search
           type: string
           enum: [chatgpt_app, conv_search, conversational_search]
-        mode: { type: string, const: list }
+        mode: { type: string, const: list, example: list }
         context:
           type: object
           example: { previous_query: 'How does OAuth work?' }
@@ -8851,6 +8860,7 @@ components:
               type: string
               enum: [list]
         meta:
+          example: { api_version: '0.55' }
           type: object
           additionalProperties: true
           properties:
@@ -8896,23 +8906,27 @@ components:
         url:
           type: string
           format: uri
+    # oxfmt-ignore
     NlwebAnswer:
       description: NLWeb documentation answer in a supported response format.
       type: object
       required: [_meta]
       properties:
         _meta:
+          example: { response_format: conv_search, response_type: Answer, version: '0.55' }
           allOf:
             - $ref: '#/components/schemas/NlwebMeta'
             - type: object
               properties:
                 response_type: { const: Answer }
         results:
+          example: []
           type: array
           maxItems: 10
           items:
             $ref: '#/components/schemas/NlwebDocumentationResult'
         content:
+          example: [{ type: text, text: 'Found 1 documentation result.' }]
           type: array
           maxItems: 1
           items:
@@ -8922,25 +8936,29 @@ components:
               text: { type: string }
               type: { type: string, const: text }
         structuredData:
+          example: []
           type: array
           maxItems: 10
           items:
             $ref: '#/components/schemas/NlwebDocumentationResult'
       oneOf:
-        - required: [results]
-        - required: [content, structuredData]
+        - { required: [results], properties: { results: { type: array } } }
+        - { required: [content, structuredData], properties: { content: { type: array }, structuredData: { type: array } } }
+    # oxfmt-ignore
     NlwebFailure:
       description: Typed NLWeb request or search failure.
       type: object
       required: [_meta, error]
       properties:
         _meta:
+          example: { response_type: Failure, version: '0.55' }
           allOf:
             - $ref: '#/components/schemas/NlwebMeta'
             - type: object
               properties:
                 response_type: { const: Failure }
         error:
+          example: { code: INVALID_REQUEST, message: 'Request is invalid.' }
           type: object
           required: [code, message]
           properties:
