@@ -53,7 +53,7 @@ Retry safe reads only on `429` and temporary `5xx` responses. For writes, poll
 the returned action. Never resubmit an ambiguous write. Start a new attempt only
 when `safeToRetry` is true.
 
-### API endpoints (129 documented operations)
+### API endpoints (130 documented operations)
 
 - **Monitors and Events.** Create account and keyword monitors, retrieve events, and manage webhooks.
 - **Extractions.** 23 tools for bulk data extraction.

@@ -150,107 +150,65 @@ paths:
       operationId: searchXquikDocumentation
       summary: Search Xquik documentation with NLWeb
       description: >-
-        Search indexed public Xquik documentation through NLWeb 0.54. This route
-        is public and read-only. Do not send secrets or private data. Set
-        prefer.streaming to true or accept text/event-stream for SSE.
+        Search public Xquik docs with NLWeb 0.55. This read-only route accepts
+        flat and structured requests. Never send secrets or private data.
       tags: [Agent Discovery]
       security: []
       requestBody:
-        description: Natural-language query and optional NLWeb preferences.
+        description: Flat or structured NLWeb request.
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/NlwebAskRequest'
             example:
-              query: { text: 'How does MCP OAuth work?' }
-              prefer: { mode: list, streaming: false }
-              meta: { api_version: '0.54' }
-      responses:
+              query: How does MCP OAuth work?
+              streaming: false
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NlwebAskRequest'
+      responses: &nlweb-ask-responses
         '200':
-          description: Documentation results or a typed NLWeb failure.
+          description: Documentation results.
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/NlwebAnswer'
-                  - $ref: '#/components/schemas/NlwebFailure'
-              example:
-                _meta:
-                  {
-                    response_format: chatgpt_app,
-                    response_type: Answer,
-                    version: '0.54',
-                  }
-                content:
-                  [{ type: text, text: 'Found 1 Xquik documentation result.' }]
-                structuredData:
-                  - {
-                      '@context': https://schema.org,
-                      '@id': https://docs.xquik.com/mcp/overview,
-                      '@type': TechArticle,
-                      description:
-                        Connect an AI client to the Xquik MCP server.,
-                      name: MCP overview,
-                      url: https://docs.xquik.com/mcp/overview,
-                    }
+                $ref: '#/components/schemas/NlwebAnswer'
             text/event-stream:
               schema:
                 type: string
-              example: |-
-                event: start
-                data: {"_meta":{"response_type":"Answer","streaming":true,"version":"0.54"}}
-
-                event: result
-                data: {"index":0,"item":{"@type":"TechArticle","name":"MCP overview","url":"https://docs.xquik.com/mcp/overview"}}
-
-                event: complete
-                data: {"_meta":{"response_type":"Answer","response_format":"chatgpt_app","version":"0.54"},"content":[{"type":"text","text":"Found 1 Xquik documentation results."}],"structuredData":[]}
         '400':
           description: Invalid or unsupported NLWeb request.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NlwebFailure'
-              example:
-                {
-                  _meta: { response_type: Failure, version: '0.54' },
-                  error:
-                    {
-                      code: INVALID_REQUEST,
-                      message: 'Request is invalid. Send a valid NLWeb query.',
-                    },
-                }
         '413':
           description: Request body exceeds 8 KiB.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NlwebFailure'
-              example:
-                {
-                  _meta: { response_type: Failure, version: '0.54' },
-                  error:
-                    {
-                      code: INVALID_REQUEST,
-                      message: 'Request is too large. Send less context.',
-                    },
-                }
         '502':
-          description: Documentation search is temporarily unavailable.
+          description: Documentation search is unavailable.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NlwebFailure'
-              example:
-                {
-                  _meta: { response_type: Failure, version: '0.54' },
-                  error:
-                    {
-                      code: SEARCH_UNAVAILABLE,
-                      message: 'Search is unavailable. Retry later.',
-                    },
-                }
+    get:
+      operationId: searchXquikDocumentationWithQuery
+      summary: Search Xquik documentation with query parameters
+      description: Send a flat NLWeb 0.55 request through query parameters.
+      tags: [Agent Discovery]
+      security: []
+      # oxfmt-ignore
+      parameters:
+        - { name: query, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 500 } }
+        - { name: site, in: query, schema: { type: string, enum: [docs.xquik.com, xquik.com] } }
+        - { name: mode, in: query, schema: { type: string, const: list } }
+        - { name: response_format, in: query, schema: { type: string, enum: [chatgpt_app, conv_search, conversational_search] } }
+        - { name: streaming, in: query, schema: { type: boolean, default: true } }
+      responses: *nlweb-ask-responses
 
   # ── Account ──────────────────────────────────────────────
   /account:
@@ -8847,24 +8805,32 @@ components:
     NlwebAskRequest:
       description: Public NLWeb documentation search request.
       type: object
-      example: { query: { text: 'How does MCP OAuth work?' } }
+      example: { query: 'How does MCP OAuth work?', streaming: false }
       required: [query]
       additionalProperties: true
       properties:
         query:
-          type: object
-          example: { text: 'How does MCP OAuth work?' }
-          required: [text]
-          additionalProperties: true
-          properties:
-            text:
-              type: string
+          oneOf:
+            - type: string
               minLength: 1
               maxLength: 500
               description: Natural-language documentation query.
-            site:
-              type: string
-              enum: [docs.xquik.com, xquik.com]
+            - type: object
+              required: [text]
+              additionalProperties: true
+              properties:
+                text: { type: string, minLength: 1, maxLength: 500 }
+                site:
+                  type: string
+                  enum: [docs.xquik.com, xquik.com]
+        site:
+          type: string
+          enum: [docs.xquik.com, xquik.com]
+        streaming: { type: boolean, default: true }
+        response_format:
+          type: string
+          enum: [chatgpt_app, conv_search, conversational_search]
+        mode: { type: string, const: list }
         context:
           type: object
           example: { previous_query: 'How does OAuth work?' }
@@ -8890,10 +8856,10 @@ components:
           properties:
             api_version:
               type: string
-              const: '0.54'
+              enum: ['0.54', '0.55']
             version:
               type: string
-              const: '0.54'
+              enum: ['0.54', '0.55']
     NlwebMeta:
       description: NLWeb response metadata.
       type: object
@@ -8907,7 +8873,7 @@ components:
           enum: [chatgpt_app, conv_search, conversational_search]
         version:
           type: string
-          const: '0.54'
+          const: '0.55'
     NlwebDocumentationResult:
       description: Public Xquik documentation result using schema.org.
       type: object
@@ -8962,17 +8928,13 @@ components:
             $ref: '#/components/schemas/NlwebDocumentationResult'
       oneOf:
         - required: [results]
-          properties: { results: { type: array } }
         - required: [content, structuredData]
-          properties:
-            { content: { type: array }, structuredData: { type: array } }
     NlwebFailure:
       description: Typed NLWeb request or search failure.
       type: object
       required: [_meta, error]
       properties:
         _meta:
-          example: { response_type: Failure, version: '0.54' }
           allOf:
             - $ref: '#/components/schemas/NlwebMeta'
             - type: object
@@ -8980,7 +8942,6 @@ components:
                 response_type: { const: Failure }
         error:
           type: object
-          example: { code: INVALID_REQUEST, message: 'Request is invalid.' }
           required: [code, message]
           properties:
             code: { type: string }
