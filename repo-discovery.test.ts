@@ -2145,7 +2145,7 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   'A question about how draw filters work hits the docs server.',
   'A request to run a draw hits the API server.',
   '## What gets searched',
-  'API reference (129 documented operations)',
+  'API reference (130 documented operations)',
   'Webhook documentation (overview, signature verification)',
   'MCP server setup and tools reference',
   'OAuth 2.1 documentation',
@@ -7994,7 +7994,7 @@ const REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS = [
 
 const REQUIRED_ARCHITECTURE_COMPONENT_SNIPPETS = [
   '<Card title="REST API" icon="braces">',
-  '129 documented operations at `https://xquik.com/api/v1/*`',
+  '130 documented operations at `https://xquik.com/api/v1/*`',
   '<Card title="MCP server" icon="bot">',
   '3 tools, `docs`, `search`, and `execute`, at `https://xquik.com/mcp`',
   '<Card title="Dashboard" icon="layout-dashboard">',
@@ -12289,7 +12289,7 @@ const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
   ['whose', 'session', 'reads'].join(' '),
 ] as const;
 
-const EXPECTED_OPENAPI_OPERATION_COUNT = 129;
+const EXPECTED_OPENAPI_OPERATION_COUNT = 130;
 const NON_REST_OPERATION_IDS = new Set(['searchXquikDocumentation']);
 
 const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
@@ -17909,8 +17909,10 @@ describe('repository discovery', (): void => {
     const page = readFileSync('mcp/docs-mcp.mdx', 'utf8');
     const contract = readFileSync('openapi.yaml', 'utf8');
 
-    expect(page).toContain('`POST https://xquik.com/ask`');
-    expect(page).toContain('Streams emit `start`, `result`, and `complete`.');
+    expect(page).toContain('`GET` or `POST https://xquik.com/ask`');
+    expect(page).toContain(
+      'Streams emit `start`, `result`, and `complete` events.',
+    );
     expect(contract).toContain(
       'operationId: searchXquikDocumentation\n',
     );
