@@ -402,13 +402,13 @@ issues anonymous agent credentials.
 &assertion=IDENTITY_ASSERTION"
     ```
 
-    Xquik accepts only service-signed assertions for active registrations.
+    Xquik accepts service-signed assertions for active registrations. Restart registration after expiry or `invalid_grant`.
   </Step>
 </Steps>
 
 ## Refresh tokens
 
-Access tokens expire after 1 hour. Use the refresh token to get a new access token without requiring the user to log in again.
+Interactive access tokens expire after 1 hour. Use their refresh token without another login.
 
 ```bash
 curl -X POST https://xquik.com/api/oauth/token \
@@ -430,7 +430,7 @@ curl -X POST https://xquik.com/api/oauth/token \
 ```
 
 <Warning>
-  Refresh tokens are **single-use**. Each refresh request revokes the old refresh token and returns a new one. Always store the latest refresh token from each response.
+  Refresh tokens are **single-use**. Always store the latest returned token.
 </Warning>
 
 ## Token revocation
@@ -453,8 +453,8 @@ curl -X POST https://xquik.com/api/oauth/revoke \
 
 Returns `200` with an empty body on success. If the token is already revoked or invalid, the server still returns `200` (per RFC 7009).
 
-For claimed agent access tokens, use `client_id=urn:xquik:agent-auth`. The
-identity assertion remains usable until it expires.
+Revoke a claimed agent with its `identity_assertion`, `client_id=urn:xquik:agent-auth`, and `token_type_hint=urn:ietf:params:oauth:token-type:id-jag`.
+This revokes the registration and every access token. Revoking one access token leaves the registration active.
 
 **Revocation errors.**
 
