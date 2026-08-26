@@ -104,6 +104,8 @@ tags:
     description: API key management (session auth only)
   - name: Account
     description: Account info and settings
+  - name: Agent Discovery
+    description: Public agent discovery and documentation search
   - name: Articles
     description: Long-form X Article extraction
   - name: Communities
@@ -141,6 +143,115 @@ tags:
   - name: X Write
     description: X write actions (tweets, likes, follows, DMs)
 paths:
+  /ask:
+    servers:
+      - url: https://xquik.com
+    post:
+      operationId: searchXquikDocumentation
+      summary: Search Xquik documentation with NLWeb
+      description: >-
+        Search indexed public Xquik documentation through NLWeb 0.54. This route
+        is public and read-only. Do not send secrets or private data. Set
+        prefer.streaming to true or accept text/event-stream for SSE.
+      tags: [Agent Discovery]
+      security: []
+      requestBody:
+        description: Natural-language query and optional NLWeb preferences.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NlwebAskRequest'
+            example:
+              query: { text: 'How does MCP OAuth work?' }
+              prefer: { mode: list, streaming: false }
+              meta: { api_version: '0.54' }
+      responses:
+        '200':
+          description: Documentation results or a typed NLWeb failure.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NlwebAnswer'
+                  - $ref: '#/components/schemas/NlwebFailure'
+              example:
+                _meta:
+                  {
+                    response_format: chatgpt_app,
+                    response_type: Answer,
+                    version: '0.54',
+                  }
+                content:
+                  [{ type: text, text: 'Found 1 Xquik documentation result.' }]
+                structuredData:
+                  - {
+                      '@context': https://schema.org,
+                      '@id': https://docs.xquik.com/mcp/overview,
+                      '@type': TechArticle,
+                      description:
+                        Connect an AI client to the Xquik MCP server.,
+                      name: MCP overview,
+                      url: https://docs.xquik.com/mcp/overview,
+                    }
+            text/event-stream:
+              schema:
+                type: string
+              example: |-
+                event: start
+                data: {"_meta":{"response_type":"Answer","streaming":true,"version":"0.54"}}
+
+                event: result
+                data: {"index":0,"item":{"@type":"TechArticle","name":"MCP overview","url":"https://docs.xquik.com/mcp/overview"}}
+
+                event: complete
+                data: {"_meta":{"response_type":"Answer","response_format":"chatgpt_app","version":"0.54"},"content":[{"type":"text","text":"Found 1 Xquik documentation results."}],"structuredData":[]}
+        '400':
+          description: Invalid or unsupported NLWeb request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NlwebFailure'
+              example:
+                {
+                  _meta: { response_type: Failure, version: '0.54' },
+                  error:
+                    {
+                      code: INVALID_REQUEST,
+                      message: 'Request is invalid. Send a valid NLWeb query.',
+                    },
+                }
+        '413':
+          description: Request body exceeds 8 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NlwebFailure'
+              example:
+                {
+                  _meta: { response_type: Failure, version: '0.54' },
+                  error:
+                    {
+                      code: INVALID_REQUEST,
+                      message: 'Request is too large. Send less context.',
+                    },
+                }
+        '502':
+          description: Documentation search is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NlwebFailure'
+              example:
+                {
+                  _meta: { response_type: Failure, version: '0.54' },
+                  error:
+                    {
+                      code: SEARCH_UNAVAILABLE,
+                      message: 'Search is unavailable. Retry later.',
+                    },
+                }
+
   # ── Account ──────────────────────────────────────────────
   /account:
     get:
@@ -297,9 +408,9 @@ paths:
                   autoTopupAmountDollars: 10
                   autoTopupThreshold: '50000'
                 xUsername: elonmusk
-        '401':
+        '401': &unauthenticated-response
           $ref: '#/components/responses/Unauthenticated'
-        '429':
+        '429': &rate-limit-exceeded-response
           $ref: '#/components/responses/RateLimitExceeded'
     patch:
       operationId: updateAccount
@@ -326,13 +437,11 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Success'
-        '400':
+        '400': &invalid-input-response
           $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
+        '401': *unauthenticated-response
 
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '429': *rate-limit-exceeded-response
   /account/x-identity:
     put:
       operationId: setXIdentity
@@ -373,12 +482,9 @@ paths:
               example:
                 success: true
                 xUsername: elonmusk
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
 
   # ── API Keys ─────────────────────────────────────────────
   /api-keys:
@@ -404,10 +510,8 @@ paths:
                     example: []
               example:
                 keys: []
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
     post:
       operationId: createApiKey
       description: Creates a revocable API key and returns its secret once.
@@ -458,8 +562,7 @@ paths:
                 name: My API Key
                 prefix: xq_live_abc1
                 createdAt: '2025-01-15T12:00:00Z'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
+        '401': *unauthenticated-response
         '403':
           description: API key limit reached
           content:
@@ -483,8 +586,7 @@ paths:
                 error: api_key_limit_reached
                 limit: 100
                 message: API key limit reached. Delete an existing key first.
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '429': *rate-limit-exceeded-response
   /api-keys/{id}:
     delete:
       operationId: revokeApiKey
@@ -497,14 +599,11 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Success'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': &not-found-response
           $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '429': *rate-limit-exceeded-response
 
   # ── Subscribe ────────────────────────────────────────────
   /subscribe:
@@ -555,10 +654,8 @@ paths:
                 url: 'https://xquik.com/billing/session'
                 status: checkout_created
                 message: Billing session created
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
 
   # ── Composition ──────────────────────────────────────────
   /compose:
@@ -611,12 +708,9 @@ paths:
                 totalChecks: 1
                 intentUrl: >-
                   https://x.com/intent/tweet?text=PostgreSQL%2018%20reduced%20query%20latency
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
   /drafts:
     get:
       operationId: listDrafts
@@ -654,10 +748,8 @@ paths:
               example:
                 drafts: []
                 hasMore: false
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
     post:
       operationId: createDraft
       description: Saves editable post text as an account draft.
@@ -701,12 +793,9 @@ paths:
                 goal: engagement
                 createdAt: '2025-01-15T12:00:00Z'
                 updatedAt: '2025-01-16T09:30:00Z'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
   /drafts/{id}:
     get:
       operationId: getDraft
@@ -730,14 +819,10 @@ paths:
                 goal: engagement
                 createdAt: '2025-01-15T12:00:00Z'
                 updatedAt: '2025-01-16T09:30:00Z'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
     delete:
       operationId: deleteDraft
       description: Permanently removes one saved draft.
@@ -749,14 +834,10 @@ paths:
       responses:
         '204':
           $ref: '#/components/responses/NoContent'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   /styles:
     get:
@@ -781,10 +862,8 @@ paths:
                     example: []
               example:
                 styles: []
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
     post:
       operationId: analyzeStyle
       description: Builds a writing style profile from recent public posts.
@@ -835,15 +914,12 @@ paths:
                 tweets:
                   - id: '1234567890'
                     text: 'Just launched our new feature!'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
 
-        '402':
+        '402': &payment-required-response
           $ref: '#/components/responses/PaymentRequired'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '429': *rate-limit-exceeded-response
   /styles/compare:
     get:
       operationId: compareStyles
@@ -895,14 +971,10 @@ paths:
                   tweets:
                     - id: '9876543210'
                       text: 'Climate change is a global challenge.'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   /styles/{id}:
     get:
@@ -928,12 +1000,9 @@ paths:
                 tweets:
                   - id: '1234567890'
                     text: 'Just launched our new feature!'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
     put:
       operationId: saveStyle
       description: Creates or replaces a style profile from supplied posts.
@@ -990,12 +1059,9 @@ paths:
                     text: 'Excited to share our latest research findings.'
                     authorUsername: 'professional voice'
                     createdAt: '2026-08-02T18:30:00.000Z'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
     delete:
       operationId: deleteStyle
       description: Permanently removes one cached style profile.
@@ -1007,12 +1073,9 @@ paths:
       responses:
         '204':
           $ref: '#/components/responses/NoContent'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   /styles/{id}/performance:
     get:
@@ -1085,16 +1148,12 @@ paths:
                     replyCount: 8
                     viewCount: 5000
                     createdAt: '2025-01-15T12:00:00Z'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '404': *not-found-response
         '422':
           $ref: '#/components/responses/InvalidInput'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '429': *rate-limit-exceeded-response
 
   /radar:
     get:
@@ -1192,12 +1251,9 @@ paths:
               example:
                 hasMore: false
                 items: []
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
 
   # ── Monitors ─────────────────────────────────────────────
   /monitors:
@@ -1227,10 +1283,8 @@ paths:
               example:
                 monitors: []
                 total: 0
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
     post:
       operationId: createMonitor
       summary: Create monitor
@@ -1311,25 +1365,21 @@ paths:
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
                 nextBillingAt: '2025-01-15T12:00:00Z'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '404': &user-not-found-response
           $ref: '#/components/responses/UserNotFound'
         '409':
           description: Monitor already exists
           content:
             application/json:
-              schema:
+              schema: &error-schema
                 $ref: '#/components/schemas/Error'
               example:
                 error: 'monitor_already_exists'
                 message: 'Monitor already exists.'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '429': *rate-limit-exceeded-response
 
   /monitors/keywords:
     get:
@@ -1358,10 +1408,8 @@ paths:
               example:
                 monitors: []
                 total: 0
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
     post:
       operationId: createKeywordMonitor
       summary: Create keyword monitor
@@ -1409,23 +1457,18 @@ paths:
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
                 nextBillingAt: '2025-01-15T12:00:00Z'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '402': *payment-required-response
         '409':
           description: Keyword monitor already exists
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'monitor_already_exists'
                 message: 'Monitor already exists.'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '429': *rate-limit-exceeded-response
 
   /monitors/keywords/{id}:
     get:
@@ -1450,14 +1493,10 @@ paths:
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
                 nextBillingAt: '2025-01-15T13:00:00Z'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
     patch:
       operationId: updateKeywordMonitor
       description: Updates mutable settings for an existing keyword monitor.
@@ -1495,14 +1534,10 @@ paths:
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
                 nextBillingAt: '2025-01-15T13:00:00Z'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
     delete:
       operationId: deleteKeywordMonitor
       description:
@@ -1516,14 +1551,10 @@ paths:
       responses:
         '202':
           $ref: '#/components/responses/MonitorDeletionAccepted'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   /monitors/{id}:
     get:
@@ -1549,14 +1580,10 @@ paths:
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
                 nextBillingAt: '2025-01-15T13:00:00Z'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
     patch:
       operationId: updateMonitor
       description: Updates mutable settings for an existing account monitor.
@@ -1595,23 +1622,18 @@ paths:
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
                 nextBillingAt: '2025-01-15T13:00:00Z'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
         '409':
           description: The monitored X account is still unavailable
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: monitor_profile_unavailable
                 message: X account unavailable. Restore it before resuming.
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '429': *rate-limit-exceeded-response
     delete:
       operationId: deleteMonitor
       description:
@@ -1625,14 +1647,10 @@ paths:
       responses:
         '202':
           $ref: '#/components/responses/MonitorDeletionAccepted'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   # ── Events ───────────────────────────────────────────────
   /events:
@@ -1683,10 +1701,8 @@ paths:
               example:
                 events: []
                 hasMore: false
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
   /events/{id}:
     get:
       operationId: getEvent
@@ -1712,14 +1728,10 @@ paths:
                 occurredAt: '2025-01-15T12:00:00Z'
                 data:
                   tweetId: '1234567890'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '400': *invalid-input-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   # ── Extractions ──────────────────────────────────────────
   /extractions:
@@ -1766,12 +1778,9 @@ paths:
               example:
                 extractions: []
                 hasMore: false
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
     post:
       operationId: createExtraction
       description:
@@ -1836,14 +1845,10 @@ paths:
                     type: string
                     enum: [pending, running, canceled, completed, failed]
                     example: running
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '404': *not-found-response
         '409':
           description: Idempotency-Key was reused with another request.
           content:
@@ -1853,12 +1858,10 @@ paths:
                 error: idempotency_conflict
                 message:
                   Idempotency-Key belongs to another request. Use a new key.
-        '424':
+        '424': &x-api-error-response
           $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response
+        '502': *x-api-error-response
 
   /extractions/estimate:
     post:
@@ -1884,16 +1887,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExtractionEstimate'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   /extractions/{id}:
     delete:
@@ -1915,10 +1913,8 @@ paths:
                 properties:
                   id: { type: string, example: 'aB3dE6gH9jK2' }
                   status: { type: string, const: canceled }
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '401': *unauthenticated-response
+        '404': *not-found-response
         '409':
           description: Extraction already reached a terminal state
           content:
@@ -1926,8 +1922,7 @@ paths:
               application/json:
                 { schema: { $ref: '#/components/schemas/Error' } },
             }
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '429': *rate-limit-exceeded-response
     get:
       operationId: getExtraction
       description:
@@ -2013,14 +2008,10 @@ paths:
                 hasMore: false
                 pollAfterMs: 0
                 waitUrl: '/api/v1/extractions/id?wait=10'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   /extractions/{id}/export:
     get:
@@ -2124,14 +2115,10 @@ paths:
               schema:
                 type: string
                 format: binary
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   # ── Draws ────────────────────────────────────────────────
   /draws:
@@ -2167,10 +2154,8 @@ paths:
               example:
                 draws: []
                 hasMore: false
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
     post:
       operationId: createDraw
       summary: Run giveaway draw
@@ -2280,10 +2265,8 @@ paths:
                 totalEntries: 250
                 validEntries: 200
                 winners: []
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
         '402':
           description:
             Insufficient usable credits. Draws can fail before execution when
@@ -2292,19 +2275,14 @@ paths:
             deducted.
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'insufficient_credits'
                 message: 'Insufficient credits'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '424':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
+        '404': *not-found-response
+        '424': *x-api-error-response
+        '429': *rate-limit-exceeded-response
+        '502': *x-api-error-response
 
   /draws/{id}:
     get:
@@ -2362,12 +2340,9 @@ paths:
                   tweetQuoteCount: 5000
                   createdAt: '2025-01-15T12:00:00Z'
                 winners: []
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   /draws/{id}/export:
     get:
@@ -2402,14 +2377,10 @@ paths:
               schema:
                 type: string
                 format: binary
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   # ── Webhooks ─────────────────────────────────────────────
   /webhooks:
@@ -2435,10 +2406,8 @@ paths:
                     example: []
               example:
                 webhooks: []
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
     post:
       operationId: createWebhook
       description: Registers an endpoint for signed event deliveries.
@@ -2495,12 +2464,9 @@ paths:
                 secret: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
                 eventTypes: [tweet.new, tweet.reply]
                 createdAt: '2025-01-15T12:00:00Z'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response
   /webhooks/{id}:
     patch:
       operationId: updateWebhook
@@ -2545,14 +2511,10 @@ paths:
                 deliveryStatus: active
                 failureHardCap: 200
                 createdAt: '2025-01-15T12:00:00Z'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
     delete:
       operationId: deleteWebhook
       description: Stops future deliveries to the selected webhook.
@@ -2564,14 +2526,10 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Success'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   /webhooks/{id}/deliveries:
     get:
@@ -2598,14 +2556,10 @@ paths:
                     example: []
               example:
                 deliveries: []
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   /webhooks/{id}/test:
     post:
@@ -2637,14 +2591,10 @@ paths:
               example:
                 success: true
                 statusCode: 200
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   /webhooks/{id}/resume:
     post:
@@ -2710,12 +2660,9 @@ paths:
                 error: 'Connection timed out'
                 statusCode: 0
                 success: false
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   # ── X API (reads) ────────────────────────────────────────
   /x/tweets:
@@ -2760,18 +2707,13 @@ paths:
                       verified: true
                 has_next_page: false
                 next_cursor: ''
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
+        '400': *invalid-input-response
+        '401': &anonymous-guest-authentication-response
           $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response
+        '424': *x-api-error-response
     post:
       operationId: createTweet
       description: Publishes a post through a connected X account.
@@ -2821,28 +2763,28 @@ paths:
             example:
               account: '@elonmusk'
               text: 'Just launched our new feature!'
-      responses:
-        '200': &write-completed
+      responses: &write-target-responses
+        '200':
           $ref: '#/components/responses/WriteActionCompleted'
-        '202': &write-accepted
+        '202':
           $ref: '#/components/responses/WriteActionAccepted'
-        '409': &write-conflict
+        '409':
           $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400': &write-invalid
+        '400':
           $ref: '#/components/responses/WriteInvalidInput'
-        '401': &write-unauthenticated
+        '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402': &write-payment-required
+        '402':
           $ref: '#/components/responses/PaymentRequired'
-        '403': &write-auth-error
+        '403':
           $ref: '#/components/responses/AccountAuthError'
-        '422': &write-rejected
+        '422':
           $ref: '#/components/responses/WriteRejected'
-        '429': &write-rate-limited
+        '429':
           $ref: '#/components/responses/WriteRateLimited'
-        '503': &write-tracking-unavailable
+        '503':
           $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500': &write-error
+        '500':
           $ref: '#/components/responses/WriteError'
 
   /x/write-actions/{id}:
@@ -2864,12 +2806,9 @@ paths:
           $ref: '#/components/responses/WriteActionCompleted'
         '202':
           $ref: '#/components/responses/WriteActionAccepted'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
 
   /x/trends:
     get:
@@ -2972,12 +2911,9 @@ paths:
           $ref: '#/components/responses/Unauthenticated'
         '402':
           $ref: '#/components/responses/PaymentRequired'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response
+        '424': *x-api-error-response
 
   /x/tweets/search:
     get:
@@ -3106,21 +3042,16 @@ paths:
           description: Missing query
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'missing_query'
                 message: 'Search query required. Use q.'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '429': &rate-limit-exceeded-response-2
           $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '424': *x-api-error-response
         '409':
           $ref: '#/components/responses/CoverageCursorUnavailable'
         '410':
@@ -3261,27 +3192,20 @@ paths:
                   name: 'Elon Musk'
                   username: 'elonmusk'
                   profilePicture: 'https://pbs.twimg.com/profile_images/example.jpg'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '402': *payment-required-response
         '404':
           description: Article not found
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'article_not_found'
                 message: 'Article not found. Use an X Article tweet ID.'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
 
   /x/tweets/{id}:
     get:
@@ -3334,27 +3258,20 @@ paths:
                   quoteCount: 1
                   viewCount: 1500
                   bookmarkCount: 2
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '402': *payment-required-response
         '404':
           description: Tweet not found
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'tweet_not_found'
                 message: 'Tweet not found. Check the tweet ID.'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
     delete:
       operationId: deleteTweet
       description: Deletes an authored post through a connected X account.
@@ -3379,7 +3296,7 @@ paths:
               $ref: '#/components/schemas/XAccountBody'
             example:
               account: '@elonmusk'
-      responses:
+      responses: &write-tweet-responses
         '200':
           $ref: '#/components/responses/WriteActionCompleted'
         '202':
@@ -3428,29 +3345,7 @@ paths:
               $ref: '#/components/schemas/XAccountBody'
             example:
               account: '@elonmusk'
-      responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/RateLimitedByX'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+      responses: *write-tweet-responses
     delete:
       operationId: unlikeTweet
       description: Removes a like through a connected X account.
@@ -3473,29 +3368,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
-      responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/RateLimitedByX'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+      responses: *write-tweet-responses
 
   /x/tweets/{id}/retweet:
     post:
@@ -3520,29 +3393,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
-      responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/RateLimitedByX'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+      responses: *write-tweet-responses
     delete:
       operationId: unretweet
       description: Removes a repost through a connected X account.
@@ -3565,29 +3416,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
-      responses:
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/RateLimitedByX'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+      responses: *write-tweet-responses
 
   /x/users/batch:
     get:
@@ -3630,18 +3459,12 @@ paths:
                 returned_count: 1
                 unavailable_ids: ['1234567890']
                 unprocessed_ids: []
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
 
   /x/users/search:
     get:
@@ -3685,18 +3508,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedUsers'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
 
   /x/users/{id}:
     get:
@@ -3735,20 +3552,13 @@ paths:
                 followers: 150000000
                 following: 500
                 verified: true
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/UserNotFound'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
 
   /x/users/{id}/follow:
     post:
@@ -3773,18 +3583,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
-      responses:
-        '200': *write-completed
-        '202': *write-accepted
-        '409': *write-conflict
-        '400': *write-invalid
-        '401': *write-unauthenticated
-        '402': *write-payment-required
-        '403': *write-auth-error
-        '422': *write-rejected
-        '429': *write-rate-limited
-        '503': *write-tracking-unavailable
-        '500': *write-error
+      responses: *write-target-responses
     delete:
       operationId: unfollowUser
       description: Unfollows a user through a connected X account.
@@ -3807,18 +3606,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
-      responses:
-        '200': *write-completed
-        '202': *write-accepted
-        '409': *write-conflict
-        '400': *write-invalid
-        '401': *write-unauthenticated
-        '402': *write-payment-required
-        '403': *write-auth-error
-        '422': *write-rejected
-        '429': *write-rate-limited
-        '503': *write-tracking-unavailable
-        '500': *write-error
+      responses: *write-target-responses
 
   /x/users/{id}/remove-follower:
     post:
@@ -3843,18 +3631,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
-      responses:
-        '200': *write-completed
-        '202': *write-accepted
-        '409': *write-conflict
-        '400': *write-invalid
-        '401': *write-unauthenticated
-        '402': *write-payment-required
-        '403': *write-auth-error
-        '422': *write-rejected
-        '429': *write-rate-limited
-        '503': *write-tracking-unavailable
-        '500': *write-error
+      responses: *write-target-responses
 
   /x/followers/check:
     get:
@@ -3914,20 +3691,14 @@ paths:
           description: Missing or invalid params
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'missing_params'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
 
   /x/dm/{userId}:
     post:
@@ -3974,18 +3745,7 @@ paths:
               account: '@elonmusk'
               text: 'Example text content'
               media_ids: ['1234567890123456789']
-      responses:
-        '200': *write-completed
-        '202': *write-accepted
-        '409': *write-conflict
-        '400': *write-invalid
-        '401': *write-unauthenticated
-        '402': *write-payment-required
-        '403': *write-auth-error
-        '422': *write-rejected
-        '429': *write-rate-limited
-        '503': *write-tracking-unavailable
-        '500': *write-error
+      responses: *write-target-responses
 
   /x/media:
     post:
@@ -4045,20 +3805,31 @@ paths:
             example:
               account: '@elonmusk'
               url: 'https://example.com/image.png'
-      responses:
-        '200': *write-completed
-        '202': *write-accepted
-        '409': *write-conflict
-        '400': *write-invalid
-        '401': *write-unauthenticated
-        '402': *write-payment-required
-        '403': *write-auth-error
-        '404': &write-account-not-found
+      responses: &write-account-responses
+        '200':
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
+        '400':
+          $ref: '#/components/responses/WriteInvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403':
+          $ref: '#/components/responses/AccountAuthError'
+        '404':
           $ref: '#/components/responses/XAccountNotFound'
-        '422': *write-rejected
-        '429': *write-rate-limited
-        '503': *write-tracking-unavailable
-        '500': *write-error
+        '422':
+          $ref: '#/components/responses/WriteRejected'
+        '429':
+          $ref: '#/components/responses/WriteRateLimited'
+        '503':
+          $ref: '#/components/responses/WriteTrackingUnavailable'
+        '500':
+          $ref: '#/components/responses/WriteError'
 
   /x/media/download:
     post:
@@ -4130,27 +3901,20 @@ paths:
                 tweetId: '1234567890'
                 galleryUrl: 'https://xquik.com/gallery/abc123'
                 cacheHit: false
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '402': *payment-required-response
         '404':
           description: Tweet media source not found
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'tweet_not_found'
                 message: 'Tweet not found.'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response-2
+        '502': *x-api-error-response
+        '424': *x-api-error-response
 
   /x/profile:
     patch:
@@ -4197,19 +3961,7 @@ paths:
               description: 'description_value'
               location: 'location_value'
               url: 'https://xquik.com/example'
-      responses:
-        '200': *write-completed
-        '202': *write-accepted
-        '409': *write-conflict
-        '400': *write-invalid
-        '401': *write-unauthenticated
-        '402': *write-payment-required
-        '403': *write-auth-error
-        '404': *write-account-not-found
-        '422': *write-rejected
-        '429': *write-rate-limited
-        '503': *write-tracking-unavailable
-        '500': *write-error
+      responses: *write-account-responses
 
   /x/profile/avatar:
     patch:
@@ -4261,19 +4013,7 @@ paths:
             example:
               account: '@elonmusk'
               url: 'https://example.com/avatar.png'
-      responses:
-        '200': *write-completed
-        '202': *write-accepted
-        '409': *write-conflict
-        '400': *write-invalid
-        '401': *write-unauthenticated
-        '402': *write-payment-required
-        '403': *write-auth-error
-        '404': *write-account-not-found
-        '422': *write-rejected
-        '429': *write-rate-limited
-        '503': *write-tracking-unavailable
-        '500': *write-error
+      responses: *write-account-responses
 
   /x/profile/banner:
     patch:
@@ -4325,19 +4065,7 @@ paths:
             example:
               account: '@elonmusk'
               url: 'https://example.com/banner.png'
-      responses:
-        '200': *write-completed
-        '202': *write-accepted
-        '409': *write-conflict
-        '400': *write-invalid
-        '401': *write-unauthenticated
-        '402': *write-payment-required
-        '403': *write-auth-error
-        '404': *write-account-not-found
-        '422': *write-rejected
-        '429': *write-rate-limited
-        '503': *write-tracking-unavailable
-        '500': *write-error
+      responses: *write-account-responses
 
   /x/communities:
     post:
@@ -4375,19 +4103,7 @@ paths:
               account: '@elonmusk'
               name: 'Example Name'
               description: 'A community for Tesla enthusiasts'
-      responses:
-        '200': *write-completed
-        '202': *write-accepted
-        '409': *write-conflict
-        '400': *write-invalid
-        '401': *write-unauthenticated
-        '402': *write-payment-required
-        '403': *write-auth-error
-        '404': *write-account-not-found
-        '422': *write-rejected
-        '429': *write-rate-limited
-        '503': *write-tracking-unavailable
-        '500': *write-error
+      responses: *write-account-responses
 
   /x/communities/{id}:
     delete:
@@ -4421,19 +4137,7 @@ paths:
             example:
               account: '@elonmusk'
               community_name: 'Tesla Fans'
-      responses:
-        '200': *write-completed
-        '202': *write-accepted
-        '409': *write-conflict
-        '400': *write-invalid
-        '401': *write-unauthenticated
-        '402': *write-payment-required
-        '403': *write-auth-error
-        '404': *write-account-not-found
-        '422': *write-rejected
-        '429': *write-rate-limited
-        '503': *write-tracking-unavailable
-        '500': *write-error
+      responses: *write-account-responses
 
   /x/communities/{id}/join:
     post:
@@ -4453,19 +4157,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
-      responses:
-        '200': *write-completed
-        '202': *write-accepted
-        '409': *write-conflict
-        '400': *write-invalid
-        '401': *write-unauthenticated
-        '402': *write-payment-required
-        '403': *write-auth-error
-        '404': *write-account-not-found
-        '422': *write-rejected
-        '429': *write-rate-limited
-        '503': *write-tracking-unavailable
-        '500': *write-error
+      responses: *write-account-responses
     delete:
       operationId: leaveCommunity
       description: Leaves an X Community through a connected account.
@@ -4483,19 +4175,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
-      responses:
-        '200': *write-completed
-        '202': *write-accepted
-        '409': *write-conflict
-        '400': *write-invalid
-        '401': *write-unauthenticated
-        '402': *write-payment-required
-        '403': *write-auth-error
-        '404': *write-account-not-found
-        '422': *write-rejected
-        '429': *write-rate-limited
-        '503': *write-tracking-unavailable
-        '500': *write-error
+      responses: *write-account-responses
 
   # ── X Accounts ───────────────────────────────────────────
   /x/accounts:
@@ -4554,15 +4234,12 @@ paths:
           description: Invalid account list cursor or limit
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: invalid_input
                 message: Invalid account list cursor or limit.
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response-2
     post:
       operationId: connectXAccount
       description: Starts a secure X account connection flow.
@@ -4651,10 +4328,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/XAccountConnectionContinuation'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
         '409':
           $ref: '#/components/responses/ConnectAlreadyConnected'
         '422':
@@ -4715,12 +4390,9 @@ paths:
                 id: 'xatt_0123456789abcdef0123456789abcdef'
                 status: 'pending'
                 pollAfterMs: 3000
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response-2
 
   /x/account-connection-challenges/{id}/submit:
     post:
@@ -4759,18 +4431,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/XAccountConnectionChallenge'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
         '409':
           description: Verification challenge is no longer active
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'connection_challenge_inactive'
                 message: 'Connection challenge is no longer active.'
@@ -4778,15 +4446,13 @@ paths:
           description: Verification code expired
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'connection_challenge_expired'
                 message: 'Verification code expired. Start again.'
         '422':
           $ref: '#/components/responses/ConnectLoginFailed'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '429': *rate-limit-exceeded-response-2
         '503':
           $ref: '#/components/responses/ConnectServiceUnavailable'
 
@@ -4806,14 +4472,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/XAccountDetail'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response-2
     delete:
       operationId: disconnectXAccount
       description: Disconnects one X account and removes stored session access.
@@ -4825,14 +4487,10 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Success'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response-2
 
   /x/accounts/{id}/reauth:
     post:
@@ -4878,10 +4536,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SanitizedXAccount'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
         '404':
           $ref: '#/components/responses/ReauthAccountNotFound'
         '422':
@@ -4916,10 +4572,8 @@ paths:
                     example: 3
               example:
                 cleared: 3
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response-2
 
   # ── Trends ───────────────────────────────────────────────
   /trends:
@@ -5013,18 +4667,12 @@ paths:
                     url: 'https://x.com/search?q=%23AI'
                 total: 30
                 woeid: 1
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
 
   # ── Support Tickets ─────────────────────────────────────
   /support/attachments/{id}:
@@ -5067,21 +4715,17 @@ paths:
               schema:
                 type: string
                 format: binary
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '401': *unauthenticated-response
+        '404': *not-found-response
         '416':
           description: Invalid or unsatisfiable byte range
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'invalid_range'
                 message: 'Use one valid byte range.'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '429': *rate-limit-exceeded-response-2
   /support/tickets:
     post:
       operationId: createTicket
@@ -5121,7 +4765,7 @@ paths:
               schema:
                 type: string
                 const: 'true'
-          content:
+          content: &support-receipt-content
             application/json:
               schema:
                 type: object
@@ -5140,39 +4784,19 @@ paths:
                 attachments: []
         '201':
           description: Ticket created
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [publicId, attachments]
-                properties:
-                  publicId:
-                    type: string
-                    example: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
-                  attachments:
-                    type: array
-                    example: []
-                    items:
-                      $ref: '#/components/schemas/SupportAttachmentReceipt'
-              example:
-                publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
-                attachments: []
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
+          content: *support-receipt-content
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
         '409':
           description: Idempotency-Key was reused with different content.
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'idempotency_key_conflict'
                 message:
                   'Reuse this Idempotency-Key only with the original request.'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '429': *rate-limit-exceeded-response-2
     get:
       operationId: listTickets
       description: Returns support tickets owned by the authenticated user.
@@ -5239,10 +4863,8 @@ paths:
                     messageCount: 2
                     createdAt: '2025-01-15T12:00:00Z'
                     updatedAt: '2025-01-16T09:30:00Z'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response-2
   /support/tickets/{id}:
     get:
       operationId: getTicket
@@ -5323,12 +4945,9 @@ paths:
                     sender: 'user'
                     createdAt: '2025-01-15T12:00:00Z'
                     attachments: []
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response-2
     patch:
       operationId: updateTicketStatus
       description: Changes the open or closed state of a support ticket.
@@ -5377,14 +4996,10 @@ paths:
               example:
                 publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
                 status: 'resolved'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response-2
   /support/tickets/{id}/messages:
     post:
       operationId: addTicketMessage
@@ -5425,60 +5040,23 @@ paths:
               schema:
                 type: string
                 const: 'true'
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [publicId, attachments]
-                properties:
-                  publicId:
-                    type: string
-                    example: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
-                  attachments:
-                    type: array
-                    example: []
-                    items:
-                      $ref: '#/components/schemas/SupportAttachmentReceipt'
-              example:
-                publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
-                attachments: []
+          content: *support-receipt-content
         '201':
           description: Message added
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [publicId, attachments]
-                properties:
-                  publicId:
-                    type: string
-                    example: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
-                  attachments:
-                    type: array
-                    example: []
-                    items:
-                      $ref: '#/components/schemas/SupportAttachmentReceipt'
-              example:
-                publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
-                attachments: []
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
+          content: *support-receipt-content
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
         '409':
           description: Reply key was reused with different message content.
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'idempotency_key_conflict'
                 message:
                   'Reuse this Idempotency-Key only with the original request.'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '429': *rate-limit-exceeded-response-2
 
   /guest-wallets:
     post:
@@ -5542,52 +5120,46 @@ paths:
                 status: pending
                 status_url: https://xquik.com/api/v1/guest-wallets/status
                 wallet_id: gw_example
-        '400':
-          $ref: '#/components/responses/InvalidInput'
+        '400': *invalid-input-response
         '409':
           description: Idempotency-Key was reused with a different request.
-          content:
+          content: &guest-wallet-idempotency-conflict-content
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'idempotency_conflict'
                 message:
                   'Reuse this Idempotency-Key only with the original request.'
         '410':
           description: Checkout expired or can no longer be used.
-          content:
+          content: &guest-wallet-checkout-unavailable-content
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'checkout_unavailable'
                 message:
                   'Checkout unavailable. Retry with a new Idempotency-Key.'
         '413':
           description: Request body is too large.
-          content:
+          content: &guest-wallet-body-too-large-content
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'body_too_large'
                 message: 'Request body is too large.'
         '415':
           description: Content-Type must be application/json.
-          content:
+          content: &guest-wallet-media-type-content
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'unsupported_media_type'
                 message: 'Send Content-Type: application/json.'
         '423':
           description: Guest wallet is unavailable.
-          content:
+          content: &guest-wallet-unavailable-content
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'guest_wallet_unavailable'
                 message:
@@ -5597,10 +5169,9 @@ paths:
           $ref: '#/components/responses/GuestWalletRateLimited'
         '503':
           description: Guest wallet checkout is unavailable.
-          content:
+          content: &guest-wallet-service-unavailable-content
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: 'guest_wallets_unavailable'
                 message: 'Guest wallet checkout is temporarily unavailable.'
@@ -5661,70 +5232,28 @@ paths:
                 status: pending
                 status_url: https://xquik.com/api/v1/guest-wallets/status
                 wallet_id: gw_example
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
         '409':
           description: Top-up key was reused with a different request.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: 'idempotency_conflict'
-                message:
-                  'Reuse this Idempotency-Key only with the original request.'
+          content: *guest-wallet-idempotency-conflict-content
         '410':
           description: Top-up checkout expired or became unavailable.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: 'checkout_unavailable'
-                message:
-                  'Checkout unavailable. Retry with a new Idempotency-Key.'
+          content: *guest-wallet-checkout-unavailable-content
         '413':
           description: Top-up request body is too large.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: 'body_too_large'
-                message: 'Request body is too large.'
+          content: *guest-wallet-body-too-large-content
         '415':
           description: Top-up requires Content-Type application/json.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: 'unsupported_media_type'
-                message: 'Send Content-Type: application/json.'
+          content: *guest-wallet-media-type-content
         '423':
           description: Guest wallet cannot accept a top-up.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: 'guest_wallet_unavailable'
-                message:
-                  'Guest wallet unavailable. Create a new wallet or contact
-                  support.'
+          content: *guest-wallet-unavailable-content
         '429':
           $ref: '#/components/responses/GuestWalletRateLimited'
         '503':
           description: Guest wallet top-up checkout is unavailable.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: 'guest_wallets_unavailable'
-                message: 'Guest wallet checkout is temporarily unavailable.'
+          content: *guest-wallet-service-unavailable-content
   /guest-wallets/status:
     get:
       operationId: getGuestWalletStatus
@@ -5766,8 +5295,7 @@ paths:
                   path: /api/v1/guest-wallets/topups
                 usable: true
                 wallet_id: gw_example
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
+        '401': *unauthenticated-response
         '429':
           $ref: '#/components/responses/GuestWalletRateLimited'
 
@@ -5831,10 +5359,8 @@ paths:
                 balance: '50000'
                 lifetime_purchased: '200000'
                 lifetime_used: '150000'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response-2
   /credits/topup:
     post:
       operationId: topUpCredits
@@ -5890,12 +5416,9 @@ paths:
               example:
                 redirect_url: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_example'
                 url: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_example'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response-2
   /credits/topup/redirect:
     get:
       operationId: redirectCreditTopupCheckout
@@ -5927,24 +5450,21 @@ paths:
           description: Missing or invalid top-up billing session ID.
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: invalid_input
         '404':
           description: Top-up billing session not found.
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: not_found
         '410':
           description: Top-up billing session is closed or expired.
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               examples:
                 closed:
                   value: { error: closed }
@@ -5954,8 +5474,7 @@ paths:
           description: Payment page lookup failed.
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: missing_url
   /credits/topup/status:
@@ -6001,14 +5520,10 @@ paths:
                 amount_dollars: 25
                 credits: '166666'
                 status: paid
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response-2
   /credits/quick-topup:
     post:
       operationId: quickTopUpCredits
@@ -6090,12 +5605,9 @@ paths:
                   summary: No saved payment method
                   value:
                     outcome: no_payment_method
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '429': *rate-limit-exceeded-response-2
   /x/tweets/{id}/favoriters:
     get:
       operationId: getTweetFavoriters
@@ -6142,16 +5654,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedUsers'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
         '424':
           $ref: '#/components/responses/FavoritersUnavailable'
 
@@ -6233,20 +5740,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTweets'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/UserNotFound'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
         '409':
           $ref: '#/components/responses/CoverageCursorUnavailable'
         '410':
@@ -6331,20 +5831,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTweets'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/UserNotFound'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
         '409':
           $ref: '#/components/responses/CoverageCursorUnavailable'
         '410':
@@ -6424,20 +5917,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTweets'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/UserNotFound'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
 
   /x/users/{id}/media:
     get:
@@ -6511,20 +5997,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTweets'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/UserNotFound'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
 
   /x/users/{id}/followers-you-know:
     get:
@@ -6568,18 +6047,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedUsers'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
 
   /x/bookmarks:
     get:
@@ -6608,16 +6081,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTweets'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '429': *rate-limit-exceeded-response-2
+        '502': *x-api-error-response
+        '424': *x-api-error-response
 
   /x/bookmarks/folders:
     get:
@@ -6661,16 +6129,11 @@ paths:
                     name: 'Read Later'
                 has_next_page: false
                 next_cursor: ''
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '429': *rate-limit-exceeded-response-2
+        '502': *x-api-error-response
+        '424': *x-api-error-response
 
   /x/notifications:
     get:
@@ -6740,16 +6203,11 @@ paths:
                     timestamp: '2025-01-15T12:00:00Z'
                 has_next_page: true
                 next_cursor: 'DAACCgACGRElMJcAAA'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '429': *rate-limit-exceeded-response-2
+        '502': *x-api-error-response
+        '424': *x-api-error-response
 
   /x/timeline:
     get:
@@ -6779,16 +6237,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTweets'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '429': *rate-limit-exceeded-response-2
+        '502': *x-api-error-response
+        '424': *x-api-error-response
 
   /x/dm/{userId}/history:
     get:
@@ -6887,8 +6340,7 @@ paths:
             missing or empty).
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               examples:
                 invalidUserId:
                   summary: Invalid user ID
@@ -6901,10 +6353,8 @@ paths:
                     message: >-
                       Provide ?account=<x_handle> for a connected X account. DM
                       history requires a connected participant account.
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '401': *unauthenticated-response
+        '402': *payment-required-response
         '403':
           description: >
             DM read forbidden. Either the connected account is not a participant
@@ -6914,8 +6364,7 @@ paths:
             (`account_needs_reauth`).
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               examples:
                 dmNotPermitted:
                   summary: Account is not a conversation participant
@@ -6938,19 +6387,15 @@ paths:
           description: Connected X account not found for the authenticated user.
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+              schema: *error-schema
               example:
                 error: account_not_found
                 message:
                   X account not found. Connect it first at
                   /dashboard/account?tab=x-accounts.
-        '424':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
+        '424': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '502': *x-api-error-response
 
   /x/communities/{id}/info:
     get:
@@ -7058,20 +6503,13 @@ paths:
                   join_policy: 'open'
                   member_count: 10000
                   moderator_count: 5
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '424':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '502': *x-api-error-response
 
   /x/communities/{id}/members:
     get:
@@ -7106,20 +6544,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedUsers'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '424':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '502': *x-api-error-response
 
   /x/communities/{id}/moderators:
     get:
@@ -7153,20 +6584,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedUsers'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '424':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '502': *x-api-error-response
 
   /x/communities/{id}/tweets:
     get:
@@ -7196,20 +6620,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTweets'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '424':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '502': *x-api-error-response
 
   /x/communities/search:
     get:
@@ -7295,20 +6712,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedUsers'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '424':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '502': *x-api-error-response
 
   /x/lists/{id}/members:
     get:
@@ -7343,20 +6753,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedUsers'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '424':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '502': *x-api-error-response
 
   /x/lists/{id}/tweets:
     get:
@@ -7410,20 +6813,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTweets'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '424':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '502':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '502': *x-api-error-response
         '409':
           $ref: '#/components/responses/CoverageCursorUnavailable'
         '410':
@@ -7508,18 +6904,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTweets'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
 
   /x/tweets/{id}/replies:
     get:
@@ -7646,16 +7036,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TweetReplies'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
         '424':
           $ref: '#/components/responses/RepliesIncomplete'
         '409':
@@ -7707,18 +7092,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedUsers'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
 
   /x/tweets/{id}/thread:
     get:
@@ -7780,18 +7159,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTweets'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
 
   /x/users/{id}/followers:
     get:
@@ -7846,20 +7219,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserListResult'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/UserNotFound'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
         '409':
           $ref: '#/components/responses/CoverageCursorUnavailable'
         '410':
@@ -7921,20 +7287,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserListResult'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/UserNotFound'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
         '409':
           $ref: '#/components/responses/CoverageCursorUnavailable'
         '410':
@@ -8016,20 +7375,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTweets'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/UserNotFound'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
 
   /x/users/{id}/verified-followers:
     get:
@@ -8085,20 +7437,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserListResult'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/UserNotFound'
-        '502':
-          $ref: '#/components/responses/XApiError'
-        '429':
-          $ref: '#/components/responses/RateLimitExceeded'
-        '424':
-          $ref: '#/components/responses/XApiError'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
         '409':
           $ref: '#/components/responses/CoverageCursorUnavailable'
         '410':
@@ -8996,8 +8341,7 @@ components:
             const: 'Bearer realm="xquik"'
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'unauthenticated'
             message:
@@ -9059,8 +8403,7 @@ components:
       description: Invalid input
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'invalid_input'
             message: 'Invalid input. Check the request body.'
@@ -9068,8 +8411,7 @@ components:
       description: Not found
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'not_found'
             message: 'Resource not found.'
@@ -9077,8 +8419,7 @@ components:
       description: X user not found
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'user_not_found'
             message: 'X user not found. Check the username.'
@@ -9183,8 +8524,7 @@ components:
         `account_needs_reauth` or `account_restricted`.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'account_needs_reauth'
             message: 'X account needs re-authentication. Re-add the account.'
@@ -9192,8 +8532,7 @@ components:
       description: Connected X account not found
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'account_not_found'
             message:
@@ -9206,8 +8545,7 @@ components:
         durable action, safeToRetry, and nextAction fields before retrying.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'x_write_failed'
             message:
@@ -9219,8 +8557,7 @@ components:
         Media failures cover URL, size, origin, and timeout.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'x_rejected'
             message:
@@ -9232,8 +8569,7 @@ components:
         Distinct from Xquik tier-based 429.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'x_rate_limited'
             message: 'Rate limited by X. Wait before retrying.'
@@ -9272,8 +8608,7 @@ components:
         transparent dependency failures.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'x_api_unavailable'
             message: 'X data source temporarily unavailable. Try again later.'
@@ -9283,8 +8618,7 @@ components:
         identities. Returns error code `favoriters_unavailable`.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'favoriters_unavailable'
             message:
@@ -9301,8 +8635,7 @@ components:
           description: Seconds to wait.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'coverage_cursor_unavailable'
             message: 'Cursor busy. Retry after the indicated delay.'
@@ -9310,8 +8643,7 @@ components:
       description: Restart without the `coverage_cursor_gone` cursor.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'coverage_cursor_gone'
             message:
@@ -9327,8 +8659,7 @@ components:
           description: Seconds to wait before retrying.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'x_api_unavailable'
             message: 'Maximum coverage is busy. Retry shortly.'
@@ -9387,8 +8718,7 @@ components:
         Returns error code `account_already_connected`.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'account_already_connected'
             message: 'This X account is already connected.'
@@ -9405,8 +8735,7 @@ components:
             minimum: 1
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'login_failed'
             message: 'Login failed. Check credentials and try again.'
@@ -9425,8 +8754,7 @@ components:
             minimum: 1
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'login_cooldown'
             message: 'Login is temporarily paused'
@@ -9446,8 +8774,7 @@ components:
             minimum: 1
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'rate_limit_exceeded'
             message: 'Too many requests. Retry later.'
@@ -9480,8 +8807,7 @@ components:
             minimum: 1
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'rate_limited'
             message: 'Try again later.'
@@ -9492,8 +8818,7 @@ components:
         contract returns 424. Error code: `x_user_lookup_failed`.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'x_user_lookup_failed'
             message: 'X username lookup failed. Try again later.'
@@ -9503,8 +8828,7 @@ components:
         delay. Returns error code `service_unavailable`.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'service_unavailable'
             message: 'Service temporarily unavailable. Try again later.'
@@ -9514,13 +8838,154 @@ components:
         error code `account_not_found`.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: *error-schema
           example:
             error: 'account_not_found'
             message: 'X account not found.'
 
   schemas:
+    NlwebAskRequest:
+      description: Public NLWeb documentation search request.
+      type: object
+      example: { query: { text: 'How does MCP OAuth work?' } }
+      required: [query]
+      additionalProperties: true
+      properties:
+        query:
+          type: object
+          example: { text: 'How does MCP OAuth work?' }
+          required: [text]
+          additionalProperties: true
+          properties:
+            text:
+              type: string
+              minLength: 1
+              maxLength: 500
+              description: Natural-language documentation query.
+            site:
+              type: string
+              enum: [docs.xquik.com, xquik.com]
+        context:
+          type: object
+          example: { previous_query: 'How does OAuth work?' }
+          additionalProperties: true
+          description: Optional NLWeb conversational context.
+        prefer:
+          type: object
+          example:
+            { mode: list, response_format: chatgpt_app, streaming: false }
+          additionalProperties: true
+          properties:
+            streaming:
+              type: boolean
+            response_format:
+              type: string
+              enum: [chatgpt_app, conv_search, conversational_search]
+            mode:
+              type: string
+              enum: [list]
+        meta:
+          type: object
+          additionalProperties: true
+          properties:
+            api_version:
+              type: string
+              const: '0.54'
+            version:
+              type: string
+              const: '0.54'
+    NlwebMeta:
+      description: NLWeb response metadata.
+      type: object
+      required: [response_type, version]
+      properties:
+        response_type:
+          type: string
+          enum: [Answer, Failure]
+        response_format:
+          type: string
+          enum: [chatgpt_app, conv_search, conversational_search]
+        version:
+          type: string
+          const: '0.54'
+    NlwebDocumentationResult:
+      description: Public Xquik documentation result using schema.org.
+      type: object
+      required: ['@context', '@id', '@type', description, name, url]
+      properties:
+        '@context':
+          type: string
+          const: https://schema.org
+        '@id':
+          type: string
+          format: uri
+        '@type':
+          type: string
+          const: TechArticle
+        description:
+          type: string
+          maxLength: 1600
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+    NlwebAnswer:
+      description: NLWeb documentation answer in a supported response format.
+      type: object
+      required: [_meta]
+      properties:
+        _meta:
+          allOf:
+            - $ref: '#/components/schemas/NlwebMeta'
+            - type: object
+              properties:
+                response_type: { const: Answer }
+        results:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/NlwebDocumentationResult'
+        content:
+          type: array
+          maxItems: 1
+          items:
+            type: object
+            required: [text, type]
+            properties:
+              text: { type: string }
+              type: { type: string, const: text }
+        structuredData:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/NlwebDocumentationResult'
+      oneOf:
+        - required: [results]
+          properties: { results: { type: array } }
+        - required: [content, structuredData]
+          properties:
+            { content: { type: array }, structuredData: { type: array } }
+    NlwebFailure:
+      description: Typed NLWeb request or search failure.
+      type: object
+      required: [_meta, error]
+      properties:
+        _meta:
+          example: { response_type: Failure, version: '0.54' }
+          allOf:
+            - $ref: '#/components/schemas/NlwebMeta'
+            - type: object
+              properties:
+                response_type: { const: Failure }
+        error:
+          type: object
+          example: { code: INVALID_REQUEST, message: 'Request is invalid.' }
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+
     ComposePrepareRequest:
       description: Inputs for preparing source-backed post guidance.
       type: object
