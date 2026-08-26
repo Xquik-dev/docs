@@ -34,7 +34,7 @@ Reach for Xquik when:
 
 ### Authentication
 
-- **OAuth 2.1.** Browser-based MCP clients keep account access granted by OAuth scopes. Add `https://xquik.com/mcp` and complete the client-opened login and consent flow. Xquik supports CIMD and DCR; let the client use its documented registration flow.
+- **OAuth 2.1.** Browser-based MCP clients keep account access granted by OAuth scopes. Agents can use claimed `service_auth` registration. Both paths require user approval.
 - **Full account key.** Send `x-api-key: xq_your_api_key_here` or `Authorization: Bearer xq_your_api_key_here`.
 - **Guest key.** Send `Authorization: Bearer xq_your_guest_key_here`. Scope is fixed to `paid_reads`.
 - **Key format.** `xq_` prefix plus 64 hex characters

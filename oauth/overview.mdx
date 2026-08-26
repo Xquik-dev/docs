@@ -1,15 +1,18 @@
 ---
 title: "OAuth 2.1 for MCP & X API agent authorization"
 sidebarTitle: OAuth 2.1
-description: "Authorize MCP clients with OAuth 2.1, PKCE, CIMD, and dynamic client registration. Follow token, redirect, discovery, and refresh examples. See examples."
-keywords: ["OAuth", "OAuth 2.1", "PKCE", "MCP", "authorization", "token", "refresh token", "CIMD", "dynamic client registration"]
+description: "Authorize MCP clients and agents with OAuth 2.1, PKCE, claimed service identities, rotating refresh tokens, discovery metadata, and revocation examples."
+keywords: ["OAuth", "OAuth 2.1", "PKCE", "MCP", "agent authentication", "authorization", "token", "refresh token", "CIMD", "dynamic client registration"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik supports [OAuth 2.1](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1) Authorization Code with S256 PKCE for remote MCP authentication. Modern clients discover the flow automatically from `https://xquik.com/mcp`, open Xquik login and consent in a browser, then store and refresh Bearer tokens.
+Xquik supports 2 MCP authorization paths. Interactive clients use
+[OAuth 2.1](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1)
+Authorization Code with S256 PKCE. Agents can use claimed `service_auth`
+registration. Both paths require the user to sign in and approve access.
 
 <Info>
   Prefer OAuth for Claude, ChatGPT, Cursor, VS Code, Windsurf, OpenCode, Gemini
@@ -23,44 +26,13 @@ Xquik supports [OAuth 2.1](https://datatracker.ietf.org/doc/html/draft-ietf-oaut
   Codex CLI 0.147.0 and newer preserve the RFC 9207 `iss` value. Upgrade if an older release reports `Authorization server response missing required issuer: expected https://xquik.com`. Use the [Codex API key fallback](/guides/troubleshooting#codex-oauth-issuer-validation-error) only when upgrading is unavailable. [Issue #31573](https://github.com/openai/codex/issues/31573) records the older defect and fix.
 </Warning>
 
-Xquik supports both MCP client registration paths:
+Interactive OAuth supports 2 client registration paths:
 
 - **Client ID Metadata Documents (CIMD).** Recommended for modern clients. The client's HTTPS metadata URL becomes its `client_id`. No registration request or client secret is required.
 - **Dynamic Client Registration (DCR).** Compatibility fallback for clients that do not publish CIMD. The client registers itself once at `/api/oauth/register`.
 
 Normal users do not create either configuration manually. Enter
 `https://xquik.com/mcp` in the client and follow its authentication prompt.
-
-## How it works
-
-OAuth 2.1 Authorization Code with PKCE follows this sequence:
-
-```text
-MCP Client                         Xquik
-    │                                 │
-    │  1. Discover auth metadata      │
-    │────────────────────────────────▶│
-    │◀────────────────────────────────│
-    │  2. Use CIMD or register by DCR │
-    │                                 │
-    │  3. Generate code_verifier      │
-    │     + code_challenge            │
-    │                                 │
-    │  4. Redirect to /authorize      │
-    │────────────────────────────────▶│
-    │                                 │  User logs in
-    │                                 │  + approves access
-    │  5. Redirect back with code     │
-    │◀────────────────────────────────│
-    │                                 │
-    │  6. Exchange code + verifier    │
-    │────────────────────────────────▶│
-    │◀────────────────────────────────│
-    │    access_token + refresh_token │
-    │                                 │
-    │  7. Call MCP with Bearer token  │
-    │────────────────────────────────▶│
-```
 
 ## Discovery
 
@@ -80,7 +52,12 @@ curl https://xquik.com/.well-known/oauth-authorization-server
   "registration_endpoint": "https://xquik.com/api/oauth/register",
   "scopes_supported": ["mcp:tools"],
   "response_types_supported": ["code"],
-  "grant_types_supported": ["authorization_code", "refresh_token"],
+  "grant_types_supported": [
+    "authorization_code",
+    "refresh_token",
+    "urn:workos:agent-auth:grant-type:claim",
+    "urn:ietf:params:oauth:grant-type:jwt-bearer"
+  ],
   "code_challenge_methods_supported": ["S256"],
   "token_endpoint_auth_methods_supported": ["none", "client_secret_post", "private_key_jwt"],
   "token_endpoint_auth_signing_alg_values_supported": ["RS256"],
@@ -97,9 +74,18 @@ curl https://xquik.com/.well-known/oauth-authorization-server
   "service_documentation": "https://docs.xquik.com/oauth/overview",
   "authorization_response_iss_parameter_supported": true,
   "response_modes_supported": ["query"],
-  "client_id_metadata_document_supported": true
+  "client_id_metadata_document_supported": true,
+  "agent_auth": {
+    "claim_endpoint": "https://xquik.com/agent/identity/claim",
+    "identity_endpoint": "https://xquik.com/agent/identity",
+    "identity_types_supported": ["service_auth"],
+    "skill": "https://xquik.com/auth.md"
+  }
 }
 ```
+
+The `agent_auth` object follows the current Auth.md service identity profile.
+Generic OAuth clients may ignore it.
 
 ### Protected resource metadata
 
@@ -351,6 +337,74 @@ can show a concrete `client_id`.
 | Access token | 1 hour | Use the refresh token to get a new one |
 | Refresh token | 30 days | Single-use. Each refresh issues a new pair |
 | Authorization code | 60 seconds | Single-use. Exchange immediately |
+| Claim token | 24 hours | Registers one claimed service identity |
+| User code | 10 minutes | Refresh it while the claim token remains active |
+| Identity assertion | 1 hour | Exchanges only for its active registration |
+
+## Claimed agent registration
+
+Use `service_auth` when an agent knows the user's verified email. Xquik never
+issues anonymous agent credentials.
+
+<Steps>
+  <Step title="Register the service identity">
+    Send the verified email as `login_hint`.
+
+    ```bash
+    curl -X POST https://xquik.com/agent/identity \
+      -H "Content-Type: application/json" \
+      -d '{"type":"service_auth","login_hint":"user@example.com"}'
+    ```
+
+    The response includes `claim_token`, `registration_id`, and a `claim`
+    object. Show `claim.verification_uri` and `claim.user_code` to the user.
+    Keep every token secret.
+  </Step>
+
+  <Step title="Complete the claim">
+    The user opens `claim.verification_uri`, signs in, and enters the code.
+    The signed-in email must match `login_hint`.
+
+    If the code expires, refresh it before the claim token expires:
+
+    ```bash
+    curl -X POST https://xquik.com/agent/identity/claim \
+      -H "Content-Type: application/json" \
+      -d '{"claim_token":"CLAIM_TOKEN","email":"user@example.com"}'
+    ```
+  </Step>
+
+  <Step title="Poll for tokens">
+    Honor the returned `claim.interval`. Poll the token endpoint with the
+    static public client ID.
+
+    ```bash
+    curl -X POST https://xquik.com/api/oauth/token \
+      -H "Content-Type: application/x-www-form-urlencoded" \
+      -d "grant_type=urn:workos:agent-auth:grant-type:claim\
+&client_id=urn:xquik:agent-auth\
+&claim_token=CLAIM_TOKEN"
+    ```
+
+    Handle `authorization_pending`, `slow_down`, `access_denied`, and
+    `expired_token`. Success returns an access token and rotating refresh
+    token. It also returns `identity_assertion`.
+  </Step>
+
+  <Step title="Exchange an identity assertion">
+    Exchange a current assertion only when a fresh OAuth pair is required.
+
+    ```bash
+    curl -X POST https://xquik.com/api/oauth/token \
+      -H "Content-Type: application/x-www-form-urlencoded" \
+      -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer\
+&client_id=urn:xquik:agent-auth\
+&assertion=IDENTITY_ASSERTION"
+    ```
+
+    Xquik accepts only service-signed assertions for active registrations.
+  </Step>
+</Steps>
 
 ## Refresh tokens
 
@@ -398,6 +452,10 @@ curl -X POST https://xquik.com/api/oauth/revoke \
 | `token_type_hint` | No | `access_token` or `refresh_token`. Helps the server locate the token faster |
 
 Returns `200` with an empty body on success. If the token is already revoked or invalid, the server still returns `200` (per RFC 7009).
+
+For claimed agent registration, use `client_id=urn:xquik:agent-auth`. Revoke
+the current refresh token to revoke the full registration. Revoking only an
+access token leaves its refresh family active.
 
 **Revocation errors.**
 
@@ -479,7 +537,11 @@ optional `state`, and `iss=https://xquik.com` query parameters.
 |-------|------|
 | `invalid_request` | Missing `code`, `code_verifier`, `client_id`, or `refresh_token` |
 | `invalid_grant` | Code/token is invalid, expired, or already used. Also: `client_id` mismatch, `redirect_uri` mismatch, or PKCE verification failed |
-| `unsupported_grant_type` | Grant type is not `authorization_code` or `refresh_token` |
+| `authorization_pending` | The user has not completed the agent claim |
+| `slow_down` | Claim polling exceeded the returned interval |
+| `access_denied` | The agent claim was denied or revoked |
+| `expired_token` | The claim token or user code expired |
+| `unsupported_grant_type` | Grant type is not advertised by discovery |
 | `invalid_target` | Resource is not `https://xquik.com/mcp` |
 
 ### Registration errors
@@ -492,105 +554,6 @@ optional `state`, and `iss=https://xquik.com` query parameters.
 
 Read `error_description` for the specific validation failure. Missing or blank
 `client_name` values default to `MCP Client`.
-
-## Full example
-
-A complete Node.js implementation of the OAuth 2.1 flow:
-
-```javascript Node.js
-import { randomBytes, createHash } from "node:crypto";
-import http from "node:http";
-
-const CLIENT_ID = "550e8400-e29b-41d4-a716-446655440000";
-const REDIRECT_URI = "http://localhost:8080/callback";
-
-// Step 1: Generate PKCE parameters
-const codeVerifier = randomBytes(32).toString("hex");
-const codeChallenge = createHash("sha256")
-  .update(codeVerifier)
-  .digest("base64url");
-const state = randomBytes(16).toString("hex");
-
-// Step 2: Build the authorization URL
-const authUrl = new URL("https://xquik.com/api/oauth/authorize");
-authUrl.searchParams.set("response_type", "code");
-authUrl.searchParams.set("client_id", CLIENT_ID);
-authUrl.searchParams.set("redirect_uri", REDIRECT_URI);
-authUrl.searchParams.set("code_challenge", codeChallenge);
-authUrl.searchParams.set("code_challenge_method", "S256");
-authUrl.searchParams.set("scope", "mcp:tools");
-authUrl.searchParams.set("state", state);
-authUrl.searchParams.set("resource", "https://xquik.com/mcp");
-
-console.log("Open this URL in your browser:");
-console.log(authUrl.toString());
-
-// Step 3: Start a local server to receive the callback
-const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, "http://localhost:8080");
-
-  if (url.pathname !== "/callback") {
-    res.writeHead(404);
-    res.end();
-    return;
-  }
-
-  const code = url.searchParams.get("code");
-  const authorizationError = url.searchParams.get("error");
-  const returnedIssuer = url.searchParams.get("iss");
-  const returnedState = url.searchParams.get("state");
-
-  // Verify state to prevent CSRF
-  if (returnedState !== state) {
-    res.writeHead(400);
-    res.end("State mismatch");
-    return;
-  }
-
-  // Verify the authorization server that issued the response
-  if (returnedIssuer !== "https://xquik.com") {
-    res.writeHead(400);
-    res.end("Issuer mismatch");
-    return;
-  }
-
-  if (authorizationError !== null || code === null) {
-    res.writeHead(400);
-    res.end("Authorization failed");
-    return;
-  }
-
-  // Step 4: Exchange the authorization code for tokens
-  const tokenResponse = await fetch("https://xquik.com/api/oauth/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "authorization_code",
-      code,
-      code_verifier: codeVerifier,
-      client_id: CLIENT_ID,
-      redirect_uri: REDIRECT_URI,
-      resource: "https://xquik.com/mcp",
-    }),
-  });
-
-  if (!tokenResponse.ok) {
-    res.writeHead(502);
-    res.end("Token exchange failed");
-    return;
-  }
-
-  const tokens = await tokenResponse.json();
-  // Store tokens in a secret store. Never print them or include them in logs.
-  void tokens;
-
-  res.writeHead(200, { "Content-Type": "text/plain" });
-  res.end("Authorization complete. You can close this tab.");
-  server.close();
-});
-
-server.listen(8080);
-```
 
 ## Where to go next
 
