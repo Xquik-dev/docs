@@ -24,7 +24,7 @@ describe('automatic maximum coverage contract', (): void => {
   });
 
   it('preserves pagination, billing, and legacy behavior', (): void => {
-    expect.assertions(24);
+    expect.assertions(21);
 
     const source = readFileSync(
       'snippets/automatic-coverage-pagination.mdx',
@@ -59,9 +59,6 @@ describe('automatic maximum coverage contract', (): void => {
     expect(source).toContain('Restart without them.');
     expect(replies).toContain('Automatic pages accept `1` through `300`.');
     expect(followers).toContain('Automatic pages accept `20` through `300`.');
-    expect(search).toContain('return available automatic rows');
-    expect(search).toContain('Xquik uses standard pagination');
-    expect(search).toContain('never switch sources mid-sequence');
     expect(search).toContain('every returned page');
     expect(search).toContain('The start is inclusive. The end is exclusive.');
     expect(search).toContain('continues past rejected rows');

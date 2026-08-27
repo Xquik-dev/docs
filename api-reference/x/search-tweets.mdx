@@ -145,12 +145,6 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
 
 <AutomaticCoveragePagination />
 
-<Info>
-  Fresh searches return available automatic rows when some views fail. If
-  automatic coverage cannot start, Xquik uses standard pagination. Coverage
-  cursors never switch sources mid-sequence.
-</Info>
-
 <CodeGroup>
   ```bash cURL
   curl -G https://xquik.com/api/v1/x/tweets/search \
@@ -231,16 +225,10 @@ import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-para
 
 ## Direct API handoff
 
-Use `GET /x/tweets/search` when an app, queue worker, CRM enrichment job, or
-agent needs the latest matching tweets without creating a stored extraction job.
-It returns paginated JSON for live search pages and app ingestion. The examples
-above write JSON Lines rows with tweet fields, author ID, username, display
-name, follower count, verified state, profile image URL, media, and cursor
-fields so a worker can resume from the last saved `next_cursor`.
-
-Use [`tweet_search_extractor`](/guides/tweet-scraper-csv-export) instead when a team
-needs an estimate, extraction ID, saved result pages, or CSV, JSON, and XLSX
-downloads after completion.
+Use `GET /x/tweets/search` for live, paginated JSON. Store stable IDs, requested
+fields, and `next_cursor` so workers can resume. Use
+[`tweet_search_extractor`](/guides/tweet-scraper-csv-export) for estimates,
+saved result pages, or downloadable CSV, JSON, and XLSX files.
 
 <CardGroup cols={2}>
   <Card title="Live search page" icon="search">
@@ -277,10 +265,6 @@ integration requires the legacy single-page timeline behavior.
 For exact lookups, a plain Tweet ID or X status URL in `q` returns that tweet
 when available. Send no cursor on the first lookup; cursor requests return an
 empty final page for exact IDs.
-
-For CSV or XLSX output, project the returned `tweets[]` rows locally or use
-[`tweet_search_extractor`](/guides/tweet-scraper-csv-export) for saved CSV, JSON, or
-XLSX files.
 
 ## Advanced Twitter search patterns
 
@@ -329,13 +313,13 @@ Tweet search costs 1 credit per tweet returned. Low credit balances can return f
 ## Query parameters
 
 <ParamField query="q" type="string" required>
-  Send the caller's query without adding terms or filters. Supports X search
-  operators, Tweet IDs, and X status URLs.
+  Send the caller's query, Tweet ID, or status URL. `query` is accepted as a
+  migration alias. Do not add terms or filters.
 </ParamField>
 
 <ParamField query="queryType" type="string">
-  `Top` ranks engagement. A like minimum alone uses `Latest`, the default.
-  Use `result_type` as a Twitter-compatible alias.
+  `Latest` ranks by time. `Top` ranks engagement. `result_type` and `sort_order`
+  are accepted aliases. `recency` maps to `Latest`; `relevancy` maps to `Top`.
 </ParamField>
 
 <ParamField query="mode" type="string">
@@ -358,8 +342,8 @@ Tweet search costs 1 credit per tweet returned. Low credit balances can return f
 </ParamField>
 
 <ParamField query="limit" type="integer">
-  Maximum Tweets per automatic page. Use `count` as an alias. Use `1` through
-  `10000`. Keep the same value when continuing with `cursor`.
+  Maximum Tweets per automatic page, from `1` through `10000`. `count` and
+  `max_results` are accepted aliases. Keep the value on cursor requests.
 </ParamField>
 
 ### Structured filters
