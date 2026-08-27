@@ -222,7 +222,7 @@ Refunds and disputes reconcile affected-purchase credits only. Unrelated credits
 - API MCP server: https://docs.xquik.com/mcp/overview
 - MCP tools reference: https://docs.xquik.com/mcp/tools
 - Agent Skills index: https://xquik.com/.well-known/agent-skills/index.json
-- Agent index: https://xquik.com/.well-known/agent-index.json
+- Agent catalog: https://xquik.com/.well-known/agents.json
 - OAuth instructions: https://xquik.com/auth.md
 - Codex OAuth troubleshooting: https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error
 - Guest wallets: https://docs.xquik.com/guides/guest-wallets

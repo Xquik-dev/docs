@@ -113,7 +113,7 @@ const REQUIRED_README_SNIPPETS = [
   '[llms.txt](https://docs.xquik.com/llms.txt)',
   '## Use with AI coding agents',
   '[Context7 library](https://context7.com/xquik-dev/xquik-docs)',
-  '[Agent index](https://xquik.com/.well-known/agent-index.json)',
+  '[Agent catalog](https://xquik.com/.well-known/agents.json)',
   '[auth.md](https://xquik.com/auth.md)',
   '[OpenAPI spec](https://docs.xquik.com/openapi.yaml)',
 ] as const;
@@ -1602,6 +1602,7 @@ const FORBIDDEN_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
 const REQUIRED_LLMS_SNIPPETS = [
   '## Agent entry points',
   'https://context7.com/xquik-dev/xquik-docs',
+  'https://xquik.com/.well-known/agents.json',
   '[Xquik Skill](https://docs.xquik.com/skill.md)',
   'Docs `https://docs.xquik.com/mcp` (docs, no auth)',
   'https://xquik.com/mcp',
@@ -1805,7 +1806,6 @@ const FORBIDDEN_SKILL_CONFIDENTIALITY_PATTERN =
 const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   "Supported browsers expose the website's tool search as a declarative WebMCP form.",
   'It performs a read-only GET and never starts an extraction.',
-  'Machine-readable metadata: `https://xquik.com/.well-known/webmcp.json`.',
   'This page covers the API MCP server at `https://xquik.com/mcp` for',
   'authenticated account actions and guest paid reads. For public documentation',
   '[Docs MCP server](/mcp/docs-mcp) at `https://docs.xquik.com/mcp`.',
@@ -1820,8 +1820,8 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   'only when the client documents secure request headers',
   'This is an Xquik-specific fallback, not an OAuth token.',
   'Agent discovery metadata is also available at',
-  '`https://xquik.com/.well-known/agent-index.json`',
-  '`com.xquik/mcp`',
+  '`https://xquik.com/.well-known/agents.json`',
+  'the public A2A docs agent',
   '`https://xquik.com/auth.md`',
   'the supported anonymous OAuth client registration path',
   'Unauthenticated requests to `https://xquik.com/mcp` return `401` with a',
@@ -17907,8 +17907,8 @@ describe('repository discovery', (): void => {
     expect(collectComparisonPositioningFindings()).toStrictEqual([]);
   });
 
-  it('documents the public NLWeb route and streaming contract', (): void => {
-    expect.assertions(4);
+  it('documents the public documentation protocols', (): void => {
+    expect.assertions(6);
     const page = readFileSync('mcp/docs-mcp.mdx', 'utf8');
     const contract = readFileSync('openapi.yaml', 'utf8');
 
@@ -17916,6 +17916,8 @@ describe('repository discovery', (): void => {
     expect(page).toContain(
       'Streams emit `start`, `result`, and `complete` events.',
     );
+    expect(page).toContain('https://xquik.com/.well-known/agent-card.json');
+    expect(page).toContain('JSON-RPC endpoint at `https://xquik.com/a2a`');
     expect(contract).toContain(
       'operationId: searchXquikDocumentation\n',
     );
