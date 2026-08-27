@@ -1803,7 +1803,9 @@ const FORBIDDEN_SKILL_CONFIDENTIALITY_PATTERN =
   /radar topics from (?!Xquik's own infrastructure\.)[^\n.]+(?:,| and )[^\n.]+/u;
 
 const REQUIRED_MCP_CONTRACT_SNIPPETS = [
-  'Xquik compatibility discovery metadata is available at:',
+  "Supported browsers expose the website's tool search as a declarative WebMCP form.",
+  'It performs a read-only GET and never starts an extraction.',
+  'Machine-readable metadata: `https://xquik.com/.well-known/webmcp.json`.',
   'This page covers the API MCP server at `https://xquik.com/mcp` for',
   'authenticated account actions and guest paid reads. For public documentation',
   '[Docs MCP server](/mcp/docs-mcp) at `https://docs.xquik.com/mcp`.',
