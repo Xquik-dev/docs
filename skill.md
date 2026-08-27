@@ -13,7 +13,7 @@ metadata:
 
 ## Product summary
 
-Xquik is an X data platform with 129 documented REST operations, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover 33 prepaid GET reads. Seven fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Primary docs: https://docs.xquik.com
+Xquik documents 131 REST operations. It also supports webhooks, Docs MCP & API MCP. Full account credentials cover account workflows. Guest keys cover 33 prepaid GET reads. Seven fixed-price operations accept direct MPP. REST starts at `https://xquik.com/api/v1`. Read https://docs.xquik.com.
 
 ## When to use
 

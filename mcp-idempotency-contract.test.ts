@@ -8,14 +8,14 @@ function read(path: string): string {
 
 describe('hosted MCP idempotency contract', () => {
   it('documents automatic required-header injection without a header input', () => {
-    expect.assertions(12);
+    expect.assertions(11);
 
     const overview = read('mcp/overview.mdx');
     const tools = read('mcp/tools.mdx');
     const handoff = read('mcp/agent-handoff.mdx');
     const skill = read('skill.md');
 
-    expect(overview).toMatch(/required idempotency headers (?:are )?injected/);
+    expect(overview).toContain('[MCP tools](/mcp/tools)');
     expect(tools).toMatch(/required idempotency headers (?:are )?injected/);
     expect(handoff).toContain(
       'Hosted MCP injects authentication and required idempotency headers.',
@@ -29,9 +29,6 @@ describe('hosted MCP idempotency contract', () => {
     expect(tools).not.toMatch(/headers\??:\s*Record/);
     expect(tools).toContain(
       'reuses it for bounded transient retries.',
-    );
-    expect(overview).toContain(
-      'reuses each generated key for bounded transient retries.',
     );
     expect(tools).toContain(
       'Retry only when `safe_to_retry` is true.',

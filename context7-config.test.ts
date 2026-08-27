@@ -52,10 +52,10 @@ const REQUIRED_EXCLUDED_FOLDERS = [
 const REQUIRED_RULE_SNIPPETS = [
   'x-api-quickstart.mdx',
   'api-reference/overview.mdx',
-  '129 documented REST operations',
+  '131 documented REST operations',
   '33 prepaid paid-read GET routes',
   '7 fixed-price direct MPP operations',
-  '118, 120, 127, or 128 REST operations',
+  '118, 120, 127, 128, or 129 REST operations',
   '119 or 120 full-scope MCP operations',
   '31 or 32 MPP read endpoints',
   '118 full-scope JSON or text MCP routes',
