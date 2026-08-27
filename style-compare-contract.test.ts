@@ -39,9 +39,10 @@ describe('compare tweet writing profiles documentation', (): void => {
         'Xquik performs 2 account-scoped cache lookups.',
       ),
       customLabelsSupported: source.includes(
-        'They also accept saved custom labels.',
+        'Both query values accept custom labels.',
       ),
-      numericIdsDenied: source.includes('Do not send numeric database IDs.'),
+      numericIdsDenied:
+        /Do not\s+send numeric database IDs\./u.test(source),
       responseOrderDocumented:
         /`style1` matches `username1`\. `style2`\s+matches `username2`\./u.test(
           source,

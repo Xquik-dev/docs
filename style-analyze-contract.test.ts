@@ -126,8 +126,8 @@ describe('analyze tweet writing style documentation', (): void => {
         route === undefined ||
         (route.includes("error: 'no_cached_style'") &&
           route.includes('{ status: 402 }')),
-      usernameRemainsLowercase:
-        parser === undefined || parser.includes("body['username'].toLowerCase()"),
+      usernameRemainsNormalized:
+        parser === undefined || parser.includes("normalizeStyleKey(body['username'])"),
       usageMatchesReturnedTweets:
         route === undefined ||
         route.includes(
@@ -138,7 +138,7 @@ describe('analyze tweet writing style documentation', (): void => {
       refreshRemains201: true,
       refreshUsesUsernameSearch: true,
       unfundedMissingReturns402: true,
-      usernameRemainsLowercase: true,
+      usernameRemainsNormalized: true,
       usageMatchesReturnedTweets: true,
     });
   });
