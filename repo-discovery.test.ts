@@ -12325,7 +12325,7 @@ const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
   'full list of 32 endpoints',
 ] as const;
 
-const MAX_LLMS_TXT_CHARS = 48_400;
+const MAX_LLMS_TXT_CHARS = 28_000;
 // Keep the overview from absorbing another deep tutorial body; link to focused
 // workflow and API pages for expanded examples instead.
 const MAX_WORKFLOWS_OVERVIEW_CHARS = 20_000;
