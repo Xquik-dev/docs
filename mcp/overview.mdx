@@ -53,16 +53,11 @@ Xquik compatibility discovery metadata is available at:
 https://xquik.com/.well-known/mcp.json
 ```
 
-`GET` and `POST` on `/.well-known/mcp.json` return a compatibility document
-from the MCP Registry `server.json` manifest. `/server.json` and
-`/.well-known/mcp/server-card.json` return the same document.
-Its standard `remotes` entry identifies the `streamable-http` endpoint. Extra
-top-level convenience fields preserve compatibility with older clients, but
-they are not MCP Registry or experimental MCP Server Card fields. OAuth-aware
-clients read `GET /.well-known/oauth-protected-resource/mcp` for
-protected-resource metadata for `https://xquik.com/mcp`. Compatibility clients
-can also read `GET /.well-known/oauth-protected-resource/.well-known/mcp.json`,
-which redirects to the canonical metadata URL.
+`GET` and `POST` on `/.well-known/mcp.json` return a compatibility document. It comes from the MCP Registry `server.json` manifest.
+`/server.json` and `/.well-known/mcp/server-card.json` return the same document. Its standard `remotes` entry identifies the `streamable-http` endpoint.
+Extra top-level convenience fields support older clients. For clarity, they are not MCP Registry or experimental MCP Server Card fields.
+OAuth clients read `GET /.well-known/oauth-protected-resource/mcp` for protected-resource metadata.
+Compatibility clients can also read `GET /.well-known/oauth-protected-resource/.well-known/mcp.json`; it redirects to the canonical metadata URL.
 
 Registry-compatible clients receive a `streamable-http` remote for
 `https://xquik.com/mcp`. OAuth-capable clients discover authentication from the
@@ -175,9 +170,6 @@ come from the same OpenAPI contract as REST and the generated SDKs. The server
 injects authentication and required idempotency headers. It rejects unknown
 routes, custom headers, redirects, traversal, and unsupported binary responses.
 
-Native mode omits `search` and `execute`, sends no global model instructions, and
-uses more model context. Choose Code Mode when supported.
-
 `docs` searches canonical Xquik documentation. Pass a non-empty `query` string.
 
 ### `search` tool
@@ -222,7 +214,9 @@ declare const xquik: {
 };
 ```
 
-The agent writes code like `async xquik => xquik.request('/api/v1/radar')`. Authentication is injected, and required idempotency headers are injected automatically. The server reuses each generated key for bounded transient retries. After an unresolved write failure, verify state. Start a new attempt only when `safe_to_retry` is true.
+Authentication and required idempotency headers are injected automatically. The server reuses each generated key for bounded transient retries. After an unresolved write failure, verify state. Start a new attempt only when `safe_to_retry` is true.
+
+An `execute` call can run for up to 180 seconds. Disconnecting cancels the call. A timeout does not cancel a durable extraction job. Find it through `GET /extractions`, then resume with its stored ID. Repeat writes only when the response marks the retry safe.
 
 `xquik.request()` automatically uses the normalized v1 contract. Responses use snake_case fields, date-time fields as Unix seconds, structured error objects, `has_more`, and `next_cursor`. A default REST `createdAt` field becomes `created`, not `created_at`, in MCP results.
 
