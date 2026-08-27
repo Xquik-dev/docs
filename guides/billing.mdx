@@ -288,36 +288,34 @@ curl -s https://xquik.com/api/v1/account \
  -H "x-api-key: xq_your_api_key_here" | jq
 ```
 
-**Response.**
+**Relevant response fields.**
 
 ```json
 {
   "plan": "active",
-  "monitorsAllowed": 9007199254740991,
-  "monitorsUsed": 1,
+  "subscription": {
+    "status": "active",
+    "tier": "pro",
+    "currentPeriodEnd": "2026-09-01T00:00:00.000Z"
+  },
   "monitorBilling": {
     "activeDailyEstimate": "500",
-    "activeHourlyBurn": "21",
-    "creditsPerActiveMonitorDay": "500",
-    "creditsPerActiveMonitorHour": "21",
-    "eventsIncluded": true,
-    "instantCheckIntervalSeconds": 1,
-    "unlimitedSlots": true
+    "activeHourlyBurn": "21"
   },
   "creditInfo": {
     "balance": "77000",
-    "lifetimePurchased": "140000",
-    "lifetimeUsed": "63000",
-    "autoTopupEnabled": false,
-    "autoTopupAmountDollars": 10,
-    "autoTopupThreshold": "50000"
+    "autoTopupEnabled": false
   }
 }
 ```
 
-The `creditInfo.balance` field shows how many credits remain. The automatic top-up fields show whether top-up is enabled, the charge amount, and the balance threshold. At 0, metered calls are rejected until you [top up credits](/api-reference/credits/topup).
+For `active`, `subscription.currentPeriodEnd` reports the renewal date. For
+`canceling`, it reports the plan end date. `creditInfo.balance` shows remaining
+credits. At 0, metered calls stop until you [top up credits](/api-reference/credits/topup).
 
-> **Tip.** Poll the account endpoint periodically to track usage. Build alerts when `creditInfo.balance` drops below 20% of your plan's monthly credit grant to avoid hitting the limit unexpectedly.
+> **Tip.** Alert before `creditInfo.balance` reaches your next expected charge.
+
+See [`GET /account`](/api-reference/account/get) for every response field.
 
 ## Cancel renewal & request a refund
 
