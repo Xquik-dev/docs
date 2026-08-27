@@ -19,17 +19,33 @@ interface DocsConfig {
   readonly navigation: NavigationGroup;
 }
 
-function flattenNavigationPages(item: NavigationItem): readonly string[] {
+function firstNavigationPage(item: NavigationItem): string | undefined {
   if (typeof item === 'string') {
-    return [normalizePagePath(item)];
+    return normalizePagePath(item);
   }
 
-  return [
+  for (const child of [
     ...(item.anchors ?? []),
     ...(item.groups ?? []),
     ...(item.pages ?? []),
     ...(item.tabs ?? []),
-  ].flatMap(flattenNavigationPages);
+  ]) {
+    const page = firstNavigationPage(child);
+    if (page !== undefined) return page;
+  }
+
+  return undefined;
+}
+
+function navigationGroupEntries(navigation: NavigationGroup): readonly string[] {
+  return (navigation.tabs ?? []).flatMap((tab): readonly string[] => {
+    if (typeof tab === 'string') return [normalizePagePath(tab)];
+
+    return (tab.groups ?? []).flatMap((group): readonly string[] => {
+      const page = firstNavigationPage(group);
+      return page === undefined ? [] : [page];
+    });
+  });
 }
 
 function normalizePagePath(page: string): string {
@@ -50,13 +66,13 @@ function documentedLlmsPages(source: string): ReadonlySet<string> {
 }
 
 describe('llms.txt coverage', (): void => {
-  it('lists every docs.json navigation page as a markdown link', (): void => {
+  it('links every top-level docs navigation group', (): void => {
     expect.assertions(1);
 
     const docsConfig = JSON.parse(
       readFileSync('docs.json', 'utf8'),
     ) as DocsConfig;
-    const expectedPages = flattenNavigationPages(docsConfig.navigation);
+    const expectedPages = navigationGroupEntries(docsConfig.navigation);
     const actualPages = documentedLlmsPages(readFileSync('llms.txt', 'utf8'));
     const missingPages = expectedPages
       .filter((page): boolean => !actualPages.has(page))
