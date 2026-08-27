@@ -59,27 +59,27 @@ describe('save custom tweet style documentation', (): void => {
     });
   });
 
-  it('explains body-label storage and full-array replacement', (): void => {
+  it('explains path identity and full-array replacement', (): void => {
     expect.assertions(1);
 
     expect({
-      bodyControlsKey: source.includes(
-        'The body `label` controls the stored profile key.',
+      pathControlsKey: source.includes(
+        'The `{id}` path value controls the stored profile key.',
       ),
-      mismatchRejected: source.includes(
-        'The PUT route rejects a `{id}` that differs from `label`, ignoring case.',
+      labelIsOptional: source.includes(
+        'The body `label` is optional. Older clients may still send it.',
       ),
       replacementIsComplete: source.includes(
-        'Sending the same label replaces the entire saved Tweet array.',
+        'Sending the same path ID replaces the entire saved Tweet array.',
       ),
-      renameDenied: source.includes(
-        'Changing only the path `{id}` does not rename a profile.',
+      renameDocumented: source.includes(
+        'To rename a profile, create the new path ID.',
       ),
     }).toStrictEqual({
-      bodyControlsKey: true,
-      mismatchRejected: true,
+      pathControlsKey: true,
+      labelIsOptional: true,
       replacementIsComplete: true,
-      renameDenied: true,
+      renameDocumented: true,
     });
   });
 
@@ -91,18 +91,20 @@ describe('save custom tweet style documentation', (): void => {
       blankTweetRejected: normalizedSource.includes(
         '| Missing, non-string, or blank `text` | Send non-empty text for every object. |',
       ),
-      labelLimit: source.includes('Profile label containing 1-50 characters.'),
+      labelLimit: source.includes(
+        'Saved profile name containing 1-50 characters.',
+      ),
       sampleLimit: source.includes(
         'Complete array of 1-100 approved Tweet examples.',
       ),
-      underscoreBehavior: source.includes(
-        'The validator also accepts underscores.',
+      underscoreDocumented: source.includes(
+        'apostrophes, and underscores.',
       ),
     }).toStrictEqual({
       blankTweetRejected: true,
       labelLimit: true,
       sampleLimit: true,
-      underscoreBehavior: true,
+      underscoreDocumented: true,
     });
   });
 
@@ -144,9 +146,10 @@ describe('save custom tweet style documentation', (): void => {
         : route.slice(route.indexOf('export async function PUT'));
 
     expect({
-      bodyLabelRemainsKey:
+      pathIdRemainsKey:
         putRoute === undefined ||
-        putRoute.includes('const label = body.label.trim().toLowerCase()'),
+        (putRoute.includes('const labelInput = body.label ?? id;') &&
+          putRoute.includes('const label = labelInput.trim().toLowerCase()')),
       composeReturnsSavedSamples:
         compose === undefined ||
         compose.includes(
@@ -155,7 +158,7 @@ describe('save custom tweet style documentation', (): void => {
       pathMustMatchLabel:
         putRoute === undefined ||
         (putRoute.includes('const { id } = await params;') &&
-          putRoute.includes('styleIdMatchesLabel(id, label)')),
+          putRoute.includes('styleIdMatchesLabel(id, body.label)')),
       replacementRemainsAccountScoped:
         putRoute === undefined ||
         (putRoute.includes(
@@ -170,7 +173,7 @@ describe('save custom tweet style documentation', (): void => {
         validator === undefined ||
         validator.includes('const LABEL_PATTERN = /^\\w'),
     }).toStrictEqual({
-      bodyLabelRemainsKey: true,
+      pathIdRemainsKey: true,
       composeReturnsSavedSamples: true,
       pathMustMatchLabel: true,
       replacementRemainsAccountScoped: true,

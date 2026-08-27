@@ -83,7 +83,7 @@ come from approved drafts, published Tweets, or internal writing guidelines.
 
 | Tweet style profile column | Request or response source | Reuse rule |
 | --- | --- | --- |
-| Profile key | Body `label` | Reuse the returned lowercase key. |
+| Profile key | Path `{id}` | Reuse the returned lowercase key. |
 | Source tweets | Request `tweets[].text` | Review every supplied post before saving. |
 | Sample ID | Response `tweets[].id` | Treat it as a local array position. |
 | Sample author | Response `tweets[].authorUsername` | Expect the normalized label. |
@@ -116,36 +116,34 @@ temporary promotions, outdated claims, and accidental wording.
 The endpoint stores text exactly after trimming outer whitespace. It does not
 decide whether an example fits your Twitter writing style.
 
-## Keep the path and label aligned
+## Name the profile in the path
 
-The body `label` controls the stored profile key. Xquik trims it and converts
-it to lowercase before saving.
+The `{id}` path value controls the stored profile key. Xquik trims it and
+converts it to lowercase before saving.
 
-The PUT route rejects a `{id}` that differs from `label`, ignoring case.
-Send the same value in both places.
+The body `label` is optional. Older clients may still send it. When present,
+it must match `{id}`, ignoring case.
 
 ```text
 PUT /api/v1/styles/product-updates
-body.label = "product-updates"
 response.xUsername = "product-updates"
 ```
 
-Spaces are valid inside `label`. Encode them when using the same path value.
+Spaces are valid inside `{id}`. Encode them in the URL.
 A simple hyphenated label avoids confusing URLs.
 
 ## Replace an existing tweet style
 
-Profiles belong to the authenticated Xquik account. The normalized body label
+Profiles belong to the authenticated Xquik account. The normalized path ID
 forms the account-scoped storage key.
 
-Sending the same label replaces the entire saved Tweet array. It also resets
+Sending the same path ID replaces the entire saved Tweet array. It also resets
 every local sample ID and save timestamp.
 
 Send the complete approved set during every replacement. Omitting an old
 example removes it from the saved profile.
 
-Changing only the path `{id}` does not rename a profile. Change `label` to
-create or replace another normalized key. Delete the old key separately.
+To rename a profile, create the new path ID. Then delete the old profile.
 
 ## Reuse saved tweet examples
 
@@ -171,7 +169,6 @@ live likes, replies, reposts, quotes, bookmarks, or view counts.
     -H "x-api-key: xq_YOUR_KEY_HERE" \
     -H "Content-Type: application/json" \
     -d '{
-      "label": "product-updates",
       "tweets": [
         {"text": "Shipped faster follower exports today. CSV files now preserve profile IDs."},
         {"text": "New: filter Tweet replies before sending results to your webhook."},
@@ -190,7 +187,6 @@ live likes, replies, reposts, quotes, bookmarks, or view counts.
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        label: "product-updates",
         tweets: [
           {
             text: "Shipped faster follower exports today. CSV files now preserve profile IDs.",
@@ -221,7 +217,6 @@ live likes, replies, reposts, quotes, bookmarks, or view counts.
       "https://xquik.com/api/v1/styles/product-updates",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
       json={
-          "label": "product-updates",
           "tweets": [
               {
                   "text": (
@@ -262,7 +257,6 @@ live likes, replies, reposts, quotes, bookmarks, or view counts.
 
   func main() {
       body, err := json.Marshal(map[string]interface{}{
-          "label": "product-updates",
           "tweets": []map[string]string{
               {"text": "Shipped faster follower exports today. CSV files now preserve profile IDs."},
               {"text": "New: filter Tweet replies before sending results to your webhook."},
@@ -305,8 +299,8 @@ live likes, replies, reposts, quotes, bookmarks, or view counts.
 ## Path parameters
 
 <ParamField path="id" type="string" required>
-  Route identifier. Keep it equal to the body `label`. The body label controls
-  the stored profile key for PUT requests.
+  Saved profile name containing 1-50 characters. Use letters, numbers, spaces,
+  dots, hyphens, apostrophes, or underscores. Xquik trims and lowercases it.
 </ParamField>
 
 ## Headers
@@ -324,10 +318,8 @@ through the `Authorization` header instead.
 
 ## Body
 
-<ParamField body="label" type="string" required>
-  Profile label containing 1-50 characters. It must start with a letter,
-  number, or underscore. It accepts letters, numbers, spaces, dots, hyphens,
-  apostrophes, and underscores. Xquik trims and lowercases this value.
+<ParamField body="label" type="string">
+  Optional compatibility label. It follows the path rules and must match `{id}`.
 </ParamField>
 
 <ParamField body="tweets" type="object[]" required>
@@ -346,7 +338,7 @@ through the `Authorization` header instead.
 Returns the complete saved profile after insertion or replacement.
 
 <ResponseField name="xUsername" type="string">
-  Normalized lowercase value from the body `label`.
+  Normalized lowercase value from the path `{id}`.
 </ResponseField>
 
 <ResponseField name="tweetCount" type="number">
@@ -413,7 +405,7 @@ Returns the complete saved profile after insertion or replacement.
 | Status | Error | Cause | Fix |
 | --- | --- | --- | --- |
 | `200` | None | Profile saved or replaced | Store `xUsername` for later requests. |
-| `400` | `invalid_input` | Label or Tweet array failed validation | Correct the rejected field. |
+| `400` | `invalid_input` | Path ID, label, or Tweet array failed validation | Correct the rejected field. |
 | `401` | `unauthenticated` | Credential is missing or invalid | Replace the API key or bearer token. |
 | `429` | `rate_limit_exceeded` | Request exceeded the rate limit | Wait for `Retry-After`, then retry once. |
 
@@ -425,8 +417,8 @@ A request returns `400` when any required input fails validation.
 
 | Invalid input | Required correction |
 | --- | --- |
-| Missing or non-string `label` | Send one label string. |
-| Blank `label` | Add at least one visible character. |
+| Blank or invalid path `{id}` | Send a supported profile name. |
+| Non-string body `label` | Remove it or send the path ID. |
 | Label longer than 50 characters | Shorten the label. |
 | Unsupported label character | Use letters, numbers, spaces, dots, hyphens, apostrophes, or underscores. |
 | Missing or non-array `tweets` | Send an array of Tweet objects. |
@@ -440,12 +432,9 @@ general invalid-input response.
 ```json
 {
   "error": "invalid_input",
-  "message": "Label can only contain letters, numbers, spaces, dots, hyphens, and apostrophes."
+  "message": "Label can only contain letters, numbers, spaces, dots, hyphens, apostrophes, and underscores."
 }
 ```
-
-The validator also accepts underscores. Its current message omits that
-character even though the public validator accepts it.
 
 ### 401 Unauthenticated
 
@@ -475,7 +464,7 @@ Wait for the `Retry-After` header. Then retry the complete replacement body.
 
 - Review every Tweet example before sending it.
 - Remove customer names, private replies, and temporary claims.
-- Keep the path `{id}` aligned with the body `label`.
+- Put the saved profile name in the path `{id}`.
 - Send 1-100 objects with non-empty `text` strings.
 - Store the returned lowercase `xUsername` key.
 - Confirm `tweetCount` matches the intended sample count.
@@ -498,13 +487,13 @@ repeatable wording, structure, replies, links, and calls to action.
 
 ### Can I update an existing Twitter writing style?
 
-Yes. Send the same normalized body label with the complete replacement array.
+Yes. Send the same normalized path ID with the complete replacement array.
 The operation replaces every stored example under that account-scoped key.
 
 ### Does the path ID rename a tweet style?
 
-No. The body label controls the stored key. Keep both values aligned, and
-delete the old key after creating a new label.
+No. The path ID controls the stored key. Create the new key, then delete the
+old one.
 
 ### Can saved tweet samples provide engagement analytics?
 
