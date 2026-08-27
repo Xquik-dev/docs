@@ -105,8 +105,8 @@ curl https://xquik.com/.well-known/oauth-protected-resource/mcp
 ```
 
 Localized site resources publish the same RFC 9728 contract under
-`/.well-known/oauth-protected-resource/en`, `/es`, and `/tr`. MCP clients should
-keep using the `/mcp` resource shown above.
+`/.well-known/oauth-protected-resource/en`, `/es`, and `/tr`. Request
+`https://xquik.com` for direct REST calls. Use `/mcp` tokens only with MCP.
 
 The MCP endpoint also returns this metadata URL in its unauthenticated
 `WWW-Authenticate` challenge:
@@ -133,8 +133,7 @@ sufficient. Use that exact URL as the `client_id`:
 }
 ```
 
-The HTTPS `client_id` must include an explicit path. A trailing `/` is enough.
-Exclude user information,
+The HTTPS `client_id` must include an explicit path. Exclude user information,
 queries, fragments, and dot segments. Xquik requires a direct `200` JSON
 response. Redirects fail. Keep the document within 5 KiB. Repeat the exact
 `client_id`. Include `client_name`, `redirect_uris`, and
@@ -268,7 +267,7 @@ can show a concrete `client_id`.
     | `redirect_uri` | Must match a registered URI exactly |
     | `code_challenge` | Base64url-encoded SHA256 digest of the `code_verifier` |
     | `code_challenge_method` | `S256` |
-    | `resource` | `https://xquik.com/mcp` |
+    | `resource` | `https://xquik.com/mcp` for MCP or `https://xquik.com` for REST |
 
     **Optional parameters.**
 
@@ -277,8 +276,8 @@ can show a concrete `client_id`.
     | `scope` | `mcp:tools` | Only `mcp:tools` is supported |
     | `state` | | Opaque value for CSRF protection |
 
-    Xquik defaults `resource` to `https://xquik.com/mcp` for compatibility, but
-    MCP clients must send it in authorization and token requests.
+    These examples use `/mcp`. Direct REST clients use `https://xquik.com`.
+    Send the same value in every authorization, token, and refresh request.
 
     The user sees a login page (Google OAuth or email magic link) followed by a consent screen. After approval, Xquik redirects back to your `redirect_uri`.
   </Step>
@@ -321,7 +320,7 @@ can show a concrete `client_id`.
   </Step>
 
   <Step title="Use the access token">
-    Pass the access token as a Bearer token in the `Authorization` header when connecting to the MCP server.
+    Pass the token as a Bearer credential to its selected resource. This example calls MCP.
 
     ```bash
     curl https://xquik.com/mcp \
@@ -527,7 +526,7 @@ optional `state`, and `iss=https://xquik.com` query parameters.
 | `unsupported_response_type` | `response_type` is not `code` |
 | `invalid_request` | Missing or repeated parameters, or missing S256 PKCE data |
 | `invalid_scope` | Scope is not `mcp:tools` |
-| `invalid_target` | Resource is not `https://xquik.com/mcp` |
+| `invalid_target` | Resource is not a published protected resource |
 | `access_denied` | User denied the authorization request |
 
 ### Token errors
@@ -541,7 +540,7 @@ optional `state`, and `iss=https://xquik.com` query parameters.
 | `access_denied` | The agent claim was denied or revoked |
 | `expired_token` | The claim token or user code expired |
 | `unsupported_grant_type` | Grant type is not advertised by discovery |
-| `invalid_target` | Resource is not `https://xquik.com/mcp` |
+| `invalid_target` | Resource is not a published protected resource |
 
 ### Registration errors
 
