@@ -1602,11 +1602,11 @@ const REQUIRED_LLMS_SNIPPETS = [
   '## Start here',
   'https://context7.com/xquik-dev/xquik-docs',
   'https://xquik.com/.well-known/agents.json',
-  '[Xquik Skill](/skill.md)',
-  '[Docs MCP](/mcp)',
+  '[Xquik Skill](https://docs.xquik.com/skill.md)',
+  'Search docs through `https://docs.xquik.com/mcp`.',
   'https://xquik.com/mcp',
   'npx skills add Xquik-dev/x-twitter-scraper',
-  '[OpenAPI schema](/openapi.yaml)',
+  '[OpenAPI schema](https://docs.xquik.com/openapi.yaml)',
 ] as const;
 
 const REQUIRED_SKILL_RATE_LIMIT_SNIPPETS = [
@@ -1705,7 +1705,7 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
   },
   {
     file: 'llms.txt',
-    required: ['[Rate Limits](/guides/rate-limits)'],
+    required: ['[Rate Limits](https://docs.xquik.com/guides/rate-limits)'],
     forbidden: ['- Read endpoints: 60 requests per 1s (fixed window)'],
   },
 ] as const;
@@ -2148,7 +2148,7 @@ const REQUIRED_AGENT_MCP_HANDOFF_SNIPPETS = [
   '<Card title="Webhook receivers" icon="webhook" href="/guides/twitter-webhook-testing">',
   '<Card title="SDK backends" icon="boxes" href="/sdks">',
   '"mcp/agent-handoff"',
-  '[Agent MCP Handoff](/mcp/agent-handoff)',
+  '[Agent MCP Handoff](https://docs.xquik.com/mcp/agent-handoff)',
 ] as const;
 
 const REQUIRED_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS = [
