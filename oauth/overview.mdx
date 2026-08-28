@@ -15,24 +15,16 @@ Authorization Code with S256 PKCE. Agents can use claimed `service_auth`
 registration. Both paths require the user to sign in and approve access.
 
 <Info>
-  Prefer OAuth for Claude, ChatGPT, Cursor, VS Code, Windsurf, OpenCode, Gemini
-  CLI, GitHub Copilot CLI, Cline, Qwen Code, and other compatible remote MCP
-  clients. Use the [client compatibility matrix](/mcp/overview#client-compatibility)
-  for Codex, Goose, Roo Code, and Pi. Xquik accepts [API keys](/api-reference/authentication)
-  only when the client documents secure header storage.
+  Prefer OAuth for compatible remote MCP clients. Check the [client compatibility
+  matrix](/mcp/overview#client-compatibility) before using an API key fallback.
 </Info>
 
 <Warning>
-  Codex CLI 0.147.0 and newer preserve the RFC 9207 `iss` value. Upgrade if an older release reports `Authorization server response missing required issuer: expected https://xquik.com`. Use the [Codex API key fallback](/guides/troubleshooting#codex-oauth-issuer-validation-error) only when upgrading is unavailable. [Issue #31573](https://github.com/openai/codex/issues/31573) records the older defect and fix.
+  Codex CLI 0.147.0 fixes `Authorization server response missing required issuer: expected https://xquik.com`. If you cannot upgrade, use the [temporary API key workaround](/guides/troubleshooting#codex-oauth-issuer-validation-error). See [issue #31573](https://github.com/openai/codex/issues/31573).
 </Warning>
-
-Interactive OAuth supports 2 client registration paths:
 
 - **Client ID Metadata Documents (CIMD).** Recommended for modern clients. The client's HTTPS metadata URL becomes its `client_id`. No registration request or client secret is required.
 - **Dynamic Client Registration (DCR).** Compatibility fallback for clients that do not publish CIMD. The client registers itself once at `/api/oauth/register`.
-
-Normal users do not create either configuration manually. Enter
-`https://xquik.com/mcp` in the client and follow its authentication prompt.
 
 ## Discovery
 
@@ -77,15 +69,18 @@ curl https://xquik.com/.well-known/oauth-authorization-server
   "client_id_metadata_document_supported": true,
   "agent_auth": {
     "claim_endpoint": "https://xquik.com/agent/identity/claim",
+    "claim_uri": "https://xquik.com/agent/identity/claim",
     "identity_endpoint": "https://xquik.com/agent/identity",
     "identity_types_supported": ["service_auth"],
+    "register_uri": "https://xquik.com/agent/identity",
+    "revocation_uri": "https://xquik.com/api/oauth/revoke",
     "skill": "https://xquik.com/auth.md"
   }
 }
 ```
 
-The `agent_auth` object follows the current Auth.md service identity profile.
-Generic OAuth clients may ignore it.
+The endpoint fields follow the current Auth.md profile. The URI fields are
+working compatibility aliases. Generic OAuth clients may ignore this object.
 
 ### Protected resource metadata
 
