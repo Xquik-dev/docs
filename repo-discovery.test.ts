@@ -46,7 +46,6 @@ const CODEX_OAUTH_GUIDANCE_FILES = [
   'mcp/docs-mcp.mdx',
   'guides/composio-migration.mdx',
   'skill.md',
-  'llms.txt',
   'README.md',
   'context7.json',
 ] as const;
@@ -1600,48 +1599,14 @@ const FORBIDDEN_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_LLMS_SNIPPETS = [
-  '## Agent entry points',
+  '## Start here',
   'https://context7.com/xquik-dev/xquik-docs',
   'https://xquik.com/.well-known/agents.json',
-  '[Xquik Skill](https://docs.xquik.com/skill.md)',
-  'Docs `https://docs.xquik.com/mcp` (docs, no auth)',
+  '[Xquik Skill](/skill.md)',
+  '[Docs MCP](/mcp)',
   'https://xquik.com/mcp',
   'npx skills add Xquik-dev/x-twitter-scraper',
-  'https://docs.xquik.com/openapi.yaml',
-  '"status": "pending_confirmation"',
-  '"writeActionId": "42"',
-  '`GET /x/write-actions/{id}`',
-  'opt in to the normalized v1 response contract',
-  '**Tweet Search Filters** (`tweet_search_extractor` and `GET /x/tweets/search`)',
-  'Use `since:` and `until:` with `from:` for account date windows.',
-  '`minQuotes`',
-  '`anyWords`',
-  '`quotesOfTweetId`',
-  '`listId`',
-  '`placeCountry`',
-  '`pointRadius`',
-  '`boundingBox`',
-  '**Tweet result filters**',
-  '`GET /x/users/{id}/tweets`',
-  '`GET /x/tweets/{id}/quotes`',
-  'signed `webhook.test` payloads without `deliveryId`/`streamEventId`',
-  'Search and read indexed public docs',
-] as const;
-
-const REQUIRED_LLMS_RUNTIME_CONTRACT_SNIPPETS = [
-  '## Monitor event types (21)',
-  'Account monitors and webhooks accept all 21. Keyword monitors accept only the 10 tweet types.',
-  'Retry: up to 10 attempts. Backoff starts at 1s and caps at 60s.',
-  'Default responses always include `error`.',
-  'Retry writes only when `safeToRetry` is `true`; use a new `Idempotency-Key`.',
-] as const;
-
-const FORBIDDEN_LLMS_RUNTIME_CONTRACT_SNIPPETS = [
-  '## Monitor Event Types (4)',
-  '5 attempts max',
-  '`no_addon`',
-  '`monitor_limit_reached`',
-  'retry only on `429` and `5xx`',
+  '[OpenAPI schema](/openapi.yaml)',
 ] as const;
 
 const REQUIRED_SKILL_RATE_LIMIT_SNIPPETS = [
@@ -1740,7 +1705,7 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
   },
   {
     file: 'llms.txt',
-    required: ['- Read endpoints: 300 requests per 1s (fixed window)'],
+    required: ['[Rate Limits](/guides/rate-limits)'],
     forbidden: ['- Read endpoints: 60 requests per 1s (fixed window)'],
   },
 ] as const;
@@ -2152,7 +2117,7 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   'Webhook documentation (overview, signature verification)',
   'MCP server setup and tools reference',
   'OAuth 2.1 documentation',
-  '`llms.txt` (complete API technical reference)',
+  '`llms.txt` (compact documentation index)',
   '"mcp/docs-mcp"',
 ] as const;
 
@@ -2183,7 +2148,7 @@ const REQUIRED_AGENT_MCP_HANDOFF_SNIPPETS = [
   '<Card title="Webhook receivers" icon="webhook" href="/guides/twitter-webhook-testing">',
   '<Card title="SDK backends" icon="boxes" href="/sdks">',
   '"mcp/agent-handoff"',
-  '[Agent MCP Handoff](https://docs.xquik.com/mcp/agent-handoff)',
+  '[Agent MCP Handoff](/mcp/agent-handoff)',
 ] as const;
 
 const REQUIRED_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS = [
@@ -12317,7 +12282,7 @@ const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
   'full list of 32 endpoints',
 ] as const;
 
-const MAX_LLMS_TXT_CHARS = 48_400;
+const MAX_LLMS_TXT_CHARS = 30_000;
 // Keep the overview from absorbing another deep tutorial body; link to focused
 // workflow and API pages for expanded examples instead.
 const MAX_WORKFLOWS_OVERVIEW_CHARS = 20_000;
@@ -13525,27 +13490,6 @@ describe('repository discovery', (): void => {
     const llms = readFileSync('llms.txt', 'utf8');
 
     expect(llms.length).toBeLessThanOrEqual(MAX_LLMS_TXT_CHARS);
-  });
-
-  it('keeps llms.txt runtime contracts current', (): void => {
-    expect.assertions(1);
-
-    const llms = readFileSync('llms.txt', 'utf8');
-    const findings = collectSnippetFindings(
-      llms,
-      'llms.txt runtime contracts',
-      REQUIRED_LLMS_RUNTIME_CONTRACT_SNIPPETS,
-    );
-
-    for (const snippet of FORBIDDEN_LLMS_RUNTIME_CONTRACT_SNIPPETS) {
-      if (llms.includes(snippet)) {
-        findings.push({
-          issue: `llms.txt contains stale runtime wording "${snippet}".`,
-        });
-      }
-    }
-
-    expect(findings).toStrictEqual([]);
   });
 
   it('keeps MCP response-contract docs aligned with product behavior', (): void => {

@@ -222,7 +222,7 @@ describe('X account connection documentation contract', (): void => {
   });
 
   it('requires the TOTP secret for a durable connection', (): void => {
-    expect.assertions(5);
+    expect.assertions(3);
     const requestSchema =
       openapi.paths['/x/accounts'].post.requestBody.content['application/json']
         .schema;
@@ -239,10 +239,6 @@ describe('X account connection documentation contract', (): void => {
     expect(CONNECT_PAGE).toContain(
       'Missing `username`, `email`, `password`, or `totp_secret`',
     );
-    expect(LLMS_INDEX).toContain(
-      'with credentials and the required Authenticator App TOTP secret.',
-    );
-    expect(LLMS_INDEX).not.toContain('optional TOTP');
   });
 
   it('keeps the guide discoverable and copy-ready', (): void => {
@@ -256,7 +252,7 @@ describe('X account connection documentation contract', (): void => {
       '"api-reference/x-accounts/connection-attempt"',
     );
     expect(LLMS_INDEX).toContain(
-      'https://docs.xquik.com/api-reference/x-accounts/connection-attempt',
+      '/api-reference/x-accounts/connection-attempt',
     );
     expect(CONNECT_PAGE).not.toMatch(
       /elon@example\.com|s3cureP@ss|JBSWY3DPEHPK3PXP"\s*[,}]/u,
