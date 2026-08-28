@@ -164,7 +164,6 @@ paths:
               $ref: '#/components/schemas/NlwebAskRequest'
             example:
               query: How does MCP OAuth work?
-              streaming: false
           application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/NlwebAskRequest'
@@ -176,7 +175,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NlwebAnswer'
-              example: { _meta: { response_format: conv_search, response_type: Answer, version: '0.55' }, results: [] }
+              example: { _meta: { response_format: conversational_search, response_type: answer, version: '0.55' }, results: [] }
             text/event-stream:
               schema:
                 type: string
@@ -186,21 +185,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NlwebFailure'
-              example: { _meta: { response_type: Failure, version: '0.55' }, error: { code: INVALID_REQUEST, message: 'Request is invalid. Send a valid NLWeb query.' } }
+              example: { _meta: { response_type: failure, version: '0.55' }, error: { code: INVALID_QUERY, message: 'Request is invalid. Send a valid NLWeb query.' } }
         '413':
           description: Request body exceeds 8 KiB.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NlwebFailure'
-              example: { _meta: { response_type: Failure, version: '0.55' }, error: { code: INVALID_REQUEST, message: 'Request is too large. Send less context.' } }
+              example: { _meta: { response_type: failure, version: '0.55' }, error: { code: TOKEN_LIMIT, message: 'Request is too large. Send less context.' } }
         '502':
           description: Documentation search is unavailable.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NlwebFailure'
-              example: { _meta: { response_type: Failure, version: '0.55' }, error: { code: SEARCH_UNAVAILABLE, message: 'Search is unavailable. Retry later.' } }
+              example: { _meta: { response_type: failure, version: '0.55' }, error: { code: INTERNAL_ERROR, message: 'Search is unavailable. Retry later.' } }
     get:
       operationId: searchXquikDocumentationWithQuery
       x-mcp-exclusion-reason: Public agent discovery remains direct.
@@ -213,8 +212,8 @@ paths:
         - { name: query, in: query, required: true, description: Natural-language docs query., schema: { type: string, minLength: 1, maxLength: 500 } }
         - { name: site, in: query, description: Optional docs host., schema: { type: string, enum: [docs.xquik.com, xquik.com] } }
         - { name: mode, in: query, description: List result mode., schema: { type: string, const: list } }
-        - { name: response_format, in: query, description: NLWeb response shape., schema: { type: string, enum: [chatgpt_app, conv_search, conversational_search] } }
-        - { name: streaming, in: query, description: Return SSE when true., schema: { type: boolean, default: true } }
+        - { name: response_format, in: query, description: NLWeb response shape., schema: { type: string, enum: [chatgpt_app, conversational_search], default: conversational_search } }
+        - { name: streaming, in: query, description: Return SSE when true., schema: { type: boolean, default: false } }
       responses: *nlweb-ask-responses
 
   # ── Account ──────────────────────────────────────────────
@@ -2932,7 +2931,8 @@ paths:
             Unique result upper bound. Omit it for a 20-row page. Explicit
             coverage defaults to 2000 and accepts up to 10000. Paid usage
             follows returned rows. Remaining credits may reduce results. Zero
-            affordable results returns 402. pageSize, count, and max_results are aliases.
+            affordable results returns 402. pageSize, count, and max_results are
+            aliases.
         - $ref: '#/components/parameters/TweetFilterFromUser'
         - $ref: '#/components/parameters/TweetFilterToUser'
         - $ref: '#/components/parameters/TweetFilterMentioning'
@@ -8826,7 +8826,7 @@ components:
     NlwebAskRequest:
       description: Public NLWeb documentation search request.
       type: object
-      example: { query: 'How does MCP OAuth work?', streaming: false }
+      example: { query: 'How does MCP OAuth work?' }
       required: [query]
       additionalProperties: true
       properties:
@@ -8849,11 +8849,12 @@ components:
           example: docs.xquik.com
           type: string
           enum: [docs.xquik.com, xquik.com]
-        streaming: { type: boolean, default: true, example: false }
+        streaming: { type: boolean, default: false, example: false }
         response_format:
-          example: conv_search
+          example: conversational_search
           type: string
-          enum: [chatgpt_app, conv_search, conversational_search]
+          default: conversational_search
+          enum: [chatgpt_app, conversational_search]
         mode: { type: string, const: list, example: list }
         context:
           type: object
@@ -8870,7 +8871,7 @@ components:
               type: boolean
             response_format:
               type: string
-              enum: [chatgpt_app, conv_search, conversational_search]
+              enum: [chatgpt_app, conversational_search]
             mode:
               type: string
               enum: [list]
@@ -8892,10 +8893,10 @@ components:
       properties:
         response_type:
           type: string
-          enum: [Answer, Failure]
+          enum: [answer, failure]
         response_format:
           type: string
-          enum: [chatgpt_app, conv_search, conversational_search]
+          enum: [chatgpt_app, conversational_search]
         version:
           type: string
           const: '0.55'
@@ -8928,12 +8929,12 @@ components:
       required: [_meta]
       properties:
         _meta:
-          example: { response_format: conv_search, response_type: Answer, version: '0.55' }
+          example: { response_format: conversational_search, response_type: answer, version: '0.55' }
           allOf:
             - $ref: '#/components/schemas/NlwebMeta'
             - type: object
               properties:
-                response_type: { const: Answer }
+                response_type: { const: answer }
         results:
           example: []
           type: array
@@ -8966,14 +8967,14 @@ components:
       required: [_meta, error]
       properties:
         _meta:
-          example: { response_type: Failure, version: '0.55' }
+          example: { response_type: failure, version: '0.55' }
           allOf:
             - $ref: '#/components/schemas/NlwebMeta'
             - type: object
               properties:
-                response_type: { const: Failure }
+                response_type: { const: failure }
         error:
-          example: { code: INVALID_REQUEST, message: 'Request is invalid.' }
+          example: { code: INVALID_QUERY, message: 'Request is invalid.' }
           type: object
           required: [code, message]
           properties:
@@ -11987,7 +11988,10 @@ components:
             [
               budget_limited,
               canceled,
+              deadline_reached,
               failed,
+              pagination_safety_limit,
+              partial_failure,
               requested_limit_reached,
               source_exhausted,
             ]
