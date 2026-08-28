@@ -5200,7 +5200,7 @@ const FORBIDDEN_CHECK_FOLLOWER_RAW_OUTPUT_SNIPPETS = [
 
 const REQUIRED_LIST_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   'title: "Twitter list followers API & profile export"',
-  'Use this Twitter List followers API for one X List.',
+  "This API returns one List's follower IDs",
   '## Twitter list followers questions',
   '### What is a Twitter list follower?',
   'A List member is an account selected',
@@ -5277,7 +5277,7 @@ const REQUIRED_LIST_MEMBERS_API_HANDOFF_SNIPPETS = [
   'create one row per List member',
   '`list_id`, `member_id`, `username`,',
   '`has_next_page`, and `next_cursor`',
-  '`pageSize` from 20 through 200',
+  'Automatic pages accept `1-300`',
   '<Card title="Member roster" icon="users">',
   '<Card title="Next page" icon="arrow-right">',
   '<Card title="Page size" icon="rows-3">',

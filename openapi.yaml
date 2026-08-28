@@ -17,66 +17,6 @@ info:
     setup](https://docs.xquik.com/guides/tweetclaw). Review the public
     [deprecation policy](https://xquik.com/deprecation-policy.md) before
     adopting a versioned operation.
-  x-guidance: >-
-    ## Common tasks
-
-
-    **Find a tweet** - GET /x/tweets/{id}. Returns text, author, metrics, media,
-    and creation time. Cost: $0.00015 per lookup.
-
-
-    **Search tweets** - GET /x/tweets/search?q={query}&limit={n}. Supports X
-    operators, structured filters, Tweet IDs, and status URLs. Omit mode for
-    automatic coverage. Cost: $0.00015 per returned tweet.
-
-
-    **Find a user** - GET /x/users/{id}. Accepts an ID or username. Cost:
-    $0.00015 per lookup.
-
-
-    **Check if A follows B** - GET /x/followers/check?source={a}&target={b}.
-    Accepts usernames or profile URLs. Cost: $0.00075.
-
-
-    **Get trends** - GET /trends?woeid={region}&count={n}. WOEID 1 is worldwide.
-    Cost: $0.00045.
-
-
-    **Download media** - POST /x/media/download with `tweetIds`. Fresh Tweets
-    cost 1 credit each. Cached repeats are free.
-
-
-    **Read an article** - GET /x/articles/{tweetId}. Cost: $0.00075.
-
-
-    ## Pagination
-
-
-    Default platform pages return `hasMore` and `nextCursor`. X pages return
-    `has_next_page` and `next_cursor`. The 2026-04-29 contract returns
-    `has_more` and `next_cursor`. Pass cursors through `cursor`; `after` remains
-    compatible. Dynamic pricing counts returned items, not requests.
-
-
-    Omit `mode` for automatic reads. Pass cursors unchanged. `mode=standard`
-    remains legacy. Retry 409 responses after `Retry-After`. Restart 410
-    responses without a cursor.
-
-
-    ## Authentication
-
-
-    Eligible reads accept guest wallets. Fixed-price lookups also accept MPP.
-    Other features require an API key or OAuth 2.1 bearer token. API keys also
-    support `Authorization: Bearer xq_...`.
-
-
-    ## Best-Practice Response Contract
-
-
-    v1 remains the default. Send `xquik-api-contract: 2026-04-29` for
-    snake_case, Unix timestamps, structured errors, unified pagination, resource
-    objects, and prefixed IDs. Dependency failures use 424 instead of 502.
   contact:
     name: Xquik
     url: https://xquik.com
@@ -5238,7 +5178,7 @@ paths:
         Poll after payment. Use usable to decide whether paid reads can run. An
         active wallet can remain usable while a top-up is pending. A new wallet
         becomes usable only after payment is verified. Send the guest key as
-        Authorization: Bearer.
+        Authorization: Bearer xq_...
       tags: [Guest Wallets]
       security: [{ apiKey: [] }]
       responses:
@@ -6660,15 +6600,18 @@ paths:
   /x/lists/{id}/followers:
     get:
       operationId: getListFollowers
-      description: Returns public profiles following one X List.
+      description: &list-profile-coverage-description >
+        Returns profiles with resumable maximum coverage. Standard keeps legacy
+        pagination.
       summary: List followers of an X List
       tags:
         - Lists
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
-      parameters:
+      parameters: &list-profile-coverage-parameters
         - $ref: '#/components/parameters/ListPathId'
-        - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/FollowerPageSize'
+        - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - $ref: '#/components/parameters/AutomaticCoverageMode'
+        - $ref: '#/components/parameters/AutomaticFollowerPageSize'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
         - $ref: '#/components/parameters/UserFilterMaxFollowers'
         - $ref: '#/components/parameters/UserFilterMinFollowing'
@@ -6685,11 +6628,11 @@ paths:
         - $ref: '#/components/parameters/UserFilterUsernameContains'
       responses:
         '200':
-          description: List of followers
+          description: List profiles
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedUsers'
+                $ref: '#/components/schemas/UserListResult'
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
@@ -6697,40 +6640,29 @@ paths:
         '424': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
         '502': *x-api-error-response
+        '409':
+          $ref: '#/components/responses/CoverageCursorUnavailable'
+        '410':
+          $ref: '#/components/responses/CursorGone'
+        '503':
+          $ref: '#/components/responses/MaximumCoverageBusy'
 
   /x/lists/{id}/members:
     get:
       operationId: getListMembers
-      description: Returns public profiles belonging to one X List.
+      description: *list-profile-coverage-description
       summary: List members of an X List
       tags:
         - Lists
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
-      parameters:
-        - $ref: '#/components/parameters/ListPathId'
-        - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/LegacyUserPageSize'
-        - $ref: '#/components/parameters/UserFilterMinFollowers'
-        - $ref: '#/components/parameters/UserFilterMaxFollowers'
-        - $ref: '#/components/parameters/UserFilterMinFollowing'
-        - $ref: '#/components/parameters/UserFilterMaxFollowing'
-        - $ref: '#/components/parameters/UserFilterMinStatuses'
-        - $ref: '#/components/parameters/UserFilterMaxStatuses'
-        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
-        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
-        - $ref: '#/components/parameters/UserFilterVerifiedType'
-        - $ref: '#/components/parameters/UserFilterHasWebsite'
-        - $ref: '#/components/parameters/UserFilterHasLocation'
-        - $ref: '#/components/parameters/UserFilterBioContains'
-        - $ref: '#/components/parameters/UserFilterLocationContains'
-        - $ref: '#/components/parameters/UserFilterUsernameContains'
+      parameters: *list-profile-coverage-parameters
       responses:
         '200':
-          description: List of members
+          description: List profiles
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedUsers'
+                $ref: '#/components/schemas/UserListResult'
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
@@ -6738,6 +6670,12 @@ paths:
         '424': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
         '502': *x-api-error-response
+        '409':
+          $ref: '#/components/responses/CoverageCursorUnavailable'
+        '410':
+          $ref: '#/components/responses/CursorGone'
+        '503':
+          $ref: '#/components/responses/MaximumCoverageBusy'
 
   /x/lists/{id}/tweets:
     get:
