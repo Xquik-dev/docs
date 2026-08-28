@@ -12083,7 +12083,7 @@ const REQUIRED_APIFY_ALTERNATIVE_SNIPPETS = [
   'rows as `json`, `jsonl`, `csv`, `html`, `xlsx`, `xml`, or `rss`.',
   '`/v2/store` lists public Actors',
   'Actor run events include created, succeeded, failed, aborted, timed out, and resurrected states.',
-  'The public Xquik profile currently shows 8 Actors.',
+  'Xquik publishes Actors for focused X data jobs.',
   '`xquik/x-tweet-scraper`',
   '`xquik/x-follower-scraper`',
   '`xquik/x-reply-scraper`',
