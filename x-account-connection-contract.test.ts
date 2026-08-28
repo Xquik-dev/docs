@@ -252,7 +252,7 @@ describe('X account connection documentation contract', (): void => {
       '"api-reference/x-accounts/connection-attempt"',
     );
     expect(LLMS_INDEX).toContain(
-      '/api-reference/x-accounts/connection-attempt',
+      'https://docs.xquik.com/api-reference/x-accounts/connection-attempt',
     );
     expect(CONNECT_PAGE).not.toMatch(
       /elon@example\.com|s3cureP@ss|JBSWY3DPEHPK3PXP"\s*[,}]/u,
