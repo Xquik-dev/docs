@@ -289,7 +289,7 @@ describe('read data richness documentation', (): void => {
     );
     expect(DOCS_CONFIG).toContain('"guides/tweet-profile-api-fields"');
     expect(LLMS_INDEX).toContain(
-      'https://docs.xquik.com/guides/tweet-profile-api-fields',
+      '/guides/tweet-profile-api-fields',
     );
   });
 

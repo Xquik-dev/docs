@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const DOCS_ORIGIN = 'https://docs.xquik.com';
 const MARKDOWN_LINK_PATTERN =
-  /\[[^\]]+\]\(https:\/\/docs\.xquik\.com\/([^\s)]*)\)/gu;
+  /\[[^\]]+\]\((?:https:\/\/docs\.xquik\.com)?\/([^\s)]*)\)/gu;
 
 interface NavigationGroup {
   readonly anchors?: readonly NavigationItem[];
@@ -51,17 +51,27 @@ function documentedLlmsPages(source: string): ReadonlySet<string> {
 
 describe('llms.txt coverage', (): void => {
   it('lists every docs.json navigation page as a markdown link', (): void => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const docsConfig = JSON.parse(
       readFileSync('docs.json', 'utf8'),
     ) as DocsConfig;
     const expectedPages = flattenNavigationPages(docsConfig.navigation);
-    const actualPages = documentedLlmsPages(readFileSync('llms.txt', 'utf8'));
+    const llms = readFileSync('llms.txt', 'utf8');
+    const actualPages = documentedLlmsPages(llms);
     const missingPages = expectedPages
       .filter((page): boolean => !actualPages.has(page))
       .map((page): string => `${DOCS_ORIGIN}/${page}`);
+    const sectionContent = llms
+      .slice(llms.indexOf('\n## '))
+      .split('\n')
+      .filter((line): boolean => line !== '' && !line.startsWith('## '));
 
     expect(missingPages).toStrictEqual([]);
+    expect(
+      sectionContent.every((line): boolean =>
+        /^- \[[^\]]+\]\([^)]+\)$/u.test(line),
+      ),
+    ).toBe(true);
   });
 });
