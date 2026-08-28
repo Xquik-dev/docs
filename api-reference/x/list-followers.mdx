@@ -8,6 +8,7 @@ keywords: ["Twitter List followers API", "Twitter List follower export", "X List
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.mdx";
+import AutomaticCoveragePagination from "/snippets/automatic-coverage-pagination.mdx";
 import UserResultFilterParams from "/snippets/user-result-filter-params.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
@@ -59,6 +60,24 @@ import UserResultFilterParams from "/snippets/user-result-filter-params.mdx";
     ```
   </Tab>
 
+  <Tab title="409" id="response-x-list-followers-409">
+    ```json
+    {
+      "error": "coverage_cursor_unavailable",
+      "message": "Cursor busy. Retry after the indicated delay."
+    }
+    ```
+  </Tab>
+
+  <Tab title="410" id="response-x-list-followers-410">
+    ```json
+    {
+      "error": "coverage_cursor_gone",
+      "message": "Cursor finished, expired, or superseded. Restart pagination without cursor."
+    }
+    ```
+  </Tab>
+
   <Tab title="424" id="response-x-list-followers-424">
     ```json
     {
@@ -86,15 +105,25 @@ import UserResultFilterParams from "/snippets/user-result-filter-params.mdx";
     }
     ```
   </Tab>
+
+  <Tab title="503" id="response-x-list-followers-503">
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Maximum coverage is busy. Retry shortly."
+    }
+    ```
+  </Tab>
 </Tabs>
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 <AudienceCommunityApiLinks />
 
-Use this Twitter List followers API for one X List. It returns subscriber
-profiles. Export user IDs, usernames, bios, and profile locations. Keep
-verification, follower counts, following counts, profile images, and cursors.
+This API returns one List's follower IDs, usernames, bios, locations,
+verification, public counts, profile images, and cursors.
+
+<AutomaticCoveragePagination />
 
 ## Twitter list followers questions
 
@@ -206,22 +235,15 @@ profile roster. That endpoint also reads profiles. It does not edit the List.
   ```
 </CodeGroup>
 
-The Node.js and Python snippets build one row per List follower. Save
-`followerRows` or `follower_rows` with `nextCursor`. Then request the next page.
-
 ## Direct list follower handoff
 
-Use `GET /x/lists/{id}/followers` for one JSON page of accounts that follow a
-List. Send the saved rows to a CRM, warehouse, audience tool, or agent. Use
+`GET /x/lists/{id}/followers` examples build one row per List follower. Send
+saved rows to a CRM, warehouse, audience tool, or agent. Use
 [`list_follower_explorer`](/api-reference/extractions/create) for a saved job
 and CSV, JSON, or XLSX export.
 
 Store `list_id`, `follower_id`, `username`, and `display_name`. Keep profile
-counts, verified state, `has_next_page`, and `next_cursor`. Do not edit the
-cursor. Pass it back only when `has_next_page` is true.
-
-Direct calls use the default paid page size. Each returned user costs 1 credit.
-If credits cover zero results, Xquik returns `402 insufficient_credits`.
+counts, verified state, `has_next_page`, and `next_cursor`.
 
 <CardGroup cols={2}>
   <Card title="List follower audience" icon="user-plus">
@@ -290,11 +312,17 @@ grant outreach rights or prove interest in every List topic.
 ## Query parameters
 
 <ParamField query="cursor" type="string">
-  Pagination cursor from a previous response. Omit for the first page.
+  Pass `next_cursor` back unchanged. Xquik cursors resume automatic coverage.
+  Existing unprefixed cursors keep legacy behavior.
+</ParamField>
+
+<ParamField query="mode" type="string">
+  Omit `mode` for automatic maximum coverage. Use `standard` for legacy
+  pagination. Use `coverage` for one diagnostic response without cursors.
 </ParamField>
 
 <ParamField query="pageSize" type="integer">
-  Profiles per page. Range: `20-200`. Defaults to `200`.
+  Automatic pages accept `1-300`. Standard pages accept `1-200`. Default: `200`.
 </ParamField>
 
 ## Which list endpoint?

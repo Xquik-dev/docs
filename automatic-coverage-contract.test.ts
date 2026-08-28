@@ -7,6 +7,8 @@ const AUTOMATIC_COVERAGE_PAGES = [
   'api-reference/x/tweet-replies.mdx',
   'api-reference/x/followers.mdx',
   'api-reference/x/following.mdx',
+  'api-reference/x/list-followers.mdx',
+  'api-reference/x/list-members.mdx',
   'api-reference/x/verified-followers.mdx',
   'api-reference/x/user-tweets.mdx',
   'api-reference/x/user-replies.mdx',
@@ -66,13 +68,15 @@ describe('automatic maximum coverage contract', (): void => {
     expect(search).toContain('`until_time:`');
   });
 
-  it('keeps OpenAPI and MCP guidance aligned', (): void => {
-    expect.assertions(4);
+  it('keeps coverage guidance canonical', (): void => {
+    expect.assertions(6);
 
     const openApi = readFileSync('openapi.yaml', 'utf8');
     const mcp = readFileSync('mcp/tools.mdx', 'utf8');
 
-    expect(openApi).toContain('Omit `mode` for automatic reads.');
+    expect(openApi).not.toContain('x-guidance');
+    expect(openApi).not.toContain('**Find a tweet**');
+    expect(openApi).toContain('Omit mode for resumable maximum coverage.');
     expect(openApi).toContain('Existing unprefixed cursors keep legacy');
     expect(mcp).toContain('Those operations use automatic maximum coverage.');
     expect(mcp).toContain('Use `mode=standard` only for legacy pagination.');
