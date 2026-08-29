@@ -10,6 +10,14 @@ interface DiscoveryFinding {
   readonly issue: string;
 }
 
+interface ApiHandoffContract {
+  readonly forbiddenSnippets: readonly string[];
+  readonly name: string;
+  readonly path: string;
+  readonly rawOutputSubject: string;
+  readonly requiredSnippets: readonly string[];
+}
+
 interface DocsRedirect {
   readonly destination: string;
   readonly source: string;
@@ -12657,6 +12665,30 @@ function collectSnippetFindings(
   return findings;
 }
 
+function collectApiHandoffFindings(
+  contract: ApiHandoffContract,
+): readonly DiscoveryFinding[] {
+  const source = readFileSync(contract.path, 'utf8');
+
+  return [
+    ...collectSnippetFindings(
+      source,
+      `${contract.name} API page`,
+      contract.requiredSnippets,
+    ),
+    ...contract.forbiddenSnippets.flatMap(
+      (snippet): readonly DiscoveryFinding[] =>
+        source.includes(snippet)
+          ? [
+              {
+                issue: `${contract.name} API page prints raw ${contract.rawOutputSubject} data with "${snippet}".`,
+              },
+            ]
+          : [],
+    ),
+  ];
+}
+
 function normalizeEvidence(value: string): string {
   return value
     .replace(/\s+/gu, ' ')
@@ -12884,6 +12916,65 @@ function collectEndpointSentenceCaseFindings(): readonly DiscoveryFinding[] {
 
   return findings;
 }
+
+const API_HANDOFF_CONTRACTS = [
+  {
+    forbiddenSnippets: FORBIDDEN_NOTIFICATIONS_API_RAW_OUTPUT_SNIPPETS,
+    name: 'Notifications',
+    path: 'api-reference/x/notifications.mdx',
+    rawOutputSubject: 'notification',
+    requiredSnippets: REQUIRED_NOTIFICATIONS_API_HANDOFF_SNIPPETS,
+  },
+  {
+    forbiddenSnippets: FORBIDDEN_X_TRENDS_API_RAW_OUTPUT_SNIPPETS,
+    name: 'X trends',
+    path: 'api-reference/x/trends.mdx',
+    rawOutputSubject: 'trend',
+    requiredSnippets: REQUIRED_X_TRENDS_API_HANDOFF_SNIPPETS,
+  },
+  {
+    forbiddenSnippets: FORBIDDEN_TRENDS_API_RAW_OUTPUT_SNIPPETS,
+    name: 'Trends',
+    path: 'api-reference/trends/list.mdx',
+    rawOutputSubject: 'trend',
+    requiredSnippets: REQUIRED_TRENDS_API_HANDOFF_SNIPPETS,
+  },
+  {
+    forbiddenSnippets: FORBIDDEN_GET_ARTICLE_API_RAW_OUTPUT_SNIPPETS,
+    name: 'Get article',
+    path: 'api-reference/x/get-article.mdx',
+    rawOutputSubject: 'article',
+    requiredSnippets: REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS,
+  },
+  {
+    forbiddenSnippets: FORBIDDEN_TWEET_THREAD_API_RAW_OUTPUT_SNIPPETS,
+    name: 'Tweet thread',
+    path: 'api-reference/x/tweet-thread.mdx',
+    rawOutputSubject: 'thread',
+    requiredSnippets: REQUIRED_TWEET_THREAD_API_HANDOFF_SNIPPETS,
+  },
+  {
+    forbiddenSnippets: FORBIDDEN_RETWEETERS_API_RAW_OUTPUT_SNIPPETS,
+    name: 'Retweeters',
+    path: 'api-reference/x/retweeters.mdx',
+    rawOutputSubject: 'retweeter',
+    requiredSnippets: REQUIRED_RETWEETERS_API_HANDOFF_SNIPPETS,
+  },
+  {
+    forbiddenSnippets: FORBIDDEN_FAVORITERS_API_RAW_OUTPUT_SNIPPETS,
+    name: 'Favoriters',
+    path: 'api-reference/x/favoriters.mdx',
+    rawOutputSubject: 'liker',
+    requiredSnippets: REQUIRED_FAVORITERS_API_HANDOFF_SNIPPETS,
+  },
+  {
+    forbiddenSnippets: FORBIDDEN_COMMUNITY_INFO_API_RAW_OUTPUT_SNIPPETS,
+    name: 'Community info',
+    path: 'api-reference/x/community-info.mdx',
+    rawOutputSubject: 'community',
+    requiredSnippets: REQUIRED_COMMUNITY_INFO_API_HANDOFF_SNIPPETS,
+  },
+] as const satisfies readonly ApiHandoffContract[];
 
 describe('repository discovery', (): void => {
   it('keeps the public README concrete and easy to find from GitHub search', (): void => {
@@ -14359,197 +14450,14 @@ describe('repository discovery', (): void => {
     ).toStrictEqual([]);
   });
 
-  it('keeps the notifications API handoff concrete', (): void => {
-    expect.assertions(1);
+  it.each(API_HANDOFF_CONTRACTS)(
+    'keeps the $name API handoff concrete',
+    (contract): void => {
+      expect.assertions(1);
 
-    const source = readFileSync('api-reference/x/notifications.mdx', 'utf8');
-
-    expect([
-      ...collectSnippetFindings(
-        source,
-        'Notifications endpoint page',
-        REQUIRED_NOTIFICATIONS_API_HANDOFF_SNIPPETS,
-      ),
-      ...FORBIDDEN_NOTIFICATIONS_API_RAW_OUTPUT_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? [
-                {
-                  issue: `Notifications API page prints raw notification data with "${snippet}".`,
-                },
-              ]
-            : [],
-      ),
-    ]).toStrictEqual([]);
-  });
-
-  it('keeps the X trends API handoff concrete', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('api-reference/x/trends.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'X trends endpoint page',
-        REQUIRED_X_TRENDS_API_HANDOFF_SNIPPETS,
-      ),
-      ...FORBIDDEN_X_TRENDS_API_RAW_OUTPUT_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? [
-                {
-                  issue: `X trends API page prints raw trend data with "${snippet}".`,
-                },
-              ]
-            : [],
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the trends API handoff concrete', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('api-reference/trends/list.mdx', 'utf8');
-
-    expect([
-      ...collectSnippetFindings(
-        source,
-        'Trends API page',
-        REQUIRED_TRENDS_API_HANDOFF_SNIPPETS,
-      ),
-      ...FORBIDDEN_TRENDS_API_RAW_OUTPUT_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? [
-                {
-                  issue: `Trends API page prints raw trend data with "${snippet}".`,
-                },
-              ]
-            : [],
-      ),
-    ]).toStrictEqual([]);
-  });
-
-  it('keeps the get article API handoff concrete', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('api-reference/x/get-article.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Get article endpoint page',
-        REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS,
-      ),
-      ...FORBIDDEN_GET_ARTICLE_API_RAW_OUTPUT_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? [
-                {
-                  issue: `Get article API page prints raw article data with "${snippet}".`,
-                },
-              ]
-            : [],
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the tweet thread API handoff concrete', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('api-reference/x/tweet-thread.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Tweet thread endpoint page',
-        REQUIRED_TWEET_THREAD_API_HANDOFF_SNIPPETS,
-      ),
-      ...FORBIDDEN_TWEET_THREAD_API_RAW_OUTPUT_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? [
-                {
-                  issue: `Tweet thread API page prints raw thread data with "${snippet}".`,
-                },
-              ]
-            : [],
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the retweeters API handoff concrete', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('api-reference/x/retweeters.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Retweeters endpoint page',
-        REQUIRED_RETWEETERS_API_HANDOFF_SNIPPETS,
-      ),
-      ...FORBIDDEN_RETWEETERS_API_RAW_OUTPUT_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? [
-                {
-                  issue: `Retweeters API page prints raw retweeter data with "${snippet}".`,
-                },
-              ]
-            : [],
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the favoriters API handoff concrete', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('api-reference/x/favoriters.mdx', 'utf8');
-
-    expect([
-      ...collectSnippetFindings(
-        source,
-        'Favoriters endpoint page',
-        REQUIRED_FAVORITERS_API_HANDOFF_SNIPPETS,
-      ),
-      ...FORBIDDEN_FAVORITERS_API_RAW_OUTPUT_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? [
-                {
-                  issue: `Favoriters API page prints raw liker data with "${snippet}".`,
-                },
-              ]
-            : [],
-      ),
-    ]).toStrictEqual([]);
-  });
-
-  it('keeps the community info API handoff concrete', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('api-reference/x/community-info.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Community info endpoint page',
-        REQUIRED_COMMUNITY_INFO_API_HANDOFF_SNIPPETS,
-      ),
-      ...FORBIDDEN_COMMUNITY_INFO_API_RAW_OUTPUT_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? [
-                {
-                  issue: `Community info API page prints raw community data with "${snippet}".`,
-                },
-              ]
-            : [],
-      ),
-    ).toStrictEqual([]);
-  });
+      expect(collectApiHandoffFindings(contract)).toStrictEqual([]);
+    },
+  );
 
   it('keeps the community members API handoff concrete', (): void => {
     expect.assertions(1);
@@ -17857,9 +17765,7 @@ describe('repository discovery', (): void => {
     );
     expect(page).toContain('https://xquik.com/.well-known/agent-card.json');
     expect(page).toContain('JSON-RPC endpoint at `https://xquik.com/a2a`');
-    expect(contract).toContain(
-      'operationId: searchXquikDocumentation\n',
-    );
+    expect(contract).toContain('operationId: searchXquikDocumentation\n');
     expect(contract).toContain('text/event-stream:');
   });
 });
