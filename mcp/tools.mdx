@@ -55,7 +55,8 @@ Search the authenticated API catalog. `search` makes no network calls and uses n
   </Card>
   <Card title="Spec access" icon="search">
     The function reads `spec.paths`. Each path groups its allowed HTTP methods.
-    OpenAPI references are resolved inline. Inspect the complete operation before `execute`.
+    OpenAPI refs are resolved inline. Return only needed fields. Read `parameters`
+    and `requestBody` before `execute`. Query responses only when needed.
   </Card>
 </CardGroup>
 
@@ -85,16 +86,14 @@ declare const spec: { paths: Record<string, PathItem> };
 
 **Examples.**
 
-> Inspect a complete operation
+> Inspect an operation's input contract
 
 ```javascript
-async () => Object.entries(spec.paths).flatMap(([path, methods]) =>
-  Object.entries(methods).flatMap(([method, operation]) =>
-    operation?.summary?.toLowerCase().includes('tweet')
-      ? [{ method: method.toUpperCase(), path, ...operation }]
-      : []
-  )
-)
+async () => {
+  const { operationId, parameters, requestBody, summary } =
+    spec.paths['/api/v1/x/tweets/search']?.get ?? {};
+  return { operationId, parameters, requestBody, summary };
+}
 ```
 
 ## execute
