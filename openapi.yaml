@@ -108,7 +108,7 @@ paths:
             schema:
               $ref: '#/components/schemas/NlwebAskRequest'
       # oxfmt-ignore
-      responses: &nlweb-ask-responses
+      responses:
         '200':
           description: Documentation results.
           content:
@@ -154,7 +154,11 @@ paths:
         - { name: mode, in: query, description: List result mode., schema: { type: string, const: list } }
         - { name: response_format, in: query, description: NLWeb response shape., schema: { type: string, enum: [chatgpt_app, conversational_search], default: conversational_search } }
         - { name: streaming, in: query, description: Return SSE when true., schema: { type: boolean, default: false } }
-      responses: *nlweb-ask-responses
+      responses:
+        '200': { $ref: '#/paths/~1ask/post/responses/200' }
+        '400': { $ref: '#/paths/~1ask/post/responses/400' }
+        '413': { $ref: '#/paths/~1ask/post/responses/413' }
+        '502': { $ref: '#/paths/~1ask/post/responses/502' }
 
   # ── Account ──────────────────────────────────────────────
   /account:
@@ -570,11 +574,9 @@ paths:
       operationId: compose
       x-mcp-annotations: { readOnlyHint: true }
       summary: Build, refine, or check a post draft
-      description: >
-        Run one step of Xquik's three-step writing workflow. Compose returns
-        questions and facts from xai-org/x-algorithm. Refine applies only those
-        facts to the requested goal. Score checks that text exists. It never
-        predicts reach or converts source weights into engagement counts.
+      description:
+        Uses xai-org/x-algorithm facts to compose and refine text. Score checks
+        text. It never predicts reach or engagement.
       tags: [Composition]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
@@ -2069,10 +2071,8 @@ paths:
       operationId: createDraw
       summary: Run giveaway draw
       description:
-        Runs a giveaway draw from a source tweet. The draw first checks the
-        minimum credits needed to inspect the source tweet and at least one
-        candidate. Remaining credits cap how many replies and retweeters can be
-        inspected before filters and winner selection run.
+        Checks credits, then draws winners from inspected replies and reposters.
+        Remaining credits cap inspected candidates.
       tags: [Draws]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
@@ -2844,8 +2844,8 @@ paths:
           schema:
             type: string
           description:
-            Caller query, Tweet ID, or status URL. query is an accepted alias.
-            Valid inline bounds apply per page.
+            Query, Tweet ID, or URL. Hyphens negate terms. Use exactPhrase for
+            literals. Valid bounds apply per page.
         - name: queryType
           in: query
           required: false
@@ -3209,28 +3209,18 @@ paths:
             example:
               account: '@elonmusk'
       responses: &write-tweet-responses
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
+        '200': { $ref: '#/components/responses/WriteActionCompleted' }
+        '202': { $ref: '#/components/responses/WriteActionAccepted' }
+        '409': { $ref: '#/components/responses/WriteIdempotencyConflict' }
+        '400': { $ref: '#/components/responses/WriteInvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403': { $ref: '#/components/responses/AccountAuthError' }
+        '422': { $ref: '#/components/responses/WriteRejected' }
         '429':
           $ref: '#/components/responses/RateLimitedByX'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+        '503': { $ref: '#/components/responses/WriteTrackingUnavailable' }
+        '500': { $ref: '#/components/responses/WriteError' }
 
   /x/tweets/{id}/like:
     post:
@@ -3257,7 +3247,18 @@ paths:
               $ref: '#/components/schemas/XAccountBody'
             example:
               account: '@elonmusk'
-      responses: *write-tweet-responses
+      responses:
+        '200': { $ref: '#/components/responses/WriteActionCompleted' }
+        '202': { $ref: '#/components/responses/WriteActionAccepted' }
+        '409': { $ref: '#/components/responses/WriteIdempotencyConflict' }
+        '400': { $ref: '#/components/responses/WriteInvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403': { $ref: '#/components/responses/AccountAuthError' }
+        '422': { $ref: '#/components/responses/WriteRejected' }
+        '429': { $ref: '#/components/responses/RateLimitedByX' }
+        '503': { $ref: '#/components/responses/WriteTrackingUnavailable' }
+        '500': { $ref: '#/components/responses/WriteError' }
     delete:
       operationId: unlikeTweet
       description: Removes a like through a connected X account.
@@ -3305,7 +3306,18 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
-      responses: *write-tweet-responses
+      responses:
+        '200': { $ref: '#/components/responses/WriteActionCompleted' }
+        '202': { $ref: '#/components/responses/WriteActionAccepted' }
+        '409': { $ref: '#/components/responses/WriteIdempotencyConflict' }
+        '400': { $ref: '#/components/responses/WriteInvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403': { $ref: '#/components/responses/AccountAuthError' }
+        '422': { $ref: '#/components/responses/WriteRejected' }
+        '429': { $ref: '#/components/responses/RateLimitedByX' }
+        '503': { $ref: '#/components/responses/WriteTrackingUnavailable' }
+        '500': { $ref: '#/components/responses/WriteError' }
     delete:
       operationId: unretweet
       description: Removes a repost through a connected X account.
@@ -3495,7 +3507,18 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
-      responses: *write-target-responses
+      responses:
+        '200': { $ref: '#/components/responses/WriteActionCompleted' }
+        '202': { $ref: '#/components/responses/WriteActionAccepted' }
+        '409': { $ref: '#/components/responses/WriteIdempotencyConflict' }
+        '400': { $ref: '#/components/responses/WriteInvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403': { $ref: '#/components/responses/AccountAuthError' }
+        '422': { $ref: '#/components/responses/WriteRejected' }
+        '429': { $ref: '#/components/responses/WriteRateLimited' }
+        '503': { $ref: '#/components/responses/WriteTrackingUnavailable' }
+        '500': { $ref: '#/components/responses/WriteError' }
     delete:
       operationId: unfollowUser
       description: Unfollows a user through a connected X account.
@@ -3543,7 +3566,18 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
-      responses: *write-target-responses
+      responses:
+        '200': { $ref: '#/components/responses/WriteActionCompleted' }
+        '202': { $ref: '#/components/responses/WriteActionAccepted' }
+        '409': { $ref: '#/components/responses/WriteIdempotencyConflict' }
+        '400': { $ref: '#/components/responses/WriteInvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403': { $ref: '#/components/responses/AccountAuthError' }
+        '422': { $ref: '#/components/responses/WriteRejected' }
+        '429': { $ref: '#/components/responses/WriteRateLimited' }
+        '503': { $ref: '#/components/responses/WriteTrackingUnavailable' }
+        '500': { $ref: '#/components/responses/WriteError' }
 
   /x/followers/check:
     get:
@@ -3657,7 +3691,18 @@ paths:
               account: '@elonmusk'
               text: 'Example text content'
               media_ids: ['1234567890123456789']
-      responses: *write-target-responses
+      responses:
+        '200': { $ref: '#/components/responses/WriteActionCompleted' }
+        '202': { $ref: '#/components/responses/WriteActionAccepted' }
+        '409': { $ref: '#/components/responses/WriteIdempotencyConflict' }
+        '400': { $ref: '#/components/responses/WriteInvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403': { $ref: '#/components/responses/AccountAuthError' }
+        '422': { $ref: '#/components/responses/WriteRejected' }
+        '429': { $ref: '#/components/responses/WriteRateLimited' }
+        '503': { $ref: '#/components/responses/WriteTrackingUnavailable' }
+        '500': { $ref: '#/components/responses/WriteError' }
 
   /x/media:
     post:
@@ -3718,30 +3763,19 @@ paths:
               account: '@elonmusk'
               url: 'https://example.com/image.png'
       responses: &write-account-responses
-        '200':
-          $ref: '#/components/responses/WriteActionCompleted'
-        '202':
-          $ref: '#/components/responses/WriteActionAccepted'
-        '409':
-          $ref: '#/components/responses/WriteIdempotencyConflict'
-        '400':
-          $ref: '#/components/responses/WriteInvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '403':
-          $ref: '#/components/responses/AccountAuthError'
+        '200': { $ref: '#/components/responses/WriteActionCompleted' }
+        '202': { $ref: '#/components/responses/WriteActionAccepted' }
+        '409': { $ref: '#/components/responses/WriteIdempotencyConflict' }
+        '400': { $ref: '#/components/responses/WriteInvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403': { $ref: '#/components/responses/AccountAuthError' }
         '404':
           $ref: '#/components/responses/XAccountNotFound'
-        '422':
-          $ref: '#/components/responses/WriteRejected'
-        '429':
-          $ref: '#/components/responses/WriteRateLimited'
-        '503':
-          $ref: '#/components/responses/WriteTrackingUnavailable'
-        '500':
-          $ref: '#/components/responses/WriteError'
+        '422': { $ref: '#/components/responses/WriteRejected' }
+        '429': { $ref: '#/components/responses/WriteRateLimited' }
+        '503': { $ref: '#/components/responses/WriteTrackingUnavailable' }
+        '500': { $ref: '#/components/responses/WriteError' }
 
   /x/media/download:
     post:
@@ -4015,7 +4049,19 @@ paths:
               account: '@elonmusk'
               name: 'Example Name'
               description: 'A community for Tesla enthusiasts'
-      responses: *write-account-responses
+      responses:
+        '200': { $ref: '#/components/responses/WriteActionCompleted' }
+        '202': { $ref: '#/components/responses/WriteActionAccepted' }
+        '409': { $ref: '#/components/responses/WriteIdempotencyConflict' }
+        '400': { $ref: '#/components/responses/WriteInvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403': { $ref: '#/components/responses/AccountAuthError' }
+        '404': { $ref: '#/components/responses/XAccountNotFound' }
+        '422': { $ref: '#/components/responses/WriteRejected' }
+        '429': { $ref: '#/components/responses/WriteRateLimited' }
+        '503': { $ref: '#/components/responses/WriteTrackingUnavailable' }
+        '500': { $ref: '#/components/responses/WriteError' }
 
   /x/communities/{id}:
     delete:
@@ -4069,7 +4115,19 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
-      responses: *write-account-responses
+      responses:
+        '200': { $ref: '#/components/responses/WriteActionCompleted' }
+        '202': { $ref: '#/components/responses/WriteActionAccepted' }
+        '409': { $ref: '#/components/responses/WriteIdempotencyConflict' }
+        '400': { $ref: '#/components/responses/WriteInvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403': { $ref: '#/components/responses/AccountAuthError' }
+        '404': { $ref: '#/components/responses/XAccountNotFound' }
+        '422': { $ref: '#/components/responses/WriteRejected' }
+        '429': { $ref: '#/components/responses/WriteRateLimited' }
+        '503': { $ref: '#/components/responses/WriteTrackingUnavailable' }
+        '500': { $ref: '#/components/responses/WriteError' }
     delete:
       operationId: leaveCommunity
       description: Leaves an X Community through a connected account.
@@ -4094,9 +4152,8 @@ paths:
     get:
       operationId: listXAccounts
       description: >
-        Returns connected X accounts in creation order. The best-practice
-        contract paginates automatically. Send limit or cursor for legacy
-        pagination. Unpaginated legacy responses retain up to 10,000 accounts.
+        Returns connected accounts in creation order. Omit pagination for up to
+        10,000 accounts. Send limit or cursor for legacy pagination.
       summary: List connected X accounts
       tags: [X Accounts]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
@@ -6275,11 +6332,9 @@ paths:
         '402': *payment-required-response
         '403':
           description: >
-            DM read forbidden. Either the connected account is not a participant
-            in this conversation (`dm_not_permitted`), the account is suspended,
-            locked, or otherwise restricted (`account_restricted`), or the
-            account session needs to be re-authenticated
-            (`account_needs_reauth`).
+            DM read forbidden. The connected account may not participate in the
+            conversation. It may also be restricted or require reauthentication.
+            Inspect the error code, then fix the account.
           content:
             application/json:
               schema: *error-schema
@@ -6600,9 +6655,7 @@ paths:
   /x/lists/{id}/followers:
     get:
       operationId: getListFollowers
-      description: &list-profile-coverage-description >
-        Returns profiles with resumable maximum coverage. Standard keeps legacy
-        pagination.
+      description: Returns List followers with resumable or standard pagination.
       summary: List followers of an X List
       tags:
         - Lists
@@ -6650,7 +6703,7 @@ paths:
   /x/lists/{id}/members:
     get:
       operationId: getListMembers
-      description: *list-profile-coverage-description
+      description: Returns List members with resumable or standard pagination.
       summary: List members of an X List
       tags:
         - Lists
@@ -6658,7 +6711,7 @@ paths:
       parameters: *list-profile-coverage-parameters
       responses:
         '200':
-          description: List profiles
+          description: List members
           content:
             application/json:
               schema:
@@ -7434,10 +7487,9 @@ components:
       in: header
       required: true
       description: >
-        Generate one unique value for each intended write. Reuse it only when
-        retrying the exact same account, action, target, and payload. A reused
-        key returns the original action. Reusing it with different input returns
-        409. Replay protection remains active for at least 90 days.
+        Use one unique value per intended write. Reuse it only for an identical
+        retry. Matching retries return the original action. Different input
+        returns 409. Protection lasts at least 90 days.
       schema:
         type: string
         minLength: 1
@@ -7508,10 +7560,9 @@ components:
       name: limit
       in: query
       description: >
-        Maximum number of items to return (1-100, default 50). For paid
-        per-result endpoints, the returned count may be lower when remaining
-        credits cannot cover the requested page. If zero paid results are
-        affordable, the endpoint returns 402 insufficient_credits.
+        Maximum items per page: 1 to 100, default 50. Credits can reduce paid
+        results. The endpoint returns 402 insufficient_credits when none are
+        affordable.
       schema:
         type: integer
         minimum: 1
@@ -7713,7 +7764,7 @@ components:
       in: query
       schema:
         type: string
-      description: Only when the caller requests a language. `lang` is also accepted.
+      description: Filter by language. Alias `lang` is accepted.
     TweetFilterSinceDate:
       name: sinceDate
       in: query
@@ -7734,14 +7785,14 @@ components:
       schema:
         type: string
         enum: [images, videos, gifs, media, links, none]
-      description: Filter by media type. `has_video=true` and `has_media=true` are also accepted.
+      description: 'Filter media. Aliases: has_video, has_media.'
     TweetFilterMinLikes:
       name: minLikes
       in: query
       schema:
         type: integer
         minimum: 0
-      description: Minimum likes threshold. `minFaves`, `min_likes`, and `min_faves` are also accepted.
+      description: 'Minimum likes. Aliases: minFaves, min_likes, min_faves.'
     TweetFilterMinRetweets:
       name: minRetweets
       in: query
@@ -7903,7 +7954,7 @@ components:
       in: query
       schema:
         type: string
-      description: Exact phrase to match.
+      description: Match this literal phrase, including any hyphens.
     TweetFilterExcludeWords:
       name: excludeWords
       in: query
@@ -8265,8 +8316,8 @@ components:
     AnonymousGuestAuthenticationRequired:
       description: >
         Non-MPP paid reads require Bearer authentication. Missing credentials
-        advertise guest checkout without creating it. Invalid credentials return
-        a plain error. Confirm before calling an advertised action.
+        offer guest checkout without creating it. Invalid credentials return a
+        plain error. Confirm before using any offered action.
       headers:
         Cache-Control:
           description: Prevents storage of the guest checkout action.
@@ -8342,8 +8393,8 @@ components:
     PaymentRequired:
       description: >
         Payment required. MPP reads include `WWW-Authenticate`. Authenticated
-        reads include balances and checkout. Guest keys expose guest top-up
-        only. A failed request never creates checkout. Confirm first.
+        reads include balances and checkout; a failed request never creates
+        checkout. Guest keys offer top-up.
       headers:
         WWW-Authenticate:
           description:
@@ -8456,9 +8507,9 @@ components:
               /dashboard/account?tab=x-accounts.'
     WriteError:
       description: >
-        Write operation failed. Possible error codes include x_write_failed,
-        x_write_ambiguous, x_duplicate_action, and x_daily_limit. Inspect the
-        durable action, safeToRetry, and nextAction fields before retrying.
+        Write failed. Inspect code, safeToRetry, and nextAction before retrying.
+        Common codes cover upstream failures, ambiguity, duplicates, and daily
+        limits.
       content:
         application/json:
           schema: *error-schema
@@ -8491,10 +8542,8 @@ components:
             message: 'Rate limited by X. Wait before retrying.'
     WriteRateLimited:
       description: >
-        A write was throttled by Xquik's tier or action limits
-        (`rate_limit_exceeded`) or by X (`x_rate_limited`, `x_daily_limit`).
-        Respect the `Retry-After` header when present, otherwise back off before
-        retrying.
+        The write hit an Xquik or X limit. Follow `Retry-After` when present.
+        Otherwise back off before retrying.
       content:
         application/json:
           schema:
@@ -9169,7 +9218,8 @@ components:
       additionalProperties: false
     ComposeExamplePattern:
       deprecated: true
-      description: Deprecated compatibility schema. The response array is empty.
+      description:
+        Deprecated example-pattern schema. The response array is empty.
       type: object
       required: [description, pattern]
       properties:
@@ -9564,9 +9614,9 @@ components:
           type: boolean
           example: true
       description: >
-        Durable write lifecycle record. Poll statusUrl until terminal is true.
-        Reusing the original Idempotency-Key returns this same record. Submit a
-        new write only when safeToRetry is true, using a new key.
+        Durable write record. Poll statusUrl until terminal is true. Reusing its
+        Idempotency-Key returns this record. Create another action only when
+        safeToRetry is true.
     XWriteActionError:
       type: object
       description: Canonical pre-dispatch error with safe recovery guidance.
@@ -11576,15 +11626,18 @@ components:
         replies:
           type: string
           enum: [include, exclude, only]
-          description: Only when requested (tweet_search_extractor).
+          description:
+            Choose whether tweet search includes, excludes, or isolates replies.
         retweets:
           type: string
           enum: [include, exclude, only]
-          description: Only when requested (tweet_search_extractor).
+          description:
+            Choose whether tweet search includes, excludes, or isolates reposts.
         quotes:
           type: string
           enum: [include, exclude, only]
-          description: Only when requested (tweet_search_extractor).
+          description:
+            Choose whether tweet search includes, excludes, or isolates quotes.
         exactPhrase:
           type: string
           description: Exact phrase to match (tweet_search_extractor)
@@ -11941,6 +11994,7 @@ components:
         completedAt: { type: string, format: date-time }
 
     ExtractionResult:
+      description: Represents a public row across supported extraction modes.
       type: object
       required: [id, xUserId, createdAt]
       additionalProperties: true
@@ -12295,6 +12349,7 @@ components:
       x-stainless-terraform-type: string
 
     TweetArticleMetadata:
+      description: Describes an X Article preview and its lifecycle metadata.
       type: object
       properties:
         coverMedia: { $ref: '#/components/schemas/PublicMetadata' }
@@ -12306,6 +12361,7 @@ components:
         coverMediaUrl: { type: string }
 
     TweetCard:
+      description: Describes a public card and its referenced profiles.
       type: object
       properties:
         id: { type: string }
@@ -12343,6 +12399,7 @@ components:
         metadata: { $ref: '#/components/schemas/PublicMetadata' }
 
     TweetEdit:
+      description: Lists edit-chain identifiers and the remaining edit window.
       type: object
       properties:
         editTweetIds: { type: array, items: { type: string } }
@@ -12350,6 +12407,7 @@ components:
         initialTweetId: { type: string }
 
     TweetEntities:
+      description: Lists hashtags, symbols, links, and mentions from tweet text.
       type: object
       properties:
         hashtags:
@@ -12372,6 +12430,7 @@ components:
           }
 
     TweetHashtag:
+      description: Provides hashtag text and source offsets within a tweet.
       type: object
       required: [text]
       properties:
@@ -12398,6 +12457,8 @@ components:
                     ticker: { type: string }
 
     TweetUrlEntity:
+      description:
+        Provides shortened, display, and expanded URLs from tweet text.
       type: object
       properties:
         display_url: { type: string }
@@ -12408,6 +12469,7 @@ components:
         url: { type: string }
 
     TweetUserMention:
+      description: Provides profile identity and source offsets for a mention.
       type: object
       required: [screen_name]
       properties:
@@ -12471,6 +12533,7 @@ components:
           type: integer
 
     TweetPlace:
+      description: Describes public place metadata on a geotagged tweet.
       type: object
       properties:
         boundingBox:
