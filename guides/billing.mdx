@@ -204,7 +204,7 @@ Ask the user to confirm before creating account checkout or charging a saved pay
 
 - Use the [top-up endpoint](/api-reference/credits/topup) to create a checkout redirect after confirmation
 - Use the [top-up status endpoint](/api-reference/credits/topup-status) to poll checkout completion
-- Use the [quick top-up endpoint](/api-reference/credits/quick-topup) to charge your saved payment method
+- The dashboard uses [quick top-up](/api-reference/credits/quick-topup) for saved methods
 - Configure automatic top-up from the dashboard. `GET /credits` and `GET /account` return the enabled status, dollar amount, and trigger threshold.
 - Top-up credits cost USD 0.00015 each and are added to your balance immediately
 - Top-up credits do not expire and carry over between billing periods
@@ -249,26 +249,8 @@ curl -s -X POST https://xquik.com/api/v1/credits/topup \
 }
 ```
 
-3. After confirmation, use quick top-up only when the account already has a saved payment method:
-
-```bash
-curl -s -X POST https://xquik.com/api/v1/credits/quick-topup \
-  -H "x-api-key: xq_your_api_key_here" \
-  -H "Content-Type: application/json" \
-  -d '{"dollars": 25}' | jq
-```
-
-```json
-{
-  "outcome": "charged",
-  "balance": "167116",
-  "credits": "166666"
-}
-```
-
-A USD 25 quick top-up adds 166,666 credits at USD 0.00015 per credit, rounded down to whole credits.
-
-Only the `charged` quick top-up outcome grants credits. If quick top-up returns `no_payment_method`, create a checkout top-up instead. If it returns `requires_action`, complete the payment confirmation flow before retrying the metered API call.
+The dashboard can charge a saved method after confirmation. Only `charged`
+grants credits. It opens checkout for `declined` or `no_payment_method`.
 
 ## Accountless guest wallets
 

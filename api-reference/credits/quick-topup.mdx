@@ -1,7 +1,7 @@
 ---
 title: "Twitter API billing: instant X API credit top-up"
 sidebarTitle: "Quick top-up credits"
-description: "Charge a saved payment method for USD 10-500 of tweet, profile, follower, monitor, webhook, export, and X write API credits. Includes response fields."
+description: "Charge a saved method for USD 10-500 in the Xquik dashboard. Handle authentication, declines, and checkout fallback without double billing or server errors."
 api: "POST /credits/quick-topup"
 keywords: ["X API credits", "Twitter API billing", "quick top-up", "top up credits", "saved payment method", "billing"]
 ---
@@ -53,20 +53,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-Add X API credits for tweet, follower, monitor, webhook, export, and write calls.
-Use this Twitter API billing route with an existing saved payment method.
+Add API credits from the Xquik dashboard with a saved payment method.
 
 ## Add API credits with a saved payment method
 
-Use quick top-up when the account already has a reusable payment method. Send a
-USD amount from 10 through 500. The route funds tweet, profile, follower,
-monitor, webhook, export, and X write requests without creating a hosted
-checkout page.
+Use quick top-up after the dashboard confirms an amount from USD 10 through
+500. This route requires a same-origin Xquik session. External integrations
+must use the [hosted top-up endpoint](/api-reference/credits/topup).
 
 Read `outcome` before handling any other response field. `charged` means the
 credits and new balance are ready. `requires_action` means the client must
-complete the payment confirmation flow. Another outcome can require adding a
-payment method first.
+complete payment authentication. `declined` means the saved method failed.
+`no_payment_method` means the account has no reusable payment method.
 
 Never print or persist `clientSecret`. Pass it directly to the payment
 confirmation flow. Log only the outcome, added credits, and resulting balance
@@ -81,108 +79,22 @@ payment outcome for the saved payment method.
 </Callout>
 
 <CodeGroup>
-  ```bash cURL
-  response=$(curl -sS -X POST https://xquik.com/api/v1/credits/quick-topup \
-    -H "x-api-key: xq_YOUR_KEY_HERE" \
-    -H "Content-Type: application/json" \
-    -d '{"dollars": 25}')
-  outcome=$(jq -r '.outcome' <<<"$response")
+```javascript Dashboard browser
+const response = await fetch("/api/v1/credits/quick-topup", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ dollars: 25 }),
+});
+const result = await response.json();
 
-  if [ "$outcome" = "requires_action" ]; then
-    client_secret=$(jq -r '.clientSecret' <<<"$response")
-    # Pass $client_secret to the billing confirmation flow; do not print it.
-  elif [ "$outcome" = "charged" ]; then
-    jq '{outcome, credits, balance}' <<<"$response"
-  else
-    jq '{outcome}' <<<"$response"
-  fi
-  ```
-
-  ```javascript Node.js
-  const response = await fetch("https://xquik.com/api/v1/credits/quick-topup", {
-    method: "POST",
-    headers: {
-      "x-api-key": "xq_YOUR_KEY_HERE",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ dollars: 25 }),
-  });
-  const result = await response.json();
-
-  if (result.outcome === "requires_action") {
-    const paymentClientSecret = result.clientSecret;
-    // Pass paymentClientSecret to the billing confirmation flow; do not print it.
-  } else if (result.outcome === "charged") {
-    process.stdout.write(`Added ${result.credits} credits. Balance: ${result.balance}\n`);
-  } else {
-    process.stdout.write("Add a payment method before quick top-up.\n");
-  }
-  ```
-
-  ```python Python
-  import requests
-
-  response = requests.post(
-      "https://xquik.com/api/v1/credits/quick-topup",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-      json={"dollars": 25},
-  )
-  data = response.json()
-  if data["outcome"] == "requires_action":
-      payment_client_secret = data["clientSecret"]
-      # Pass payment_client_secret to the billing confirmation flow; do not print it.
-  elif data["outcome"] == "charged":
-      print(f"Added {data['credits']} credits. Balance: {data['balance']}")
-  else:
-      print("Add a payment method before quick top-up.")
-  ```
-
-  ```go Go
-  package main
-
-  import (
-      "bytes"
-      "encoding/json"
-      "fmt"
-      "net/http"
-  )
-
-  func main() {
-      body, _ := json.Marshal(map[string]interface{}{
-          "dollars": 25,
-      })
-
-      req, err := http.NewRequest("POST", "https://xquik.com/api/v1/credits/quick-topup", bytes.NewReader(body))
-      if err != nil {
-          panic(err)
-      }
-      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-      req.Header.Set("Content-Type", "application/json")
-
-      resp, err := http.DefaultClient.Do(req)
-      if err != nil {
-          panic(err)
-      }
-      defer resp.Body.Close()
-
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-          panic(err)
-      }
-      outcome, _ := data["outcome"].(string)
-      if outcome == "requires_action" {
-          clientSecret, _ := data["clientSecret"].(string)
-          // Pass clientSecret to the billing confirmation flow; do not print it.
-          _ = clientSecret
-      } else if outcome == "charged" {
-          credits, _ := data["credits"].(string)
-          balance, _ := data["balance"].(string)
-          fmt.Printf("Added %s credits. Balance: %s\n", credits, balance)
-      } else {
-          fmt.Println("Add a payment method before quick top-up.")
-      }
-  }
-  ```
+if (result.outcome === "charged") {
+  window.location.reload();
+} else if (result.outcome === "requires_action") {
+  await confirmSavedPayment(result.clientSecret);
+} else {
+  window.location.assign("/account/subscription");
+}
+```
 </CodeGroup>
 
 | Credit top-up outcome | Response fields | Next action |
@@ -190,15 +102,12 @@ payment outcome for the saved payment method.
 | Immediate charge | `outcome: "charged"` | Store `credits` and the updated `balance`. |
 | Payment authentication | `outcome: "requires_action"` | Complete the billing confirmation flow. |
 | Missing payment method | `outcome: "no_payment_method"` | Create a checkout top-up instead. |
+| Declined payment method | `outcome: "declined"` | Ask for another payment method. |
 | Added credits | `credits` | Treat the bigint value as a string. |
 | Updated balance | `balance` | Gate the next tweet, follower, or monitor job. |
 | Confirmation secret | `clientSecret` | Send it only to the billing confirmation flow. |
 
 ## Headers
-
-<ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported.
-</ParamField>
 
 <ParamField header="Content-Type" type="string" required>
   Must be `application/json`.
@@ -212,7 +121,8 @@ payment outcome for the saved payment method.
 
 At USD 0.00015 per credit, a USD 25 quick top-up adds 166,666 credits, rounded down to whole credits.
 
-Only the `charged` outcome grants credits and updates `balance`. If the endpoint returns `requires_action`, complete payment authentication with `clientSecret` before retrying the metered API call. Pass `clientSecret` to the billing confirmation flow only; do not print it in logs. If it returns `no_payment_method`, create a checkout top-up instead.
+Only `charged` grants credits. Complete `requires_action` with `clientSecret`.
+Use hosted checkout for `declined` or `no_payment_method`.
 
 ## Response
 
@@ -255,6 +165,18 @@ No saved payment method on file. Redirect the user to add one via the billing po
 ```json
 {
   "outcome": "no_payment_method"
+}
+```
+
+### 200 Declined
+
+The saved method failed. Open hosted checkout so the user can choose another.
+
+<ResponseField name="outcome" type="string">Always `"declined"`.</ResponseField>
+
+```json
+{
+  "outcome": "declined"
 }
 ```
 
