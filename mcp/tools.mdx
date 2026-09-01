@@ -117,12 +117,11 @@ declare const xquik: {
 
 **Response contract.**
 
-`xquik.request()` resolves directly to the endpoint response body. It does not add a `data`, `body`, `result`, or `status` wrapper. Reading an absent wrapper returns an actionable error. It sends the normalized contract automatically. Hosted MCP injects a unique `Idempotency-Key` for routes that require it. The sandbox reuses that key for bounded transient retries. After an unresolved write failure, verify state. Start a new attempt only when `safe_to_retry` is true. Responses use snake_case fields, date-time fields as Unix seconds, and structured error objects. A default REST `createdAt` field becomes `created`, while fields such as `publishedAt` become `published_at`.
+`xquik.request()` resolves to the endpoint body without a `data`, `body`, `result`, or `status` wrapper. A rejected request includes the numeric HTTP status in `error.status` when available. Hosted MCP injects a unique `Idempotency-Key`. The sandbox reuses that key for bounded transient retries. After an unresolved write failure, verify state. Start a new attempt only when `safe_to_retry` is true. Responses use snake_case fields, Unix timestamps, structured errors, `has_more`, and `next_cursor`.
 
 Compact extraction results retain `like_count`, `retweet_count`, `reply_count`, `quote_count`, `view_count`, and `bookmark_count`. They omit profile images and nested enrichment.
 
-MCP preserves every safe field that X supplies. Optional fields stay absent.
-See [Read Data Richness](/guides/tweet-profile-api-fields) for the REST field map.
+MCP preserves every safe field that X supplies. Optional fields stay absent. See [Read Data Richness](/guides/tweet-profile-api-fields) for the REST field map.
 
 List and search responses use `has_more` and `next_cursor`, even when REST shows `has_next_page` or `hasMore`. Pass `next_cursor` unchanged as `cursor` for X reads, draws, extractions, and events. Never replace an extraction cursor with `offset`. Use `after` for `/api/v1/radar` and `afterCursor` for drafts.
 
