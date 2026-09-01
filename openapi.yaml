@@ -1694,8 +1694,8 @@ paths:
     post:
       operationId: createExtraction
       description:
-        Starts an asynchronous extraction. Call waitUrl for a bounded wait, or
-        poll statusUrl after pollAfterMs until job status is terminal.
+        Starts an extraction. Follow waitUrl, then page statusUrl after
+        completion.
       summary: Create extraction
       tags: [Extractions]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
@@ -1747,8 +1747,10 @@ paths:
                   pollAfterMs: { type: integer, minimum: 0, example: 1000 }
                   statusUrl:
                     { type: string, example: '/api/v1/extractions/a1b2c3d4' }
-                  waitUrl:
-                    { type: string, example: '/api/v1/extractions/id?wait=10' }
+                  waitUrl: &extraction-wait-url
+                    type: string
+                    example: >-
+                      /api/v1/extractions/id?wait=10&limit=1&outputMode=compact
                   toolType:
                     $ref: '#/components/schemas/ExtractionToolType'
                   status:
@@ -1836,8 +1838,8 @@ paths:
     get:
       operationId: getExtraction
       description:
-        Returns status and up to 1,000 results. A bounded wait reduces polling.
-        Follow nextCursor when hasMore is true.
+        Returns status and up to 1,000 results. Follow nextCursor when hasMore
+        is true.
       summary: Get extraction results
       tags: [Extractions]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
@@ -1845,12 +1847,12 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
         - name: limit
           in: query
-          description: Maximum results per page (1-1000, default 1000).
+          description: Maximum results per page (1-1000, default 100).
           schema:
             type: integer
             minimum: 1
             maximum: 1000
-            default: 1000
+            default: 100
         - $ref: '#/components/parameters/After'
         - name: wait
           in: query
@@ -1902,22 +1904,8 @@ paths:
                     example: []
                   hasMore: { type: boolean, example: false }
                   pollAfterMs: { type: integer, minimum: 0, example: 0 }
-                  waitUrl:
-                    { type: string, example: '/api/v1/extractions/id?wait=10' }
+                  waitUrl: *extraction-wait-url
                   nextCursor: { type: string, example: 'abc123' }
-              example:
-                job:
-                  {
-                    id: id,
-                    toolType: follower_explorer,
-                    status: completed,
-                    totalResults: 0,
-                    createdAt: '2026-08-23T10:00:00Z',
-                  }
-                results: []
-                hasMore: false
-                pollAfterMs: 0
-                waitUrl: '/api/v1/extractions/id?wait=10'
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '404': *not-found-response
@@ -6893,6 +6881,7 @@ paths:
   /x/tweets/{id}/replies:
     get:
       operationId: getTweetReplies
+      x-mcp-return-body-statuses: [424]
       summary: List replies to a tweet
       description: >
         Returns direct replies. Omit mode for automatic maximum coverage with
@@ -8625,7 +8614,7 @@ components:
               'Cursor finished, expired, or superseded. Restart pagination
               without cursor.'
     MaximumCoverageBusy:
-      description: Automatic or explicit maximum coverage is temporarily busy.
+      description: Coverage is busy or its read sources are unavailable.
       headers:
         Retry-After:
           schema:
@@ -12037,9 +12026,7 @@ components:
         replyCount: { type: integer }
         retweetCount: { type: integer }
         viewCount: { type: integer }
-        enrichmentData:
-          $ref: '#/components/schemas/PublicMetadata'
-          description: Nested public user, Tweet, media, and source metadata.
+        enrichmentData: { $ref: '#/components/schemas/PublicMetadata' }
 
     DrawListItem:
       description: Giveaway draw summary with entry counts and status.
