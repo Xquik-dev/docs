@@ -2209,13 +2209,8 @@ const REQUIRED_BILLING_RECOVERY_SNIPPETS = [
   'get explicit confirmation before billing',
   'https://xquik.com/api/v1/credits',
   'https://xquik.com/api/v1/credits/topup',
-  'https://xquik.com/api/v1/credits/quick-topup',
-  'A USD 25 quick top-up adds 166,666 credits',
-  '"balance": "167116"',
-  '"credits": "166666"',
-  'Only the `charged` quick top-up outcome grants credits.',
-  'If quick top-up returns `no_payment_method`, create a checkout top-up instead.',
-  'If it returns `requires_action`, complete the payment confirmation flow before retrying the metered API call.',
+  'The dashboard can charge a saved method after confirmation.',
+  'It opens checkout for `declined` or `no_payment_method`.',
 ] as const;
 
 const REQUIRED_BILLING_MONITOR_SNIPPETS = [
@@ -2503,14 +2498,12 @@ const FORBIDDEN_X_API_GLOSSARY_SNIPPETS = [
 
 const REQUIRED_QUICK_TOPUP_PAGE_SNIPPETS = [
   'At USD 0.00015 per credit, a USD 25 quick top-up adds 166,666 credits',
-  'Only the `charged` outcome grants credits and updates `balance`.',
-  'If the endpoint returns `requires_action`, complete payment authentication with `clientSecret` before retrying the metered API call.',
-  'Pass `clientSecret` to the billing confirmation flow only; do not print it in logs.',
-  'client_secret=$(jq -r \'.clientSecret\' <<<"$response")',
-  'const paymentClientSecret = result.clientSecret;',
-  'payment_client_secret = data["clientSecret"]',
-  'clientSecret, _ := data["clientSecret"].(string)',
-  'If it returns `no_payment_method`, create a checkout top-up instead.',
+  'This route requires a same-origin Xquik session.',
+  'External integrations',
+  'must use the [hosted top-up endpoint]',
+  'Only `charged` grants credits.',
+  'Use hosted checkout for `declined` or `no_payment_method`.',
+  '### 200 Declined',
   '"balance": "466666"',
   '"credits": "166666"',
 ] as const;
