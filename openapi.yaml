@@ -6881,12 +6881,12 @@ paths:
   /x/tweets/{id}/replies:
     get:
       operationId: getTweetReplies
-      x-mcp-return-body-statuses: [424]
+      x-mcp-return-body-statuses: [404, 424]
       summary: List replies to a tweet
       description: >
-        Returns direct replies. Omit mode for automatic maximum coverage with
-        resumable pagination. Complete mode returns nested replies, diagnostics,
-        and 424 when direct coverage stays below 80%.
+        Returns direct replies with automatic maximum coverage and pagination.
+        Complete mode adds nested replies, diagnostics, and a 424 below 80%
+        coverage.
       tags:
         - Tweets
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
@@ -6904,10 +6904,9 @@ paths:
             type: string
             enum: [standard, complete]
           description: >
-            Optional advanced override. Omit mode for automatic maximum direct
-            reply coverage with pagination. Standard keeps legacy pagination.
-            Complete returns direct and nested replies with diagnostics, scope,
-            depth, sorting, and original-post controls.
+            Override automatic coverage. Standard uses legacy pagination.
+            Complete adds nested replies, diagnostics, scope, depth, sorting,
+            and original-post controls.
         - name: limit
           in: query
           schema:
@@ -6915,9 +6914,8 @@ paths:
             minimum: 1
             maximum: 25000
           description: >
-            With mode=complete, maximum combined direct and nested reply rows
-            (1-25000, default 25000). Automatic pages accept 1-300. Standard
-            pages accept 1-100. Prefer pageSize outside complete mode.
+            Complete mode caps combined direct and nested replies at 25,000.
+            Automatic pages accept 1-300. Standard pages accept 1-100.
         - $ref: '#/components/parameters/AutomaticTweetPageSize'
         - name: scope
           in: query
@@ -7007,6 +7005,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '404': *not-found-response
         '502': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
         '424':
