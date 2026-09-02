@@ -555,8 +555,9 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: 'mcp/tools.mdx',
     snippets: [
-      '| Agent task | MCP call | Durable output |',
-      "| Search tweets | `xquik.request('/api/v1/x/tweets/search')` | Preserve tweet IDs, authors, timestamps, and `next_cursor`. |",
+      'interface XquikResponse<T>',
+      'Promise<XquikResponse<T>>',
+      '`result` contains the endpoint body',
     ],
   },
   {

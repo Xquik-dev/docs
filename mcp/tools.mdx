@@ -25,17 +25,6 @@ Native names, schemas, and contracts come from OpenAPI. `compose` and
 
 Use `https://xquik.com/mcp` for Code Mode. Choose native mode for one tool per operation. Binary downloads and credential lifecycle operations remain REST-only.
 
-| Agent task | MCP call | Durable output |
-| --- | --- | --- |
-| Search product docs | `docs` with a documentation query | Keep source links with cited guidance. |
-| Discover tweet routes | `search` over `spec.paths` | Save the chosen method, path, and parameters. |
-| Search tweets | `xquik.request('/api/v1/x/tweets/search')` | Preserve tweet IDs, authors, timestamps, and `next_cursor`. |
-| Export followers | `xquik.request('/api/v1/extractions')` | Persist the extraction ID before polling or exporting. |
-| Extract replies | `xquik.request('/api/v1/extractions')` | Store the target tweet ID and extraction ID together. |
-| Monitor keywords | `xquik.request('/api/v1/monitors')` | Save the monitor ID before creating its webhook. |
-| Replay events | `xquik.request('/api/v1/events')` | Keep event IDs and the next page cursor. |
-| Run write actions | `xquik.request()` with the write route | Store `write_action_id`, `status_url`, and `charged_credits`. |
-
 ## docs
 
 Search canonical public documentation. `docs` is read-only and uses no credits.
@@ -106,18 +95,35 @@ Pass `code` as an async arrow function of up to 10,000 characters. `xquik` is gl
 **Sandbox API.**
 
 ```typescript
+interface XquikRequest {
+  path: string;
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  query?: Record<string, string | number | boolean | undefined>;
+  body?: unknown;
+}
+
+interface XquikResponse<T> {
+  success: true;
+  status: number;
+  result: T;
+  errors: [];
+  messages: [];
+}
+
 declare const xquik: {
-  request<T = unknown>(path: string, options?: {
-    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-    body?: unknown;
-    query?: Record<string, string | number | boolean | undefined>;
-  }): Promise<T>;
+  request<T = unknown>(options: XquikRequest): Promise<XquikResponse<T>>;
 };
 ```
 
 **Response contract.**
 
-`xquik.request()` resolves to the endpoint body without a `data`, `body`, `result`, or `status` wrapper. A rejected request includes the numeric HTTP status in `error.status` when available. Hosted MCP injects a unique `Idempotency-Key`. The sandbox reuses that key for bounded transient retries. After an unresolved write failure, verify state. Start a new attempt only when `safe_to_retry` is true. Responses use snake_case fields, Unix timestamps, structured errors, `has_more`, and `next_cursor`.
+`xquik.request()` returns `success`, `status`, `result`, `errors`, and `messages`.
+`status` contains the HTTP status. `result` contains the endpoint body.
+A rejected request includes `error.status` when available. Existing string-path
+calls still return the body for compatibility. Hosted MCP injects a unique
+`Idempotency-Key` and reuses it for bounded transient retries. Verify unresolved
+writes. Retry only when `safe_to_retry` is true. Result fields use snake_case,
+Unix timestamps, structured errors, `has_more`, and `next_cursor`.
 
 Compact extraction results retain `like_count`, `retweet_count`, `reply_count`, `quote_count`, `view_count`, and `bookmark_count`. They omit profile images and nested enrichment.
 
@@ -144,7 +150,7 @@ modules, `recommendedFallback`, and X-dependent coverage limits.
 
 Errors use `error.type`, `error.code`, and `error.message`, with fields such as `error.retryable` or `error.retry_after` when available. Invalid routes stay blocked. Related path errors name a valid same-method catalog route. Dependency failures use HTTP `424` in this contract. Fix validation errors before retrying, and respect `retry_after` on `429`.
 
-Write and media responses also use the MCP-normalized snake_case contract. Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `xquik.request()` results. REST and generated SDK pages may show camelCase fields such as `tweetId`, `writeActionId`, `chargedCredits`, `mediaId`, and `messageId`; keep MCP agents on snake_case when reading tool results.
+Write and media results also use the MCP-normalized snake_case contract. Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `response.result`. REST and generated SDK pages may show camelCase fields such as `tweetId`, `writeActionId`, `chargedCredits`, `mediaId`, and `messageId`; keep MCP agents on snake_case when reading tool results.
 
 Tool output stops at 24,000 characters. Project large arrays to requested fields before returning them. Oversized structured output returns `response_too_large` with the original size, limit, and retry guidance. It never returns partial JSON. Retry with fewer rows, shorter strings, or an aggregate. Use REST, SDKs, or extraction exports to persist every row.
 
@@ -154,79 +160,7 @@ The [MCP operation boundary](/mcp/overview#mcp-operation-boundary) lists exclude
 
 A `402` creates no checkout. Report its `payment_options`, ask the user to choose an amount and option, then wait for explicit confirmation. Full account MCP sessions may call only an advertised account checkout action present in their catalog. Guest wallet creation and top-up remain direct REST after confirmation.
 
-**Workflow Examples.**
-
-> Build and check a post draft (3-step, free)
-
-```javascript
-async () => {
-  // Step 1: Get editorial rules, questions, and Radar recommendations.
-  const compose = await xquik.request('/api/v1/compose', {
-    method: 'POST',
-    body: { step: 'compose', topic: 'AI agents' }
-  });
-  return compose;
-}
-```
-
-> Save a writing style from screenshots (free)
-
-```javascript
-async () => {
-  // When a user shares tweet screenshots, extract the texts and save as a style.
-  // This lets free users clone any writing voice without a subscription.
-  return xquik.request('/api/v1/styles/elonmusk', {
-    method: 'PUT',
-    body: {
-      label: 'Elon Musk style',
-      tweets: [
-        { text: 'The most entertaining outcome is the most likely' },
-        { text: 'Mars, here we come!!' }
-      ]
-    }
-  });
-  // Then compose with: POST /api/v1/compose { step: 'compose', topic: '...', styleUsername: 'elonmusk' }
-}
-```
-
-> Browse trending news from radar (free)
-
-```javascript
-async () => {
-  return xquik.request('/api/v1/radar');
-}
-```
-
-Reddit Radar items can expose post text, links, media, and engagement data.
-Startup growth items can expose reported metrics, company details, and founder
-X usernames. MCP returns multiword fields in snake_case. Examples include
-`source_format`, `estimated_upvotes`, and `x_handle`. Comment bodies are not
-included.
-
-> Radar + Style + Compose combined (free)
-
-```javascript
-async () => {
-  const [radar, styles] = await Promise.all([
-    xquik.request('/api/v1/radar'),
-    xquik.request('/api/v1/styles'),
-  ]);
-  return { radar, styles };
-}
-```
-
-> Analyze a user's writing style
-
-```javascript
-async () => {
-  // Returns cached style if available (free)
-  // Auto-refreshes from X if cache older than 7 days (credits required)
-  return xquik.request('/api/v1/styles', {
-    method: 'POST',
-    body: { username: 'elonmusk' }
-  });
-}
-```
+**Examples.**
 
 > Summarize up to 100 tweets with guarded pagination (credits required)
 
@@ -246,7 +180,8 @@ async () => {
   let stopReason = 'page_cap';
 
   for (let pageNumber = 0; pageNumber < 10 && seenIds.size < target && hasMore; pageNumber += 1) {
-    const page = await xquik.request('/api/v1/x/tweets/search', {
+    const { result: page } = await xquik.request({
+      path: '/api/v1/x/tweets/search',
       query: {
         q: query,
         limit: String(Math.min(200, target - seenIds.size)),
@@ -313,7 +248,8 @@ async () => {
   let stopReason = 'page_cap';
 
   for (let pageNumber = 0; pageNumber < 10 && seenIds.size < target && hasMore; pageNumber += 1) {
-    const page = await xquik.request(`/api/v1/x/users/${sourceUser}/followers`, {
+    const { result: page } = await xquik.request({
+      path: `/api/v1/x/users/${sourceUser}/followers`,
       query: {
         pageSize: String(Math.max(20, Math.min(200, target - seenIds.size))),
         ...(cursor ? { cursor } : {})
@@ -374,7 +310,8 @@ async () => {
     resultsLimit: 500
   };
 
-  const extraction = await xquik.request('/api/v1/extractions', {
+  const { result: extraction } = await xquik.request({
+    path: '/api/v1/extractions',
     method: 'POST',
     body
   });
@@ -408,7 +345,8 @@ async () => {
     media: ['https://example.com/product-demo.mp4']
   };
 
-  const result = await xquik.request('/api/v1/x/tweets', {
+  const { result } = await xquik.request({
+    path: '/api/v1/x/tweets',
     method: 'POST',
     body
   });
@@ -440,7 +378,8 @@ async () => {
   const user_id = '44196397';
   const source_url = 'https://example.com/image.png';
 
-  const media = await xquik.request('/api/v1/x/media', {
+  const { result: media } = await xquik.request({
+    path: '/api/v1/x/media',
     method: 'POST',
     body: {
       account,
@@ -448,7 +387,8 @@ async () => {
     }
   });
 
-  const dm = await xquik.request(`/api/v1/x/dm/${user_id}`, {
+  const { result: dm } = await xquik.request({
+    path: `/api/v1/x/dm/${user_id}`,
     method: 'POST',
     body: {
       account,
@@ -481,7 +421,8 @@ reply threading.
 ```javascript
 async () => {
   const tweet_input = '1234567890';
-  const download = await xquik.request('/api/v1/x/media/download', {
+  const { result: download } = await xquik.request({
+    path: '/api/v1/x/media/download',
     method: 'POST',
     body: { tweetInput: tweet_input }
   });
@@ -504,7 +445,8 @@ async () => {
 ```javascript
 async () => {
   const query = 'from:berktavsan has:videos';
-  const search = await xquik.request('/api/v1/x/tweets/search', {
+  const { result: search } = await xquik.request({
+    path: '/api/v1/x/tweets/search',
     query: { q: query }
   });
   if (!search.tweets?.length) {
@@ -517,7 +459,8 @@ async () => {
   }
 
   const tweetIds = search.tweets.map(t => t.id).slice(0, 50);
-  const download = await xquik.request('/api/v1/x/media/download', {
+  const { result: download } = await xquik.request({
+    path: '/api/v1/x/media/download',
     method: 'POST',
     body: { tweetIds }
   });
@@ -539,15 +482,18 @@ async () => {
 
 ```javascript
 async () => {
-  const monitor = await xquik.request('/api/v1/monitors', {
+  const { result: monitor } = await xquik.request({
+    path: '/api/v1/monitors',
     method: 'POST',
     body: { username: 'elonmusk', eventTypes: ['tweet.new', 'tweet.reply'] }
   });
-  const webhook = await xquik.request('/api/v1/webhooks', {
+  const { result: webhook } = await xquik.request({
+    path: '/api/v1/webhooks',
     method: 'POST',
     body: { url: 'https://example.com/hook', eventTypes: ['tweet.new', 'tweet.reply'] }
   });
-  const test = await xquik.request(`/api/v1/webhooks/${webhook.id}/test`, {
+  const { result: test } = await xquik.request({
+    path: `/api/v1/webhooks/${webhook.id}/test`,
     method: 'POST'
   });
   return {
@@ -570,7 +516,8 @@ async () => {
 async () => {
   const monitor_id = 'mon_123';
   const event_type = 'tweet.new';
-  const page = await xquik.request('/api/v1/events', {
+  const { result: page } = await xquik.request({
+    path: '/api/v1/events',
     query: { monitorId: monitor_id, eventType: event_type }
   });
 
@@ -610,7 +557,8 @@ async () => {
 
   // Add optional filters only when the user requests them.
 
-  const job = await xquik.request('/api/v1/extractions', {
+  const { result: job } = await xquik.request({
+    path: '/api/v1/extractions',
     method: 'POST',
     body
   });
@@ -665,7 +613,8 @@ Do not upload media before posting tweets or replies when the media is already p
 
 ```javascript
 async () => {
-  const page = await xquik.request('/api/v1/x/tweets/search', {
+  const { result: page } = await xquik.request({
+    path: '/api/v1/x/tweets/search',
     query: { q: 'from:username giveaway', limit: '50' }
   });
 
@@ -692,7 +641,8 @@ async () => {
 
 ```javascript
 async () => {
-  const page = await xquik.request('/api/v1/x/tweets', {
+  const { result: page } = await xquik.request({
+    path: '/api/v1/x/tweets',
     query: { ids: '1893456789012345678,1893456789012345679' }
   });
   return {
@@ -711,7 +661,10 @@ Run this mutation only after the user explicitly asks to subscribe or open billi
 
 ```javascript
 async () => {
-  return xquik.request('/api/v1/subscribe', { method: 'POST' });
+  return xquik.request({
+    path: '/api/v1/subscribe',
+    method: 'POST'
+  });
 }
 ```
 

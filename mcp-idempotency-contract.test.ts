@@ -28,13 +28,13 @@ describe('hosted MCP idempotency contract', () => {
     );
     expect(tools).not.toMatch(/headers\??:\s*Record/);
     expect(tools).toContain(
-      'sandbox reuses that key for bounded transient retries.',
+      'reuses it for bounded transient retries.',
     );
     expect(overview).toContain(
       'reuses each generated key for bounded transient retries.',
     );
     expect(tools).toContain(
-      'Start a new attempt only when `safe_to_retry` is true.',
+      'Retry only when `safe_to_retry` is true.',
     );
     expect(skill).toContain('Never resubmit an ambiguous write.');
     expect(skill).toContain(
