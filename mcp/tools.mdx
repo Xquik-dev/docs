@@ -122,8 +122,8 @@ declare const xquik: {
 A rejected request includes `error.status` when available. Existing string-path
 calls still return the body for compatibility. Hosted MCP injects a unique
 `Idempotency-Key` and reuses it for bounded transient retries. Verify unresolved
-writes. Retry only when `safe_to_retry` is true. Result fields use snake_case,
-Unix timestamps, structured errors, `has_more`, and `next_cursor`.
+writes. Retry only when `safe_to_retry` is true. Results use snake_case with Unix
+timestamps. CamelCase reads work, including `favoriteCount` for `like_count`. Errors stay structured. Pagination uses `has_more` and `next_cursor`.
 
 Compact extraction results retain `like_count`, `retweet_count`, `reply_count`, `quote_count`, `view_count`, and `bookmark_count`. They omit profile images and nested enrichment.
 
@@ -150,7 +150,7 @@ modules, `recommendedFallback`, and X-dependent coverage limits.
 
 Errors use `error.type`, `error.code`, and `error.message`, with fields such as `error.retryable` or `error.retry_after` when available. Invalid routes stay blocked. Related path errors name a valid same-method catalog route. Dependency failures use HTTP `424` in this contract. Fix validation errors before retrying, and respect `retry_after` on `429`.
 
-Write and media results also use the MCP-normalized snake_case contract. Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `response.result`. REST and generated SDK pages may show camelCase fields such as `tweetId`, `writeActionId`, `chargedCredits`, `mediaId`, and `messageId`; keep MCP agents on snake_case when reading tool results.
+Write and media results follow the same contract. Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `response.result`.
 
 Tool output stops at 24,000 characters. Project large arrays to requested fields before returning them. Oversized structured output returns a recoverable `response_too_large` tool error with the original size, limit, and retry guidance. It never returns partial JSON. Retry with fewer rows, shorter strings, or an aggregate. Use REST, SDKs, or extraction exports to persist every row.
 
