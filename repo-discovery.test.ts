@@ -6377,7 +6377,7 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   '"handoff_format": "jsonl"',
   '`xquik-extraction-results.jsonl`',
   'Keep `page_cursor` and `next_cursor` so the job can resume from the last successful page.',
-  'Only `tweet_search_extractor` accepts the 31 optional filters.',
+  '`community_search` accepts language, dates, media',
   '`minFaves`, `minRetweets`, `minReplies`, or `minQuotes`',
   '`replies`, `retweets`, and `quotes` with `include`, `exclude`, or `only`',
   '`exactPhrase`, `excludeWords`, `anyWords`, `hashtags`, `cashtags`',
