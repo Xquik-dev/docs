@@ -167,7 +167,7 @@ paths:
       description:
         Returns plan, credit, monitoring, and account settings for the
         authenticated user.
-      summary: Get account info
+      summary: Get account plan, credits & monitoring
       tags: [Account]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
       responses:
@@ -177,24 +177,36 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [plan, monitorsUsed, monitorsAllowed, monitorBilling]
+                required:
+                  [plan, subscription, monitorsUsed, monitorsAllowed, monitorBilling]
                 properties:
                   plan:
                     type: string
                     enum: [active, inactive]
                     example: active
+                  subscription:
+                    type: object
+                    description: Subscription status and period end.
+                    example: { status: active }
+                    required: [status]
+                    properties:
+                      status:
+                        type: string
+                        enum: [none, active, past_due, canceling, incomplete]
+                        example: active
+                      tier: { type: string, enum: [starter, pro, business], example: pro }
+                      currentPeriodEnd:
+                        type: string
+                        format: date-time
+                        example: '2026-09-01T00:00:00.000Z'
                   monitorsUsed:
                     type: integer
                     example: 3
                   monitorsAllowed:
                     type: integer
                     deprecated: true
-                    x-stainless-deprecation-message:
-                      Monitor slots are unlimited. Use
-                      monitorBilling.unlimitedSlots instead.
-                    description:
-                      Deprecated. Monitor slots are unlimited, so this is always
-                      Number.MAX_SAFE_INTEGER.
+                    x-stainless-deprecation-message: Monitor slots are unlimited.
+                    description: Deprecated. Always Number.MAX_SAFE_INTEGER.
                     example: 9007199254740991
                   monitorBilling:
                     type: object
@@ -211,38 +223,31 @@ paths:
                     properties:
                       activeDailyEstimate:
                         type: string
-                        description:
-                          Estimated daily credits for currently active monitors.
+                        description: Daily credit estimate for active monitors.
                         example: '1500'
                       activeHourlyBurn:
                         type: string
-                        description:
-                          Credits charged each hour for currently active
-                          monitors.
+                        description: Hourly credits for active monitors.
                         example: '63'
                       creditsPerActiveMonitorDay:
                         type: string
-                        description:
-                          Rounded daily estimate for 1 active monitor.
+                        description: Daily estimate for 1 active monitor.
                         example: '500'
                       creditsPerActiveMonitorHour:
                         type: string
-                        description:
-                          Hourly credits charged for 1 active monitor.
+                        description: Hourly credits for 1 active monitor.
                         example: '21'
                       eventsIncluded:
                         type: boolean
-                        description:
-                          Webhook and event deliveries are included in monitor
-                          billing.
+                        description: Monitor billing includes events and webhooks.
                         example: true
                       instantCheckIntervalSeconds:
                         type: integer
-                        description: Active monitors check every 1 second.
+                        description: Checks every 1 second.
                         example: 1
                       unlimitedSlots:
                         type: boolean
-                        description: Monitor slot count is unlimited.
+                        description: Monitor slots are unlimited.
                         example: true
                   creditInfo:
                     type: object
@@ -258,31 +263,26 @@ paths:
                     properties:
                       balance:
                         type: string
-                        description:
-                          Bigint string to preserve precision above
-                          Number.MAX_SAFE_INTEGER.
+                        description: Available credits as a bigint string.
                         example: '50000'
                       lifetimePurchased:
                         type: string
-                        description: Total purchased credits as a bigint string.
+                        description: Purchased credits as a bigint string.
                         example: '140000'
                       lifetimeUsed:
                         type: string
-                        description: Total consumed credits as a bigint string.
+                        description: Used credits as a bigint string.
                         example: '90000'
                       autoTopupEnabled:
                         type: boolean
                         example: false
                       autoTopupAmountDollars:
                         type: number
-                        description:
-                          Dollar amount charged when automatic top-up runs.
+                        description: Automatic top-up charge in USD.
                         example: 10
                       autoTopupThreshold:
                         type: string
-                        description:
-                          Bigint string threshold that triggers automatic top-up
-                          when enabled.
+                        description: Balance that triggers automatic top-up.
                         example: '50000'
                     example:
                       balance: '50000'
@@ -293,11 +293,14 @@ paths:
                       autoTopupThreshold: '50000'
                   xUsername:
                     type: string
-                    description:
-                      Linked X username, omitted when no X account is connected.
+                    description: Linked X username. Omitted when disconnected.
                     example: elonmusk
               example:
                 plan: active
+                subscription:
+                  status: active
+                  tier: pro
+                  currentPeriodEnd: '2026-09-01T00:00:00.000Z'
                 monitorsUsed: 3
                 monitorsAllowed: 9007199254740991
                 monitorBilling:

@@ -6,8 +6,9 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: 'api-reference/account/get.mdx',
     snippets: [
       '| Preflight question | Response field | Integration decision |',
-      '| Credit balance | `creditInfo.balance` |',
-      'Funded pay-as-you-go requests can continue while `plan` is `inactive`.',
+      '| When does the plan renew or end? | `subscription.currentPeriodEnd` |',
+      '| How many credits remain? | `creditInfo.balance` |',
+      'Funded pay-as-you-go requests can continue without an active subscription.',
     ],
   },
   {
