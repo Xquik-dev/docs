@@ -6539,7 +6539,7 @@ const FORBIDDEN_TRENDS_REGION_SNIPPETS = [
 const REQUIRED_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
   '<ParamField body="queryType" type="string">',
   'Search ranking: `Latest`, `Top`, or `Both`.',
-  'Each extraction job needs one target field based on `toolType`.',
+  'Choose supported target fields.',
   '`resultsLimit`',
   '<Card title="Tweet target" icon="message-circle">',
   'Use `targetTweetId` for tweet-centered jobs:',
