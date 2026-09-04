@@ -80,6 +80,7 @@ const TWEET_FIELDS = [
   'postCta',
   'possiblySensitive',
   'previousCounts',
+  'reactionContext',
   'viewState',
   'scopes',
   'entities',
