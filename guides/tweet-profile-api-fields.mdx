@@ -30,12 +30,8 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
 Use this guide to get tweet metadata from Xquik responses.
 It maps Twitter API fields for tweets, user profiles, media files, and replies.
-Compare Twitter API user fields, Twitter profile fields, and media objects.
-Review tweet engagement metrics, quote context, repost context, and pagination.
-
-Quick answer: treat IDs as strings. Treat optional fields as conditional. Keep
-reply, quote, and repost relationships separate. Store a collection timestamp
-beside mutable engagement and profile counts.
+Quick answer: treat IDs as strings.
+Keep reply, quote, and repost relationships separate.
 
 This Twitter metadata guide focuses on public fields X supplies.
 Xquik preserves every documented public field supplied for supported reads.
@@ -105,7 +101,7 @@ Core tweet fields group into these roles:
 - Text: `text`, `displayTextRange`, `entities`, and `contentDisclosure`
 - Replies: `isReply`, `isLimitedReply`, `conversationId`, `conversationControl`, `limitedActions`, `unmentionedUserIds`, `inReplyToId`, `inReplyToUserId`, and `inReplyToUsername`
 - Quote and repost context: `isQuoteStatus`, `quoted_tweet`, `quotedTweetId`, `retweeted_tweet`, and `isNoteTweet`
-- Related data: `author`, `media`, `retweetCount`, `replyCount`, `likeCount`, `quoteCount`, `viewCount`, and `bookmarkCount`
+- Related data: `author`, `media`, `reactionContext`, `retweetCount`, `replyCount`, `likeCount`, `quoteCount`, `viewCount`, and `bookmarkCount`
 
 | Field               | Description                       |
 | ------------------- | --------------------------------- |
@@ -122,6 +118,7 @@ Core tweet fields group into these roles:
 | `postCta`           | Public post action metadata       |
 | `possiblySensitive` | X sensitivity state               |
 | `previousCounts`    | Pre-edit engagement counts        |
+| `reactionContext`   | Referenced public post and user   |
 | `scopes`            | Sanitized public scope metadata   |
 | `tombstone`         | Unavailable tweet metadata        |
 | `viewState`         | X view-state metadata             |
@@ -171,17 +168,12 @@ values. Never copy example IDs into a production join.
 
 ### Map replies, quotes, and reposts
 
-Use `isReply` to identify a reply. Use `inReplyToId` for its direct parent.
-Use `conversationId` for the root conversation. These IDs can differ.
-
-Use `isQuoteStatus` to identify quote context. Read `quoted_tweet` for the
-nested quoted tweet when available. Keep the quoting tweet as its own row.
-
-Read `retweeted_tweet` for original repost context. Keep the returned outer
-tweet ID and nested tweet ID separate. This prevents incorrect engagement
-joins.
-
+Join replies to `inReplyToId`. Keep `conversationId` for the root conversation.
+Join quotes and reposts to each nested tweet ID.
 Keep original tweets separate from outer repost records.
+
+`reactionContext` identifies the public post and user tied to a reaction.
+Xquik removes viewer-specific state from its nested user.
 
 <CardGroup cols={2}>
   <Card title="Direct reply" icon="reply">
