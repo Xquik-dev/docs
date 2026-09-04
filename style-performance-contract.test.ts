@@ -86,7 +86,7 @@ describe('tweet style performance documentation', (): void => {
 
     expect({
       customIdsDenied:
-        /A custom style\s+saved from supplied text contains local sample IDs\. Those IDs cannot produce X\s+tweet analytics\./u.test(
+        /Custom styles contain local IDs that cannot produce X analytics\./u.test(
           source,
         ),
       liveLookupDocumented: source.includes(

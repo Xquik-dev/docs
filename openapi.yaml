@@ -782,7 +782,8 @@ paths:
       security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: true
-        description: X username whose recent tweets define the style.
+        description:
+          X username, with or without @, whose posts define the style.
         content:
           application/json:
             schema:
@@ -791,7 +792,8 @@ paths:
               properties:
                 username:
                   type: string
-                  description: X username to analyze
+                  pattern: '^@?[A-Za-z0-9_]{1,15}$'
+                  description: X username to analyze. A leading @ is allowed.
                   example: elonmusk
             example:
               username: elonmusk
@@ -833,8 +835,7 @@ paths:
   /styles/compare:
     get:
       operationId: compareStyles
-      description:
-        Compares language and engagement signals across two style profiles.
+      description: Returns 2 cached style profiles in request order.
       summary: Compare two style profiles
       tags: [Composition]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
@@ -844,13 +845,13 @@ paths:
           required: true
           schema:
             type: string
-          description: First username to compare
+          description: First saved profile. Usernames may start with @.
         - name: username2
           in: query
           required: true
           schema:
             type: string
-          description: Second username to compare
+          description: Second saved profile. Usernames may start with @.
       responses:
         '200':
           description: Style comparison
@@ -915,7 +916,7 @@ paths:
         '429': *rate-limit-exceeded-response
     put:
       operationId: saveStyle
-      description: Creates or replaces a style profile from supplied posts.
+      description: Creates or replaces a saved X writing profile. The path ID is its name.
       summary: Save style profile with custom tweets
       tags: [Composition]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
@@ -923,17 +924,16 @@ paths:
         - $ref: '#/components/parameters/StyleId'
       requestBody:
         required: true
-        description: Label and sample tweets that define the style profile.
+        description: Sample posts and an optional matching label.
         content:
           application/json:
             schema:
               type: object
-              required: [label, tweets]
+              required: [tweets]
               properties:
                 label:
                   type: string
-                  description:
-                    Display label. Must match the path ID, ignoring case.
+                  description: Optional label. If set, it must match the path ID.
                   example: 'Professional Voice'
                 tweets:
                   type: array
@@ -949,7 +949,6 @@ paths:
                   example:
                     - text: 'Excited to share our latest research findings.'
             example:
-              label: 'Professional Voice'
               tweets:
                 - text: 'Excited to share our latest research findings.'
       responses:
@@ -7734,7 +7733,7 @@ components:
       required: true
       schema:
         type: string
-      description: Style profile ID or X username
+      description: Saved profile name. Reads and deletes accept @username.
     TweetFilterFromUser:
       name: fromUser
       in: query
@@ -8984,7 +8983,7 @@ components:
         styleUsername:
           type: string
           minLength: 1
-          description: Username from a style analysis saved to this account.
+          description: Saved profile name. Usernames may start with @.
           example: example_user
       additionalProperties: true
     ComposeRefineRequest:
