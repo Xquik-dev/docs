@@ -43,8 +43,8 @@ Search the authenticated API catalog. `search` makes no network calls and uses n
     10,000 characters.
   </Card>
   <Card title="Spec access" icon="search">
-    Read `spec.paths`. Return each matching path, method, and full operation.
-    Inspect its parameters, body, and responses before `execute`.
+    Read `spec.paths`. Return matching paths, methods, and relevant contract fields.
+    Inspect inputs and response fields separately when an operation is large.
   </Card>
 </CardGroup>
 
@@ -77,12 +77,16 @@ declare const spec: { paths: Record<string, PathItem> };
 > Inspect an operation's input contract
 
 ```javascript
-async () => ({
-  path: '/api/v1/x/tweets/search',
-  method: 'GET',
-  operation: spec.paths['/api/v1/x/tweets/search']?.get,
-})
+async () => {
+  const path = '/api/v1/x/tweets/search';
+  const { operationId, summary, parameters } = spec.paths[path].get;
+  return { path, method: 'GET', operationId, summary, parameters };
+}
 ```
+
+Response schemas can exceed the 24,000-character output limit after reference resolution.
+Inspect specific response properties in a separate `search` call.
+The limit bounds tool output, not the catalog or available results.
 
 ## execute
 
@@ -91,6 +95,9 @@ Execute API calls allowed by the authenticated credential. Full account keys and
 **Input.**
 
 Pass `code` as an async arrow function of up to 10,000 characters. `xquik` is global and the function's first argument.
+
+Pass the function itself, not a promise or its result.
+Place API calls inside its body. Non-functions fail before any API request starts.
 
 **Sandbox API.**
 

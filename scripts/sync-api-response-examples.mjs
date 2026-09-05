@@ -180,10 +180,9 @@ function compactErrorExample(value) {
   }
 
   const entries = Object.entries(value);
-  const selected = ERROR_EXAMPLE_KEYS.flatMap((key) => {
-    const entry = entries.find(([name]) => name === key);
-    return entry === undefined ? [] : [entry];
-  });
+  const selected = ERROR_EXAMPLE_KEYS
+    .filter((key) => Object.hasOwn(value, key))
+    .map((key) => [key, value[key]]);
   return Object.fromEntries(
     (selected.length > 0 ? selected : entries.slice(0, 6)).map(([key, item]) => [
       key,
