@@ -5837,13 +5837,11 @@ const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   '`GET /x/tweets/search`',
   'for live JSON. Store IDs and `next_cursor` to resume.',
   'saved pages, or downloadable CSV, JSON, and XLSX files.',
-  '<Card title="Live search page" icon="search">',
-  'Call `GET /x/tweets/search` with filters and cursors for live JSON.',
-  '<Card title="Exact tweet lookup" icon="hash">',
-  'source queue stores links.',
-  '<Card title="Saved export job" icon="archive">',
-  'Run `tweet_search_extractor` for estimates, job status, stored pages, and',
-  'downloadable files.',
+  'Use [`tweet_search_extractor`](/guides/tweet-scraper-csv-export) for estimates,',
+  '### 404 Missing user or tweet',
+  '`user_not_found` means a required user lookup failed. Check the username.',
+  '`tweet_not_found` means an exact tweet lookup failed. Check the tweet ID or URL.',
+  'Neither means a search completed with no matching tweets.',
   'const searchRows = page.tweets.map',
   'tweet_id: tweet.id',
   'author_username: tweet.author?.username ?? null',
@@ -17385,354 +17383,136 @@ describe('repository discovery', (): void => {
     );
   });
 
-  it('keeps the Brandwatch alternative focused on concrete social listening handoffs', (): void => {
+  it.each([
+    [
+      'Brandwatch alternative',
+      'alternatives/brandwatch.mdx',
+      REQUIRED_BRANDWATCH_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Meltwater alternative',
+      'alternatives/meltwater.mdx',
+      REQUIRED_MELTWATER_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Talkwalker alternative',
+      'alternatives/talkwalker.mdx',
+      REQUIRED_TALKWALKER_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'TweetDeck alternative',
+      'alternatives/tweetdeck.mdx',
+      REQUIRED_TWEETDECK_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Zernio alternative',
+      'alternatives/late.mdx',
+      REQUIRED_ZERNIO_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'twscrape alternative',
+      'alternatives/twscrape.mdx',
+      REQUIRED_TWSCRAPE_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Postproxy alternative',
+      'alternatives/postproxy.mdx',
+      REQUIRED_POSTPROXY_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Post Bridge alternative',
+      'alternatives/post-bridge.mdx',
+      REQUIRED_POST_BRIDGE_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'SocialCrawl alternative',
+      'alternatives/socialcrawl.mdx',
+      REQUIRED_SOCIALCRAWL_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Outstand alternative',
+      'alternatives/outstand.mdx',
+      REQUIRED_OUTSTAND_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Hypefury alternative',
+      'alternatives/hypefury.mdx',
+      REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Antwork alternative',
+      'alternatives/antwork.mdx',
+      REQUIRED_ANTWORK_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'ChirrApp alternative',
+      'alternatives/chirrapp.mdx',
+      REQUIRED_CHIRRAPP_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Black Magic alternative',
+      'alternatives/black-magic.mdx',
+      REQUIRED_BLACK_MAGIC_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'TweetStream alternative',
+      'alternatives/tweetstream.mdx',
+      REQUIRED_TWEETSTREAM_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Tweet Hunter alternative',
+      'alternatives/tweet-hunter.mdx',
+      REQUIRED_TWEET_HUNTER_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Taplio alternative',
+      'alternatives/taplio.mdx',
+      REQUIRED_TAPLIO_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Postwise alternative',
+      'alternatives/postwise.mdx',
+      REQUIRED_POSTWISE_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'TryPost alternative',
+      'alternatives/trypost.mdx',
+      REQUIRED_TRYPOST_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Xanguard alternative',
+      'alternatives/xanguard.mdx',
+      REQUIRED_XANGUARD_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Hootsuite alternative',
+      'alternatives/hootsuite.mdx',
+      REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Sprinklr alternative',
+      'alternatives/sprinklr.mdx',
+      REQUIRED_SPRINKLR_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Sprout Social alternative',
+      'alternatives/sprout-social.mdx',
+      REQUIRED_SPROUT_SOCIAL_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Buffer alternative',
+      'alternatives/buffer.mdx',
+      REQUIRED_BUFFER_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      'Typefully alternative',
+      'alternatives/typefully.mdx',
+      REQUIRED_TYPEFULLY_ALTERNATIVE_SNIPPETS,
+    ],
+  ])('keeps %s source-backed', (label, path, snippets): void => {
     expect.assertions(1);
-
-    const source = readFileSync('alternatives/brandwatch.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Brandwatch alternative',
-        REQUIRED_BRANDWATCH_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Meltwater alternative focused on concrete media monitoring handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/meltwater.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Meltwater alternative',
-        REQUIRED_MELTWATER_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Talkwalker alternative focused on concrete consumer intelligence handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/talkwalker.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Talkwalker alternative',
-        REQUIRED_TALKWALKER_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the TweetDeck alternative current for X Pro and monitor handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/tweetdeck.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'TweetDeck alternative',
-        REQUIRED_TWEETDECK_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Zernio alternative current for social API handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/late.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Zernio alternative',
-        REQUIRED_ZERNIO_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the twscrape alternative current for library handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/twscrape.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'twscrape alternative',
-        REQUIRED_TWSCRAPE_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Postproxy alternative current for publishing handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/postproxy.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Postproxy alternative',
-        REQUIRED_POSTPROXY_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Post Bridge alternative current for scheduler API handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/post-bridge.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Post Bridge alternative',
-        REQUIRED_POST_BRIDGE_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the SocialCrawl alternative current for social data API handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/socialcrawl.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'SocialCrawl alternative',
-        REQUIRED_SOCIALCRAWL_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Outstand alternative current for social publishing handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/outstand.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Outstand alternative',
-        REQUIRED_OUTSTAND_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Hypefury alternative current for creator-publishing handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/hypefury.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Hypefury alternative',
-        REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Antwork alternative current for AI-agent publishing handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/antwork.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Antwork alternative',
-        REQUIRED_ANTWORK_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the ChirrApp alternative current for thread-publishing handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/chirrapp.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'ChirrApp alternative',
-        REQUIRED_CHIRRAPP_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Black Magic alternative current for creator CRM handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/black-magic.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Black Magic alternative',
-        REQUIRED_BLACK_MAGIC_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the TweetStream alternative current for WebSocket alert handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/tweetstream.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'TweetStream alternative',
-        REQUIRED_TWEETSTREAM_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Tweet Hunter alternative current for creator-growth handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/tweet-hunter.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Tweet Hunter alternative',
-        REQUIRED_TWEET_HUNTER_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Taplio alternative current for LinkedIn handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/taplio.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Taplio alternative',
-        REQUIRED_TAPLIO_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Postwise alternative current for creator-scheduling handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/postwise.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Postwise alternative',
-        REQUIRED_POSTWISE_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the TryPost alternative current for open-source scheduler handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/trypost.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'TryPost alternative',
-        REQUIRED_TRYPOST_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Xanguard alternative current for crypto-alert handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/xanguard.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Xanguard alternative',
-        REQUIRED_XANGUARD_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Hootsuite alternative focused on social-suite handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/hootsuite.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Hootsuite alternative',
-        REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Sprinklr alternative focused on enterprise social handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/sprinklr.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Sprinklr alternative',
-        REQUIRED_SPRINKLR_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Sprout Social alternative focused on social-care handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/sprout-social.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Sprout Social alternative',
-        REQUIRED_SPROUT_SOCIAL_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Buffer alternative focused on social-scheduling handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/buffer.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Buffer alternative',
-        REQUIRED_BUFFER_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it('keeps the Typefully alternative focused on creator-publishing handoffs', (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync('alternatives/typefully.mdx', 'utf8');
-
-    expect(
-      collectSnippetFindings(
-        source,
-        'Typefully alternative',
-        REQUIRED_TYPEFULLY_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
+    const source = readFileSync(path, 'utf8');
+    expect(collectSnippetFindings(source, label, snippets)).toStrictEqual([]);
   });
 
   it('keeps Apify marketplace claims current without freezing rank signals', (): void => {
@@ -17843,9 +17623,7 @@ describe('repository discovery', (): void => {
     );
     expect(page).toContain('https://xquik.com/.well-known/agent-card.json');
     expect(page).toContain('JSON-RPC endpoint at `https://xquik.com/a2a`');
-    expect(contract).toContain(
-      'operationId: searchXquikDocumentation\n',
-    );
+    expect(contract).toContain('operationId: searchXquikDocumentation\n');
     expect(contract).toContain('text/event-stream:');
   });
 });

@@ -23,13 +23,10 @@ for (const [name, version] of Object.entries(
   }
 }
 
-let dependencyCount = 0;
-for (const [path, metadata] of Object.entries(lockfile.packages ?? {})) {
-  if (path === '') {
-    continue;
-  }
-
-  dependencyCount += 1;
+const dependencies = Object.entries(lockfile.packages ?? {}).filter(
+  ([path]) => path !== '',
+);
+for (const [path, metadata] of dependencies) {
   const name = path.slice(path.lastIndexOf('node_modules/') + 13);
   const key = `${name}@${metadata.version}`;
   const license = metadata.license ?? licenseOverrides.get(key);
@@ -47,7 +44,7 @@ for (const [path, metadata] of Object.entries(lockfile.packages ?? {})) {
   }
 }
 
-if (dependencyCount === 0) {
+if (dependencies.length === 0) {
   failures.push('The lockfile contains no dependencies.');
 }
 
@@ -56,5 +53,5 @@ if (failures.length > 0) {
 }
 
 process.stdout.write(
-  `Verified ${dependencyCount} locked dependencies with approved integrity and licenses.\n`,
+  `Verified ${dependencies.length} locked dependencies with approved integrity and licenses.\n`,
 );

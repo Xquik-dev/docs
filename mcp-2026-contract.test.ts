@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 
 const PROJECT_ROOT = process.cwd();
@@ -22,6 +23,36 @@ const CHANGELOG = readFileSync(join(PROJECT_ROOT, 'changelog.mdx'), 'utf8');
 const README = readFileSync(join(PROJECT_ROOT, 'README.md'), 'utf8');
 
 describe('MCP 2026-07-28 documentation contract', (): void => {
+  it('projects the search example without returning large response schemas', async (): Promise<void> => {
+    expect.assertions(9);
+    const example = /```javascript\n([\s\S]*?)\n```/u.exec(TOOLS)?.[1];
+    expect(example).toBeDefined();
+    const path = '/api/v1/x/tweets/search';
+    const operation = {
+      operationId: 'searchTweets',
+      summary: 'Search Tweets',
+      parameters: [{ name: 'q', in: 'query', required: true }],
+      responses: { description: 'x'.repeat(24_001) },
+    };
+    const result: unknown = await runInNewContext(`(${example})()`, {
+      spec: { paths: { [path]: { get: operation } } },
+    });
+    expect(result).toEqual({
+      path,
+      method: 'GET',
+      operationId: operation.operationId,
+      summary: operation.summary,
+      parameters: operation.parameters,
+    });
+    expect(JSON.stringify(result).length).toBeLessThan(24_000);
+    expect(TOOLS).toMatch(/Inspect specific response properties[\s\S]*Both `search` and `execute` return compact JSON within 24,000 characters\. Whitespace inside strings stays unchanged\./u);
+    expect(TOOLS).toContain('Pass the function itself, not a promise or its result.');
+    expect(TOOLS).toContain('Non-functions fail before any API request starts.');
+    expect(TOOLS).toContain('Native API tools apply the same limit to successful & failed responses.');
+    expect(TOOLS).toContain('Oversized output returns `isError: true`');
+    expect(TOOLS).toContain('Output errors do not undo completed API actions or charges.');
+  });
+
   it('keeps volatile server versions out of setup documents', (): void => {
     const setupDocuments = [
       OVERVIEW,

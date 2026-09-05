@@ -318,4 +318,10 @@ describe('read data richness documentation', (): void => {
     expect(MCP_TOOLS).toContain('recommendedFallback');
     expect(TWEET_REPLIES).toContain('Trust `diagnostic.complete`');
   });
+  it('distinguishes direct coverage from nested reply exhaustion', (): void => {
+    expect.assertions(3);
+    expect(TWEET_REPLIES).toContain('It does not prove every nested reply was returned.');
+    expect(TWEET_REPLIES).toContain('follows queued live cursors even after meeting direct coverage');
+    expect(TWEET_REPLIES).toContain('Requested limits, deadlines, and bounded collection budgets still apply.');
+  });
 });
