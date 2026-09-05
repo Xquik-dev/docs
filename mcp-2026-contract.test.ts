@@ -3,24 +3,16 @@ import { join } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 
-const PROJECT_ROOT = process.cwd();
-const OVERVIEW = readFileSync(join(PROJECT_ROOT, 'mcp/overview.mdx'), 'utf8');
-const TOOLS = readFileSync(join(PROJECT_ROOT, 'mcp/tools.mdx'), 'utf8');
-const AGENT_HANDOFF = readFileSync(
-  join(PROJECT_ROOT, 'mcp/agent-handoff.mdx'),
-  'utf8',
-);
-const DOCS_MCP = readFileSync(join(PROJECT_ROOT, 'mcp/docs-mcp.mdx'), 'utf8');
-const QUICKSTART = readFileSync(
-  join(PROJECT_ROOT, 'x-api-quickstart.mdx'),
-  'utf8',
-);
-const INTRODUCTION = readFileSync(join(PROJECT_ROOT, 'index.mdx'), 'utf8');
-const SKILL = readFileSync(join(PROJECT_ROOT, 'skill.md'), 'utf8');
-const LLMS = readFileSync(join(PROJECT_ROOT, 'llms.txt'), 'utf8');
-const CONTEXT7 = readFileSync(join(PROJECT_ROOT, 'context7.json'), 'utf8');
-const CHANGELOG = readFileSync(join(PROJECT_ROOT, 'changelog.mdx'), 'utf8');
-const README = readFileSync(join(PROJECT_ROOT, 'README.md'), 'utf8');
+function readDocument(path: string): string {
+  return readFileSync(join(process.cwd(), path), 'utf8');
+}
+
+const OVERVIEW = readDocument('mcp/overview.mdx');
+const TOOLS = readDocument('mcp/tools.mdx');
+const SKILL = readDocument('skill.md');
+const LLMS = readDocument('llms.txt');
+const CHANGELOG = readDocument('changelog.mdx');
+const README = readDocument('README.md');
 
 describe('MCP 2026-07-28 documentation contract', (): void => {
   it('projects the search example without returning large response schemas', async (): Promise<void> => {
@@ -57,13 +49,13 @@ describe('MCP 2026-07-28 documentation contract', (): void => {
     const setupDocuments = [
       OVERVIEW,
       TOOLS,
-      AGENT_HANDOFF,
-      DOCS_MCP,
-      QUICKSTART,
-      INTRODUCTION,
+      readDocument('mcp/agent-handoff.mdx'),
+      readDocument('mcp/docs-mcp.mdx'),
+      readDocument('x-api-quickstart.mdx'),
+      readDocument('index.mdx'),
       SKILL,
       LLMS,
-      CONTEXT7,
+      readDocument('context7.json'),
       README,
     ];
     expect.assertions(setupDocuments.length);
@@ -74,7 +66,7 @@ describe('MCP 2026-07-28 documentation contract', (): void => {
   });
 
   it('explains modern negotiation and safe cache behavior', (): void => {
-    expect.assertions(10);
+    expect.assertions(12);
 
     expect(OVERVIEW).toContain('MCP `2026-07-28`');
     expect(OVERVIEW).toContain('server/discover');
@@ -84,6 +76,8 @@ describe('MCP 2026-07-28 documentation contract', (): void => {
     expect(OVERVIEW).toContain('stateless 2025-era clients');
     expect(OVERVIEW).toContain('application/json');
     expect(OVERVIEW).toContain('text/event-stream');
+    expect(OVERVIEW).toContain('`X-Request-Id`');
+    expect(OVERVIEW).toContain('not the JSON-RPC message or authenticated session');
     expect(SKILL).toContain('MCP `2026-07-28`');
     expect(LLMS).toContain('MCP 2026-07-28');
   });
