@@ -24,7 +24,7 @@ const README = readFileSync(join(PROJECT_ROOT, 'README.md'), 'utf8');
 
 describe('MCP 2026-07-28 documentation contract', (): void => {
   it('projects the search example without returning large response schemas', async (): Promise<void> => {
-    expect.assertions(6);
+    expect.assertions(9);
     const example = /```javascript\n([\s\S]*?)\n```/u.exec(TOOLS)?.[1];
     expect(example).toBeDefined();
     const path = '/api/v1/x/tweets/search';
@@ -48,6 +48,9 @@ describe('MCP 2026-07-28 documentation contract', (): void => {
     expect(TOOLS).toMatch(/Inspect specific response properties[\s\S]*Both `search` and `execute` return compact JSON within 24,000 characters\. Whitespace inside strings stays unchanged\./u);
     expect(TOOLS).toContain('Pass the function itself, not a promise or its result.');
     expect(TOOLS).toContain('Non-functions fail before any API request starts.');
+    expect(TOOLS).toContain('Native API tools apply the same limit to successful & failed responses.');
+    expect(TOOLS).toContain('Oversized output returns `isError: true`');
+    expect(TOOLS).toContain('Output errors do not undo completed API actions or charges.');
   });
 
   it('keeps volatile server versions out of setup documents', (): void => {

@@ -37,16 +37,9 @@ Search the authenticated API catalog. `search` makes no network calls and uses n
 
 **Input.**
 
-<CardGroup cols={2}>
-  <Card title="Sandbox code" icon="code">
-    Pass `code` as an async arrow function. It is required and can be up to
-    10,000 characters.
-  </Card>
-  <Card title="Spec access" icon="search">
-    Read `spec.paths`. Return matching paths, methods, and relevant contract fields.
-    Inspect inputs and response fields separately when an operation is large.
-  </Card>
-</CardGroup>
+Pass required `code` as an async arrow function of up to 10,000 characters.
+Read `spec.paths`. Return matching paths, methods, and relevant contract fields.
+Inspect inputs and response fields separately when an operation is large.
 
 **Sandbox API.**
 
@@ -157,7 +150,10 @@ Errors use `error.type`, `error.code`, and `error.message`, with fields such as 
 
 Write and media results follow the same contract. Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `response.result`.
 
-Both `search` and `execute` return compact JSON within 24,000 characters. Whitespace inside strings stays unchanged. The limit bounds tool output, not catalog access or available results. Resolved response schemas can exceed it. Oversized output returns a recoverable `response_too_large` tool error with size, limit, and retry guidance. It never returns partial JSON. Retry with selected fields, fewer rows, shorter strings, or an aggregate. Use REST, SDKs, or extraction exports to persist every row.
+Both `search` and `execute` return compact JSON within 24,000 characters. Whitespace inside strings stays unchanged. Native API tools apply the same limit to successful & failed responses.
+The limit bounds tool output, not catalog access or available results. Resolved response schemas can exceed it. Oversized output returns `isError: true` with a recoverable `response_too_large` diagnostic. It includes size, limit, and retry guidance, never partial JSON. An ordinary result containing an `error` field is not a tool failure.
+Retry with selected fields, fewer rows, shorter strings, or an aggregate. Use REST, SDKs, or extraction exports to persist every row.
+Output errors do not undo completed API actions or charges. Retrieve existing results instead of repeating completed writes.
 
 ### Scope and unavailable operations
 
