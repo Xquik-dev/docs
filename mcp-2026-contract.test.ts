@@ -45,7 +45,7 @@ describe('MCP 2026-07-28 documentation contract', (): void => {
       parameters: operation.parameters,
     });
     expect(JSON.stringify(result).length).toBeLessThan(24_000);
-    expect(TOOLS).toContain('Inspect specific response properties');
+    expect(TOOLS).toMatch(/Inspect specific response properties[\s\S]*Both `search` and `execute` return compact JSON within 24,000 characters\. Whitespace inside strings stays unchanged\./u);
     expect(TOOLS).toContain('Pass the function itself, not a promise or its result.');
     expect(TOOLS).toContain('Non-functions fail before any API request starts.');
   });
