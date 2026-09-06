@@ -3,30 +3,28 @@ import { join } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 
-const PROJECT_ROOT = process.cwd();
-const OVERVIEW = readFileSync(join(PROJECT_ROOT, 'mcp/overview.mdx'), 'utf8');
-const TOOLS = readFileSync(join(PROJECT_ROOT, 'mcp/tools.mdx'), 'utf8');
-const AGENT_HANDOFF = readFileSync(
-  join(PROJECT_ROOT, 'mcp/agent-handoff.mdx'),
-  'utf8',
-);
-const DOCS_MCP = readFileSync(join(PROJECT_ROOT, 'mcp/docs-mcp.mdx'), 'utf8');
-const QUICKSTART = readFileSync(
-  join(PROJECT_ROOT, 'x-api-quickstart.mdx'),
-  'utf8',
-);
-const INTRODUCTION = readFileSync(join(PROJECT_ROOT, 'index.mdx'), 'utf8');
-const SKILL = readFileSync(join(PROJECT_ROOT, 'skill.md'), 'utf8');
-const LLMS = readFileSync(join(PROJECT_ROOT, 'llms.txt'), 'utf8');
-const CONTEXT7 = readFileSync(join(PROJECT_ROOT, 'context7.json'), 'utf8');
-const CHANGELOG = readFileSync(join(PROJECT_ROOT, 'changelog.mdx'), 'utf8');
-const README = readFileSync(join(PROJECT_ROOT, 'README.md'), 'utf8');
+const read = (path: string): string => readFileSync(join(process.cwd(), path), 'utf8');
+const OVERVIEW = read('mcp/overview.mdx');
+const TOOLS = read('mcp/tools.mdx');
+const AGENT_HANDOFF = read('mcp/agent-handoff.mdx');
+const DOCS_MCP = read('mcp/docs-mcp.mdx');
+const QUICKSTART = read('x-api-quickstart.mdx');
+const INTRODUCTION = read('index.mdx');
+const SKILL = read('skill.md');
+const LLMS = read('llms.txt');
+const CONTEXT7 = read('context7.json');
+const CHANGELOG = read('changelog.mdx');
+const README = read('README.md');
 
 describe('MCP 2026-07-28 documentation contract', (): void => {
   it('projects the search example without returning large response schemas', async (): Promise<void> => {
-    expect.assertions(9);
+    expect.assertions(10);
     const example = /```javascript\n([\s\S]*?)\n```/u.exec(TOOLS)?.[1];
     expect(example).toBeDefined();
+    const responseExample = [...TOOLS.matchAll(/```javascript\n([\s\S]*?)\n```/gu)][1]?.[1];
+    const properties = { tweets: { type: 'array' } };
+    const spec = { components: { schemas: { PaginatedTweets: { properties } } } };
+    expect(await runInNewContext(`(${responseExample})()`, { spec })).toEqual(properties);
     const path = '/api/v1/x/tweets/search';
     const operation = {
       operationId: 'searchTweets',

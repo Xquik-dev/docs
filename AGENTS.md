@@ -3,9 +3,13 @@
 This repository is the public documentation site. Treat every committed file as
 public-facing unless it is explicitly a standard open-source project file.
 
-Every commit must reduce net handwritten source LOC. No exceptions. No one may waive this rule.
-Additions require larger, useful simplifications elsewhere in this repository.
-Formatting, minification, generated files, and deleted valuable tests or docs do not count.
+Every commit reduces handwritten test LOC & non-test code LOC separately.
+Both deltas must be negative against the parent. No category offsets another.
+Count every language & location, including shell scripts & development tooling.
+Test-only scripts & helpers count as tests; other scripts count as non-test code.
+Report before, after & delta for both categories. Count each line once.
+Exclude generated code, formatting, minification, moves, renames & reclassification.
+Preserve valuable tests, docs, assertions, coverage, guards, diagnostics & behavior.
 
 ## Confidentiality
 
