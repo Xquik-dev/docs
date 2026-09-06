@@ -1,9 +1,8 @@
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 
-const read = (path: string): string => readFileSync(join(process.cwd(), path), 'utf8');
+const read = (path: string): string => readFileSync(path, 'utf8');
 const OVERVIEW = read('mcp/overview.mdx');
 const TOOLS = read('mcp/tools.mdx');
 const AGENT_HANDOFF = read('mcp/agent-handoff.mdx');
@@ -51,24 +50,20 @@ describe('MCP 2026-07-28 documentation contract', (): void => {
     expect(TOOLS).toContain('Output errors do not undo completed API actions or charges.');
   });
 
-  it('keeps volatile server versions out of setup documents', (): void => {
-    const setupDocuments = [
-      OVERVIEW,
-      TOOLS,
-      AGENT_HANDOFF,
-      DOCS_MCP,
-      QUICKSTART,
-      INTRODUCTION,
-      SKILL,
-      LLMS,
-      CONTEXT7,
-      README,
-    ];
-    expect.assertions(setupDocuments.length);
-
-    for (const document of setupDocuments) {
-      expect(document).not.toMatch(/\b(?:API )?MCP (?:server )?v\d+\.\d+\.\d+\b/u);
-    }
+  it.each([
+    OVERVIEW,
+    TOOLS,
+    AGENT_HANDOFF,
+    DOCS_MCP,
+    QUICKSTART,
+    INTRODUCTION,
+    SKILL,
+    LLMS,
+    CONTEXT7,
+    README,
+  ])('keeps volatile server versions out of setup documents', (document): void => {
+    expect.assertions(1);
+    expect(document).not.toMatch(/\b(?:API )?MCP (?:server )?v\d+\.\d+\.\d+\b/u);
   });
 
   it('explains modern negotiation and safe cache behavior', (): void => {
@@ -87,7 +82,7 @@ describe('MCP 2026-07-28 documentation contract', (): void => {
   });
 
   it('keeps README and changelog release guidance visible', (): void => {
-    expect.assertions(7);
+    expect.assertions(10);
 
     expect(README).toContain('MCP 2026-07-28');
     expect(README).toContain('server/discover');
@@ -96,6 +91,9 @@ describe('MCP 2026-07-28 documentation contract', (): void => {
     expect(CHANGELOG).toContain('private cache hints');
     expect(TOOLS).toContain('Search retains operation-specific response descriptions.');
     expect(TOOLS).toContain('Date-only fields keep string types.');
+    expect(TOOLS).toContain('Missing response-field reads return `undefined` and produce `warnings`.');
+    expect(TOOLS).toContain('Optional-field fallbacks remain valid.');
+    expect(TOOLS).toContain('The combined output follows the existing 24,000-character limit.');
   });
 
   it('documents optional OpenAPI-native tools without changing the default', (): void => {
