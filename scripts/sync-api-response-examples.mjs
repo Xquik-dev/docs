@@ -44,33 +44,6 @@ function resolveReference(document, reference) {
     .reduce((value, segment) => value?.[segment], document);
 }
 
-function resolveNode(document, node) {
-  if (node?.$ref === undefined) {
-    return node;
-  }
-  const resolved = resolveReference(document, node.$ref);
-  if (resolved === undefined) {
-    throw new Error(`OpenAPI reference not found: ${node.$ref}`);
-  }
-  return resolved;
-}
-
-function mergeExamples(values) {
-  return values.reduce((result, value) => {
-    if (
-      result !== null &&
-      value !== null &&
-      typeof result === 'object' &&
-      typeof value === 'object' &&
-      !Array.isArray(result) &&
-      !Array.isArray(value)
-    ) {
-      return { ...result, ...value };
-    }
-    return value ?? result;
-  }, {});
-}
-
 function exampleFromSchema(document, schema, depth = 0, visited = new Set()) {
   if (schema === undefined || depth > 7) {
     return {};
@@ -99,12 +72,22 @@ function exampleFromSchema(document, schema, depth = 0, visited = new Set()) {
   }
 
   if (schema.allOf !== undefined) {
-    return mergeExamples(
-      schema.allOf.map((schema) =>
-        exampleFromSchema(document, schema, depth + 1, visited),
-      ),
-    );
+    return schema.allOf.reduce((result, schema) => {
+      const value = exampleFromSchema(document, schema, depth + 1, visited);
+      if (
+        result !== null &&
+        value !== null &&
+        typeof result === 'object' &&
+        typeof value === 'object' &&
+        !Array.isArray(result) &&
+        !Array.isArray(value)
+      ) {
+        return { ...result, ...value };
+      }
+      return value ?? result;
+    }, {});
   }
+
   const variant = schema.oneOf?.[0] ?? schema.anyOf?.[0];
   if (variant !== undefined) {
     return exampleFromSchema(document, variant, depth + 1, visited);
@@ -175,22 +158,12 @@ function compactErrorExample(value) {
   );
 }
 
-function specializeWriteActionExample(value, status, writeAction) {
-  if (
-    (status !== '200' && status !== '202') ||
-    typeof writeAction !== 'string' ||
-    value === null ||
-    typeof value !== 'object' ||
-    Array.isArray(value) ||
-    !Object.hasOwn(value, 'action')
-  ) {
-    return value;
-  }
-  return { ...value, action: writeAction };
-}
-
 function responseExample(document, rawResponse, status, writeAction) {
-  const response = resolveNode(document, rawResponse);
+  const reference = rawResponse?.$ref;
+  const response = reference === undefined ? rawResponse : resolveReference(document, reference);
+  if (reference !== undefined && response === undefined) {
+    throw new Error(`OpenAPI reference not found: ${reference}`);
+  }
   if (status === '204') {
     return { language: 'text', value: 'No response body.' };
   }
@@ -208,11 +181,15 @@ function responseExample(document, rawResponse, status, writeAction) {
     media.example ??
     firstNamedExample?.value ??
     exampleFromSchema(document, media.schema);
-  const operationValue = specializeWriteActionExample(
-    value,
-    status,
-    writeAction,
-  );
+  const operationValue =
+    (status === '200' || status === '202') &&
+    typeof writeAction === 'string' &&
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.hasOwn(value, 'action')
+      ? { ...value, action: writeAction }
+      : value;
   const compactValue =
     status.startsWith('4') || status.startsWith('5')
       ? compactErrorExample(operationValue)
@@ -222,12 +199,6 @@ function responseExample(document, rawResponse, status, writeAction) {
     language: mediaType.includes('json') ? 'json' : 'text',
     value: compactValue,
   };
-}
-
-function formatValue(language, value) {
-  return language === 'json' || typeof value !== 'string'
-    ? JSON.stringify(value, null, 2)
-    : value;
 }
 
 function responseExampleBlock(document, operation, scope) {
@@ -240,7 +211,10 @@ function responseExampleBlock(document, operation, scope) {
       operation['x-write-action'],
     );
     const tabId = `response-${scope.replaceAll('/', '-')}-${status}`;
-    const value = formatValue(example.language, example.value)
+    const formatted = example.language === 'json' || typeof example.value !== 'string'
+      ? JSON.stringify(example.value, null, 2)
+      : example.value;
+    const value = formatted
       .split('\n')
       .map((line) => `    ${line}`)
       .join('\n');
