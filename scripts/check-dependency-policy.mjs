@@ -1,5 +1,3 @@
-import { readFile } from 'node:fs/promises';
-
 const REGISTRY_PREFIX = 'https://registry.npmjs.org/';
 const EXACT_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u;
 
@@ -8,7 +6,7 @@ const [packageJson, lockfile, policy] = await Promise.all(
     'package.json',
     'package-lock.json',
     'config/dependency-license-policy.json',
-  ].map(async (path) => JSON.parse(await readFile(path, 'utf8'))),
+  ].map(async (path) => JSON.parse(await Bun.file(path).text())),
 );
 
 const allowedLicenses = new Set(policy.allowedLicenses);
