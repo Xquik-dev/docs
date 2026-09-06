@@ -759,21 +759,15 @@ function productBookmarkFolderFields(): readonly string[] {
 
 function productXTrendsFields(): readonly string[] {
   const source = readFileSync(PRODUCT_X_TRENDS_ROUTE_PATH, 'utf8');
-  if (source.includes('function buildTrendsResponse')) {
-    return uniqueSorted([
-      'woeid',
-      ...productReturnFieldsFromPath(
-        PRODUCT_X_TRENDS_ROUTE_PATH,
-        'buildTrendsResponse',
-      ),
-      ...productInterfaceFieldsFromPath(PRODUCT_TRENDS_API_PATH, 'TrendItem'),
-    ]);
-  }
-  const responseStart = source.indexOf('return NextResponse.json({');
-  if (responseStart < 0) {
+  const responseStart = source.indexOf('const response = {');
+  const responseEnd = source.indexOf('};', responseStart);
+  if (
+    responseStart < 0 ||
+    responseEnd < 0 ||
+    !source.includes('return NextResponse.json(response);')
+  ) {
     throw new Error('Could not locate X trends success response.');
   }
-  const responseEnd = source.indexOf('});', responseStart);
   return uniqueSorted([
     ...objectLiteralFields(source.slice(responseStart, responseEnd + 1)),
     ...productInterfaceFieldsFromPath(PRODUCT_TRENDS_API_PATH, 'TrendItem'),
