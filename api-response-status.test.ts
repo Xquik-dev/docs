@@ -254,22 +254,15 @@ function collectStatusFindings({
 }
 
 describe('API success response status documentation', (): void => {
-  it('keeps endpoint success response tabs aligned with OpenAPI status codes', (): void => {
+  it.each([
+    ['success', collectResponseStatusFindings],
+    ['all', collectAuditedResponseStatusFindings],
+  ] as const)('matches %s response tabs to OpenAPI', (_scope, collect): void => {
     expect.assertions(1);
-
     const spec = parseYaml(
       readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'),
     );
-    expect(collectResponseStatusFindings(spec)).toStrictEqual([]);
-  });
-
-  it('keeps fully audited endpoint response tabs aligned with OpenAPI status codes', (): void => {
-    expect.assertions(1);
-
-    const spec = parseYaml(
-      readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'),
-    );
-    expect(collectAuditedResponseStatusFindings(spec)).toStrictEqual([]);
+    expect(collect(spec)).toStrictEqual([]);
   });
 
   it('keeps response tabs independent and success-first', (): void => {

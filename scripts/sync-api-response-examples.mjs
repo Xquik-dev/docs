@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 import {
@@ -8,8 +8,6 @@ import {
 } from './lib/generated-response-examples.ts';
 
 const PROJECT_ROOT = process.cwd();
-const API_REFERENCE_DIR = join(PROJECT_ROOT, 'api-reference');
-const OPENAPI_PATH = join(PROJECT_ROOT, 'openapi.yaml');
 const API_PATTERN = /^api: "([A-Z]+) ([^"]+)"$/mu;
 const HTTP_METHODS = new Set([
   'delete',
@@ -33,16 +31,6 @@ const ERROR_EXAMPLE_KEYS = [
   'writeActionId',
   'statusUrl',
 ];
-
-function listMdxFiles(directory) {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(directory, entry.name);
-    if (entry.isDirectory()) {
-      return listMdxFiles(path);
-    }
-    return entry.name.endsWith('.mdx') ? [path] : [];
-  });
-}
 
 function resolveReference(document, reference) {
   if (!reference.startsWith('#/')) {
@@ -83,47 +71,45 @@ function mergeExamples(values) {
   }, {});
 }
 
-function exampleFromSchema(document, rawSchema, depth = 0, visited = new Set()) {
-  if (rawSchema === undefined || depth > 7) {
+function exampleFromSchema(document, schema, depth = 0, visited = new Set()) {
+  if (schema === undefined || depth > 7) {
     return {};
   }
   for (const value of [
-    rawSchema.example,
-    rawSchema.const,
-    rawSchema.default,
-    rawSchema.enum?.[0],
+    schema.example,
+    schema.const,
+    schema.default,
+    schema.enum?.[0],
   ]) {
     if (value !== undefined) {
       return value;
     }
   }
 
-  if (rawSchema.$ref !== undefined) {
-    if (visited.has(rawSchema.$ref)) {
+  if (schema.$ref !== undefined) {
+    if (visited.has(schema.$ref)) {
       return {};
     }
-    const nextVisited = new Set(visited).add(rawSchema.$ref);
     return exampleFromSchema(
       document,
-      resolveReference(document, rawSchema.$ref),
+      resolveReference(document, schema.$ref),
       depth + 1,
-      nextVisited,
+      new Set(visited).add(schema.$ref),
     );
   }
 
-  if (rawSchema.allOf !== undefined) {
+  if (schema.allOf !== undefined) {
     return mergeExamples(
-      rawSchema.allOf.map((schema) =>
+      schema.allOf.map((schema) =>
         exampleFromSchema(document, schema, depth + 1, visited),
       ),
     );
   }
-  const variant = rawSchema.oneOf?.[0] ?? rawSchema.anyOf?.[0];
+  const variant = schema.oneOf?.[0] ?? schema.anyOf?.[0];
   if (variant !== undefined) {
     return exampleFromSchema(document, variant, depth + 1, visited);
   }
 
-  const schema = resolveNode(document, rawSchema);
   if (schema.type === 'array') {
     return [exampleFromSchema(document, schema.items, depth + 1, visited)];
   }
@@ -305,13 +291,17 @@ function replaceGeneratedBlock(source, block) {
   return `${sourceWithoutBlock.slice(0, insertion)}\n${block}\n${sourceWithoutBlock.slice(insertion).replace(/^\r?\n*/u, '')}`;
 }
 
-const document = Bun.YAML.parse(readFileSync(OPENAPI_PATH, 'utf8'));
+const document = Bun.YAML.parse(readFileSync('openapi.yaml', 'utf8'));
 const check = process.argv.includes('--check');
 const findings = [];
 let pages = 0;
 let statuses = 0;
 
-for (const file of listMdxFiles(API_REFERENCE_DIR)) {
+for (const file of new Bun.Glob('**/*.mdx').scanSync({
+  cwd: join(PROJECT_ROOT, 'api-reference'),
+  absolute: true,
+  dot: true,
+})) {
   const source = readFileSync(file, 'utf8');
   const match = API_PATTERN.exec(source);
   if (match === null) {
@@ -324,7 +314,7 @@ for (const file of listMdxFiles(API_REFERENCE_DIR)) {
     continue;
   }
 
-  const scope = relative(API_REFERENCE_DIR, file).replace(/\.mdx$/u, '');
+  const scope = relative(join(PROJECT_ROOT, 'api-reference'), file).replace(/\.mdx$/u, '');
   const block = responseExampleBlock(document, operation, scope);
   const nextSource = replaceGeneratedBlock(source, block);
   pages += 1;
