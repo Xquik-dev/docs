@@ -10,7 +10,6 @@ const [packageJson, lockfile, policy] = await Promise.all(
 );
 
 const allowedLicenses = new Set(policy.allowedLicenses);
-const licenseOverrides = new Map(Object.entries(policy.packageLicenses));
 const failures = [];
 
 for (const [name, version] of Object.entries(
@@ -27,7 +26,7 @@ const dependencies = Object.entries(lockfile.packages ?? {}).filter(
 for (const [path, metadata] of dependencies) {
   const name = path.slice(path.lastIndexOf('node_modules/') + 13);
   const key = `${name}@${metadata.version}`;
-  const license = metadata.license ?? licenseOverrides.get(key);
+  const license = metadata.license ?? policy.packageLicenses[key];
 
   if (!metadata.integrity?.startsWith('sha512-')) {
     failures.push(`${key} must use SHA-512 package integrity metadata.`);

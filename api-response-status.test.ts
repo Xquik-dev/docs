@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -12,7 +12,6 @@ const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
   PROJECT_ROOT,
   'snippets/write-action-lifecycle-response.mdx',
 );
-const WRITE_ACTION_DIR = join(PROJECT_ROOT, 'api-reference/x-write');
 const FRONTMATTER_API_PATTERN = /^api:\s*"([A-Z]+) ([^"]+)"/mu;
 const RESPONSE_STATUS_PATTERN =
   /(?:<Tab title="|^### |^  ```(?:json|text) )(\d{3})\b/gmu;
@@ -51,10 +50,12 @@ function parseYaml(source: string): OpenApiSpec {
   return parse(source) as OpenApiSpec;
 }
 
-const apiReferenceFiles = [...new Bun.Glob('api-reference/**/*.mdx').scanSync({
-  cwd: PROJECT_ROOT,
-  dot: true,
-})].sort();
+const apiReferenceFiles = [
+  ...new Bun.Glob('api-reference/**/*.mdx').scanSync({
+    cwd: PROJECT_ROOT,
+    dot: true,
+  }),
+].sort();
 
 function readApiDocs(): readonly ApiDoc[] {
   return apiReferenceFiles.flatMap((file) => {
@@ -73,21 +74,17 @@ function readApiDocs(): readonly ApiDoc[] {
 function successfulResponseStatuses(
   operation: OpenApiOperation,
 ): readonly string[] {
-  return Object.keys(operation.responses ?? {})
-    .filter(
-      (status): boolean =>
-        STATUS_CODE_PATTERN.test(status) && status.startsWith('2'),
-    )
-    .sort();
+  return responseStatuses(operation).filter((status): boolean =>
+    status.startsWith('2'),
+  );
 }
 
 function documentedSuccessfulResponseStatuses(
   source: string,
 ): readonly string[] {
-  return [...source.matchAll(RESPONSE_STATUS_PATTERN)]
-    .map((match): string => match[1] ?? '')
-    .filter((status): boolean => status.startsWith('2'))
-    .sort();
+  return documentedResponseStatuses(source).filter((status): boolean =>
+    status.startsWith('2'),
+  );
 }
 
 function documentedResponseStatuses(source: string): readonly string[] {
@@ -160,32 +157,10 @@ function getOperation(
   return spec.paths?.[apiDoc.path]?.[apiDoc.method];
 }
 
-function collectResponseStatusFindings(
-  spec: OpenApiSpec,
-): readonly ResponseStatusFinding[] {
-  return collectStatusFindings({
-    docsStatusProvider: documentedSuccessfulResponseStatuses,
-    issuePrefix: 'success ',
-    spec,
-    statusProvider: successfulResponseStatuses,
-  });
-}
-
 function responseStatuses(operation: OpenApiOperation): readonly string[] {
   return Object.keys(operation.responses ?? {})
     .filter((status): boolean => STATUS_CODE_PATTERN.test(status))
     .sort();
-}
-
-function collectAuditedResponseStatusFindings(
-  spec: OpenApiSpec,
-): readonly ResponseStatusFinding[] {
-  return collectStatusFindings({
-    docsStatusProvider: documentedResponseStatuses,
-    issuePrefix: '',
-    spec,
-    statusProvider: responseStatuses,
-  });
 }
 
 function collectStatusFindings({
@@ -244,15 +219,26 @@ function collectStatusFindings({
 
 describe('API success response status documentation', (): void => {
   it.each([
-    ['success', collectResponseStatusFindings],
-    ['all', collectAuditedResponseStatusFindings],
-  ] as const)('matches %s response tabs to OpenAPI', (_scope, collect): void => {
-    expect.assertions(1);
-    const spec = parseYaml(
-      readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'),
-    );
-    expect(collect(spec)).toStrictEqual([]);
-  });
+    {
+      docsStatusProvider: documentedSuccessfulResponseStatuses,
+      issuePrefix: 'success ',
+      statusProvider: successfulResponseStatuses,
+    },
+    {
+      docsStatusProvider: documentedResponseStatuses,
+      issuePrefix: '',
+      statusProvider: responseStatuses,
+    },
+  ])(
+    'matches $issuePrefix\u200bresponse tabs to OpenAPI',
+    (providers): void => {
+      expect.assertions(1);
+      const spec = parseYaml(
+        readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'),
+      );
+      expect(collectStatusFindings({ ...providers, spec })).toStrictEqual([]);
+    },
+  );
 
   it('keeps response tabs independent and success-first', (): void => {
     expect.assertions(2);
@@ -336,27 +322,42 @@ describe('API success response status documentation', (): void => {
   it('keeps every write page idempotent and lifecycle-aware', (): void => {
     expect.assertions(2);
 
-    const pages = readdirSync(WRITE_ACTION_DIR)
-      .filter(
-        (file): boolean =>
-          file.endsWith('.mdx') && file !== 'get-write-action-status.mdx',
-      )
-      .sort();
-    const findings = pages.flatMap((file): readonly string[] => {
-      const source = readFileSync(join(WRITE_ACTION_DIR, file), 'utf8');
-      const required = [
-        '-H "Idempotency-Key:',
-        '<ParamField header="Idempotency-Key" type="string" required>',
-        '<WriteActionLifecycleResponse />',
+    const pages = readApiDocs().filter(
+      ({ file }): boolean =>
+        file.startsWith('api-reference/x-write/') &&
+        !file.endsWith('/get-write-action-status.mdx'),
+    );
+    const findings = pages.flatMap(({ file, source }): readonly string[] => {
+      const guidance = [
+        [true, '-H "Idempotency-Key:'],
+        [true, '<ParamField header="Idempotency-Key" type="string" required>'],
+        [true, '<WriteActionLifecycleResponse />'],
+        [
+          true,
+          'Replay the same account, target, payload, and media after a lost response.',
+        ],
+        [true, 'Retry only when `safeToRetry` is `true`.'],
+        [true, 'Keep the original key for that replay.'],
+        [
+          true,
+          'Use a new key when `nextAction.requiresNewIdempotencyKey` is `true`.',
+        ],
+        [
+          true,
+          'After HTTP `429`, wait for `Retry-After`. Follow `nextAction`.',
+        ],
+        [false, 'Safe to retry with exponential backoff.'],
+        [false, 'Preserve the same key.'],
       ] as const;
-      return [
-        ...required
-          .filter((snippet): boolean => !source.includes(snippet))
-          .map((snippet): string => `${file}: missing ${snippet}`),
-        ...(source.includes('Safe to retry with exponential backoff.')
-          ? [`${file}: unsafe retry guidance`]
-          : []),
-      ];
+      return guidance
+        .filter(
+          ([required, snippet]): boolean =>
+            source.includes(snippet) !== required,
+        )
+        .map(
+          ([, snippet]): string =>
+            `${file}: incorrect retry guidance ${snippet}`,
+        );
     });
 
     expect(pages).toHaveLength(18);

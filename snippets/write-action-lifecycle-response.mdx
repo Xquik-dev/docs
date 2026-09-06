@@ -1,17 +1,17 @@
 ## Durable write recovery
 
 <Warning>
-  Send one unique `Idempotency-Key` per intended write. Reuse it only for the
-  same account, target, payload, and media.
+  Send one unique `Idempotency-Key` per intended write.
+  Replay the same account, target, payload, and media after a lost response.
+  Keep the original key for that replay.
 </Warning>
 
 1. Store `id`, the nested `hash` in `request`, `billing`, and `statusUrl`.
 2. Poll after `Retry-After` or `pollAfterMs` when `terminal` is `false`.
-3. Trust `safeToRetry` and `nextAction` before any new write.
+3. Retry only when `safeToRetry` is `true`.
+4. Use a new key when `nextAction.requiresNewIdempotencyKey` is `true`.
 
 ### 200 Terminal or 202 active
-
-Store terminal results. Poll active actions without creating another write.
 
 - After HTTP `200`, store the result and settled billing.
 - After HTTP `202`, poll the same action. Never submit another write.
@@ -21,9 +21,7 @@ Store terminal results. Poll active actions without creating another write.
 - After HTTP `403`, reconnect the account.
 - After HTTP `409`, keep the original action. Use a new key for new input.
 - After HTTP `422`, fix the rejected request before retrying.
-- After HTTP `429`, wait for `Retry-After`. Preserve the same key.
-- After HTTP `500`, retry only when `safeToRetry` is `true`.
-- After HTTP `503`, poll while `terminal` is `false`.
+- After HTTP `429`, wait for `Retry-After`. Follow `nextAction`.
 
 See [Get Write Action Status](/api-reference/x-write/get-write-action-status)
 for every lifecycle field, terminal state, billing field, and retry rule.
