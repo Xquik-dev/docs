@@ -30,7 +30,7 @@ function parseOpenApi(): OpenApiDocument {
   return parse(readFileSync("openapi.yaml", "utf8")) as OpenApiDocument;
 }
 
-function requireErrorVariant(title: string): SchemaNode {
+function requireErrorEnum(title: string, property?: string): readonly string[] {
   const variants = parseOpenApi().components?.schemas?.["Error"]?.properties?.[
     "error"
   ]?.oneOf;
@@ -38,29 +38,21 @@ function requireErrorVariant(title: string): SchemaNode {
   if (variant === undefined) {
     throw new Error(`OpenAPI Error is missing ${title}.`);
   }
-  return variant;
-}
-
-function requireEnum(node: SchemaNode, label: string): readonly string[] {
-  if (node.enum === undefined) {
+  const values = (property === undefined ? variant : variant.properties?.[property])?.enum;
+  if (values === undefined) {
+    const label = property === undefined ? title : `${title}.${property}`;
     throw new Error(`${label} is missing its enum.`);
   }
-  return node.enum;
+  return values;
 }
 
 describe("public error contract", (): void => {
   it("documents only canonical OpenAPI error codes", (): void => {
-    expect.assertions(6);
+    expect.assertions(10);
 
     const guide = readFileSync("guides/error-handling.mdx", "utf8");
-    const legacyCodes = requireEnum(
-      requireErrorVariant("LegacyErrorCode"),
-      "LegacyErrorCode",
-    );
-    const structuredCodes = requireEnum(
-      requireErrorVariant("StructuredError").properties?.["code"] ?? {},
-      "StructuredError.code",
-    );
+    const legacyCodes = requireErrorEnum("LegacyErrorCode");
+    const structuredCodes = requireErrorEnum("StructuredError", "code");
     const documentedCodes = [...guide.matchAll(/<Card title="([a-z][a-z0-9_]+)"/gu)]
       .map((match): string => match[1] ?? "")
       .filter((code): boolean => code !== "");
@@ -74,6 +66,11 @@ describe("public error contract", (): void => {
     ).toStrictEqual([]);
     expect(guide).toContain("schema lists every public code.");
     expect(guide).not.toMatch(/no_addon|monitor_limit_reached/u);
+    expect(documentedCodes).toContain("x_reply_not_allowed");
+    expect(guide).toContain("Target is missing or invisible to the connected X account.");
+    const createGuide = readFileSync("api-reference/x-write/create-tweet.mdx", "utf8");
+    expect(createGuide).toContain("`x_target_not_found`");
+    expect(createGuide).toContain("`x_reply_not_allowed`");
   });
 
   it("keeps copied TypeScript error types aligned with OpenAPI", (): void => {
@@ -87,10 +84,7 @@ describe("public error contract", (): void => {
     const documentedTypes = [...typeBlock.matchAll(/"([a-z_]+)"/gu)].map(
       (match): string => match[1] ?? "",
     );
-    const canonicalTypes = requireEnum(
-      requireErrorVariant("StructuredError").properties?.["type"] ?? {},
-      "StructuredError.type",
-    );
+    const canonicalTypes = requireErrorEnum("StructuredError", "type");
 
     expect(documentedTypes).toStrictEqual(canonicalTypes);
     expect(source).toContain("error: string | StructuredApiError;");

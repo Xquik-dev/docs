@@ -2831,8 +2831,8 @@ const FORBIDDEN_TYPES_GUIDE_COMPLETENESS_OVERCLAIMS = [
 ] as const;
 
 const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
-  'description: "Handle Xquik API errors with exact status guidance and safe retries. Recover cursors, confirm writes, repair monitors, restore webhooks, and check dependencies."',
-  'Use each `error` code to choose recovery.',
+  'description: "Recover Xquik requests, cursors, writes, monitors, webhooks, and dependencies. Follow retry safety, restore account access, and handle reply restrictions."',
+  'Choose recovery by `error` code.',
   'safeToRetry',
   'Start with HTTP status. Retry only when stated.',
   '<Card title="400 request validation" icon="circle-alert">',
@@ -2846,7 +2846,7 @@ const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   '## Common error codes',
   'schema lists every public code.',
   '<Card title="422 write validation" icon="message-circle-warning">',
-  '`x_dm_not_allowed`, `x_target_not_found`, `x_content_too_long`',
+  '`x_dm_not_allowed`, `x_reply_not_allowed`, `x_target_not_found`, `x_content_too_long`',
   '<Card title="202 active write" icon="clock">',
   'Store the action and poll `statusUrl` while `terminal` is',
   'Follow `Retry-After`, `pollAfterMs`, and `nextAction`.',
@@ -2855,7 +2855,7 @@ const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   '<Card title="500, 502, and 503 transient failures" icon="rotate-ccw">',
   'For writes, retry only when',
   '<Card title="HTTP status" icon="gauge">',
-  '`429 Too Many Requests` means the request is rate limited or waiting on an',
+  '`429 Too Many Requests` signals a rate limit or account cooldown.',
   '<Card title="Retry-After header" icon="timer">',
   'The `Retry-After` header gives seconds to wait before sending the same',
   '<Card title="x_write_ambiguous" icon="activity">',
@@ -3721,7 +3721,7 @@ const REQUIRED_WRITE_VALIDATION_ERROR_GUIDE_SNIPPETS = [
   '<Card title="x_dm_not_allowed" icon="message-circle">',
   'Recipient does not accept DMs from this account.',
   '<Card title="x_target_not_found" icon="search-x">',
-  'Verify the ID or username before',
+  "Verify the ID and that account's access before",
   '<Card title="x_content_too_long" icon="message-circle-warning">',
   'Content exceeds the character limit.',
   '<Card title="x_rejected" icon="circle-x">',

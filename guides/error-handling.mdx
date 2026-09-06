@@ -1,7 +1,7 @@
 ---
 title: "X API error handling for tweet & follower workflows"
 sidebarTitle: "Error handling"
-description: "Handle Xquik API errors with exact status guidance and safe retries. Recover cursors, confirm writes, repair monitors, restore webhooks, and check dependencies."
+description: "Recover Xquik requests, cursors, writes, monitors, webhooks, and dependencies. Follow retry safety, restore account access, and handle reply restrictions."
 keywords: ["error codes", "retry", "exponential backoff", "rate limit", "error recovery", "write action", "safeToRetry", "pending confirmation"]
 ---
 
@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use each `error` code to choose recovery.
+Choose recovery by `error` code.
 
 <CardGroup cols={3}>
   <Card title="Getting 400?" icon="circle-x">
@@ -66,7 +66,7 @@ Start with HTTP status. Retry only when stated.
     Retry: no. Fix the account capability, target, content, DM permissions, or
     media URL before sending again. Covers `x_account_feature_required`,
     `x_account_suspended`, `x_account_protected`, `x_duplicate_action`,
-    `x_dm_not_allowed`, `x_target_not_found`, `x_content_too_long`,
+    `x_dm_not_allowed`, `x_reply_not_allowed`, `x_target_not_found`, `x_content_too_long`,
     `x_rejected`, and `media_download_failed`.
   </Card>
   <Card title="202 active write" icon="clock">
@@ -88,7 +88,7 @@ Start with HTTP status. Retry only when stated.
 
 ## Common error codes
 
-This section covers common recovery paths. The OpenAPI
+The OpenAPI
 [`Error`](https://docs.xquik.com/openapi.yaml) schema lists every public code.
 
 **Default response.**
@@ -332,8 +332,11 @@ responses also include `message`, `reason`, `retryAfter`, or `retryAfterMs`.
         connected account or ask the recipient to allow messages.
       </Card>
       <Card title="x_target_not_found" icon="search-x">
-        Tweet or user target does not exist. Verify the ID or username before
-        sending another request.
+        Target is missing or invisible to the connected X account.
+        Verify the ID and that account's access before sending another request.
+      </Card>
+      <Card title="x_reply_not_allowed" icon="message-circle-warning">
+        This account cannot reply to the post. Choose a post it can reply to.
       </Card>
       <Card title="x_content_too_long" icon="message-circle-warning">
         Content exceeds the character limit. Shorten the text or use an account
@@ -425,8 +428,7 @@ responses also include `message`, `reason`, `retryAfter`, or `retryAfterMs`.
 
 ## Write lifecycle recovery
 
-Every write can return a durable action. Inspect the JSON lifecycle fields
-before generic success or error handling.
+Writes can return durable actions. Check lifecycle fields before handling success or errors.
 
 <Steps>
   <Step title="Store the action">
@@ -472,14 +474,13 @@ function shouldRetry(response: Response): boolean {
 
 ## Rate limit handling
 
-When a request is rate limited, Xquik returns `429 Too Many Requests` with a
-`Retry-After` header. Some JSON bodies also include `retryAfter` in seconds or
+Rate-limited requests return `429 Too Many Requests` with a
+`Retry-After` header. JSON may include `retryAfter` in seconds or
 `retryAfterMs` in milliseconds for login cooldowns.
 
 <CardGroup cols={2}>
   <Card title="HTTP status" icon="gauge">
-    `429 Too Many Requests` means the request is rate limited or waiting on an
-    account cooldown.
+    `429 Too Many Requests` signals a rate limit or account cooldown.
   </Card>
   <Card title="Retry-After header" icon="timer">
     The `Retry-After` header gives seconds to wait before sending the same
@@ -495,7 +496,7 @@ When a request is rate limited, Xquik returns `429 Too Many Requests` with a
     Parse `Retry-After` as seconds. If it is missing, read `retryAfter` or `retryAfterMs` from the JSON body.
   </Step>
   <Step title="Wait the full duration">
-    Do not send another request for the same operation until the wait expires.
+    Wait for that operation's cooldown before repeating it.
   </Step>
   <Step title="Back off after another 429">
     If the same request returns another 429, apply exponential backoff and stop after 3 attempts.
@@ -505,7 +506,7 @@ When a request is rate limited, Xquik returns `429 Too Many Requests` with a
 ## Best practices
 
 <AccordionGroup>
-  <Accordion title="Distinguish client errors from server errors">
+  <Accordion title="Check the error category">
     Do not retry a `4xx` response unchanged. Fix authentication, billing,
     permissions, or input first. Retry `429` and `5xx` only as described above.
   </Accordion>
@@ -517,18 +518,19 @@ When a request is rate limited, Xquik returns `429 Too Many Requests` with a
     retry once.
   </Accordion>
   <Accordion title="Set request timeouts">
-    Set a bounded client timeout. Use status endpoints for long-running jobs.
+    Set client timeouts. Poll status endpoints for long-running jobs.
   </Accordion>
   <Accordion title="Use idempotent operations">
-    Creating a monitor for the same username returns `409`. Deleting a non-existent resource returns `404`. Both are safe to retry.
+    Duplicate monitor creation returns `409`. Deleting a missing resource returns `404`.
+    Both are safe to retry.
   </Accordion>
 </AccordionGroup>
 
 <CardGroup cols={2}>
   <Card title="Rate limits" icon="gauge" href="/guides/rate-limits">
-    Detailed rate limit tiers and client-side rate limiting.
+    Rate limit tiers and client-side limits.
   </Card>
   <Card title="API overview" icon="book" href="/api-reference/overview">
-    Base URL, authentication, and API conventions.
+    Base URL, authentication, and conventions.
   </Card>
 </CardGroup>
