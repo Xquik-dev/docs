@@ -20,18 +20,16 @@ function checkPolicy(
   const directory = mkdtempSync(join(tmpdir(), 'xquik-dependency-policy-'));
   try {
     mkdirSync(join(directory, 'config'));
-    writeFileSync(
-      join(directory, 'config/dependency-license-policy.json'),
-      JSON.stringify({ allowedLicenses: ['MIT'], packageLicenses: {} }),
-    );
-    writeFileSync(
-      join(directory, 'package.json'),
-      JSON.stringify({ devDependencies: { fixture: version } }),
-    );
-    writeFileSync(
-      join(directory, 'package-lock.json'),
-      JSON.stringify({ packages }),
-    );
+    for (const [name, contents] of Object.entries({
+      'config/dependency-license-policy.json': {
+        allowedLicenses: ['MIT'],
+        packageLicenses: {},
+      },
+      'package.json': { devDependencies: { fixture: version } },
+      'package-lock.json': { packages },
+    })) {
+      writeFileSync(join(directory, name), JSON.stringify(contents));
+    }
     return spawnSync(process.execPath, [checker], {
       cwd: directory,
       encoding: 'utf8',

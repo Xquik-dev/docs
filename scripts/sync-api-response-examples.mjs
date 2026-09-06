@@ -87,17 +87,15 @@ function exampleFromSchema(document, rawSchema, depth = 0, visited = new Set()) 
   if (rawSchema === undefined || depth > 7) {
     return {};
   }
-  if (rawSchema.example !== undefined) {
-    return rawSchema.example;
-  }
-  if (rawSchema.const !== undefined) {
-    return rawSchema.const;
-  }
-  if (rawSchema.default !== undefined) {
-    return rawSchema.default;
-  }
-  if (rawSchema.enum?.[0] !== undefined) {
-    return rawSchema.enum[0];
+  for (const value of [
+    rawSchema.example,
+    rawSchema.const,
+    rawSchema.default,
+    rawSchema.enum?.[0],
+  ]) {
+    if (value !== undefined) {
+      return value;
+    }
   }
 
   if (rawSchema.$ref !== undefined) {
@@ -241,10 +239,9 @@ function responseExample(document, rawResponse, status, writeAction) {
 }
 
 function formatValue(language, value) {
-  if (language === 'json') {
-    return JSON.stringify(value, null, 2);
-  }
-  return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  return language === 'json' || typeof value !== 'string'
+    ? JSON.stringify(value, null, 2)
+    : value;
 }
 
 function responseExampleBlock(document, operation, scope) {
