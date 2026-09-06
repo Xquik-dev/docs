@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -8,7 +8,6 @@ import {
 } from './scripts/lib/generated-response-examples';
 
 const PROJECT_ROOT = process.cwd();
-const API_REFERENCE_DIR = join(PROJECT_ROOT, 'api-reference');
 const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
   PROJECT_ROOT,
   'snippets/write-action-lifecycle-response.mdx',
@@ -52,23 +51,13 @@ function parseYaml(source: string): OpenApiSpec {
   return parse(source) as OpenApiSpec;
 }
 
-function listApiReferenceFiles(dir: string): readonly string[] {
-  const files: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const fullPath = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...listApiReferenceFiles(fullPath));
-      continue;
-    }
-    if (entry.name.endsWith('.mdx')) {
-      files.push(relative(PROJECT_ROOT, fullPath));
-    }
-  }
-  return files.sort();
-}
+const apiReferenceFiles = [...new Bun.Glob('api-reference/**/*.mdx').scanSync({
+  cwd: PROJECT_ROOT,
+  dot: true,
+})].sort();
 
 function readApiDocs(): readonly ApiDoc[] {
-  return listApiReferenceFiles(API_REFERENCE_DIR).flatMap((file) => {
+  return apiReferenceFiles.flatMap((file) => {
     const pageSource = readFileSync(join(PROJECT_ROOT, file), 'utf8');
     const source = pageSource.includes('<WriteActionLifecycleResponse />')
       ? `${pageSource}\n${readFileSync(WRITE_ACTION_LIFECYCLE_SNIPPET_PATH, 'utf8')}`

@@ -87,13 +87,15 @@ describe('MCP 2026-07-28 documentation contract', (): void => {
   });
 
   it('keeps README and changelog release guidance visible', (): void => {
-    expect.assertions(5);
+    expect.assertions(7);
 
     expect(README).toContain('MCP 2026-07-28');
     expect(README).toContain('server/discover');
     expect(CHANGELOG).toContain('API MCP v2.6.0');
     expect(CHANGELOG).toContain('MCP `2026-07-28`');
     expect(CHANGELOG).toContain('private cache hints');
+    expect(TOOLS).toContain('Search retains operation-specific response descriptions.');
+    expect(TOOLS).toContain('Date-only fields keep string types.');
   });
 
   it('documents optional OpenAPI-native tools without changing the default', (): void => {

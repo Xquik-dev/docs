@@ -270,23 +270,14 @@ function replaceGeneratedBlock(source, block) {
     throw new Error('API reference page has no frontmatter insertion point.');
   }
 
-  const topLevelImports = /^(?:\r?\n)*import [^\r\n]+;\r?\n/u.exec(
+  const topLevelImports = /^(?:\r?\n)*(?:import [^\r\n]+;\r?\n)+/u.exec(
     sourceWithoutBlock.slice(frontmatter[0].length),
   );
   if (topLevelImports === null) {
     throw new Error('API reference page has no import insertion point.');
   }
 
-  let insertion = frontmatter[0].length + topLevelImports[0].length;
-  while (true) {
-    const nextImport = /^import [^\r\n]+;\r?\n/u.exec(
-      sourceWithoutBlock.slice(insertion),
-    );
-    if (nextImport === null) {
-      break;
-    }
-    insertion += nextImport[0].length;
-  }
+  const insertion = frontmatter[0].length + topLevelImports[0].length;
 
   return `${sourceWithoutBlock.slice(0, insertion)}\n${block}\n${sourceWithoutBlock.slice(insertion).replace(/^\r?\n*/u, '')}`;
 }
