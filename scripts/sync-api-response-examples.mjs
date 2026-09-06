@@ -44,22 +44,6 @@ function resolveReference(document, reference) {
     .reduce((value, segment) => value?.[segment], document);
 }
 
-function mergeExamples(values) {
-  return values.reduce((result, value) => {
-    if (
-      result !== null &&
-      value !== null &&
-      typeof result === 'object' &&
-      typeof value === 'object' &&
-      !Array.isArray(result) &&
-      !Array.isArray(value)
-    ) {
-      return { ...result, ...value };
-    }
-    return value ?? result;
-  }, {});
-}
-
 function exampleFromSchema(document, schema, depth = 0, visited = new Set()) {
   if (schema === undefined || depth > 7) {
     return {};
@@ -88,12 +72,22 @@ function exampleFromSchema(document, schema, depth = 0, visited = new Set()) {
   }
 
   if (schema.allOf !== undefined) {
-    return mergeExamples(
-      schema.allOf.map((schema) =>
-        exampleFromSchema(document, schema, depth + 1, visited),
-      ),
-    );
+    return schema.allOf.reduce((result, schema) => {
+      const value = exampleFromSchema(document, schema, depth + 1, visited);
+      if (
+        result !== null &&
+        value !== null &&
+        typeof result === 'object' &&
+        typeof value === 'object' &&
+        !Array.isArray(result) &&
+        !Array.isArray(value)
+      ) {
+        return { ...result, ...value };
+      }
+      return value ?? result;
+    }, {});
   }
+
   const variant = schema.oneOf?.[0] ?? schema.anyOf?.[0];
   if (variant !== undefined) {
     return exampleFromSchema(document, variant, depth + 1, visited);
