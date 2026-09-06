@@ -147,6 +147,7 @@ when `safeToRetry` is true.
 2. Configure API MCP at `https://xquik.com/mcp` for live authenticated calls.
 3. Use full credentials for 118 JSON or text routes. Use REST for excluded downloads. Guest keys expose 33 GET routes.
 4. Use `docs` for guidance, `search` for contracts, and `execute` for allowed requests.
+   Inspect `spec.paths`; follow response references into `spec.components.schemas`.
 5. Add `?codemode=false` only when the client needs OpenAPI-native tools.
 
 API MCP supports MCP `2026-07-28` over Streamable HTTP.

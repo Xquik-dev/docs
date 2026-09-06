@@ -6,6 +6,7 @@ keywords: ["MCP tools", "docs", "search", "execute", "sandbox", "code execution"
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
+import McpSearchSpec from "/snippets/mcp-search-spec.mdx";
 
 <LlmsDirective />
 
@@ -43,27 +44,11 @@ Inspect inputs and response fields separately when an operation is large.
 
 **Sandbox API.**
 
-```typescript
-interface OperationInfo {
-  operationId: string;
-  summary?: string;
-  description?: string;
-  tags?: string[];
-  parameters?: unknown[];
-  requestBody?: unknown;
-  responses?: Record<string, unknown>;
-}
+Inputs resolve inline. Response `$ref` values point into `spec.components.schemas`.
+The catalog includes only response schemas reachable from your allowed operations.
+Follow references to inspect shared fields and recursive types.
 
-interface PathItem {
-  get?: OperationInfo;
-  post?: OperationInfo;
-  put?: OperationInfo;
-  patch?: OperationInfo;
-  delete?: OperationInfo;
-}
-
-declare const spec: { paths: Record<string, PathItem> };
-```
+<McpSearchSpec />
 
 **Examples.**
 
@@ -78,6 +63,11 @@ async () => {
 ```
 
 Inspect specific response properties in a separate `search` call.
+For example, `#/components/schemas/PaginatedTweets` identifies the shared pagination schema.
+
+```javascript
+async () => spec.components.schemas.PaginatedTweets.properties
+```
 
 ## execute
 
@@ -151,7 +141,7 @@ Errors use `error.type`, `error.code`, and `error.message`, with fields such as 
 Write and media results follow the same contract. Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `response.result`.
 
 Both `search` and `execute` return compact JSON within 24,000 characters. Whitespace inside strings stays unchanged. Native API tools apply the same limit to successful & failed responses.
-The limit bounds tool output, not catalog access or available results. Resolved response schemas can exceed it. Oversized output returns `isError: true` with a recoverable `response_too_large` diagnostic. It includes size, limit, and retry guidance, never partial JSON. An ordinary result containing an `error` field is not a tool failure.
+The limit bounds tool output, not catalog access or available results. Large schema selections can exceed it. Oversized output returns `isError: true` with a recoverable `response_too_large` diagnostic. It includes size, limit, and retry guidance, never partial JSON. An ordinary result containing an `error` field is not a tool failure.
 Retry with selected fields, fewer rows, shorter strings, or an aggregate. Use REST, SDKs, or extraction exports to persist every row.
 Output errors do not undo completed API actions or charges. Retrieve existing results instead of repeating completed writes.
 
