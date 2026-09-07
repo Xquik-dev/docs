@@ -32,6 +32,10 @@ const ERROR_EXAMPLE_KEYS = [
   'statusUrl',
 ];
 
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function resolveReference(document, reference) {
   if (!reference.startsWith('#/')) {
     throw new Error(`Only local OpenAPI references are supported: ${reference}`);
@@ -44,46 +48,14 @@ function resolveReference(document, reference) {
     .reduce((value, segment) => value?.[segment], document);
 }
 
-function resolveNode(document, node) {
-  if (node?.$ref === undefined) {
-    return node;
-  }
-  const resolved = resolveReference(document, node.$ref);
-  if (resolved === undefined) {
-    throw new Error(`OpenAPI reference not found: ${node.$ref}`);
-  }
-  return resolved;
-}
-
-function mergeExamples(values) {
-  return values.reduce((result, value) => {
-    if (
-      result !== null &&
-      value !== null &&
-      typeof result === 'object' &&
-      typeof value === 'object' &&
-      !Array.isArray(result) &&
-      !Array.isArray(value)
-    ) {
-      return { ...result, ...value };
-    }
-    return value ?? result;
-  }, {});
-}
-
 function exampleFromSchema(document, schema, depth = 0, visited = new Set()) {
   if (schema === undefined || depth > 7) {
     return {};
   }
-  for (const value of [
-    schema.example,
-    schema.const,
-    schema.default,
-    schema.enum?.[0],
-  ]) {
-    if (value !== undefined) {
-      return value;
-    }
+  const explicit = [schema.example, schema.const, schema.default, schema.enum?.[0]]
+    .find((value) => value !== undefined);
+  if (explicit !== undefined) {
+    return explicit;
   }
 
   if (schema.$ref !== undefined) {
@@ -98,20 +70,23 @@ function exampleFromSchema(document, schema, depth = 0, visited = new Set()) {
     );
   }
 
+  const next = (child) => exampleFromSchema(document, child, depth + 1, visited);
   if (schema.allOf !== undefined) {
-    return mergeExamples(
-      schema.allOf.map((schema) =>
-        exampleFromSchema(document, schema, depth + 1, visited),
-      ),
+    return schema.allOf.map(next).reduce(
+      (result, value) =>
+        isRecord(result) && isRecord(value)
+          ? { ...result, ...value }
+          : value ?? result,
+      {},
     );
   }
   const variant = schema.oneOf?.[0] ?? schema.anyOf?.[0];
   if (variant !== undefined) {
-    return exampleFromSchema(document, variant, depth + 1, visited);
+    return next(variant);
   }
 
   if (schema.type === 'array') {
-    return [exampleFromSchema(document, schema.items, depth + 1, visited)];
+    return [next(schema.items)];
   }
   if (schema.type === 'object' || schema.properties !== undefined) {
     const properties = Object.entries(schema.properties ?? {});
@@ -119,10 +94,7 @@ function exampleFromSchema(document, schema, depth = 0, visited = new Set()) {
     const selected = properties.filter(([name]) => required.has(name));
     const fields = (selected.length > 0 ? selected : properties).slice(0, 12);
     return Object.fromEntries(
-      fields.map(([name, property]) => [
-        name,
-        exampleFromSchema(document, property, depth + 1, visited),
-      ]),
+      fields.map(([name, property]) => [name, next(property)]),
     );
   }
   if (schema.type === 'boolean') {
@@ -159,38 +131,29 @@ function compactExample(value, maxFields, depth = 0) {
 }
 
 function compactErrorExample(value) {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+  if (!isRecord(value)) {
     return value;
   }
 
-  const entries = Object.entries(value);
   const selected = ERROR_EXAMPLE_KEYS
     .filter((key) => Object.hasOwn(value, key))
     .map((key) => [key, value[key]]);
   return Object.fromEntries(
-    (selected.length > 0 ? selected : entries.slice(0, 6)).map(([key, item]) => [
+    (selected.length > 0 ? selected : Object.entries(value).slice(0, 6)).map(([key, item]) => [
       key,
       compactExample(item, 5, 1),
     ]),
   );
 }
 
-function specializeWriteActionExample(value, status, writeAction) {
-  if (
-    (status !== '200' && status !== '202') ||
-    typeof writeAction !== 'string' ||
-    value === null ||
-    typeof value !== 'object' ||
-    Array.isArray(value) ||
-    !Object.hasOwn(value, 'action')
-  ) {
-    return value;
-  }
-  return { ...value, action: writeAction };
-}
-
 function responseExample(document, rawResponse, status, writeAction) {
-  const response = resolveNode(document, rawResponse);
+  const reference = rawResponse?.$ref;
+  const response = reference === undefined
+    ? rawResponse
+    : resolveReference(document, reference);
+  if (reference !== undefined && response === undefined) {
+    throw new Error(`OpenAPI reference not found: ${reference}`);
+  }
   if (status === '204') {
     return { language: 'text', value: 'No response body.' };
   }
@@ -208,11 +171,13 @@ function responseExample(document, rawResponse, status, writeAction) {
     media.example ??
     firstNamedExample?.value ??
     exampleFromSchema(document, media.schema);
-  const operationValue = specializeWriteActionExample(
-    value,
-    status,
-    writeAction,
-  );
+  const operationValue =
+    (status === '200' || status === '202') &&
+    typeof writeAction === 'string' &&
+    isRecord(value) &&
+    Object.hasOwn(value, 'action')
+      ? { ...value, action: writeAction }
+      : value;
   const compactValue =
     status.startsWith('4') || status.startsWith('5')
       ? compactErrorExample(operationValue)

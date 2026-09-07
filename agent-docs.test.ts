@@ -3,20 +3,11 @@ import { loadConfig } from 'afdocs/helpers';
 import type {
   AgentDocsConfig,
   CheckResult,
-  CheckStatus,
   RunnerOptions,
 } from 'afdocs';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-const LIVE_AGENT_DOCS_TIMEOUT_MS = 420_000;
-
-const STATUS_LABEL: Record<CheckStatus, string> = {
-  error: 'error',
-  fail: 'fail',
-  pass: 'pass',
-  skip: 'skip',
-  warn: 'warn',
-};
+const LIVE_AGENT_DOCS_TIMEOUT_MS = 19_000;
 
 function runnerOptions(config: AgentDocsConfig): Partial<RunnerOptions> {
   const inferredStrategy =
@@ -48,12 +39,6 @@ function asRecordArray(value: unknown): Record<string, unknown>[] {
     : [];
 }
 
-function asStringArray(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === 'string')
-    : [];
-}
-
 function asNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value)
     ? value
@@ -62,10 +47,6 @@ function asNumber(value: unknown): number | undefined {
 
 function asString(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
-}
-
-function asBoolean(value: unknown): boolean | undefined {
-  return typeof value === 'boolean' ? value : undefined;
 }
 
 function formatSize(value: number): string {
@@ -80,8 +61,7 @@ function formatPageIssue(page: Record<string, unknown>): string {
     asString(page.classification),
     asString(page.error),
   ];
-  const found = asBoolean(page.found);
-  if (found === false) {
+  if (page.found === false) {
     parts.push('missing directive');
   }
 
@@ -116,7 +96,7 @@ function formatPageDetails(result: CheckResult): string[] {
   const pageResults = asRecordArray(details?.pageResults);
   const issuePages = pageResults.filter((page) => page.status !== 'pass');
 
-  return issuePages.slice(0, 10).map((page) => {
+  return issuePages.map((page) => {
     const url =
       asString(page.url) ??
       asString(page.mdUrl) ??
@@ -127,7 +107,7 @@ function formatPageDetails(result: CheckResult): string[] {
 }
 
 function formatResult(result: CheckResult): string {
-  const lines = [`[${STATUS_LABEL[result.status]}] ${result.message}`];
+  const lines = [`[${result.status}] ${result.message}`];
   if (result.status !== 'pass' && result.status !== 'skip') {
     lines.push(...formatPageDetails(result));
   }
@@ -143,31 +123,6 @@ function isExpectedSectionHeaderSkip(result: CheckResult): boolean {
   );
 }
 
-function isMintlifyEscapeParityWarning(result: CheckResult): boolean {
-  if (result.status !== 'warn') {
-    return false;
-  }
-
-  const details = asRecord(result.details);
-  const issuePages = asRecordArray(details?.pageResults).filter(
-    (page) => page.status !== 'pass',
-  );
-  if (issuePages.length !== 1) {
-    return false;
-  }
-
-  const [page] = issuePages;
-  const sampleDiffs = asStringArray(page.sampleDiffs);
-  return (
-    page.url ===
-      'https://docs.xquik.com/guides/tweet-scraper-csv-export' &&
-    page.missingPercent === 9 &&
-    page.missingSegments === 10 &&
-    sampleDiffs.length === 5 &&
-    sampleDiffs.every((sample) => sample.includes('tweet_search_extract'))
-  );
-}
-
 function acceptsResult(checkId: string, result: CheckResult): boolean {
   if (result.status === 'pass') {
     return true;
@@ -177,9 +132,6 @@ function acceptsResult(checkId: string, result: CheckResult): boolean {
   }
   if (checkId === 'section-header-quality') {
     return isExpectedSectionHeaderSkip(result);
-  }
-  if (checkId === 'markdown-content-parity') {
-    return isMintlifyEscapeParityWarning(result);
   }
   return false;
 }
