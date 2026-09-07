@@ -24,6 +24,11 @@ function checkPolicy(
       'config/dependency-license-policy.json': {
         allowedLicenses: ['MIT'],
         packageLicenses: {},
+        licenseReferences: [{
+          declared: 'SEE LICENSE IN LICENSE.md',
+          license: 'MIT',
+          packages: ['fixture@1.0.0'],
+        }],
       },
       'package.json': { devDependencies: { fixture: version } },
       'package-lock.json': { packages },
@@ -72,5 +77,20 @@ describe('dependency policy', (): void => {
     const result = checkPolicy({ 'node_modules/fixture': metadata }, '^1.0.0');
     expect(result.status).toBe(1);
     expect(String(result.stderr)).toContain('must use an exact version');
+  });
+
+  it.each([
+    ['fixture', '1.0.0', 'SEE LICENSE IN LICENSE.md', 0],
+    ['other', '1.0.0', 'SEE LICENSE IN LICENSE.md', 1],
+    ['fixture', '1.0.1', 'SEE LICENSE IN LICENSE.md', 1],
+    ['fixture', '1.0.0', 'SEE LICENSE IN README.md', 1],
+    ['fixture', '1.0.0', 'unapproved', 1],
+  ])('resolves only reviewed package references: %s@%s %s', (name, version, license, status): void => {
+    expect.assertions(2);
+    const result = checkPolicy({ [`node_modules/${name}`]: { ...metadata, version, license } });
+    expect(result.status).toBe(status);
+    expect(String(status === 0 ? result.stdout : result.stderr)).toContain(
+      status === 0 ? 'Verified 1 locked dependencies' : `unapproved license ${license}`,
+    );
   });
 });

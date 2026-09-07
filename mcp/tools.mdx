@@ -78,6 +78,9 @@ Execute API calls allowed by the authenticated credential. Full account keys and
 
 Pass `code` as an async arrow function of up to 10,000 characters. `xquik` is global and the function's first argument.
 
+Pass optional `result_id` to load a saved result into `xquik.result`.
+Without it, `xquik.result` is `null`.
+
 Pass the function itself, not a promise or its result.
 Place API calls inside its body. Non-functions fail before any API request starts.
 
@@ -100,6 +103,7 @@ interface XquikResponse<T> {
 }
 
 declare const xquik: {
+  result: unknown;
   request<T = unknown>(options: XquikRequest): Promise<XquikResponse<T>>;
 };
 ```
@@ -149,8 +153,37 @@ Write and media results follow the same contract. Read `tweet_id`, `write_action
 
 Both `search` and `execute` return compact JSON within 24,000 characters. Whitespace inside strings stays unchanged. Native API tools apply the same limit to successful & failed responses.
 The limit bounds tool output, not catalog access or available results. Large schema selections can exceed it. Oversized output returns `isError: true` with a recoverable `response_too_large` diagnostic. It includes size, limit, and retry guidance, never partial JSON. An ordinary result containing an `error` field is not a tool failure.
-Retry with selected fields, fewer rows, shorter strings, or an aggregate. Use REST, SDKs, or extraction exports to persist every row.
-Output errors do not undo completed API actions or charges. Retrieve existing results instead of repeating completed writes.
+Output errors do not undo completed API actions or charges.
+Use REST, SDKs, or extraction exports to persist every row.
+
+### Recover oversized results
+
+When saving succeeds, oversized API results include `result_id` and a resource link.
+Use either retrieval method:
+
+- Pass `result_id` to `execute`, then project or page `xquik.result`.
+- Read `xquik://results/{result_id}` through MCP `resources/read`.
+
+Resources return complete `{ result, warnings? }` JSON.
+Return selected fields, fewer rows, shorter strings, or an aggregate from saved data.
+Reading saved data makes no API requests and spends no extraction credits.
+Explicit `xquik.request()` calls still follow normal billing.
+Use the original account and credential scope.
+Another account or scope cannot retrieve the result.
+Missing or unavailable results return an error.
+
+```json
+{
+  "code": "async () => xquik.result.tweets.slice(0, 10).map(({ id }) => id)",
+  "result_id": "<result_id from the output error>"
+}
+```
+
+Recovery applies only when the response supplies `result_id`.
+Very large results or storage failures may prevent saving.
+Search catalog errors still require a smaller selection.
+Without a saved result, contact support before repeating paid requests.
+Verify completed writes before retrying them.
 
 ### Scope and unavailable operations
 

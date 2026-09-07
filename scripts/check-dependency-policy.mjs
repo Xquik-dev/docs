@@ -26,7 +26,9 @@ const dependencies = Object.entries(lockfile.packages ?? {}).filter(
 for (const [path, metadata] of dependencies) {
   const name = path.slice(path.lastIndexOf('node_modules/') + 13);
   const key = `${name}@${metadata.version}`;
-  const license = metadata.license ?? policy.packageLicenses[key];
+  const license = policy.licenseReferences?.find(
+    (reference) => reference.declared === metadata.license && reference.packages.includes(key),
+  )?.license ?? metadata.license ?? policy.packageLicenses[key];
 
   if (!metadata.integrity?.startsWith('sha512-')) {
     failures.push(`${key} must use SHA-512 package integrity metadata.`);
