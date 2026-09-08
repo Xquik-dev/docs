@@ -3,15 +3,26 @@ title: "Create a tweet draft for review with the Xquik API"
 sidebarTitle: "Create draft"
 description: "Save one Xquik tweet draft with text, optional topic and goal, 25,000-character validation, API authentication, and clear 400, 401 or 429 recovery steps."
 api: "POST /drafts"
-keywords: ["tweet draft", "create tweet draft", "save tweet draft", "tweet draft API", "draft review workflow"]
+keywords:
+  [
+    "tweet draft",
+    "create tweet draft",
+    "save tweet draft",
+    "tweet draft API",
+    "draft review workflow",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="201" id="response-drafts-create-201">
+
     ```json
     {
       "id": "42",
@@ -22,27 +33,33 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "updatedAt": "2025-01-16T09:30:00Z"
     }
     ```
+
   </Tab>
 
   <Tab title="400" id="response-drafts-create-400">
+
     ```json
     {
       "error": "invalid_input",
       "message": "Invalid input. Check the request body."
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-drafts-create-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-drafts-create-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -50,8 +67,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "retryAfter": 60
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
@@ -69,119 +88,123 @@ Xquik drafts are separate from [X's native Unsent posts](https://help.x.com/en/u
 Creating a record here does not add anything to the X compose interface.
 
 <Callout icon="circle-check" color="#16a34a">
-  **Free** - does not consume credits
+
+**Free** - does not consume credits
+
 </Callout>
 
 <CodeGroup>
-  ```bash cURL
-  curl --fail-with-body \
-    --request POST https://xquik.com/api/v1/drafts \
-    --header "x-api-key: xq_YOUR_KEY_HERE" \
-    --header "Content-Type: application/json" \
-    --data '{
-      "text": "Just shipped dark mode. What feature should we build next?",
-      "topic": "product update",
-      "goal": "conversation"
-    }' | jq
-  ```
 
-  ```javascript Node.js
-  const response = await fetch("https://xquik.com/api/v1/drafts", {
-    method: "POST",
-    headers: {
-      "x-api-key": "xq_YOUR_KEY_HERE",
-      "Content-Type": "application/json",
+```bash cURL
+curl --fail-with-body \
+  --request POST https://xquik.com/api/v1/drafts \
+  --header "x-api-key: xq_YOUR_KEY_HERE" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "text": "Just shipped dark mode. What feature should we build next?",
+    "topic": "product update",
+    "goal": "conversation"
+  }' | jq
+```
+
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/drafts", {
+  method: "POST",
+  headers: {
+    "x-api-key": "xq_YOUR_KEY_HERE",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    text: "Just shipped dark mode. What feature should we build next?",
+    topic: "product update",
+    goal: "conversation",
+  }),
+});
+const draft = await response.json();
+if (!response.ok) {
+  throw new Error(`${response.status} ${draft.error}: ${draft.message}`);
+}
+
+console.log(draft.id, draft.text, draft.createdAt);
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://xquik.com/api/v1/drafts",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    json={
+        "text": "Just shipped dark mode. What feature should we build next?",
+        "topic": "product update",
+        "goal": "conversation",
     },
-    body: JSON.stringify({
-      text: "Just shipped dark mode. What feature should we build next?",
-      topic: "product update",
-      goal: "conversation",
-    }),
-  });
-  const draft = await response.json();
-  if (!response.ok) {
-    throw new Error(`${response.status} ${draft.error}: ${draft.message}`);
-  }
+)
+draft = response.json()
+if response.status_code != 201:
+    raise RuntimeError(
+        f'{response.status_code} {draft["error"]}: {draft["message"]}'
+    )
 
-  console.log(draft.id, draft.text, draft.createdAt);
-  ```
+print(draft["id"], draft["text"], draft["createdAt"])
+```
 
-  ```python Python
-  import requests
+```go Go
+package main
 
-  response = requests.post(
-      "https://xquik.com/api/v1/drafts",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-      json={
-          "text": "Just shipped dark mode. What feature should we build next?",
-          "topic": "product update",
-          "goal": "conversation",
-      },
-  )
-  draft = response.json()
-  if response.status_code != 201:
-      raise RuntimeError(
-          f'{response.status_code} {draft["error"]}: {draft["message"]}'
-      )
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "net/http"
+)
 
-  print(draft["id"], draft["text"], draft["createdAt"])
-  ```
+func main() {
+    body, err := json.Marshal(map[string]interface{}{
+        "text":  "Just shipped dark mode. What feature should we build next?",
+        "topic": "product update",
+        "goal":  "conversation",
+    })
+    if err != nil {
+        panic(err)
+    }
 
-  ```go Go
-  package main
+    req, err := http.NewRequest("POST", "https://xquik.com/api/v1/drafts", bytes.NewReader(body))
+    if err != nil {
+        panic(err)
+    }
+    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+    req.Header.Set("Content-Type", "application/json")
 
-  import (
-      "bytes"
-      "encoding/json"
-      "fmt"
-      "net/http"
-  )
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+        panic(err)
+    }
+    defer resp.Body.Close()
 
-  func main() {
-      body, err := json.Marshal(map[string]interface{}{
-          "text":  "Just shipped dark mode. What feature should we build next?",
-          "topic": "product update",
-          "goal":  "conversation",
-      })
-      if err != nil {
-          panic(err)
-      }
+    var draft map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&draft); err != nil {
+        panic(err)
+    }
+    if resp.StatusCode != http.StatusCreated {
+        panic(fmt.Sprintf("%d %v: %v", resp.StatusCode, draft["error"], draft["message"]))
+    }
 
-      req, err := http.NewRequest("POST", "https://xquik.com/api/v1/drafts", bytes.NewReader(body))
-      if err != nil {
-          panic(err)
-      }
-      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-      req.Header.Set("Content-Type", "application/json")
+    fmt.Println(draft["id"], draft["text"], draft["createdAt"])
+}
+```
 
-      resp, err := http.DefaultClient.Do(req)
-      if err != nil {
-          panic(err)
-      }
-      defer resp.Body.Close()
-
-      var draft map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&draft); err != nil {
-          panic(err)
-      }
-      if resp.StatusCode != http.StatusCreated {
-          panic(fmt.Sprintf("%d %v: %v", resp.StatusCode, draft["error"], draft["message"]))
-      }
-
-      fmt.Println(draft["id"], draft["text"], draft["createdAt"])
-  }
-  ```
 </CodeGroup>
 
 ## Choose the tweet draft fields
 
 Send a JSON object with one required field and two optional fields.
 
-| Field | Requirement | Draft use |
-| --- | --- | --- |
-| `text` | Required string with 1 to 25,000 characters | Store the exact proposed tweet text. |
-| `topic` | Optional string, stored up to 500 characters | Record the intended subject. |
-| `goal` | Optional supported enum value | Record the intended composition outcome. |
+| Field   | Requirement                                  | Draft use                                |
+| ------- | -------------------------------------------- | ---------------------------------------- |
+| `text`  | Required string with 1 to 25,000 characters  | Store the exact proposed tweet text.     |
+| `topic` | Optional string, stored up to 500 characters | Record the intended subject.             |
+| `goal`  | Optional supported enum value                | Record the intended composition outcome. |
 
 The supported `goal` values are `engagement`, `followers`, `authority`, and
 `conversation`. Match the lowercase value exactly.
@@ -202,14 +225,14 @@ connected account's X posting rules before a separate write request.
 
 A successful request returns `201 Created` and one canonical draft object.
 
-| Field | Meaning | Next action |
-| --- | --- | --- |
-| `id` | Stable Xquik draft ID | Store it for retrieval or deletion. |
-| `text` | Exact accepted text | Compare it with the submitted copy. |
-| `topic` | Accepted optional topic | Confirm any truncation was acceptable. |
-| `goal` | Accepted optional goal | Confirm the requested value was supported. |
-| `createdAt` | ISO 8601 creation timestamp | Record when review began. |
-| `updatedAt` | ISO 8601 update timestamp | Compare later retrieval with this response. |
+| Field       | Meaning                     | Next action                                 |
+| ----------- | --------------------------- | ------------------------------------------- |
+| `id`        | Stable Xquik draft ID       | Store it for retrieval or deletion.         |
+| `text`      | Exact accepted text         | Compare it with the submitted copy.         |
+| `topic`     | Accepted optional topic     | Confirm any truncation was acceptable.      |
+| `goal`      | Accepted optional goal      | Confirm the requested value was supported.  |
+| `createdAt` | ISO 8601 creation timestamp | Record when review began.                   |
+| `updatedAt` | ISO 8601 update timestamp   | Compare later retrieval with this response. |
 
 Optional `topic` and `goal` fields are omitted when unset or invalid. Do not
 expect those keys to contain `null`.
@@ -250,26 +273,26 @@ carry photos, GIFs, or video.
 An Xquik draft stores one text string plus optional composition context. It
 does not mirror native draft features or publish automatically.
 
-| Draft capability | Xquik create draft | Native X draft |
-| --- | --- | --- |
-| Store one text string through an API | Yes | No through this endpoint |
-| Store optional topic and goal | Yes | Not represented here |
-| Appear under X Unsent posts | No | Yes |
-| Preserve a native thread sequence | No | Supported by native X workflows |
-| Preserve native media attachments | No | Supported by native X workflows |
-| Publish during draft creation | No | No |
+| Draft capability                     | Xquik create draft | Native X draft                  |
+| ------------------------------------ | ------------------ | ------------------------------- |
+| Store one text string through an API | Yes                | No through this endpoint        |
+| Store optional topic and goal        | Yes                | Not represented here            |
+| Appear under X Unsent posts          | No                 | Yes                             |
+| Preserve a native thread sequence    | No                 | Supported by native X workflows |
+| Preserve native media attachments    | No                 | Supported by native X workflows |
+| Publish during draft creation        | No                 | No                              |
 
 Keep thread items, media IDs, reply targets, and scheduling instructions in
 your publishing workflow. Do not assume the draft response contains them.
 
 ## Recover from draft creation errors
 
-| Status | Error | Cause | Fix |
-| --- | --- | --- | --- |
-| `201` | Draft object | Xquik stored the draft | Save the returned ID. |
-| `400` | `invalid_input` | `text` is missing, empty, non-string, or oversized | Send 1 to 25,000 characters. |
-| `401` | `unauthenticated` | The credential is missing or invalid | Replace the API key or bearer token. |
-| `429` | `rate_limit_exceeded` | Too many requests reached the route | Wait for `Retry-After`, then retry carefully. |
+| Status | Error                 | Cause                                              | Fix                                           |
+| ------ | --------------------- | -------------------------------------------------- | --------------------------------------------- |
+| `201`  | Draft object          | Xquik stored the draft                             | Save the returned ID.                         |
+| `400`  | `invalid_input`       | `text` is missing, empty, non-string, or oversized | Send 1 to 25,000 characters.                  |
+| `401`  | `unauthenticated`     | The credential is missing or invalid               | Replace the API key or bearer token.          |
+| `429`  | `rate_limit_exceeded` | Too many requests reached the route                | Wait for `Retry-After`, then retry carefully. |
 
 Never retry `400` without changing the body. Never retry `401` without
 replacing the credential.
@@ -315,41 +338,65 @@ No. This authenticated draft creation request is free.
 ## Headers
 
 <ParamField header="x-api-key" type="string">
-  Your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+
+Your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+
 </ParamField>
 
 <ParamField header="Authorization" type="string">
-  An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-api-key`, not both.
+
+An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-api-key`, not both.
+
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
-  Must be `application/json`.
+
+Must be `application/json`.
+
 </ParamField>
 
 ## Body
 
 <ParamField body="text" type="string" required>
-  Exact draft text. Send 1 to 25,000 characters. Oversized text returns `400`.
+
+Exact draft text. Send 1 to 25,000 characters. Oversized text returns `400`.
+
 </ParamField>
 
 <ParamField body="topic" type="string">
-  Optional composition topic. Values longer than 500 characters are silently truncated.
+
+Optional composition topic. Values longer than 500 characters are silently truncated.
+
 </ParamField>
 
 <ParamField body="goal" type="string">
-  Optional goal: `engagement`, `followers`, `authority`, or `conversation`. Other values are silently omitted.
+
+Optional goal: `engagement`, `followers`, `authority`, or `conversation`. Other values are silently omitted.
+
 </ParamField>
 
 ## Response
 
 ### 201 Created
 
-<ResponseField name="id" type="string">Unique Xquik draft ID.</ResponseField>
-<ResponseField name="text" type="string">Exact accepted tweet text.</ResponseField>
-<ResponseField name="topic" type="string">Optional accepted topic. Omitted when unset.</ResponseField>
-<ResponseField name="goal" type="string">Optional accepted goal. Omitted when unset.</ResponseField>
-<ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
-<ResponseField name="updatedAt" type="string">ISO 8601 update timestamp.</ResponseField>
+<ResponseField name="id" type="string">
+  Unique Xquik draft ID.
+</ResponseField>
+<ResponseField name="text" type="string">
+  Exact accepted tweet text.
+</ResponseField>
+<ResponseField name="topic" type="string">
+  Optional accepted topic. Omitted when unset.
+</ResponseField>
+<ResponseField name="goal" type="string">
+  Optional accepted goal. Omitted when unset.
+</ResponseField>
+<ResponseField name="createdAt" type="string">
+  ISO 8601 creation timestamp.
+</ResponseField>
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 update timestamp.
+</ResponseField>
 
 ```json
 {
@@ -367,22 +414,34 @@ No. This authenticated draft creation request is free.
 ```json
 { "error": "invalid_input", "message": "Invalid input. Check the request body." }
 ```
+
 The `text` field is missing, empty, non-string, or longer than 25,000 characters.
 
 ### 401 Unauthenticated
 
 ```json
-{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }
+{
+  "error": "unauthenticated",
+  "message": "Authentication required. Provide a valid API key or bearer token."
+}
 ```
+
 Authentication is missing or invalid. Replace the credential before retrying.
 
 ### 429 Rate limited
 
 ```json
-{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Try again later.",
+  "retryAfter": 60
+}
 ```
+
 Too many requests reached the route. Wait for `Retry-After` before retrying.
 
 <Note>
-  **Next steps.** [List Drafts](/api-reference/drafts/list) to inventory saved text, [Get Draft](/api-reference/drafts/get) to retrieve one record, or [Delete Draft](/api-reference/drafts/delete) to remove it.
+
+**Next steps.** [List Drafts](/api-reference/drafts/list) to inventory saved text, [Get Draft](/api-reference/drafts/get) to retrieve one record, or [Delete Draft](/api-reference/drafts/delete) to remove it.
+
 </Note>

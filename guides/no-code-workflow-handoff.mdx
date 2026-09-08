@@ -38,14 +38,14 @@ calls idempotent around retries. Store secrets outside workflow history.
 
 ## Choose a Twitter automation outcome
 
-| Outcome | Best lane | Required checkpoint |
-| --- | --- | --- |
-| Alert on new tweets or replies | Account monitor webhook | `streamEventId` |
-| Track keyword or brand matches | Keyword monitor webhook | `streamEventId` |
-| Add tweet search rows to Sheets | Direct read pages | `next_cursor` |
-| Export followers or following to CRM | Extraction job | Job ID and `nextCursor` |
-| Repair events after receiver downtime | Stored event replay | `nextCursor` |
-| Audit failed webhook deliveries | Delivery log | `deliveryId` |
+| Outcome                               | Best lane               | Required checkpoint     |
+| ------------------------------------- | ----------------------- | ----------------------- |
+| Alert on new tweets or replies        | Account monitor webhook | `streamEventId`         |
+| Track keyword or brand matches        | Keyword monitor webhook | `streamEventId`         |
+| Add tweet search rows to Sheets       | Direct read pages       | `next_cursor`           |
+| Export followers or following to CRM  | Extraction job          | Job ID and `nextCursor` |
+| Repair events after receiver downtime | Stored event replay     | `nextCursor`            |
+| Audit failed webhook deliveries       | Delivery log            | `deliveryId`            |
 
 Choose the lane from the required freshness and row count. Do not poll a
 webhook workflow. Do not build a bulk export from repeated page-one reads.
@@ -53,25 +53,34 @@ webhook workflow. Do not build a bulk export from repeated page-one reads.
 ## Pick the handoff lane
 
 <CardGroup cols={2}>
+
   <Card title="Monitor event webhooks" icon="radio">
+
     Use `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then
     `POST /api/v1/webhooks`, when the workflow needs fresh account or keyword
     events.
+
   </Card>
 
   <Card title="Bulk export jobs" icon="database">
+
     Use `POST /api/v1/extractions`, poll `GET /api/v1/extractions`, then
     export CSV, JSON, or XLSX when the workflow needs many rows.
+
   </Card>
 
   <Card title="Direct read pages" icon="search">
+
     Use `GET /api/v1/x/tweets/search` or follower pages when the workflow owns
     the cursor loop and can store `next_cursor`.
+
   </Card>
 
   <Card title="Replay and repair" icon="history">
+
     Use `GET /api/v1/events` and `GET /api/v1/webhooks/{id}/deliveries` after
     receiver downtime, failed steps, or queue backpressure.
+
   </Card>
 </CardGroup>
 
@@ -81,8 +90,10 @@ Use webhooks for fresh events. Poll only durable extraction jobs. Use direct
 reads for bounded operator searches. Store each cursor before the next page.
 
 <Warning>
-  Never use repeated polling as a substitute for monitor webhooks. It creates
-  duplicate tweet reads and weaker recovery checkpoints.
+
+Never use repeated polling as a substitute for monitor webhooks. It creates
+duplicate tweet reads and weaker recovery checkpoints.
+
 </Warning>
 
 ## Monitor event trigger
@@ -118,9 +129,11 @@ Xquik signs `<timestamp>.<nonce>.<rawBody>` with HMAC-SHA256. Read
 [Webhook Signature Verification](/webhooks/verification).
 
 <Warning>
-  Some visual webhook triggers parse JSON before exposing request bytes. Route
-  those triggers through a small verified receiver. Forward only verified
-  fields into the visual workflow.
+
+Some visual webhook triggers parse JSON before exposing request bytes. Route
+those triggers through a small verified receiver. Forward only verified
+fields into the visual workflow.
+
 </Warning>
 
 Use `deliveryId` for endpoint retries. Use `streamEventId` across receivers.
@@ -203,24 +216,33 @@ and `next_cursor` together. Upsert on tweet ID or X user ID.
 ### Choose direct reads by task
 
 <CardGroup cols={2}>
+
   <Card title="Tweet search" icon="search">
+
     Search keywords, hashtags, authors, dates, and engagement filters. Store
     each tweet ID before requesting another page.
+
   </Card>
 
   <Card title="Followers" icon="users">
+
     Export follower IDs, usernames, names, bios, and public metrics. Upsert on
     the stable X user ID.
+
   </Card>
 
   <Card title="Following" icon="user-round-check">
+
     Export accounts followed by a public profile. Keep source profile and
     collection time beside each relationship.
+
   </Card>
 
   <Card title="Replies and mentions" icon="messages-square">
+
     Store reply tweet IDs, parent tweet IDs, author IDs, and timestamps. Keep
     the endpoint cursor with the same filters.
+
   </Card>
 </CardGroup>
 
@@ -277,24 +299,33 @@ Scope checkpoints by endpoint, filters, monitor, job, and destination.
 ## Platform notes
 
 <CardGroup cols={2}>
+
   <Card title="Zapier" icon="zap" href="/guides/zapier">
+
     Use REST Hooks for monitor events. Zapier polling triggers do not fetch
     additional result pages automatically.
+
   </Card>
 
   <Card title="Make" icon="route" href="/guides/make">
+
     Use a custom app with webhook triggers, data stores, iterators, and a
     universal API call module. Keep cursors in a Data Store between runs.
+
   </Card>
 
   <Card title="Pipedream" icon="code" href="/guides/pipedream">
+
     Pipedream Data Store writes are not transactional. Restrict each key to one
     worker.
+
   </Card>
 
   <Card title="n8n" icon="workflow" href="/guides/n8n">
+
     Use HTTP Request nodes, webhook triggers, and workflow state for replay,
     cursor, and dedupe checkpoints. Use persistent state in production.
+
   </Card>
 </CardGroup>
 
@@ -307,18 +338,24 @@ Each guide includes pre-built HTTP patterns for complex workflows.
 ## Cost and retry notes
 
 <Check>
-  Active account and keyword monitors check every 1 second and cost 21 credits
-  per active monitor-hour. Event storage and webhook delivery are included.
+
+Active account and keyword monitors check every 1 second and cost 21 credits
+per active monitor-hour. Event storage and webhook delivery are included.
+
 </Check>
 
 <Check>
-  Direct tweet search and follower pages are metered by returned rows. Store
-  cursors so retries do not restart from page 1.
+
+Direct tweet search and follower pages are metered by returned rows. Store
+cursors so retries do not restart from page 1.
+
 </Check>
 
 <Check>
-  Extraction jobs return `202` with `id`, `toolType`, and `status`. Poll job
-  detail or list completed jobs before exporting rows.
+
+Extraction jobs return `202` with `id`, `toolType`, and `status`. Poll job
+detail or list completed jobs before exporting rows.
+
 </Check>
 
 ## Handle webhook retries and missed events
@@ -340,28 +377,41 @@ Use `monitorId` or `keywordMonitorId` during replay. Store each `nextCursor`.
 ## Handle no-code API errors
 
 <AccordionGroup>
+
   <Accordion title="400 invalid input">
+
     Request rejected. Check the route, body, query, cursor, and selected format.
+
   </Accordion>
 
   <Accordion title="401 authentication">
+
     API key rejected. Replace the credential and rerun the failed step.
+
   </Accordion>
 
   <Accordion title="402 subscription required">
+
     Subscription required. Subscribe first, then resume from the checkpoint.
+
   </Accordion>
 
   <Accordion title="404 resource not found">
+
     Resource missing. Verify the monitor, webhook, extraction, tweet, or user ID.
+
   </Accordion>
 
   <Accordion title="429 rate limited">
+
     Rate limited. Respect the retry delay and preserve the current cursor.
+
   </Accordion>
 
   <Accordion title="502 or 503 dependency failure">
+
     Upstream unavailable. Retry from the same idempotent checkpoint.
+
   </Accordion>
 </AccordionGroup>
 
@@ -482,19 +532,28 @@ Use cursors, batching, and idempotency to avoid wasteful duplicate requests.
 ## Next steps
 
 <CardGroup cols={2}>
+
   <Card title="Brand monitoring" icon="radio" href="/guides/brand-monitoring-workflow">
+
     Build account and keyword monitor workflows with signed webhooks and replay.
+
   </Card>
 
   <Card title="Extraction workflow" icon="database" href="/guides/extraction-workflow">
+
     Create extraction jobs, fetch paginated results, and export files.
+
   </Card>
 
   <Card title="Webhook testing" icon="webhook" href="/guides/twitter-webhook-testing">
+
     Verify signed test deliveries before accepting production events.
+
   </Card>
 
   <Card title="Response formats" icon="braces" href="/guides/response-formats-exports">
+
     Choose CSV, JSON, XLSX, PDF, or paginated JSON for downstream tools.
+
   </Card>
 </CardGroup>

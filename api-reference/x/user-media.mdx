@@ -3,7 +3,17 @@ title: "Twitter media scraper & profile export API guide"
 sidebarTitle: "Get user media"
 description: "Scrape tweets with photos, videos, and GIFs from a Twitter or X profile. Export media posts with authors, metrics, cursors, and timestamps. See costs."
 api: "GET /x/users/{id}/media"
-keywords: ["Twitter media scraper", "Twitter media API", "X media API", "user media", "tweet photos", "tweet videos", "GIFs", "media export"]
+keywords:
+  [
+    "Twitter media scraper",
+    "Twitter media API",
+    "X media API",
+    "user media",
+    "tweet photos",
+    "tweet videos",
+    "GIFs",
+    "media export",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -13,9 +23,13 @@ import TweetAdvancedFilterParams from "/snippets/tweet-advanced-filter-params.md
 import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="200" id="response-x-user-media-200">
+
     ```json
     {
       "tweets": [],
@@ -23,54 +37,66 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
       "next_cursor": ""
     }
     ```
+
   </Tab>
 
   <Tab title="400" id="response-x-user-media-400">
+
     ```json
     {
       "error": "invalid_input",
       "message": "Invalid input. Check the request body."
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-x-user-media-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required."
     }
     ```
+
   </Tab>
 
   <Tab title="402" id="response-x-user-media-402">
+
     ```json
     {
       "error": "insufficient_credits",
       "message": "Insufficient credits. Top up or subscribe to continue."
     }
     ```
+
   </Tab>
 
   <Tab title="404" id="response-x-user-media-404">
+
     ```json
     {
       "error": "user_not_found",
       "message": "X user not found. Check the username."
     }
     ```
+
   </Tab>
 
   <Tab title="424" id="response-x-user-media-424">
+
     ```json
     {
       "error": "x_api_unavailable",
       "message": "X data source temporarily unavailable. Try again later."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-x-user-media-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -78,17 +104,21 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
       "retryAfter": 60
     }
     ```
+
   </Tab>
 
   <Tab title="502" id="response-x-user-media-502">
+
     ```json
     {
       "error": "x_api_unavailable",
       "message": "X data source temporarily unavailable. Try again later."
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
@@ -96,121 +126,125 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 <ConnectedAccountApiLinks />
 
 <Note>
-  Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
+Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
 </Note>
 
 <Callout icon="coins" color="#5c3327">
-  **1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
+
+**1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
+
 </Callout>
 
 <CodeGroup>
-  ```bash cURL
-  curl https://xquik.com/api/v1/x/users/44196397/media \
-    -H "x-api-key: xq_your_api_key_here" | jq
 
-  # Page 2
-  curl -G https://xquik.com/api/v1/x/users/44196397/media \
-    --data-urlencode "cursor=abc123" \
-    -H "x-api-key: xq_your_api_key_here" | jq
-  ```
+```bash cURL
+curl https://xquik.com/api/v1/x/users/44196397/media \
+  -H "x-api-key: xq_your_api_key_here" | jq
 
-  ```javascript Node.js
-  const userId = "44196397";
-  let pageCursor = "";
+# Page 2
+curl -G https://xquik.com/api/v1/x/users/44196397/media \
+  --data-urlencode "cursor=abc123" \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
 
-  for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
-    const params =
-      pageCursor === "" ? "" : `?${new URLSearchParams({ cursor: pageCursor })}`;
-    const response = await fetch(
-      `https://xquik.com/api/v1/x/users/${userId}/media${params}`,
-      { headers: { "x-api-key": "xq_your_api_key_here" } },
-    );
-    const page = await response.json();
-    if (!response.ok) throw new Error(JSON.stringify(page));
+```javascript Node.js
+const userId = "44196397";
+let pageCursor = "";
 
-    const mediaRows = page.tweets.map((tweet) => ({
-      source_user_id: userId,
-      media_tweet_id: tweet.id,
-      text: tweet.text,
-      tweet_url: tweet.url ?? null,
-      created_at: tweet.createdAt ?? null,
-      author_id: tweet.author?.id ?? null,
-      author_username: tweet.author?.username ?? null,
-      author_name: tweet.author?.name ?? null,
-      author_followers: tweet.author?.followers ?? null,
-      author_verified: tweet.author?.verified ?? null,
-      author_profile_picture: tweet.author?.profilePicture ?? null,
-      like_count: tweet.likeCount ?? null,
-      reply_count: tweet.replyCount ?? null,
-      retweet_count: tweet.retweetCount ?? null,
-      quote_count: tweet.quoteCount ?? null,
-      view_count: tweet.viewCount ?? null,
-      media_urls: (tweet.media ?? []).map((item) => item.mediaUrl).filter(Boolean),
-      media_types: (tweet.media ?? []).map((item) => item.type).filter(Boolean),
-      page_index: pageIndex,
-      page_cursor: pageCursor,
-      next_cursor: page.next_cursor,
-      has_next_page: page.has_next_page,
-    }));
-    for (const row of mediaRows) process.stdout.write(`${JSON.stringify(row)}\n`);
+for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
+  const params = pageCursor === "" ? "" : `?${new URLSearchParams({ cursor: pageCursor })}`;
+  const response = await fetch(`https://xquik.com/api/v1/x/users/${userId}/media${params}`, {
+    headers: { "x-api-key": "xq_your_api_key_here" },
+  });
+  const page = await response.json();
+  if (!response.ok) throw new Error(JSON.stringify(page));
 
-    if (!page.has_next_page || page.next_cursor === "") break;
-    pageCursor = page.next_cursor;
-  }
-  ```
+  const mediaRows = page.tweets.map((tweet) => ({
+    source_user_id: userId,
+    media_tweet_id: tweet.id,
+    text: tweet.text,
+    tweet_url: tweet.url ?? null,
+    created_at: tweet.createdAt ?? null,
+    author_id: tweet.author?.id ?? null,
+    author_username: tweet.author?.username ?? null,
+    author_name: tweet.author?.name ?? null,
+    author_followers: tweet.author?.followers ?? null,
+    author_verified: tweet.author?.verified ?? null,
+    author_profile_picture: tweet.author?.profilePicture ?? null,
+    like_count: tweet.likeCount ?? null,
+    reply_count: tweet.replyCount ?? null,
+    retweet_count: tweet.retweetCount ?? null,
+    quote_count: tweet.quoteCount ?? null,
+    view_count: tweet.viewCount ?? null,
+    media_urls: (tweet.media ?? []).map((item) => item.mediaUrl).filter(Boolean),
+    media_types: (tweet.media ?? []).map((item) => item.type).filter(Boolean),
+    page_index: pageIndex,
+    page_cursor: pageCursor,
+    next_cursor: page.next_cursor,
+    has_next_page: page.has_next_page,
+  }));
+  for (const row of mediaRows) process.stdout.write(`${JSON.stringify(row)}\n`);
 
-  ```python Python
-  import json
-  import requests
+  if (!page.has_next_page || page.next_cursor === "") break;
+  pageCursor = page.next_cursor;
+}
+```
 
-  user_id = "44196397"
-  page_cursor = ""
+```python Python
+import json
+import requests
 
-  for page_index in range(3):
-      params = {"cursor": page_cursor} if page_cursor else {}
-      response = requests.get(
-          f"https://xquik.com/api/v1/x/users/{user_id}/media",
-          params=params,
-          headers={"x-api-key": "xq_your_api_key_here"},
-      )
-      page = response.json()
-      if not response.ok:
-          raise RuntimeError(page)
+user_id = "44196397"
+page_cursor = ""
 
-      for tweet in page["tweets"]:
-          media_items = tweet.get("media", [])
-          media_row = {
-              "source_user_id": user_id,
-              "media_tweet_id": tweet["id"],
-              "text": tweet["text"],
-              "tweet_url": tweet.get("url"),
-              "created_at": tweet.get("createdAt"),
-              "author_id": (tweet.get("author") or {}).get("id"),
-              "author_username": (tweet.get("author") or {}).get("username"),
-              "author_name": (tweet.get("author") or {}).get("name"),
-              "author_followers": (tweet.get("author") or {}).get("followers"),
-              "author_verified": (tweet.get("author") or {}).get("verified"),
-              "author_profile_picture": (tweet.get("author") or {}).get("profilePicture"),
-              "like_count": tweet.get("likeCount"),
-              "reply_count": tweet.get("replyCount"),
-              "retweet_count": tweet.get("retweetCount"),
-              "quote_count": tweet.get("quoteCount"),
-              "view_count": tweet.get("viewCount"),
-              "media_urls": [
-                  item["mediaUrl"] for item in media_items if item.get("mediaUrl")
-              ],
-              "media_types": [item["type"] for item in media_items if item.get("type")],
-              "page_index": page_index,
-              "page_cursor": page_cursor,
-              "next_cursor": page["next_cursor"],
-              "has_next_page": page["has_next_page"],
-          }
-          print(json.dumps(media_row, separators=(",", ":")))
+for page_index in range(3):
+    params = {"cursor": page_cursor} if page_cursor else {}
+    response = requests.get(
+        f"https://xquik.com/api/v1/x/users/{user_id}/media",
+        params=params,
+        headers={"x-api-key": "xq_your_api_key_here"},
+    )
+    page = response.json()
+    if not response.ok:
+        raise RuntimeError(page)
 
-      if not page["has_next_page"] or not page["next_cursor"]:
-          break
-      page_cursor = page["next_cursor"]
-  ```
+    for tweet in page["tweets"]:
+        media_items = tweet.get("media", [])
+        media_row = {
+            "source_user_id": user_id,
+            "media_tweet_id": tweet["id"],
+            "text": tweet["text"],
+            "tweet_url": tweet.get("url"),
+            "created_at": tweet.get("createdAt"),
+            "author_id": (tweet.get("author") or {}).get("id"),
+            "author_username": (tweet.get("author") or {}).get("username"),
+            "author_name": (tweet.get("author") or {}).get("name"),
+            "author_followers": (tweet.get("author") or {}).get("followers"),
+            "author_verified": (tweet.get("author") or {}).get("verified"),
+            "author_profile_picture": (tweet.get("author") or {}).get("profilePicture"),
+            "like_count": tweet.get("likeCount"),
+            "reply_count": tweet.get("replyCount"),
+            "retweet_count": tweet.get("retweetCount"),
+            "quote_count": tweet.get("quoteCount"),
+            "view_count": tweet.get("viewCount"),
+            "media_urls": [
+                item["mediaUrl"] for item in media_items if item.get("mediaUrl")
+            ],
+            "media_types": [item["type"] for item in media_items if item.get("type")],
+            "page_index": page_index,
+            "page_cursor": page_cursor,
+            "next_cursor": page["next_cursor"],
+            "has_next_page": page["has_next_page"],
+        }
+        print(json.dumps(media_row, separators=(",", ":")))
+
+    if not page["has_next_page"] or not page["next_cursor"]:
+        break
+    page_cursor = page["next_cursor"]
+```
+
 </CodeGroup>
 
 ## User media handoff
@@ -279,43 +313,49 @@ does not mean the asset was downloaded.
 Keep failed downloads retryable by tweet ID and media URL. Do not rerun the
 entire profile export for one failed asset.
 
-| Media inventory column | Response source | Asset rule |
-| --- | --- | --- |
-| `source_x_user_id` | Resolved profile ID | Keep every media tweet tied to the intended profile. |
-| `tweet_id` | `tweets[].id` | Use as the parent key for one or more media items. |
-| `tweet_url` | `tweets[].url` | Preserve the original X post for attribution and review. |
-| `tweet_text` | `tweets[].text` | Keep the caption or post context beside each asset. |
-| `author_id` | `tweets[].author.id` | Preserve the original publisher as a stable identity. |
-| `created_at` | `tweets[].createdAt` | Store the tweet publication time. |
-| `media_index` | Position inside `tweets[].media` | Preserve the order of several assets on one tweet. |
-| `media_type` | `tweets[].media[].type` | Separate photo, video, and animated GIF processing. |
-| `media_url` | `tweets[].media[].mediaUrl` | De-duplicate an asset only within its parent tweet. |
-| `video_variants` | `tweets[].media[].videoVariants` | Keep every returned rendition until a download is approved. |
-| `page_cursor` | Request `cursor` | Resume the profile media inventory after stored pages. |
-| `collected_at` | Integration timestamp | Audit when the media URL and engagement counts were observed. |
+| Media inventory column | Response source                  | Asset rule                                                    |
+| ---------------------- | -------------------------------- | ------------------------------------------------------------- |
+| `source_x_user_id`     | Resolved profile ID              | Keep every media tweet tied to the intended profile.          |
+| `tweet_id`             | `tweets[].id`                    | Use as the parent key for one or more media items.            |
+| `tweet_url`            | `tweets[].url`                   | Preserve the original X post for attribution and review.      |
+| `tweet_text`           | `tweets[].text`                  | Keep the caption or post context beside each asset.           |
+| `author_id`            | `tweets[].author.id`             | Preserve the original publisher as a stable identity.         |
+| `created_at`           | `tweets[].createdAt`             | Store the tweet publication time.                             |
+| `media_index`          | Position inside `tweets[].media` | Preserve the order of several assets on one tweet.            |
+| `media_type`           | `tweets[].media[].type`          | Separate photo, video, and animated GIF processing.           |
+| `media_url`            | `tweets[].media[].mediaUrl`      | De-duplicate an asset only within its parent tweet.           |
+| `video_variants`       | `tweets[].media[].videoVariants` | Keep every returned rendition until a download is approved.   |
+| `page_cursor`          | Request `cursor`                 | Resume the profile media inventory after stored pages.        |
+| `collected_at`         | Integration timestamp            | Audit when the media URL and engagement counts were observed. |
 
-| Asset decision | Required evidence | Next action |
-| --- | --- | --- |
-| Review only | Tweet URL, media URL, author, and text | Keep the remote asset linked to its source tweet. |
-| Approved image download | Image media type and approved usage | Call the download route for the selected media URL. |
-| Approved video download | Video variants and selected format | Choose a variant after inspecting bitrate and content type. |
-| Rejected asset | Reviewer decision and reason | Keep the source record without downloading the file. |
+| Asset decision           | Required evidence                      | Next action                                                      |
+| ------------------------ | -------------------------------------- | ---------------------------------------------------------------- |
+| Review only              | Tweet URL, media URL, author, and text | Keep the remote asset linked to its source tweet.                |
+| Approved image download  | Image media type and approved usage    | Call the download route for the selected media URL.              |
+| Approved video download  | Video variants and selected format     | Choose a variant after inspecting bitrate and content type.      |
+| Rejected asset           | Reviewer decision and reason           | Keep the source record without downloading the file.             |
 | Failed selected download | Tweet ID, media URL, and failure state | Retry only the selected asset, not the entire profile inventory. |
 
 ## Path parameters
 
 <ParamField path="id" type="string" required>
-  X user ID (numeric string) or username.
+
+X user ID (numeric string) or username.
+
 </ParamField>
 
 ## Query parameters
 
 <ParamField query="cursor" type="string">
-  Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
+
+Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
+
 </ParamField>
 
 <ParamField query="pageSize" type="integer">
-  Tweets per page. Range: `1-100`. Defaults to `20`.
+
+Tweets per page. Range: `1-100`. Defaults to `20`.
+
 </ParamField>
 
 ### Tweet result filters
@@ -330,11 +370,15 @@ selective filters can return fewer rows than an unfiltered page.
 ## Headers
 
 <ParamField header="x-api-key" type="string">
-  Full account key. Sessions and OAuth also work.
+
+Full account key. Sessions and OAuth also work.
+
 </ParamField>
 
 <ParamField header="Authorization" type="string">
-  `Bearer xq_your_guest_key_here` for `paid_reads`.
+
+`Bearer xq_your_guest_key_here` for `paid_reads`.
+
 </ParamField>
 
 ## Response
@@ -342,33 +386,36 @@ selective filters can return fewer rows than an unfiltered page.
 ### 200 OK
 
 <ResponseField name="tweets" type="object[]">
-  Array of tweets containing media.
-  **Tweet object fields.**
-    <ResponseField name="id" type="string">Tweet ID.</ResponseField>
-    <ResponseField name="text" type="string">Tweet text content.</ResponseField>
-    <ResponseField name="type" type="string">Tweet type. Omitted if unavailable.</ResponseField>
-    <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet (long-form post). Omitted if unavailable.</ResponseField>
-    <ResponseField name="likeCount" type="number">Like count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="retweetCount" type="number">Retweet count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="replyCount" type="number">Reply count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="quoteCount" type="number">Quote tweet count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="viewCount" type="number">View count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="bookmarkCount" type="number">Bookmark count. Omitted if unavailable.</ResponseField>
-    <ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
-    <ResponseField name="lang" type="string">Tweet language code. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isReply" type="boolean">Whether the tweet is a reply. Omitted if unavailable.</ResponseField>
-    <ResponseField name="inReplyToId" type="string">Tweet ID being replied to. Omitted if not a reply.</ResponseField>
-    <ResponseField name="inReplyToUserId" type="string">User ID being replied to. Omitted if not a reply.</ResponseField>
-    <ResponseField name="inReplyToUsername" type="string">Username being replied to. Omitted if not a reply.</ResponseField>
-    <ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
-    <ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
-    <ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
-    <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
-    <ResponseField name="contentDisclosure" type="object">Disclosure metadata for paid partnership and AI-generated media labels. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them. Omitted if unavailable.</ResponseField>
-    <ResponseField name="author" type="object">
+
+Array of tweets containing media.
+**Tweet object fields.**
+
+<ResponseField name="id" type="string">Tweet ID.</ResponseField>
+<ResponseField name="text" type="string">Tweet text content.</ResponseField>
+<ResponseField name="type" type="string">Tweet type. Omitted if unavailable.</ResponseField>
+<ResponseField name="createdAt" type="string">ISO 8601 creation timestamp. Omitted if unavailable.</ResponseField>
+<ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet (long-form post). Omitted if unavailable.</ResponseField>
+<ResponseField name="likeCount" type="number">Like count. Omitted if unavailable.</ResponseField>
+<ResponseField name="retweetCount" type="number">Retweet count. Omitted if unavailable.</ResponseField>
+<ResponseField name="replyCount" type="number">Reply count. Omitted if unavailable.</ResponseField>
+<ResponseField name="quoteCount" type="number">Quote tweet count. Omitted if unavailable.</ResponseField>
+<ResponseField name="viewCount" type="number">View count. Omitted if unavailable.</ResponseField>
+<ResponseField name="bookmarkCount" type="number">Bookmark count. Omitted if unavailable.</ResponseField>
+<ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
+<ResponseField name="lang" type="string">Tweet language code. Omitted if unavailable.</ResponseField>
+<ResponseField name="isReply" type="boolean">Whether the tweet is a reply. Omitted if unavailable.</ResponseField>
+<ResponseField name="inReplyToId" type="string">Tweet ID being replied to. Omitted if not a reply.</ResponseField>
+<ResponseField name="inReplyToUserId" type="string">User ID being replied to. Omitted if not a reply.</ResponseField>
+<ResponseField name="inReplyToUsername" type="string">Username being replied to. Omitted if not a reply.</ResponseField>
+<ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
+<ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
+<ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
+<ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
+<ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
+<ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
+<ResponseField name="contentDisclosure" type="object">Disclosure metadata for paid partnership and AI-generated media labels. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them. Omitted if unavailable.</ResponseField>
+<ResponseField name="author" type="object">
+
       Tweet author profile. Omitted if unavailable.
       **Author object fields.**
         <ResponseField name="id" type="string">Author user ID.</ResponseField>
@@ -380,6 +427,7 @@ selective filters can return fewer rows than an unfiltered page.
 
     </ResponseField>
     <ResponseField name="media" type="object[]">
+
       Media attachments. Omitted if unavailable.
       **Media item fields.**
         <ResponseField name="mediaUrl" type="string">Direct media URL.</ResponseField>
@@ -393,10 +441,14 @@ selective filters can return fewer rows than an unfiltered page.
 
 </ResponseField>
 <ResponseField name="has_next_page" type="boolean">
-  Whether more results are available.
+
+Whether more results are available.
+
 </ResponseField>
 <ResponseField name="next_cursor" type="string">
-  Opaque cursor for the next page. Empty string when no more results.
+
+Opaque cursor for the next page. Empty string when no more results.
+
 </ResponseField>
 
 ```json
@@ -428,8 +480,12 @@ selective filters can return fewer rows than an unfiltered page.
 ### 400 Invalid user ID
 
 ```json
-{ "error": "invalid_user_id", "message": "User not found or invalid user ID. Check the username or ID." }
+{
+  "error": "invalid_user_id",
+  "message": "User not found or invalid user ID. Check the username or ID."
+}
 ```
+
 The user ID is empty or invalid.
 
 ### 404 User not found
@@ -441,9 +497,11 @@ The user ID is empty or invalid.
 ### 401 Unauthenticated
 
 Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
 ```json
 { "error": "unauthenticated" }
 ```
+
 Missing or invalid API key.
 
 ### 402 Payment required
@@ -456,6 +514,7 @@ No checkout starts automatically. Confirm any payment action.
 ```json
 { "error": "x_api_unavailable" }
 ```
+
 The read service returned an error. Retry after a short delay.
 
 ### 429 Rate limit exceeded
@@ -463,6 +522,7 @@ The read service returned an error. Retry after a short delay.
 ```json
 { "error": "rate_limit_exceeded", "retryAfter": 60 }
 ```
+
 Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
 
 ### 424 Dependency failed
@@ -470,8 +530,11 @@ Your tier rate limit was exceeded. Wait for the `Retry-After` header before retr
 ```json
 { "error": "x_api_unavailable" }
 ```
+
 The normalized v1 response contract can return 424 when the read service is unavailable.
 
 <Note>
-  **Related.** [Get user timeline](/api-reference/x/user-tweets) · [User likes](/api-reference/x/user-likes) · [User mentions timeline](/api-reference/x/user-mentions)
+
+**Related.** [Get user timeline](/api-reference/x/user-tweets) · [User likes](/api-reference/x/user-likes) · [User mentions timeline](/api-reference/x/user-mentions)
+
 </Note>

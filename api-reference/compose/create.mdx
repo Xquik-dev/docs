@@ -3,15 +3,29 @@ title: "Tweet composer API with X algorithm guidance"
 sidebarTitle: "Build a post draft"
 description: "Plan, refine, and validate one X post with source-backed guidance from the public X recommendation algorithm, deterministic checks, examples, and intent URLs."
 api: "POST /compose"
-keywords: ["tweet composer", "tweet writing", "how to write a good tweet", "Twitter post ideas", "tweet template", "X post checker", "tweet draft API", "Twitter writing style"]
+keywords:
+  [
+    "tweet composer",
+    "tweet writing",
+    "how to write a good tweet",
+    "Twitter post ideas",
+    "tweet template",
+    "X post checker",
+    "tweet draft API",
+    "Twitter writing style",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="200" id="response-compose-create-200">
+
     ```json
     {
       "checklist": [
@@ -28,27 +42,33 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "intentUrl": "https://x.com/intent/tweet?text=PostgreSQL%2018%20reduced%20query%20latency"
     }
     ```
+
   </Tab>
 
   <Tab title="400" id="response-compose-create-400">
+
     ```json
     {
       "error": "invalid_input",
       "message": "Invalid input. Check the request body."
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-compose-create-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-compose-create-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -56,14 +76,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "retryAfter": 60
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
 <Callout icon="circle-check" color="#16a34a">
-  **Free.** This endpoint does not consume credits.
+
+**Free.** This endpoint does not consume credits.
+
 </Callout>
 
 Use this guided Tweet composer to plan, refine, and validate one post draft.
@@ -86,11 +110,11 @@ viewer-specific. Published defaults may differ from production experiments.
 
 ## Choose the correct tweet writing step
 
-| Step | Required input | Returned writing help | Not returned |
-| --- | --- | --- | --- |
-| `compose` | `topic` | 10 source facts and 4 questions | Finished Tweet text |
-| `refine` | `topic`, `goal`, `tone` | Source guidance and request context | Finished Tweet text |
-| `score` | `draft` | One input check and pass status | Predicted reach |
+| Step      | Required input          | Returned writing help               | Not returned        |
+| --------- | ----------------------- | ----------------------------------- | ------------------- |
+| `compose` | `topic`                 | 10 source facts and 4 questions     | Finished Tweet text |
+| `refine`  | `topic`, `goal`, `tone` | Source guidance and request context | Finished Tweet text |
+| `score`   | `draft`                 | One input check and pass status     | Predicted reach     |
 
 Each call returns only its step-specific shape. Do not deserialize every result
 into one generic response type.
@@ -99,12 +123,12 @@ into one generic response type.
 
 The `goal` selects one question and matching source guidance.
 
-| Goal | Compose question | Refine emphasis |
-| --- | --- | --- |
-| `engagement` | What call to action should readers take? | One useful point and concrete example |
-| `followers` | Why should readers follow this account? | Niche expertise and future value |
-| `authority` | What expertise or insight supports the post? | Evidence, reasoning, and useful frameworks |
-| `conversation` | What replies should the post invite? | Context, one open question, and readable paragraphs |
+| Goal           | Compose question                             | Refine emphasis                                     |
+| -------------- | -------------------------------------------- | --------------------------------------------------- |
+| `engagement`   | What call to action should readers take?     | One useful point and concrete example               |
+| `followers`    | Why should readers follow this account?      | Niche expertise and future value                    |
+| `authority`    | What expertise or insight supports the post? | Evidence, reasoning, and useful frameworks          |
+| `conversation` | What replies should the post invite?         | Context, one open question, and readable paragraphs |
 
 `compose` defaults to `engagement` when `goal` is omitted. Send one documented
 goal explicitly when downstream behavior must remain stable.
@@ -112,10 +136,13 @@ goal explicitly when downstream behavior must remain stable.
 ## Requests
 
 <Tabs>
+
   <Tab title="1. Compose">
+
     Returns 10 source facts and 4 follow-up questions.
 
     <CodeGroup>
+
     ```bash cURL
     curl https://xquik.com/api/v1/compose \
       -X POST \
@@ -127,6 +154,7 @@ goal explicitly when downstream behavior must remain stable.
         "goal": "authority"
       }'
     ```
+
     </CodeGroup>
 
     Required fields: `step`, `topic`.
@@ -136,12 +164,15 @@ goal explicitly when downstream behavior must remain stable.
     - `goal`: `engagement`, `followers`, `authority`, or `conversation`.
       Defaults to `engagement`.
     - `styleUsername`: An analyzed X username or saved custom style label.
+
   </Tab>
 
   <Tab title="2. Refine">
+
     Returns goal, tone, media, and editorial guidance.
 
     <CodeGroup>
+
     ```bash cURL
     curl https://xquik.com/api/v1/compose \
       -X POST \
@@ -155,6 +186,7 @@ goal explicitly when downstream behavior must remain stable.
         "mediaType": "none"
       }'
     ```
+
     </CodeGroup>
 
     Required fields: `step`, `topic`, `goal`, `tone`.
@@ -164,12 +196,15 @@ goal explicitly when downstream behavior must remain stable.
     - `mediaType`: `photo`, `video`, or `none`.
     - `callToAction`: Specific action the draft should request.
     - `additionalContext`: Audience, constraints, or source context.
+
   </Tab>
 
   <Tab title="3. Score">
+
     Runs one deterministic input check.
 
     <CodeGroup>
+
     ```bash cURL
     curl https://xquik.com/api/v1/compose \
       -X POST \
@@ -181,12 +216,14 @@ goal explicitly when downstream behavior must remain stable.
         "hasLink": false
       }'
     ```
+
     </CodeGroup>
 
     Required fields: `step`, `draft`.
 
     `hasLink` and the deprecated `hasMedia` field remain accepted. Validation
     ignores both fields.
+
   </Tab>
 </Tabs>
 
@@ -202,64 +239,92 @@ Send `x-api-key` with an Xquik API key. OAuth clients can send a bearer token
 through the `Authorization` header instead.
 
 <ParamField header="x-api-key" type="string">
-  Your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+
+Your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+
 </ParamField>
 
 <ParamField header="Authorization" type="string">
-  OAuth bearer token using `Bearer YOUR_TOKEN`.
+
+OAuth bearer token using `Bearer YOUR_TOKEN`.
+
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
-  Use `application/json`.
+
+Use `application/json`.
+
 </ParamField>
 
 ## Body
 
 <ParamField body="step" type="string" required>
-  Use exactly `compose`, `refine`, or `score`.
+
+Use exactly `compose`, `refine`, or `score`.
+
 </ParamField>
 
 <ParamField body="topic" type="string">
-  Non-empty subject. Required for `compose` and `refine`.
+
+Non-empty subject. Required for `compose` and `refine`.
+
 </ParamField>
 
 <ParamField body="goal" type="string">
-  Use `engagement`, `followers`, `authority`, or `conversation`. Required for
-  `refine`. Optional for `compose`.
+
+Use `engagement`, `followers`, `authority`, or `conversation`. Required for
+`refine`. Optional for `compose`.
+
 </ParamField>
 
 <ParamField body="styleUsername" type="string">
-  Account-scoped analyzed username or custom label. Only used by `compose`.
-  Xquik lowercases the lookup value.
+
+Account-scoped analyzed username or custom label. Only used by `compose`.
+Xquik lowercases the lookup value.
+
 </ParamField>
 
 <ParamField body="tone" type="string">
-  Non-empty voice description. Required for `refine`.
+
+Non-empty voice description. Required for `refine`.
+
 </ParamField>
 
 <ParamField body="mediaType" type="string">
-  Optional `photo`, `video`, or `none` value for `refine`.
+
+Optional `photo`, `video`, or `none` value for `refine`.
+
 </ParamField>
 
 <ParamField body="callToAction" type="string">
-  Optional requested action for `refine`.
+
+Optional requested action for `refine`.
+
 </ParamField>
 
 <ParamField body="additionalContext" type="string">
-  Optional audience, constraint, or verified source context for `refine`.
-  Include selected Radar facts only when current context helps.
+
+Optional audience, constraint, or verified source context for `refine`.
+Include selected Radar facts only when current context helps.
+
 </ParamField>
 
 <ParamField body="draft" type="string">
-  Non-empty full post text. Required for `score`.
+
+Non-empty full post text. Required for `score`.
+
 </ParamField>
 
 <ParamField body="hasLink" type="boolean">
-  Set true when a separate link card is attached during `score`.
+
+Set true when a separate link card is attached during `score`.
+
 </ParamField>
 
 <ParamField body="hasMedia" type="boolean">
-  Deprecated compatibility field. Text checks ignore it.
+
+Deprecated compatibility field. Text checks ignore it.
+
 </ParamField>
 
 Unknown body fields are ignored. Send only the fields for the selected step.
@@ -273,89 +338,131 @@ The response shape matches the requested workflow step.
 ## Compose response
 
 <ResponseField name="contentRules" type="object[]" required>
-  10 source facts from the public X recommendation code.
+
+10 source facts from the public X recommendation code.
+
 </ResponseField>
 
 <ResponseField name="contentRules[].rule" type="string" required>
-  One concrete editorial rule for the requested goal.
+
+One concrete editorial rule for the requested goal.
+
 </ResponseField>
 
 <ResponseField name="followUpQuestions" type="string[]" required>
-  4 questions for the next writing step.
+
+4 questions for the next writing step.
+
 </ResponseField>
 
 <ResponseField name="radarRecommendations" type="object[]" required>
-  Deprecated compatibility field. Always empty.
+
+Deprecated compatibility field. Always empty.
+
 </ResponseField>
 
 <ResponseField name="engagementMultipliers" type="object[]" required>
-  26 published signal names. Every `multiplier` states that X does not publish
-  the production weight.
+
+26 published signal names. Every `multiplier` states that X does not publish
+the production weight.
+
 </ResponseField>
 
 <ResponseField name="engagementMultipliers[].action" type="string" required>
-  Human-readable public signal name.
+
+Human-readable public signal name.
+
 </ResponseField>
 
 <ResponseField name="engagementMultipliers[].multiplier" type="string" required>
-  States that X does not publish the production multiplier.
+
+States that X does not publish the production multiplier.
+
 </ResponseField>
 
 <ResponseField name="scorerWeights" type="object[]" required>
-  26 published signal names. Every `weight` is `null`.
+
+26 published signal names. Every `weight` is `null`.
+
 </ResponseField>
 
 <ResponseField name="scorerWeights[].signal" type="string" required>
-  Signal name from X's public ranking repository.
+
+Signal name from X's public ranking repository.
+
 </ResponseField>
 
 <ResponseField name="scorerWeights[].context" type="string" required>
-  Signal direction and the limit of public evidence.
+
+Signal direction and the limit of public evidence.
+
 </ResponseField>
 
 <ResponseField name="scorerWeights[].weight" type="null" required>
-  Always `null` because X does not publish production weights.
+
+Always `null` because X does not publish production weights.
+
 </ResponseField>
 
 <ResponseField name="engagementVelocity" type="string" required>
-  States that X publishes no universal engagement window or decay rate.
+
+States that X publishes no universal engagement window or decay rate.
+
 </ResponseField>
 
 <ResponseField name="topPenalties" type="string[]" required>
-  5 negative predictions named by X's public model. No severity order is
-  claimed.
+
+5 negative predictions named by X's public model. No severity order is
+claimed.
+
 </ResponseField>
 
 <ResponseField name="source" type="string" required>
-  Signal source and evidence limits.
+
+Signal source and evidence limits.
+
 </ResponseField>
 
 <ResponseField name="intentUrl" type="string" required>
-  X post intent seeded with the topic.
+
+X post intent seeded with the topic.
+
 </ResponseField>
 
 <ResponseField name="nextStep" type="string" required>
-  Exact fields required for `refine`.
+
+Exact fields required for `refine`.
+
 </ResponseField>
 
 <ResponseField name="savedStyles" type="object[]">
-  Saved styles. Present when saved styles exist and `styleUsername` is omitted.
+
+Saved styles. Present when saved styles exist and `styleUsername` is omitted.
+
 </ResponseField>
 
 <ResponseField name="savedStyles[].username" type="string">
-  Saved analyzed username or custom style label.
+
+Saved analyzed username or custom style label.
+
 </ResponseField>
 
 <ResponseField name="savedStyles[].tweetCount" type="integer">
-  Cached post count for the style.
+
+Cached post count for the style.
+
 </ResponseField>
 
 <ResponseField name="styleTweets" type="string[]">
-  Cached examples. Present when `styleUsername` matches a cached style.
+
+Cached examples. Present when `styleUsername` matches a cached style.
+
 </ResponseField>
 
 <ResponseField name="styleNote" type="string">
-  Fallback instruction when the requested style is unavailable.
+
+Fallback instruction when the requested style is unavailable.
+
 </ResponseField>
 
 ### Match a saved Twitter writing style
@@ -363,12 +470,12 @@ The response shape matches the requested workflow step.
 `styleUsername` searches only styles owned by the authenticated account.
 Xquik lowercases the lookup value before searching.
 
-| Style lookup | Result |
-| --- | --- |
-| Matching analyzed username or custom label | 200 response with `styleTweets` |
-| Omitted value with saved styles | 200 response with `savedStyles` |
-| Missing style without available credits | 200 response with `styleNote` |
-| Missing style with available credits | 400 `invalid_input` with analysis instructions |
+| Style lookup                               | Result                                         |
+| ------------------------------------------ | ---------------------------------------------- |
+| Matching analyzed username or custom label | 200 response with `styleTweets`                |
+| Omitted value with saved styles            | 200 response with `savedStyles`                |
+| Missing style without available credits    | 200 response with `styleNote`                  |
+| Missing style with available credits       | 400 `invalid_input` with analysis instructions |
 
 The 200 fallback still returns the complete Compose response. The 400 branch
 returns only the documented error object. Analyze the username first when the
@@ -377,19 +484,27 @@ account can run a new style analysis.
 ## Refine response
 
 <ResponseField name="compositionGuidance" type="string[]" required>
-  Goal, tone, media, and editorial guidance.
+
+Goal, tone, media, and editorial guidance.
+
 </ResponseField>
 
 <ResponseField name="examplePatterns" type="object[]" required>
-  Deprecated compatibility field. Always empty.
+
+Deprecated compatibility field. Always empty.
+
 </ResponseField>
 
 <ResponseField name="intentUrl" type="string" required>
-  X post intent seeded with the topic.
+
+X post intent seeded with the topic.
+
 </ResponseField>
 
 <ResponseField name="nextStep" type="string" required>
-  Exact fields required for the `score` call.
+
+Exact fields required for the `score` call.
+
 </ResponseField>
 
 ## Score response
@@ -399,9 +514,7 @@ It does not score quality or predict ranking.
 
 ```json
 {
-  "checklist": [
-    { "factor": "Draft contains text", "passed": true }
-  ],
+  "checklist": [{ "factor": "Draft contains text", "passed": true }],
   "intentUrl": "https://x.com/intent/tweet?text=...",
   "nextStep": "Draft accepted. Publish through POST /api/v1/x/tweets or use intentUrl.",
   "passed": true,
@@ -414,59 +527,81 @@ It does not score quality or predict ranking.
 `intentUrl` appears only when the draft contains text.
 
 <ResponseField name="checklist" type="object[]" required>
-  One deterministic input check.
+
+One deterministic input check.
+
 </ResponseField>
 
 <ResponseField name="checklist[].factor" type="string" required>
-  Stable name for the evaluated rule.
+
+Stable name for the evaluated rule.
+
 </ResponseField>
 
 <ResponseField name="checklist[].passed" type="boolean" required>
-  Whether the draft satisfies this rule.
+
+Whether the draft satisfies this rule.
+
 </ResponseField>
 
 <ResponseField name="checklist[].suggestion" type="string">
-  `Add the post text.` when the draft is blank.
+
+`Add the post text.` when the draft is blank.
+
 </ResponseField>
 
 <ResponseField name="passed" type="boolean" required>
-  True when the draft contains text.
+
+True when the draft contains text.
+
 </ResponseField>
 
 <ResponseField name="passedCount" type="integer" required>
-  `1` for text. `0` for a blank draft.
+
+`1` for text. `0` for a blank draft.
+
 </ResponseField>
 
 <ResponseField name="totalChecks" type="integer" required>
-  Always `1` for the current contract.
+
+Always `1` for the current contract.
+
 </ResponseField>
 
 <ResponseField name="topSuggestion" type="string" required>
-  The missing-text fix or the source limit on deterministic ranking scores.
+
+The missing-text fix or the source limit on deterministic ranking scores.
+
 </ResponseField>
 
 <ResponseField name="intentUrl" type="string">
-  X post intent containing the draft. Present only when every check passes.
+
+X post intent containing the draft. Present only when every check passes.
+
 </ResponseField>
 
 <ResponseField name="nextStep" type="string" required>
-  Publishing instructions after success. Revision instructions after failure.
+
+Publishing instructions after success. Revision instructions after failure.
+
 </ResponseField>
 
 ## Errors
 
-| Status | Cause | Fix |
-| --- | --- | --- |
-| `400` | Invalid `step` or non-object JSON body | Send `compose`, `refine`, or `score` |
-| `400` | Missing `topic` for `compose` | Send a non-empty topic |
-| `400` | Missing `goal`, `tone`, or `topic` for `refine` | Send every required Refine field |
-| `400` | Missing `draft` for `score` | Send the complete post text |
-| `400` | Account with credits requested an uncached style | Analyze the username with `POST /api/v1/styles` |
-| `401` | Missing or invalid API credentials | Send an API key or OAuth bearer token |
-| `429` | Request rate exceeded | Wait for `Retry-After` before retrying |
+| Status | Cause                                            | Fix                                             |
+| ------ | ------------------------------------------------ | ----------------------------------------------- |
+| `400`  | Invalid `step` or non-object JSON body           | Send `compose`, `refine`, or `score`            |
+| `400`  | Missing `topic` for `compose`                    | Send a non-empty topic                          |
+| `400`  | Missing `goal`, `tone`, or `topic` for `refine`  | Send every required Refine field                |
+| `400`  | Missing `draft` for `score`                      | Send the complete post text                     |
+| `400`  | Account with credits requested an uncached style | Analyze the username with `POST /api/v1/styles` |
+| `401`  | Missing or invalid API credentials               | Send an API key or OAuth bearer token           |
+| `429`  | Request rate exceeded                            | Wait for `Retry-After` before retrying          |
 
 <Tabs>
+
   <Tab title="400 Invalid input">
+
     ```json
     {
       "error": "invalid_input",
@@ -475,15 +610,19 @@ It does not score quality or predict ranking.
     ```
 
     Missing step-specific fields also return `invalid_input`.
+
   </Tab>
 
   <Tab title="401 Unauthenticated">
+
     ```json
     { "error": "unauthenticated" }
     ```
+
   </Tab>
 
   <Tab title="429 Rate limited">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -493,6 +632,7 @@ It does not score quality or predict ranking.
     ```
 
     Wait for `Retry-After` before retrying.
+
   </Tab>
 </Tabs>
 
@@ -544,7 +684,9 @@ No. Use [Create Tweet](/api-reference/x-write/create-tweet) after review. You
 can also open `intentUrl` after the input check passes.
 
 <Note>
-  Research current context with [Radar](/api-reference/radar/list). Save accepted
-  text with [Create Draft](/api-reference/drafts/create). Analyze a reference
-  voice with [Analyze Style](/api-reference/styles/analyze).
+
+Research current context with [Radar](/api-reference/radar/list). Save accepted
+text with [Create Draft](/api-reference/drafts/create). Analyze a reference
+voice with [Analyze Style](/api-reference/styles/analyze).
+
 </Note>

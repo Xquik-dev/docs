@@ -2,7 +2,18 @@
 title: "Java SDK for tweet search, exports & X automation"
 sidebarTitle: Java
 description: "Use the Xquik Java SDK to search tweets, export JSON Lines, CSV, or XLSX, post media tweets, upload media, send DMs, and run JVM X API workers. See examples."
-keywords: ["Java SDK", "X API Java", "JVM client", "tweet search Java", "Twitter API Java", "JSON export", "CSV export", "XLSX export", "source build"]
+keywords:
+  [
+    "Java SDK",
+    "X API Java",
+    "JVM client",
+    "tweet search Java",
+    "Twitter API Java",
+    "JSON export",
+    "CSV export",
+    "XLSX export",
+    "source build",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -16,19 +27,21 @@ tweets, export followers, monitor tweets, post media, upload files, or send
 direct messages. Hand tweet, follower, reply, and profile rows to analytics or
 CRM systems.
 
-| Java worker task | SDK call | Durable checkpoint |
-| --- | --- | --- |
-| Search tweets | `client.x().tweets().search` | Persist `page.nextCursor()` after every page. |
-| Estimate follower or reply exports | `client.extractions().estimateCost` | Store the estimate and `allowed()` decision. |
-| Start an extraction | `client.extractions().run` | Save `job.id()` immediately. |
-| Retrieve saved rows | `client.extractions().retrieve` | Keep `nextCursor()` while `hasMore()` is true. |
-| Export CSV, JSON, or XLSX | `client.extractions().exportResults` | Record the job ID, format, and file destination. |
-| Create a tweet | `client.x().tweets().withRawResponse().create` | Store the write action ID and terminal state. |
+| Java worker task                   | SDK call                                       | Durable checkpoint                               |
+| ---------------------------------- | ---------------------------------------------- | ------------------------------------------------ |
+| Search tweets                      | `client.x().tweets().search`                   | Persist `page.nextCursor()` after every page.    |
+| Estimate follower or reply exports | `client.extractions().estimateCost`            | Store the estimate and `allowed()` decision.     |
+| Start an extraction                | `client.extractions().run`                     | Save `job.id()` immediately.                     |
+| Retrieve saved rows                | `client.extractions().retrieve`                | Keep `nextCursor()` while `hasMore()` is true.   |
+| Export CSV, JSON, or XLSX          | `client.extractions().exportResults`           | Record the job ID, format, and file destination. |
+| Create a tweet                     | `client.x().tweets().withRawResponse().create` | Store the write action ID and terminal state.    |
 
 ## Install
 
 <Note>
+
 Maven Central publication is pending. Build from source until the `com.x_twitter_scraper.api:x-twitter-scraper-java` artifact resolves in Maven Central.
+
 </Note>
 
 ```bash
@@ -94,9 +107,9 @@ for (SearchTweet tweet : page.tweets()) {
 
 ## Workflow: search tweets to JSON Lines, CSV, or XLSX
 
-Use this workflow when a Java service, Spring Batch job, scheduled worker, or queue consumer needs tweet search results in a durable handoff file for a data lake, CRM enrichment step, analyst CSV export, XLSX workbook, or downstream processor.
+Export tweet search from Java services, Spring Batch, scheduled workers, or queues. Save files for data lakes, CRM enrichment, CSV, XLSX, or downstream processing.
 
-`client.x().tweets().search` calls `GET /x/tweets/search`. Build `TweetSearchParams` with the same query parameters the REST API accepts: `.q()`, `.limit()`, `.cursor()`, `.sinceTime()`, `.untilTime()`, and `.queryType()`.
+`client.x().tweets().search` calls `GET /x/tweets/search`. Build `TweetSearchParams` with the REST query parameters: `.q()`, `.limit()`, `.cursor()`, `.sinceTime()`, `.untilTime()`, and `.queryType()`.
 
 ```java
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -224,23 +237,36 @@ static void writeCsvRow(BufferedWriter writer, List<?> values) throws IOExceptio
 ### Request mapping
 
 <CardGroup cols={2}>
+
   <Card title=".q()" icon="search">
+
     Java builder method `.q()` maps to REST `q`. Use it for an X search query such as `from:username`, a keyword, hashtag, or boolean operator query.
+
   </Card>
   <Card title=".limit()" icon="list">
+
     Java builder method `.limit()` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `page.hasNextPage()` is true, keep the same `.q()`, filters, `.queryType()`, and `.limit()` when you continue with `page.nextCursor()`.
+
   </Card>
   <Card title=".cursor()" icon="arrow-right">
+
     Java builder method `.cursor()` maps to REST `cursor`. Pass the opaque cursor from `page.nextCursor()` to request the next page.
+
   </Card>
   <Card title=".sinceTime()" icon="clock">
+
     Java builder method `.sinceTime()` maps to REST `sinceTime`. Use it as the ISO 8601 lower bound for tweet creation time.
+
   </Card>
   <Card title=".untilTime()" icon="clock">
+
     Java builder method `.untilTime()` maps to REST `untilTime`. Use it as the ISO 8601 upper bound for tweet creation time.
+
   </Card>
   <Card title=".queryType()" icon="sliders-horizontal">
+
     Java builder method `.queryType()` maps to REST `queryType`. Use `QueryType.LATEST` for chronological search or `QueryType.TOP` for engagement-ranked search.
+
   </Card>
 </CardGroup>
 
@@ -254,12 +280,14 @@ Tweet search costs 1 credit per tweet returned. If remaining credits cannot cove
 
 ## Workflow: follower export to CSV, JSON, or XLSX
 
-Use this workflow when a JVM worker needs an owned follower list for CRM import, warehouse loading, account scoring, analyst CSV, XLSX workbook delivery, or a resumable JSON handoff.
+Export followers for CRM, warehouses, account scoring, CSV, XLSX, or resumable JSON.
 
 `client.extractions().estimateCost` maps to `POST /extractions/estimate`, `client.extractions().run` maps to `POST /extractions`, `client.extractions().retrieve` maps to `GET /extractions/{id}`, and `client.extractions().exportResults` maps to `GET /extractions/{id}/export`. For follower exports, `follower_explorer` requires `targetUsername`.
 
 <Info>
+
 `client.extractions().run` returns the queued `202 Accepted` receipt from `POST /extractions`: REST `id`, `toolType`, and `status: "running"` as Java `job.id()`, `job.toolType()`, and `job._status()`. Store `job.id()` immediately, then poll `client.extractions().retrieve` before reading pages or calling `client.extractions().exportResults`. Credit reservation happens after the job starts. If available credits changed since `estimateCost`, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
+
 </Info>
 
 ```java
@@ -397,8 +425,6 @@ Persist `job.id()`, `targetUsername`, `estimate.estimatedResults()`, and `estima
 ## Workflow: tweet replies to CSV, JSON, or XLSX
 
 Use this workflow when a Java worker needs every reply to a campaign, support thread, launch post, or incident update as a durable file. `reply_extractor` requires `targetTweetId`; estimate first, run the job, poll `retrieve`, then export the completed job as CSV, JSON, or XLSX.
-
-`client.extractions().estimateCost` maps to `POST /extractions/estimate`, `client.extractions().run` maps to `POST /extractions`, `client.extractions().retrieve` maps to `GET /extractions/{id}`, and `client.extractions().exportResults` maps to `GET /extractions/{id}/export`.
 
 Reuse the follower export loop above. Change only the required target, tool type, and output names:
 
@@ -580,26 +606,41 @@ Use public media URLs with `client.x().tweets().create`. Do not pass uploaded `m
 The Java SDK throws unchecked exceptions.
 
 <CardGroup cols={2}>
+
   <Card title="400 Bad request" icon="triangle-alert">
+
     Throws `BadRequestException`.
+
   </Card>
   <Card title="401 Unauthorized" icon="lock">
+
     Throws `UnauthorizedException`.
+
   </Card>
   <Card title="403 Permission denied" icon="shield">
+
     Throws `PermissionDeniedException`.
+
   </Card>
   <Card title="404 Not found" icon="circle-x">
+
     Throws `NotFoundException`.
+
   </Card>
   <Card title="422 Validation error" icon="triangle-alert">
+
     Throws `UnprocessableEntityException`.
+
   </Card>
   <Card title="429 Rate limited" icon="gauge">
+
     Throws `RateLimitException`.
+
   </Card>
   <Card title="5xx server error" icon="server">
+
     Throws `InternalServerException`.
+
   </Card>
 </CardGroup>
 

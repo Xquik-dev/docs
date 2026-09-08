@@ -3,15 +3,30 @@ title: "Twitter account monitor API & real-time webhooks"
 sidebarTitle: Create account monitor
 description: "Monitor one X account every second. Track tweets, replies, quotes, reposts, mentions, media, links, and profile changes. Deliver signed webhook alerts."
 api: "POST /monitors"
-keywords: ["Twitter monitor", "monitor Twitter account", "tweet monitor", "Twitter account monitor API", "Twitter webhook", "Twitter webhook alerts", "real-time Twitter alerts", "monitor tweets", "profile change alerts"]
+keywords:
+  [
+    "Twitter monitor",
+    "monitor Twitter account",
+    "tweet monitor",
+    "Twitter account monitor API",
+    "Twitter webhook",
+    "Twitter webhook alerts",
+    "real-time Twitter alerts",
+    "monitor tweets",
+    "profile change alerts",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="201" id="response-monitors-create-201">
+
     ```json
     {
       "id": "42",
@@ -25,54 +40,66 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "nextBillingAt": "2025-01-15T12:00:00Z"
     }
     ```
+
   </Tab>
 
   <Tab title="400" id="response-monitors-create-400">
+
     ```json
     {
       "error": "invalid_input",
       "message": "Invalid input. Check the request body."
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-monitors-create-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
+
   </Tab>
 
   <Tab title="402" id="response-monitors-create-402">
+
     ```json
     {
       "error": "insufficient_credits",
       "message": "Insufficient credits. Top up or subscribe to continue."
     }
     ```
+
   </Tab>
 
   <Tab title="404" id="response-monitors-create-404">
+
     ```json
     {
       "error": "user_not_found",
       "message": "X user not found. Check the username."
     }
     ```
+
   </Tab>
 
   <Tab title="409" id="response-monitors-create-409">
+
     ```json
     {
       "error": "monitor_already_exists",
       "message": "Monitor already exists."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-monitors-create-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -80,8 +107,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "retryAfter": 60
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
@@ -90,11 +119,15 @@ Create a Twitter account monitor for one known profile. Select tweet, profile,
 or availability events. Store the monitor ID. Then connect signed webhooks.
 
 <Callout icon="coins" color="#5c3327">
-  **Requires 22 available credits.** The username lookup costs 1 credit. The first active monitor hour costs 21 credits.
+
+**Requires 22 available credits.** The username lookup costs 1 credit. The first active monitor hour costs 21 credits.
+
 </Callout>
 
 <Note>
-  Monitors are unlimited. Active monitors check every 1 second. Webhook and event deliveries are included in active monitor billing.
+
+Monitors are unlimited. Active monitors check every 1 second. Webhook and event deliveries are included in active monitor billing.
+
 </Note>
 
 ## Create a Twitter monitor for one account
@@ -112,11 +145,11 @@ changes. It does not search posts from every public account.
 
 Choose one option for the required alert scope.
 
-| Monitoring need | Xquik option | Result |
-| --- | --- | --- |
-| Continuous changes from one known account | `POST /monitors` | Selected tweet and profile events from that username. |
-| Specific keywords across many accounts | [Create Keyword Monitor](/api-reference/monitors/create-keyword) | Matching tweet events for one stored query. |
-| Historical or on-demand tweet results | [Search Tweets](/api-reference/x/search-tweets) | One paginated result set without continuous alerts. |
+| Monitoring need                           | Xquik option                                                     | Result                                                |
+| ----------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------- |
+| Continuous changes from one known account | `POST /monitors`                                                 | Selected tweet and profile events from that username. |
+| Specific keywords across many accounts    | [Create Keyword Monitor](/api-reference/monitors/create-keyword) | Matching tweet events for one stored query.           |
+| Historical or on-demand tweet results     | [Search Tweets](/api-reference/x/search-tweets)                  | One paginated result set without continuous alerts.   |
 
 Do not replace one option with another after collection starts.
 Store the chosen monitor type beside every downstream alert.
@@ -236,192 +269,194 @@ Fix the receiver, verify its signature code, and send another signed test.
 Then inspect delivery attempts and join `streamEventId` to the stored event.
 
 <CodeGroup>
-  ```bash cURL
-  curl --fail-with-body -X POST https://xquik.com/api/v1/monitors \
-    -H "x-api-key: xq_YOUR_KEY_HERE" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "username": "elonmusk",
-      "eventTypes": ["tweet.new", "tweet.reply"]
-    }' |
-    jq -c '{
-      monitor_id: .id,
-      username: .username,
-      x_user_id: .xUserId,
-      event_types: .eventTypes,
-      is_active: .isActive,
-      created_at: .createdAt,
-      next_billing_at: .nextBillingAt,
-      verify_endpoint: "/api/v1/monitors/\(.id)",
-      update_endpoint: "/api/v1/monitors/\(.id)",
-      delete_endpoint: "/api/v1/monitors/\(.id)",
-      events_endpoint: "/api/v1/events?monitorId=\(.id)",
-      event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
-      webhooks_endpoint: "/api/v1/webhooks",
-      deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"
-    }'
-  ```
 
-  ```javascript Node.js
-  const response = await fetch("https://xquik.com/api/v1/monitors", {
-    method: "POST",
-    headers: {
-      "x-api-key": "xq_YOUR_KEY_HERE",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      username: "elonmusk",
-      eventTypes: ["tweet.new", "tweet.reply"],
-    }),
-  });
-  const monitor = await response.json();
-  if (!response.ok) {
-    throw new Error(monitor.message || "Twitter monitor creation failed.");
-  }
-  const monitorState = {
-    monitor_id: monitor.id,
-    username: monitor.username,
-    x_user_id: monitor.xUserId,
-    event_types: monitor.eventTypes,
-    is_active: monitor.isActive,
-    created_at: monitor.createdAt,
-    next_billing_at: monitor.nextBillingAt,
-    verify_endpoint: `/api/v1/monitors/${monitor.id}`,
-    update_endpoint: `/api/v1/monitors/${monitor.id}`,
-    delete_endpoint: `/api/v1/monitors/${monitor.id}`,
-    events_endpoint: `/api/v1/events?monitorId=${monitor.id}`,
+```bash cURL
+curl --fail-with-body -X POST https://xquik.com/api/v1/monitors \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "elonmusk",
+    "eventTypes": ["tweet.new", "tweet.reply"]
+  }' |
+  jq -c '{
+    monitor_id: .id,
+    username: .username,
+    x_user_id: .xUserId,
+    event_types: .eventTypes,
+    is_active: .isActive,
+    created_at: .createdAt,
+    next_billing_at: .nextBillingAt,
+    verify_endpoint: "/api/v1/monitors/\(.id)",
+    update_endpoint: "/api/v1/monitors/\(.id)",
+    delete_endpoint: "/api/v1/monitors/\(.id)",
+    events_endpoint: "/api/v1/events?monitorId=\(.id)",
     event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
     webhooks_endpoint: "/api/v1/webhooks",
-    deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries",
-  };
-  process.stdout.write(`${JSON.stringify(monitorState)}\n`);
-  ```
+    deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"
+  }'
+```
 
-  ```python Python
-  import json
-  import requests
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/monitors", {
+  method: "POST",
+  headers: {
+    "x-api-key": "xq_YOUR_KEY_HERE",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    username: "elonmusk",
+    eventTypes: ["tweet.new", "tweet.reply"],
+  }),
+});
+const monitor = await response.json();
+if (!response.ok) {
+  throw new Error(monitor.message || "Twitter monitor creation failed.");
+}
+const monitorState = {
+  monitor_id: monitor.id,
+  username: monitor.username,
+  x_user_id: monitor.xUserId,
+  event_types: monitor.eventTypes,
+  is_active: monitor.isActive,
+  created_at: monitor.createdAt,
+  next_billing_at: monitor.nextBillingAt,
+  verify_endpoint: `/api/v1/monitors/${monitor.id}`,
+  update_endpoint: `/api/v1/monitors/${monitor.id}`,
+  delete_endpoint: `/api/v1/monitors/${monitor.id}`,
+  events_endpoint: `/api/v1/events?monitorId=${monitor.id}`,
+  event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
+  webhooks_endpoint: "/api/v1/webhooks",
+  deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries",
+};
+process.stdout.write(`${JSON.stringify(monitorState)}\n`);
+```
 
-  response = requests.post(
-      "https://xquik.com/api/v1/monitors",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-      json={
-          "username": "elonmusk",
-          "eventTypes": ["tweet.new", "tweet.reply"],
-      },
-  )
-  monitor = response.json()
-  if not response.ok:
-      raise RuntimeError(monitor.get("message", "Twitter monitor creation failed."))
-  monitor_state = {
-      "monitor_id": monitor["id"],
-      "username": monitor["username"],
-      "x_user_id": monitor["xUserId"],
-      "event_types": monitor["eventTypes"],
-      "is_active": monitor["isActive"],
-      "created_at": monitor["createdAt"],
-      "next_billing_at": monitor["nextBillingAt"],
-      "verify_endpoint": f"/api/v1/monitors/{monitor['id']}",
-      "update_endpoint": f"/api/v1/monitors/{monitor['id']}",
-      "delete_endpoint": f"/api/v1/monitors/{monitor['id']}",
-      "events_endpoint": f"/api/v1/events?monitorId={monitor['id']}",
-      "event_detail_endpoint_pattern": "/api/v1/events/{event_id}",
-      "webhooks_endpoint": "/api/v1/webhooks",
-      "deliveries_endpoint_pattern": "/api/v1/webhooks/{webhook_id}/deliveries",
-  }
-  print(json.dumps(monitor_state))
-  ```
+```python Python
+import json
+import requests
 
-  ```go Go
-  package main
+response = requests.post(
+    "https://xquik.com/api/v1/monitors",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    json={
+        "username": "elonmusk",
+        "eventTypes": ["tweet.new", "tweet.reply"],
+    },
+)
+monitor = response.json()
+if not response.ok:
+    raise RuntimeError(monitor.get("message", "Twitter monitor creation failed."))
+monitor_state = {
+    "monitor_id": monitor["id"],
+    "username": monitor["username"],
+    "x_user_id": monitor["xUserId"],
+    "event_types": monitor["eventTypes"],
+    "is_active": monitor["isActive"],
+    "created_at": monitor["createdAt"],
+    "next_billing_at": monitor["nextBillingAt"],
+    "verify_endpoint": f"/api/v1/monitors/{monitor['id']}",
+    "update_endpoint": f"/api/v1/monitors/{monitor['id']}",
+    "delete_endpoint": f"/api/v1/monitors/{monitor['id']}",
+    "events_endpoint": f"/api/v1/events?monitorId={monitor['id']}",
+    "event_detail_endpoint_pattern": "/api/v1/events/{event_id}",
+    "webhooks_endpoint": "/api/v1/webhooks",
+    "deliveries_endpoint_pattern": "/api/v1/webhooks/{webhook_id}/deliveries",
+}
+print(json.dumps(monitor_state))
+```
 
-  import (
-      "bytes"
-      "encoding/json"
-      "io"
-      "log"
-      "net/http"
-      "os"
-  )
+```go Go
+package main
 
-  type Monitor struct {
-      ID            string   `json:"id"`
-      Username      string   `json:"username"`
-      XUserID       string   `json:"xUserId"`
-      EventTypes    []string `json:"eventTypes"`
-      IsActive      bool     `json:"isActive"`
-      CreatedAt     string   `json:"createdAt"`
-      NextBillingAt string   `json:"nextBillingAt"`
-  }
+import (
+    "bytes"
+    "encoding/json"
+    "io"
+    "log"
+    "net/http"
+    "os"
+)
 
-  type MonitorState struct {
-      CreatedAt                  string   `json:"created_at"`
-      DeleteEndpoint             string   `json:"delete_endpoint"`
-      DeliveriesEndpointPattern  string   `json:"deliveries_endpoint_pattern"`
-      EventDetailEndpointPattern string   `json:"event_detail_endpoint_pattern"`
-      EventsEndpoint             string   `json:"events_endpoint"`
-      EventTypes                 []string `json:"event_types"`
-      IsActive                   bool     `json:"is_active"`
-      MonitorID                  string   `json:"monitor_id"`
-      NextBillingAt              string   `json:"next_billing_at"`
-      UpdateEndpoint             string   `json:"update_endpoint"`
-      Username                   string   `json:"username"`
-      VerifyEndpoint             string   `json:"verify_endpoint"`
-      WebhooksEndpoint           string   `json:"webhooks_endpoint"`
-      XUserID                    string   `json:"x_user_id"`
-  }
+type Monitor struct {
+    ID            string   `json:"id"`
+    Username      string   `json:"username"`
+    XUserID       string   `json:"xUserId"`
+    EventTypes    []string `json:"eventTypes"`
+    IsActive      bool     `json:"isActive"`
+    CreatedAt     string   `json:"createdAt"`
+    NextBillingAt string   `json:"nextBillingAt"`
+}
 
-  func main() {
-      body, _ := json.Marshal(map[string]interface{}{
-          "username":   "elonmusk",
-          "eventTypes": []string{"tweet.new", "tweet.reply"},
-      })
+type MonitorState struct {
+    CreatedAt                  string   `json:"created_at"`
+    DeleteEndpoint             string   `json:"delete_endpoint"`
+    DeliveriesEndpointPattern  string   `json:"deliveries_endpoint_pattern"`
+    EventDetailEndpointPattern string   `json:"event_detail_endpoint_pattern"`
+    EventsEndpoint             string   `json:"events_endpoint"`
+    EventTypes                 []string `json:"event_types"`
+    IsActive                   bool     `json:"is_active"`
+    MonitorID                  string   `json:"monitor_id"`
+    NextBillingAt              string   `json:"next_billing_at"`
+    UpdateEndpoint             string   `json:"update_endpoint"`
+    Username                   string   `json:"username"`
+    VerifyEndpoint             string   `json:"verify_endpoint"`
+    WebhooksEndpoint           string   `json:"webhooks_endpoint"`
+    XUserID                    string   `json:"x_user_id"`
+}
 
-      req, err := http.NewRequest("POST", "https://xquik.com/api/v1/monitors", bytes.NewReader(body))
-      if err != nil {
-          log.Fatal(err)
-      }
-      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-      req.Header.Set("Content-Type", "application/json")
+func main() {
+    body, _ := json.Marshal(map[string]interface{}{
+        "username":   "elonmusk",
+        "eventTypes": []string{"tweet.new", "tweet.reply"},
+    })
 
-      resp, err := http.DefaultClient.Do(req)
-      if err != nil {
-          log.Fatal(err)
-      }
-      defer resp.Body.Close()
+    req, err := http.NewRequest("POST", "https://xquik.com/api/v1/monitors", bytes.NewReader(body))
+    if err != nil {
+        log.Fatal(err)
+    }
+    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+    req.Header.Set("Content-Type", "application/json")
 
-      if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-          problem, readErr := io.ReadAll(resp.Body)
-          if readErr != nil {
-              log.Fatal(readErr)
-          }
-          log.Fatalf("Twitter monitor creation failed with %d: %s", resp.StatusCode, string(problem))
-      }
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer resp.Body.Close()
 
-      var monitor Monitor
-      if err := json.NewDecoder(resp.Body).Decode(&monitor); err != nil {
-          log.Fatal(err)
-      }
-      state := MonitorState{
-          CreatedAt:                  monitor.CreatedAt,
-          DeleteEndpoint:             "/api/v1/monitors/" + monitor.ID,
-          DeliveriesEndpointPattern:  "/api/v1/webhooks/{webhook_id}/deliveries",
-          EventDetailEndpointPattern: "/api/v1/events/{event_id}",
-          EventsEndpoint:             "/api/v1/events?monitorId=" + monitor.ID,
-          EventTypes:                 monitor.EventTypes,
-          IsActive:                   monitor.IsActive,
-          MonitorID:                  monitor.ID,
-          NextBillingAt:              monitor.NextBillingAt,
-          UpdateEndpoint:             "/api/v1/monitors/" + monitor.ID,
-          Username:                   monitor.Username,
-          VerifyEndpoint:             "/api/v1/monitors/" + monitor.ID,
-          WebhooksEndpoint:           "/api/v1/webhooks",
-          XUserID:                    monitor.XUserID,
-      }
-      if err := json.NewEncoder(os.Stdout).Encode(state); err != nil {
-          log.Fatal(err)
-      }
-  }
-  ```
+    if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+        problem, readErr := io.ReadAll(resp.Body)
+        if readErr != nil {
+            log.Fatal(readErr)
+        }
+        log.Fatalf("Twitter monitor creation failed with %d: %s", resp.StatusCode, string(problem))
+    }
+
+    var monitor Monitor
+    if err := json.NewDecoder(resp.Body).Decode(&monitor); err != nil {
+        log.Fatal(err)
+    }
+    state := MonitorState{
+        CreatedAt:                  monitor.CreatedAt,
+        DeleteEndpoint:             "/api/v1/monitors/" + monitor.ID,
+        DeliveriesEndpointPattern:  "/api/v1/webhooks/{webhook_id}/deliveries",
+        EventDetailEndpointPattern: "/api/v1/events/{event_id}",
+        EventsEndpoint:             "/api/v1/events?monitorId=" + monitor.ID,
+        EventTypes:                 monitor.EventTypes,
+        IsActive:                   monitor.IsActive,
+        MonitorID:                  monitor.ID,
+        NextBillingAt:              monitor.NextBillingAt,
+        UpdateEndpoint:             "/api/v1/monitors/" + monitor.ID,
+        Username:                   monitor.Username,
+        VerifyEndpoint:             "/api/v1/monitors/" + monitor.ID,
+        WebhooksEndpoint:           "/api/v1/webhooks",
+        XUserID:                    monitor.XUserID,
+    }
+    if err := json.NewEncoder(os.Stdout).Encode(state); err != nil {
+        log.Fatal(err)
+    }
+}
+```
+
 </CodeGroup>
 
 Each code example maps the response to one monitor row. Save the account IDs,
@@ -438,47 +473,60 @@ Create the monitor first. Then create a signed webhook with
 [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) before enabling
 production alerts.
 
-| Created monitor column | Response source | Setup rule |
-| --- | --- | --- |
-| Monitor ID | `id` | Store this ID before configuring downstream alerts. |
-| X username | `username` | Store the normalized username without `@`. |
-| X user ID | `xUserId` | Use this stable ID for account joins. |
-| Event filter | `eventTypes` | Align webhook subscriptions with these event types. |
-| Polling state | `isActive` | Route only active monitors into alert checks. |
-| Creation time | `createdAt` | Store this timestamp with each monitor audit. |
-| Billing checkpoint | `nextBillingAt` | Review available credits before this time. |
+| Created monitor column | Response source | Setup rule                                          |
+| ---------------------- | --------------- | --------------------------------------------------- |
+| Monitor ID             | `id`            | Store this ID before configuring downstream alerts. |
+| X username             | `username`      | Store the normalized username without `@`.          |
+| X user ID              | `xUserId`       | Use this stable ID for account joins.               |
+| Event filter           | `eventTypes`    | Align webhook subscriptions with these event types. |
+| Polling state          | `isActive`      | Route only active monitors into alert checks.       |
+| Creation time          | `createdAt`     | Store this timestamp with each monitor audit.       |
+| Billing checkpoint     | `nextBillingAt` | Review available credits before this time.          |
 
 <CardGroup cols={2}>
+
   <Card title="Monitor ID" icon="fingerprint">
+
     Store `id` as `monitor_id`. Verify state with
     [Get Monitor](/api-reference/monitors/twitter-account-monitor-status).
     Pause or resume with [Update Monitor](/api-reference/monitors/update). Call
     [Delete Monitor](/api-reference/monitors/delete-twitter-account-monitor)
     only when tracking should stop permanently.
+
   </Card>
   <Card title="Stored account" icon="user">
+
     Store `username` after trimming the `@` prefix. Store `xUserId` for stable
     joins, dedupe, and downstream account mapping.
+
   </Card>
   <Card title="Event filter" icon="funnel">
+
     Store `eventTypes`; keep [List Webhooks](/api-reference/webhooks/list)
     subscriptions aligned so expected account activity delivers.
+
   </Card>
   <Card title="Active state" icon="clock">
+
     Read `isActive` and `nextBillingAt` before enabling alerts or estimating
     hourly monitor burn.
+
   </Card>
   <Card title="Stored event join" icon="link">
+
     Read `monitorType: "account"`, `monitorId`, and `username` from
     [List Events](/api-reference/events/list). Use them to join stored events
     to the account. Use [Get Event](/api-reference/events/get) for one event.
+
   </Card>
   <Card title="Webhook delivery join" icon="webhook">
+
     Use `deliveryId` for receiver idempotency and
     [List Deliveries](/api-reference/webhooks/deliveries) for delivery
     attempts. Join `streamEventId` to event IDs; do not use `x_event_id` as the
     delivery join key. Store `eventType`, `occurredAt`, and `data` with the
     downstream job.
+
   </Card>
 </CardGroup>
 
@@ -497,26 +545,36 @@ You need 22 available credits to create or restore a monitor. That total include
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Send your Xquik API key. Create one in the [Xquik dashboard](https://xquik.com/dashboard).
+
+Send your Xquik API key. Create one in the [Xquik dashboard](https://xquik.com/dashboard).
+
 </ParamField>
 
 <ParamField header="Authorization" type="string">
-  Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.
+
+Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.
+
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
-  Must be `application/json`.
+
+Must be `application/json`.
+
 </ParamField>
 
 ## Body
 
 <ParamField body="username" type="string" required>
-  Send an X username with 1-15 letters, numerals, or underscores. Xquik removes
-  a leading `@` before validation.
+
+Send an X username with 1-15 letters, numerals, or underscores. Xquik removes
+a leading `@` before validation.
+
 </ParamField>
 
 <ParamField body="eventTypes" type="string[]" required>
-  Array of event types to subscribe to. At least 1 required. See [Valid Event Types](#valid-event-types) below.
+
+Array of event types to subscribe to. At least 1 required. See [Valid Event Types](#valid-event-types) below.
+
 </ParamField>
 
 ## Valid event types
@@ -525,36 +583,47 @@ Choose only the exact event types in the goal map below.
 
 ### Match event types to monitor goals
 
-| Monitor goal | Event types | Stored signal |
-| --- | --- | --- |
-| New posts and conversations | `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet` | Original posts, replies, quotes, or reposts from one profile. |
-| Tweet content formats | `tweet.media`, `tweet.link`, `tweet.poll`, `tweet.mention`, `tweet.hashtag`, `tweet.longform` | Posts containing the selected format or reference. |
-| Profile text changes | `profile.name.changed`, `profile.username.changed`, `profile.bio.changed`, `profile.location.changed`, `profile.url.changed` | Previous and current profile text values. |
-| Profile image changes | `profile.avatar.changed`, `profile.banner.changed` | Old and new avatar or banner references. |
-| Profile state changes | `profile.verified.changed`, `profile.protected.changed`, `profile.pinned_tweet.changed`, `profile.unavailable.changed` | Verification, visibility, pinned post, or availability changes. |
+| Monitor goal                | Event types                                                                                                                  | Stored signal                                                   |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| New posts and conversations | `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet`                                                                   | Original posts, replies, quotes, or reposts from one profile.   |
+| Tweet content formats       | `tweet.media`, `tweet.link`, `tweet.poll`, `tweet.mention`, `tweet.hashtag`, `tweet.longform`                                | Posts containing the selected format or reference.              |
+| Profile text changes        | `profile.name.changed`, `profile.username.changed`, `profile.bio.changed`, `profile.location.changed`, `profile.url.changed` | Previous and current profile text values.                       |
+| Profile image changes       | `profile.avatar.changed`, `profile.banner.changed`                                                                           | Old and new avatar or banner references.                        |
+| Profile state changes       | `profile.verified.changed`, `profile.protected.changed`, `profile.pinned_tweet.changed`, `profile.unavailable.changed`       | Verification, visibility, pinned post, or availability changes. |
 
 <Warning>
-  Account monitors do not emit follower-gained or follower-lost events. Use
-  [Followers](/api-reference/x/followers) and
-  [Following](/api-reference/x/following) for paginated relationship snapshots.
+
+Account monitors do not emit follower-gained or follower-lost events. Use
+[Followers](/api-reference/x/followers) and
+[Following](/api-reference/x/following) for paginated relationship snapshots.
+
 </Warning>
 
 <CardGroup cols={2}>
+
   <Card title="tweet.new" icon="bell">
+
     Original tweet from the monitored account. Used when no reply, quote, or
     retweet signal is present.
+
   </Card>
   <Card title="tweet.quote" icon="quote">
+
     Quote tweet from the monitored account. Include this when quote activity
     should create stored events and webhook deliveries.
+
   </Card>
   <Card title="tweet.reply" icon="message-circle">
+
     Reply from the monitored account. Include this when support routing,
     conversation tracking, or alerting needs replies.
+
   </Card>
   <Card title="tweet.retweet" icon="repeat-2">
+
     Retweet from the monitored account. Include this when repost activity should
     create stored events and webhook deliveries.
+
   </Card>
 </CardGroup>
 
@@ -562,13 +631,27 @@ Choose only the exact event types in the goal map below.
 
 ### 201 Created
 
-<ResponseField name="id" type="string">Unique monitor ID.</ResponseField>
-<ResponseField name="username" type="string">Stored X username after trimming and removing the `@` prefix.</ResponseField>
-<ResponseField name="xUserId" type="string">Resolved X user ID for the account.</ResponseField>
-<ResponseField name="eventTypes" type="string[]">Event types this monitor is subscribed to.</ResponseField>
-<ResponseField name="isActive" type="boolean">Whether the monitor is currently active.</ResponseField>
-<ResponseField name="createdAt" type="string">Xquik records the creation time in ISO 8601 format.</ResponseField>
-<ResponseField name="nextBillingAt" type="string">Next hourly credit charge time. New active monitors are due immediately.</ResponseField>
+<ResponseField name="id" type="string">
+  Unique monitor ID.
+</ResponseField>
+<ResponseField name="username" type="string">
+  Stored X username after trimming and removing the `@` prefix.
+</ResponseField>
+<ResponseField name="xUserId" type="string">
+  Resolved X user ID for the account.
+</ResponseField>
+<ResponseField name="eventTypes" type="string[]">
+  Event types this monitor is subscribed to.
+</ResponseField>
+<ResponseField name="isActive" type="boolean">
+  Whether the monitor is currently active.
+</ResponseField>
+<ResponseField name="createdAt" type="string">
+  Xquik records the creation time in ISO 8601 format.
+</ResponseField>
+<ResponseField name="nextBillingAt" type="string">
+  Next hourly credit charge time. New active monitors are due immediately.
+</ResponseField>
 
 ```json
 {
@@ -587,20 +670,29 @@ Choose only the exact event types in the goal map below.
 ```json
 { "error": "invalid_input", "message": "Invalid input. Check the request body." }
 ```
+
 Invalid username format or missing/invalid `eventTypes` array.
 
 ### 401 Missing API key
 
 ```json
-{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }
+{
+  "error": "unauthenticated",
+  "message": "Authentication required. Provide a valid API key or bearer token."
+}
 ```
+
 Missing or invalid API key or OAuth bearer token.
 
 ### 402 Payment required
 
 ```json
-{ "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }
+{
+  "error": "insufficient_credits",
+  "message": "Insufficient credits. Top up or subscribe to continue."
+}
 ```
+
 Keep at least 22 credits available before sending this request. The API may return
 `insufficient_credits` when the balance is too low.
 
@@ -609,6 +701,7 @@ Keep at least 22 credits available before sending this request. The API may retu
 ```json
 { "error": "user_not_found", "message": "X user not found. Check the username." }
 ```
+
 Xquik could not find that username. Check the spelling.
 
 ### 409 Duplicate
@@ -616,30 +709,40 @@ Xquik could not find that username. Check the spelling.
 ```json
 { "error": "monitor_already_exists", "message": "Monitor already exists." }
 ```
+
 An active monitor already tracks this X account. Use
 [Update Monitor](/api-reference/monitors/update) to change event types instead.
 
 ### 429 Rate limited
 
 ```json
-{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Try again later.",
+  "retryAfter": 60
+}
 ```
+
 Too many requests. Wait for the `Retry-After` header before retrying.
 
 <Info>
-  A previously deleted monitor is reactivated with new event types. An active
-  duplicate returns `409`.
+
+A previously deleted monitor is reactivated with new event types. An active
+duplicate returns `409`.
+
 </Info>
 
 <Note>
-  **Next steps.**
 
-  - [List Monitors](/api-reference/monitors/list) to view account monitors.
-  - [Get Monitor](/api-reference/monitors/twitter-account-monitor-status) to fetch one monitor.
-  - [Update Monitor](/api-reference/monitors/update) to pause or resume checks.
-  - [Create Webhook](/api-reference/webhooks/create) to receive events.
-  - [List Webhooks](/api-reference/webhooks/list) to check subscriptions.
-  - [List Events](/api-reference/events/list) to audit stored events.
-  - [Get Event](/api-reference/events/get) to inspect one event.
-  - [List Deliveries](/api-reference/webhooks/deliveries) to inspect webhook attempts.
+**Next steps.**
+
+- [List Monitors](/api-reference/monitors/list) to view account monitors.
+- [Get Monitor](/api-reference/monitors/twitter-account-monitor-status) to fetch one monitor.
+- [Update Monitor](/api-reference/monitors/update) to pause or resume checks.
+- [Create Webhook](/api-reference/webhooks/create) to receive events.
+- [List Webhooks](/api-reference/webhooks/list) to check subscriptions.
+- [List Events](/api-reference/events/list) to audit stored events.
+- [Get Event](/api-reference/events/get) to inspect one event.
+- [List Deliveries](/api-reference/webhooks/deliveries) to inspect webhook attempts.
+
 </Note>

@@ -31,14 +31,14 @@ services. LangGraph adds durable state, resumable jobs, and human approval.
 
 Choose a narrow route for each Twitter agent task.
 
-| Agent task | Xquik route | Preserve for the next step |
-| --- | --- | --- |
-| Search tweets | `GET /api/v1/x/tweets/search` | Query, tweet IDs, authors, `created`, and cursor |
-| Inspect a profile | `GET /api/v1/x/users/{id}` | User ID, username, biography, and follower count |
-| Export followers | `POST /api/v1/extractions` | Extraction ID, status, poll URL, and export state |
-| Watch keywords | `POST /api/v1/monitors` | Monitor ID, event types, and next billing time |
-| Replay monitor events | `GET /api/v1/events` | Event IDs, `has_more`, and `next_cursor` |
-| Post or reply | The matching X write route | Tweet ID, action ID, status, and charged credits |
+| Agent task            | Xquik route                   | Preserve for the next step                        |
+| --------------------- | ----------------------------- | ------------------------------------------------- |
+| Search tweets         | `GET /api/v1/x/tweets/search` | Query, tweet IDs, authors, `created`, and cursor  |
+| Inspect a profile     | `GET /api/v1/x/users/{id}`    | User ID, username, biography, and follower count  |
+| Export followers      | `POST /api/v1/extractions`    | Extraction ID, status, poll URL, and export state |
+| Watch keywords        | `POST /api/v1/monitors`       | Monitor ID, event types, and next billing time    |
+| Replay monitor events | `GET /api/v1/events`          | Event IDs, `has_more`, and `next_cursor`          |
+| Post or reply         | The matching X write route    | Tweet ID, action ID, status, and charged credits  |
 
 Use LangChain for short tool-calling conversations. Use LangGraph when work must
 resume after failures, approvals, or process restarts. Both use the same MCP
@@ -230,37 +230,54 @@ Conversation history is not a reliable job database. Persist the values needed
 for retries, pagination, exports, and downstream tools.
 
 <CardGroup cols={2}>
+
   <Card title="Tweet search rows" icon="search">
+
     Store `tweet_id`, `text`, `author_username`, `created`, `url`, `has_more`,
     `next_cursor`, and the original query.
+
   </Card>
   <Card title="User profile rows" icon="users">
+
     Store source `id` as `user_id`. Keep `username`, `name`, `description`,
     `followers`, `verified`, and `profile_picture`.
+
   </Card>
   <Card title="Follower exports" icon="download">
+
     Store the source user, extraction ID, status, poll URL, export state, and
     requested file format.
+
   </Card>
   <Card title="Tweet replies" icon="message-circle">
+
     Store the root tweet ID, reply IDs, parent IDs, cursor state, and coverage
     diagnostics. Keep nested replies separate.
+
   </Card>
   <Card title="Monitor events" icon="radio">
+
     Store `monitor_id`, `event_id`, `type`, `occurred_at`, `has_more`, and
     `next_cursor`. Use the next cursor as `cursor`.
+
   </Card>
   <Card title="Webhook delivery" icon="webhook">
+
     Store `webhook_id`, `delivery_id`, and `stream_event_id`. Keep the one-time
     webhook secret in a secret manager.
+
   </Card>
   <Card title="Write actions" icon="send">
+
     Store `tweet_id` or `write_action_id`. Keep `status`, `charged_credits`,
     `poll`, and the idempotency key.
+
   </Card>
   <Card title="Media attachments" icon="image">
+
     Pass public image or video URLs in `media` for tweets. Use uploaded
     `media_id` values only for direct messages.
+
   </Card>
 </CardGroup>
 
@@ -273,14 +290,14 @@ Do not let the model guess whether a failed request should retry.
 Match every HTTP status code before choosing the next action.
 A 400 Bad Request indicates invalid route parameters or unsupported fields.
 
-| Status | Meaning | LangChain agent decision |
-| --- | --- | --- |
-| `400` | Invalid route parameters or unsupported fields | Fix the request before retrying |
-| `401` | Missing or invalid authentication | Stop and replace the Xquik credential |
-| `402` | Subscription or credit action required | Report choices and request explicit confirmation |
-| `424` | Upstream dependency failure or incomplete replies | Preserve partial rows and inspect `error.retryable` |
-| `429` | Rate limit reached | Respect `error.retry_after`, then back off |
-| `502` | Temporary upstream failure | Apply bounded backoff to safe read retries |
+| Status | Meaning                                           | LangChain agent decision                            |
+| ------ | ------------------------------------------------- | --------------------------------------------------- |
+| `400`  | Invalid route parameters or unsupported fields    | Fix the request before retrying                     |
+| `401`  | Missing or invalid authentication                 | Stop and replace the Xquik credential               |
+| `402`  | Subscription or credit action required            | Report choices and request explicit confirmation    |
+| `424`  | Upstream dependency failure or incomplete replies | Preserve partial rows and inspect `error.retryable` |
+| `429`  | Rate limit reached                                | Respect `error.retry_after`, then back off          |
+| `502`  | Temporary upstream failure                        | Apply bounded backoff to safe read retries          |
 
 Errors contain `error.type`, `error.code`, and `error.message`. Some errors add
 `error.retryable` or `error.retry_after`. Store these fields with the job.
@@ -402,12 +419,12 @@ sets improve route selection and reduce accidental actions.
 
 These versions were checked on August 2, 2026.
 
-| Package | Checked version | Supported range in this guide |
-| --- | --- | --- |
-| Python | 3.10 or later | `>=3.10` |
-| `langchain-mcp-adapters` | 0.3.0 | `>=0.3,<0.4` |
-| `langchain` | 1.3.14 | `>=1.3,<1.4` |
-| `langgraph` | 1.2.10 | Installed through LangChain constraints |
+| Package                  | Checked version | Supported range in this guide           |
+| ------------------------ | --------------- | --------------------------------------- |
+| Python                   | 3.10 or later   | `>=3.10`                                |
+| `langchain-mcp-adapters` | 0.3.0           | `>=0.3,<0.4`                            |
+| `langchain`              | 1.3.14          | `>=1.3,<1.4`                            |
+| `langgraph`              | 1.2.10          | Installed through LangChain constraints |
 
 Pin exact versions in production lockfiles. Re-test structured output, approval,
 and checkpointer behavior before upgrading a minor range.

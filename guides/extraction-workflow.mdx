@@ -2,7 +2,24 @@
 title: "Twitter scraper API for tweets, replies & followers"
 sidebarTitle: "Extraction workflow"
 description: "Use the Twitter scraper API to scrape tweets, export follower and following profiles, collect reply authors, paginate JSON, and download CSV, JSON, or XLSX."
-keywords: ["Twitter scraper API", "Twitter scraper", "tweet scraper", "scrape tweets", "Twitter data scraper", "Twitter scrape API", "Twitter follower scraper", "Twitter reply scraper", "follower export API", "tweet replies export", "CSV export", "JSON export", "XLSX export", "pagination", "MCP"]
+keywords:
+  [
+    "Twitter scraper API",
+    "Twitter scraper",
+    "tweet scraper",
+    "scrape tweets",
+    "Twitter data scraper",
+    "Twitter scrape API",
+    "Twitter follower scraper",
+    "Twitter reply scraper",
+    "follower export API",
+    "tweet replies export",
+    "CSV export",
+    "JSON export",
+    "XLSX export",
+    "pagination",
+    "MCP",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -21,33 +38,46 @@ Tweet search results can filter authors, dates, engagement, media, relationships
 
 ## Workflow overview
 
-| Extraction stage | Exact API call | Durable checkpoint |
-| --- | --- | --- |
-| Check credits | `GET /account` | Available balance |
-| Estimate results | `POST /extractions/estimate` | `allowed`, `estimatedCost`, `estimatedResults`, `source` |
-| Start scraping | `POST /extractions` | `id`, `toolType`, `status` |
-| Retrieve rows | `GET /extractions/{id}` | `nextCursor` while `hasMore` is true |
-| Export a file | `GET /extractions/{id}/export` | Job ID, format, filename, destination |
+| Extraction stage | Exact API call                 | Durable checkpoint                                       |
+| ---------------- | ------------------------------ | -------------------------------------------------------- |
+| Check credits    | `GET /account`                 | Available balance                                        |
+| Estimate results | `POST /extractions/estimate`   | `allowed`, `estimatedCost`, `estimatedResults`, `source` |
+| Start scraping   | `POST /extractions`            | `id`, `toolType`, `status`                               |
+| Retrieve rows    | `GET /extractions/{id}`        | `nextCursor` while `hasMore` is true                     |
+| Export a file    | `GET /extractions/{id}/export` | Job ID, format, filename, destination                    |
 
 <Info>
-  Treat `202 Accepted` as a queued run receipt. Credits are reserved after the job starts. Poll `GET /extractions/{id}` before handoff. The run can lower `resultsLimit` to the affordable count or fail with `insufficient_credits`.
+
+Treat `202 Accepted` as a queued run receipt. Credits are reserved after the job starts. Poll `GET /extractions/{id}` before handoff. The run can lower `resultsLimit` to the affordable count or fail with `insufficient_credits`.
+
 </Info>
 
 <Steps>
+
   <Step title="Check credits">
+
     Verify that your available credit balance can cover the job.
+
   </Step>
   <Step title="Estimate cost">
+
     Preview the extraction cost before committing. Check whether it fits within your remaining budget.
+
   </Step>
   <Step title="Run the extraction">
+
     Submit the extraction job, store the `202 Accepted` receipt, then poll before handoff.
+
   </Step>
   <Step title="Retrieve results">
+
     Paginate through extracted data via the API, or export as CSV, JSON, XLSX, Markdown, PDF, or TXT.
+
   </Step>
   <Step title="Export files">
+
     Download CSV, JSON, XLSX, Markdown, PDF, or TXT when a downstream tool expects a file.
+
   </Step>
 </Steps>
 
@@ -88,17 +118,26 @@ Store one checkpoint per extraction run so another worker can resume without rer
 ```
 
 <CardGroup cols={2}>
+
   <Card title="Estimate checkpoint" icon="calculator">
+
     Store `estimatedResults`, `creditsRequired`, `creditsAvailable`, `allowed`, and `source` before creating the job.
+
   </Card>
   <Card title="Create receipt" icon="clipboard-check">
+
     Store the returned job `id`, `status`, and `poll_path`; result rows arrive from `GET /extractions/{id}`.
+
   </Card>
   <Card title="Cursor state" icon="shuffle">
+
     Store `page_cursor`, `next_cursor`, and `has_more` for each JSON page so workers can resume pagination.
+
   </Card>
   <Card title="File handoff" icon="download">
+
     Store `inventory_path` for later job lookup and `export_path` for the CSV, JSON, or XLSX download.
+
   </Card>
 </CardGroup>
 
@@ -130,6 +169,7 @@ Use the estimate endpoint first.
 It shows expected rows and credits without charging you.
 
 <CodeGroup>
+
 ```bash cURL
 curl -X POST https://xquik.com/api/v1/extractions/estimate \
   -H "x-api-key: xq_YOUR_KEY_HERE" \
@@ -154,7 +194,9 @@ const estimate = await fetch("https://xquik.com/api/v1/extractions/estimate", {
 }).then((r) => r.json());
 
 if (!estimate.allowed) {
-  throw new Error(`Insufficient credits: need ${estimate.creditsRequired}, have ${estimate.creditsAvailable}`);
+  throw new Error(
+    `Insufficient credits: need ${estimate.creditsRequired}, have ${estimate.creditsAvailable}`,
+  );
 }
 
 console.log(`Estimated results: ${estimate.estimatedResults}`);
@@ -198,11 +240,15 @@ The estimate reports:
 - `resolvedXUserId`: the ID returned by count-based profile estimates.
 
 <Warning>
-  `allowed: false` means your balance cannot fund the full estimate. Add credits or lower `resultsLimit`.
+
+`allowed: false` means your balance cannot fund the full estimate. Add credits or lower `resultsLimit`.
+
 </Warning>
 
 <Tip>
-  `resultsLimit` defaults to `10,000` for estimates and jobs. Set any positive integer for a different bound. Billing follows unique emitted results. Source counts such as `followers` or `replyCount` can produce a smaller estimate.
+
+`resultsLimit` defaults to `10,000` for estimates and jobs. Set any positive integer for a different bound. Billing follows unique emitted results. Source counts such as `followers` or `replyCount` can produce a smaller estimate.
+
 </Tip>
 
 ## Step 3: run the extraction
@@ -210,6 +256,7 @@ The estimate reports:
 Submit the job with the same parameters you used for the estimate.
 
 <CodeGroup>
+
 ```bash cURL
 IDEMPOTENCY_KEY=$(uuidgen)
 curl -X POST https://xquik.com/api/v1/extractions \
@@ -282,24 +329,33 @@ Follow `waitUrl` until terminal. Save row count, cursor, and format before resul
 ## Data handoff
 
 <CardGroup cols={2}>
+
   <Card title="App or API pipeline" icon="code">
+
     Use `GET /extractions/{id}`. Store `job`, `results`, `hasMore`, `nextCursor`.
     Use `limit` up to 1,000 and pass `nextCursor` as `cursor`.
     Use compact output for core fields and tweet counts.
+
   </Card>
   <Card title="CRM import" icon="users">
+
     Use `GET /extractions/{id}/export?format=csv`. Store `User ID`,
     `Username`, `Display Name`, `Followers`, and `Verified`. Upsert by stable X
     user ID when possible.
+
   </Card>
   <Card title="Warehouse or queue" icon="database">
+
     Use `GET /extractions/{id}/export?format=json` or paginated JSON. Store
     `xUserId`, `xUsername`, `tweetId`, `tweetText`, `createdAt`. Keep the
     extraction ID with each load for replay and audit.
+
   </Card>
   <Card title="Analyst review" icon="file-spreadsheet">
+
     Use `GET /extractions/{id}/export?format=xlsx`. Store export columns plus
     enrichment fields. Use CSV/JSON for automation and XLSX for manual review.
+
   </Card>
 </CardGroup>
 
@@ -310,6 +366,7 @@ Paginated JSON is not row-capped by the export limit. File exports are capped at
 Fetch results in pages of up to 1,000 records. Use cursor-based pagination to iterate through all results.
 
 <CodeGroup>
+
 ```bash cURL
 # First page
 curl -s "https://xquik.com/api/v1/extractions/77777?limit=1000" \
@@ -329,10 +386,9 @@ do {
   const params = new URLSearchParams({ limit: "1000" });
   if (cursor) params.set("after", cursor);
 
-  const data = await fetch(
-    `https://xquik.com/api/v1/extractions/${extractionId}?${params}`,
-    { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
-  ).then((r) => r.json());
+  const data = await fetch(`https://xquik.com/api/v1/extractions/${extractionId}?${params}`, {
+    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+  }).then((r) => r.json());
 
   allResults.push(...data.results);
   cursor = data.hasMore ? data.nextCursor : undefined;
@@ -400,6 +456,7 @@ for {
 
 fmt.Printf("Fetched %d results\n", len(allResults))
 ```
+
 </CodeGroup>
 
 ### Durable JSON Lines handoff
@@ -426,6 +483,7 @@ Store rows in `xquik-extraction-results.jsonl` for queue replay, warehouse loads
 Each result contains user profile data and (for tweet-based tools) tweet data:
 
 <Expandable title="Example response">
+
 ```json
 {
   "id": "990001",
@@ -441,10 +499,13 @@ Each result contains user profile data and (for tweet-based tools) tweet data:
   "createdAt": "2026-02-24T10:06:12.000Z"
 }
 ```
+
 </Expandable>
 
 <Info>
-  Only `id`, `xUserId`, and `createdAt` are guaranteed on every result. All other fields are omitted when unavailable (never `null`). Check for field presence before accessing.
+
+Only `id`, `xUserId`, and `createdAt` are guaranteed on every result. All other fields are omitted when unavailable (never `null`). Check for field presence before accessing.
+
 </Info>
 
 ### Option b: export as file
@@ -453,6 +514,7 @@ Download results as CSV, JSON, XLSX, Markdown, PDF, or TXT.
 Available export rows include bios, locations, and engagement counts.
 
 <CodeGroup>
+
 ```bash cURL
 curl -s "https://xquik.com/api/v1/extractions/77777/export?format=csv" \
   -H "x-api-key: xq_YOUR_KEY_HERE" \
@@ -492,41 +554,59 @@ file, _ := os.Create("extraction-reply_extractor-77777.csv")
 defer file.Close()
 io.Copy(file, resp.Body)
 ```
+
 </CodeGroup>
 
 <CardGroup cols={2}>
+
   <Card title="CSV" icon="table">
+
     `format=csv` returns `text/csv; charset=utf-8` for spreadsheets and data
     pipelines.
+
   </Card>
   <Card title="JSON" icon="braces">
+
     `format=json` returns `application/json; charset=utf-8` for API clients and
     programmatic processing.
+
   </Card>
   <Card title="Markdown" icon="file-text">
+
     `format=md` returns `text/markdown; charset=utf-8` for documentation and
     issue handoffs.
+
   </Card>
   <Card title="Markdown document" icon="file-text">
+
     `format=md-document` returns `text/markdown; charset=utf-8` for longer
     markdown documents.
+
   </Card>
   <Card title="PDF" icon="file-down">
+
     `format=pdf` returns `application/pdf` for reports and sharing. PDF exports
     are capped at `10,000` rows.
+
   </Card>
   <Card title="TXT" icon="file">
+
     `format=txt` returns `text/plain; charset=utf-8` for plain text and logs.
+
   </Card>
   <Card title="XLSX" icon="file-spreadsheet">
+
     `format=xlsx` returns
     `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` for
     Excel and formatted reports.
+
   </Card>
 </CardGroup>
 
 <Warning>
-  Exports are capped at 100,000 rows (10,000 for PDF). For larger extractions, use the paginated API to retrieve all results.
+
+Exports are capped at 100,000 rows (10,000 for PDF). For larger extractions, use the paginated API to retrieve all results.
+
 </Warning>
 
 ## Tool types reference
@@ -536,107 +616,158 @@ All 23 extraction tools grouped by target type. Each requires a specific target 
 ### Tweet-based tools
 
 <CardGroup cols={2}>
+
   <Card title="Reply authors" icon="message-square">
+
     Use `reply_extractor` with `targetTweetId` to extract users who replied to a
     tweet.
+
   </Card>
   <Card title="Repost authors" icon="repeat-2">
+
     Use `repost_extractor` with `targetTweetId` to extract users who reposted a
     tweet.
+
   </Card>
   <Card title="Quote authors" icon="quote">
+
     Use `quote_extractor` with `targetTweetId` to extract users who quote-posted
     a tweet.
+
   </Card>
   <Card title="Like authors" icon="heart">
+
     Use `favoriters` with `targetTweetId` to extract visible users who liked a
     post. Liker identities can be unavailable even when the post reports likes.
+
   </Card>
   <Card title="Thread tweets" icon="message-square-text">
+
     Use `thread_extractor` with `targetTweetId` to extract all tweets in a
     thread.
+
   </Card>
   <Card title="Article content" icon="file-text">
+
     Use `article_extractor` with `targetTweetId` to extract article content from
     a tweet.
+
   </Card>
 </CardGroup>
 
 ### User-based tools
 
 <CardGroup cols={2}>
+
   <Card title="Follower profiles" icon="users">
+
     Use `follower_explorer` with `targetUsername` to extract followers of an
     account.
+
   </Card>
   <Card title="Following profiles" icon="user-plus">
+
     Use `following_explorer` with `targetUsername` to extract accounts followed
     by a user.
+
   </Card>
   <Card title="Verified followers" icon="badge-check">
+
     Use `verified_follower_explorer` with `targetUsername` to extract verified
     followers of an account.
+
   </Card>
   <Card title="Mention tweets" icon="at-sign">
+
     Use `mention_extractor` with `targetUsername` to extract tweets mentioning
     an account.
+
   </Card>
   <Card title="Account posts" icon="send">
+
     Use `post_extractor` with `targetUsername` to extract posts from an
     account.
+
   </Card>
   <Card title="Liked tweets" icon="heart">
+
     Use `user_likes` with `targetUsername` to extract tweets liked by a user.
+
   </Card>
   <Card title="Media posts" icon="image">
+
     Use `user_media` with `targetUsername` to extract media posts from a user.
+
   </Card>
 </CardGroup>
 
 ### Community tools
 
 <CardGroup cols={2}>
+
   <Card title="Community members" icon="users">
+
     Use `community_extractor` with `targetCommunityId` to extract members.
+
   </Card>
   <Card title="Community moderators" icon="shield-check">
+
     Use `community_moderator_explorer` with `targetCommunityId` to extract moderators.
+
   </Card>
   <Card title="Community posts" icon="message-square-text">
+
     Use `community_post_extractor` with `targetCommunityId` to extract posts.
+
   </Card>
   <Card title="Search within a community" icon="search">
+
     Use `community_search` with `targetCommunityId` and `searchQuery` to filter Community posts.
+
   </Card>
 </CardGroup>
 
 ### List tools
 
 <CardGroup cols={2}>
+
   <Card title="List members" icon="users">
+
     Use `list_member_extractor` with `targetListId` to extract members.
+
   </Card>
   <Card title="List tweets" icon="message-square-text">
+
     Use `list_post_extractor` with `targetListId` to extract tweets.
+
   </Card>
   <Card title="List followers" icon="user-plus">
+
     Use `list_follower_explorer` with `targetListId` to extract followers.
+
   </Card>
 </CardGroup>
 
 ### Other tools
 
 <CardGroup cols={2}>
+
   <Card title="People search" icon="search">
+
     Use `people_search` with `searchQuery` to find user profiles by keyword.
+
   </Card>
   <Card title="Space participants" icon="radio">
+
     Use `space_explorer` with `targetSpaceId` to extract participants of a
     Space.
+
   </Card>
   <Card title="Tweet search" icon="message-square">
+
     Use `tweet_search_extractor` with `searchQuery` to extract tweets by
     keyword, hashtag, or structured filters.
+
   </Card>
 </CardGroup>
 
@@ -647,37 +778,54 @@ Omit unrequested filters. A minimum alone does not request `queryType=Top`.
 Use `advancedQuery` only for a known X search operator string.
 
 <CardGroup cols={2}>
+
   <Card title="Account filters" icon="at-sign">
+
     Use `fromUser` for author username, `toUser` for tweets directed to a user,
     and `mentioning` for tweets that mention a user.
+
   </Card>
   <Card title="Date and language" icon="calendar-days">
+
     Use `language` for a language code such as `en`, `tr`, or `es`, then bound
     the export with `sinceDate` and `untilDate` in `YYYY-MM-DD` format.
+
   </Card>
   <Card title="Media and engagement" icon="image">
+
     Use `mediaType` for `images`, `videos`, `gifs`, `media`, `links`, or `none`.
     Set `minFaves`, `minRetweets`, `minReplies`, or `minQuotes`.
+
   </Card>
   <Card title="Conversation filters" icon="message-circle">
+
     Use `replies`, `retweets`, and `quotes` with `include`, `exclude`, or `only`.
     Set `verifiedOnly` when only verified authors should match.
+
   </Card>
   <Card title="Query refinement" icon="sliders-horizontal">
+
     Combine `exactPhrase`, `excludeWords`, `anyWords`, `hashtags`, `cashtags`,
     and `url` for terms, entities, or linked domains.
+
   </Card>
   <Card title="Tweet relationships" icon="git-branch">
+
     Use `conversationId`, `inReplyToTweetId`, `quotesOfTweetId`, or
     `retweetsOfTweetId` for one conversation or source tweet.
+
   </Card>
   <Card title="List and location scopes" icon="map-pin">
+
     Use `listId`, `place`, `placeCountry`, `pointRadius`, or `boundingBox`.
     These fields narrow search results to a list or location.
+
   </Card>
   <Card title="Advanced query" icon="code">
+
     Use `advancedQuery` only for raw X search syntax.
     Prefer the 30 structured fields when one already represents the filter.
+
   </Card>
 </CardGroup>
 
@@ -701,7 +849,9 @@ curl -X POST https://xquik.com/api/v1/extractions \
 ```
 
 <Tip>
-  Combine filters with `resultsLimit` to run targeted, cost-efficient searches. For example, find the top 50 viral tweets about a topic from verified accounts in the last 24 hours.
+
+Combine filters with `resultsLimit` to run targeted, cost-efficient searches. For example, find the top 50 viral tweets about a topic from verified accounts in the last 24 hours.
+
 </Tip>
 
 ## Twitter scraper API questions
@@ -748,25 +898,34 @@ A Twitter scrape API uses documented requests, statuses, cursors, and output fie
 The same workflow works through the MCP server using the `execute` sandbox tool:
 
 <CardGroup cols={2}>
+
   <Card title="Check account" icon="user-check">
+
     REST route: `GET /account`. MCP call:
     `xquik.request('/api/v1/account')` to confirm account state, credits, and
     usage before a run.
+
   </Card>
   <Card title="Estimate extraction" icon="calculator">
+
     REST route: `POST /extractions/estimate`. MCP call:
     `xquik.request('/api/v1/extractions/estimate', { method: 'POST', body })`
     with the same body you plan to run.
+
   </Card>
   <Card title="Start extraction" icon="rocket">
+
     REST route: `POST /extractions`. MCP call:
     `xquik.request('/api/v1/extractions', { method: 'POST', body })` to create
     the background job.
+
   </Card>
   <Card title="Poll results" icon="refresh-cw">
+
     REST route: `GET /extractions/{id}`. MCP call:
     `xquik.request('/api/v1/extractions/ID')` to retrieve the job status and
     rows.
+
   </Card>
 </CardGroup>
 
@@ -777,49 +936,71 @@ The same workflow works through the MCP server using the `execute` sandbox tool:
 - "Show me the results of my last extraction."
 
 <Note>
-  File export (`GET /extractions/{id}/export`) is only available via the REST API. The MCP server returns results as structured JSON via `xquik.request()`.
+
+File export (`GET /extractions/{id}/export`) is only available via the REST API. The MCP server returns results as structured JSON via `xquik.request()`.
+
 </Note>
 
 ## Error handling
 
 <CardGroup cols={2}>
+
   <Card title="Resolve billing access" icon="credit-card">
+
     A `402` means the account cannot fund this extraction. Check the available
     balance and `payment_options`. An active plan is not required when enough
     credits remain.
+
   </Card>
   <Card title="Top up credits" icon="coins">
+
     `402 insufficient_credits` means the account cannot cover the requested
     extraction. Top up credits, wait for the next grant, or lower `resultsLimit`.
+
   </Card>
   <Card title="Fix toolType" icon="list-checks">
+
     `400 invalid_tool_type` means `toolType` is not one of the supported
     extraction tools. Check the [tool types](#tool-types-reference) reference.
+
   </Card>
   <Card title="Fix required fields" icon="wrench">
+
     `400 invalid_input` usually means the target field is missing or malformed.
     Match `targetTweetId`, `targetUsername`, `targetCommunityId`,
     `targetListId`, `targetSpaceId`, or `searchQuery` to the selected tool.
+
   </Card>
   <Card title="Retry read service" icon="refresh-cw">
+
     `502 x_api_unavailable` means the read service is temporarily unavailable.
     Retry with exponential backoff, then contact support if the error persists.
+
   </Card>
 </CardGroup>
 
 ## Next steps
 
 <CardGroup cols={2}>
+
   <Card title="Create extraction" icon="pickaxe" href="/api-reference/extractions/create">
+
     Full API reference with request/response schemas.
+
   </Card>
   <Card title="Estimate extraction" icon="calculator" href="/api-reference/extractions/twitter-scraping-cost-estimator">
+
     Cost estimation endpoint reference.
+
   </Card>
   <Card title="Export extraction" icon="download" href="/api-reference/extractions/export">
+
     CSV, XLSX, and Markdown export with column details.
+
   </Card>
   <Card title="Billing & usage" icon="credit-card" href="/guides/billing">
+
     Pricing, credits, and usage scenarios.
+
   </Card>
 </CardGroup>

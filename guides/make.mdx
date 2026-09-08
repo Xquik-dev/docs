@@ -2,7 +2,15 @@
 title: "Make.com Twitter integration for X API automation"
 sidebarTitle: "Make"
 description: "Build Make Twitter automation for tweet search, followers, scheduled posts, webhooks, and X API errors. Connect profiles, replies, and monitors through Make."
-keywords: ["make twitter automation", "make.com twitter integration", "make webhook", "twitter api integration", "tweet search automation", "twitter monitor webhook"]
+keywords:
+  [
+    "make twitter automation",
+    "make.com twitter integration",
+    "make webhook",
+    "twitter api integration",
+    "tweet search automation",
+    "twitter monitor webhook",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -61,24 +69,35 @@ This step-by-step structure keeps every module focused on one result.
 ## App shape
 
 <CardGroup cols={2}>
+
   <Card title="Connection" icon="key-round">
+
     Use an API key parameter named `apiKey` and inject it as `x-api-key`.
+
   </Card>
 
   <Card title="Base URL" icon="link">
+
     Call Xquik REST modules from `https://xquik.com/api/v1`.
+
   </Card>
 
   <Card title="Modules" icon="boxes">
+
     Start with Search Tweets, Get Tweet, Get User, Get Trends, Create Tweet, Create Extraction, Create Monitor, Create Webhook, and Make an API Call.
+
   </Card>
 
   <Card title="Triggers" icon="radio">
+
     Support Monitor Event instant webhooks and Extraction Completed polling.
+
   </Card>
 
   <Card title="Error handling" icon="circle-alert">
+
     Map `401`, `402`, `429`, and `5xx` to short scenario messages.
+
   </Card>
 </CardGroup>
 
@@ -150,20 +169,29 @@ Use one base request pattern for JSON modules:
 Handle status codes consistently:
 
 <CardGroup cols={2}>
+
   <Card title="401 authentication" icon="key-round">
+
     Authentication failed. Check the Xquik API key.
+
   </Card>
 
   <Card title="402 billing state" icon="credit-card">
+
     Subscription or credits required. Update billing in Xquik.
+
   </Card>
 
   <Card title="429 rate limit" icon="timer">
+
     Rate limited. Respect the `Retry-After` header before retrying.
+
   </Card>
 
   <Card title="5xx transient" icon="refresh-cw">
+
     Xquik service unavailable. Retry with exponential backoff.
+
   </Card>
 </CardGroup>
 
@@ -192,40 +220,59 @@ Use incomplete executions for recoverable failures that need operator review.
 ## Starter modules
 
 <CardGroup cols={3}>
+
   <Card title="Search tweets" icon="search">
+
     Search module. Call `GET /x/tweets/search` with `q`; use `cursor` for page loops and keep `limit` on bounded resumes.
+
   </Card>
 
   <Card title="Get tweet" icon="message-circle">
+
     Action module. Call `GET /x/tweets/{id}` with a tweet ID.
+
   </Card>
 
   <Card title="Get user" icon="user-round">
+
     Action module. Call `GET /x/users/{id}` with a user ID or username.
+
   </Card>
 
   <Card title="Get trends" icon="trending-up">
+
     Search module. Call `GET /x/trends` with optional `woeid` and `count`.
+
   </Card>
 
   <Card title="Create tweet" icon="send">
+
     Action module. Call `POST /x/tweets` with account, text, and optional public media URLs.
+
   </Card>
 
   <Card title="Create extraction" icon="boxes">
+
     Action module. Call `POST /extractions` with `toolType`, query fields, and result limit.
+
   </Card>
 
   <Card title="Create monitor" icon="radio">
+
     Action module. Call `POST /monitors` with username and event types.
+
   </Card>
 
   <Card title="Create webhook" icon="webhook">
+
     Action module. Call `POST /webhooks` with callback URL and event types.
+
   </Card>
 
   <Card title="Make an API call" icon="terminal">
+
     Universal module. Accept any `/api/v1` path as an escape hatch for endpoints not yet modeled.
+
   </Card>
 </CardGroup>
 
@@ -258,44 +305,65 @@ Add a bounded-pull variant that sends `limit`. If `body.has_next_page` is `true`
 Make response handling lets search modules `iterate` over `body.tweets` while `body` stays available for output, wrapper, and pagination fields. Emit tweet bundles from `item`, then carry setup IDs, write status, and page cursors in scenario state when downstream modules need another request. Use snake_case keys for data-store rows even when the API response uses camelCase.
 
 <CardGroup cols={2}>
+
   <Card title="Tweet search page" icon="search">
+
     Store `q`, each `tweet_id`, `text`, `author_username`, `created_at`, `has_next_page`, and `next_cursor`.
+
   </Card>
 
   <Card title="User profile rows" icon="users">
+
     Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, and `profile_picture`. For user-list modules, carry `has_next_page` and `next_cursor`.
+
   </Card>
 
   <Card title="Trend rows" icon="trending-up">
+
     Store each trend `name`, `rank`, `query`, and `description`; keep `body.count`, `body.woeid`, and the selected region in scenario state.
+
   </Card>
 
   <Card title="Tweet or reply write" icon="send">
+
     Send a unique `Idempotency-Key`. Store the returned action. Poll `status_url` while `terminal` is false. Retry only when `safe_to_retry` is true, using a new key.
+
   </Card>
 
   <Card title="Media attachments" icon="image">
+
     For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`. For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.
+
   </Card>
 
   <Card title="Monitor and webhook setup" icon="radio">
+
     Store monitor `id`, `username`, `xUserId`, `eventTypes`, `isActive`, `nextBillingAt`, webhook `id`, `url`, `eventTypes`, and the one-time `secret`. For Make storage rows, map production `deliveryId` to `delivery_id` for receiver retry de-dupe and `streamEventId` to `stream_event_id` when one monitor event should process once across endpoint changes.
+
   </Card>
 
   <Card title="Extraction jobs" icon="database">
+
     Store `id`, `tool_type`, and `status` from `POST /extractions`; poll `GET /extractions/{id}`, then carry `has_more` and `next_cursor`.
+
   </Card>
 
   <Card title="Webhook event dedupe" icon="fingerprint">
+
     Store `deliveryId` for endpoint-level retry dedupe and `streamEventId` when one monitor event must process once across receiver changes.
+
   </Card>
 
   <Card title="Stored event replay" icon="activity">
+
     Call `GET /api/v1/events` with `cursor` when a scenario needs replay. Map `id`, `monitorId`, `monitorType`, `occurredAt`, `hasMore`, and `nextCursor` to `event_id`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, and `next_cursor`.
+
   </Card>
 
   <Card title="Receiver acceptance" icon="copy-check">
+
     Return `2xx` after accepting duplicate `deliveryId` or `streamEventId`; keep endpoint signing values, raw request body, raw signature, and full headers out of scenario logs, data stores, Slack messages, CRM rows, and retry queues.
+
   </Card>
 </CardGroup>
 
@@ -330,36 +398,53 @@ Then create or confirm the monitor:
 Map webhook output fields for downstream modules:
 
 <CardGroup cols={3}>
+
   <Card title="Event type" icon="bell">
+
     Map `eventType` to route `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.retweet` events.
+
   </Card>
 
   <Card title="Delivery ID" icon="fingerprint">
+
     Map `deliveryId` as the per-endpoint idempotency key for retries.
+
   </Card>
 
   <Card title="Stream event ID" icon="link">
+
     Map `streamEventId` when one monitor event should process once across endpoint changes.
+
   </Card>
 
   <Card title="Occurred at" icon="calendar-clock">
+
     Map `occurredAt` as the event timestamp.
+
   </Card>
 
   <Card title="Username" icon="at-sign">
+
     Map `username` for account monitor events.
+
   </Card>
 
   <Card title="Tweet ID" icon="hash">
+
     Map `data.id` as the tweet identifier.
+
   </Card>
 
   <Card title="Text" icon="type">
+
     Map `data.text` as the tweet body.
+
   </Card>
 
   <Card title="Author username" icon="user-round">
+
     Map `data.author.userName` when present. Use `username` as the monitored-account fallback.
+
   </Card>
 </CardGroup>
 
@@ -398,64 +483,93 @@ Fetch the job detail with `GET /extractions/{id}` and loop through `nextCursor` 
 ### Social listening to Slack
 
 <CardGroup cols={2}>
+
   <Card title="Monitor event trigger" icon="radio">
+
     Start from the Xquik Monitor Event instant trigger for `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.retweet`.
+
   </Card>
 
   <Card title="Topic filter" icon="funnel">
+
     Filter on `eventType`, `username`, and `data.text` before routing alerts.
+
   </Card>
 
   <Card title="Slack message" icon="message-square">
+
     Create a Slack message from `data.text`, `data.id`, `data.author.userName`, and `occurredAt`.
+
   </Card>
 
   <Card title="Dedupe store" icon="database">
+
     Upsert by `deliveryId` per endpoint. Use `streamEventId` when one monitor event should fan out once across endpoint changes.
+
   </Card>
 </CardGroup>
 
 ### Daily topic research to sheets
 
 <CardGroup cols={2}>
+
   <Card title="Schedule trigger" icon="calendar-clock">
+
     Run the scenario on a daily schedule for repeatable topic research.
+
   </Card>
 
   <Card title="Search tweets" icon="search">
+
     Call Xquik Search Tweets with `q`; use `cursor` for page loops and keep `limit` on bounded resumes.
+
   </Card>
 
   <Card title="Iterator" icon="list">
+
     Iterate over `tweets` and pass one tweet bundle to each downstream module.
+
   </Card>
 
   <Card title="Sheet row" icon="table">
+
     Append `id`, `author.username`, `text`, `createdAt`, `likeCount`, and `retweetCount`.
+
   </Card>
 </CardGroup>
 
 ### Bulk extraction to CRM
 
 <CardGroup cols={3}>
+
   <Card title="Start run" icon="play">
+
     Use a scheduler or manual trigger to start the bulk extraction.
+
   </Card>
 
   <Card title="Create extraction" icon="boxes">
+
     Call Xquik Create Extraction with `toolType` and the required target fields.
+
   </Card>
 
   <Card title="Wait or poll" icon="timer">
+
     Wait before polling, or reuse the Extraction Completed polling trigger.
+
   </Card>
 
   <Card title="Get extraction" icon="search">
+
     Call `GET /extractions/{id}` until `job.status` is `completed` or `failed`.
+
   </Card>
 
   <Card title="CRM upsert" icon="database">
+
     Upsert by user `id`, then follow `hasMore` and `nextCursor` for additional result pages.
+
   </Card>
 </CardGroup>
 

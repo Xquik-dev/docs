@@ -2,7 +2,16 @@
 title: "Go SDK for tweet search, exports & X automation"
 sidebarTitle: "Go SDK"
 description: "Use the Xquik Go SDK to search tweets, export JSON Lines, CSV, or XLSX, post media tweets, upload media, send DMs, and run Go X API workers. See code examples."
-keywords: ["Go SDK", "Golang Twitter scraper SDK", "X API Go", "Go client", "tweet search SDK", "CSV export", "XLSX export"]
+keywords:
+  [
+    "Go SDK",
+    "Golang Twitter scraper SDK",
+    "X API Go",
+    "Go client",
+    "tweet search SDK",
+    "CSV export",
+    "XLSX export",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -11,10 +20,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Use typed Go requests to search tweets and export followers or replies. Send JSON Lines, CSV, or XLSX files to workers, queues, and analysts.
 
-| Go task | SDK call | Save |
-| --- | --- | --- |
-| Search tweets | `client.X.Tweets.Search` | `NextCursor` |
-| Export followers | `client.Extractions.Run` | `job.ID` |
+| Go task          | SDK call                 | Save         |
+| ---------------- | ------------------------ | ------------ |
+| Search tweets    | `client.X.Tweets.Search` | `NextCursor` |
+| Export followers | `client.Extractions.Run` | `job.ID`     |
 
 ## Install
 
@@ -81,7 +90,7 @@ func main() {
 
 ## Workflow: search tweets to JSON Lines, CSV, or XLSX
 
-This job is for backend workers that need searchable tweet data in a stable handoff format for queues, data lakes, analyst CSV files, or XLSX workbooks. It calls `GET /x/tweets/search` through `client.X.Tweets.Search`, requests the newest matching tweets, and writes each returned tweet as one JSON object per line.
+Search newest tweets with `client.X.Tweets.Search` through `GET /x/tweets/search`. Write each tweet as a JSON line for queues, data lakes, CSV, or XLSX.
 
 ```go
 package main
@@ -140,23 +149,36 @@ func main() {
 The example builds an `XTweetSearchParams` request so the Go fields stay aligned with `GET /x/tweets/search`. The generated params map directly to the REST endpoint:
 
 <CardGroup cols={2}>
+
   <Card title="Q" icon="search">
+
     Go field `Q` maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.
+
   </Card>
   <Card title="Limit" icon="list">
+
     Go field `Limit` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `page.HasNextPage` is true, keep the same `Q`, filters, `QueryType`, and `Limit` when you continue with `page.NextCursor`.
+
   </Card>
   <Card title="Cursor" icon="arrow-right">
+
     Go field `Cursor` maps to REST `cursor`. Pass the opaque cursor from `NextCursor` to request the next page.
+
   </Card>
   <Card title="SinceTime" icon="clock">
+
     Go field `SinceTime` maps to REST `sinceTime`. Use the inclusive ISO bound on every page.
+
   </Card>
   <Card title="UntilTime" icon="clock">
+
     Go field `UntilTime` maps to REST `untilTime`. Use the exclusive ISO bound on every page.
+
   </Card>
   <Card title="QueryType" icon="sliders-horizontal">
+
     Go field `QueryType` maps to REST `queryType`. Use `Latest` for chronological results or `Top` for engagement-ranked results.
+
   </Card>
 </CardGroup>
 
@@ -165,14 +187,21 @@ The example builds an `XTweetSearchParams` request so the Go fields stay aligned
 `client.X.Tweets.Search` returns `PaginatedTweets`:
 
 <CardGroup cols={2}>
+
   <Card title="Tweets" icon="message-square-text">
+
     JSON field `tweets`. Contains tweet records with `ID`, `Text`, `Author`, `CreatedAt`, `LikeCount`, `ReplyCount`, `RetweetCount`, `QuoteCount`, `BookmarkCount`, `ViewCount`, and `IsNoteTweet` when available.
+
   </Card>
   <Card title="HasNextPage" icon="circle-check">
+
     Go field `HasNextPage`. JSON field `has_next_page`. Tells your worker whether another page exists.
+
   </Card>
   <Card title="NextCursor" icon="arrow-right">
+
     JSON field `next_cursor`. Store it only when `page.HasNextPage` is true. For bounded pulls that return fewer tweets than `Limit`, pass it back as `Cursor` with the same query, filters, `QueryType`, and `Limit`.
+
   </Card>
 </CardGroup>
 
@@ -183,7 +212,9 @@ Write `Tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data l
 Use this workflow when a Go worker needs an owned follower list for a CRM import, warehouse load, analyst CSV file, XLSX workbook, or resumable JSON handoff. It calls `POST /extractions/estimate` through `client.Extractions.EstimateCost`, creates the job with `client.Extractions.Run`, reads saved rows with `client.Extractions.Get`, and downloads files with `client.Extractions.ExportResults`.
 
 <Info>
+
 `client.Extractions.Run` returns the queued `202 Accepted` receipt from `POST /extractions`: REST `id`, `toolType`, and `status: "running"` as Go `job.ID`, `job.ToolType`, and `job.Status`. Store `job.ID` immediately, then poll `client.Extractions.Get` before reading pages or calling `client.Extractions.ExportResults`. Credit reservation happens after the job starts. If available credits changed since `EstimateCost`, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
+
 </Info>
 
 ```go

@@ -3,15 +3,32 @@ title: "Twitter API errors & X write action status"
 sidebarTitle: Get write action status
 description: "Handle Twitter API errors by polling tweet, reply, DM, follow, like, repost, media, profile, and community writes. Check results, billing, and safe retries."
 api: "GET /x/write-actions/{id}"
-keywords: ["Twitter API errors", "Twitter API error handling", "write action status", "error message", "response codes", "rate limit", "idempotency", "pending write", "safe retry", "billing status", "X write API"]
+keywords:
+  [
+    "Twitter API errors",
+    "Twitter API error handling",
+    "write action status",
+    "error message",
+    "response codes",
+    "rate limit",
+    "idempotency",
+    "pending write",
+    "safe retry",
+    "billing status",
+    "X write API",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="200" id="response-x-write-get-write-action-status-200">
+
     ```json
     {
       "object": "x_write_action",
@@ -26,9 +43,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "pollAfterMs": null
     }
     ```
+
   </Tab>
 
   <Tab title="202" id="response-x-write-get-write-action-status-202">
+
     ```json
     {
       "object": "x_write_action",
@@ -43,27 +62,33 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "pollAfterMs": 2000
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-x-write-get-write-action-status-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
+
   </Tab>
 
   <Tab title="404" id="response-x-write-get-write-action-status-404">
+
     ```json
     {
       "error": "not_found",
       "message": "Resource not found."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-x-write-get-write-action-status-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -71,8 +96,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "retryAfter": 60
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
@@ -92,8 +119,10 @@ Review X's [response codes and errors](https://docs.x.com/x-api/fundamentals/res
 Xquik's write status record uses different fields.
 
 <Note>
-  Trust `terminal`, `safeToRetry`, and `nextAction`. Never infer retry safety
-  from an HTTP status or error name alone.
+
+Trust `terminal`, `safeToRetry`, and `nextAction`. Never infer retry safety
+from an HTTP status or error name alone.
+
 </Note>
 
 ## Agent algorithm
@@ -112,14 +141,14 @@ action, target, and payload. The replay returns the same durable action.
 
 ## Lifecycle
 
-| Status | Terminal | Required behavior |
-| --- | --- | --- |
-| `accepted` | No | Poll. Dispatch has not completed. |
-| `dispatching` | No | Poll. Do not submit another write. |
-| `pending_confirmation` | No | Poll. The write may already exist. |
-| `success` | Yes | Store the result and settled billing. |
-| `failed` | Yes | Follow `safeToRetry` and `nextAction`. |
-| `expired` | Yes | Verify the result when dispatch may have occurred. |
+| Status                 | Terminal | Required behavior                                  |
+| ---------------------- | -------- | -------------------------------------------------- |
+| `accepted`             | No       | Poll. Dispatch has not completed.                  |
+| `dispatching`          | No       | Poll. Do not submit another write.                 |
+| `pending_confirmation` | No       | Poll. The write may already exist.                 |
+| `success`              | Yes      | Store the result and settled billing.              |
+| `failed`               | Yes      | Follow `safeToRetry` and `nextAction`.             |
+| `expired`              | Yes      | Verify the result when dispatch may have occurred. |
 
 Active actions return `202`, `Location`, and `Retry-After`. Terminal actions
 return `200` from this endpoint.
@@ -134,17 +163,14 @@ curl https://xquik.com/api/v1/x/write-actions/42 \
 ```
 
 ```javascript Node.js
-const response = await fetch(
-  "https://xquik.com/api/v1/x/write-actions/42",
-  { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
-);
+const response = await fetch("https://xquik.com/api/v1/x/write-actions/42", {
+  headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+});
 const action = await response.json();
 
 if (!action.terminal) {
   const delayMs = action.pollAfterMs ?? 2000;
-  process.stdout.write(
-    JSON.stringify({ delayMs, next: action.statusUrl }) + "\n",
-  );
+  process.stdout.write(JSON.stringify({ delayMs, next: action.statusUrl }) + "\n");
 } else if (action.safeToRetry) {
   process.stdout.write("Ask for approval, then retry with a new key.\n");
 } else {
@@ -174,84 +200,187 @@ else:
 ## Headers
 
 <ParamField header="x-api-key" type="string">
-  Send your Xquik API key in this header.
+
+Send your Xquik API key in this header.
+
 </ParamField>
 
 <ParamField header="Authorization" type="string">
-  Send an OAuth 2.1 bearer token instead of `x-api-key`.
+
+Send an OAuth 2.1 bearer token instead of `x-api-key`.
+
 </ParamField>
 
 ## Path parameters
 
 <ParamField path="id" type="string" required>
-  Durable action ID returned by the original write.
+
+Durable action ID returned by the original write.
+
 </ParamField>
 
 ## Response
 
 <Tabs>
+
   <Tab title="200 Terminal">
+
     Polling is complete. Store `result` and settled `billing`. Follow
     `safeToRetry` and `nextAction` before any new attempt.
+
   </Tab>
   <Tab title="202 Active">
+
     Poll `statusUrl` after `Retry-After` or `pollAfterMs`. Never submit another
     write while `terminal` is `false`.
+
   </Tab>
   <Tab title="401 Unauthenticated">
+
     Fix the authentication credentials. Keep the original write record.
+
   </Tab>
   <Tab title="404 Not found">
+
     Check the action ID and environment. Never resubmit the original write.
+
   </Tab>
   <Tab title="429 Rate limited">
+
     Wait for `Retry-After`. Poll the same action again. Never resend the write.
+
   </Tab>
 </Tabs>
 
-<ResponseField name="object" type="string">Always `x_write_action`.</ResponseField>
-<ResponseField name="id" type="string">Durable action ID.</ResponseField>
-<ResponseField name="writeActionId" type="string">This field aliases `id`.</ResponseField>
-<ResponseField name="action" type="string">Exact write operation.</ResponseField>
-<ResponseField name="status" type="string">Current lifecycle status.</ResponseField>
-<ResponseField name="terminal" type="boolean">This field is `true` when polling can stop.</ResponseField>
-<ResponseField name="retryable" type="boolean">This field is `true` when a later attempt could succeed.</ResponseField>
-<ResponseField name="safeToRetry" type="boolean">This field is `true` when a new attempt is safe.</ResponseField>
-<ResponseField name="statusUrl" type="string">Relative polling URL.</ResponseField>
-<ResponseField name="pollAfterMs" type="number | null">Recommended polling delay.</ResponseField>
-<ResponseField name="charged" type="boolean">`true` after billing settles as charged.</ResponseField>
-<ResponseField name="chargedCredits" type="string">Settled credits charged.</ResponseField>
-<ResponseField name="billing" type="object">Planned and settled billing state.</ResponseField>
-<ResponseField name="request" type="object">Stable hash and exact sanitized payload.</ResponseField>
-<ResponseField name="account" type="object">Connected account selected for this write.</ResponseField>
-<ResponseField name="target" type="object | null">Target type and ID.</ResponseField>
-<ResponseField name="targetId" type="string | null">Target ID alias.</ResponseField>
-<ResponseField name="result" type="object | null">Confirmed result or desired state.</ResponseField>
-<ResponseField name="nextAction" type="object | null">Required poll, retry, or verification step.</ResponseField>
-<ResponseField name="requestHash" type="string">Stable request fingerprint.</ResponseField>
-<ResponseField name="requestId" type="string">Correlation ID echoed in `X-Request-Id`.</ResponseField>
-<ResponseField name="idempotent" type="boolean">`true` when this response replays an action.</ResponseField>
-<ResponseField name="error" type="string">Machine-readable error code.</ResponseField>
-<ResponseField name="message" type="string">Actionable status or error message.</ResponseField>
-<ResponseField name="sendDispatched" type="boolean">This field is `true` after dispatch.</ResponseField>
-<ResponseField name="sendDispatchedAt" type="string">ISO 8601 dispatch time.</ResponseField>
-<ResponseField name="createdAt" type="string">ISO 8601 creation time.</ResponseField>
-<ResponseField name="updatedAt" type="string">ISO 8601 latest update time.</ResponseField>
-<ResponseField name="completedAt" type="string">ISO 8601 terminal time.</ResponseField>
-<ResponseField name="expiresAt" type="string">Nonterminal resolution deadline.</ResponseField>
-<ResponseField name="confirmedAt" type="string">ISO 8601 confirmation time.</ResponseField>
-<ResponseField name="confirmationCheckedAt" type="string">ISO 8601 latest confirmation check.</ResponseField>
-<ResponseField name="confirmationAttempts" type="number">Confirmation attempt count.</ResponseField>
-<ResponseField name="tweetId" type="string">Confirmed tweet ID when available.</ResponseField>
-<ResponseField name="messageId" type="string">Confirmed direct message ID when available.</ResponseField>
-<ResponseField name="mediaId" type="string">Confirmed media ID when available.</ResponseField>
-<ResponseField name="mediaUrl" type="string">Public media URL when available.</ResponseField>
-<ResponseField name="communityId" type="string">Confirmed community ID when available.</ResponseField>
-<ResponseField name="communityName" type="string">Confirmed community name when available.</ResponseField>
-<ResponseField name="resultId" type="string">Result ID alias.</ResponseField>
-<ResponseField name="media" type="object">Media details when used.</ResponseField>
-<ResponseField name="details" type="object">Structured recovery context.</ResponseField>
-<ResponseField name="success" type="boolean">This field is `true` when status equals `success`.</ResponseField>
+<ResponseField name="object" type="string">
+  Always `x_write_action`.
+</ResponseField>
+<ResponseField name="id" type="string">
+  Durable action ID.
+</ResponseField>
+<ResponseField name="writeActionId" type="string">
+  This field aliases `id`.
+</ResponseField>
+<ResponseField name="action" type="string">
+  Exact write operation.
+</ResponseField>
+<ResponseField name="status" type="string">
+  Current lifecycle status.
+</ResponseField>
+<ResponseField name="terminal" type="boolean">
+  This field is `true` when polling can stop.
+</ResponseField>
+<ResponseField name="retryable" type="boolean">
+  This field is `true` when a later attempt could succeed.
+</ResponseField>
+<ResponseField name="safeToRetry" type="boolean">
+  This field is `true` when a new attempt is safe.
+</ResponseField>
+<ResponseField name="statusUrl" type="string">
+  Relative polling URL.
+</ResponseField>
+<ResponseField name="pollAfterMs" type="number | null">
+  Recommended polling delay.
+</ResponseField>
+<ResponseField name="charged" type="boolean">
+  `true` after billing settles as charged.
+</ResponseField>
+<ResponseField name="chargedCredits" type="string">
+  Settled credits charged.
+</ResponseField>
+<ResponseField name="billing" type="object">
+  Planned and settled billing state.
+</ResponseField>
+<ResponseField name="request" type="object">
+  Stable hash and exact sanitized payload.
+</ResponseField>
+<ResponseField name="account" type="object">
+  Connected account selected for this write.
+</ResponseField>
+<ResponseField name="target" type="object | null">
+  Target type and ID.
+</ResponseField>
+<ResponseField name="targetId" type="string | null">
+  Target ID alias.
+</ResponseField>
+<ResponseField name="result" type="object | null">
+  Confirmed result or desired state.
+</ResponseField>
+<ResponseField name="nextAction" type="object | null">
+  Required poll, retry, or verification step.
+</ResponseField>
+<ResponseField name="requestHash" type="string">
+  Stable request fingerprint.
+</ResponseField>
+<ResponseField name="requestId" type="string">
+  Correlation ID echoed in `X-Request-Id`.
+</ResponseField>
+<ResponseField name="idempotent" type="boolean">
+  `true` when this response replays an action.
+</ResponseField>
+<ResponseField name="error" type="string">
+  Machine-readable error code.
+</ResponseField>
+<ResponseField name="message" type="string">
+  Actionable status or error message.
+</ResponseField>
+<ResponseField name="sendDispatched" type="boolean">
+  This field is `true` after dispatch.
+</ResponseField>
+<ResponseField name="sendDispatchedAt" type="string">
+  ISO 8601 dispatch time.
+</ResponseField>
+<ResponseField name="createdAt" type="string">
+  ISO 8601 creation time.
+</ResponseField>
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 latest update time.
+</ResponseField>
+<ResponseField name="completedAt" type="string">
+  ISO 8601 terminal time.
+</ResponseField>
+<ResponseField name="expiresAt" type="string">
+  Nonterminal resolution deadline.
+</ResponseField>
+<ResponseField name="confirmedAt" type="string">
+  ISO 8601 confirmation time.
+</ResponseField>
+<ResponseField name="confirmationCheckedAt" type="string">
+  ISO 8601 latest confirmation check.
+</ResponseField>
+<ResponseField name="confirmationAttempts" type="number">
+  Confirmation attempt count.
+</ResponseField>
+<ResponseField name="tweetId" type="string">
+  Confirmed tweet ID when available.
+</ResponseField>
+<ResponseField name="messageId" type="string">
+  Confirmed direct message ID when available.
+</ResponseField>
+<ResponseField name="mediaId" type="string">
+  Confirmed media ID when available.
+</ResponseField>
+<ResponseField name="mediaUrl" type="string">
+  Public media URL when available.
+</ResponseField>
+<ResponseField name="communityId" type="string">
+  Confirmed community ID when available.
+</ResponseField>
+<ResponseField name="communityName" type="string">
+  Confirmed community name when available.
+</ResponseField>
+<ResponseField name="resultId" type="string">
+  Result ID alias.
+</ResponseField>
+<ResponseField name="media" type="object">
+  Media details when used.
+</ResponseField>
+<ResponseField name="details" type="object">
+  Structured recovery context.
+</ResponseField>
+<ResponseField name="success" type="boolean">
+  This field is `true` when status equals `success`.
+</ResponseField>
 
 ```json
 {

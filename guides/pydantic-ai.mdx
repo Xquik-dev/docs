@@ -31,14 +31,14 @@ the Twitter API routes through 3 MCP tools: `docs`, `search`, and `execute`.
 
 Use each strength at the correct boundary.
 
-| Boundary | Pydantic AI control | Twitter agent benefit |
-| --- | --- | --- |
-| MCP connection | `MCP` capability | Keep credentials and tracing in your process |
-| Final response | Pydantic `output_type` | Reject malformed tweet rows and cursors |
-| Tool catalog | `.defer_loading()` | Hide unused MCP tools until discovery |
-| Write actions | `.approval_required()` | Pause before posting, replying, or following |
-| MCP naming | `.prefixed()` | Prevent tool collisions across servers |
-| Connection lifecycle | `async with agent` | Reuse one MCP session across related calls |
+| Boundary             | Pydantic AI control    | Twitter agent benefit                        |
+| -------------------- | ---------------------- | -------------------------------------------- |
+| MCP connection       | `MCP` capability       | Keep credentials and tracing in your process |
+| Final response       | Pydantic `output_type` | Reject malformed tweet rows and cursors      |
+| Tool catalog         | `.defer_loading()`     | Hide unused MCP tools until discovery        |
+| Write actions        | `.approval_required()` | Pause before posting, replying, or following |
+| MCP naming           | `.prefixed()`          | Prevent tool collisions across servers       |
+| Connection lifecycle | `async with agent`     | Reuse one MCP session across related calls   |
 
 Use one typed agent for tweet search, profile enrichment, or follower exports.
 Use another agent for monitor processing. Keep each agent focused.
@@ -215,37 +215,54 @@ Conversation text cannot safely resume a Python Twitter API job. Persist the
 validated fields required by the next worker.
 
 <CardGroup cols={2}>
+
   <Card title="Tweet search" icon="search">
+
     Store the query, route, tweet IDs, authors, `created`, URLs, `has_more`,
     `next_cursor`, and stop reason.
+
   </Card>
   <Card title="Profile lookup" icon="user">
+
     Store `user_id`, `username`, `name`, `description`, `followers`,
     `verified`, and `profile_picture`.
+
   </Card>
   <Card title="Follower export" icon="download">
+
     Store the source user, extraction ID, status, poll URL, requested format,
     and export completion state.
+
   </Card>
   <Card title="Reply collection" icon="message-circle">
+
     Store the root tweet ID, reply IDs, parent IDs, cursor state, and coverage
     diagnostics. Keep nested replies separate.
+
   </Card>
   <Card title="Monitor replay" icon="radio">
+
     Store `monitor_id`, `event_id`, `type`, `occurred_at`, `has_more`, and
     `next_cursor`. Send the next cursor as `cursor`.
+
   </Card>
   <Card title="Webhook delivery" icon="webhook">
+
     Store `webhook_id`, `delivery_id`, and `stream_event_id`. Keep the webhook
     secret in a secret manager.
+
   </Card>
   <Card title="Write receipt" icon="send">
+
     Store `tweet_id` or `write_action_id`, `status`, `charged_credits`, `poll`,
     and the idempotency key.
+
   </Card>
   <Card title="Media attachment" icon="image">
+
     Use public URLs in `media` for tweets. Reserve uploaded `media_id` values
     for direct messages.
+
   </Card>
 </CardGroup>
 
@@ -353,14 +370,14 @@ Store the approval decision and tool call ID with the resulting action receipt.
 
 Treat error messages as typed error handling inputs.
 
-| Status | Meaning | Pydantic AI decision |
-| --- | --- | --- |
-| `400` | Invalid parameters or unsupported fields | Correct the request before retrying |
-| `401` | Invalid Xquik authentication | Stop and replace the credential |
-| `402` | Subscription or credit action required | Report choices and request confirmation |
-| `424` | Dependency failure or incomplete replies | Preserve partial rows and inspect retryability |
-| `429` | Twitter API rate limit reached | Respect `error.retry_after` and back off |
-| `502` | Temporary upstream failure | Retry safe reads with a bounded policy |
+| Status | Meaning                                  | Pydantic AI decision                           |
+| ------ | ---------------------------------------- | ---------------------------------------------- |
+| `400`  | Invalid parameters or unsupported fields | Correct the request before retrying            |
+| `401`  | Invalid Xquik authentication             | Stop and replace the credential                |
+| `402`  | Subscription or credit action required   | Report choices and request confirmation        |
+| `424`  | Dependency failure or incomplete replies | Preserve partial rows and inspect retryability |
+| `429`  | Twitter API rate limit reached           | Respect `error.retry_after` and back off       |
+| `502`  | Temporary upstream failure               | Retry safe reads with a bounded policy         |
 
 A `402` never authorizes a purchase. Show the available payment choices. Wait
 for explicit confirmation before any supported account checkout action.
@@ -407,13 +424,13 @@ approval predicate after adding a prefix.
 MCP and REST solve different integration problems. MCP adds a discoverable tool
 layer over documented Twitter API routes.
 
-| Requirement | Choose | Reason |
-| --- | --- | --- |
-| A model selects tweet or profile operations | Pydantic AI MCP | The agent discovers `docs`, `search`, and `execute` |
-| Application code calls one known route | REST API | The request stays deterministic |
-| A human must review an X action | Pydantic AI MCP | Deferred tool approval pauses execution |
-| A scheduled follower export runs without a model | REST API | No model decision is required |
-| A typed agent hands work to Python | Pydantic AI MCP | `output_type` validates the handoff |
+| Requirement                                      | Choose          | Reason                                              |
+| ------------------------------------------------ | --------------- | --------------------------------------------------- |
+| A model selects tweet or profile operations      | Pydantic AI MCP | The agent discovers `docs`, `search`, and `execute` |
+| Application code calls one known route           | REST API        | The request stays deterministic                     |
+| A human must review an X action                  | Pydantic AI MCP | Deferred tool approval pauses execution             |
+| A scheduled follower export runs without a model | REST API        | No model decision is required                       |
+| A typed agent hands work to Python               | Pydantic AI MCP | `output_type` validates the handoff                 |
 
 Xquik validates the sandbox route, method, query, and body. Pydantic validates
 the final typed handoff. Keep both layers. Each layer enforces a separate
@@ -423,11 +440,11 @@ boundary.
 
 These versions were checked on August 3, 2026.
 
-| Package | Checked version | Supported range in this guide |
-| --- | --- | --- |
-| Python | 3.10 or later | `>=3.10` |
-| `pydantic-ai-slim` | 2.22.0 | `>=2.22,<2.23` |
-| `fastmcp-slim` | 3.4.5 | `>=3.3,<4` through the `mcp` extra |
+| Package            | Checked version | Supported range in this guide      |
+| ------------------ | --------------- | ---------------------------------- |
+| Python             | 3.10 or later   | `>=3.10`                           |
+| `pydantic-ai-slim` | 2.22.0          | `>=2.22,<2.23`                     |
+| `fastmcp-slim`     | 3.4.5           | `>=3.3,<4` through the `mcp` extra |
 
 [Pydantic AI issue 6661](https://github.com/pydantic/pydantic-ai/issues/6661)
 tracks FastMCP 4 and MCP SDK v2 support. Use the stable FastMCP 3.x line until

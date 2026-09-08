@@ -1,31 +1,27 @@
-import { getChecksSorted, runChecks } from 'afdocs';
-import { loadConfig } from 'afdocs/helpers';
-import type {
-  AgentDocsConfig,
-  CheckResult,
-  RunnerOptions,
-} from 'afdocs';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { getChecksSorted, runChecks } from "afdocs";
+import { loadConfig } from "afdocs/helpers";
+import type { AgentDocsConfig, CheckResult, RunnerOptions } from "afdocs";
+import { beforeAll, describe, expect, it } from "vitest";
 
 const LIVE_AGENT_DOCS_TIMEOUT_MS = 19_000;
 
 function runnerOptions(config: AgentDocsConfig): Partial<RunnerOptions> {
   const inferredStrategy =
     config.pages && config.pages.length > 0 && !config.options?.samplingStrategy
-      ? 'curated'
+      ? "curated"
       : undefined;
 
   return {
-    checkIds: config.checks,
-    skipCheckIds: config.skipChecks,
+    ...(config.checks === undefined ? {} : { checkIds: config.checks }),
+    ...(config.skipChecks === undefined ? {} : { skipCheckIds: config.skipChecks }),
     ...config.options,
     ...(inferredStrategy ? { samplingStrategy: inferredStrategy } : {}),
-    curatedPages: config.pages,
+    ...(config.pages === undefined ? {} : { curatedPages: config.pages }),
   };
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === 'object' && !Array.isArray(value)
+  return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : undefined;
 }
@@ -40,29 +36,21 @@ function asRecordArray(value: unknown): Record<string, unknown>[] {
 }
 
 function asNumber(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value)
-    ? value
-    : undefined;
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
 function asString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.length > 0 ? value : undefined;
+  return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
 function formatSize(value: number): string {
-  return value >= 1_000
-    ? `${Math.round(value / 1_000)}K chars`
-    : `${value} chars`;
+  return value >= 1_000 ? `${Math.round(value / 1_000)}K chars` : `${value} chars`;
 }
 
 function formatPageIssue(page: Record<string, unknown>): string {
-  const parts = [
-    asString(page.status),
-    asString(page.classification),
-    asString(page.error),
-  ];
+  const parts = [asString(page.status), asString(page.classification), asString(page.error)];
   if (page.found === false) {
-    parts.push('missing directive');
+    parts.push("missing directive");
   }
 
   const positionPercent = asNumber(page.positionPercent);
@@ -85,58 +73,52 @@ function formatPageIssue(page: Record<string, unknown>): string {
     parts.push(formatSize(characters));
   }
 
-  return (
-    parts.filter((part) => part && part !== 'pass').join(', ') ||
-    'content differs'
-  );
+  return parts.filter((part) => part && part !== "pass").join(", ") || "content differs";
 }
 
 function formatPageDetails(result: CheckResult): string[] {
   const details = asRecord(result.details);
   const pageResults = asRecordArray(details?.pageResults);
-  const issuePages = pageResults.filter((page) => page.status !== 'pass');
+  const issuePages = pageResults.filter((page) => page.status !== "pass");
 
   return issuePages.map((page) => {
     const url =
-      asString(page.url) ??
-      asString(page.mdUrl) ??
-      asString(page.testUrl) ??
-      'unknown URL';
+      asString(page.url) ?? asString(page.mdUrl) ?? asString(page.testUrl) ?? "unknown URL";
     return `  - ${url}: ${formatPageIssue(page)}`;
   });
 }
 
 function formatResult(result: CheckResult): string {
   const lines = [`[${result.status}] ${result.message}`];
-  if (result.status !== 'pass' && result.status !== 'skip') {
+  if (result.status !== "pass" && result.status !== "skip") {
     lines.push(...formatPageDetails(result));
   }
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 function isExpectedSectionHeaderSkip(result: CheckResult): boolean {
   return (
-    result.status === 'skip' &&
+    result.status === "skip" &&
     result.message.endsWith(
-      'page(s) with tabs found, but no section headers inside tab panels to evaluate',
+      "page(s) with tabs found, but no section headers inside tab panels to evaluate",
     )
   );
 }
 
 function acceptsResult(checkId: string, result: CheckResult): boolean {
-  if (result.status === 'pass') {
+  if (result.status === "pass") {
     return true;
   }
-  if (checkId === 'auth-alternative-access') {
-    return result.status === 'skip';
+  if (checkId === "auth-alternative-access") {
+    return result.status === "skip";
   }
-  if (checkId === 'section-header-quality') {
+  if (checkId === "section-header-quality") {
     return isExpectedSectionHeaderSkip(result);
   }
   return false;
 }
 
-describe('Agent-Friendly Documentation', (): void => {
+describe("Agent-Friendly Documentation", (): void => {
   let configuredCheckIds = new Set<string>();
   let resultsByCheck: Map<string, CheckResult> | undefined;
 
@@ -145,9 +127,7 @@ describe('Agent-Friendly Documentation', (): void => {
     configuredCheckIds = new Set(config.checks);
     const report = await runChecks(config.url, runnerOptions(config));
     resultsByCheck = new Map(
-      report.results.map(
-        (result): [string, CheckResult] => [result.id, result],
-      ),
+      report.results.map((result): [string, CheckResult] => [result.id, result]),
     );
   }, LIVE_AGENT_DOCS_TIMEOUT_MS);
 

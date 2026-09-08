@@ -10,9 +10,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="200" id="response-x-batch-users-200">
+
     ```json
     {
       "users": [
@@ -33,45 +37,55 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
       "unprocessed_ids": []
     }
     ```
+
   </Tab>
 
   <Tab title="400" id="response-x-batch-users-400">
+
     ```json
     {
       "error": "invalid_input",
       "message": "Invalid input. Check the request body."
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-x-batch-users-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required."
     }
     ```
+
   </Tab>
 
   <Tab title="402" id="response-x-batch-users-402">
+
     ```json
     {
       "error": "insufficient_credits",
       "message": "Insufficient credits. Top up or subscribe to continue."
     }
     ```
+
   </Tab>
 
   <Tab title="424" id="response-x-batch-users-424">
+
     ```json
     {
       "error": "x_api_unavailable",
       "message": "X data source temporarily unavailable. Try again later."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-x-batch-users-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -79,101 +93,116 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
       "retryAfter": 60
     }
     ```
+
   </Tab>
 
   <Tab title="502" id="response-x-batch-users-502">
+
     ```json
     {
       "error": "x_api_unavailable",
       "message": "X data source temporarily unavailable. Try again later."
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 <AudienceCommunityApiLinks />
 
 <ParamField query="minFollowers" type="integer">
-  Require this minimum follower count. Filtering happens before billing.
+
+Require this minimum follower count. Filtering happens before billing.
+
 </ParamField>
 
 <ParamField query="maxFollowers" type="integer">
-  Allow this maximum follower count. Missing counts pass.
+
+Allow this maximum follower count. Missing counts pass.
+
 </ParamField>
 
 <ParamField query="minAccountAgeDays" type="integer">
-  Require this minimum account age in whole days.
+
+Require this minimum account age in whole days.
+
 </ParamField>
 
 <ParamField query="verifiedOnly" type="boolean">
-  When `true`, only return verified profiles.
+
+When `true`, only return verified profiles.
+
 </ParamField>
 
 <Note>
-  Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
+Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
 </Note>
 
 <Callout icon="coins" color="#5c3327">
-  **1 credit per user returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+
+**1 credit per user returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+
 </Callout>
 
 <CodeGroup>
-  ```bash cURL
-  curl "https://xquik.com/api/v1/x/users/batch?ids=44196397,987654321" \
-    -H "x-api-key: xq_your_api_key_here" | jq
-  ```
 
-  ```javascript Node.js
-  const ids = ["44196397", "987654321"];
-  const response = await fetch(
-    `https://xquik.com/api/v1/x/users/batch?ids=${ids.join(",")}`,
+```bash cURL
+curl "https://xquik.com/api/v1/x/users/batch?ids=44196397,987654321" \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
+
+```javascript Node.js
+const ids = ["44196397", "987654321"];
+const response = await fetch(`https://xquik.com/api/v1/x/users/batch?ids=${ids.join(",")}`, {
+  headers: { "x-api-key": "xq_your_api_key_here" },
+});
+const data = await response.json();
+const profilesById = new Map(data.users.map((user) => [user.id, user]));
+const profileRows = data.users.map((user) => ({
+  user_id: user.id,
+  username: user.username,
+  display_name: user.name,
+  bio: user.description ?? null,
+  follower_count: user.followers ?? null,
+  following_count: user.following ?? null,
+  verified: user.verified ?? false,
+  profile_image_url: user.profilePicture ?? null,
+}));
+const missingIds = ids.filter((id) => !profilesById.has(id));
+```
+
+```python Python
+import requests
+
+ids = ["44196397", "987654321"]
+response = requests.get(
+    "https://xquik.com/api/v1/x/users/batch",
+    params={"ids": ",".join(ids)},
+    headers={"x-api-key": "xq_your_api_key_here"},
+)
+data = response.json()
+profiles_by_id = {user["id"]: user for user in data["users"]}
+profile_rows = [
     {
-      headers: { "x-api-key": "xq_your_api_key_here" },
+        "user_id": user["id"],
+        "username": user["username"],
+        "display_name": user["name"],
+        "bio": user.get("description"),
+        "follower_count": user.get("followers"),
+        "following_count": user.get("following"),
+        "verified": user.get("verified", False),
+        "profile_image_url": user.get("profilePicture"),
     }
-  );
-  const data = await response.json();
-  const profilesById = new Map(data.users.map((user) => [user.id, user]));
-  const profileRows = data.users.map((user) => ({
-    user_id: user.id,
-    username: user.username,
-    display_name: user.name,
-    bio: user.description ?? null,
-    follower_count: user.followers ?? null,
-    following_count: user.following ?? null,
-    verified: user.verified ?? false,
-    profile_image_url: user.profilePicture ?? null,
-  }));
-  const missingIds = ids.filter((id) => !profilesById.has(id));
-  ```
+    for user in data["users"]
+]
+missing_ids = [user_id for user_id in ids if user_id not in profiles_by_id]
+```
 
-  ```python Python
-  import requests
-
-  ids = ["44196397", "987654321"]
-  response = requests.get(
-      "https://xquik.com/api/v1/x/users/batch",
-      params={"ids": ",".join(ids)},
-      headers={"x-api-key": "xq_your_api_key_here"},
-  )
-  data = response.json()
-  profiles_by_id = {user["id"]: user for user in data["users"]}
-  profile_rows = [
-      {
-          "user_id": user["id"],
-          "username": user["username"],
-          "display_name": user["name"],
-          "bio": user.get("description"),
-          "follower_count": user.get("followers"),
-          "following_count": user.get("following"),
-          "verified": user.get("verified", False),
-          "profile_image_url": user.get("profilePicture"),
-      }
-      for user in data["users"]
-  ]
-  missing_ids = [user_id for user_id in ids if user_id not in profiles_by_id]
-  ```
 </CodeGroup>
 
 The Node.js and Python snippets shape durable profile rows instead of printing
@@ -196,52 +225,74 @@ and `next_cursor: ""`; zero affordable results return
 `402 insufficient_credits`.
 
 <CardGroup cols={2}>
+
   <Card title="Known IDs" icon="key-round">
+
     Send comma-separated X user IDs in `ids`. Keep the original list as
     `requested_ids` for retry and audit rows.
+
   </Card>
   <Card title="Profile rows" icon="user-round">
+
     Store each returned `id` as `user_id` with `username`, `name`,
     `description`, `followers`, `following`, `verified`, and `verifiedType`.
+
   </Card>
   <Card title="Missing rows" icon="triangle-alert">
+
     Compare returned `user_id` values with `requested_ids`. Retry only the
     missing IDs or route username-only inputs to Get User first.
+
   </Card>
   <Card title="No pagination" icon="route">
+
     Use the single-page batch contract: `has_next_page: false` and
     `next_cursor: ""`. Do not treat it as a cursor workflow.
+
   </Card>
 </CardGroup>
 
 ## Which lookup endpoint?
 
 <CardGroup cols={2}>
+
   <Card title="One profile" icon="user-round">
+
     Use [`GET /x/users/{id}`](/api-reference/x/twitter-profile-lookup) for one username or one
     user ID.
+
   </Card>
   <Card title="Many known IDs" icon="key-round">
+
     Use `GET /x/users/batch` for up to 100 comma-separated user IDs in one
     request.
+
   </Card>
   <Card title="Name or partial handle" icon="search">
+
     Use [`GET /x/users/search`](/api-reference/x/search-users) before batch
     lookup when the workflow starts from a name, brand, or handle fragment.
+
   </Card>
   <Card title="Tweet IDs" icon="list">
+
     Use [`GET /x/tweets/batch`](/api-reference/x/batch-tweets) when the input
     list contains tweet IDs instead of user IDs.
+
   </Card>
   <Card title="Audience pages" icon="users">
+
     Use [`GET /x/users/{id}/followers`](/api-reference/x/followers) or
     [`GET /x/users/{id}/following`](/api-reference/x/following) when the job
     starts from an account audience.
+
   </Card>
   <Card title="Saved exports" icon="file-spreadsheet">
+
     Use [`Create extraction`](/api-reference/extractions/create) when the source
     is a follower, following, timeline, media, or search job instead of an
     existing ID list.
+
   </Card>
 </CardGroup>
 
@@ -270,17 +321,23 @@ before starting the next. This makes a failed enrichment job safe to resume.
 ## Query parameters
 
 <ParamField query="ids" type="string" required>
-  Comma-separated user IDs. Maximum 100 per request.
+
+Comma-separated user IDs. Maximum 100 per request.
+
 </ParamField>
 
 ## Headers
 
 <ParamField header="x-api-key" type="string">
-  Full account key. Sessions and OAuth also work.
+
+Full account key. Sessions and OAuth also work.
+
 </ParamField>
 
 <ParamField header="Authorization" type="string">
-  `Bearer xq_your_guest_key_here` for `paid_reads`.
+
+`Bearer xq_your_guest_key_here` for `paid_reads`.
+
 </ParamField>
 
 ## Response
@@ -288,39 +345,103 @@ before starting the next. This makes a failed enrichment job safe to resume.
 ### 200 OK
 
 <ResponseField name="users" type="object[]">
-  Array of user profiles matching the requested IDs.
-  **User object fields.**
-    <ResponseField name="id" type="string">X user ID.</ResponseField>
-    <ResponseField name="username" type="string">X username.</ResponseField>
-    <ResponseField name="name" type="string">Display name.</ResponseField>
-    <ResponseField name="description" type="string">Profile bio.</ResponseField>
-    <ResponseField name="followers" type="number">Follower count.</ResponseField>
-    <ResponseField name="following" type="number">Following count.</ResponseField>
-    <ResponseField name="verified" type="boolean">Verified status.</ResponseField>
-    <ResponseField name="profilePicture" type="string">Profile image URL.</ResponseField>
-    <ResponseField name="location" type="string">Profile location.</ResponseField>
-    <ResponseField name="createdAt" type="string">Account creation date (ISO 8601).</ResponseField>
-    <ResponseField name="statusesCount" type="number">Total number of tweets posted. Omitted if unavailable.</ResponseField>
-    <ResponseField name="coverPicture" type="string">Cover/banner image URL. Omitted if unavailable.</ResponseField>
-    <ResponseField name="mediaCount" type="number">Total number of media tweets posted. Omitted if unavailable.</ResponseField>
-    <ResponseField name="url" type="string">Website URL from profile. Omitted if empty.</ResponseField>
-    <ResponseField name="favouritesCount" type="number">Total number of tweets liked. Omitted if unavailable.</ResponseField>
-    <ResponseField name="hasCustomTimelines" type="boolean">Whether the user has custom timelines. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isTranslator" type="boolean">Whether the user is an X translator. Omitted if unavailable.</ResponseField>
-    <ResponseField name="withheldInCountries" type="string[]">Country codes where the account is withheld. Omitted if empty.</ResponseField>
-    <ResponseField name="possiblySensitive" type="boolean">Whether the account is flagged as possibly sensitive. Omitted if unavailable.</ResponseField>
-    <ResponseField name="pinnedTweetIds" type="string[]">IDs of pinned tweets. Omitted if none.</ResponseField>
-    <ResponseField name="isAutomated" type="boolean">Whether the account is marked as automated. Omitted if unavailable.</ResponseField>
-    <ResponseField name="automatedBy" type="string">Username of the account operator if automated. Omitted if not automated.</ResponseField>
-    <ResponseField name="unavailable" type="boolean">Whether the account is unavailable. Omitted if available.</ResponseField>
-    <ResponseField name="unavailableReason" type="string">Reason the account is unavailable. Omitted if available.</ResponseField>
-    <ResponseField name="verifiedType" type="string">Verification type (e.g. `Business`, `Government`). Omitted if not verified or standard blue check.</ResponseField>
-    <ResponseField name="profile_bio" type="object">Structured profile bio with entity annotations. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isBlueVerified" type="boolean">Whether the account has X Premium verification. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isVerified" type="boolean">Normalized verification status. Omitted if unavailable.</ResponseField>
-    <ResponseField name="profileBannerUrl" type="string">Profile banner URL. Omitted if unavailable.</ResponseField>
-    <ResponseField name="protected" type="boolean">Whether the account protects its posts. Omitted if unavailable.</ResponseField>
-    <ResponseField name="communityRole" type="string">Role within the requested community context. Omitted outside community results.</ResponseField>
+
+Array of user profiles matching the requested IDs.
+**User object fields.**
+
+<ResponseField name="id" type="string">
+  X user ID.
+</ResponseField>
+<ResponseField name="username" type="string">
+  X username.
+</ResponseField>
+<ResponseField name="name" type="string">
+  Display name.
+</ResponseField>
+<ResponseField name="description" type="string">
+  Profile bio.
+</ResponseField>
+<ResponseField name="followers" type="number">
+  Follower count.
+</ResponseField>
+<ResponseField name="following" type="number">
+  Following count.
+</ResponseField>
+<ResponseField name="verified" type="boolean">
+  Verified status.
+</ResponseField>
+<ResponseField name="profilePicture" type="string">
+  Profile image URL.
+</ResponseField>
+<ResponseField name="location" type="string">
+  Profile location.
+</ResponseField>
+<ResponseField name="createdAt" type="string">
+  Account creation date (ISO 8601).
+</ResponseField>
+<ResponseField name="statusesCount" type="number">
+  Total number of tweets posted. Omitted if unavailable.
+</ResponseField>
+<ResponseField name="coverPicture" type="string">
+  Cover/banner image URL. Omitted if unavailable.
+</ResponseField>
+<ResponseField name="mediaCount" type="number">
+  Total number of media tweets posted. Omitted if unavailable.
+</ResponseField>
+<ResponseField name="url" type="string">
+  Website URL from profile. Omitted if empty.
+</ResponseField>
+<ResponseField name="favouritesCount" type="number">
+  Total number of tweets liked. Omitted if unavailable.
+</ResponseField>
+<ResponseField name="hasCustomTimelines" type="boolean">
+  Whether the user has custom timelines. Omitted if unavailable.
+</ResponseField>
+<ResponseField name="isTranslator" type="boolean">
+  Whether the user is an X translator. Omitted if unavailable.
+</ResponseField>
+<ResponseField name="withheldInCountries" type="string[]">
+  Country codes where the account is withheld. Omitted if empty.
+</ResponseField>
+<ResponseField name="possiblySensitive" type="boolean">
+  Whether the account is flagged as possibly sensitive. Omitted if unavailable.
+</ResponseField>
+<ResponseField name="pinnedTweetIds" type="string[]">
+  IDs of pinned tweets. Omitted if none.
+</ResponseField>
+<ResponseField name="isAutomated" type="boolean">
+  Whether the account is marked as automated. Omitted if unavailable.
+</ResponseField>
+<ResponseField name="automatedBy" type="string">
+  Username of the account operator if automated. Omitted if not automated.
+</ResponseField>
+<ResponseField name="unavailable" type="boolean">
+  Whether the account is unavailable. Omitted if available.
+</ResponseField>
+<ResponseField name="unavailableReason" type="string">
+  Reason the account is unavailable. Omitted if available.
+</ResponseField>
+<ResponseField name="verifiedType" type="string">
+  Verification type (e.g. `Business`, `Government`). Omitted if not verified or standard blue check.
+</ResponseField>
+<ResponseField name="profile_bio" type="object">
+  Structured profile bio with entity annotations. Omitted if unavailable.
+</ResponseField>
+<ResponseField name="isBlueVerified" type="boolean">
+  Whether the account has X Premium verification. Omitted if unavailable.
+</ResponseField>
+<ResponseField name="isVerified" type="boolean">
+  Normalized verification status. Omitted if unavailable.
+</ResponseField>
+<ResponseField name="profileBannerUrl" type="string">
+  Profile banner URL. Omitted if unavailable.
+</ResponseField>
+<ResponseField name="protected" type="boolean">
+  Whether the account protects its posts. Omitted if unavailable.
+</ResponseField>
+<ResponseField name="communityRole" type="string">
+  Role within the requested community context. Omitted outside community results.
+</ResponseField>
 
 </ResponseField>
 <ResponseField name="has_next_page" type="boolean">Always `false` for batch requests.</ResponseField>
@@ -357,6 +478,7 @@ before starting the next. This makes a failed enrichment job safe to resume.
 ### 401 Unauthenticated
 
 Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
 ```json
 { "error": "unauthenticated" }
 ```
@@ -371,6 +493,7 @@ No checkout starts automatically. Confirm any payment action.
 ```json
 { "error": "x_api_unavailable" }
 ```
+
 The read service returned an error. Retry after a short delay.
 
 ### 429 Rate limit exceeded
@@ -378,6 +501,7 @@ The read service returned an error. Retry after a short delay.
 ```json
 { "error": "rate_limit_exceeded", "retryAfter": 60 }
 ```
+
 Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
 
 ### 424 Dependency failed
@@ -385,8 +509,11 @@ Your tier rate limit was exceeded. Wait for the `Retry-After` header before retr
 ```json
 { "error": "x_api_unavailable" }
 ```
+
 The normalized v1 response contract can return 424 when the read service is unavailable.
 
 <Note>
-  **Related.** [Batch Tweets](/api-reference/x/batch-tweets) · [Get User](/api-reference/x/twitter-profile-lookup)
+
+**Related.** [Batch Tweets](/api-reference/x/batch-tweets) · [Get User](/api-reference/x/twitter-profile-lookup)
+
 </Note>

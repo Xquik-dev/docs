@@ -2,7 +2,19 @@
 title: "Twitter search pipeline with Python & Prefect"
 sidebarTitle: "Prefect"
 description: "Build scheduled Twitter search, profile, timeline, and trend workflows in Python with Prefect. Paginate tweet and user pages, then retry failures. See examples."
-keywords: ["Twitter automation", "Twitter API Python", "Twitter search pipeline Python", "tweet search Python", "Prefect", "workflow orchestration", "user timeline API", "Twitter trends API", "X API", "Xquik"]
+keywords:
+  [
+    "Twitter automation",
+    "Twitter API Python",
+    "Twitter search pipeline Python",
+    "tweet search Python",
+    "Prefect",
+    "workflow orchestration",
+    "user timeline API",
+    "Twitter trends API",
+    "X API",
+    "Xquik",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -18,23 +30,36 @@ The collection is read-only. It provides six asynchronous Prefect tasks. Each ta
 You can track Python functions as data pipelines with Prefect. Prefect flows wrap normal Python code with retries, schedules, and state tracking. Prefect offers run history, deployment controls, and execution environments for each data workflow. The Prefect UI shows every created task and flow state in real time.
 
 <CardGroup cols={3}>
+
   <Card title="Search tweets" icon="search">
+
     Search keywords, hashtags, accounts, dates, and X query operators.
+
   </Card>
   <Card title="Look up tweets" icon="message-square">
+
     Fetch one public tweet from its numeric ID.
+
   </Card>
   <Card title="Search profiles" icon="users">
+
     Find public X accounts by name, username, or topic.
+
   </Card>
   <Card title="Look up profiles" icon="user-round">
+
     Retrieve one public profile by username or user ID.
+
   </Card>
   <Card title="Refresh timelines" icon="list">
+
     Fetch recent tweets with optional replies and parent context.
+
   </Card>
   <Card title="Track trends" icon="trending-up">
+
     Retrieve worldwide or regional trending topics by WOEID.
+
   </Card>
 </CardGroup>
 
@@ -109,23 +134,36 @@ Store the local profile name or server URL in environment variables. Store Xquik
 ## Choose the right Prefect task
 
 <CardGroup cols={2}>
+
   <Card title="search_tweets" icon="search">
+
     Calls `GET /x/tweets/search`. Accepts `query`, `cursor`, `limit`, `query_type`, `since_time`, and `until_time`.
+
   </Card>
   <Card title="get_tweet" icon="message-square">
+
     Calls `GET /x/tweets/{id}`. Pass one numeric tweet ID.
+
   </Card>
   <Card title="search_users" icon="users">
+
     Calls `GET /x/users/search`. Accepts a profile query and optional cursor.
+
   </Card>
   <Card title="get_user" icon="user-round">
+
     Calls `GET /x/users/{id}`. Accepts usernames with or without `@`.
+
   </Card>
   <Card title="get_user_tweets" icon="list">
+
     Calls `GET /x/users/{id}/tweets`. Supports replies, parent tweets, and cursors.
+
   </Card>
   <Card title="get_trends" icon="trending-up">
+
     Calls `GET /x/trends`. Accepts `woeid` and a count from 1 through 50.
+
   </Card>
 </CardGroup>
 
@@ -219,23 +257,36 @@ The timestamps define a reproducible search window. Store them beside every run 
 Narrow each search to avoid irrelevant rows.
 
 <CardGroup cols={2}>
+
   <Card title="Exact phrase" icon="quote">
+
     Use `"workflow orchestration"` for an exact phrase.
+
   </Card>
   <Card title="Account filter" icon="at-sign">
+
     Use `from:PrefectIO` for tweets from one account.
+
   </Card>
   <Card title="Hashtag search" icon="hash">
+
     Use `#prefect #python` for matching hashtags.
+
   </Card>
   <Card title="Engagement floor" icon="heart">
+
     Use `prefect min_faves:10` for a like threshold.
+
   </Card>
   <Card title="Date window" icon="calendar-range">
+
     Use `since:` and `until:` dates inside a query.
+
   </Card>
   <Card title="Exclude reposts" icon="repeat-2">
+
     Use `-filter:retweets` when original posts matter.
+
   </Card>
 </CardGroup>
 
@@ -317,17 +368,26 @@ Use the same pattern with `search_users` and `get_user_tweets`. Keep `query`, `q
 Scheduled windows can overlap. Workers can also retry completed requests. Prevent duplicate downstream rows with stable identifiers.
 
 <CardGroup cols={2}>
+
   <Card title="Tweet identity" icon="message-square">
+
     Upsert tweet rows by `id`. Do not use text as a key.
+
   </Card>
   <Card title="Profile identity" icon="user-round">
+
     Upsert profile rows by numeric user `id`.
+
   </Card>
   <Card title="Window checkpoint" icon="calendar-range">
+
     Store `since_time`, `until_time`, query, and ordering.
+
   </Card>
   <Card title="Cursor checkpoint" icon="list-tree">
+
     Store `has_next_page` and `next_cursor` after each committed page.
+
   </Card>
 </CardGroup>
 
@@ -365,29 +425,46 @@ Add jitter so scheduled tasks avoid synchronized retries. The collection does no
 `XquikError` exposes a sanitized message, optional `status_code`, and raw `response_text`. Do not persist the raw response. Store the status, task run ID, endpoint, and safe error category.
 
 <CardGroup cols={2}>
+
   <Card title="400 Invalid request" icon="circle-x">
+
     Fix missing queries, invalid limits, or malformed input. Do not retry unchanged.
+
   </Card>
   <Card title="401 Authentication" icon="key-round">
+
     Load a valid Xquik API key from the credentials block.
+
   </Card>
   <Card title="402 Account action" icon="credit-card">
+
     Resolve subscription or credits before the next scheduled run.
+
   </Card>
   <Card title="404 Not found" icon="search-x">
+
     Check tweet IDs, usernames, and user IDs. Search routes omit this status.
+
   </Card>
   <Card title="424 Dependency failure" icon="unplug">
+
     Retry with bounded backoff. Stop after the configured attempt cap.
+
   </Card>
   <Card title="429 Rate limit" icon="timer">
+
     Slow the schedule and retry with jittered delays.
+
   </Card>
   <Card title="502 Retrieval failure" icon="triangle-alert">
+
     Retry transient X retrieval failures with a cap.
+
   </Card>
   <Card title="Network failure" icon="wifi-off">
+
     Retry bounded connection failures when `status_code` is absent.
+
   </Card>
 </CardGroup>
 
@@ -448,17 +525,26 @@ Trends are discovery signals, not verified facts. Validate important topics thro
 ## Result handoff
 
 <CardGroup cols={2}>
+
   <Card title="Tweet pages" icon="message-square">
+
     Store `tweets`, `has_next_page`, and `next_cursor`. Normalize tweets before loading a warehouse or dashboard.
+
   </Card>
   <Card title="User pages" icon="users">
+
     Store `users`, `has_next_page`, and `next_cursor`. Keep numeric user IDs as primary keys.
+
   </Card>
   <Card title="Trend batches" icon="trending-up">
+
     Store `trends`, `count`, and `woeid`. Preserve each trend's rank.
+
   </Card>
   <Card title="Failure records" icon="route">
+
     Store status, endpoint, task run ID, attempt count, and safe error category.
+
   </Card>
 </CardGroup>
 

@@ -2,7 +2,16 @@
 title: "TypeScript SDK for tweet search & X API automation"
 sidebarTitle: TypeScript
 description: Use the Xquik TypeScript SDK to search tweets, export JSON Lines, CSV, or XLSX, post media tweets, upload media, send DMs, and run Node.js X API workers.
-keywords: ["TypeScript SDK", "Node.js Twitter scraper SDK", "X API TypeScript", "Bun SDK", "tweet search SDK", "CSV export", "XLSX export"]
+keywords:
+  [
+    "TypeScript SDK",
+    "Node.js Twitter scraper SDK",
+    "X API TypeScript",
+    "Bun SDK",
+    "tweet search SDK",
+    "CSV export",
+    "XLSX export",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -13,10 +22,10 @@ Use the TypeScript SDK when you want typed request parameters, response models, 
 
 Use this page when a TypeScript service must search tweets or export them to JSON Lines, CSV, or XLSX. It can export followers and profiles, post media tweets, send DMs, monitor tweets, or send records downstream.
 
-| TypeScript task | SDK call | Save |
-| --- | --- | --- |
-| Search tweets | `client.x.tweets.search` | `nextCursor` |
-| Export followers | `client.extractions.run` | `job.id` |
+| TypeScript task  | SDK call                 | Save         |
+| ---------------- | ------------------------ | ------------ |
+| Search tweets    | `client.x.tweets.search` | `nextCursor` |
+| Export followers | `client.extractions.run` | `job.id`     |
 
 ## Install
 
@@ -122,23 +131,36 @@ while (true) {
 The generated params map directly to the REST endpoint:
 
 <CardGroup cols={2}>
+
   <Card title="q" icon="search">
+
     Maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.
+
   </Card>
   <Card title="limit" icon="list">
+
     Maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `page.has_next_page` is true, keep the same `q`, filters, `queryType`, and `limit` when you continue with `page.next_cursor`.
+
   </Card>
   <Card title="cursor" icon="arrow-right">
+
     Maps to REST `cursor`. Pass the opaque cursor from `page.next_cursor` to request the next page.
+
   </Card>
   <Card title="sinceTime" icon="clock">
+
     Maps to REST `sinceTime`. Use the inclusive ISO bound on every page.
+
   </Card>
   <Card title="untilTime" icon="clock">
+
     Maps to REST `untilTime`. Use the exclusive ISO bound on every page.
+
   </Card>
   <Card title="queryType" icon="sliders-horizontal">
+
     Maps to REST `queryType`. Use `Latest` for chronological results or `Top` for engagement-ranked results.
+
   </Card>
 </CardGroup>
 
@@ -147,14 +169,21 @@ The generated params map directly to the REST endpoint:
 `client.x.tweets.search` returns `PaginatedTweets`:
 
 <CardGroup cols={2}>
+
   <Card title="page.tweets" icon="message-square-text">
+
     JSON field `tweets`. Contains tweet records with `id`, `text`, optional `author`, `createdAt`, `likeCount`, `replyCount`, `retweetCount`, `quoteCount`, `bookmarkCount`, `viewCount`, and `isNoteTweet` when available.
+
   </Card>
   <Card title="page.has_next_page" icon="circle-check">
+
     TypeScript field `page.has_next_page`. JSON field `has_next_page`. Tells your worker whether another page exists.
+
   </Card>
   <Card title="page.next_cursor" icon="arrow-right">
+
     JSON field `next_cursor`. Store it only when `page.has_next_page` is true. For bounded pulls that return fewer tweets than `limit`, pass it back as `cursor` with the same query, filters, `queryType`, and `limit`.
+
   </Card>
 </CardGroup>
 
@@ -165,7 +194,9 @@ Project `page.tweets` into JSON Lines rows in `xquik-tweet-search.jsonl` for que
 Use this workflow when a Node.js, Bun, or queue worker needs an owned follower list for CRM import, warehouse loading, account scoring, analyst CSV, XLSX workbook delivery, or a resumable JSON handoff. It calls `POST /extractions/estimate` through `client.extractions.estimateCost`, creates the job with `client.extractions.run`, reads saved rows with `client.extractions.retrieve`, and downloads files with `client.extractions.exportResults`.
 
 <Info>
+
 `client.extractions.run` returns the queued `202 Accepted` receipt from `POST /extractions`: `id`, `toolType`, and `status: "running"`. Store `job.id` immediately, then poll `client.extractions.retrieve` before reading pages or calling `client.extractions.exportResults`. Credit reservation happens after the job starts. If available credits changed since `estimateCost`, the API can set `resultsLimit` to the affordable count before fetching rows or mark the job `failed` with `insufficient_credits`.
+
 </Info>
 
 ```ts
@@ -174,8 +205,7 @@ import XTwitterScraper from "x-twitter-scraper";
 
 const client = new XTwitterScraper();
 const targetUsername = "username";
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 const estimate = await client.extractions.estimateCost({
   toolType: "follower_explorer",
@@ -307,9 +337,7 @@ function createTweetHandoff(
     reply_to_tweet_id?: string;
   },
 ) {
-  const thread = base.reply_to_tweet_id
-    ? { reply_to_tweet_id: base.reply_to_tweet_id }
-    : {};
+  const thread = base.reply_to_tweet_id ? { reply_to_tweet_id: base.reply_to_tweet_id } : {};
 
   return {
     status: action.status,
@@ -414,26 +442,41 @@ Useful endpoints:
 The SDK throws typed errors for API failures:
 
 <CardGroup cols={2}>
+
   <Card title="400 Bad request" icon="triangle-alert">
+
     Throws `BadRequestError`.
+
   </Card>
   <Card title="401 Unauthenticated" icon="lock">
+
     Throws `AuthenticationError`.
+
   </Card>
   <Card title="403 Permission denied" icon="shield">
+
     Throws `PermissionDeniedError`.
+
   </Card>
   <Card title="404 Not found" icon="circle-x">
+
     Throws `NotFoundError`.
+
   </Card>
   <Card title="422 Unprocessable entity" icon="triangle-alert">
+
     Throws `UnprocessableEntityError`.
+
   </Card>
   <Card title="429 Rate limited" icon="gauge">
+
     Throws `RateLimitError`.
+
   </Card>
   <Card title="5xx server error" icon="server">
+
     Throws `InternalServerError`.
+
   </Card>
 </CardGroup>
 

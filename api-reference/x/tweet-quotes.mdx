@@ -3,7 +3,19 @@ title: "View quote tweets with Twitter API & author fields"
 sidebarTitle: "Get quote tweets"
 description: "View quote tweets for an original tweet with a Twitter API, author profiles, commentary, media, engagement counts, filters, cursors, alerts & error responses."
 api: "GET /x/tweets/{id}/quotes"
-keywords: ["quote tweets", "view quote tweets", "get quote tweets", "quote tweets API", "tweet quotes API", "Twitter quote tweets API", "X quote tweets API", "quoted posts", "conversation analysis", "CSV export"]
+keywords:
+  [
+    "quote tweets",
+    "view quote tweets",
+    "get quote tweets",
+    "quote tweets API",
+    "tweet quotes API",
+    "Twitter quote tweets API",
+    "X quote tweets API",
+    "quoted posts",
+    "conversation analysis",
+    "CSV export",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -12,9 +24,13 @@ import TweetAdvancedFilterParams from "/snippets/tweet-advanced-filter-params.md
 import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="200" id="response-x-tweet-quotes-200">
+
     ```json
     {
       "tweets": [],
@@ -22,45 +38,55 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
       "next_cursor": ""
     }
     ```
+
   </Tab>
 
   <Tab title="400" id="response-x-tweet-quotes-400">
+
     ```json
     {
       "error": "invalid_input",
       "message": "Invalid input. Check the request body."
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-x-tweet-quotes-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required."
     }
     ```
+
   </Tab>
 
   <Tab title="402" id="response-x-tweet-quotes-402">
+
     ```json
     {
       "error": "insufficient_credits",
       "message": "Insufficient credits. Top up or subscribe to continue."
     }
     ```
+
   </Tab>
 
   <Tab title="424" id="response-x-tweet-quotes-424">
+
     ```json
     {
       "error": "x_api_unavailable",
       "message": "X data source temporarily unavailable. Try again later."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-x-tweet-quotes-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -68,127 +94,139 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
       "retryAfter": 60
     }
     ```
+
   </Tab>
 
   <Tab title="502" id="response-x-tweet-quotes-502">
+
     ```json
     {
       "error": "x_api_unavailable",
       "message": "X data source temporarily unavailable. Try again later."
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 <TweetReadApiLinks />
 
 <Note>
-  Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
+Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
 </Note>
 
 <Callout icon="coins" color="#5c3327">
-  **1 credit per tweet returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
+
+**1 credit per tweet returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
+
 </Callout>
 
 <Info>
-  Use this Twitter API to view quote tweets for one original tweet. Each row
-  includes the quoting tweet's commentary, author, engagement counts, and media
-  attachments. The canonical route remains `GET /api/v1/x/tweets/{id}/quotes`.
+
+Use this Twitter API to view quote tweets for one original tweet. Each row
+includes the quoting tweet's commentary, author, engagement counts, and media
+attachments. The canonical route remains `GET /api/v1/x/tweets/{id}/quotes`.
+
 </Info>
 
 <CodeGroup>
-  ```bash First page
-  curl "https://xquik.com/api/v1/x/tweets/1893456789012345678/quotes" \
-    -H "x-api-key: xq_your_api_key_here" | jq
-  ```
 
-  ```bash Next page with filters
-  curl -G https://xquik.com/api/v1/x/tweets/1893456789012345678/quotes \
-    --data-urlencode "cursor=abc123" \
-    --data-urlencode "sinceTime=1774500000" \
-    --data-urlencode "includeReplies=false" \
-    --data-urlencode "verifiedOnly=true" \
-    -H "x-api-key: xq_your_api_key_here" | jq
-  ```
+```bash First page
+curl "https://xquik.com/api/v1/x/tweets/1893456789012345678/quotes" \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
 
-  ```javascript Node.js
-  const tweetId = "1893456789012345678";
-  const params = new URLSearchParams({
-    sinceTime: "1774500000",
-    includeReplies: "false",
-  });
-  const response = await fetch(`https://xquik.com/api/v1/x/tweets/${tweetId}/quotes?${params}`, {
-    headers: { "x-api-key": "xq_your_api_key_here" },
-  });
-  const data = await response.json();
-  const nextCursor = data.has_next_page ? data.next_cursor : null;
-  const quoteRows = data.tweets.map((tweet) => ({
-    quoted_tweet_id: tweetId,
-    quote_id: tweet.id,
-    text: tweet.text,
-    author_id: tweet.author?.id ?? null,
-    author_username: tweet.author?.username ?? null,
-    author_name: tweet.author?.name ?? null,
-    author_followers: tweet.author?.followers ?? null,
-    author_verified: tweet.author?.verified ?? null,
-    author_profile_picture: tweet.author?.profilePicture ?? null,
-    created_at: tweet.createdAt ?? null,
-    like_count: tweet.likeCount ?? null,
-    reply_count: tweet.replyCount ?? null,
-    retweet_count: tweet.retweetCount ?? null,
-    quote_count: tweet.quoteCount ?? null,
-    media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
-  }));
-  const checkpoint = { quoted_tweet_id: tweetId, next_cursor: nextCursor };
+```bash Next page with filters
+curl -G https://xquik.com/api/v1/x/tweets/1893456789012345678/quotes \
+  --data-urlencode "cursor=abc123" \
+  --data-urlencode "sinceTime=1774500000" \
+  --data-urlencode "includeReplies=false" \
+  --data-urlencode "verifiedOnly=true" \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
 
-  for (const row of quoteRows) {
-    process.stdout.write(`${JSON.stringify(row)}\n`);
-  }
-  process.stdout.write(`${JSON.stringify({ checkpoint })}\n`);
-  ```
+```javascript Node.js
+const tweetId = "1893456789012345678";
+const params = new URLSearchParams({
+  sinceTime: "1774500000",
+  includeReplies: "false",
+});
+const response = await fetch(`https://xquik.com/api/v1/x/tweets/${tweetId}/quotes?${params}`, {
+  headers: { "x-api-key": "xq_your_api_key_here" },
+});
+const data = await response.json();
+const nextCursor = data.has_next_page ? data.next_cursor : null;
+const quoteRows = data.tweets.map((tweet) => ({
+  quoted_tweet_id: tweetId,
+  quote_id: tweet.id,
+  text: tweet.text,
+  author_id: tweet.author?.id ?? null,
+  author_username: tweet.author?.username ?? null,
+  author_name: tweet.author?.name ?? null,
+  author_followers: tweet.author?.followers ?? null,
+  author_verified: tweet.author?.verified ?? null,
+  author_profile_picture: tweet.author?.profilePicture ?? null,
+  created_at: tweet.createdAt ?? null,
+  like_count: tweet.likeCount ?? null,
+  reply_count: tweet.replyCount ?? null,
+  retweet_count: tweet.retweetCount ?? null,
+  quote_count: tweet.quoteCount ?? null,
+  media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
+}));
+const checkpoint = { quoted_tweet_id: tweetId, next_cursor: nextCursor };
 
-  ```python Python
-  import json
-  import requests
+for (const row of quoteRows) {
+  process.stdout.write(`${JSON.stringify(row)}\n`);
+}
+process.stdout.write(`${JSON.stringify({ checkpoint })}\n`);
+```
 
-  tweet_id = "1893456789012345678"
-  response = requests.get(
-      f"https://xquik.com/api/v1/x/tweets/{tweet_id}/quotes",
-      params={"sinceTime": "1774500000", "includeReplies": "false"},
-      headers={"x-api-key": "xq_your_api_key_here"},
-  )
-  data = response.json()
-  next_cursor = data["next_cursor"] if data["has_next_page"] else None
-  quote_rows = [
-      {
-          "quoted_tweet_id": tweet_id,
-          "quote_id": tweet["id"],
-          "text": tweet["text"],
-          "author_id": (tweet.get("author") or {}).get("id"),
-          "author_username": (tweet.get("author") or {}).get("username"),
-          "author_name": (tweet.get("author") or {}).get("name"),
-          "author_followers": (tweet.get("author") or {}).get("followers"),
-          "author_verified": (tweet.get("author") or {}).get("verified"),
-          "author_profile_picture": (tweet.get("author") or {}).get("profilePicture"),
-          "created_at": tweet.get("createdAt"),
-          "like_count": tweet.get("likeCount"),
-          "reply_count": tweet.get("replyCount"),
-          "retweet_count": tweet.get("retweetCount"),
-          "quote_count": tweet.get("quoteCount"),
-          "media_urls": [
-              item["mediaUrl"] for item in tweet.get("media", []) if item.get("mediaUrl")
-          ],
-      }
-      for tweet in data["tweets"]
-  ]
-  checkpoint = {"quoted_tweet_id": tweet_id, "next_cursor": next_cursor}
+```python Python
+import json
+import requests
 
-  for row in quote_rows:
-      print(json.dumps(row))
-  print(json.dumps({"checkpoint": checkpoint}))
-  ```
+tweet_id = "1893456789012345678"
+response = requests.get(
+    f"https://xquik.com/api/v1/x/tweets/{tweet_id}/quotes",
+    params={"sinceTime": "1774500000", "includeReplies": "false"},
+    headers={"x-api-key": "xq_your_api_key_here"},
+)
+data = response.json()
+next_cursor = data["next_cursor"] if data["has_next_page"] else None
+quote_rows = [
+    {
+        "quoted_tweet_id": tweet_id,
+        "quote_id": tweet["id"],
+        "text": tweet["text"],
+        "author_id": (tweet.get("author") or {}).get("id"),
+        "author_username": (tweet.get("author") or {}).get("username"),
+        "author_name": (tweet.get("author") or {}).get("name"),
+        "author_followers": (tweet.get("author") or {}).get("followers"),
+        "author_verified": (tweet.get("author") or {}).get("verified"),
+        "author_profile_picture": (tweet.get("author") or {}).get("profilePicture"),
+        "created_at": tweet.get("createdAt"),
+        "like_count": tweet.get("likeCount"),
+        "reply_count": tweet.get("replyCount"),
+        "retweet_count": tweet.get("retweetCount"),
+        "quote_count": tweet.get("quoteCount"),
+        "media_urls": [
+            item["mediaUrl"] for item in tweet.get("media", []) if item.get("mediaUrl")
+        ],
+    }
+    for tweet in data["tweets"]
+]
+checkpoint = {"quoted_tweet_id": tweet_id, "next_cursor": next_cursor}
+
+for row in quote_rows:
+    print(json.dumps(row))
+print(json.dumps({"checkpoint": checkpoint}))
+```
+
 </CodeGroup>
 
 The Node.js and Python snippets write JSON Lines quote rows plus a separate
@@ -208,36 +246,53 @@ media URLs, and a separate `next_cursor` checkpoint. Use `sinceTime`,
 before exporting rows downstream.
 
 <CardGroup cols={2}>
+
   <Card title="Quote rows" icon="quote">
+
     Store `tweets[]` as quote tweet rows for one source tweet.
+
   </Card>
   <Card title="Stable upserts" icon="key-round">
+
     Store `tweets[].id` as `quote_id` with `quoted_tweet_id` for idempotent
     imports and moderation queues.
+
   </Card>
   <Card title="Author joins" icon="user-round">
+
     Store `tweets[].author.id`, `username`, `name`, `followers`, `verified`, and
     `profilePicture` for CRM, research, and review tools.
+
   </Card>
   <Card title="Engagement metrics" icon="chart-no-axes-combined">
+
     Store `likeCount`, `replyCount`, `retweetCount`, `quoteCount`, `viewCount`,
     and `bookmarkCount` when returned.
+
   </Card>
   <Card title="Media context" icon="image">
+
     Store `media[].mediaUrl`, `entities`, `quoted_tweet`, and `retweeted_tweet`
     when returned to preserve attached context.
+
   </Card>
   <Card title="Window filters" icon="calendar-range">
+
     Use `sinceTime`, `untilTime`, `includeReplies`, and tweet result filters to
     narrow campaign, support, or audit windows.
+
   </Card>
   <Card title="Next page" icon="arrow-right">
+
     Store `has_next_page` and `next_cursor`; pass `next_cursor` back as `cursor`
     only when `has_next_page` is true.
+
   </Card>
   <Card title="Credit-limited pages" icon="coins">
+
     Use `tweets.length`, not a requested page size, for row counts. Low balances
     can return fewer rows.
+
   </Card>
 </CardGroup>
 
@@ -252,24 +307,33 @@ monitors when future quote activity should arrive as stored events or signed
 webhook deliveries.
 
 <CardGroup cols={2}>
+
   <Card title="Historical quote pull" icon="clock-arrow-down">
+
     Call `GET /x/tweets/{id}/quotes`, store `quote_id`, and resume with
     `next_cursor` for one known source tweet.
+
   </Card>
   <Card title="Account quote monitor" icon="radio">
+
     Use [`POST /monitors`](/api-reference/monitors/create) with
     `eventTypes: ["tweet.quote"]` when one tracked account's future quote
     tweets should produce events.
+
   </Card>
   <Card title="Keyword quote monitor" icon="search-check">
+
     Use [`POST /monitors/keywords`](/api-reference/monitors/create-keyword)
     with `eventTypes: ["tweet.quote"]` when matching future quote tweets should
     produce events.
+
   </Card>
   <Card title="Signed webhook delivery" icon="webhook">
+
     Use [`POST /webhooks`](/api-reference/webhooks/create) with `tweet.quote`,
     verify signatures, and replay stored rows with
     [`GET /events`](/api-reference/events/list).
+
   </Card>
 </CardGroup>
 
@@ -311,34 +375,48 @@ monitors and signed webhooks for future quote alerts.
 ## Path parameters
 
 <ParamField path="id" type="string" required>
-  Tweet ID (numeric string).
+
+Tweet ID (numeric string).
+
 </ParamField>
 
 ## Query parameters
 
 <ParamField query="cursor" type="string">
-  Pagination cursor from `next_cursor` in a previous response. Leave it empty
-  for the initial request. Pass a cursor only when `has_next_page` is true.
+
+Pagination cursor from `next_cursor` in a previous response. Leave it empty
+for the initial request. Pass a cursor only when `has_next_page` is true.
+
 </ParamField>
 
 <ParamField query="mode" type="string">
-  Legacy pagination override. Use `standard` when required by an older client.
+
+Legacy pagination override. Use `standard` when required by an older client.
+
 </ParamField>
 
 <ParamField query="pageSize" type="integer">
-  Tweets per page. Range: `1-100`. Defaults to `20`.
+
+Tweets per page. Range: `1-100`. Defaults to `20`.
+
 </ParamField>
 
 <ParamField query="sinceTime" type="string">
-  Unix timestamp in seconds. Only return quotes after this time.
+
+Unix timestamp in seconds. Only return quotes after this time.
+
 </ParamField>
 
 <ParamField query="untilTime" type="string">
-  Unix timestamp in seconds. Only return quotes before this time.
+
+Unix timestamp in seconds. Only return quotes before this time.
+
 </ParamField>
 
 <ParamField query="includeReplies" type="boolean">
-  Include reply tweets. Default: `false`. Explicit `replies` takes precedence.
+
+Include reply tweets. Default: `false`. Explicit `replies` takes precedence.
+
 </ParamField>
 
 ### Tweet result filters
@@ -353,40 +431,57 @@ filters can return fewer rows than an unfiltered page.
 ## Which tweet engagement endpoint?
 
 <CardGroup cols={2}>
+
   <Card title="Quote tweets" icon="quote">
+
     Use `GET /x/tweets/{id}/quotes` for tweet rows that quote one source tweet.
+
   </Card>
   <Card title="Tweet replies" icon="message-square-reply">
+
     Use [`GET /x/tweets/{id}/replies`](/api-reference/x/tweet-replies) when you
     need reply tweet rows under the source tweet.
+
   </Card>
   <Card title="Retweeters" icon="repeat-2">
+
     Use [`GET /x/tweets/{id}/retweeters`](/api-reference/x/retweeters) for user
     profiles that reposted one source tweet.
+
   </Card>
   <Card title="Tweet likers" icon="heart">
+
     Use [`GET /x/tweets/{id}/favoriters`](/api-reference/x/favoriters) for user
     profiles that liked one source tweet.
+
   </Card>
   <Card title="Saved exports" icon="file-spreadsheet">
+
     Use [`Create extraction`](/api-reference/extractions/create) with
     `toolType=quote_extractor` when you need a saved job or CSV, JSON, or XLSX
     export.
+
   </Card>
   <Card title="Search handoff" icon="search">
+
     Use [`Search tweets`](/api-reference/x/search-tweets) when you need keyword,
     operator, or structured-filter discovery across many source tweets.
+
   </Card>
 </CardGroup>
 
 ## Headers
 
 <ParamField header="x-api-key" type="string">
-  Full account key. Sessions and OAuth also work.
+
+Full account key. Sessions and OAuth also work.
+
 </ParamField>
 
 <ParamField header="Authorization" type="string">
-  `Bearer xq_your_guest_key_here` for `paid_reads`.
+
+`Bearer xq_your_guest_key_here` for `paid_reads`.
+
 </ParamField>
 
 ## Response
@@ -394,33 +489,36 @@ filters can return fewer rows than an unfiltered page.
 ### 200 OK
 
 <ResponseField name="tweets" type="object[]">
-  Array of quote tweets.
-  **Tweet object fields.**
-    <ResponseField name="id" type="string">This value is the tweet ID.</ResponseField>
-    <ResponseField name="text" type="string">This value contains the tweet text.</ResponseField>
-    <ResponseField name="type" type="string">This value identifies the tweet type when available.</ResponseField>
-    <ResponseField name="createdAt" type="string">This value contains the ISO 8601 creation timestamp.</ResponseField>
-    <ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isReply" type="boolean">Whether the tweet is a reply. Omitted if unavailable.</ResponseField>
-    <ResponseField name="inReplyToId" type="string">This ID identifies the tweet receiving the reply.</ResponseField>
-    <ResponseField name="inReplyToUserId" type="string">User ID being replied to. Omitted if unavailable.</ResponseField>
-    <ResponseField name="inReplyToUsername" type="string">Username being replied to. Omitted if unavailable.</ResponseField>
-    <ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
-    <ResponseField name="likeCount" type="number">This value records the like count when available.</ResponseField>
-    <ResponseField name="retweetCount" type="number">This value records the repost count when available.</ResponseField>
-    <ResponseField name="replyCount" type="number">This value records the reply count when available.</ResponseField>
-    <ResponseField name="quoteCount" type="number">This value records the quote tweet count when available.</ResponseField>
-    <ResponseField name="viewCount" type="number">This value records the view count when available.</ResponseField>
-    <ResponseField name="bookmarkCount" type="number">This value records the bookmark count when available.</ResponseField>
-    <ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
-    <ResponseField name="lang" type="string">The tweet's language code appears here when X returns it.</ResponseField>
-    <ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
-    <ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
-    <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
-    <ResponseField name="contentDisclosure" type="object">X can return paid partnership and AI-generated media labels here. Paid partnership state appears in `advertising.isPaidPromotion`. AI media state appears in `aiGenerated.hasAiGeneratedMedia`. X may omit this object.</ResponseField>
-    <ResponseField name="author" type="object">
+
+Array of quote tweets.
+**Tweet object fields.**
+
+<ResponseField name="id" type="string">This value is the tweet ID.</ResponseField>
+<ResponseField name="text" type="string">This value contains the tweet text.</ResponseField>
+<ResponseField name="type" type="string">This value identifies the tweet type when available.</ResponseField>
+<ResponseField name="createdAt" type="string">This value contains the ISO 8601 creation timestamp.</ResponseField>
+<ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet. Omitted if unavailable.</ResponseField>
+<ResponseField name="isReply" type="boolean">Whether the tweet is a reply. Omitted if unavailable.</ResponseField>
+<ResponseField name="inReplyToId" type="string">This ID identifies the tweet receiving the reply.</ResponseField>
+<ResponseField name="inReplyToUserId" type="string">User ID being replied to. Omitted if unavailable.</ResponseField>
+<ResponseField name="inReplyToUsername" type="string">Username being replied to. Omitted if unavailable.</ResponseField>
+<ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
+<ResponseField name="likeCount" type="number">This value records the like count when available.</ResponseField>
+<ResponseField name="retweetCount" type="number">This value records the repost count when available.</ResponseField>
+<ResponseField name="replyCount" type="number">This value records the reply count when available.</ResponseField>
+<ResponseField name="quoteCount" type="number">This value records the quote tweet count when available.</ResponseField>
+<ResponseField name="viewCount" type="number">This value records the view count when available.</ResponseField>
+<ResponseField name="bookmarkCount" type="number">This value records the bookmark count when available.</ResponseField>
+<ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
+<ResponseField name="lang" type="string">The tweet's language code appears here when X returns it.</ResponseField>
+<ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
+<ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
+<ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
+<ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
+<ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
+<ResponseField name="contentDisclosure" type="object">X can return paid partnership and AI-generated media labels here. Paid partnership state appears in `advertising.isPaidPromotion`. AI media state appears in `aiGenerated.hasAiGeneratedMedia`. X may omit this object.</ResponseField>
+<ResponseField name="author" type="object">
+
       Tweet author profile. Omitted if unavailable.
       **Author object fields.**
         <ResponseField name="id" type="string">Author user ID.</ResponseField>
@@ -432,6 +530,7 @@ filters can return fewer rows than an unfiltered page.
 
     </ResponseField>
     <ResponseField name="media" type="object[]">
+
       This array contains media attachments when available.
       **Media object fields.**
         <ResponseField name="mediaUrl" type="string">Direct media URL.</ResponseField>
@@ -457,5 +556,7 @@ Account keys receive account options. A guest wallet receives a checkout option.
 Confirm any payment action.
 
 <Note>
-  **Related.** [Tweet replies](/api-reference/x/tweet-replies) · [Tweet thread](/api-reference/x/tweet-thread) · [Retweeters](/api-reference/x/retweeters) · [Tweet favoriters](/api-reference/x/favoriters)
+
+**Related.** [Tweet replies](/api-reference/x/tweet-replies) · [Tweet thread](/api-reference/x/tweet-thread) · [Retweeters](/api-reference/x/retweeters) · [Tweet favoriters](/api-reference/x/favoriters)
+
 </Note>

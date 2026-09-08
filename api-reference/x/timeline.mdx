@@ -3,16 +3,33 @@ title: "Twitter timeline API for home feed tweets & media"
 sidebarTitle: "Get timeline"
 description: "Use the Twitter timeline API to get a connected account's home feed. Paginate tweets, authors, replies, reposts, likes, views, media, and cursors safely."
 api: "GET /x/timeline"
-keywords: ["Twitter timeline API", "Twitter API timeline", "X timeline API", "Twitter home timeline", "Twitter API timeline pagination", "home feed API", "timeline tweets", "replies", "reposts", "likes", "media"]
+keywords:
+  [
+    "Twitter timeline API",
+    "Twitter API timeline",
+    "X timeline API",
+    "Twitter home timeline",
+    "Twitter API timeline pagination",
+    "home feed API",
+    "timeline tweets",
+    "replies",
+    "reposts",
+    "likes",
+    "media",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="200" id="response-x-timeline-200">
+
     ```json
     {
       "tweets": [],
@@ -20,36 +37,44 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
       "next_cursor": ""
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-x-timeline-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
+
   </Tab>
 
   <Tab title="402" id="response-x-timeline-402">
+
     ```json
     {
       "error": "insufficient_credits",
       "message": "Insufficient credits. Top up or subscribe to continue."
     }
     ```
+
   </Tab>
 
   <Tab title="424" id="response-x-timeline-424">
+
     ```json
     {
       "error": "x_api_unavailable",
       "message": "X data source temporarily unavailable. Try again later."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-x-timeline-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -57,157 +82,169 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
       "retryAfter": 60
     }
     ```
+
   </Tab>
 
   <Tab title="502" id="response-x-timeline-502">
+
     ```json
     {
       "error": "x_api_unavailable",
       "message": "X data source temporarily unavailable. Try again later."
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 <ConnectedAccountApiLinks />
 
 <Note>
-  Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
+Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
 </Note>
 
 <Callout icon="coins" color="#5c3327">
-  **1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+
+**1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+
 </Callout>
 
 <Note>
-  Requires a connected X account. Uses user-authenticated access.
+
+Requires a connected X account. Uses user-authenticated access.
+
 </Note>
 
 <CodeGroup>
-  ```bash cURL
-  curl https://xquik.com/api/v1/x/timeline \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 
-  # Page 2
-  curl -G https://xquik.com/api/v1/x/timeline \
-    --data-urlencode "cursor=abc123" \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
-  ```
+```bash cURL
+curl https://xquik.com/api/v1/x/timeline \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 
-  ```javascript Node.js
-  const baseUrl = "https://xquik.com/api/v1/x/timeline";
-  const seenTweetIds = new Set();
-  let pageCursor = "";
+# Page 2
+curl -G https://xquik.com/api/v1/x/timeline \
+  --data-urlencode "cursor=abc123" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
 
-  for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
-    const params = new URLSearchParams();
-    if (pageCursor !== "") params.set("cursor", pageCursor);
-    if (seenTweetIds.size > 0) {
-      params.set("seenTweetIds", Array.from(seenTweetIds).join(","));
-    }
+```javascript Node.js
+const baseUrl = "https://xquik.com/api/v1/x/timeline";
+const seenTweetIds = new Set();
+let pageCursor = "";
 
-    const query = params.toString();
-    const response = await fetch(query === "" ? baseUrl : `${baseUrl}?${query}`, {
-      headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
-    });
-    const page = await response.json();
-    if (!response.ok) throw new Error(JSON.stringify(page));
-
-    const timelineRows = page.tweets.map((tweet) => {
-      seenTweetIds.add(tweet.id);
-      return {
-        timeline_source: "home",
-        tweet_id: tweet.id,
-        tweet_url: tweet.url ?? null,
-        text: tweet.text,
-        author_id: tweet.author?.id ?? null,
-        author_username: tweet.author?.username ?? null,
-        author_name: tweet.author?.name ?? null,
-        author_followers: tweet.author?.followers ?? null,
-        author_verified: tweet.author?.verified ?? null,
-        author_profile_picture: tweet.author?.profilePicture ?? null,
-        created_at: tweet.createdAt ?? null,
-        is_reply: tweet.isReply ?? false,
-        in_reply_to_id: tweet.inReplyToId ?? null,
-        like_count: tweet.likeCount ?? null,
-        reply_count: tweet.replyCount ?? null,
-        retweet_count: tweet.retweetCount ?? null,
-        quote_count: tweet.quoteCount ?? null,
-        view_count: tweet.viewCount ?? null,
-        media_urls: (tweet.media ?? []).map((item) => item.mediaUrl).filter(Boolean),
-        page_index: pageIndex,
-        page_cursor: pageCursor,
-        next_cursor: page.next_cursor,
-        has_next_page: page.has_next_page,
-      };
-    });
-    for (const row of timelineRows) process.stdout.write(`${JSON.stringify(row)}\n`);
-
-    if (!page.has_next_page || page.next_cursor === "") break;
-    pageCursor = page.next_cursor;
+for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
+  const params = new URLSearchParams();
+  if (pageCursor !== "") params.set("cursor", pageCursor);
+  if (seenTweetIds.size > 0) {
+    params.set("seenTweetIds", Array.from(seenTweetIds).join(","));
   }
-  ```
 
-  ```python Python
-  import json
-  import requests
+  const query = params.toString();
+  const response = await fetch(query === "" ? baseUrl : `${baseUrl}?${query}`, {
+    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+  });
+  const page = await response.json();
+  if (!response.ok) throw new Error(JSON.stringify(page));
 
-  seen_tweet_ids = set()
-  page_cursor = ""
+  const timelineRows = page.tweets.map((tweet) => {
+    seenTweetIds.add(tweet.id);
+    return {
+      timeline_source: "home",
+      tweet_id: tweet.id,
+      tweet_url: tweet.url ?? null,
+      text: tweet.text,
+      author_id: tweet.author?.id ?? null,
+      author_username: tweet.author?.username ?? null,
+      author_name: tweet.author?.name ?? null,
+      author_followers: tweet.author?.followers ?? null,
+      author_verified: tweet.author?.verified ?? null,
+      author_profile_picture: tweet.author?.profilePicture ?? null,
+      created_at: tweet.createdAt ?? null,
+      is_reply: tweet.isReply ?? false,
+      in_reply_to_id: tweet.inReplyToId ?? null,
+      like_count: tweet.likeCount ?? null,
+      reply_count: tweet.replyCount ?? null,
+      retweet_count: tweet.retweetCount ?? null,
+      quote_count: tweet.quoteCount ?? null,
+      view_count: tweet.viewCount ?? null,
+      media_urls: (tweet.media ?? []).map((item) => item.mediaUrl).filter(Boolean),
+      page_index: pageIndex,
+      page_cursor: pageCursor,
+      next_cursor: page.next_cursor,
+      has_next_page: page.has_next_page,
+    };
+  });
+  for (const row of timelineRows) process.stdout.write(`${JSON.stringify(row)}\n`);
 
-  for page_index in range(3):
-      params = {}
-      if page_cursor:
-          params["cursor"] = page_cursor
-      if seen_tweet_ids:
-          params["seenTweetIds"] = ",".join(sorted(seen_tweet_ids))
+  if (!page.has_next_page || page.next_cursor === "") break;
+  pageCursor = page.next_cursor;
+}
+```
 
-      response = requests.get(
-          "https://xquik.com/api/v1/x/timeline",
-          params=params,
-          headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-      )
-      page = response.json()
-      if not response.ok:
-          raise RuntimeError(page)
+```python Python
+import json
+import requests
 
-      for tweet in page["tweets"]:
-          seen_tweet_ids.add(tweet["id"])
-          timeline_row = {
-              "timeline_source": "home",
-              "tweet_id": tweet["id"],
-              "tweet_url": tweet.get("url"),
-              "text": tweet["text"],
-              "author_id": (tweet.get("author") or {}).get("id"),
-              "author_username": (tweet.get("author") or {}).get("username"),
-              "author_name": (tweet.get("author") or {}).get("name"),
-              "author_followers": (tweet.get("author") or {}).get("followers"),
-              "author_verified": (tweet.get("author") or {}).get("verified"),
-              "author_profile_picture": (tweet.get("author") or {}).get("profilePicture"),
-              "created_at": tweet.get("createdAt"),
-              "is_reply": tweet.get("isReply", False),
-              "in_reply_to_id": tweet.get("inReplyToId"),
-              "like_count": tweet.get("likeCount"),
-              "reply_count": tweet.get("replyCount"),
-              "retweet_count": tweet.get("retweetCount"),
-              "quote_count": tweet.get("quoteCount"),
-              "view_count": tweet.get("viewCount"),
-              "media_urls": [
-                  item["mediaUrl"] for item in tweet.get("media", []) if item.get("mediaUrl")
-              ],
-              "page_index": page_index,
-              "page_cursor": page_cursor,
-              "next_cursor": page["next_cursor"],
-              "has_next_page": page["has_next_page"],
-          }
-          print(json.dumps(timeline_row, separators=(",", ":")))
+seen_tweet_ids = set()
+page_cursor = ""
 
-      if not page["has_next_page"] or not page["next_cursor"]:
-          break
-      page_cursor = page["next_cursor"]
-  ```
+for page_index in range(3):
+    params = {}
+    if page_cursor:
+        params["cursor"] = page_cursor
+    if seen_tweet_ids:
+        params["seenTweetIds"] = ",".join(sorted(seen_tweet_ids))
+
+    response = requests.get(
+        "https://xquik.com/api/v1/x/timeline",
+        params=params,
+        headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    )
+    page = response.json()
+    if not response.ok:
+        raise RuntimeError(page)
+
+    for tweet in page["tweets"]:
+        seen_tweet_ids.add(tweet["id"])
+        timeline_row = {
+            "timeline_source": "home",
+            "tweet_id": tweet["id"],
+            "tweet_url": tweet.get("url"),
+            "text": tweet["text"],
+            "author_id": (tweet.get("author") or {}).get("id"),
+            "author_username": (tweet.get("author") or {}).get("username"),
+            "author_name": (tweet.get("author") or {}).get("name"),
+            "author_followers": (tweet.get("author") or {}).get("followers"),
+            "author_verified": (tweet.get("author") or {}).get("verified"),
+            "author_profile_picture": (tweet.get("author") or {}).get("profilePicture"),
+            "created_at": tweet.get("createdAt"),
+            "is_reply": tweet.get("isReply", False),
+            "in_reply_to_id": tweet.get("inReplyToId"),
+            "like_count": tweet.get("likeCount"),
+            "reply_count": tweet.get("replyCount"),
+            "retweet_count": tweet.get("retweetCount"),
+            "quote_count": tweet.get("quoteCount"),
+            "view_count": tweet.get("viewCount"),
+            "media_urls": [
+                item["mediaUrl"] for item in tweet.get("media", []) if item.get("mediaUrl")
+            ],
+            "page_index": page_index,
+            "page_cursor": page_cursor,
+            "next_cursor": page["next_cursor"],
+            "has_next_page": page["has_next_page"],
+        }
+        print(json.dumps(timeline_row, separators=(",", ":")))
+
+    if not page["has_next_page"] or not page["next_cursor"]:
+        break
+    page_cursor = page["next_cursor"]
+```
+
 </CodeGroup>
 
 ## Home timeline handoff
@@ -229,29 +266,38 @@ as a complete public archive. X explains the feed model in its
 [home and user timeline documentation](https://docs.x.com/x-api/posts/timelines/introduction).
 
 <CardGroup cols={2}>
+
   <Card title="Home feed rows" icon="house">
+
     Store one row per `tweets[]` item with `timeline_source: "home"` for the
     connected account.
+
   </Card>
   <Card title="Seen tweet dedupe" icon="list-checks">
+
     Add processed tweet IDs to `seenTweetIds` before requesting the next page.
+
   </Card>
   <Card title="Cursor checkpoint" icon="arrow-right">
+
     Store `has_next_page` and `next_cursor`. Pass `next_cursor` back as `cursor`
     only when `has_next_page` is true.
+
   </Card>
   <Card title="Account-scoped sync" icon="lock-keyhole">
+
     Keep home timeline rows in account-scoped inbox, CRM, monitor seed, or agent
     memory systems.
+
   </Card>
 </CardGroup>
 
-| Home timeline column | Response source | Feed use |
-| --- | --- | --- |
-| `tweet_id` | `tweets[].id` | Deduplicate rows and build tweet URLs. |
-| `author_id` | `tweets[].author.id` | Keep stable author identity when usernames change. |
-| `page_cursor` | Request `cursor` | Trace the page that produced each row. |
-| `next_cursor` | Response `next_cursor` | Resume after storing the current page. |
+| Home timeline column | Response source        | Feed use                                           |
+| -------------------- | ---------------------- | -------------------------------------------------- |
+| `tweet_id`           | `tweets[].id`          | Deduplicate rows and build tweet URLs.             |
+| `author_id`          | `tweets[].author.id`   | Keep stable author identity when usernames change. |
+| `page_cursor`        | Request `cursor`       | Trace the page that produced each row.             |
+| `next_cursor`        | Response `next_cursor` | Resume after storing the current page.             |
 
 ## Twitter API timeline pagination
 
@@ -269,13 +315,13 @@ Never advance a checkpoint after a failed destination write.
 
 ## Route home timeline tweets
 
-| Routing rule | Concrete match | Destination |
-| --- | --- | --- |
-| Support reply | Approved account or keyword | Support review queue |
-| Campaign mention | Campaign phrase in `text` | Campaign verification queue |
-| Media review | Non-empty `media` | Image or video review |
-| High engagement | Approved likes, replies, reposts, or views | Priority research queue |
-| No rule match | No approved condition matches | Store without generating a notification |
+| Routing rule     | Concrete match                             | Destination                             |
+| ---------------- | ------------------------------------------ | --------------------------------------- |
+| Support reply    | Approved account or keyword                | Support review queue                    |
+| Campaign mention | Campaign phrase in `text`                  | Campaign verification queue             |
+| Media review     | Non-empty `media`                          | Image or video review                   |
+| High engagement  | Approved likes, replies, reposts, or views | Priority research queue                 |
+| No rule match    | No approved condition matches              | Store without generating a notification |
 
 Keep each rule name beside its tweet ID. Preserve the original tweet text.
 Reprocess a tweet only after its routing rule changes.
@@ -306,45 +352,64 @@ Respect `Retry-After` after 429. Resume from the stored cursor after 424 or 502.
 ## Query parameters
 
 <ParamField query="cursor" type="string">
-  Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
+
+Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
+
 </ParamField>
 
 <ParamField query="seenTweetIds" type="string">
-  Comma-separated tweet IDs to exclude from results. Ignore empty entries. Use this to avoid returning tweets the user has already seen.
+
+Comma-separated tweet IDs to exclude from results. Ignore empty entries. Use this to avoid returning tweets the user has already seen.
+
 </ParamField>
 
 ## Which timeline endpoint?
 
 <CardGroup cols={2}>
+
   <Card title="Home timeline" icon="house">
+
     Use `GET /x/timeline` for the connected account's home feed.
+
   </Card>
   <Card title="Profile timeline" icon="user-round">
+
     Use [`GET /x/users/{id}/tweets`](/api-reference/x/user-tweets) for one
     public profile's timeline.
+
   </Card>
   <Card title="Mentions timeline" icon="at-sign">
+
     Use [`GET /x/users/{id}/mentions`](/api-reference/x/user-mentions) for
     public mentions of one account.
+
   </Card>
   <Card title="Saved tweets" icon="bookmark">
+
     Use [`GET /x/bookmarks`](/api-reference/x/bookmarks) for tweets the
     connected account saved.
+
   </Card>
   <Card title="Notifications" icon="bell">
+
     Use [`GET /x/notifications`](/api-reference/x/notifications) for compact
     inbox activity rows.
+
   </Card>
   <Card title="Monitor events" icon="radio">
+
     Use [`List events`](/api-reference/events/list) after account or keyword
     monitors have captured replayable webhook events.
+
   </Card>
 </CardGroup>
 
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. You can also authenticate with an OAuth bearer token.
+
+Your API key. You can also authenticate with an OAuth bearer token.
+
 </ParamField>
 
 ## Response
@@ -352,33 +417,36 @@ Respect `Retry-After` after 429. Resume from the stored cursor after 424 or 502.
 ### 200 OK
 
 <ResponseField name="tweets" type="object[]">
-  Array of timeline tweets.
-  **Tweet object fields.**
-    <ResponseField name="id" type="string">Tweet ID.</ResponseField>
-    <ResponseField name="text" type="string">Contains the tweet text.</ResponseField>
-    <ResponseField name="type" type="string">Returns the tweet type when available.</ResponseField>
-    <ResponseField name="createdAt" type="string">Returns an ISO 8601 timestamp when available.</ResponseField>
-    <ResponseField name="isNoteTweet" type="boolean">Marks long-form Note Tweets when available.</ResponseField>
-    <ResponseField name="likeCount" type="number">Counts likes when available.</ResponseField>
-    <ResponseField name="retweetCount" type="number">Counts reposts when available.</ResponseField>
-    <ResponseField name="replyCount" type="number">Counts replies when available.</ResponseField>
-    <ResponseField name="quoteCount" type="number">Counts quote tweets when available.</ResponseField>
-    <ResponseField name="viewCount" type="number">Counts views when available.</ResponseField>
-    <ResponseField name="bookmarkCount" type="number">Counts bookmarks when available.</ResponseField>
-    <ResponseField name="url" type="string">Links to the tweet on X when available.</ResponseField>
-    <ResponseField name="lang" type="string">Identifies the tweet language when available.</ResponseField>
-    <ResponseField name="isReply" type="boolean">Marks replies when available.</ResponseField>
-    <ResponseField name="inReplyToId" type="string">Identifies the parent tweet for a reply.</ResponseField>
-    <ResponseField name="inReplyToUserId" type="string">Identifies the replied-to user.</ResponseField>
-    <ResponseField name="inReplyToUsername" type="string">Identifies the replied-to username.</ResponseField>
-    <ResponseField name="conversationId" type="string">Identifies the conversation when available.</ResponseField>
-    <ResponseField name="source" type="string">Identifies the posting client when available.</ResponseField>
-    <ResponseField name="displayTextRange" type="number[]">Provides rendered text offsets when available.</ResponseField>
-    <ResponseField name="isLimitedReply" type="boolean">Shows whether X limits replies.</ResponseField>
-    <ResponseField name="isQuoteStatus" type="boolean">Marks quote tweets when available.</ResponseField>
-    <ResponseField name="entities" type="object">Returns parsed entities when available.</ResponseField>
-    <ResponseField name="contentDisclosure" type="object">Describes paid partnerships and AI-generated media. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them.</ResponseField>
-    <ResponseField name="author" type="object">
+
+Array of timeline tweets.
+**Tweet object fields.**
+
+<ResponseField name="id" type="string">Tweet ID.</ResponseField>
+<ResponseField name="text" type="string">Contains the tweet text.</ResponseField>
+<ResponseField name="type" type="string">Returns the tweet type when available.</ResponseField>
+<ResponseField name="createdAt" type="string">Returns an ISO 8601 timestamp when available.</ResponseField>
+<ResponseField name="isNoteTweet" type="boolean">Marks long-form Note Tweets when available.</ResponseField>
+<ResponseField name="likeCount" type="number">Counts likes when available.</ResponseField>
+<ResponseField name="retweetCount" type="number">Counts reposts when available.</ResponseField>
+<ResponseField name="replyCount" type="number">Counts replies when available.</ResponseField>
+<ResponseField name="quoteCount" type="number">Counts quote tweets when available.</ResponseField>
+<ResponseField name="viewCount" type="number">Counts views when available.</ResponseField>
+<ResponseField name="bookmarkCount" type="number">Counts bookmarks when available.</ResponseField>
+<ResponseField name="url" type="string">Links to the tweet on X when available.</ResponseField>
+<ResponseField name="lang" type="string">Identifies the tweet language when available.</ResponseField>
+<ResponseField name="isReply" type="boolean">Marks replies when available.</ResponseField>
+<ResponseField name="inReplyToId" type="string">Identifies the parent tweet for a reply.</ResponseField>
+<ResponseField name="inReplyToUserId" type="string">Identifies the replied-to user.</ResponseField>
+<ResponseField name="inReplyToUsername" type="string">Identifies the replied-to username.</ResponseField>
+<ResponseField name="conversationId" type="string">Identifies the conversation when available.</ResponseField>
+<ResponseField name="source" type="string">Identifies the posting client when available.</ResponseField>
+<ResponseField name="displayTextRange" type="number[]">Provides rendered text offsets when available.</ResponseField>
+<ResponseField name="isLimitedReply" type="boolean">Shows whether X limits replies.</ResponseField>
+<ResponseField name="isQuoteStatus" type="boolean">Marks quote tweets when available.</ResponseField>
+<ResponseField name="entities" type="object">Returns parsed entities when available.</ResponseField>
+<ResponseField name="contentDisclosure" type="object">Describes paid partnerships and AI-generated media. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them.</ResponseField>
+<ResponseField name="author" type="object">
+
       Returns the tweet author when available.
       **Author object fields.**
         <ResponseField name="id" type="string">Identifies the author.</ResponseField>
@@ -390,6 +458,7 @@ Respect `Retry-After` after 429. Resume from the stored cursor after 424 or 502.
 
     </ResponseField>
     <ResponseField name="media" type="object[]">
+
       Lists attached images, GIFs, or videos when available.
       **Media item fields.**
         <ResponseField name="mediaUrl" type="string">Returns the direct media URL.</ResponseField>
@@ -403,10 +472,14 @@ Respect `Retry-After` after 429. Resume from the stored cursor after 424 or 502.
 
 </ResponseField>
 <ResponseField name="has_next_page" type="boolean">
-  Shows whether more tweets remain.
+
+Shows whether more tweets remain.
+
 </ResponseField>
 <ResponseField name="next_cursor" type="string">
-  Provides the next page cursor. Empty after the final page.
+
+Provides the next page cursor. Empty after the final page.
+
 </ResponseField>
 
 ```json
@@ -440,6 +513,7 @@ Respect `Retry-After` after 429. Resume from the stored cursor after 424 or 502.
 ```json
 { "error": "unauthenticated" }
 ```
+
 Missing or invalid API key.
 
 ### 402 Insufficient credits
@@ -447,6 +521,7 @@ Missing or invalid API key.
 ```json
 { "error": "insufficient_credits" }
 ```
+
 Metered access requires enough available credits. Possible error values include `no_subscription`, `subscription_inactive`, `no_credits`, and `insufficient_credits`.
 
 ### 429 Rate limit exceeded
@@ -458,6 +533,7 @@ Metered access requires enough available credits. Possible error values include 
   "retryAfter": 60
 }
 ```
+
 The API key, user, or plan tier is sending requests too quickly. Respect the `Retry-After` header before retrying.
 
 ### 502 X API unavailable
@@ -465,6 +541,7 @@ The API key, user, or plan tier is sending requests too quickly. Respect the `Re
 ```json
 { "error": "x_api_unavailable" }
 ```
+
 The read service failed. Retry after a short delay.
 
 ### 424 Dependency failed
@@ -472,9 +549,12 @@ The read service failed. Retry after a short delay.
 ```json
 { "error": "x_api_unavailable" }
 ```
+
 The opt-in normalized v1 contract returns `424` when the read service fails.
 Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns `502`.
 
 <Note>
-  **Related.** [Notifications](/api-reference/x/notifications) · [Bookmarks](/api-reference/x/bookmarks)
+
+**Related.** [Notifications](/api-reference/x/notifications) · [Bookmarks](/api-reference/x/bookmarks)
+
 </Note>

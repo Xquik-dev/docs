@@ -57,17 +57,17 @@ Follow references to inspect shared fields and recursive types.
 
 ```javascript
 async () => {
-  const path = '/api/v1/x/tweets/search';
+  const path = "/api/v1/x/tweets/search";
   const { operationId, summary, parameters } = spec.paths[path].get;
-  return { path, method: 'GET', operationId, summary, parameters };
-}
+  return { path, method: "GET", operationId, summary, parameters };
+};
 ```
 
 Inspect specific response properties in a separate `search` call.
 For example, `#/components/schemas/PaginatedTweets` identifies the shared pagination schema.
 
 ```javascript
-async () => spec.components.schemas.PaginatedTweets.properties
+async () => spec.components.schemas.PaginatedTweets.properties;
 ```
 
 ## execute
@@ -89,7 +89,7 @@ Place API calls inside its body. Non-functions fail before any API request start
 ```typescript
 interface XquikRequest {
   path: string;
-  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   query?: Record<string, string | number | boolean | undefined>;
   body?: unknown;
 }
@@ -201,23 +201,23 @@ status URL when the agent receives a single stored link.
 ```javascript
 async () => {
   const target = 100;
-  const query = 'from:username giveaway';
+  const query = "from:username giveaway";
   const seenIds = new Set();
   const seenCursors = new Set();
   const sampleTweets = [];
   let cursor;
   let hasMore = true;
-  let nextCursor = '';
-  let stopReason = 'page_cap';
+  let nextCursor = "";
+  let stopReason = "page_cap";
 
   for (let pageNumber = 0; pageNumber < 10 && seenIds.size < target && hasMore; pageNumber += 1) {
     const { result: page } = await xquik.request({
-      path: '/api/v1/x/tweets/search',
+      path: "/api/v1/x/tweets/search",
       query: {
         q: query,
         limit: String(Math.min(200, target - seenIds.size)),
-        ...(cursor ? { cursor } : {})
-      }
+        ...(cursor ? { cursor } : {}),
+      },
     });
 
     for (const tweet of page.tweets) {
@@ -229,21 +229,21 @@ async () => {
           text_excerpt: tweet.text?.slice(0, 120) ?? null,
           author_id: tweet.author?.id ?? null,
           author_username: tweet.author?.username ?? null,
-          created: tweet['created'] ?? null,
+          created: tweet["created"] ?? null,
           like_count: tweet.like_count ?? null,
-          view_count: tweet.view_count ?? null
+          view_count: tweet.view_count ?? null,
         });
       }
     }
 
     hasMore = Boolean(page.has_more);
-    nextCursor = page.next_cursor ?? '';
+    nextCursor = page.next_cursor ?? "";
     if (!hasMore) {
-      stopReason = 'exhausted';
+      stopReason = "exhausted";
       break;
     }
     if (!nextCursor || nextCursor === cursor || seenCursors.has(nextCursor)) {
-      stopReason = 'cursor_stalled';
+      stopReason = "cursor_stalled";
       break;
     }
     seenCursors.add(nextCursor);
@@ -251,16 +251,16 @@ async () => {
   }
 
   return {
-    source: 'xquik_mcp',
-    job: 'tweet_search',
+    source: "xquik_mcp",
+    job: "tweet_search",
     query,
     rows_seen: seenIds.size,
     sample_tweets: sampleTweets,
     has_more: hasMore,
     next_cursor: nextCursor,
-    stop_reason: seenIds.size >= target ? 'requested_total' : stopReason
+    stop_reason: seenIds.size >= target ? "requested_total" : stopReason,
   };
-}
+};
 ```
 
 > Summarize up to 100 followers with guarded pagination (credits required)
@@ -268,23 +268,23 @@ async () => {
 ```javascript
 async () => {
   const target = 100;
-  const sourceUser = 'username';
+  const sourceUser = "username";
   const seenIds = new Set();
   const seenCursors = new Set();
   const sampleProfiles = [];
   let verifiedCount = 0;
   let cursor;
   let hasMore = true;
-  let nextCursor = '';
-  let stopReason = 'page_cap';
+  let nextCursor = "";
+  let stopReason = "page_cap";
 
   for (let pageNumber = 0; pageNumber < 10 && seenIds.size < target && hasMore; pageNumber += 1) {
     const { result: page } = await xquik.request({
       path: `/api/v1/x/users/${sourceUser}/followers`,
       query: {
         pageSize: String(Math.max(20, Math.min(200, target - seenIds.size))),
-        ...(cursor ? { cursor } : {})
-      }
+        ...(cursor ? { cursor } : {}),
+      },
     });
 
     for (const user of page.users) {
@@ -298,19 +298,19 @@ async () => {
           name: user.name ?? null,
           followers: user.followers ?? null,
           verified: user.verified ?? null,
-          profile_picture: user.profile_picture ?? null
+          profile_picture: user.profile_picture ?? null,
         });
       }
     }
 
     hasMore = Boolean(page.has_more);
-    nextCursor = page.next_cursor ?? '';
+    nextCursor = page.next_cursor ?? "";
     if (!hasMore) {
-      stopReason = 'exhausted';
+      stopReason = "exhausted";
       break;
     }
     if (!nextCursor || nextCursor === cursor || seenCursors.has(nextCursor)) {
-      stopReason = 'cursor_stalled';
+      stopReason = "cursor_stalled";
       break;
     }
     seenCursors.add(nextCursor);
@@ -318,17 +318,17 @@ async () => {
   }
 
   return {
-    source: 'xquik_mcp',
-    job: 'follower_export',
+    source: "xquik_mcp",
+    job: "follower_export",
     source_user: sourceUser,
     rows_seen: seenIds.size,
     verified_count: verifiedCount,
     sample_profiles: sampleProfiles,
     has_more: hasMore,
     next_cursor: nextCursor,
-    stop_reason: seenIds.size >= target ? 'requested_total' : stopReason
+    stop_reason: seenIds.size >= target ? "requested_total" : stopReason,
   };
-}
+};
 ```
 
 > Scrape tweet replies to CSV, JSON, or XLSX (credits required)
@@ -336,20 +336,20 @@ async () => {
 ```javascript
 async () => {
   const body = {
-    toolType: 'reply_extractor',
-    targetTweetId: '1893704267862470862',
-    resultsLimit: 500
+    toolType: "reply_extractor",
+    targetTweetId: "1893704267862470862",
+    resultsLimit: 500,
   };
 
   const { result: extraction } = await xquik.request({
-    path: '/api/v1/extractions',
-    method: 'POST',
-    body
+    path: "/api/v1/extractions",
+    method: "POST",
+    body,
   });
 
   return {
-    source: 'xquik_mcp',
-    job: 'reply_extraction',
+    source: "xquik_mcp",
+    job: "reply_extraction",
     extraction_id: extraction.id,
     status: extraction.status,
     target_tweet_id: body.targetTweetId,
@@ -357,9 +357,9 @@ async () => {
     poll: `/api/v1/extractions/${extraction.id}`,
     export_csv: `/api/v1/extractions/${extraction.id}/export?format=csv`,
     export_json: `/api/v1/extractions/${extraction.id}/export?format=json`,
-    export_xlsx: `/api/v1/extractions/${extraction.id}/export?format=xlsx`
+    export_xlsx: `/api/v1/extractions/${extraction.id}/export?format=xlsx`,
   };
-}
+};
 ```
 
 > Post a tweet or reply with public media URLs (credits required)
@@ -370,21 +370,21 @@ supply it themselves.
 ```javascript
 async () => {
   const body = {
-    account: 'myxhandle',
-    text: 'Launch media is ready',
-    reply_to_tweet_id: '1893456789012345678',
-    media: ['https://example.com/product-demo.mp4']
+    account: "myxhandle",
+    text: "Launch media is ready",
+    reply_to_tweet_id: "1893456789012345678",
+    media: ["https://example.com/product-demo.mp4"],
   };
 
   const { result } = await xquik.request({
-    path: '/api/v1/x/tweets',
-    method: 'POST',
-    body
+    path: "/api/v1/x/tweets",
+    method: "POST",
+    body,
   });
 
   return {
-    source: 'xquik_mcp',
-    job: 'tweet_write',
+    source: "xquik_mcp",
+    job: "tweet_write",
     status: result.status,
     terminal: result.terminal,
     safe_to_retry: result.safe_to_retry,
@@ -396,50 +396,50 @@ async () => {
     reply_to_tweet_id: body.reply_to_tweet_id,
     media: body.media,
     charged: result.billing.charged,
-    charged_credits: result.billing.charged_credits
+    charged_credits: result.billing.charged_credits,
   };
-}
+};
 ```
 
 > Upload media for a DM (credits required)
 
 ```javascript
 async () => {
-  const account = 'myxhandle';
-  const user_id = '44196397';
-  const source_url = 'https://example.com/image.png';
+  const account = "myxhandle";
+  const user_id = "44196397";
+  const source_url = "https://example.com/image.png";
 
   const { result: media } = await xquik.request({
-    path: '/api/v1/x/media',
-    method: 'POST',
+    path: "/api/v1/x/media",
+    method: "POST",
     body: {
       account,
-      url: source_url
-    }
+      url: source_url,
+    },
   });
 
   const { result: dm } = await xquik.request({
     path: `/api/v1/x/dm/${user_id}`,
-    method: 'POST',
+    method: "POST",
     body: {
       account,
-      text: 'Here is the asset',
-      media_ids: [media.media_id]
-    }
+      text: "Here is the asset",
+      media_ids: [media.media_id],
+    },
   });
 
   return {
-    source: 'xquik_mcp',
-    job: 'dm_media',
-    status: 'sent',
+    source: "xquik_mcp",
+    job: "dm_media",
+    status: "sent",
     user_id,
     account,
     source_url,
     media_id: media.media_id,
     media_url: media.media_url,
-    message_id: dm.message_id
+    message_id: dm.message_id,
   };
-}
+};
 ```
 
 Store `message_id` with the uploaded `media_id`. Keep full DM bodies out of
@@ -451,62 +451,62 @@ reply threading.
 
 ```javascript
 async () => {
-  const tweet_input = '1234567890';
+  const tweet_input = "1234567890";
   const { result: download } = await xquik.request({
-    path: '/api/v1/x/media/download',
-    method: 'POST',
-    body: { tweetInput: tweet_input }
+    path: "/api/v1/x/media/download",
+    method: "POST",
+    body: { tweetInput: tweet_input },
   });
 
   return {
-    source: 'xquik_mcp',
-    job: 'media_download',
-    mode: 'single',
+    source: "xquik_mcp",
+    job: "media_download",
+    mode: "single",
     tweet_input,
     tweet_id: download.tweet_id,
     gallery_url: download.gallery_url,
     cache_hit: download.cache_hit,
-    note: 'Store gallery_url as the saved media gallery. It is not an uploaded media_id for DMs.'
+    note: "Store gallery_url as the saved media gallery. It is not an uploaded media_id for DMs.",
   };
-}
+};
 ```
 
 > Bulk download: search + download combined
 
 ```javascript
 async () => {
-  const query = 'from:berktavsan has:videos';
+  const query = "from:berktavsan has:videos";
   const { result: search } = await xquik.request({
-    path: '/api/v1/x/tweets/search',
-    query: { q: query }
+    path: "/api/v1/x/tweets/search",
+    query: { q: query },
   });
   if (!search.tweets?.length) {
     return {
-      source: 'xquik_mcp',
-      job: 'bulk_media_download',
-      status: 'empty',
-      query
+      source: "xquik_mcp",
+      job: "bulk_media_download",
+      status: "empty",
+      query,
     };
   }
 
-  const tweetIds = search.tweets.map(t => t.id).slice(0, 50);
+  const tweetIds = search.tweets.map((t) => t.id).slice(0, 50);
   const { result: download } = await xquik.request({
-    path: '/api/v1/x/media/download',
-    method: 'POST',
-    body: { tweetIds }
+    path: "/api/v1/x/media/download",
+    method: "POST",
+    body: { tweetIds },
   });
 
   return {
-    source: 'xquik_mcp',
-    job: 'bulk_media_download',
-    status: 'ready',
+    source: "xquik_mcp",
+    job: "bulk_media_download",
+    status: "ready",
     query,
     tweet_ids: tweetIds,
     gallery_url: download.gallery_url,
     total_tweets: download.total_tweets,
-    total_media: download.total_media
+    total_media: download.total_media,
   };
-}
+};
 ```
 
 > Monitor a user + create webhook (monitor creation requires credits, webhook is free)
@@ -514,18 +514,18 @@ async () => {
 ```javascript
 async () => {
   const { result: monitor } = await xquik.request({
-    path: '/api/v1/monitors',
-    method: 'POST',
-    body: { username: 'elonmusk', eventTypes: ['tweet.new', 'tweet.reply'] }
+    path: "/api/v1/monitors",
+    method: "POST",
+    body: { username: "elonmusk", eventTypes: ["tweet.new", "tweet.reply"] },
   });
   const { result: webhook } = await xquik.request({
-    path: '/api/v1/webhooks',
-    method: 'POST',
-    body: { url: 'https://example.com/hook', eventTypes: ['tweet.new', 'tweet.reply'] }
+    path: "/api/v1/webhooks",
+    method: "POST",
+    body: { url: "https://example.com/hook", eventTypes: ["tweet.new", "tweet.reply"] },
   });
   const { result: test } = await xquik.request({
     path: `/api/v1/webhooks/${webhook.id}/test`,
-    method: 'POST'
+    method: "POST",
   });
   return {
     monitor_id: monitor.id,
@@ -533,31 +533,32 @@ async () => {
     next_billing_at: monitor.next_billing_at,
     webhook_id: webhook.id,
     webhook_url: webhook.url,
-    save_secret_once: 'Store webhook.secret for X-Xquik-Signature verification; do not print it in logs.',
-    idempotency_keys: ['deliveryId', 'streamEventId'],
+    save_secret_once:
+      "Store webhook.secret for X-Xquik-Signature verification; do not print it in logs.",
+    idempotency_keys: ["deliveryId", "streamEventId"],
     delivery_status: `/api/v1/webhooks/${webhook.id}/deliveries`,
-    test
+    test,
   };
-}
+};
 ```
 
 > Poll stored monitor events (free)
 
 ```javascript
 async () => {
-  const monitor_id = 'mon_123';
-  const event_type = 'tweet.new';
+  const monitor_id = "mon_123";
+  const event_type = "tweet.new";
   const { result: page } = await xquik.request({
-    path: '/api/v1/events',
-    query: { monitorId: monitor_id, eventType: event_type }
+    path: "/api/v1/events",
+    query: { monitorId: monitor_id, eventType: event_type },
   });
 
   return {
-    source: 'xquik_mcp',
-    job: 'monitor_event_poll',
+    source: "xquik_mcp",
+    job: "monitor_event_poll",
     monitor_id,
     event_type,
-    rows: page.events.map(event => ({
+    rows: page.events.map((event) => ({
       event_id: event.id,
       type: event.type,
       username: event.username ?? null,
@@ -565,15 +566,15 @@ async () => {
       monitor_id: event.monitor_id,
       monitor_type: event.monitor_type,
       occurred_at: event.occurred_at,
-      data: event.data
+      data: event.data,
     })),
     has_more: page.has_more,
     next_cursor: page.next_cursor,
     next_query: page.next_cursor
       ? { monitorId: monitor_id, eventType: event_type, cursor: page.next_cursor }
-      : null
+      : null,
   };
-}
+};
 ```
 
 > Run an extraction with a resumable handoff (credits required)
@@ -581,31 +582,31 @@ async () => {
 ```javascript
 async () => {
   const body = {
-    toolType: 'tweet_search_extractor',
-    searchQuery: 'launch announcement',
-    resultsLimit: 500
+    toolType: "tweet_search_extractor",
+    searchQuery: "launch announcement",
+    resultsLimit: 500,
   };
 
   // Add optional filters only when the user requests them.
 
   const { result: job } = await xquik.request({
-    path: '/api/v1/extractions',
-    method: 'POST',
-    body
+    path: "/api/v1/extractions",
+    method: "POST",
+    body,
   });
 
   return {
-    source: 'xquik_mcp',
-    job: 'tweet_search_extraction',
+    source: "xquik_mcp",
+    job: "tweet_search_extraction",
     extraction_id: job.id,
     tool_type: job.tool_type,
     status: job.status,
     query: body.searchQuery,
     results_limit: body.resultsLimit,
     poll: `/api/v1/extractions/${job.id}`,
-    export_after_complete: `/api/v1/extractions/${job.id}/export?format=json`
+    export_after_complete: `/api/v1/extractions/${job.id}/export?format=json`,
   };
-}
+};
 ```
 
 ## Agent handoff patterns
@@ -614,29 +615,46 @@ Use extraction exports for generated files. Keep agent handoffs small. Include t
 Avoid raw pages when later workers need durable rows.
 
 <CardGroup cols={2}>
+
   <Card title="Search tweets to JSON" icon="search">
+
     Call `GET /api/v1/x/tweets/search` with keywords, operators, a Tweet ID, or an X status URL in `q`. Valid time bounds apply to every page. The start is inclusive and the end is exclusive. Store `tweets[].id`, `tweets[].text`, `tweets[].author`, `tweets[].created`, `has_more`, `next_cursor`, and the original `q`. Cost: 1 credit per tweet returned.
+
   </Card>
   <Card title="Scrape tweet replies to files" icon="messages-square">
+
     Call `POST /api/v1/extractions` with `reply_extractor` and `targetTweetId`. The create route handles required preflight. Poll `GET /api/v1/extractions/{id}`, export CSV/JSON/XLSX with `GET /api/v1/extractions/{id}/export`, and store reply rows plus `has_more` and `next_cursor`. Cost: 1 credit per reply extracted or returned.
+
   </Card>
   <Card title="Export followers to CRM" icon="users">
+
     Call `GET /api/v1/x/users/{id}/followers` or `POST /api/v1/extractions` with `follower_explorer`. Store `users[].id`, `users[].username`, `users[].name`, `users[].followers`, `has_more`, and `next_cursor`. Cost: 1 credit per follower returned or extracted.
+
   </Card>
   <Card title="Post media tweets or replies" icon="image">
+
     Call `POST /api/v1/x/tweets` with `media: ["https://..."]`. Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `account`, `charged_credits`, and the original `media` URLs. Cost: 30 credits text-only, plus 2 credits per started MB across attached media.
+
   </Card>
   <Card title="Send DMs with media" icon="send">
+
     Call `POST /api/v1/x/media`, then `POST /api/v1/x/dm/{userId}` with one `media_ids` value. Store `media_id`, `media_url`, `message_id`, `user_id`, `account`, and source URL or filename. Keep full DM bodies out of shared outputs and leave `reply_to_message_id` unset. Cost: 10 credits per media upload plus 10 credits per DM send.
+
   </Card>
   <Card title="Track tweet or reply writes" icon="activity">
+
     Call `POST /api/v1/x/tweets`, then `GET /api/v1/x/write-actions/{id}` when pending. Store `tweet_id`, `reply_to_tweet_id`, `write_action_id`, `status`, `charged`, `charged_credits`, and `media`. Cost: 30 credits text-only, plus 2 credits per started MB across attached media.
+
   </Card>
   <Card title="Monitor tweets to webhooks" icon="radio">
+
     Call `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then `POST /api/v1/webhooks`. Store `monitor.id`, `event_types`, `next_billing_at`, `webhook.id`, webhook URL, and the one-time `webhook.secret`; run `POST /api/v1/webhooks/{id}/test` before routing production events. Verify `X-Xquik-Signature`, de-dupe production payloads with `deliveryId` and `streamEventId`, and inspect `GET /api/v1/webhooks/{id}/deliveries` for retry status rows. Each payload contains one monitor event, so process multiple POSTs when one check catches multiple new matching tweets. Cost: 21 credits per active monitor-hour; webhook delivery is included.
+
   </Card>
   <Card title="Replay monitor events" icon="activity">
+
     Call `GET /api/v1/events` when a receiver missed webhook delivery or a downstream queue needs replay. Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, and `next_cursor`. Use `cursor` for the next page.
+
   </Card>
 </CardGroup>
 
@@ -645,25 +663,25 @@ Do not upload media before posting tweets or replies when the media is already p
 ```javascript
 async () => {
   const { result: page } = await xquik.request({
-    path: '/api/v1/x/tweets/search',
-    query: { q: 'from:username giveaway', limit: '50' }
+    path: "/api/v1/x/tweets/search",
+    query: { q: "from:username giveaway", limit: "50" },
   });
 
   return {
-    source: 'xquik_mcp',
-    job: 'tweet_search',
-    query: 'from:username giveaway',
-    rows: page.tweets.map(tweet => ({
+    source: "xquik_mcp",
+    job: "tweet_search",
+    query: "from:username giveaway",
+    rows: page.tweets.map((tweet) => ({
       tweet_id: tweet.id,
       text: tweet.text,
       author: tweet.author,
-      created: tweet['created'],
-      url: tweet.url
+      created: tweet["created"],
+      url: tweet.url,
     })),
     has_more: page.has_more,
-    next_cursor: page.next_cursor
+    next_cursor: page.next_cursor,
   };
-}
+};
 ```
 
 > Look up known tweet IDs
@@ -673,17 +691,17 @@ async () => {
 ```javascript
 async () => {
   const { result: page } = await xquik.request({
-    path: '/api/v1/x/tweets',
-    query: { ids: '1893456789012345678,1893456789012345679' }
+    path: "/api/v1/x/tweets",
+    query: { ids: "1893456789012345678,1893456789012345679" },
   });
   return {
-    tweets: page.tweets.map(tweet => ({
+    tweets: page.tweets.map((tweet) => ({
       tweet_id: tweet.id,
       text: tweet.text,
-      author_username: tweet.author?.username ?? null
-    }))
+      author_username: tweet.author?.username ?? null,
+    })),
   };
-}
+};
 ```
 
 > Subscribe (free, returns checkout or billing portal URL)
@@ -693,10 +711,10 @@ Run this mutation only after the user explicitly asks to subscribe or open billi
 ```javascript
 async () => {
   return xquik.request({
-    path: '/api/v1/subscribe',
-    method: 'POST'
+    path: "/api/v1/subscribe",
+    method: "POST",
   });
-}
+};
 ```
 
 ## API endpoints
@@ -704,23 +722,36 @@ async () => {
 The REST API documents 129 operations. The full MCP catalog exposes 118 across 10 categories:
 
 <CardGroup cols={2}>
+
   <Card title="Account, composition, and credits" icon="user">
+
     20 MCP operations across `account`, `composition`, and `credits`: account info, subscribe, X identity, compose, styles, drafts, radar, balance checks, checkout creation, and checkout status.
+
   </Card>
   <Card title="Extractions and media" icon="download">
+
     9 operations across `extraction` and `media`: giveaway draws, extraction jobs, estimates, and media download.
+
   </Card>
   <Card title="Monitoring and webhooks" icon="radio">
+
     19 operations in `monitoring`: account monitors, keyword monitors, stored events, webhooks, deliveries, and test delivery.
+
   </Card>
   <Card title="Support" icon="message-circle">
+
     5 operations in `support`: create, list, read, reply, and close tickets.
+
   </Card>
   <Card title="Tweets, profiles & followers" icon="search">
+
     38 operations in `twitter`: batch and single tweet lookup, tweet search, article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, followers, replies, communities, and lists.
+
   </Card>
   <Card title="X accounts and writes" icon="send">
+
     27 operations across `x-accounts` and `x-write`: connect accounts, resolve challenges, post tweets, like, retweet, follow, remove followers, send DMs, upload media, update profiles, and manage communities.
+
   </Card>
 </CardGroup>
 
@@ -729,28 +760,43 @@ With a guest `paid_reads` key, `search` and `execute` expose exactly 33 `twitter
 ## Cost summary
 
 <CardGroup cols={2}>
+
   <Card title="Always free discovery" icon="sparkles">
+
     `docs` and `search` are free. They return documentation and API contract details.
+
   </Card>
   <Card title="Free account and stored records" icon="circle-check">
+
     Compose, cached styles, drafts, radar, subscribe, account, support, credits, X account management, webhooks, stored monitors, stored events, and existing extraction or draw reads are free.
+
   </Card>
   <Card title="Metered reads and jobs" icon="gauge">
+
     Tweet search, user lookup, follow checks, media download, trends, extraction creation, and draw creation are metered.
+
   </Card>
   <Card title="Monitor billing" icon="radio">
+
     Active monitors cost 21 credits per monitor-hour. Creating one requires enough available credits.
+
   </Card>
   <Card title="Write actions" icon="send">
+
     Tweet, reply, like, retweet, follow, DM, profile, community, and media upload writes are metered.
+
   </Card>
   <Card title="Metered refreshes" icon="refresh-cw">
+
     Fresh style analysis after the 7-day cache window requires enough available credits.
+
   </Card>
 </CardGroup>
 
 <Warning>
-  Never combine free and paid endpoints in a single `Promise.all`. A 402 error on one call kills all results. Call free endpoints first, then paid ones separately.
+
+Never combine free and paid endpoints in a single `Promise.all`. A 402 error on one call kills all results. Call free endpoints first, then paid ones separately.
+
 </Warning>
 
 ## Error handling

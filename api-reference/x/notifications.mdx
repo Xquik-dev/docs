@@ -3,16 +3,31 @@ title: "Twitter notifications API, mentions & activity feed"
 sidebarTitle: "Get notifications"
 description: "Retrieve authenticated X account notifications, store triage rows, and route mentions, verified activity, and older pages with next_cursor. See costs."
 api: "GET /x/notifications"
-keywords: ["Twitter notifications API", "Twitter API webhook", "X notifications API", "get notifications", "mentions notifications", "verified notifications", "notification triage", "next_cursor", "agent inbox"]
+keywords:
+  [
+    "Twitter notifications API",
+    "Twitter API webhook",
+    "X notifications API",
+    "get notifications",
+    "mentions notifications",
+    "verified notifications",
+    "notification triage",
+    "next_cursor",
+    "agent inbox",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="200" id="response-x-notifications-200">
+
     ```json
     {
       "notifications": [
@@ -27,36 +42,44 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
       "next_cursor": "DAACCgACGRElMJcAAA"
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-x-notifications-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
+
   </Tab>
 
   <Tab title="402" id="response-x-notifications-402">
+
     ```json
     {
       "error": "insufficient_credits",
       "message": "Insufficient credits. Top up or subscribe to continue."
     }
     ```
+
   </Tab>
 
   <Tab title="424" id="response-x-notifications-424">
+
     ```json
     {
       "error": "x_api_unavailable",
       "message": "X data source temporarily unavailable. Try again later."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-x-notifications-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -64,137 +87,151 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
       "retryAfter": 60
     }
     ```
+
   </Tab>
 
   <Tab title="502" id="response-x-notifications-502">
+
     ```json
     {
       "error": "x_api_unavailable",
       "message": "X data source temporarily unavailable. Try again later."
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 <ConnectedAccountApiLinks />
 
 <Note>
-  Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
+Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
 </Note>
 
 <Callout icon="coins" color="#5c3327">
-  **1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+
+**1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+
 </Callout>
 
 <Note>
-  Requires a connected X account. Uses user-authenticated access.
+
+Requires a connected X account. Uses user-authenticated access.
+
 </Note>
 
 <Info>
-  Get notifications reads the connected account inbox. Use `type=Mentions` for
-  mention triage, `type=Verified` for verified-account activity, or omit `type`
-  for all notification rows. Store `next_cursor` only when `has_next_page` is
-  true.
+
+Get notifications reads the connected account inbox. Use `type=Mentions` for
+mention triage, `type=Verified` for verified-account activity, or omit `type`
+for all notification rows. Store `next_cursor` only when `has_next_page` is
+true.
+
 </Info>
 
 <CodeGroup>
-  ```bash Mentions
-  curl -G https://xquik.com/api/v1/x/notifications \
-    --data-urlencode "type=Mentions" \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 
-  # Page 2
-  curl -G https://xquik.com/api/v1/x/notifications \
-    --data-urlencode "type=Mentions" \
-    --data-urlencode "cursor=abc123" \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
-  ```
+```bash Mentions
+curl -G https://xquik.com/api/v1/x/notifications \
+  --data-urlencode "type=Mentions" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 
-  ```javascript Node.js
-  function notificationsUrl({ cursor, type = "Mentions" }) {
-    const params = new URLSearchParams({ type });
-    if (cursor) params.set("cursor", cursor);
-    return `https://xquik.com/api/v1/x/notifications?${params}`;
-  }
+# Page 2
+curl -G https://xquik.com/api/v1/x/notifications \
+  --data-urlencode "type=Mentions" \
+  --data-urlencode "cursor=abc123" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
 
-  function toNotificationRows(page, { inboxType }) {
-    return page.notifications.map((notification) => ({
-      record_type: "notification",
-      inbox_type: inboxType,
-      notification_id: notification.id,
-      notification_type: notification.type ?? null,
-      message_preview: notification.message ?? null,
-      created_at: notification.timestamp ?? null,
-      source_endpoint: "GET /api/v1/x/notifications",
-      page_next_cursor: page.has_next_page ? page.next_cursor : null,
-    }));
-  }
+```javascript Node.js
+function notificationsUrl({ cursor, type = "Mentions" }) {
+  const params = new URLSearchParams({ type });
+  if (cursor) params.set("cursor", cursor);
+  return `https://xquik.com/api/v1/x/notifications?${params}`;
+}
 
-  async function saveNotificationRows(rows) {
-    // Replace this with a private support inbox, CRM, queue, or agent memory write.
-    return rows.length;
-  }
+function toNotificationRows(page, { inboxType }) {
+  return page.notifications.map((notification) => ({
+    record_type: "notification",
+    inbox_type: inboxType,
+    notification_id: notification.id,
+    notification_type: notification.type ?? null,
+    message_preview: notification.message ?? null,
+    created_at: notification.timestamp ?? null,
+    source_endpoint: "GET /api/v1/x/notifications",
+    page_next_cursor: page.has_next_page ? page.next_cursor : null,
+  }));
+}
 
-  const inboxType = "Mentions";
-  const response = await fetch(notificationsUrl({ type: inboxType }), {
+async function saveNotificationRows(rows) {
+  // Replace this with a private support inbox, CRM, queue, or agent memory write.
+  return rows.length;
+}
+
+const inboxType = "Mentions";
+const response = await fetch(notificationsUrl({ type: inboxType }), {
+  headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+});
+const data = await response.json();
+const rows = toNotificationRows(data, { inboxType });
+await saveNotificationRows(rows);
+
+// Paginate
+if (data.has_next_page) {
+  const next = await fetch(notificationsUrl({ type: inboxType, cursor: data.next_cursor }), {
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
-  const data = await response.json();
-  const rows = toNotificationRows(data, { inboxType });
-  await saveNotificationRows(rows);
+  const nextRows = toNotificationRows(await next.json(), { inboxType });
+  await saveNotificationRows(nextRows);
+}
+```
 
-  // Paginate
-  if (data.has_next_page) {
-    const next = await fetch(notificationsUrl({ type: inboxType, cursor: data.next_cursor }), {
-      headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
-    });
-    const nextRows = toNotificationRows(await next.json(), { inboxType });
-    await saveNotificationRows(nextRows);
-  }
-  ```
+```python Python
+import requests
 
-  ```python Python
-  import requests
+def to_notification_rows(page, inbox_type):
+    return [
+        {
+            "record_type": "notification",
+            "inbox_type": inbox_type,
+            "notification_id": notification["id"],
+            "notification_type": notification.get("type"),
+            "message_preview": notification.get("message"),
+            "created_at": notification.get("timestamp"),
+            "source_endpoint": "GET /api/v1/x/notifications",
+            "page_next_cursor": page["next_cursor"] if page["has_next_page"] else None,
+        }
+        for notification in page["notifications"]
+    ]
 
-  def to_notification_rows(page, inbox_type):
-      return [
-          {
-              "record_type": "notification",
-              "inbox_type": inbox_type,
-              "notification_id": notification["id"],
-              "notification_type": notification.get("type"),
-              "message_preview": notification.get("message"),
-              "created_at": notification.get("timestamp"),
-              "source_endpoint": "GET /api/v1/x/notifications",
-              "page_next_cursor": page["next_cursor"] if page["has_next_page"] else None,
-          }
-          for notification in page["notifications"]
-      ]
+def save_notification_rows(rows):
+    # Replace this with a private support inbox, CRM, queue, or agent memory write.
+    return len(rows)
 
-  def save_notification_rows(rows):
-      # Replace this with a private support inbox, CRM, queue, or agent memory write.
-      return len(rows)
+inbox_type = "Mentions"
+response = requests.get(
+    "https://xquik.com/api/v1/x/notifications",
+    params={"type": inbox_type},
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+)
+data = response.json()
+save_notification_rows(to_notification_rows(data, inbox_type))
 
-  inbox_type = "Mentions"
-  response = requests.get(
-      "https://xquik.com/api/v1/x/notifications",
-      params={"type": inbox_type},
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-  )
-  data = response.json()
-  save_notification_rows(to_notification_rows(data, inbox_type))
+# Paginate
+while data["has_next_page"]:
+    data = requests.get(
+        "https://xquik.com/api/v1/x/notifications",
+        params={"type": inbox_type, "cursor": data["next_cursor"]},
+        headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    ).json()
+    save_notification_rows(to_notification_rows(data, inbox_type))
+```
 
-  # Paginate
-  while data["has_next_page"]:
-      data = requests.get(
-          "https://xquik.com/api/v1/x/notifications",
-          params={"type": inbox_type, "cursor": data["next_cursor"]},
-          headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-      ).json()
-      save_notification_rows(to_notification_rows(data, inbox_type))
-  ```
 </CodeGroup>
 
 The Node.js and Python snippets normalize each page for notification triage.
@@ -210,29 +247,42 @@ returns notification IDs, types, message previews, and timestamps. It omits
 full tweet and direct-message payloads.
 
 <CardGroup cols={2}>
+
   <Card title="Mention queue" icon="at-sign">
+
     Use `type=Mentions` for replies and mentions that need a support or brand
     review queue.
+
   </Card>
   <Card title="Verified activity" icon="badge-check">
+
     Use `type=Verified` when verified-account activity should be routed ahead
     of the general inbox.
+
   </Card>
   <Card title="All inbox" icon="inbox">
+
     Omit `type` or pass `All` when the workflow needs every notification row
     visible to the connected account.
+
   </Card>
   <Card title="Stable upserts" icon="key-round">
+
     Store `notifications[].id` as `notification_id` for dedupe and replay-safe
     imports.
+
   </Card>
   <Card title="Private text" icon="lock-keyhole">
+
     Keep `notifications[].message` in private support, CRM, or agent memory
     systems.
+
   </Card>
   <Card title="Next page" icon="arrow-right">
+
     Store `has_next_page` and `next_cursor`; pass `next_cursor` back as `cursor`
     only when `has_next_page` is true.
+
   </Card>
 </CardGroup>
 
@@ -303,46 +353,65 @@ cursor after `424` or `502`.
 ## Query parameters
 
 <ParamField query="type" type="string">
-  Notification filter. `All` (default), `Verified`, or `Mentions`. Unrecognized values fall back to `All`.
+
+Notification filter. `All` (default), `Verified`, or `Mentions`. Unrecognized values fall back to `All`.
+
 </ParamField>
 
 <ParamField query="cursor" type="string">
-  Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
+
+Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
+
 </ParamField>
 
 ## Which inbox endpoint?
 
 <CardGroup cols={2}>
+
   <Card title="Account notifications" icon="bell">
+
     Use `GET /x/notifications` for connected-account notification rows with
     `All`, `Verified`, or `Mentions` filters.
+
   </Card>
   <Card title="Home timeline" icon="house">
+
     Use [`GET /x/timeline`](/api-reference/x/timeline) for the connected
     account's home timeline tweets.
+
   </Card>
   <Card title="Participant DMs" icon="message-square">
+
     Use [`GET /x/dm/{userId}/history`](/api-reference/x/dm-history) when the
     workflow needs private direct-message conversation rows.
+
   </Card>
   <Card title="Public mentions" icon="message-square-reply">
+
     Use [`GET /x/users/{id}/mentions`](/api-reference/x/user-mentions) when you
     need public mention timeline rows for a user.
+
   </Card>
   <Card title="Account monitor events" icon="radio">
+
     Use [`List events`](/api-reference/events/list) after account or keyword
     monitors have captured replayable webhook events.
+
   </Card>
   <Card title="Webhook delivery" icon="webhook">
+
     Use [`Webhooks`](/webhooks/overview) when notification-like activity should
     push to your system instead of being polled.
+
   </Card>
 </CardGroup>
 
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported.
+
+Your API key. Session cookie authentication is also supported.
+
 </ParamField>
 
 ## Response
@@ -350,21 +419,37 @@ cursor after `424` or `502`.
 ### 200 OK
 
 <ResponseField name="notifications" type="object[]">
-  Array of notification objects.
-  **Notification object fields.**
-    <ResponseField name="id" type="string">Notification ID.</ResponseField>
-    <ResponseField name="type" type="string">Notification type (e.g. mention, like, retweet). Omitted if unavailable.</ResponseField>
-    <ResponseField name="message" type="string">Notification message text. Omitted if unavailable.</ResponseField>
-    <ResponseField name="timestamp" type="string">ISO 8601 timestamp. Omitted if unavailable.</ResponseField>
+
+Array of notification objects.
+**Notification object fields.**
+
+<ResponseField name="id" type="string">
+  Notification ID.
+</ResponseField>
+<ResponseField name="type" type="string">
+  Notification type (e.g. mention, like, retweet). Omitted if unavailable.
+</ResponseField>
+<ResponseField name="message" type="string">
+  Notification message text. Omitted if unavailable.
+</ResponseField>
+<ResponseField name="timestamp" type="string">
+  ISO 8601 timestamp. Omitted if unavailable.
+</ResponseField>
 
 </ResponseField>
 <ResponseField name="has_next_page" type="boolean">
-  Whether more notifications are available.
+
+Whether more notifications are available.
+
 </ResponseField>
 <ResponseField name="next_cursor" type="string">
-  Opaque cursor for the next page. Empty string when no more results.
+
+Opaque cursor for the next page. Empty string when no more results.
+
 </ResponseField>
 
 <Note>
-  **Related.** [Timeline](/api-reference/x/timeline), [DM History](/api-reference/x/dm-history), [User Mentions](/api-reference/x/user-mentions), and [Webhooks](/webhooks/overview).
+
+**Related.** [Timeline](/api-reference/x/timeline), [DM History](/api-reference/x/dm-history), [User Mentions](/api-reference/x/user-mentions), and [Webhooks](/webhooks/overview).
+
 </Note>

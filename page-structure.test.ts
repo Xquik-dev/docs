@@ -1,16 +1,16 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
 interface PageStructureFinding {
   readonly file: string;
   readonly issue: string;
 }
 
-const SKIPPED_DIRECTORIES = new Set(['.git', 'node_modules'] as const);
+const SKIPPED_DIRECTORIES = new Set<string>([".git", "node_modules"] as const);
 
-function listMdxFiles(directory = '.'): readonly string[] {
+function listMdxFiles(directory = "."): readonly string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
 
@@ -18,7 +18,7 @@ function listMdxFiles(directory = '.'): readonly string[] {
       return SKIPPED_DIRECTORIES.has(entry.name) ? [] : listMdxFiles(path);
     }
 
-    return entry.isFile() && entry.name.endsWith('.mdx') ? [path] : [];
+    return entry.isFile() && entry.name.endsWith(".mdx") ? [path] : [];
   });
 }
 
@@ -26,7 +26,7 @@ function collectPageStructureFindings(): readonly PageStructureFinding[] {
   const findings: PageStructureFinding[] = [];
 
   for (const file of listMdxFiles()) {
-    const source = readFileSync(file, 'utf8');
+    const source = readFileSync(file, "utf8");
     const lines = source.split(/\r?\n/u);
     let insideCodeFence = false;
     let insideCodeGroup = false;
@@ -35,16 +35,12 @@ function collectPageStructureFindings(): readonly PageStructureFinding[] {
     if (/<Tabs>(?:(?!<\/Tabs>)[\s\S])*?<ResponseField\b/u.test(source)) {
       findings.push({
         file,
-        issue: 'ResponseField cannot be nested inside Tabs.',
+        issue: "ResponseField cannot be nested inside Tabs.",
       });
     }
 
     for (const [index, line] of lines.entries()) {
-      if (
-        insideCodeGroup &&
-        !insideCodeFence &&
-        /^\s*```[A-Za-z0-9#+.-]+\s*$/u.test(line)
-      ) {
+      if (insideCodeGroup && !insideCodeFence && /^\s*```[A-Za-z0-9#+.-]+\s*$/u.test(line)) {
         findings.push({
           file,
           issue: `CodeGroup fence on line ${index + 1} needs a visible tab title.`,
@@ -71,7 +67,7 @@ function collectPageStructureFindings(): readonly PageStructureFinding[] {
         continue;
       }
 
-      const headingLevel = heading[1].length;
+      const headingLevel = heading[0].trim().length;
       if (headingLevel > previousHeadingLevel + 1) {
         findings.push({
           file,
@@ -85,8 +81,8 @@ function collectPageStructureFindings(): readonly PageStructureFinding[] {
   return findings;
 }
 
-describe('page structure', (): void => {
-  it('keeps CodeGroup labels and heading order accessible', (): void => {
+describe("page structure", (): void => {
+  it("keeps CodeGroup labels and heading order accessible", (): void => {
     expect.assertions(1);
 
     expect(collectPageStructureFindings()).toStrictEqual([]);

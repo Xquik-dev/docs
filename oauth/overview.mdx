@@ -2,7 +2,19 @@
 title: "OAuth 2.1 for MCP & X API agent authorization"
 sidebarTitle: OAuth 2.1
 description: "Authorize MCP clients and agents with OAuth 2.1, PKCE, claimed service identities, interactive refresh tokens, discovery metadata, and revocation examples."
-keywords: ["OAuth", "OAuth 2.1", "PKCE", "MCP", "agent authentication", "authorization", "token", "refresh token", "CIMD", "dynamic client registration"]
+keywords:
+  [
+    "OAuth",
+    "OAuth 2.1",
+    "PKCE",
+    "MCP",
+    "agent authentication",
+    "authorization",
+    "token",
+    "refresh token",
+    "CIMD",
+    "dynamic client registration",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -15,12 +27,16 @@ Authorization Code with S256 PKCE. Agents can use claimed `service_auth`
 registration. Both paths require the user to sign in and approve access.
 
 <Info>
-  Prefer OAuth for compatible remote MCP clients. Check the [client compatibility
-  matrix](/mcp/overview#client-compatibility) before using an API key fallback.
+
+Prefer OAuth for compatible remote MCP clients. Check the [client compatibility
+matrix](/mcp/overview#client-compatibility) before using an API key fallback.
+
 </Info>
 
 <Warning>
-  Codex CLI 0.147.0 fixes `Authorization server response missing required issuer: expected https://xquik.com`. If you cannot upgrade, use the [temporary API key workaround](/guides/troubleshooting#codex-oauth-issuer-validation-error). See [issue #31573](https://github.com/openai/codex/issues/31573).
+
+Codex CLI 0.147.0 fixes `Authorization server response missing required issuer: expected https://xquik.com`. If you cannot upgrade, use the [temporary API key workaround](/guides/troubleshooting#codex-oauth-issuer-validation-error). See [issue #31573](https://github.com/openai/codex/issues/31573).
+
 </Warning>
 
 - **Client ID Metadata Documents (CIMD).** Recommended for modern clients. The client's HTTPS metadata URL becomes its `client_id`. No registration request or client secret is required.
@@ -144,7 +160,9 @@ can show a concrete `client_id`.
 ## Manual implementation
 
 <Steps>
+
   <Step title="Register a DCR client">
+
     Skip this step when the client uses CIMD. For DCR, register once to get a
     UUID `client_id`.
 
@@ -180,11 +198,15 @@ can show a concrete `client_id`.
     - **Confidential** (`token_endpoint_auth_method: "client_secret_post"`): Returns a `client_secret` in the registration response. Used by server-side apps.
 
     <Warning>
+
       If you register a confidential client, the `client_secret` is returned **once** in the registration response. Store it securely.
+
     </Warning>
+
   </Step>
 
   <Step title="Generate PKCE parameters">
+
     Generate a cryptographically random `code_verifier` and derive the `code_challenge` from it.
 
     <CodeGroup>
@@ -234,11 +256,15 @@ can show a concrete `client_id`.
     </CodeGroup>
 
     <Warning>
+
       The `code_verifier` must have sufficient entropy. Use at least 32 cryptographically random bytes (64 hex characters). Store the verifier securely on the client. You need it for the token exchange in step 5.
+
     </Warning>
+
   </Step>
 
   <Step title="Redirect to authorization">
+
     Redirect the user to the Xquik authorization endpoint with the required query parameters.
 
     ```text
@@ -275,9 +301,11 @@ can show a concrete `client_id`.
     Send the same value in every authorization, token, and refresh request.
 
     The user sees a login page (Google OAuth or email magic link) followed by a consent screen. After approval, Xquik redirects back to your `redirect_uri`.
+
   </Step>
 
   <Step title="Receive the authorization code">
+
     After the user approves, Xquik redirects to your `redirect_uri` with a `code` parameter:
 
     ```text
@@ -287,9 +315,11 @@ can show a concrete `client_id`.
     Verify `state` against the value sent in step 3. Verify `iss` exactly equals
     the discovered issuer, `https://xquik.com`, before exchanging the code. The
     authorization code expires in **60 seconds** and is single-use.
+
   </Step>
 
   <Step title="Exchange code for tokens">
+
     Exchange the authorization code and your `code_verifier` for an access token and refresh token.
 
     ```bash
@@ -312,28 +342,31 @@ can show a concrete `client_id`.
       "scope": "mcp:tools"
     }
     ```
+
   </Step>
 
   <Step title="Use the access token">
+
     Pass the token as a Bearer credential to its selected resource. This example calls MCP.
 
     ```bash
     curl https://xquik.com/mcp \
-      -H "Authorization: Bearer a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+      -H "Authorization: Bearer ${XQUIK_ACCESS_TOKEN}"
     ```
+
   </Step>
 </Steps>
 
 ## Token lifetimes
 
-| Token | Lifetime | Notes |
-|-------|----------|-------|
-| Access token | 1 hour | Use the refresh token to get a new one |
-| Refresh token | 30 days | Single-use. Each refresh issues a new pair |
-| Authorization code | 60 seconds | Single-use. Exchange immediately |
-| Claim token | 24 hours | Registers one claimed service identity |
-| User code | 10 minutes | Refresh it while the claim token remains active |
-| Identity assertion | 1 hour | Reuse it to mint agent access tokens |
+| Token              | Lifetime   | Notes                                           |
+| ------------------ | ---------- | ----------------------------------------------- |
+| Access token       | 1 hour     | Use the refresh token to get a new one          |
+| Refresh token      | 30 days    | Single-use. Each refresh issues a new pair      |
+| Authorization code | 60 seconds | Single-use. Exchange immediately                |
+| Claim token        | 24 hours   | Registers one claimed service identity          |
+| User code          | 10 minutes | Refresh it while the claim token remains active |
+| Identity assertion | 1 hour     | Reuse it to mint agent access tokens            |
 
 ## Claimed agent registration
 
@@ -341,7 +374,9 @@ Use `service_auth` when an agent knows the user's verified email. Xquik never
 issues anonymous agent credentials.
 
 <Steps>
+
   <Step title="Register the service identity">
+
     Send the verified email as `login_hint`.
 
     ```bash
@@ -353,9 +388,11 @@ issues anonymous agent credentials.
     The response includes `claim_token`, `registration_id`, and a `claim`
     object. Show `claim.verification_uri` and `claim.user_code` to the user.
     Keep every token secret.
+
   </Step>
 
   <Step title="Complete the claim">
+
     The user opens `claim.verification_uri`, signs in, and enters the code.
     The signed-in email must match `login_hint`.
 
@@ -366,37 +403,42 @@ issues anonymous agent credentials.
       -H "Content-Type: application/json" \
       -d '{"claim_token":"CLAIM_TOKEN","email":"user@example.com"}'
     ```
+
   </Step>
 
   <Step title="Poll for tokens">
+
     Honor the returned `claim.interval`. Poll the token endpoint with the
     static public client ID.
 
     ```bash
     curl -X POST https://xquik.com/api/oauth/token \
       -H "Content-Type: application/x-www-form-urlencoded" \
-      -d "grant_type=urn:workos:agent-auth:grant-type:claim\
-&client_id=urn:xquik:agent-auth\
-&claim_token=CLAIM_TOKEN"
+      --data-urlencode "grant_type=urn:workos:agent-auth:grant-type:claim" \
+      --data-urlencode "client_id=urn:xquik:agent-auth" \
+      --data-urlencode "claim_token=CLAIM_TOKEN"
     ```
 
     Handle `authorization_pending`, `slow_down`, `access_denied`, and
     `expired_token`. Success returns an access token and
     `identity_assertion`. It never returns a refresh token.
+
   </Step>
 
   <Step title="Exchange an identity assertion">
+
     Reuse a current assertion when a fresh access token is required.
 
     ```bash
     curl -X POST https://xquik.com/api/oauth/token \
       -H "Content-Type: application/x-www-form-urlencoded" \
-      -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer\
-&client_id=urn:xquik:agent-auth\
-&assertion=IDENTITY_ASSERTION"
+      --data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" \
+      --data-urlencode "client_id=urn:xquik:agent-auth" \
+      --data-urlencode "assertion=IDENTITY_ASSERTION"
     ```
 
     Xquik accepts service-signed assertions for active registrations. Restart registration after expiry or `invalid_grant`.
+
   </Step>
 </Steps>
 
@@ -424,7 +466,9 @@ curl -X POST https://xquik.com/api/oauth/token \
 ```
 
 <Warning>
-  Refresh tokens are **single-use**. Always store the latest returned token.
+
+Refresh tokens are **single-use**. Always store the latest returned token.
+
 </Warning>
 
 ## Token revocation
@@ -439,11 +483,11 @@ curl -X POST https://xquik.com/api/oauth/revoke \
 &token_type_hint=access_token"
 ```
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `token` | Yes | The token to revoke |
-| `client_id` | Yes | The client ID that owns the token |
-| `token_type_hint` | No | `access_token` or `refresh_token`. Helps the server locate the token faster |
+| Parameter         | Required | Description                                                                 |
+| ----------------- | -------- | --------------------------------------------------------------------------- |
+| `token`           | Yes      | The token to revoke                                                         |
+| `client_id`       | Yes      | The client ID that owns the token                                           |
+| `token_type_hint` | No       | `access_token` or `refresh_token`. Helps the server locate the token faster |
 
 Returns `200` with an empty body on success. If the token is already revoked or invalid, the server still returns `200` (per RFC 7009).
 
@@ -452,16 +496,16 @@ This revokes the registration and every access token. Revoking one access token 
 
 **Revocation errors.**
 
-| Status | Error | When |
-|--------|-------|------|
-| 400 | `invalid_request` | `token` parameter is empty or missing |
-| 400 | `invalid_request` | `client_id` parameter is empty or missing |
-| 401 | `invalid_client` | `client_id` does not match a registered client |
+| Status | Error             | When                                           |
+| ------ | ----------------- | ---------------------------------------------- |
+| 400    | `invalid_request` | `token` parameter is empty or missing          |
+| 400    | `invalid_request` | `client_id` parameter is empty or missing      |
+| 401    | `invalid_client`  | `client_id` does not match a registered client |
 
 ## Scopes
 
-| Scope | Description |
-|-------|-------------|
+| Scope       | Description                                                                                     |
+| ----------- | ----------------------------------------------------------------------------------------------- |
 | `mcp:tools` | Full access to all MCP tools (search tweets, manage monitors, run extractions, run draws, etc.) |
 
 Only `mcp:tools` is supported. No partial scopes or scope combinations are available.
@@ -475,27 +519,27 @@ POST /api/oauth/register
 Content-Type: application/json
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `client_name` | string | No | Display name shown on the consent screen. Defaults to `MCP Client` |
-| `redirect_uris` | string[] | Yes | Allowed redirect URIs (1 or more) |
-| `token_endpoint_auth_method` | string | No | `none` (default) or `client_secret_post` |
-| `grant_types` | string[] | No | Defaults to `["authorization_code", "refresh_token"]` |
-| `response_types` | string[] | No | Defaults to `["code"]` |
+| Field                        | Type     | Required | Description                                                        |
+| ---------------------------- | -------- | -------- | ------------------------------------------------------------------ |
+| `client_name`                | string   | No       | Display name shown on the consent screen. Defaults to `MCP Client` |
+| `redirect_uris`              | string[] | Yes      | Allowed redirect URIs (1 or more)                                  |
+| `token_endpoint_auth_method` | string   | No       | `none` (default) or `client_secret_post`                           |
+| `grant_types`                | string[] | No       | Defaults to `["authorization_code", "refresh_token"]`              |
+| `response_types`             | string[] | No       | Defaults to `["code"]`                                             |
 
 ### Response
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `client_id` | string | UUID. Use this in all subsequent OAuth requests |
-| `client_name` | string | Resolved display name. Defaults to `MCP Client` |
-| `redirect_uris` | string[] | Echoed from request |
-| `grant_types` | string[] | Resolved grant types |
-| `response_types` | string[] | Resolved response types |
-| `token_endpoint_auth_method` | string | Resolved auth method |
-| `client_secret` | string | Only present for confidential clients (`client_secret_post`) |
-| `client_id_issued_at` | number | Unix timestamp when the client ID was issued |
-| `client_secret_expires_at` | number | Always `0` (non-expiring). Only present for confidential clients |
+| Field                        | Type     | Description                                                      |
+| ---------------------------- | -------- | ---------------------------------------------------------------- |
+| `client_id`                  | string   | UUID. Use this in all subsequent OAuth requests                  |
+| `client_name`                | string   | Resolved display name. Defaults to `MCP Client`                  |
+| `redirect_uris`              | string[] | Echoed from request                                              |
+| `grant_types`                | string[] | Resolved grant types                                             |
+| `response_types`             | string[] | Resolved response types                                          |
+| `token_endpoint_auth_method` | string   | Resolved auth method                                             |
+| `client_secret`              | string   | Only present for confidential clients (`client_secret_post`)     |
+| `client_id_issued_at`        | number   | Unix timestamp when the client ID was issued                     |
+| `client_secret_expires_at`   | number   | Always `0` (non-expiring). Only present for confidential clients |
 
 ## Error responses
 
@@ -516,34 +560,34 @@ optional `state`, and `iss=https://xquik.com` query parameters.
 
 ### Authorization errors
 
-| Error | When |
-|-------|------|
-| `unsupported_response_type` | `response_type` is not `code` |
-| `invalid_request` | Missing or repeated parameters, or missing S256 PKCE data |
-| `invalid_scope` | Scope is not `mcp:tools` |
-| `invalid_target` | Resource is not a published protected resource |
-| `access_denied` | User denied the authorization request |
+| Error                       | When                                                      |
+| --------------------------- | --------------------------------------------------------- |
+| `unsupported_response_type` | `response_type` is not `code`                             |
+| `invalid_request`           | Missing or repeated parameters, or missing S256 PKCE data |
+| `invalid_scope`             | Scope is not `mcp:tools`                                  |
+| `invalid_target`            | Resource is not a published protected resource            |
+| `access_denied`             | User denied the authorization request                     |
 
 ### Token errors
 
-| Error | When |
-|-------|------|
-| `invalid_request` | Missing `code`, `code_verifier`, `client_id`, or `refresh_token` |
-| `invalid_grant` | Code/token is invalid, expired, or already used. Also: `client_id` mismatch, `redirect_uri` mismatch, or PKCE verification failed |
-| `authorization_pending` | The user has not completed the agent claim |
-| `slow_down` | Claim polling exceeded the returned interval |
-| `access_denied` | The agent claim was denied or revoked |
-| `expired_token` | The claim token or user code expired |
-| `unsupported_grant_type` | Grant type is not advertised by discovery |
-| `invalid_target` | Resource is not a published protected resource |
+| Error                    | When                                                                                                                              |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `invalid_request`        | Missing `code`, `code_verifier`, `client_id`, or `refresh_token`                                                                  |
+| `invalid_grant`          | Code/token is invalid, expired, or already used. Also: `client_id` mismatch, `redirect_uri` mismatch, or PKCE verification failed |
+| `authorization_pending`  | The user has not completed the agent claim                                                                                        |
+| `slow_down`              | Claim polling exceeded the returned interval                                                                                      |
+| `access_denied`          | The agent claim was denied or revoked                                                                                             |
+| `expired_token`          | The claim token or user code expired                                                                                              |
+| `unsupported_grant_type` | Grant type is not advertised by discovery                                                                                         |
+| `invalid_target`         | Resource is not a published protected resource                                                                                    |
 
 ### Registration errors
 
-| Error | When |
-|-------|------|
+| Error                     | When                                                                                                                 |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `invalid_client_metadata` | The JSON body, client name, token authentication method, grant types, or response types are malformed or unsupported |
-| `invalid_redirect_uri` | `redirect_uris` is missing, malformed, duplicated, too long, unsupported, or exceeds the 10 URI limit |
-| `temporarily_unavailable` | Registration is rate limited. Honor `Retry-After` before retrying |
+| `invalid_redirect_uri`    | `redirect_uris` is missing, malformed, duplicated, too long, unsupported, or exceeds the 10 URI limit                |
+| `temporarily_unavailable` | Registration is rate limited. Honor `Retry-After` before retrying                                                    |
 
 Read `error_description` for the specific validation failure. Missing or blank
 `client_name` values default to `MCP Client`.
@@ -551,16 +595,25 @@ Read `error_description` for the specific validation failure. Missing or blank
 ## Where to go next
 
 <CardGroup cols={2}>
+
   <Card title="MCP server" icon="server" href="/mcp/overview">
+
     Connect AI agents to Xquik via MCP.
+
   </Card>
   <Card title="MCP tools reference" icon="wrench" href="/mcp/tools">
+
     All MCP tools with input/output schemas.
+
   </Card>
   <Card title="API key auth" icon="key" href="/api-reference/authentication">
+
     API key authentication for REST API and MCP.
+
   </Card>
   <Card title="Quickstart" icon="rocket" href="/x-api-quickstart">
+
     Get your API key and make your first request.
+
   </Card>
 </CardGroup>

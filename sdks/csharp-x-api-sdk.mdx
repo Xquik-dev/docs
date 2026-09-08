@@ -2,23 +2,35 @@
 title: "C# SDK for tweet search, exports & X automation"
 sidebarTitle: C# / .NET
 description: Use the Xquik C# SDK to search tweets, export tweet replies to JSON Lines, CSV, or XLSX, post media tweets, upload media, send DMs, and run .NET X API workers.
-keywords: ["C# SDK", ".NET Twitter scraper SDK", "NuGet X API", "X API C#", "tweet search C#", "tweet replies C#", "Twitter API C#", "JSON export", "CSV export", "XLSX export"]
+keywords:
+  [
+    "C# SDK",
+    ".NET Twitter scraper SDK",
+    "NuGet X API",
+    "X API C#",
+    "tweet search C#",
+    "tweet replies C#",
+    "Twitter API C#",
+    "JSON export",
+    "CSV export",
+    "XLSX export",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the C# SDK for typed .NET Standard 2.0+ access from services, workers, console tools, and ASP.NET backends. A .NET job can search or scrape tweets, export followers, monitor tweets, post media, send direct messages, or hand X API data to queues, CRMs, and reports.
+Use typed .NET Standard 2.0+ calls in services, workers, console tools, or ASP.NET. Search tweets, export followers, monitor, post media, send DMs, or feed queues, CRMs, and reports.
 
-| C# worker task | SDK call | Durable checkpoint |
-| --- | --- | --- |
-| Search tweets | `client.X.Tweets.Search` | Persist `page.NextCursor` after every page. |
-| Estimate follower or reply exports | `client.Extractions.EstimateCost` | Store the estimate and `Allowed` decision. |
-| Start an extraction | `client.Extractions.Run` | Save `job.ID` immediately. |
-| Retrieve saved rows | `client.Extractions.Retrieve` | Keep `NextCursor` while `HasMore` is true. |
-| Export CSV, JSON, or XLSX | `client.Extractions.ExportResults` | Record the job ID, format, and file destination. |
-| Create a tweet | `client.X.Tweets.WithRawResponse.Create` | Store the write action ID and terminal state. |
+| C# worker task                     | SDK call                                 | Durable checkpoint                               |
+| ---------------------------------- | ---------------------------------------- | ------------------------------------------------ |
+| Search tweets                      | `client.X.Tweets.Search`                 | Persist `page.NextCursor` after every page.      |
+| Estimate follower or reply exports | `client.Extractions.EstimateCost`        | Store the estimate and `Allowed` decision.       |
+| Start an extraction                | `client.Extractions.Run`                 | Save `job.ID` immediately.                       |
+| Retrieve saved rows                | `client.Extractions.Retrieve`            | Keep `NextCursor` while `HasMore` is true.       |
+| Export CSV, JSON, or XLSX          | `client.Extractions.ExportResults`       | Record the job ID, format, and file destination. |
+| Create a tweet                     | `client.X.Tweets.WithRawResponse.Create` | Store the write action ID and terminal state.    |
 
 ## Install
 
@@ -178,23 +190,36 @@ static async Task WriteCsvRow(StreamWriter writer, IEnumerable<object?> values)
 ### Request mapping
 
 <CardGroup cols={2}>
+
   <Card title="Q" icon="search">
+
     C# property `Q` maps to REST `q`. Use it for an X search query such as `from:username`, a keyword, hashtag, or boolean operator query.
+
   </Card>
   <Card title="Limit" icon="list">
+
     C# property `Limit` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `page.HasNextPage` is true, keep the same `Q`, filters, `QueryType`, and `Limit` when you continue with `page.NextCursor`.
+
   </Card>
   <Card title="Cursor" icon="arrow-right">
+
     C# property `Cursor` maps to REST `cursor`. Pass the opaque cursor from `page.NextCursor` to request the next page.
+
   </Card>
   <Card title="SinceTime" icon="clock">
+
     C# property `SinceTime` maps to REST `sinceTime`. Use it as the ISO 8601 lower bound for tweet creation time.
+
   </Card>
   <Card title="UntilTime" icon="clock">
+
     C# property `UntilTime` maps to REST `untilTime`. Use it as the ISO 8601 upper bound for tweet creation time.
+
   </Card>
   <Card title="QueryType" icon="sliders-horizontal">
+
     C# property `QueryType` maps to REST `queryType`. Use `QueryType.Latest` for chronological search or `QueryType.Top` for engagement-ranked search.
+
   </Card>
 </CardGroup>
 
@@ -213,7 +238,9 @@ Use this workflow when a .NET worker, console job, or ASP.NET background service
 `client.Extractions.EstimateCost` and `client.Extractions.Run` map to the extraction workflow. For follower exports, use `ExtractionEstimateCostParamsToolType.FollowerExplorer` and `ExtractionRunParamsToolType.FollowerExplorer`; `follower_explorer` requires `TargetUsername`. `client.Extractions.Retrieve` returns `Results`, `HasMore`, and `NextCursor` for pagination. `client.Extractions.ExportResults` returns an `HttpResponse`; read CSV and JSON as strings, and copy XLSX from the response stream.
 
 <Info>
+
 `client.Extractions.Run` returns the queued `202 Accepted` receipt from `POST /extractions`: REST `id`, `toolType`, and `status: "running"` as C# `job.ID`, `job.ToolType`, and `job.Status`. Store `job.ID` immediately, then poll `client.Extractions.Retrieve` before reading pages or calling `client.Extractions.ExportResults`. Credit reservation happens after the job starts. If available credits changed since `EstimateCost`, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
+
 </Info>
 
 ```csharp
@@ -496,26 +523,41 @@ Use public media URLs with `client.X.Tweets.Create`. Do not pass uploaded `media
 The C# SDK throws generated exception types for non-success responses and connection failures.
 
 <CardGroup cols={2}>
+
   <Card title="400 Bad request" icon="triangle-alert">
+
     Throws `XTwitterScraperBadRequestException`.
+
   </Card>
   <Card title="401 Unauthorized" icon="lock">
+
     Throws `XTwitterScraperUnauthorizedException`.
+
   </Card>
   <Card title="403 Forbidden" icon="shield">
+
     Throws `XTwitterScraperForbiddenException`.
+
   </Card>
   <Card title="404 Not found" icon="circle-x">
+
     Throws `XTwitterScraperNotFoundException`.
+
   </Card>
   <Card title="422 Validation error" icon="triangle-alert">
+
     Throws `XTwitterScraperUnprocessableEntityException`.
+
   </Card>
   <Card title="429 Rate limited" icon="gauge">
+
     Throws `XTwitterScraperRateLimitException`.
+
   </Card>
   <Card title="5xx server error" icon="server">
+
     Throws `XTwitterScraper5xxException`.
+
   </Card>
 </CardGroup>
 

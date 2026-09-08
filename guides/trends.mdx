@@ -2,7 +2,16 @@
 title: "Twitter trends by region & WOEID guide | trends API"
 sidebarTitle: "Regional trends"
 description: "Find ranked X trends by WOEID region, preserve each trend query and rank, then search matching tweets with cursor pagination. Includes exact API steps."
-keywords: ["Twitter trends", "Twitter topic trends", "Twitter trending API", "X trends", "trending topics", "regional trends", "WOEID"]
+keywords:
+  [
+    "Twitter trends",
+    "Twitter topic trends",
+    "Twitter trending API",
+    "X trends",
+    "trending topics",
+    "regional trends",
+    "WOEID",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -33,23 +42,30 @@ Use these WOEIDs in `woeid` for `GET /trends` or `GET /x/trends`. Omit
 `woeid` or pass `1` for worldwide trends.
 
 <CardGroup cols={3}>
+
   <Card title="Global & americas" icon="globe">
+
     - `1` - Worldwide
     - `23424977` - United States
     - `23424775` - Canada
     - `23424900` - Mexico
     - `23424768` - Brazil
+
   </Card>
   <Card title="Europe" icon="map-pin">
+
     - `23424975` - United Kingdom
     - `23424969` - Turkey
     - `23424950` - Spain
     - `23424829` - Germany
     - `23424819` - France
+
   </Card>
   <Card title="Asia" icon="building-2">
+
     - `23424856` - Japan
     - `23424848` - India
+
   </Card>
 </CardGroup>
 
@@ -142,117 +158,124 @@ why every topic entered a dashboard, alert, or AI summary.
 Fetch the top trend for a region, then search for tweets about it:
 
 <CodeGroup>
-  ```bash cURL
-  # 1. Get top trend
-  TREND=$(curl -s "https://xquik.com/api/v1/trends?woeid=23424977&count=1" \
-    -H "x-api-key: xq_YOUR_KEY_HERE" \
-    | jq -r '.trends[0].query')
 
-  # 2. Search tweets about it
-  curl -G "https://xquik.com/api/v1/x/tweets/search" \
-    --data-urlencode "q=$TREND" \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
-  ```
+```bash cURL
+# 1. Get top trend
+TREND=$(curl -s "https://xquik.com/api/v1/trends?woeid=23424977&count=1" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  | jq -r '.trends[0].query')
 
-  ```javascript Node.js
-  const API_KEY = "xq_YOUR_KEY_HERE";
-  const headers = { "x-api-key": API_KEY };
+# 2. Search tweets about it
+curl -G "https://xquik.com/api/v1/x/tweets/search" \
+  --data-urlencode "q=$TREND" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
 
-  // 1. Get top trend
-  const trendsRes = await fetch("https://xquik.com/api/v1/trends?woeid=23424977&count=1", { headers });
-  const trendsData = await trendsRes.json();
-  const query = trendsData.trends[0].query;
+```javascript Node.js
+const API_KEY = "xq_YOUR_KEY_HERE";
+const headers = { "x-api-key": API_KEY };
 
-  // 2. Search tweets about it
-  const searchRes = await fetch(`https://xquik.com/api/v1/x/tweets/search?q=${encodeURIComponent(query)}`, { headers });
-  const searchData = await searchRes.json();
-  console.log(searchData);
-  ```
+// 1. Get top trend
+const trendsRes = await fetch("https://xquik.com/api/v1/trends?woeid=23424977&count=1", {
+  headers,
+});
+const trendsData = await trendsRes.json();
+const query = trendsData.trends[0].query;
 
-  ```python Python
-  import requests
+// 2. Search tweets about it
+const searchRes = await fetch(
+  `https://xquik.com/api/v1/x/tweets/search?q=${encodeURIComponent(query)}`,
+  { headers },
+);
+const searchData = await searchRes.json();
+console.log(searchData);
+```
 
-  API_KEY = "xq_YOUR_KEY_HERE"
-  headers = {"x-api-key": API_KEY}
+```python Python
+import requests
 
-  # 1. Get top trend
-  trends_res = requests.get(
-      "https://xquik.com/api/v1/trends",
-      params={"woeid": 23424977, "count": 1},
-      headers=headers,
-  )
-  query = trends_res.json()["trends"][0]["query"]
+API_KEY = "xq_YOUR_KEY_HERE"
+headers = {"x-api-key": API_KEY}
 
-  # 2. Search tweets about it
-  search_res = requests.get(
-      "https://xquik.com/api/v1/x/tweets/search",
-      params={"q": query},
-      headers=headers,
-  )
-  print(search_res.json())
-  ```
+# 1. Get top trend
+trends_res = requests.get(
+    "https://xquik.com/api/v1/trends",
+    params={"woeid": 23424977, "count": 1},
+    headers=headers,
+)
+query = trends_res.json()["trends"][0]["query"]
 
-  ```go Go
-  package main
+# 2. Search tweets about it
+search_res = requests.get(
+    "https://xquik.com/api/v1/x/tweets/search",
+    params={"q": query},
+    headers=headers,
+)
+print(search_res.json())
+```
 
-  import (
-  	"encoding/json"
-  	"fmt"
-  	"io"
-  	"log"
-  	"net/http"
-  	"net/url"
-  )
+```go Go
+package main
 
-  const apiKey = "xq_YOUR_KEY_HERE"
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/url"
+)
 
-  func main() {
-  	// 1. Get top trend
-  	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/trends?woeid=23424977&count=1", nil)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	req.Header.Set("x-api-key", apiKey)
+const apiKey = "xq_YOUR_KEY_HERE"
 
-  	resp, err := http.DefaultClient.Do(req)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	defer resp.Body.Close()
+func main() {
+	// 1. Get top trend
+	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/trends?woeid=23424977&count=1", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("x-api-key", apiKey)
 
-  	body, err := io.ReadAll(resp.Body)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
 
-  	var trends struct {
-  		Trends []struct {
-  			Query string `json:"query"`
-  		} `json:"trends"`
-  	}
-  	json.Unmarshal(body, &trends)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-  	// 2. Search tweets about it
-  	searchURL := "https://xquik.com/api/v1/x/tweets/search?q=" + url.QueryEscape(trends.Trends[0].Query)
-  	req2, err := http.NewRequest("GET", searchURL, nil)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	req2.Header.Set("x-api-key", apiKey)
+	var trends struct {
+		Trends []struct {
+			Query string `json:"query"`
+		} `json:"trends"`
+	}
+	json.Unmarshal(body, &trends)
 
-  	resp2, err := http.DefaultClient.Do(req2)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	defer resp2.Body.Close()
+	// 2. Search tweets about it
+	searchURL := "https://xquik.com/api/v1/x/tweets/search?q=" + url.QueryEscape(trends.Trends[0].Query)
+	req2, err := http.NewRequest("GET", searchURL, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req2.Header.Set("x-api-key", apiKey)
 
-  	body2, err := io.ReadAll(resp2.Body)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	fmt.Println(string(body2))
-  }
-  ```
+	resp2, err := http.DefaultClient.Do(req2)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp2.Body.Close()
+
+	body2, err := io.ReadAll(resp2.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(body2))
+}
+```
+
 </CodeGroup>
 
 The trend response supplies a raw search expression such as `#AI`.
@@ -329,10 +352,15 @@ Corp. This guide documents Xquik endpoints and response fields.
 ## Next steps
 
 <CardGroup cols={2}>
+
   <Card title="Trends API reference" icon="trending-up" href="/api-reference/trends/list">
+
     Full endpoint reference with query parameters and response schema.
+
   </Card>
   <Card title="Billing & usage" icon="credit-card" href="/guides/billing">
+
     Subscription pricing, credits, and per-operation costs.
+
   </Card>
 </CardGroup>

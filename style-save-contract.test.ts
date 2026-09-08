@@ -1,38 +1,30 @@
-import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
 
-const productRoot =
-  process.env['XQUIK_PRODUCT_ROOT'] ?? process.env['XQUIK_ROOT'];
-const source = readFileSync(
-  new URL('api-reference/styles/save.mdx', import.meta.url),
-  'utf8',
-);
+const productRoot = process.env["XQUIK_PRODUCT_ROOT"] ?? process.env["XQUIK_ROOT"];
+const source = readFileSync(new URL("api-reference/styles/save.mdx", import.meta.url), "utf8");
 
 function readProductFile(path: string): string | undefined {
   if (productRoot === undefined) return undefined;
-  return readFileSync(`${productRoot}/${path}`, 'utf8');
+  return readFileSync(`${productRoot}/${path}`, "utf8");
 }
 
-describe('save custom tweet style documentation', (): void => {
-  it('matches every canonical status and authentication method', (): void => {
+describe("save custom tweet style documentation", (): void => {
+  it("matches every canonical status and authentication method", (): void => {
     expect.assertions(1);
 
     expect({
-      apiKeyDocumented: source.includes('Send `x-api-key`'),
-      bearerDocumented: source.includes(
-        'OAuth clients can send a bearer token',
-      ),
-      responseTabs: [...source.matchAll(/<Tab title="(\d{3})"/gu)].map(
-        ([, status]) => status,
-      ),
+      apiKeyDocumented: source.includes("Send `x-api-key`"),
+      bearerDocumented: source.includes("OAuth clients can send a bearer token"),
+      responseTabs: [...source.matchAll(/<Tab title="(\d{3})"/gu)].map(([, status]) => status),
     }).toStrictEqual({
       apiKeyDocumented: true,
       bearerDocumented: true,
-      responseTabs: ['200', '400', '401', '429'],
+      responseTabs: ["200", "400", "401", "429"],
     });
   });
 
-  it('documents the exact saved custom profile response', (): void => {
+  it("documents the exact saved custom profile response", (): void => {
     expect.assertions(1);
 
     expect({
@@ -40,17 +32,13 @@ describe('save custom tweet style documentation', (): void => {
         source.includes('"xUsername": "professional voice"') &&
         source.includes('"isOwnAccount": false') &&
         source.includes('"authorUsername": "professional voice"'),
-      nestedFields: ['id', 'text', 'authorUsername', 'createdAt'].every(
+      nestedFields: ["id", "text", "authorUsername", "createdAt"].every((field) =>
+        source.includes(`<ResponseField name="${field}"`),
+      ),
+      topLevelFields: ["xUsername", "tweetCount", "isOwnAccount", "fetchedAt", "tweets"].every(
         (field) => source.includes(`<ResponseField name="${field}"`),
       ),
-      topLevelFields: [
-        'xUsername',
-        'tweetCount',
-        'isOwnAccount',
-        'fetchedAt',
-        'tweets',
-      ].every((field) => source.includes(`<ResponseField name="${field}"`)),
-      xTweetIdDenied: source.includes('This is not an X Tweet ID.'),
+      xTweetIdDenied: source.includes("This is not an X Tweet ID."),
     }).toStrictEqual({
       customExampleCorrect: true,
       nestedFields: true,
@@ -59,22 +47,18 @@ describe('save custom tweet style documentation', (): void => {
     });
   });
 
-  it('explains body-label storage and full-array replacement', (): void => {
+  it("explains body-label storage and full-array replacement", (): void => {
     expect.assertions(1);
 
     expect({
-      bodyControlsKey: source.includes(
-        'The body `label` controls the stored profile key.',
-      ),
+      bodyControlsKey: source.includes("The body `label` controls the stored profile key."),
       mismatchRejected: source.includes(
-        'The PUT route rejects a `{id}` that differs from `label`, ignoring case.',
+        "The PUT route rejects a `{id}` that differs from `label`, ignoring case.",
       ),
       replacementIsComplete: source.includes(
-        'Sending the same label replaces the entire saved Tweet array.',
+        "Sending the same label replaces the entire saved Tweet array.",
       ),
-      renameDenied: source.includes(
-        'Changing only the path `{id}` does not rename a profile.',
-      ),
+      renameDenied: source.includes("Changing only the path `{id}` does not rename a profile."),
     }).toStrictEqual({
       bodyControlsKey: true,
       mismatchRejected: true,
@@ -83,21 +67,17 @@ describe('save custom tweet style documentation', (): void => {
     });
   });
 
-  it('documents input limits and every validation branch', (): void => {
+  it("documents input limits and every validation branch", (): void => {
     expect.assertions(1);
-    const normalizedSource = source.replace(/\s+/gu, ' ');
+    const normalizedSource = source.replace(/\s+/gu, " ");
 
     expect({
       blankTweetRejected: normalizedSource.includes(
-        '| Missing, non-string, or blank `text` | Send non-empty text for every object. |',
+        "| Missing, non-string, or blank `text` | Send non-empty text for every object. |",
       ),
-      labelLimit: source.includes('Profile label containing 1-50 characters.'),
-      sampleLimit: source.includes(
-        'Complete array of 1-100 approved Tweet examples.',
-      ),
-      underscoreBehavior: source.includes(
-        'The validator also accepts underscores.',
-      ),
+      labelLimit: source.includes("Profile label containing 1-50 characters."),
+      sampleLimit: source.includes("Complete array of 1-100 approved Tweet examples."),
+      underscoreBehavior: source.includes("The validator also accepts underscores."),
     }).toStrictEqual({
       blankTweetRejected: true,
       labelLimit: true,
@@ -106,24 +86,21 @@ describe('save custom tweet style documentation', (): void => {
     });
   });
 
-  it('uses focused tweet-writing language without invented analysis', (): void => {
+  it("uses focused tweet-writing language without invented analysis", (): void => {
     expect.assertions(1);
 
-    const frontmatter = source.slice(0, source.indexOf('---', 4) + 3);
+    const frontmatter = source.slice(0, source.indexOf("---", 4) + 3);
 
     expect({
-      focusedTitle: frontmatter.includes(
-        'Save tweet writing samples for a reusable X style',
-      ),
+      focusedTitle: frontmatter.includes("Save tweet writing samples for a reusable X style"),
       keywordsPresent: [
-        'tweet writing',
-        'save tweet style',
-        'Twitter writing style',
-        'X brand voice',
-        'tweet writing samples',
+        "tweet writing",
+        "save tweet style",
+        "Twitter writing style",
+        "X brand voice",
+        "tweet writing samples",
       ].every((keyword) => frontmatter.includes(keyword)),
-      unsupportedDescriptionSignals:
-        /tone|vocabulary|sentiment|engagement/iu.test(frontmatter),
+      unsupportedDescriptionSignals: /tone|vocabulary|sentiment|engagement/iu.test(frontmatter),
     }).toStrictEqual({
       focusedTitle: true,
       keywordsPresent: true,
@@ -131,44 +108,36 @@ describe('save custom tweet style documentation', (): void => {
     });
   });
 
-  it('remains synchronized with the optional product implementation', (): void => {
+  it("remains synchronized with the optional product implementation", (): void => {
     expect.assertions(1);
 
-    const compose = readProductFile('lib/compose/handler.ts');
-    const constants = readProductFile('lib/styles/constants.ts');
-    const route = readProductFile('app/api/v1/styles/[id]/route.ts');
-    const validator = readProductFile('lib/styles/validate-label.ts');
+    const compose = readProductFile("lib/compose/handler.ts");
+    const constants = readProductFile("lib/styles/constants.ts");
+    const route = readProductFile("app/api/v1/styles/[id]/route.ts");
+    const validator = readProductFile("lib/styles/validate-label.ts");
     const putRoute =
-      route === undefined
-        ? undefined
-        : route.slice(route.indexOf('export async function PUT'));
+      route === undefined ? undefined : route.slice(route.indexOf("export async function PUT"));
 
     expect({
       bodyLabelRemainsKey:
         putRoute === undefined ||
-        putRoute.includes('const label = body.label.trim().toLowerCase()'),
+        putRoute.includes("const label = body.label.trim().toLowerCase()"),
       composeReturnsSavedSamples:
         compose === undefined ||
-        compose.includes(
-          'return { ...result, styleTweets: [...style.tweets] }',
-        ),
+        compose.includes("return { ...result, styleTweets: [...style.tweets] }"),
       pathMustMatchLabel:
         putRoute === undefined ||
-        (putRoute.includes('const { id } = await params;') &&
-          putRoute.includes('styleIdMatchesLabel(id, label)')),
+        (putRoute.includes("const { id } = await params;") &&
+          putRoute.includes("styleIdMatchesLabel(id, label)")),
       replacementRemainsAccountScoped:
         putRoute === undefined ||
-        (putRoute.includes(
-          'target: [tweetStyleCache.userId, tweetStyleCache.xUsername]',
-        ) &&
-          putRoute.includes('.onConflictDoUpdate({')),
-      sampleIdsRemainLocal:
-        putRoute === undefined || putRoute.includes('id: String(index)'),
+        (putRoute.includes("target: [tweetStyleCache.userId, tweetStyleCache.xUsername]") &&
+          putRoute.includes(".onConflictDoUpdate({")),
+      sampleIdsRemainLocal: putRoute === undefined || putRoute.includes("id: String(index)"),
       sampleLimitRemains100:
-        constants === undefined || constants.includes('MAX_STYLE_TWEETS = 100'),
+        constants === undefined || constants.includes("MAX_STYLE_TWEETS = 100"),
       underscoresRemainAccepted:
-        validator === undefined ||
-        validator.includes('const LABEL_PATTERN = /^\\w'),
+        validator === undefined || validator.includes("const LABEL_PATTERN = /^\\w"),
     }).toStrictEqual({
       bodyLabelRemainsKey: true,
       composeReturnsSavedSamples: true,

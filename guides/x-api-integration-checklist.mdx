@@ -2,7 +2,14 @@
 title: "Twitter API rate limits, errors & webhook events"
 sidebarTitle: "API error checklist"
 description: "Handle Xquik REST API calls with authentication, pagination, HTTP errors, Twitter API rate limits, webhook events, durable writes, and normalized responses."
-keywords: ["Twitter API rate limits", "REST API call", "API error handling", "API pagination", "webhook events"]
+keywords:
+  [
+    "Twitter API rate limits",
+    "REST API call",
+    "API error handling",
+    "API pagination",
+    "webhook events",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -23,23 +30,36 @@ idempotency keys and status polling.
 Run this checklist before connecting a production client, workflow builder, or agent to the API.
 
 <CardGroup cols={2}>
+
   <Card title="Authentication" icon="key">
+
     Send a full account key or OAuth token for account operations. Use an active guest key on its 33 paid reads. Use direct MPP only on its 7 fixed-price operations. Handle the documented `401` and `402` contracts separately.
+
   </Card>
   <Card title="Response contract" icon="braces">
+
     Default REST examples use the v1 shape. Send `xquik-api-contract: 2026-04-29` when your client expects snake_case, date-time fields as Unix seconds, structured errors, `has_more`, and `next_cursor`. The API MCP server sends this contract automatically.
+
   </Card>
   <Card title="Pagination" icon="list">
+
     Use `cursor` with `nextCursor` on events, draws, and extractions. Use `after` on Radar. Use `afterCursor` on drafts. Use `cursor` with `next_cursor` on X endpoints. De-duplicate stable IDs and reject repeated cursors.
+
   </Card>
   <Card title="Billing" icon="credit-card">
+
     Handle `402 no_credits` and `402 insufficient_credits`. Treat every `payment_options` action as an offer. Ask the user to select an amount and explicitly confirm before creating checkout.
+
   </Card>
   <Card title="Rate limits" icon="timer">
+
     Respect `Retry-After`. Read calls allow 300 per 1s. Writes allow 120 per 60s. Deletes allow 60 per 60s. Back off after repeated `429 rate_limit_exceeded` responses.
+
   </Card>
   <Card title="Durable writes" icon="activity">
+
     Send a unique `Idempotency-Key`. Store the returned action. Poll `statusUrl` while `terminal` is `false`. Retry only when `safeToRetry` is `true`, using a new key.
+
   </Card>
 </CardGroup>
 
@@ -210,19 +230,25 @@ pagination, response, webhook, or write-contract changes.
 ## Conventions
 
 <AccordionGroup>
+
   <Accordion title="IDs are strings">
+
     Treat every ID as an opaque string. IDs may use digits, UUIDs, or prefixes. Never parse them as numbers:
     ```json
     { "id": "123456789" }
     ```
+
   </Accordion>
   <Accordion title="Default timestamps are ISO 8601 UTC">
+
     Default REST responses use ISO 8601 UTC strings. The normalized contract converts date-time fields to Unix seconds and renames `createdAt` to `created`:
     ```json
     { "created": 1771929000 }
     ```
+
   </Accordion>
   <Accordion title="Default errors use string codes">
+
     Default REST errors return an `error` field with a machine-readable string code:
     ```json
     { "error": "error_code" }
@@ -231,39 +257,56 @@ pagination, response, webhook, or write-contract changes.
     **Common errors.**
 
     <CardGroup cols={2}>
+
       <Card title="400 validation" icon="circle-alert">
+
         `invalid_input` means the request body, query, or path failed
         validation. Fix the schema, field types, or required parameters before
         retrying.
+
       </Card>
       <Card title="401 authentication" icon="key-round">
+
         `unauthenticated` means the API key or bearer token is missing or
         invalid. Send `x-api-key` or a valid `Authorization` bearer token.
+
       </Card>
       <Card title="402 billing state" icon="credit-card">
+
         `no_subscription`, `no_credits`, and `insufficient_credits` mean the
         request lacks usable billing access or enough credits. Existing
         available credits work without an active plan.
+
       </Card>
       <Card title="404 missing resource" icon="search">
+
         `not_found` means the requested resource does not exist or is not
         available to the authenticated account.
+
       </Card>
       <Card title="429 rate limit" icon="timer">
+
         `rate_limit_exceeded` includes `Retry-After` and JSON `retryAfter`.
         Wait for the window and retry with backoff.
+
       </Card>
       <Card title="502 read service retry" icon="rotate-ccw">
+
         `x_api_unavailable` means the read service is temporarily unavailable.
         Retry with exponential backoff.
+
       </Card>
     </CardGroup>
 
     See [Error Handling](/guides/error-handling) for the full error code list and handling strategies.
+
   </Accordion>
   <Accordion title="Cursor-based pagination">
+
     <Tabs>
+
       <Tab title="Platform endpoints">
+
         Events, draws, extractions, Radar, and drafts use cursor-based pagination.
         More results return `hasMore: true` and a `nextCursor` value:
         ```json
@@ -280,8 +323,10 @@ pagination, response, webhook, or write-contract changes.
         curl "https://xquik.com/api/v1/events?cursor=MjAyNi0wMi0yNFQxMDozMDowMC4wMDBa..." \
          -H "x-api-key: xq_your_api_key_here"
         ```
+
       </Tab>
       <Tab title="X endpoints">
+
         Tweet, profile, follower, reply, timeline, community, and list endpoints
         under `/x/*` use a different pagination shape. When more results exist,
         the response includes `has_next_page: true` and a `next_cursor` value:
@@ -297,11 +342,14 @@ pagination, response, webhook, or write-contract changes.
         curl "https://xquik.com/api/v1/x/tweets/search?q=xquik&cursor=DAABCgABGRnYttk__..." \
          -H "x-api-key: xq_your_api_key_here"
         ```
+
       </Tab>
     </Tabs>
     Cursors are opaque strings. Do not decode or construct them. Continue through empty pages while the response says more data exists. Return a pagination error when the next cursor is missing, unchanged, or already seen. Monitors, webhooks, and API keys return up to 200 items without pagination.
+
   </Accordion>
   <Accordion title="Opt-in response contract">
+
     v1 keeps the default response contract unchanged for existing clients. Send `xquik-api-contract: 2026-04-29` to opt in to the normalized v1 response contract.
 
     ```bash
@@ -335,6 +383,7 @@ pagination, response, webhook, or write-contract changes.
     Pass `next_cursor` as `cursor` on tweet, profile, follower, reply, timeline,
     community, and list endpoints. Use `cursor` for events, draws, and extractions.
     Use `after` for Radar. Use `afterCursor` for drafts.
+
   </Accordion>
 </AccordionGroup>
 
@@ -359,20 +408,29 @@ Monitors, webhooks, and events share these event types:
 Keyword monitors accept only the 10 `tweet.*` types above.
 
 <CardGroup cols={2}>
+
   <Card title="tweet.new" icon="bell">
+
     Original tweet posted by the monitored account or matching query. Used when
     no reply, quote, or retweet signal is present.
+
   </Card>
   <Card title="tweet.quote" icon="quote">
+
     Quote tweet posted by the monitored account or matching query. Classified
     when quote metadata is present.
+
   </Card>
   <Card title="tweet.reply" icon="message-circle">
+
     Reply posted by the monitored account or matching query. Classified from
     reply flags or reply target IDs.
+
   </Card>
   <Card title="tweet.retweet" icon="repeat-2">
+
     Retweet posted by the monitored account or matching query. Classified from
     retweet flags or `RT @` text.
+
   </Card>
 </CardGroup>

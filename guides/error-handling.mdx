@@ -2,7 +2,17 @@
 title: "X API error handling for tweet & follower workflows"
 sidebarTitle: "Error handling"
 description: "Handle Xquik API errors with exact status guidance and safe retries. Recover cursors, confirm writes, repair monitors, restore webhooks, and check dependencies."
-keywords: ["error codes", "retry", "exponential backoff", "rate limit", "error recovery", "write action", "safeToRetry", "pending confirmation"]
+keywords:
+  [
+    "error codes",
+    "retry",
+    "exponential backoff",
+    "rate limit",
+    "error recovery",
+    "write action",
+    "safeToRetry",
+    "pending confirmation",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -12,14 +22,21 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 Use each `error` code to choose recovery.
 
 <CardGroup cols={3}>
+
   <Card title="Getting 400?" icon="circle-x">
+
     Fix your request body. See [validation errors](#common-error-codes).
+
   </Card>
   <Card title="Getting 401 or 402?" icon="credit-card">
+
     Read the challenge and payment options. Never start checkout automatically. See [common errors](#common-error-codes).
+
   </Card>
   <Card title="Getting 429?" icon="gauge">
+
     Implement backoff. See [retry strategy](#retry-with-exponential-backoff) or [rate limits](/guides/rate-limits).
+
   </Card>
 </CardGroup>
 
@@ -28,61 +45,82 @@ Use each `error` code to choose recovery.
 Start with HTTP status. Retry only when stated.
 
 <CardGroup cols={2}>
+
   <Card title="400 request validation" icon="circle-alert">
+
     Retry: no. Fix the body, query, or path. Covers `invalid_input`,
     `invalid_json`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`,
     `invalid_username`, `invalid_user_id`, `invalid_tool_type`,
     `invalid_format`, `invalid_params`, `missing_query`, `missing_ids`,
     `missing_params`, `too_many_ids`, `unsupported_field`, and
     `invalid_coverage_cursor`.
+
   </Card>
   <Card title="401 authentication" icon="key-round">
+
     Retry: no. Check `x-api-key`, regenerate revoked keys, or re-authenticate
     the connected X account. Covers `unauthenticated` and `x_auth_failure`.
+
   </Card>
   <Card title="402 billing and credits" icon="credit-card">
+
     Retry: no. Read `payment_options`, then get explicit user confirmation.
     Covers `no_subscription`, `subscription_inactive`, `payment_failed`,
     `no_credits`, and `insufficient_credits`.
+
   </Card>
   <Card title="403 permissions and account health" icon="shield-alert">
+
     Retry: no. Delete an extra key, check billing status, use a participating
     DM account, re-authenticate the X account, or resolve account health on
     x.com. Covers `api_key_limit_reached`, `dm_not_permitted`,
     `account_needs_reauth`, and `account_restricted`.
+
   </Card>
   <Card title="404 missing resource" icon="search-x">
+
     Retry: no. Verify the resource ID, connected account, username, tweet ID,
     media, article, draft, or cached style. Covers `not_found`,
     `account_not_found`, `user_not_found`, `tweet_not_found`, `no_media`,
     `article_not_found`, `draft_not_found`, `style_not_found`, and
     `no_cached_style`.
+
   </Card>
   <Card title="409 or 410 cursor state" icon="refresh-cw">
+
     Busy cursor: follow `Retry-After` and retry once. Gone cursor: restart
     cursorless and deduplicate IDs.
+
   </Card>
   <Card title="422 write validation" icon="message-circle-warning">
+
     Retry: no. Fix the account capability, target, content, DM permissions, or
     media URL before sending again. Covers `x_account_feature_required`,
     `x_account_suspended`, `x_account_protected`, `x_duplicate_action`,
     `x_dm_not_allowed`, `x_target_not_found`, `x_content_too_long`,
     `x_rejected`, and `media_download_failed`.
+
   </Card>
   <Card title="202 active write" icon="clock">
+
     Retry: no. Store the action and poll `statusUrl` while `terminal` is
     `false`. Follow `Retry-After`, `pollAfterMs`, and `nextAction`.
+
   </Card>
   <Card title="429 rate limit or cooldown" icon="timer">
+
     Retry: mixed. Retry `rate_limit_exceeded` and `x_rate_limited` after
     `Retry-After` or exponential backoff. Wait out `login_cooldown` via
     `retryAfterMs`. Do not retry `x_daily_limit` on the same X account for 24
     hours.
+
   </Card>
   <Card title="500, 502, and 503 transient failures" icon="rotate-ccw">
+
     Retry: yes for `internal_error`, `x_api_rate_limited`,
     `x_api_unavailable` and `x_api_unauthorized`. For writes, retry only when
     `safeToRetry` is `true`, using a new `Idempotency-Key`.
+
   </Card>
 </CardGroup>
 
@@ -101,325 +139,472 @@ Send `xquik-api-contract: 2026-04-29` for a structured `error` object. Some
 responses also include `message`, `reason`, `retryAfter`, or `retryAfterMs`.
 
 <AccordionGroup>
+
   <Accordion title="Validation errors (400)">
-    Request body, query, or path validation failed. Fix the request shape before
-    retrying.
+
+    Invalid body, query, or path. Fix the request before retrying.
 
     <CardGroup cols={2}>
+
       <Card title="invalid_input" icon="circle-alert">
-        Request body failed validation. Check required fields, types, and enum
-        values against the endpoint docs.
+
+        Invalid body. Check required fields, types, and enum values in the endpoint docs.
+
       </Card>
       <Card title="invalid_json" icon="file-code">
-        Request body is not valid JSON. Rebuild the body and send a parseable
-        JSON object.
+
+        Invalid JSON body. Send a parseable JSON object.
+
       </Card>
       <Card title="invalid_id" icon="hash">
-        Path ID is not valid. Use the numeric string returned by the create or
-        list endpoint.
+
+        Invalid path ID. Use the create or list endpoint's numeric string.
+
       </Card>
       <Card title="invalid_tweet_url" icon="link">
+
         Tweet URL is malformed. Use the full format
         `https://x.com/user/status/ID`.
+
       </Card>
       <Card title="invalid_tweet_id" icon="message-circle">
+
         Tweet ID is empty or malformed. Extract the final numeric status ID
         before calling tweet, media, or article endpoints.
+
       </Card>
       <Card title="invalid_username" icon="users">
+
         Username or user path value is empty or invalid. Send a username without
         the `@` prefix, or send a numeric user ID where supported.
+
       </Card>
       <Card title="invalid_user_id" icon="users">
+
         User lookup input is invalid or does not resolve. Check the username or
         numeric user ID before retrying.
+
       </Card>
       <Card title="invalid_tool_type" icon="database">
+
         Extraction tool type is not recognized. Use one of the 23 valid tool
         types from [Create Extraction](/api-reference/extractions/create).
+
       </Card>
       <Card title="invalid_format" icon="file-text">
+
         Export format is unsupported. Use `csv`, `json`, `md`, `md-document`,
         `pdf`, `txt`, or `xlsx`.
+
       </Card>
       <Card title="invalid_params" icon="circle-alert">
+
         Export query parameters are invalid. Check the `format` and `type`
         values for that export endpoint.
+
       </Card>
       <Card title="missing_query" icon="search">
+
         Required search query is missing. Add the `q` parameter before calling
         search or community endpoints.
+
       </Card>
       <Card title="missing_ids" icon="list">
+
         Required multi-ID query is missing. Provide comma-separated numeric IDs
         in the `ids` parameter.
+
       </Card>
       <Card title="missing_params" icon="circle-alert">
+
         Required query parameters are missing. Check the endpoint docs; follower
         checks require both source and target.
+
       </Card>
       <Card title="too_many_ids" icon="list">
+
         Too many IDs were requested at once. Split requests into groups of 100
         IDs or fewer.
+
       </Card>
       <Card title="unsupported_field" icon="circle-x">
+
         Request body contains a field this endpoint does not accept. For tweet
         posts, send public media URLs in `media`, not uploaded media IDs.
+
       </Card>
       <Card title="invalid_coverage_cursor" icon="circle-x">
+
         Cursor is malformed. Restart without it and deduplicate stored IDs.
+
       </Card>
     </CardGroup>
+
   </Accordion>
 
   <Accordion title="Authentication errors (401)">
+
     Missing or invalid credentials. Check your API key or session.
 
     <CardGroup cols={2}>
+
       <Card title="unauthenticated" icon="key-round">
+
         API key or bearer token is missing or invalid. Send `x-api-key` or
         regenerate a revoked key.
+
       </Card>
       <Card title="x_auth_failure" icon="refresh-cw">
+
         Connected X account session expired or was invalidated. Re-authenticate
         the account from the [dashboard](https://xquik.com/dashboard).
+
       </Card>
     </CardGroup>
+
   </Accordion>
 
   <Accordion title="Anonymous paid-read authentication (401)">
+
     Non-MPP paid reads return `401` with `WWW-Authenticate: Bearer` and a guest wallet action. This is not a Payment challenge. Authenticate or get confirmation before calling the action.
+
   </Accordion>
 
   <Accordion title="Billing & credit errors (402)">
+
     A `402` creates no checkout. Account and OAuth responses advertise account billing actions. Guest responses advertise only `POST /api/v1/guest-wallets/topups`. Direct MPP responses include a Payment challenge and guest option. Get confirmation before calling any action.
 
     <CardGroup cols={2}>
+
       <Card title="no_subscription" icon="badge-x">
+
         No plan. Check credits, then [top up](/api-reference/credits/topup) or [subscribe](/api-reference/account/subscription-checkout).
+
       </Card>
       <Card title="subscription_inactive" icon="badge-alert">
+
         Plan inactive. Remaining credits work. Top up or reactivate on the [billing page](https://dashboard.xquik.com/en/account?tab=subscription).
+
       </Card>
       <Card title="payment_failed" icon="credit-card">
+
         Payment processing failed. Update the payment method from the
         [dashboard](https://xquik.com/subscription).
+
       </Card>
       <Card title="no_credits" icon="coins">
+
         No credit balance is available. Check balance with
         [Get Account](/api-reference/account/get), then use
         [Top Up Credits](/api-reference/credits/topup) after confirmation.
+
       </Card>
       <Card title="insufficient_credits" icon="wallet-cards">
+
         Balance is below the required operation cost. Account callers can check
         [Get Account](/api-reference/account/get). Guest callers can check
         [Guest Wallet Status](/api-reference/guest-wallets/status). Use only the
         payment action advertised for that credential.
+
       </Card>
     </CardGroup>
+
   </Accordion>
 
   <Accordion title="Permission errors (403)">
+
     Action not allowed under current plan or limits.
 
     <CardGroup cols={2}>
+
       <Card title="api_key_limit_reached" icon="key-round">
+
         The account already has 100 active API keys. Revoke an active key
         before creating another.
+
       </Card>
       <Card title="dm_not_permitted" icon="message-circle">
+
         DM history requires a connected account that participates in the
         conversation. Use a participating account or reconnect it from the
         [dashboard](https://xquik.com/dashboard).
+
       </Card>
       <Card title="account_needs_reauth" icon="refresh-cw">
+
         Connected X account session needs re-authentication. Reconnect the
         account from the [dashboard](https://xquik.com/dashboard), then retry.
+
       </Card>
       <Card title="account_restricted" icon="shield-alert">
+
         Connected X account is locked, suspended, recovering, or temporarily
         blocked. Resolve account health on x.com or wait before retrying.
+
       </Card>
     </CardGroup>
+
   </Accordion>
 
   <Accordion title="Not found errors (404)">
+
     The requested resource does not exist, is unavailable to this API key, or
     is not the expected X object type.
 
     <CardGroup cols={2}>
+
       <Card title="not_found" icon="search-x">
+
         Generic resource lookup failed. Verify the ID belongs to your account
         and has not been deleted.
+
       </Card>
       <Card title="account_not_found" icon="users">
+
         Connected X account was not found for this user. Call
         [List X Accounts](/api-reference/x-accounts/list) and use a valid
         connected account.
+
       </Card>
       <Card title="user_not_found" icon="users">
+
         X username or numeric user ID does not resolve. Confirm the username
         with the user or try a different handle.
+
       </Card>
       <Card title="tweet_not_found" icon="message-circle">
+
         Tweet ID does not resolve. Check the numeric tweet ID; the tweet may
         have been deleted.
+
       </Card>
       <Card title="no_media" icon="image">
+
         Tweet exists but has no downloadable media attachments. Use a tweet
         that contains media.
+
       </Card>
       <Card title="article_not_found" icon="file-text">
-        Tweet ID is valid but is not an X Article. Ask for an X Article URL or
-        use a normal tweet or thread endpoint.
+
+        Valid Tweet ID, but no X Article. Request an Article URL or use tweet/thread endpoints.
+
       </Card>
       <Card title="draft_not_found" icon="file-text">
-        Draft ID does not exist. Verify the draft ID or create a new draft.
+
+        Draft missing. Verify its ID or create one.
+
       </Card>
       <Card title="style_not_found" icon="pen-line">
-        Writing style ID was not found. Analyze tweets first with
+
+        Style ID missing. Analyze tweets with
         [Analyze Style](/api-reference/styles/analyze).
+
       </Card>
       <Card title="no_cached_style" icon="pen-line">
-        No cached writing style exists for username lookup. Analyze tweets
-        first with [Analyze Style](/api-reference/styles/analyze).
+
+        No cached style for this username. Analyze tweets with [Analyze Style](/api-reference/styles/analyze).
+
       </Card>
     </CardGroup>
+
   </Accordion>
 
   <Accordion title="Conflict and cursor errors (409/410)">
+
     Reuse duplicate monitors. Recover cursors by status and error code.
 
     <CardGroup cols={2}>
+
       <Card title="monitor_already_exists" icon="copy-check">
+
         Duplicate account or keyword monitor. List existing monitors, reuse the
           monitor ID, or update event types with
           [Update Monitor](/api-reference/monitors/update) or
           [Update Keyword Monitor](/api-reference/monitors/update-keyword).
+
       </Card>
       <Card title="coverage_cursor_unavailable" icon="timer">
+
         Follow the exact `Retry-After` seconds. Retry the same cursor once.
+
       </Card>
       <Card title="coverage_cursor_gone" icon="refresh-cw">
+
         No `Retry-After`. Restart cursorless and deduplicate IDs.
+
       </Card>
     </CardGroup>
+
   </Accordion>
 
   <Accordion title="Validation errors (422)">
+
     Write validation failed. Change the account, target, content, DM
     permission, or media input before retrying.
 
     <CardGroup cols={2}>
+
       <Card title="x_account_feature_required" icon="lock-keyhole">
-        Account capability is missing. Use an account with the required
-        capability or adjust the request.
+
+        Missing account capability. Change the account or request.
+
       </Card>
       <Card title="x_account_suspended" icon="shield-alert">
-        Connected X account is suspended or restricted. Resolve account status
-        on x.com before sending more writes from it.
+
+        X account suspended or restricted. Resolve its status on x.com before further writes.
+
       </Card>
       <Card title="x_account_protected" icon="lock">
+
         Target account is protected. Request access first or choose a target
         account that the connected account can interact with.
+
       </Card>
       <Card title="x_duplicate_action" icon="copy-check">
+
         Operation is already complete. Do not retry unchanged; check the target
         state before sending anything again.
+
       </Card>
       <Card title="x_dm_not_allowed" icon="message-circle">
+
         Recipient does not accept DMs from this account. Use a permitted
         connected account or ask the recipient to allow messages.
+
       </Card>
       <Card title="x_target_not_found" icon="search-x">
+
         Tweet or user target does not exist. Verify the ID or username before
         sending another request.
+
       </Card>
       <Card title="x_content_too_long" icon="message-circle-warning">
+
         Content exceeds the character limit. Shorten the text or use an account
         that supports the requested content length.
+
       </Card>
       <Card title="x_rejected" icon="circle-x">
+
         X rejected the write without a specific reason. Change the request.
         Retry only when the durable action marks it safe.
+
       </Card>
       <Card title="media_download_failed" icon="image">
+
         Public media URL could not be downloaded. Fix the HTTPS URL or pass the
         file via multipart/form-data. Do not retry the same URL.
+
       </Card>
     </CardGroup>
+
   </Accordion>
 
   <Accordion title="Active write lifecycle (202)">
+
     The durable write remains active. Its status is `accepted`, `dispatching`,
     or `pending_confirmation`.
 
     <CardGroup cols={2}>
+
       <Card title="Poll" icon="clock">
+
         Store `id`, `request.hash`, `account`, `target`, and `billing`. Poll
         `statusUrl` after `Retry-After` or `pollAfterMs`.
+
       </Card>
       <Card title="Recovery" icon="circle-check">
+
         Stop when `terminal` is `true`. Retry only when `safeToRetry` is `true`,
         using a new key. Verify the result when `nextAction.type` is
         `verify_result`.
+
       </Card>
     </CardGroup>
+
   </Accordion>
 
   <Accordion title="Rate limit errors (429)">
+
     Request rate exceeded. See [Rate Limits](/guides/rate-limits) for tier details.
 
     <CardGroup cols={2}>
+
       <Card title="rate_limit_exceeded" icon="timer">
+
         Xquik tier or action limit was reached. Wait the `Retry-After` seconds
         from the response; JSON also includes `retryAfter` when available.
+
       </Card>
       <Card title="login_cooldown" icon="clock">
+
         A recent login attempt triggered cooldown. Wait `retryAfterMs` or the
         `Retry-After` header before reconnecting or reauthenticating.
+
       </Card>
       <Card title="x_rate_limited" icon="gauge">
+
         X throttled the write. Follow `Retry-After`, then retry with backoff.
+
       </Card>
       <Card title="x_daily_limit" icon="calendar-x">
+
         Connected X account reached its daily posting limit. Wait 24 hours
         before retrying that account, or use another connected account.
+
       </Card>
     </CardGroup>
+
   </Accordion>
 
   <Accordion title="Server & service errors (500/502/503)">
+
     Transient failures. Retry with exponential backoff (max 3 attempts).
 
     <CardGroup cols={2}>
+
       <Card title="internal_error" icon="server-crash">
+
         Server error. Retry with backoff and
         [contact support](mailto:support@xquik.com) if it persists.
+
       </Card>
       <Card title="x_api_rate_limited" icon="timer-reset">
+
         Read service rate limited. Retry in a few minutes.
+
       </Card>
       <Card title="x_api_unavailable" icon="cloud-off">
+
         Read service temporarily unavailable or busy. Respect `Retry-After`
         when present, otherwise retry with backoff.
+
       </Card>
       <Card title="x_api_unauthorized" icon="key-round">
+
         Read service authentication failed. Retry later and
         [contact support](mailto:support@xquik.com) if it persists.
+
       </Card>
       <Card title="x_write_failed" icon="circle-x">
+
         Write action failed unexpectedly. Follow `safeToRetry` and
         `nextAction`. Contact support if the action remains unsafe to retry.
+
       </Card>
       <Card title="x_write_ambiguous" icon="activity">
+
         Completion could not be confirmed. Poll the durable action, then verify
         the result before sending anything again.
+
       </Card>
       <Card title="x_transient_error" icon="rotate-ccw">
+
         Temporary write failure. Retry only when `safeToRetry` is `true`.
+
       </Card>
     </CardGroup>
+
   </Accordion>
 </AccordionGroup>
 
@@ -429,20 +614,29 @@ Every write can return a durable action. Inspect the JSON lifecycle fields
 before generic success or error handling.
 
 <Steps>
+
   <Step title="Store the action">
+
     Store `id`, `status`, `request.hash`, `account`, `target`, `billing`, and
     `statusUrl`.
+
   </Step>
   <Step title="Poll the write action">
+
     Poll `statusUrl` while `terminal` is `false`. Respect `Retry-After` and
     `pollAfterMs`.
+
   </Step>
   <Step title="Persist the outcome">
+
     Store `result` and settled `billing` after `terminal` becomes `true`.
+
   </Step>
   <Step title="Follow retry safety">
+
     Retry only when `safeToRetry` is `true`, using a new `Idempotency-Key`.
     Verify the result when `nextAction.type` is `verify_result`.
+
   </Step>
 </Steps>
 
@@ -477,58 +671,88 @@ When a request is rate limited, Xquik returns `429 Too Many Requests` with a
 `retryAfterMs` in milliseconds for login cooldowns.
 
 <CardGroup cols={2}>
+
   <Card title="HTTP status" icon="gauge">
+
     `429 Too Many Requests` means the request is rate limited or waiting on an
     account cooldown.
+
   </Card>
   <Card title="Retry-After header" icon="timer">
+
     The `Retry-After` header gives seconds to wait before sending the same
     request again.
+
   </Card>
 </CardGroup>
 
 <Steps>
+
   <Step title="Check the status">
+
     Branch on `response.status === 429` before normal success handling.
+
   </Step>
   <Step title="Prefer the header">
+
     Parse `Retry-After` as seconds. If it is missing, read `retryAfter` or `retryAfterMs` from the JSON body.
+
   </Step>
   <Step title="Wait the full duration">
+
     Do not send another request for the same operation until the wait expires.
+
   </Step>
   <Step title="Back off after another 429">
+
     If the same request returns another 429, apply exponential backoff and stop after 3 attempts.
+
   </Step>
 </Steps>
 
 ## Best practices
 
 <AccordionGroup>
+
   <Accordion title="Distinguish client errors from server errors">
+
     Do not retry a `4xx` response unchanged. Fix authentication, billing,
     permissions, or input first. Retry `429` and `5xx` only as described above.
+
   </Accordion>
   <Accordion title="Log error codes for debugging">
+
     Log the status and error code. Never log credentials or private payloads.
+
   </Accordion>
   <Accordion title="Handle 409 gracefully">
+
     Reuse `monitor_already_exists`. For a busy cursor, follow `Retry-After` and
     retry once.
+
   </Accordion>
   <Accordion title="Set request timeouts">
+
     Set a bounded client timeout. Use status endpoints for long-running jobs.
+
   </Accordion>
   <Accordion title="Use idempotent operations">
+
     Creating a monitor for the same username returns `409`. Deleting a non-existent resource returns `404`. Both are safe to retry.
+
   </Accordion>
 </AccordionGroup>
 
 <CardGroup cols={2}>
+
   <Card title="Rate limits" icon="gauge" href="/guides/rate-limits">
+
     Detailed rate limit tiers and client-side rate limiting.
+
   </Card>
   <Card title="API overview" icon="book" href="/api-reference/overview">
+
     Base URL, authentication, and API conventions.
+
   </Card>
 </CardGroup>

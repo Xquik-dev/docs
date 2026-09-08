@@ -9,9 +9,13 @@ keywords: ["x accounts", "get", "details", "status"]
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="200" id="response-x-accounts-get-200">
+
     ```json
     {
       "id": "42",
@@ -22,36 +26,44 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "createdAt": "2025-01-15T12:00:00Z"
     }
     ```
+
   </Tab>
 
   <Tab title="400" id="response-x-accounts-get-400">
+
     ```json
     {
       "error": "invalid_input",
       "message": "Invalid input. Check the request body."
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-x-accounts-get-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
+
   </Tab>
 
   <Tab title="404" id="response-x-accounts-get-404">
+
     ```json
     {
       "error": "not_found",
       "message": "Resource not found."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-x-accounts-get-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -59,8 +71,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "retryAfter": 60
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
@@ -70,7 +84,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 Use this route as a health gate before one connected-account write. Read health, recovery, and credential state before selecting the next action. Use list only for account-wide inventory.
 
 <Callout icon="circle-check" color="#16a34a">
-  **Free** - does not consume credits
+
+**Free** - does not consume credits
+
 </Callout>
 
 Use this endpoint before a workflow acts with one connected account. Read `health` first. Write with `healthy`. Use `recovering` on the next action. Wait or bulk retry `temporaryIssue`. Re-authenticate `needsReauth`. Fix `locked` or `suspended` on X before retrying writes.
@@ -78,104 +94,137 @@ Use this endpoint before a workflow acts with one connected account. Read `healt
 ## Read the account state
 
 <CardGroup cols={1}>
+
   <Card title="Ready for actions" icon="circle-check">
+
     `health: "healthy"` means the stored session is usable. `cookiesObtainedAt` shows when the session was last obtained and is omitted if the account has not authenticated yet.
+
   </Card>
   <Card title="Needs credentials" icon="key-round">
+
     `health: "needsReauth"` means credentials, TOTP, email verification, passkey, or another security challenge blocked login. Use [Re-authenticate](/api-reference/x-accounts/reauth) with current credentials and a valid TOTP secret before retrying writes.
+
   </Card>
   <Card title="Temporary recovery" icon="refresh-cw">
+
     `health: "temporaryIssue"` means a transient or automated cooldown is still active. Wait for recovery, or use [Bulk retry](/api-reference/x-accounts/bulk-retry) for temporary failures. `health: "recovering"` means the account can reconnect on its next use.
+
   </Card>
   <Card title="X restriction" icon="shield-alert">
+
     `health: "locked"` or `health: "suspended"` means writes stay blocked until the account is fixed on X. Re-authenticate or reconnect only after the account is usable again.
+
   </Card>
 </CardGroup>
 
 <CodeGroup>
-  ```bash cURL
-  curl -X GET https://xquik.com/api/v1/x/accounts/3 \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
-  ```
 
-  ```javascript Node.js
-  const accountId = "3";
-  const response = await fetch(`https://xquik.com/api/v1/x/accounts/${accountId}`, {
-    method: "GET",
-    headers: {
-      "x-api-key": "xq_YOUR_KEY_HERE",
-    },
-  });
-  const data = await response.json();
-  ```
+```bash cURL
+curl -X GET https://xquik.com/api/v1/x/accounts/3 \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
 
-  ```python Python
-  import requests
+```javascript Node.js
+const accountId = "3";
+const response = await fetch(`https://xquik.com/api/v1/x/accounts/${accountId}`, {
+  method: "GET",
+  headers: {
+    "x-api-key": "xq_YOUR_KEY_HERE",
+  },
+});
+const data = await response.json();
+```
 
-  account_id = "3"
-  response = requests.get(
-      f"https://xquik.com/api/v1/x/accounts/{account_id}",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-  )
-  data = response.json()
-  ```
+```python Python
+import requests
 
-  ```go Go
-  package main
+account_id = "3"
+response = requests.get(
+    f"https://xquik.com/api/v1/x/accounts/{account_id}",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+)
+data = response.json()
+```
 
-  import (
-      "encoding/json"
-      "fmt"
-      "net/http"
-  )
+```go Go
+package main
 
-  func main() {
-      accountID := "3"
-      req, err := http.NewRequest("GET", "https://xquik.com/api/v1/x/accounts/"+accountID, nil)
-      if err != nil {
-          panic(err)
-      }
-      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+import (
+    "encoding/json"
+    "fmt"
+    "net/http"
+)
 
-      resp, err := http.DefaultClient.Do(req)
-      if err != nil {
-          panic(err)
-      }
-      defer resp.Body.Close()
+func main() {
+    accountID := "3"
+    req, err := http.NewRequest("GET", "https://xquik.com/api/v1/x/accounts/"+accountID, nil)
+    if err != nil {
+        panic(err)
+    }
+    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-          panic(err)
-      }
-      fmt.Println(data)
-  }
-  ```
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+        panic(err)
+    }
+    defer resp.Body.Close()
+
+    var data map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+        panic(err)
+    }
+    fmt.Println(data)
+}
+```
+
 </CodeGroup>
 
 ## Path parameters
 
 <ParamField path="id" type="string" required>
-  The unique account ID. Returned when you [connect an account](/api-reference/x-accounts/connect) or [list accounts](/api-reference/x-accounts/list).
+
+The unique account ID. Returned when you [connect an account](/api-reference/x-accounts/connect) or [list accounts](/api-reference/x-accounts/list).
+
 </ParamField>
 
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+
+Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+
 </ParamField>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="id" type="string">Unique account ID.</ResponseField>
-<ResponseField name="xUsername" type="string">X username.</ResponseField>
-<ResponseField name="xUserId" type="string">X user ID.</ResponseField>
-<ResponseField name="status" type="string">Account connection status (e.g. `"active"`).</ResponseField>
-<ResponseField name="health" type="string">Derived login/cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`. See [Account health](/api-reference/x-accounts/list#account-health) for meanings.</ResponseField>
-<ResponseField name="cookiesObtainedAt" type="string">ISO 8601 timestamp of when session cookies were last obtained. Omitted if not yet authenticated.</ResponseField>
-<ResponseField name="createdAt" type="string">ISO 8601 timestamp of when the account was connected.</ResponseField>
-<ResponseField name="updatedAt" type="string">ISO 8601 timestamp of the last update.</ResponseField>
+<ResponseField name="id" type="string">
+  Unique account ID.
+</ResponseField>
+<ResponseField name="xUsername" type="string">
+  X username.
+</ResponseField>
+<ResponseField name="xUserId" type="string">
+  X user ID.
+</ResponseField>
+<ResponseField name="status" type="string">
+  Account connection status (e.g. `"active"`).
+</ResponseField>
+<ResponseField name="health" type="string">
+  Derived login/cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`,
+  `temporaryIssue`. See [Account health](/api-reference/x-accounts/list#account-health) for
+  meanings.
+</ResponseField>
+<ResponseField name="cookiesObtainedAt" type="string">
+  ISO 8601 timestamp of when session cookies were last obtained. Omitted if not yet authenticated.
+</ResponseField>
+<ResponseField name="createdAt" type="string">
+  ISO 8601 timestamp of when the account was connected.
+</ResponseField>
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 timestamp of the last update.
+</ResponseField>
 
 ```json
 {
@@ -195,6 +244,7 @@ Use this endpoint before a workflow acts with one connected account. Read `healt
 ```json
 { "error": "invalid_id", "message": "Invalid account ID format" }
 ```
+
 The provided account ID is not a valid format.
 
 ### 401 Unauthenticated
@@ -202,6 +252,7 @@ The provided account ID is not a valid format.
 ```json
 { "error": "unauthenticated", "message": "Missing or invalid API key" }
 ```
+
 Missing or invalid API key.
 
 ### 404 Not found
@@ -209,15 +260,23 @@ Missing or invalid API key.
 ```json
 { "error": "not_found", "message": "Resource not found." }
 ```
+
 No account exists with this ID, or it belongs to a different Xquik account.
 
 ### 429 Rate limited
 
 ```json
-{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Try again later.",
+  "retryAfter": 1
+}
 ```
+
 Wait for the `Retry-After` value before fetching this account again.
 
 <Note>
-  **Related.** [List X Accounts](/api-reference/x-accounts/list) to see all accounts, [Disconnect](/api-reference/x-accounts/disconnect) to remove this account, or [Re-authenticate](/api-reference/x-accounts/reauth) if the session has expired.
+
+**Related.** [List X Accounts](/api-reference/x-accounts/list) to see all accounts, [Disconnect](/api-reference/x-accounts/disconnect) to remove this account, or [Re-authenticate](/api-reference/x-accounts/reauth) if the session has expired.
+
 </Note>
