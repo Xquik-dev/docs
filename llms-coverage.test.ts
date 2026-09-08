@@ -1,10 +1,9 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync } from "node:fs";
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
-const DOCS_ORIGIN = 'https://docs.xquik.com';
-const MARKDOWN_LINK_PATTERN =
-  /\[[^\]]+\]\((?:https:\/\/docs\.xquik\.com)?\/([^\s)]*)\)/gu;
+const DOCS_ORIGIN = "https://docs.xquik.com";
+const MARKDOWN_LINK_PATTERN = /\[[^\]]+\]\((?:https:\/\/docs\.xquik\.com)?\/([^\s)]*)\)/gu;
 
 interface NavigationGroup {
   readonly anchors?: readonly NavigationItem[];
@@ -20,7 +19,7 @@ interface DocsConfig {
 }
 
 function flattenNavigationPages(item: NavigationItem): readonly string[] {
-  if (typeof item === 'string') {
+  if (typeof item === "string") {
     return [normalizePagePath(item)];
   }
 
@@ -34,44 +33,40 @@ function flattenNavigationPages(item: NavigationItem): readonly string[] {
 
 function normalizePagePath(page: string): string {
   const normalizedPage = page
-    .replace(/^\/+/u, '')
-    .replace(/\.mdx?$/u, '')
-    .replace(/#.*$/u, '');
+    .replace(/^\/+/u, "")
+    .replace(/\.mdx?$/u, "")
+    .replace(/#.*$/u, "");
 
-  return normalizedPage === 'index' ? '' : normalizedPage;
+  return normalizedPage === "index" ? "" : normalizedPage;
 }
 
 function documentedLlmsPages(source: string): ReadonlySet<string> {
   return new Set(
     [...source.matchAll(MARKDOWN_LINK_PATTERN)].map((match): string =>
-      normalizePagePath(match[1] ?? ''),
+      normalizePagePath(match[1] ?? ""),
     ),
   );
 }
 
-describe('llms.txt coverage', (): void => {
-  it('lists every docs.json navigation page as a markdown link', (): void => {
+describe("llms.txt coverage", (): void => {
+  it("lists every docs.json navigation page as a markdown link", (): void => {
     expect.assertions(2);
 
-    const docsConfig = JSON.parse(
-      readFileSync('docs.json', 'utf8'),
-    ) as DocsConfig;
+    const docsConfig = JSON.parse(readFileSync("docs.json", "utf8")) as DocsConfig;
     const expectedPages = flattenNavigationPages(docsConfig.navigation);
-    const llms = readFileSync('llms.txt', 'utf8');
+    const llms = readFileSync("llms.txt", "utf8");
     const actualPages = documentedLlmsPages(llms);
     const missingPages = expectedPages
       .filter((page): boolean => !actualPages.has(page))
       .map((page): string => `${DOCS_ORIGIN}/${page}`);
     const sectionContent = llms
-      .slice(llms.indexOf('\n## '))
-      .split('\n')
-      .filter((line): boolean => line !== '' && !line.startsWith('## '));
+      .slice(llms.indexOf("\n## "))
+      .split("\n")
+      .filter((line): boolean => line !== "" && !line.startsWith("## "));
 
     expect(missingPages).toStrictEqual([]);
-    expect(
-      sectionContent.every((line): boolean =>
-        /^- \[[^\]]+\]\([^)]+\)$/u.test(line),
-      ),
-    ).toBe(true);
+    expect(sectionContent.every((line): boolean => /^- \[[^\]]+\]\([^)]+\)$/u.test(line))).toBe(
+      true,
+    );
   });
 });

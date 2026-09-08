@@ -1,43 +1,47 @@
-import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
-const checker = resolve('scripts/check-dependency-policy.mjs');
+const checker = resolve("scripts/check-dependency-policy.mjs");
 const metadata = {
-  version: '1.0.0',
-  integrity: 'sha512-fixture',
-  resolved: 'https://registry.npmjs.org/fixture/-/fixture-1.0.0.tgz',
-  license: 'MIT',
+  version: "1.0.0",
+  integrity: "sha512-fixture",
+  resolved: "https://registry.npmjs.org/fixture/-/fixture-1.0.0.tgz",
+  license: "MIT",
 };
 
 function checkPolicy(
   packages: Record<string, unknown>,
-  version = '1.0.0',
+  version = "1.0.0",
+  competingLock = false,
 ): ReturnType<typeof spawnSync> {
-  const directory = mkdtempSync(join(tmpdir(), 'xquik-dependency-policy-'));
+  const directory = mkdtempSync(join(tmpdir(), "xquik-dependency-policy-"));
   try {
-    mkdirSync(join(directory, 'config'));
+    mkdirSync(join(directory, "config"));
+    if (competingLock) writeFileSync(join(directory, "bun.lock"), "{}");
     for (const [name, contents] of Object.entries({
-      'config/dependency-license-policy.json': {
-        allowedLicenses: ['MIT'],
+      "config/dependency-license-policy.json": {
+        allowedLicenses: ["MIT"],
         packageLicenses: {},
-        licenseReferences: [{
-          declared: 'SEE LICENSE IN LICENSE.md',
-          license: 'MIT',
-          packages: ['fixture@1.0.0'],
-        }],
+        licenseReferences: [
+          {
+            declared: "SEE LICENSE IN LICENSE.md",
+            license: "MIT",
+            packages: ["fixture@1.0.0"],
+          },
+        ],
       },
-      'package.json': { devDependencies: { fixture: version } },
-      'package-lock.json': { packages },
+      "package.json": { devDependencies: { fixture: version } },
+      "package-lock.json": { packages },
     })) {
       writeFileSync(join(directory, name), JSON.stringify(contents));
     }
     return spawnSync(process.execPath, [checker], {
       cwd: directory,
-      encoding: 'utf8',
+      encoding: "utf8",
       timeout: 5000,
     });
   } finally {
@@ -45,52 +49,62 @@ function checkPolicy(
   }
 }
 
-describe('dependency policy', (): void => {
-  it('counts locked dependencies without counting the root package', (): void => {
+describe("dependency policy", (): void => {
+  it("rejects an installation lockfile that bypasses metadata validation", (): void => {
     expect.assertions(2);
-    const result = checkPolicy({ '': {}, 'node_modules/fixture': metadata });
-    expect(result.status).toBe(0);
-    expect(String(result.stdout)).toContain('Verified 1 locked dependencies');
+    const result = checkPolicy({ "node_modules/fixture": metadata }, "1.0.0", true);
+    expect(result.status).toBe(1);
+    expect(String(result.stderr)).toContain("Use package-lock.json only. Remove bun.lock.");
   });
 
-  it('rejects an empty dependency lockfile', (): void => {
+  it("counts locked dependencies without counting the root package", (): void => {
     expect.assertions(2);
-    const result = checkPolicy({ '': {} });
+    const result = checkPolicy({ "": {}, "node_modules/fixture": metadata });
+    expect(result.status).toBe(0);
+    expect(String(result.stdout)).toContain("Verified 1 locked dependencies");
+  });
+
+  it("rejects an empty dependency lockfile", (): void => {
+    expect.assertions(2);
+    const result = checkPolicy({ "": {} });
     expect(result.status).toBe(1);
-    expect(String(result.stderr)).toContain('lockfile contains no dependencies');
+    expect(String(result.stderr)).toContain("lockfile contains no dependencies");
   });
 
   it.each([
-    [{ ...metadata, integrity: undefined }, 'SHA-512 package integrity'],
-    [{ ...metadata, resolved: 'https://example.com/file' }, 'approved registry'],
-    [{ ...metadata, license: undefined }, 'missing license metadata'],
-    [{ ...metadata, license: 'unapproved' }, 'unapproved license'],
-  ])('retains metadata enforcement for %j', (entry, message): void => {
+    [{ ...metadata, integrity: undefined }, "SHA-512 package integrity"],
+    [{ ...metadata, resolved: "https://example.com/file" }, "approved registry"],
+    [{ ...metadata, license: undefined }, "missing license metadata"],
+    [{ ...metadata, license: "unapproved" }, "unapproved license"],
+  ])("retains metadata enforcement for %j", (entry, message): void => {
     expect.assertions(2);
-    const result = checkPolicy({ 'node_modules/fixture': entry });
+    const result = checkPolicy({ "node_modules/fixture": entry });
     expect(result.status).toBe(1);
     expect(String(result.stderr)).toContain(String(message));
   });
 
-  it('rejects unpinned direct dependencies', (): void => {
+  it("rejects unpinned direct dependencies", (): void => {
     expect.assertions(2);
-    const result = checkPolicy({ 'node_modules/fixture': metadata }, '^1.0.0');
+    const result = checkPolicy({ "node_modules/fixture": metadata }, "^1.0.0");
     expect(result.status).toBe(1);
-    expect(String(result.stderr)).toContain('must use an exact version');
+    expect(String(result.stderr)).toContain("must use an exact version");
   });
 
   it.each([
-    ['fixture', '1.0.0', 'SEE LICENSE IN LICENSE.md', 0],
-    ['other', '1.0.0', 'SEE LICENSE IN LICENSE.md', 1],
-    ['fixture', '1.0.1', 'SEE LICENSE IN LICENSE.md', 1],
-    ['fixture', '1.0.0', 'SEE LICENSE IN README.md', 1],
-    ['fixture', '1.0.0', 'unapproved', 1],
-  ])('resolves only reviewed package references: %s@%s %s', (name, version, license, status): void => {
-    expect.assertions(2);
-    const result = checkPolicy({ [`node_modules/${name}`]: { ...metadata, version, license } });
-    expect(result.status).toBe(status);
-    expect(String(status === 0 ? result.stdout : result.stderr)).toContain(
-      status === 0 ? 'Verified 1 locked dependencies' : `unapproved license ${license}`,
-    );
-  });
+    ["fixture", "1.0.0", "SEE LICENSE IN LICENSE.md", 0],
+    ["other", "1.0.0", "SEE LICENSE IN LICENSE.md", 1],
+    ["fixture", "1.0.1", "SEE LICENSE IN LICENSE.md", 1],
+    ["fixture", "1.0.0", "SEE LICENSE IN README.md", 1],
+    ["fixture", "1.0.0", "unapproved", 1],
+  ])(
+    "resolves only reviewed package references: %s@%s %s",
+    (name, version, license, status): void => {
+      expect.assertions(2);
+      const result = checkPolicy({ [`node_modules/${name}`]: { ...metadata, version, license } });
+      expect(result.status).toBe(status);
+      expect(String(status === 0 ? result.stdout : result.stderr)).toContain(
+        status === 0 ? "Verified 1 locked dependencies" : `unapproved license ${license}`,
+      );
+    },
+  );
 });

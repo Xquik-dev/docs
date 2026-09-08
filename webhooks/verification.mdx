@@ -2,7 +2,14 @@
 title: "Twitter webhook signature verification | monitor API"
 sidebarTitle: "Signature verification"
 description: "Verify HMAC-SHA256 signatures before processing account or keyword monitor webhooks. Preserve raw bodies and compare signatures safely. See event fields."
-keywords: ["signature verification", "HMAC-SHA256", "webhook security", "timingSafeEqual", "replay protection"]
+keywords:
+  [
+    "signature verification",
+    "HMAC-SHA256",
+    "webhook security",
+    "timingSafeEqual",
+    "replay protection",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -13,14 +20,14 @@ Xquik signs every webhook delivery with HMAC-SHA256 over a string built from a
 timestamp, nonce, and the raw body. Always verify the signature AND reject
 stale or replayed requests before processing events.
 
-| Verification checkpoint | Exact source | Reject when |
-| --- | --- | --- |
-| Signature | `X-Xquik-Signature` | HMAC-SHA256 differs in a timing-safe comparison. |
-| Timestamp | `X-Xquik-Timestamp` | The delivery falls outside the 5-minute tolerance. |
-| Nonce | `X-Xquik-Nonce` | The webhook already used this nonce within 5 minutes. |
-| Raw body | Unparsed request bytes | Middleware parsed or re-serialized JSON before verification. |
-| Delivery | `deliveryId` | The receiver already queued this webhook attempt. |
-| Monitor event | `streamEventId` | The receiver already processed this monitor event. |
+| Verification checkpoint | Exact source           | Reject when                                                  |
+| ----------------------- | ---------------------- | ------------------------------------------------------------ |
+| Signature               | `X-Xquik-Signature`    | HMAC-SHA256 differs in a timing-safe comparison.             |
+| Timestamp               | `X-Xquik-Timestamp`    | The delivery falls outside the 5-minute tolerance.           |
+| Nonce                   | `X-Xquik-Nonce`        | The webhook already used this nonce within 5 minutes.        |
+| Raw body                | Unparsed request bytes | Middleware parsed or re-serialized JSON before verification. |
+| Delivery                | `deliveryId`           | The receiver already queued this webhook attempt.            |
+| Monitor event           | `streamEventId`        | The receiver already processed this monitor event.           |
 
 ## Headers sent with every delivery
 
@@ -29,25 +36,36 @@ signature is the trust boundary; use `Content-Type` and `User-Agent` only for
 handler routing and logs.
 
 <CardGroup cols={2}>
+
   <Card title="Timestamp" icon="clock">
+
     `X-Xquik-Timestamp` is Unix epoch milliseconds. Reject requests outside the
     5-minute tolerance window.
+
   </Card>
   <Card title="Nonce" icon="key-round">
+
     `X-Xquik-Nonce` is 16 random bytes in hex. Store recent values for 5
     minutes and reject repeats.
+
   </Card>
   <Card title="Signature" icon="shield-check">
+
     `X-Xquik-Signature` is `sha256=<hex>` over
     `<timestamp>.<nonce>.<rawBody>` keyed with the endpoint secret.
+
   </Card>
   <Card title="Raw JSON body" icon="database">
+
     `Content-Type` is always `application/json`. Verify the raw body bytes
     before parsing or re-serializing JSON.
+
   </Card>
   <Card title="Sender logs" icon="radio">
+
     `User-Agent` is `xquik-webhooks/1.0 (+https://xquik.com)`. Log it for
     diagnostics, but never trust it instead of the signature.
+
   </Card>
 </CardGroup>
 
@@ -72,11 +90,7 @@ idempotency, and incident routing visible in one review record.
   "signature": {
     "raw_body": true,
     "signing_string": "<timestamp>.<nonce>.<rawBody>",
-    "headers": [
-      "X-Xquik-Signature",
-      "X-Xquik-Timestamp",
-      "X-Xquik-Nonce"
-    ],
+    "headers": ["X-Xquik-Signature", "X-Xquik-Timestamp", "X-Xquik-Nonce"],
     "replay_window_ms": 300000,
     "secret_logging": "never"
   },
@@ -92,38 +106,40 @@ idempotency, and incident routing visible in one review record.
   },
   "incident_row": {
     "source": "GET /api/v1/webhooks/15/deliveries",
-    "fields": [
-      "status",
-      "attempts",
-      "lastStatusCode",
-      "lastError",
-      "createdAt",
-      "deliveredAt"
-    ]
+    "fields": ["status", "attempts", "lastStatusCode", "lastError", "createdAt", "deliveredAt"]
   },
   "handoff_state": "verify_raw_body_store_nonce_then_dedupe_delivery"
 }
 ```
 
 <CardGroup cols={2}>
+
   <Card title="Raw body first" icon="braces">
+
     Keep raw request bytes available until signature verification succeeds.
     Parse JSON only after the HMAC check passes.
+
   </Card>
 
   <Card title="Nonce store" icon="database">
+
     Store each nonce with the webhook ID for 5 minutes. Reject duplicates before
     queueing or acknowledging the event.
+
   </Card>
 
   <Card title="Secret hygiene" icon="shield-check">
+
     Store the webhook secret once, use it only for HMAC checks, and never write
     it to logs, queues, traces, or incident rows.
+
   </Card>
 
   <Card title="Incident fields" icon="activity">
+
     Send `status`, `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and
     `deliveredAt` from the deliveries API to your alerting or support queue.
+
   </Card>
 </CardGroup>
 
@@ -163,8 +179,7 @@ function verifyWebhook(req, secret) {
   }
 
   const signingString = `${timestamp}.${nonce}.${rawBody}`;
-  const expected =
-    "sha256=" + createHmac("sha256", secret).update(signingString).digest("hex");
+  const expected = "sha256=" + createHmac("sha256", secret).update(signingString).digest("hex");
   const expectedBuffer = Buffer.from(expected);
   const signatureBuffer = Buffer.from(signature);
   if (expectedBuffer.length !== signatureBuffer.length) return false;
@@ -321,17 +336,26 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 ## Security checklist
 
 <AccordionGroup>
+
   <Accordion title="Always verify before processing">
+
     Never process webhook payloads without verifying the signature first. An unverified payload could be a spoofed request.
+
   </Accordion>
   <Accordion title="Use constant-time comparison">
+
     Use `timingSafeEqual` (Node.js), `hmac.compare_digest` (Python), or `hmac.Equal` (Go). String equality (`===`) is vulnerable to timing attacks.
+
   </Accordion>
   <Accordion title="Use the raw request body">
+
     Compute the HMAC over the raw request body bytes, not a re-serialized JSON object. Re-serialization can alter whitespace or key ordering.
+
   </Accordion>
   <Accordion title="Respond quickly">
+
     We recommend responding within 10 seconds. Process events asynchronously if your handler is slow.
+
   </Accordion>
 </AccordionGroup>
 
@@ -398,10 +422,7 @@ app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
     return res.status(200).send("Test accepted");
   }
 
-  if (
-    typeof event.deliveryId !== "string" ||
-    typeof event.streamEventId !== "string"
-  ) {
+  if (typeof event.deliveryId !== "string" || typeof event.streamEventId !== "string") {
     return res.status(400).send("Missing idempotency fields");
   }
 
@@ -523,5 +544,7 @@ func processSignedWebhook(w http.ResponseWriter, r *http.Request) {
 </CodeGroup>
 
 <Warning>
-  The in-memory examples above work for single-process servers. In production, use a persistent store (database, Redis) to track processed delivery IDs and event IDs across restarts and multiple instances.
+
+The in-memory examples above work for single-process servers. In production, use a persistent store (database, Redis) to track processed delivery IDs and event IDs across restarts and multiple instances.
+
 </Warning>

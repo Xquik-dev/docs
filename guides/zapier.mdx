@@ -2,7 +2,20 @@
 title: "Zapier Twitter automation with webhooks & X API"
 sidebarTitle: "Zapier"
 description: "Build Zapier Twitter automation for tweet search, follower exports, monitors, signed webhooks, extraction jobs, and approved X actions with exact code."
-keywords: ["Zapier Twitter automation", "Zapier Twitter integration", "Zapier Twitter API", "Twitter automation tools", "automate tweets", "Twitter webhook", "Twitter Zapier", "tweet search", "follower export", "REST Hooks", "X API"]
+keywords:
+  [
+    "Zapier Twitter automation",
+    "Zapier Twitter integration",
+    "Zapier Twitter API",
+    "Twitter automation tools",
+    "automate tweets",
+    "Twitter webhook",
+    "Twitter Zapier",
+    "tweet search",
+    "follower export",
+    "REST Hooks",
+    "X API",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -23,21 +36,30 @@ workflows through an API-key connection.
 Choose an Xquik connection based on the workflow:
 
 <CardGroup cols={2}>
+
   <Card title="API by Zapier" icon="braces">
+
     Use one reusable API-key connection for a small number of actions. Keep the
     Xquik key in the app connection instead of a Zap field.
+
   </Card>
   <Card title="Private platform integration" icon="blocks">
+
     Use the CLI for shared actions, polling triggers, and REST Hooks. Add
     samples, output fields, custom errors, and shared field mapping.
+
   </Card>
   <Card title="Webhooks by Zapier" icon="webhook">
+
     Use simple unauthenticated payloads only. Zapier keeps credentials in
     Webhooks step fields. People with Zap access can read them.
+
   </Card>
   <Card title="Search versus monitor" icon="scan-search">
+
     Search existing tweets with an action. Monitor new tweets, replies, quotes,
     or reposts with polling or signed webhook events.
+
   </Card>
 </CardGroup>
 
@@ -64,22 +86,33 @@ npm install
 ## Integration shape
 
 <CardGroup cols={2}>
+
   <Card title="Auth" icon="key-round">
+
     API key field named `apiKey`, injected as `x-api-key`.
+
   </Card>
   <Card title="Base URL" icon="link">
+
     `https://xquik.com/api/v1`
+
   </Card>
   <Card title="Request helper" icon="workflow">
+
     JSON requests, structured Xquik errors, and `Retry-After` handling.
+
   </Card>
   <Card title="Actions" icon="play">
+
     Search Tweets, Get User, Read Followers, Create Extraction, and Create
     Monitor. Add Create Webhook, Create Tweet, and Create Reply.
+
   </Card>
   <Card title="Triggers" icon="radio">
+
     New Matching Tweet polling and Monitor Event instant trigger. Add Extraction
     Completed and Webhook Delivery Failure polling.
+
   </Card>
 </CardGroup>
 
@@ -136,9 +169,7 @@ function throwForXquikError(z, response) {
   }
 
   if (response.status === 401) {
-    throw new z.errors.RefreshAuthError(
-      "Authentication failed. Check the Xquik API key.",
-    );
+    throw new z.errors.RefreshAuthError("Authentication failed. Check the Xquik API key.");
   }
 
   if (response.status === 402) {
@@ -167,17 +198,12 @@ function throwForXquikError(z, response) {
 
   if (response.status === 429) {
     const retryAfter = Number.parseInt(
-      response.getHeader?.("retry-after") ||
-        response.headers?.["retry-after"] ||
-        "",
+      response.getHeader?.("retry-after") || response.headers?.["retry-after"] || "",
       10,
     );
 
     if (Number.isInteger(retryAfter) && retryAfter > 0) {
-      throw new z.errors.ThrottledError(
-        "Rate limited. Zapier scheduled a retry.",
-        retryAfter,
-      );
+      throw new z.errors.ThrottledError("Rate limited. Zapier scheduled a retry.", retryAfter);
     }
 
     throw new z.errors.Error(
@@ -220,41 +246,66 @@ response widget as the canonical status list.
 ## Starter actions
 
 <CardGroup cols={2}>
+
   <Card title="Search tweets" icon="search">
+
     Call `GET /x/tweets/search` with `q`. Use `cursor` for page loops. Keep `limit` on bounded resumes.
+
   </Card>
   <Card title="Get tweet" icon="message-square">
+
     Call `GET /x/tweets/{id}` with a tweet ID.
+
   </Card>
   <Card title="Get user" icon="user">
+
     Call `GET /x/users/{id}` with a username or numeric user ID.
+
   </Card>
   <Card title="Read followers" icon="user-plus">
+
     Call `GET /x/users/{id}/followers`. Preserve `next_cursor` between pages.
+
   </Card>
   <Card title="Read following" icon="user-check">
+
     Call `GET /x/users/{id}/following`. Keep following rows separate.
+
   </Card>
   <Card title="Read tweet replies" icon="messages-square">
+
     Call `GET /x/tweets/{id}/replies`. Preserve parent and reply tweet IDs.
+
   </Card>
   <Card title="Get trends" icon="trending-up">
+
     Call `GET /x/trends` with optional `woeid` and `count`.
+
   </Card>
   <Card title="Create tweet" icon="send">
+
     Call `POST /x/tweets` with account, text, and optional public media URLs.
+
   </Card>
   <Card title="Create reply" icon="reply">
+
     Call `POST /x/tweets` with account, text, and `reply_to_tweet_id`.
+
   </Card>
   <Card title="Create extraction" icon="database">
+
     Call `POST /extractions` with `toolType`, query fields, and result limit.
+
   </Card>
   <Card title="Create monitor" icon="radio">
+
     Call `POST /monitors` with username and event types.
+
   </Card>
   <Card title="Create webhook" icon="webhook">
+
     Call `POST /webhooks` with callback URL and event types.
+
   </Card>
 </CardGroup>
 
@@ -265,41 +316,64 @@ Use snake_case storage keys when direct API responses use camelCase. Return
 compact objects from actions and arrays from triggers.
 
 <CardGroup cols={2}>
+
   <Card title="Search tweets action" icon="search">
+
     Return `id`, `tweet_id`, `text`, `author_username`, `created_at`, and `url`. Keep `has_next_page` and `next_cursor` when a Zap loops pages.
+
   </Card>
   <Card title="User profile rows" icon="users">
+
     Return source `id` as `user_id`. Keep `username`, `name`, `followers`, `verified`, and `profile_picture`. Store the input, `has_next_page`, and `next_cursor` separately.
+
   </Card>
   <Card title="Follower and following rows" icon="user-check">
+
     Store `user_id`, `username`, `name`, `followers`, `following`, `verified`, and `profile_picture`. Keep the source account, page cursor, and relationship direction.
+
   </Card>
   <Card title="Trend rows" icon="trending-up">
+
     Return each trend `name`, `rank`, `query`, and `description`. Keep response `count`, `woeid`, and the selected region with the Zap run.
+
   </Card>
   <Card title="Tweet or reply write" icon="send">
+
     Send a unique `Idempotency-Key`. Store `id`, `status`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+
   </Card>
   <Card title="Media attachments" icon="image">
+
     For tweets or replies, pass public URLs in `media`. Do not send `media_ids`. For DMs, upload first. Pass 1 `media_id` in `media_ids`. Store `message_id` and leave `reply_to_message_id` unset.
+
   </Card>
   <Card title="Monitor and webhook setup" icon="radio">
+
     Return monitor `id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`. Return webhook `id`, `url`, `eventTypes`, and one-time `secret`. Map production `deliveryId` to `delivery_id` for receiver retry deduplication. Map `streamEventId` to `stream_event_id` for event deduplication across webhook changes.
+
   </Card>
   <Card title="REST hook trigger" icon="fingerprint">
+
     Return `id`, `delivery_id`, and `stream_event_id`. Use delivery IDs for endpoint retries. Use event IDs across webhook changes.
+
   </Card>
   <Card title="Stored event replay" icon="activity">
+
     Call `GET /events` with `cursor` when a Zap needs replay. Map event and monitor IDs first. Then map `occurredAt`, `hasMore`, and `nextCursor` to snake_case fields.
+
   </Card>
   <Card title="Receiver acceptance" icon="copy-check">
+
     Zapier controls responses from its generated hook URL. Use a relay when you
     need custom acceptance or replay rules. Keep signing values, raw bodies,
     raw signatures outside Zap history. Keep full headers outside business apps
     too.
+
   </Card>
   <Card title="Extraction polling trigger" icon="database">
+
     Return completed job `id`, `toolType`, and `status`. Store normalized IDs, status, `has_more`, and `next_cursor`. Then fetch detail rows.
+
   </Card>
 </CardGroup>
 
@@ -407,15 +481,20 @@ Use REST Hooks for near-real-time tweets, replies, quotes, and retweets.
 Use a verification relay. Keep the one-time signing secret outside Zapier logs.
 
 <CardGroup cols={2}>
+
   <Card title="Production relay" icon="shield-check">
+
     Let the relay create the Xquik webhook. Store its secret only in the relay.
     Verify HMAC, timestamp, nonce, delivery ID, and event ID there. Forward a
     normalized event to `bundle.targetUrl` after verification.
+
   </Card>
   <Card title="Direct private prototype" icon="flask-conical">
+
     Use direct Zapier subscription only for isolated testing. The returned
     secret enters `bundle.subscribeData` and may enter Zapier HTTP logs. Never
     use this path when that exposure violates your secret policy.
+
   </Card>
 </CardGroup>
 
@@ -493,10 +572,7 @@ function verifyXquikWebhook(z, bundle) {
   }
 
   const timestampMs = Number(timestamp);
-  if (
-    !Number.isFinite(timestampMs) ||
-    Math.abs(Date.now() - timestampMs) > FIVE_MINUTES_MS
-  ) {
+  if (!Number.isFinite(timestampMs) || Math.abs(Date.now() - timestampMs) > FIVE_MINUTES_MS) {
     throw new z.errors.Error(
       "Webhook rejected. Timestamp is stale or invalid.",
       "XquikWebhookVerificationError",
@@ -505,9 +581,7 @@ function verifyXquikWebhook(z, bundle) {
   }
 
   const signingString = `${timestamp}.${nonce}.${rawBody}`;
-  const expected =
-    "sha256=" +
-    createHmac("sha256", secret).update(signingString).digest("hex");
+  const expected = "sha256=" + createHmac("sha256", secret).update(signingString).digest("hex");
   const expectedBuffer = Buffer.from(expected);
   const actualBuffer = Buffer.from(signature);
 
@@ -530,10 +604,7 @@ function performMonitorEvent(z, bundle) {
 
   return [
     {
-      id:
-        payload.streamEventId ||
-        payload.deliveryId ||
-        String(payload.timestamp),
+      id: payload.streamEventId || payload.deliveryId || String(payload.timestamp),
       delivery_id: payload.deliveryId || null,
       stream_event_id: payload.streamEventId || null,
       event_type: payload.eventType,
@@ -541,8 +612,7 @@ function performMonitorEvent(z, bundle) {
       username: payload.username || null,
       tweet_id: payload.data?.id || null,
       text: payload.data?.text || null,
-      author_username:
-        payload.data?.author?.userName || payload.username || null,
+      author_username: payload.data?.author?.userName || payload.username || null,
     },
   ];
 }
@@ -574,8 +644,7 @@ async function performList(z) {
     username: event.username || null,
     tweet_id: event.data?.id || null,
     text: event.data?.text || null,
-    author_username:
-      event.data?.author?.userName || event.username || null,
+    author_username: event.data?.author?.userName || event.username || null,
   }));
 }
 ```
@@ -605,38 +674,49 @@ async function performWebhookFailures(z, bundle) {
     url: `${BASE_URL}/webhooks/${bundle.inputData.webhookId}/deliveries`,
   });
 
-  return (response.data.deliveries || []).filter(
-    (delivery) => delivery.status === "failed",
-  );
+  return (response.data.deliveries || []).filter((delivery) => delivery.status === "failed");
 }
 ```
 
 ## Build useful Zapier Twitter automation
 
 <CardGroup cols={2}>
+
   <Card title="Zapier Twitter Google Sheets" icon="table-2">
+
     Search tweets with one saved query. Append IDs, text, authors, times, and
     URLs to Google Sheets. Resume with that query's `next_cursor`.
+
   </Card>
   <Card title="Zapier Twitter to Slack" icon="bell-ring">
+
     Verify each monitor event. Send normalized tweets, accounts, event types,
     and URLs to Slack in real time.
+
   </Card>
   <Card title="Zapier Twitter Discord" icon="message-circle">
+
     Send matched tweets or replies to Discord. Include the author, timestamp,
     tweet URL, and search query.
+
   </Card>
   <Card title="Zapier RSS to Twitter" icon="rss">
+
     Read blog posts from an RSS feed. Create approved scheduled tweets with the
     article title, URL, and campaign tags.
+
   </Card>
   <Card title="Zapier post to Twitter" icon="send">
+
     Review the Twitter account, text, reply target, and media. Then run the
     approved write action with an idempotency key.
+
   </Card>
   <Card title="Followers to CRM" icon="contact-round">
+
     Use an automated workflow for bounded follower pages. Choose an extraction
     job for durable CSV, JSON, or XLSX exports.
+
   </Card>
 </CardGroup>
 
@@ -656,56 +736,91 @@ Compare other Twitter automation tools before choosing.
 Add focused Zapier tests before sharing the private app:
 
 <CardGroup cols={2}>
+
   <Card title="Auth header injection" icon="shield-check">
+
     Every request includes `x-api-key` from `bundle.authData.apiKey`.
+
   </Card>
   <Card title="Invalid key" icon="key-round">
+
     `401` returns "Authentication failed. Check the Xquik API key."
+
   </Card>
   <Card title="Invalid input" icon="circle-x">
+
     `400` returns the safe Xquik detail or an input-field remediation.
+
   </Card>
   <Card title="Billing required" icon="credit-card">
+
     `402` tells the user to update subscription or credits.
+
   </Card>
   <Card title="Missing resource" icon="search-x">
+
     `404` identifies a bad tweet, user, monitor, webhook, or extraction ID.
+
   </Card>
   <Card title="Dependency failure" icon="unplug">
+
     `424` stops unsafe automatic retries and preserves a safe explanation.
+
   </Card>
   <Card title="Rate limit" icon="timer">
+
     `429` creates `ThrottledError` with `Retry-After` when present.
+
   </Card>
   <Card title="Retrieval failure" icon="triangle-alert">
+
     `502` uses a bounded retry policy outside unsafe write actions.
+
   </Card>
   <Card title="REST hook subscribe" icon="webhook">
+
     The relay stores `bundle.targetUrl`, selected event types, and the secret.
+
   </Card>
   <Card title="REST hook unsubscribe" icon="radio">
+
     `DELETE /webhooks/{id}` uses `bundle.subscribeData.id`.
+
   </Card>
   <Card title="Sample output" icon="database">
+
     `performList` and live `perform` return identical snake_case fields.
+
   </Card>
   <Card title="Search action" icon="search">
+
     Search returns stable tweet IDs, authors, timestamps, URLs, and cursors.
+
   </Card>
   <Card title="Raw-Body signature" icon="shield-check">
+
     Changing one raw body byte makes HMAC verification fail.
+
   </Card>
   <Card title="Stale timestamp" icon="clock-alert">
+
     A timestamp outside 5 minutes is rejected before JSON parsing.
+
   </Card>
   <Card title="Secret hygiene" icon="vault">
+
     Production Zapier output and logs never receive the Xquik signing secret.
+
   </Card>
   <Card title="Relay replay store" icon="database-zap">
+
     The relay rejects reused nonces and deduplicates delivery and event IDs.
+
   </Card>
   <Card title="Acknowledgement ownership" icon="network">
+
     Relay tests cover custom `2xx` rules. Zapier owns its hook URL response.
+
   </Card>
 </CardGroup>
 

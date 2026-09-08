@@ -1,14 +1,14 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync } from "node:fs";
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
 const MIN_DESCRIPTION_LENGTH = 150;
 const MAX_DESCRIPTION_LENGTH = 160;
 const MIN_RENDERED_TITLE_LENGTH = 50;
 const MAX_RENDERED_TITLE_LENGTH = 60;
-const TITLE_SUFFIX = ' - Xquik';
+const TITLE_SUFFIX = " - Xquik";
 const SITE_DESCRIPTION =
-  'Search tweets, export followers and replies, retrieve profiles and timelines, monitor accounts, post tweets, and use webhooks, SDKs & MCP. Not affiliated with X Corp.';
+  "Search tweets, export followers and replies, retrieve profiles and timelines, monitor accounts, post tweets, and use webhooks, SDKs & MCP. Not affiliated with X Corp.";
 
 interface NavigationGroup {
   readonly anchors?: readonly NavigationItem[];
@@ -22,7 +22,7 @@ type NavigationItem = string | NavigationGroup;
 interface DocsConfig {
   readonly description: string;
   readonly metadata: {
-    readonly 'og:description': string;
+    readonly "og:description": string;
     readonly timestamp: boolean;
   };
   readonly navigation: NavigationGroup;
@@ -43,7 +43,7 @@ interface MetadataFinding {
 }
 
 function flattenNavigationPages(item: NavigationItem): readonly string[] {
-  if (typeof item === 'string') {
+  if (typeof item === "string") {
     return [normalizePagePath(item)];
   }
 
@@ -57,9 +57,9 @@ function flattenNavigationPages(item: NavigationItem): readonly string[] {
 
 function normalizePagePath(page: string): string {
   return page
-    .replace(/^\/+/u, '')
-    .replace(/\.mdx?$/u, '')
-    .replace(/#.*$/u, '');
+    .replace(/^\/+/u, "")
+    .replace(/\.mdx?$/u, "")
+    .replace(/#.*$/u, "");
 }
 
 function frontmatter(source: string): string | undefined {
@@ -67,15 +67,12 @@ function frontmatter(source: string): string | undefined {
 }
 
 function frontmatterValue(metadata: string, key: string): string | undefined {
-  const match = new RegExp(
-    `^${key}:\\s*(?:"([^"]*)"|'([^']*)'|(.+))$`,
-    'mu',
-  ).exec(metadata);
+  const match = new RegExp(`^${key}:\\s*(?:"([^"]*)"|'([^']*)'|(.+))$`, "mu").exec(metadata);
   return match?.[1] ?? match?.[2] ?? match?.[3]?.trim();
 }
 
 function loadDocsConfig(): DocsConfig {
-  return JSON.parse(readFileSync('docs.json', 'utf8')) as DocsConfig;
+  return JSON.parse(readFileSync("docs.json", "utf8")) as DocsConfig;
 }
 
 function navigationPages(): readonly string[] {
@@ -89,15 +86,15 @@ function collectMetadataFindings(): readonly MetadataFinding[] {
 
   for (const page of navigationPages()) {
     const file = `${page}.mdx`;
-    const metadata = frontmatter(readFileSync(file, 'utf8'));
+    const metadata = frontmatter(readFileSync(file, "utf8"));
     if (metadata === undefined) {
-      findings.push({ file, issue: 'Missing frontmatter.' });
+      findings.push({ file, issue: "Missing frontmatter." });
       continue;
     }
 
-    const title = frontmatterValue(metadata, 'title');
-    if (title === undefined || title.trim() === '') {
-      findings.push({ file, issue: 'Missing title.' });
+    const title = frontmatterValue(metadata, "title");
+    if (title === undefined || title.trim() === "") {
+      findings.push({ file, issue: "Missing title." });
     } else {
       const renderedTitle = `${title}${TITLE_SUFFIX}`;
       if (renderedTitle.length < MIN_RENDERED_TITLE_LENGTH) {
@@ -125,9 +122,9 @@ function collectMetadataFindings(): readonly MetadataFinding[] {
       }
     }
 
-    const description = frontmatterValue(metadata, 'description');
-    if (description === undefined || description.trim() === '') {
-      findings.push({ file, issue: 'Missing description.' });
+    const description = frontmatterValue(metadata, "description");
+    if (description === undefined || description.trim() === "") {
+      findings.push({ file, issue: "Missing description." });
       continue;
     }
 
@@ -159,8 +156,8 @@ function collectMetadataFindings(): readonly MetadataFinding[] {
   return findings;
 }
 
-describe('SEO metadata', (): void => {
-  it('keeps site discovery metadata specific and intentionally indexed', (): void => {
+describe("SEO metadata", (): void => {
+  it("keeps site discovery metadata specific and intentionally indexed", (): void => {
     expect.assertions(1);
 
     const config = loadDocsConfig();
@@ -168,34 +165,32 @@ describe('SEO metadata', (): void => {
       description: config.description,
       indexing: config.seo.indexing,
       latex: config.styling.latex,
-      openGraphDescription: config.metadata['og:description'],
+      openGraphDescription: config.metadata["og:description"],
       searchPrompt: config.search.prompt,
     }).toStrictEqual({
       description: SITE_DESCRIPTION,
-      indexing: 'all',
+      indexing: "all",
       latex: false,
       openGraphDescription: SITE_DESCRIPTION,
-      searchPrompt: 'Search docs',
+      searchPrompt: "Search docs",
     });
   });
 
-  it('disables timezone-sensitive page timestamps', (): void => {
+  it("disables timezone-sensitive page timestamps", (): void => {
     expect.assertions(1);
 
     expect(loadDocsConfig().metadata.timestamp).toBe(false);
   });
 
-  it('keeps every navigation page title and description usable for search previews', (): void => {
+  it("keeps every navigation page title and description usable for search previews", (): void => {
     expect.assertions(1);
 
     expect(collectMetadataFindings()).toStrictEqual([]);
   });
 
-  it('keeps the Go SDK navigation link descriptive', (): void => {
+  it("keeps the Go SDK navigation link descriptive", (): void => {
     expect.assertions(1);
 
-    expect(readFileSync('sdks/go.mdx', 'utf8')).toContain(
-      'sidebarTitle: "Go SDK"',
-    );
+    expect(readFileSync("sdks/go.mdx", "utf8")).toContain('sidebarTitle: "Go SDK"');
   });
 });

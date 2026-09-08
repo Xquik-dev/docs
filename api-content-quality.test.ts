@@ -1,32 +1,32 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { readdirSync, readFileSync } from "node:fs";
+import { join, relative } from "node:path";
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
 const PROJECT_ROOT = process.cwd();
-const API_REFERENCE_DIR = join(PROJECT_ROOT, 'api-reference');
+const API_REFERENCE_DIR = join(PROJECT_ROOT, "api-reference");
 const WRITE_ACTION_LIFECYCLE_SNIPPET = readFileSync(
-  join(PROJECT_ROOT, 'snippets/write-action-lifecycle-response.mdx'),
-  'utf8',
+  join(PROJECT_ROOT, "snippets/write-action-lifecycle-response.mdx"),
+  "utf8",
 );
 const FRONTMATTER_API_PATTERN = /^api:\s*"([A-Z]+) ([^"]+)"/mu;
 const UNIX_TIMESTAMP_FILTER_ENDPOINTS: ReadonlySet<string> = new Set([
-  'GET /x/lists/{id}/tweets',
-  'GET /x/tweets/{id}/quotes',
-  'GET /x/tweets/{id}/replies',
-  'GET /x/users/{id}/mentions',
+  "GET /x/lists/{id}/tweets",
+  "GET /x/tweets/{id}/quotes",
+  "GET /x/tweets/{id}/replies",
+  "GET /x/users/{id}/mentions",
 ] as const);
 const FORBIDDEN_PUBLIC_ENDPOINT_SNIPPETS = [
-  ['shared', 'read', 'pool'].join(' '),
-  ['read', 'pool'].join(' '),
-  ['participant', 'session'].join(' '),
-  ['session', 'reads', 'the', 'conversation'].join(' '),
-  ['whose', 'session', 'reads'].join(' '),
-  'A transient upstream issue occurred. Safe to retry with exponential backoff.',
-  'The X data source returned an error. Retry after a short delay.',
-  'The best-practice response contract can return 424 when the upstream X data source fails.',
-  'Returned when you opt into the normalized v1 response contract and the upstream dependency fails.',
-  'The X data source is temporarily unavailable. Retry with exponential backoff.',
+  ["shared", "read", "pool"].join(" "),
+  ["read", "pool"].join(" "),
+  ["participant", "session"].join(" "),
+  ["session", "reads", "the", "conversation"].join(" "),
+  ["whose", "session", "reads"].join(" "),
+  "A transient upstream issue occurred. Safe to retry with exponential backoff.",
+  "The X data source returned an error. Retry after a short delay.",
+  "The best-practice response contract can return 424 when the upstream X data source fails.",
+  "Returned when you opt into the normalized v1 response contract and the upstream dependency fails.",
+  "The X data source is temporarily unavailable. Retry with exponential backoff.",
 ] as const;
 
 interface ContentFinding {
@@ -42,7 +42,7 @@ function listApiReferenceFiles(dir: string): readonly string[] {
       files.push(...listApiReferenceFiles(fullPath));
       continue;
     }
-    if (entry.name.endsWith('.mdx')) {
+    if (entry.name.endsWith(".mdx")) {
       files.push(relative(PROJECT_ROOT, fullPath));
     }
   }
@@ -65,28 +65,28 @@ function collectContentFindings(): readonly ContentFinding[] {
   const findings: ContentFinding[] = [];
 
   for (const file of listApiReferenceFiles(API_REFERENCE_DIR)) {
-    const pageSource = readFileSync(join(PROJECT_ROOT, file), 'utf8');
-    const source = pageSource.includes('<WriteActionLifecycleResponse />')
+    const pageSource = readFileSync(join(PROJECT_ROOT, file), "utf8");
+    const source = pageSource.includes("<WriteActionLifecycleResponse />")
       ? `${pageSource}\n${WRITE_ACTION_LIFECYCLE_SNIPPET}`
       : pageSource;
     if (!isApiEndpointPage(source)) {
       continue;
     }
 
-    if (!source.includes('<CodeGroup>')) {
-      findings.push({ file, issue: 'Missing copy-ready code examples.' });
+    if (!source.includes("<CodeGroup>")) {
+      findings.push({ file, issue: "Missing copy-ready code examples." });
     }
 
     if (!/^## Headers\b/mu.test(source)) {
-      findings.push({ file, issue: 'Missing headers section.' });
+      findings.push({ file, issue: "Missing headers section." });
     }
 
     if (!/^## Response\b/mu.test(source)) {
-      findings.push({ file, issue: 'Missing response section.' });
+      findings.push({ file, issue: "Missing response section." });
     }
 
     if (!/(?:<Tab title="|^### )2\d\d\b/mu.test(source)) {
-      findings.push({ file, issue: 'Missing successful response section.' });
+      findings.push({ file, issue: "Missing successful response section." });
     }
 
     const key = operationKey(source);
@@ -102,11 +102,11 @@ function collectContentFindings(): readonly ContentFinding[] {
     if (
       key !== undefined &&
       UNIX_TIMESTAMP_FILTER_ENDPOINTS.has(key) &&
-      source.includes('ISO 8601 timestamp')
+      source.includes("ISO 8601 timestamp")
     ) {
       findings.push({
         file,
-        issue: 'sinceTime/untilTime must document Unix timestamp filters.',
+        issue: "sinceTime/untilTime must document Unix timestamp filters.",
       });
     }
   }
@@ -114,8 +114,8 @@ function collectContentFindings(): readonly ContentFinding[] {
   return findings;
 }
 
-describe('API endpoint content quality', (): void => {
-  it('keeps endpoint pages useful beyond generated signatures', (): void => {
+describe("API endpoint content quality", (): void => {
+  it("keeps endpoint pages useful beyond generated signatures", (): void => {
     expect.assertions(1);
 
     expect(collectContentFindings()).toStrictEqual([]);

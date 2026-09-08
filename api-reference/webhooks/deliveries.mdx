@@ -9,44 +9,56 @@ keywords: ["webhook", "deliveries", "attempts", "status", "retry"]
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="200" id="response-webhooks-deliveries-200">
+
     ```json
     {
       "deliveries": []
     }
     ```
+
   </Tab>
 
   <Tab title="400" id="response-webhooks-deliveries-400">
+
     ```json
     {
       "error": "invalid_input",
       "message": "Invalid input. Check the request body."
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-webhooks-deliveries-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
+
   </Tab>
 
   <Tab title="404" id="response-webhooks-deliveries-404">
+
     ```json
     {
       "error": "not_found",
       "message": "Resource not found."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-webhooks-deliveries-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -54,197 +66,204 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "retryAfter": 60
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
 <Callout icon="circle-check" color="#16a34a">
-  **Free** - does not consume credits
+
+**Free** - does not consume credits
+
 </Callout>
 
 <CodeGroup>
-  ```bash cURL
-  curl https://xquik.com/api/v1/webhooks/15/deliveries \
-    -H "x-api-key: xq_YOUR_KEY_HERE" \
-    | jq '[.deliveries[] | {
-      delivery_id: .id,
-      stream_event_id: .streamEventId,
-      status,
-      attempts,
-      receiver_status: (.lastStatusCode // null),
-      last_error: (.lastError // null),
-      queued_at: .createdAt,
-      delivered_at: (.deliveredAt // null),
-      action: (
-        if .status == "exhausted" then "page"
-        elif .status == "failed" and .attempts >= 3 then "warn"
-        else "track"
-        end
-      )
-    }]'
-  ```
 
-  ```javascript Node.js
-  const response = await fetch(
+```bash cURL
+curl https://xquik.com/api/v1/webhooks/15/deliveries \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  | jq '[.deliveries[] | {
+    delivery_id: .id,
+    stream_event_id: .streamEventId,
+    status,
+    attempts,
+    receiver_status: (.lastStatusCode // null),
+    last_error: (.lastError // null),
+    queued_at: .createdAt,
+    delivered_at: (.deliveredAt // null),
+    action: (
+      if .status == "exhausted" then "page"
+      elif .status == "failed" and .attempts >= 3 then "warn"
+      else "track"
+      end
+    )
+  }]'
+```
+
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/webhooks/15/deliveries", {
+  headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+});
+const data = await response.json();
+const deliveryTriage = data.deliveries.map((delivery) => ({
+  delivery_id: delivery.id,
+  stream_event_id: delivery.streamEventId,
+  status: delivery.status,
+  attempts: delivery.attempts,
+  receiver_status: delivery.lastStatusCode ?? null,
+  last_error: delivery.lastError ?? null,
+  queued_at: delivery.createdAt,
+  delivered_at: delivery.deliveredAt ?? null,
+  action:
+    delivery.status === "exhausted"
+      ? "page"
+      : delivery.status === "failed" && delivery.attempts >= 3
+        ? "warn"
+        : "track",
+}));
+const retryCandidates = deliveryTriage.filter((row) => row.action !== "track");
+```
+
+```python Python
+import requests
+
+response = requests.get(
     "https://xquik.com/api/v1/webhooks/15/deliveries",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+)
+data = response.json()
+delivery_triage = [
     {
-      headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+        "delivery_id": delivery["id"],
+        "stream_event_id": delivery["streamEventId"],
+        "status": delivery["status"],
+        "attempts": delivery["attempts"],
+        "receiver_status": delivery.get("lastStatusCode"),
+        "last_error": delivery.get("lastError"),
+        "queued_at": delivery["createdAt"],
+        "delivered_at": delivery.get("deliveredAt"),
+        "action": "page"
+        if delivery["status"] == "exhausted"
+        else "warn"
+        if delivery["status"] == "failed" and delivery["attempts"] >= 3
+        else "track",
     }
-  );
-  const data = await response.json();
-  const deliveryTriage = data.deliveries.map((delivery) => ({
-    delivery_id: delivery.id,
-    stream_event_id: delivery.streamEventId,
-    status: delivery.status,
-    attempts: delivery.attempts,
-    receiver_status: delivery.lastStatusCode ?? null,
-    last_error: delivery.lastError ?? null,
-    queued_at: delivery.createdAt,
-    delivered_at: delivery.deliveredAt ?? null,
-    action:
-      delivery.status === "exhausted"
-        ? "page"
-        : delivery.status === "failed" && delivery.attempts >= 3
-          ? "warn"
-          : "track",
-  }));
-  const retryCandidates = deliveryTriage.filter((row) => row.action !== "track");
-  ```
+    for delivery in data["deliveries"]
+]
+retry_candidates = [
+    row for row in delivery_triage if row["action"] != "track"
+]
+```
 
-  ```python Python
-  import requests
+```go Go
+package main
 
-  response = requests.get(
-      "https://xquik.com/api/v1/webhooks/15/deliveries",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-  )
-  data = response.json()
-  delivery_triage = [
-      {
-          "delivery_id": delivery["id"],
-          "stream_event_id": delivery["streamEventId"],
-          "status": delivery["status"],
-          "attempts": delivery["attempts"],
-          "receiver_status": delivery.get("lastStatusCode"),
-          "last_error": delivery.get("lastError"),
-          "queued_at": delivery["createdAt"],
-          "delivered_at": delivery.get("deliveredAt"),
-          "action": "page"
-          if delivery["status"] == "exhausted"
-          else "warn"
-          if delivery["status"] == "failed" and delivery["attempts"] >= 3
-          else "track",
-      }
-      for delivery in data["deliveries"]
-  ]
-  retry_candidates = [
-      row for row in delivery_triage if row["action"] != "track"
-  ]
-  ```
+import (
+  "encoding/json"
+  "log"
+  "net/http"
+)
 
-  ```go Go
-  package main
+type Delivery struct {
+  ID             string  `json:"id"`
+  StreamEventID  string  `json:"streamEventId"`
+  Status         string  `json:"status"`
+  Attempts       int     `json:"attempts"`
+  LastStatusCode *int    `json:"lastStatusCode"`
+  LastError      *string `json:"lastError"`
+  CreatedAt      string  `json:"createdAt"`
+  DeliveredAt    *string `json:"deliveredAt"`
+}
 
-  import (
-    "encoding/json"
-    "log"
-    "net/http"
-  )
+type DeliveriesResponse struct {
+  Deliveries []Delivery `json:"deliveries"`
+}
 
-  type Delivery struct {
-    ID             string  `json:"id"`
-    StreamEventID  string  `json:"streamEventId"`
-    Status         string  `json:"status"`
-    Attempts       int     `json:"attempts"`
-    LastStatusCode *int    `json:"lastStatusCode"`
-    LastError      *string `json:"lastError"`
-    CreatedAt      string  `json:"createdAt"`
-    DeliveredAt    *string `json:"deliveredAt"`
+type DeliveryTriage struct {
+  DeliveryID     string  `json:"delivery_id"`
+  StreamEventID  string  `json:"stream_event_id"`
+  Status         string  `json:"status"`
+  Attempts       int     `json:"attempts"`
+  ReceiverStatus *int    `json:"receiver_status"`
+  LastError      *string `json:"last_error"`
+  QueuedAt       string  `json:"queued_at"`
+  DeliveredAt    *string `json:"delivered_at"`
+  Action         string  `json:"action"`
+}
+
+func actionForDelivery(delivery Delivery) string {
+  if delivery.Status == "exhausted" {
+    return "page"
+  }
+  if delivery.Status == "failed" && delivery.Attempts >= 3 {
+    return "warn"
+  }
+  return "track"
+}
+
+func main() {
+  req, err := http.NewRequest("GET", "https://xquik.com/api/v1/webhooks/15/deliveries", nil)
+  if err != nil {
+    log.Fatal(err)
+  }
+  req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+
+  resp, err := http.DefaultClient.Do(req)
+  if err != nil {
+    log.Fatal(err)
+  }
+  defer resp.Body.Close()
+
+  var data DeliveriesResponse
+  if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+    log.Fatal(err)
   }
 
-  type DeliveriesResponse struct {
-    Deliveries []Delivery `json:"deliveries"`
+  deliveryTriage := make([]DeliveryTriage, 0, len(data.Deliveries))
+  for _, delivery := range data.Deliveries {
+    row := DeliveryTriage{
+      DeliveryID:     delivery.ID,
+      StreamEventID:  delivery.StreamEventID,
+      Status:         delivery.Status,
+      Attempts:       delivery.Attempts,
+      ReceiverStatus: delivery.LastStatusCode,
+      LastError:      delivery.LastError,
+      QueuedAt:       delivery.CreatedAt,
+      DeliveredAt:    delivery.DeliveredAt,
+      Action:         actionForDelivery(delivery),
+    }
+    deliveryTriage = append(deliveryTriage, row)
   }
 
-  type DeliveryTriage struct {
-    DeliveryID     string  `json:"delivery_id"`
-    StreamEventID  string  `json:"stream_event_id"`
-    Status         string  `json:"status"`
-    Attempts       int     `json:"attempts"`
-    ReceiverStatus *int    `json:"receiver_status"`
-    LastError      *string `json:"last_error"`
-    QueuedAt       string  `json:"queued_at"`
-    DeliveredAt    *string `json:"delivered_at"`
-    Action         string  `json:"action"`
+  retryCandidates := make([]DeliveryTriage, 0)
+  for _, row := range deliveryTriage {
+    if row.Action != "track" {
+      retryCandidates = append(retryCandidates, row)
+    }
   }
+  _ = retryCandidates
+}
+```
 
-  func actionForDelivery(delivery Delivery) string {
-    if delivery.Status == "exhausted" {
-      return "page"
-    }
-    if delivery.Status == "failed" && delivery.Attempts >= 3 {
-      return "warn"
-    }
-    return "track"
-  }
-
-  func main() {
-    req, err := http.NewRequest("GET", "https://xquik.com/api/v1/webhooks/15/deliveries", nil)
-    if err != nil {
-      log.Fatal(err)
-    }
-    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil {
-      log.Fatal(err)
-    }
-    defer resp.Body.Close()
-
-    var data DeliveriesResponse
-    if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-      log.Fatal(err)
-    }
-
-    deliveryTriage := make([]DeliveryTriage, 0, len(data.Deliveries))
-    for _, delivery := range data.Deliveries {
-      row := DeliveryTriage{
-        DeliveryID:     delivery.ID,
-        StreamEventID:  delivery.StreamEventID,
-        Status:         delivery.Status,
-        Attempts:       delivery.Attempts,
-        ReceiverStatus: delivery.LastStatusCode,
-        LastError:      delivery.LastError,
-        QueuedAt:       delivery.CreatedAt,
-        DeliveredAt:    delivery.DeliveredAt,
-        Action:         actionForDelivery(delivery),
-      }
-      deliveryTriage = append(deliveryTriage, row)
-    }
-
-    retryCandidates := make([]DeliveryTriage, 0)
-    for _, row := range deliveryTriage {
-      if row.Action != "track" {
-        retryCandidates = append(retryCandidates, row)
-      }
-    }
-    _ = retryCandidates
-  }
-  ```
 </CodeGroup>
 
 ## Path parameters
 
 <ParamField path="id" type="string" required>
-  The webhook ID to retrieve deliveries for.
+
+The webhook ID to retrieve deliveries for.
+
 </ParamField>
 
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key.
+
+Your API key.
+
 </ParamField>
 
 ## Operational handoff
@@ -259,44 +278,59 @@ or full request headers.
 
 Do not depend on a `nextRetryAt` field. The response does not expose one; route incidents from `status`, `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt`.
 
-| Webhook delivery incident column | Response source | Triage rule |
-| --- | --- | --- |
-| Delivery ID | `deliveries[].id` | Use this ID for idempotency and support lookup. |
-| Monitor event ID | `deliveries[].streamEventId` | Join the delivery to `GET /events/{id}`. |
-| Delivery state | `deliveries[].status` | Route pending, failed, exhausted, or delivered rows. |
-| Attempt count | `deliveries[].attempts` | Identify early, repeated, or terminal failures. |
-| Receiver status | `deliveries[].lastStatusCode` | Separate HTTP failures from unreachable receivers. |
-| Failure reason | `deliveries[].lastError` | Show the latest receiver error to operators. |
-| Delivery timing | `createdAt` and `deliveredAt` | Measure queue and recovery latency. |
+| Webhook delivery incident column | Response source               | Triage rule                                          |
+| -------------------------------- | ----------------------------- | ---------------------------------------------------- |
+| Delivery ID                      | `deliveries[].id`             | Use this ID for idempotency and support lookup.      |
+| Monitor event ID                 | `deliveries[].streamEventId`  | Join the delivery to `GET /events/{id}`.             |
+| Delivery state                   | `deliveries[].status`         | Route pending, failed, exhausted, or delivered rows. |
+| Attempt count                    | `deliveries[].attempts`       | Identify early, repeated, or terminal failures.      |
+| Receiver status                  | `deliveries[].lastStatusCode` | Separate HTTP failures from unreachable receivers.   |
+| Failure reason                   | `deliveries[].lastError`      | Show the latest receiver error to operators.         |
+| Delivery timing                  | `createdAt` and `deliveredAt` | Measure queue and recovery latency.                  |
 
 Store these fields for support and retry triage:
 
 <CardGroup cols={2}>
+
   <Card title="Delivery ID" icon="fingerprint">
+
     Store `id` for delivery-level idempotency and support lookup.
+
   </Card>
   <Card title="Event join" icon="link">
+
     Store `streamEventId` to join back to the stored monitor event with
     `GET /events/{id}`.
+
   </Card>
   <Card title="Status route" icon="route">
+
     Use `status` to route `pending`, `failed`, and `exhausted` deliveries to the
     right queue.
+
   </Card>
   <Card title="Attempt count" icon="repeat-2">
+
     Use `attempts` to decide whether a failed delivery is early, repeated, or at
     the retry cap.
+
   </Card>
   <Card title="Receiver result" icon="activity">
+
     Use `lastStatusCode` to separate receiver errors such as `500` from
     unreachable endpoints with status `0`.
+
   </Card>
   <Card title="Failure reason" icon="triangle-alert">
+
     Show `lastError` as the most recent failure reason for the operator.
+
   </Card>
   <Card title="Timing" icon="timer">
+
     Compare `createdAt` and `deliveredAt` to measure delivery latency and
     recovery time.
+
   </Card>
 </CardGroup>
 
@@ -325,22 +359,31 @@ Use one compact handoff row when a delivery needs receiver-owner action. Route
 ```
 
 <CardGroup cols={2}>
+
   <Card title="Repeated failure" icon="repeat-2">
+
     Warn after repeated `failed` rows. Include `attempts`, `lastStatusCode`,
     and `lastError` so the receiver owner can separate code errors from
     reachability failures.
+
   </Card>
   <Card title="Terminal delivery" icon="circle-x">
+
     Page when `status` is `exhausted`. This means retryable failures reached
     the 10-attempt cap, or the receiver returned `410 Gone`.
+
   </Card>
   <Card title="Event join" icon="link">
+
     Store `streamEventId` and link `GET /api/v1/events/{id}` so support can
     inspect the monitor event that triggered the delivery.
+
   </Card>
   <Card title="Receiver proof" icon="shield-check">
+
     After fixing the endpoint, send `POST /webhooks/{id}/test` and attach the
     signed test result to the incident before waiting for the next event.
+
   </Card>
 </CardGroup>
 
@@ -361,14 +404,7 @@ own downstream queue after the receiver is fixed.
   "event_source": "GET /api/v1/events?limit=100&cursor={nextCursor}",
   "source_filter": "monitorId for account monitors, keywordMonitorId for keyword monitors",
   "join_key": "delivery.streamEventId == event.id",
-  "store": [
-    "deliveryId",
-    "streamEventId",
-    "status",
-    "attempts",
-    "eventId",
-    "nextCursor"
-  ],
+  "store": ["deliveryId", "streamEventId", "status", "attempts", "eventId", "nextCursor"],
   "stop_when": "hasMore is false",
   "handoff_state": "receiver_fixed_backfill_events_then_resume_webhooks"
 }
@@ -385,31 +421,49 @@ monitor, or `keywordMonitorId` when replaying one keyword monitor.
 ### 200 OK
 
 <ResponseField name="deliveries" type="array">
-  List of delivery attempts, most recent first. Returns up to 100 deliveries.
-  **Delivery object fields.**
-    <ResponseField name="id" type="string">
+
+List of delivery attempts, most recent first. Returns up to 100 deliveries.
+**Delivery object fields.**
+
+<ResponseField name="id" type="string">
+
       Unique delivery identifier.
+
     </ResponseField>
     <ResponseField name="streamEventId" type="string">
+
       ID of the stream event that triggered this delivery.
+
     </ResponseField>
     <ResponseField name="status" type="string">
+
       Current delivery status: `pending`, `delivered`, `failed`, or `exhausted`.
+
     </ResponseField>
     <ResponseField name="attempts" type="number">
+
       Total number of delivery attempts made.
+
     </ResponseField>
     <ResponseField name="lastStatusCode" type="number">
+
       HTTP status code returned by your endpoint on the most recent attempt. Omitted if no attempt has been made yet.
+
     </ResponseField>
     <ResponseField name="lastError" type="string">
+
       Error message from the most recent failed attempt. Omitted on success.
+
     </ResponseField>
     <ResponseField name="createdAt" type="string">
+
       ISO 8601 timestamp of when the delivery was queued.
+
     </ResponseField>
     <ResponseField name="deliveredAt" type="string">
+
       ISO 8601 timestamp of successful delivery. Omitted if not yet delivered.
+
     </ResponseField>
 
 </ResponseField>
@@ -460,6 +514,7 @@ monitor, or `keywordMonitorId` when replaying one keyword monitor.
 ```json
 { "error": "unauthenticated" }
 ```
+
 Missing or invalid API key. Check the `x-api-key` header value.
 
 ### 400 Invalid ID
@@ -467,6 +522,7 @@ Missing or invalid API key. Check the `x-api-key` header value.
 ```json
 { "error": "invalid_id" }
 ```
+
 The provided webhook ID is not a valid format.
 
 ### 404 Not found
@@ -474,38 +530,55 @@ The provided webhook ID is not a valid format.
 ```json
 { "error": "not_found" }
 ```
+
 No webhook exists with this ID, or it belongs to a different account.
 
 ### 429 Rate limited
 
 ```json
-{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Try again later.",
+  "retryAfter": 1
+}
 ```
+
 Too many requests. Wait for the `Retry-After` header before retrying.
 
 ## Delivery statuses
 
 <CardGroup cols={2}>
+
   <Card title="pending" icon="clock">
+
     Delivery is queued and waiting for the next attempt.
+
   </Card>
   <Card title="delivered" icon="circle-check">
+
     Your endpoint returned `2xx`. Delivery is complete.
+
   </Card>
   <Card title="failed" icon="triangle-alert">
+
     The most recent attempt failed because the endpoint returned non-`2xx` or
     the network request failed. Xquik retries with exponential backoff.
+
   </Card>
   <Card title="exhausted" icon="circle-x">
+
     All retry attempts have been used. Xquik will not retry this delivery.
     Check the receiver endpoint, then use
     [Resume Webhook](/api-reference/webhooks/resume) if the webhook needs
     attention before new deliveries continue.
+
   </Card>
 </CardGroup>
 
 Deliveries follow an exponential backoff retry schedule. After each failed attempt, the wait time increases. Once all retries are exhausted, the status transitions to `exhausted` and no further attempts are made.
 
 <Note>
-  **Related.** [Webhooks Overview](/webhooks/overview) &middot; [Resume Webhook](/api-reference/webhooks/resume) &middot; [Webhook Testing Guide](/guides/twitter-webhook-testing)
+
+**Related.** [Webhooks Overview](/webhooks/overview) &middot; [Resume Webhook](/api-reference/webhooks/resume) &middot; [Webhook Testing Guide](/guides/twitter-webhook-testing)
+
 </Note>

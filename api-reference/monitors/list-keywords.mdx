@@ -9,27 +9,35 @@ keywords: ["keyword monitor", "list", "monitoring", "x search"]
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="200" id="response-monitors-list-keywords-200">
+
     ```json
     {
       "monitors": [],
       "total": 0
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-monitors-list-keywords-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-monitors-list-keywords-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -37,8 +45,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "retryAfter": 60
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
@@ -48,175 +58,179 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 Use this endpoint when the exact monitor ID is unknown. It returns up to 200
 stored searches plus `total`. It does not paginate the inventory.
 
-| Portfolio check | Inventory calculation | Reconciliation decision |
-| --- | --- | --- |
-| Active searches | Count `monitors[].isActive === true` | Include only active rows in current polling reviews. |
-| Paused searches | Count `monitors[].isActive === false` | Preserve them for history or later reactivation. |
-| Duplicate queries | Group by normalized `monitors[].query` | Compare `eventTypes` before treating rows as duplicates. |
-| Webhook gaps | Compare every `eventTypes` array | Add only missing receiver subscriptions. |
-| Billing order | Sort active `nextBillingAt` values | Review the nearest credit checkpoints first. |
-| Inventory completeness | Compare `monitors.length` with `total` | Escalate when the returned collection is incomplete. |
+| Portfolio check        | Inventory calculation                  | Reconciliation decision                                  |
+| ---------------------- | -------------------------------------- | -------------------------------------------------------- |
+| Active searches        | Count `monitors[].isActive === true`   | Include only active rows in current polling reviews.     |
+| Paused searches        | Count `monitors[].isActive === false`  | Preserve them for history or later reactivation.         |
+| Duplicate queries      | Group by normalized `monitors[].query` | Compare `eventTypes` before treating rows as duplicates. |
+| Webhook gaps           | Compare every `eventTypes` array       | Add only missing receiver subscriptions.                 |
+| Billing order          | Sort active `nextBillingAt` values     | Review the nearest credit checkpoints first.             |
+| Inventory completeness | Compare `monitors.length` with `total` | Escalate when the returned collection is incomplete.     |
 
 Use the detail endpoint only after choosing one monitor ID from this inventory.
 
 <Callout icon="circle-check" color="#16a34a">
-  **Free** - does not consume credits
+
+**Free** - does not consume credits
+
 </Callout>
 
 <CodeGroup>
-  ```bash cURL
-  curl -X GET https://xquik.com/api/v1/monitors/keywords \
-    -H "x-api-key: xq_YOUR_KEY_HERE" |
-    jq -c '.monitors[] | {
-      keyword_monitor_id: .id,
-      query: .query,
-      event_types: .eventTypes,
-      is_active: .isActive,
-      next_billing_at: .nextBillingAt,
-      events_endpoint: "/api/v1/events?keywordMonitorId=\(.id)",
-      event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
-      verify_endpoint: "/api/v1/monitors/keywords/\(.id)",
-      update_endpoint: "/api/v1/monitors/keywords/\(.id)",
-      delete_endpoint: "/api/v1/monitors/keywords/\(.id)",
-      webhooks_endpoint: "/api/v1/webhooks",
-      deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"
-    }'
-  ```
 
-  ```javascript Node.js
-  const response = await fetch("https://xquik.com/api/v1/monitors/keywords", {
-    method: "GET",
-    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
-  });
-  const payload = await response.json();
-  for (const monitor of payload.monitors) {
-    const monitorRow = {
-      keyword_monitor_id: monitor.id,
-      query: monitor.query,
-      event_types: monitor.eventTypes,
-      is_active: monitor.isActive,
-      created_at: monitor.createdAt,
-      next_billing_at: monitor.nextBillingAt,
-      events_endpoint: `/api/v1/events?keywordMonitorId=${monitor.id}`,
-      event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
-      verify_endpoint: `/api/v1/monitors/keywords/${monitor.id}`,
-      update_endpoint: `/api/v1/monitors/keywords/${monitor.id}`,
-      delete_endpoint: `/api/v1/monitors/keywords/${monitor.id}`,
-      webhooks_endpoint: "/api/v1/webhooks",
-      deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries",
-    };
-    process.stdout.write(`${JSON.stringify(monitorRow)}\n`);
-  }
-  ```
+```bash cURL
+curl -X GET https://xquik.com/api/v1/monitors/keywords \
+  -H "x-api-key: xq_YOUR_KEY_HERE" |
+  jq -c '.monitors[] | {
+    keyword_monitor_id: .id,
+    query: .query,
+    event_types: .eventTypes,
+    is_active: .isActive,
+    next_billing_at: .nextBillingAt,
+    events_endpoint: "/api/v1/events?keywordMonitorId=\(.id)",
+    event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
+    verify_endpoint: "/api/v1/monitors/keywords/\(.id)",
+    update_endpoint: "/api/v1/monitors/keywords/\(.id)",
+    delete_endpoint: "/api/v1/monitors/keywords/\(.id)",
+    webhooks_endpoint: "/api/v1/webhooks",
+    deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"
+  }'
+```
 
-  ```python Python
-  import json
-  import requests
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/monitors/keywords", {
+  method: "GET",
+  headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+});
+const payload = await response.json();
+for (const monitor of payload.monitors) {
+  const monitorRow = {
+    keyword_monitor_id: monitor.id,
+    query: monitor.query,
+    event_types: monitor.eventTypes,
+    is_active: monitor.isActive,
+    created_at: monitor.createdAt,
+    next_billing_at: monitor.nextBillingAt,
+    events_endpoint: `/api/v1/events?keywordMonitorId=${monitor.id}`,
+    event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
+    verify_endpoint: `/api/v1/monitors/keywords/${monitor.id}`,
+    update_endpoint: `/api/v1/monitors/keywords/${monitor.id}`,
+    delete_endpoint: `/api/v1/monitors/keywords/${monitor.id}`,
+    webhooks_endpoint: "/api/v1/webhooks",
+    deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries",
+  };
+  process.stdout.write(`${JSON.stringify(monitorRow)}\n`);
+}
+```
 
-  response = requests.get(
-      "https://xquik.com/api/v1/monitors/keywords",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-  )
-  payload = response.json()
-  for monitor in payload["monitors"]:
-      monitor_row = {
-          "keyword_monitor_id": monitor["id"],
-          "query": monitor["query"],
-          "event_types": monitor["eventTypes"],
-          "is_active": monitor["isActive"],
-          "created_at": monitor["createdAt"],
-          "next_billing_at": monitor["nextBillingAt"],
-          "events_endpoint": f"/api/v1/events?keywordMonitorId={monitor['id']}",
-          "event_detail_endpoint_pattern": "/api/v1/events/{event_id}",
-          "verify_endpoint": f"/api/v1/monitors/keywords/{monitor['id']}",
-          "update_endpoint": f"/api/v1/monitors/keywords/{monitor['id']}",
-          "delete_endpoint": f"/api/v1/monitors/keywords/{monitor['id']}",
-          "webhooks_endpoint": "/api/v1/webhooks",
-          "deliveries_endpoint_pattern": "/api/v1/webhooks/{webhook_id}/deliveries",
-      }
-      print(json.dumps(monitor_row))
-  ```
+```python Python
+import json
+import requests
 
-  ```go Go
-  package main
+response = requests.get(
+    "https://xquik.com/api/v1/monitors/keywords",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+)
+payload = response.json()
+for monitor in payload["monitors"]:
+    monitor_row = {
+        "keyword_monitor_id": monitor["id"],
+        "query": monitor["query"],
+        "event_types": monitor["eventTypes"],
+        "is_active": monitor["isActive"],
+        "created_at": monitor["createdAt"],
+        "next_billing_at": monitor["nextBillingAt"],
+        "events_endpoint": f"/api/v1/events?keywordMonitorId={monitor['id']}",
+        "event_detail_endpoint_pattern": "/api/v1/events/{event_id}",
+        "verify_endpoint": f"/api/v1/monitors/keywords/{monitor['id']}",
+        "update_endpoint": f"/api/v1/monitors/keywords/{monitor['id']}",
+        "delete_endpoint": f"/api/v1/monitors/keywords/{monitor['id']}",
+        "webhooks_endpoint": "/api/v1/webhooks",
+        "deliveries_endpoint_pattern": "/api/v1/webhooks/{webhook_id}/deliveries",
+    }
+    print(json.dumps(monitor_row))
+```
 
-  import (
-      "encoding/json"
-      "log"
-      "net/http"
-      "os"
-  )
+```go Go
+package main
 
-  type KeywordMonitor struct {
-      ID            string   `json:"id"`
-      Query         string   `json:"query"`
-      EventTypes    []string `json:"eventTypes"`
-      IsActive      bool     `json:"isActive"`
-      CreatedAt     string   `json:"createdAt"`
-      NextBillingAt string   `json:"nextBillingAt"`
-  }
+import (
+    "encoding/json"
+    "log"
+    "net/http"
+    "os"
+)
 
-  type KeywordMonitorListResponse struct {
-      Monitors []KeywordMonitor `json:"monitors"`
-      Total    int              `json:"total"`
-  }
+type KeywordMonitor struct {
+    ID            string   `json:"id"`
+    Query         string   `json:"query"`
+    EventTypes    []string `json:"eventTypes"`
+    IsActive      bool     `json:"isActive"`
+    CreatedAt     string   `json:"createdAt"`
+    NextBillingAt string   `json:"nextBillingAt"`
+}
 
-  type KeywordMonitorRow struct {
-      KeywordMonitorID           string   `json:"keyword_monitor_id"`
-      Query                      string   `json:"query"`
-      EventTypes                 []string `json:"event_types"`
-      IsActive                   bool     `json:"is_active"`
-      CreatedAt                  string   `json:"created_at"`
-      NextBillingAt              string   `json:"next_billing_at"`
-      EventsEndpoint             string   `json:"events_endpoint"`
-      EventDetailEndpointPattern string   `json:"event_detail_endpoint_pattern"`
-      VerifyEndpoint             string   `json:"verify_endpoint"`
-      UpdateEndpoint             string   `json:"update_endpoint"`
-      DeleteEndpoint             string   `json:"delete_endpoint"`
-      WebhooksEndpoint           string   `json:"webhooks_endpoint"`
-      DeliveriesEndpointPattern  string   `json:"deliveries_endpoint_pattern"`
-  }
+type KeywordMonitorListResponse struct {
+    Monitors []KeywordMonitor `json:"monitors"`
+    Total    int              `json:"total"`
+}
 
-  func main() {
-      req, err := http.NewRequest("GET", "https://xquik.com/api/v1/monitors/keywords", nil)
-      if err != nil {
-          log.Fatal(err)
-      }
-      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+type KeywordMonitorRow struct {
+    KeywordMonitorID           string   `json:"keyword_monitor_id"`
+    Query                      string   `json:"query"`
+    EventTypes                 []string `json:"event_types"`
+    IsActive                   bool     `json:"is_active"`
+    CreatedAt                  string   `json:"created_at"`
+    NextBillingAt              string   `json:"next_billing_at"`
+    EventsEndpoint             string   `json:"events_endpoint"`
+    EventDetailEndpointPattern string   `json:"event_detail_endpoint_pattern"`
+    VerifyEndpoint             string   `json:"verify_endpoint"`
+    UpdateEndpoint             string   `json:"update_endpoint"`
+    DeleteEndpoint             string   `json:"delete_endpoint"`
+    WebhooksEndpoint           string   `json:"webhooks_endpoint"`
+    DeliveriesEndpointPattern  string   `json:"deliveries_endpoint_pattern"`
+}
 
-      resp, err := http.DefaultClient.Do(req)
-      if err != nil {
-          log.Fatal(err)
-      }
-      defer resp.Body.Close()
+func main() {
+    req, err := http.NewRequest("GET", "https://xquik.com/api/v1/monitors/keywords", nil)
+    if err != nil {
+        log.Fatal(err)
+    }
+    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 
-      var payload KeywordMonitorListResponse
-      if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-          log.Fatal(err)
-      }
-      encoder := json.NewEncoder(os.Stdout)
-      for _, monitor := range payload.Monitors {
-          row := KeywordMonitorRow{
-              KeywordMonitorID:           monitor.ID,
-              Query:                      monitor.Query,
-              EventTypes:                 monitor.EventTypes,
-              IsActive:                   monitor.IsActive,
-              CreatedAt:                  monitor.CreatedAt,
-              NextBillingAt:              monitor.NextBillingAt,
-              EventsEndpoint:             "/api/v1/events?keywordMonitorId=" + monitor.ID,
-              EventDetailEndpointPattern: "/api/v1/events/{event_id}",
-              VerifyEndpoint:             "/api/v1/monitors/keywords/" + monitor.ID,
-              UpdateEndpoint:             "/api/v1/monitors/keywords/" + monitor.ID,
-              DeleteEndpoint:             "/api/v1/monitors/keywords/" + monitor.ID,
-              WebhooksEndpoint:           "/api/v1/webhooks",
-              DeliveriesEndpointPattern:  "/api/v1/webhooks/{webhook_id}/deliveries",
-          }
-          if err := encoder.Encode(row); err != nil {
-              log.Fatal(err)
-          }
-      }
-  }
-  ```
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer resp.Body.Close()
+
+    var payload KeywordMonitorListResponse
+    if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+        log.Fatal(err)
+    }
+    encoder := json.NewEncoder(os.Stdout)
+    for _, monitor := range payload.Monitors {
+        row := KeywordMonitorRow{
+            KeywordMonitorID:           monitor.ID,
+            Query:                      monitor.Query,
+            EventTypes:                 monitor.EventTypes,
+            IsActive:                   monitor.IsActive,
+            CreatedAt:                  monitor.CreatedAt,
+            NextBillingAt:              monitor.NextBillingAt,
+            EventsEndpoint:             "/api/v1/events?keywordMonitorId=" + monitor.ID,
+            EventDetailEndpointPattern: "/api/v1/events/{event_id}",
+            VerifyEndpoint:             "/api/v1/monitors/keywords/" + monitor.ID,
+            UpdateEndpoint:             "/api/v1/monitors/keywords/" + monitor.ID,
+            DeleteEndpoint:             "/api/v1/monitors/keywords/" + monitor.ID,
+            WebhooksEndpoint:           "/api/v1/webhooks",
+            DeliveriesEndpointPattern:  "/api/v1/webhooks/{webhook_id}/deliveries",
+        }
+        if err := encoder.Encode(row); err != nil {
+            log.Fatal(err)
+        }
+    }
+}
+```
+
 </CodeGroup>
 
 The cURL, Node.js, Python, and Go examples convert each keyword monitor into one
@@ -233,47 +247,60 @@ to rebuild your keyword monitor inventory. The response returns up to 200
 keyword monitors ordered by creation time and a `total` count for the returned
 set.
 
-| Keyword monitor inventory column | Response source | Reconciliation rule |
-| --- | --- | --- |
-| Monitor ID | `monitors[].id` | Use this ID for status, updates, and events. |
-| X search query | `monitors[].query` | Preserve the exact stored keyword expression. |
-| Tweet event filter | `monitors[].eventTypes` | Compare these types with webhook subscriptions. |
-| Polling state | `monitors[].isActive` | Separate active and paused keyword monitors. |
-| Creation time | `monitors[].createdAt` | Track configuration age and drift. |
-| Billing checkpoint | `monitors[].nextBillingAt` | Schedule the next active monitor credit check. |
-| Inventory count | `total` | Compare this count with emitted monitor rows. |
+| Keyword monitor inventory column | Response source            | Reconciliation rule                             |
+| -------------------------------- | -------------------------- | ----------------------------------------------- |
+| Monitor ID                       | `monitors[].id`            | Use this ID for status, updates, and events.    |
+| X search query                   | `monitors[].query`         | Preserve the exact stored keyword expression.   |
+| Tweet event filter               | `monitors[].eventTypes`    | Compare these types with webhook subscriptions. |
+| Polling state                    | `monitors[].isActive`      | Separate active and paused keyword monitors.    |
+| Creation time                    | `monitors[].createdAt`     | Track configuration age and drift.              |
+| Billing checkpoint               | `monitors[].nextBillingAt` | Schedule the next active monitor credit check.  |
+| Inventory count                  | `total`                    | Compare this count with emitted monitor rows.   |
 
 <CardGroup cols={2}>
+
   <Card title="Active burn" icon="activity">
+
     Filter monitors where `isActive` is `true`. Each active keyword monitor
     bills 21 credits per active monitor-hour; use `nextBillingAt` to schedule
     credit checks or pause stale alerts.
+
   </Card>
   <Card title="Webhook alignment" icon="webhook">
+
     Compare each monitor's `eventTypes` with
     [List Webhooks](/api-reference/webhooks/list) before relying on signed
     alerts.
+
   </Card>
   <Card title="Event backfill" icon="database">
+
     Use `id` as `keywordMonitorId` with
     [List Events](/api-reference/events/list) to audit stored monitor events.
     Use [Get Event](/api-reference/events/get) for one event's full payload.
+
   </Card>
   <Card title="Delivery audit" icon="activity">
+
     Use [List Deliveries](/api-reference/webhooks/deliveries) when webhook
     delivery evidence must be retained. Join delivery `streamEventId` to event
     IDs. Do not use `x_event_id` as the delivery join key.
+
   </Card>
   <Card title="Detail check" icon="search-check">
+
     Use [Get Keyword Monitor](/api-reference/monitors/get-keyword) before
     changing a row. Store the returned `query`, `eventTypes`, `isActive`, and
     `nextBillingAt`.
+
   </Card>
   <Card title="State repair" icon="sliders-horizontal">
+
     Use [Update Keyword Monitor](/api-reference/monitors/update-keyword) to
     replace `eventTypes` or toggle `isActive`. Use
     [Delete Keyword Monitor](/api-reference/monitors/delete-keyword) only when
     the query should stop permanently.
+
   </Card>
 </CardGroup>
 
@@ -325,21 +352,39 @@ changes.
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+
+Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+
 </ParamField>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="monitors" type="object[]">Array of keyword monitor objects.</ResponseField>
-<ResponseField name="monitors[].id" type="string">Unique keyword monitor ID.</ResponseField>
-<ResponseField name="monitors[].query" type="string">Normalized X search query.</ResponseField>
-<ResponseField name="monitors[].eventTypes" type="string[]">Subscribed event types.</ResponseField>
-<ResponseField name="monitors[].isActive" type="boolean">Whether the monitor is currently active.</ResponseField>
-<ResponseField name="monitors[].createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
-<ResponseField name="monitors[].nextBillingAt" type="string">Next hourly credit charge time for active monitor billing.</ResponseField>
-<ResponseField name="total" type="number">Total number of keyword monitors.</ResponseField>
+<ResponseField name="monitors" type="object[]">
+  Array of keyword monitor objects.
+</ResponseField>
+<ResponseField name="monitors[].id" type="string">
+  Unique keyword monitor ID.
+</ResponseField>
+<ResponseField name="monitors[].query" type="string">
+  Normalized X search query.
+</ResponseField>
+<ResponseField name="monitors[].eventTypes" type="string[]">
+  Subscribed event types.
+</ResponseField>
+<ResponseField name="monitors[].isActive" type="boolean">
+  Whether the monitor is currently active.
+</ResponseField>
+<ResponseField name="monitors[].createdAt" type="string">
+  ISO 8601 creation timestamp.
+</ResponseField>
+<ResponseField name="monitors[].nextBillingAt" type="string">
+  Next hourly credit charge time for active monitor billing.
+</ResponseField>
+<ResponseField name="total" type="number">
+  Total number of keyword monitors.
+</ResponseField>
 
 ```json
 {
@@ -362,19 +407,29 @@ changes.
 ```json
 { "error": "unauthenticated" }
 ```
+
 Missing or invalid API key.
 
 ### 429 Rate limited
 
 ```json
-{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Try again later.",
+  "retryAfter": 1
+}
 ```
+
 Too many requests. Wait for the `Retry-After` header before retrying.
 
 <Info>
-  Returns up to 200 keyword monitors. There is no pagination. [Contact support](mailto:support@xquik.com) if you need more.
+
+Returns up to 200 keyword monitors. There is no pagination. [Contact support](mailto:support@xquik.com) if you need more.
+
 </Info>
 
 <Note>
-  **Related.** [Create Keyword Monitor](/api-reference/monitors/create-keyword) to add a query, [Get Keyword Monitor](/api-reference/monitors/get-keyword) to fetch one monitor, [Update Keyword Monitor](/api-reference/monitors/update-keyword) to pause or edit it, [Delete Keyword Monitor](/api-reference/monitors/delete-keyword) to remove it, [List Events](/api-reference/events/list) and [Get Event](/api-reference/events/get) to audit events, or [List Webhooks](/api-reference/webhooks/list) and [List Deliveries](/api-reference/webhooks/deliveries) to audit delivery evidence.
+
+**Related.** [Create Keyword Monitor](/api-reference/monitors/create-keyword) to add a query, [Get Keyword Monitor](/api-reference/monitors/get-keyword) to fetch one monitor, [Update Keyword Monitor](/api-reference/monitors/update-keyword) to pause or edit it, [Delete Keyword Monitor](/api-reference/monitors/delete-keyword) to remove it, [List Events](/api-reference/events/list) and [Get Event](/api-reference/events/get) to audit events, or [List Webhooks](/api-reference/webhooks/list) and [List Deliveries](/api-reference/webhooks/deliveries) to audit delivery evidence.
+
 </Note>

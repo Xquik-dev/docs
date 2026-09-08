@@ -2,7 +2,18 @@
 title: "Accountless Twitter scraper API with guest wallets"
 sidebarTitle: "Guest wallet reads"
 description: "Read tweets, profiles, followers, replies, timelines, and communities without an Xquik account. No connected X account is required. Fund one guest key."
-keywords: ["accountless Twitter scraper", "Twitter API no account required", "guest key Twitter API", "Twitter search without an account", "accountless API key", "guest wallet", "paid_reads", "HTTP 401", "HTTP 402"]
+keywords:
+  [
+    "accountless Twitter scraper",
+    "Twitter API no account required",
+    "guest key Twitter API",
+    "Twitter search without an account",
+    "accountless API key",
+    "guest wallet",
+    "paid_reads",
+    "HTTP 401",
+    "HTTP 402",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -14,7 +25,9 @@ Guest wallets provide prepaid access to 33 eligible X read routes without an acc
 This is accountless access, not anonymous access. Every guest-wallet paid read requires the active guest key returned during wallet creation. Direct MPP reads use a per-request payment credential.
 
 <Warning>
-  A `401` or `402` response never creates a checkout. Show the payment choices and amount first. Create a hosted checkout only after the user explicitly confirms. Never submit payment for the user.
+
+A `401` or `402` response never creates a checkout. Show the payment choices and amount first. Create a hosted checkout only after the user explicitly confirms. Never submit payment for the user.
+
 </Warning>
 
 ## Accountless Twitter scraper API questions
@@ -102,22 +115,26 @@ approved top-up. Do not create a new wallet when one paid read returns
 
 ## Choose an access method
 
-| Access method | Account | Credential | Coverage | Payment |
-| --- | --- | --- | --- | --- |
-| Account API key | Required | Full-scope API key | Full authenticated API | Available account credits; plans add monthly credits |
-| OAuth 2.1 | Required | OAuth Bearer token | Same account capabilities granted by OAuth | Available account credits; plans add monthly credits |
-| Guest wallet | Not required | `paid_reads` API key | Exactly 33 prepaid GET routes | $10-$250 USD hosted checkout |
-| MPP | Not required | Per-request payment credential | 7 fixed-price GET operations | Per-request payment |
+| Access method   | Account      | Credential                     | Coverage                                   | Payment                                              |
+| --------------- | ------------ | ------------------------------ | ------------------------------------------ | ---------------------------------------------------- |
+| Account API key | Required     | Full-scope API key             | Full authenticated API                     | Available account credits; plans add monthly credits |
+| OAuth 2.1       | Required     | OAuth Bearer token             | Same account capabilities granted by OAuth | Available account credits; plans add monthly credits |
+| Guest wallet    | Not required | `paid_reads` API key           | Exactly 33 prepaid GET routes              | $10-$250 USD hosted checkout                         |
+| MPP             | Not required | Per-request payment credential | 7 fixed-price GET operations               | Per-request payment                                  |
 
 Guest wallets do not grant write actions, connected-account reads, monitors, webhooks, extractions, draws, account management, billing management, API-key management, or OAuth access. Full account keys and OAuth behavior remain unchanged.
 
 ## Create and activate a wallet
 
 <Steps>
+
   <Step title="Confirm the amount">
+
     Ask the user to choose and explicitly confirm a USD amount from $10 through $250. Represent it in cents as `amount_minor`.
+
   </Step>
   <Step title="Create hosted checkout">
+
     Call `POST /api/v1/guest-wallets` with `Content-Type: application/json`, a cryptographically random UUID v4 `Idempotency-Key`, and the confirmed amount.
 
     ```bash
@@ -132,14 +149,20 @@ Guest wallets do not grant write actions, connected-account reads, monitors, web
     ```
 
     This request creates a one-use hosted checkout. It does not charge the user.
+
   </Step>
   <Step title="Store the credentials">
+
     Store the returned `api_key` and the original `Idempotency-Key` in a secret manager. The key appears only in the initial response and an exact idempotent replay. No email recovery is available.
+
   </Step>
   <Step title="Give the user the checkout URL">
+
     Give only `checkout_url` to the user. The user completes hosted checkout. Pending checkouts expire after 60 minutes.
+
   </Step>
   <Step title="Poll for verified payment">
+
     After payment, poll `GET /api/v1/guest-wallets/status` every `poll_after_seconds` with the guest key. Stop when `latest_purchase.status` is no longer `pending`.
 
     ```bash
@@ -148,6 +171,7 @@ Guest wallets do not grant write actions, connected-account reads, monitors, web
     ```
 
     The key remains inactive for paid reads until status reports `usable: true`. Checkout completion alone is not proof of activation. Xquik activates credits only after payment is verified.
+
   </Step>
 </Steps>
 

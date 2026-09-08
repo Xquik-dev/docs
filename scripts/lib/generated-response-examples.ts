@@ -1,7 +1,5 @@
-export const GENERATED_RESPONSE_EXAMPLES_START =
-  '{/* GENERATED RESPONSE EXAMPLES START */}';
-export const GENERATED_RESPONSE_EXAMPLES_END =
-  '{/* GENERATED RESPONSE EXAMPLES END */}';
+export const GENERATED_RESPONSE_EXAMPLES_START = "{/* GENERATED RESPONSE EXAMPLES START */}";
+export const GENERATED_RESPONSE_EXAMPLES_END = "{/* GENERATED RESPONSE EXAMPLES END */}";
 
 export function stripGeneratedResponseExamples(source: string): string {
   const start = source.indexOf(GENERATED_RESPONSE_EXAMPLES_START);
@@ -11,10 +9,8 @@ export function stripGeneratedResponseExamples(source: string): string {
     return source;
   }
   if (start === -1 || end === -1 || end < start) {
-    throw new Error('Generated response example markers are incomplete.');
+    throw new Error("Generated response example markers are incomplete.");
   }
 
-  return `${source.slice(0, start)}${source.slice(
-    end + GENERATED_RESPONSE_EXAMPLES_END.length,
-  )}`;
+  return `${source.slice(0, start)}${source.slice(end + GENERATED_RESPONSE_EXAMPLES_END.length)}`;
 }

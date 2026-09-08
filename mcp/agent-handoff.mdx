@@ -23,27 +23,36 @@ Use this page when an AI agent needs to choose the right Xquik interface. It can
 ## Pick the agent interface
 
 <CardGroup cols={2}>
+
   <Card title="Docs MCP" icon="book-open">
+
     Use `https://docs.xquik.com/mcp` when the agent needs public docs, API
     reference pages, examples, troubleshooting, or type definitions. It is
     read-only and requires no auth.
+
   </Card>
 
   <Card title="API MCP" icon="terminal">
+
     Use API MCP at `https://xquik.com/mcp` for live calls. Full account
     keys and OAuth tokens expose 118 catalog routes. Guest `paid_reads` keys
     expose exactly 33 eligible GET routes. Current SDKs negotiate MCP
     `2026-07-28` through `server/discover`.
+
   </Card>
 
   <Card title="REST or SDK" icon="code">
+
     Use REST or generated SDKs when a service owns retries, cursor storage,
     file downloads, queues, or batch jobs outside the chat session.
+
   </Card>
 
   <Card title="Webhooks and replay" icon="history">
+
     Use monitor webhooks for fresh events and `GET /api/v1/events` when a
     receiver, queue, warehouse, or agent run needs replay.
+
   </Card>
 </CardGroup>
 
@@ -67,13 +76,12 @@ A `402` creates no checkout. Report its payment choices, ask the user to choose 
 async () => {
   return Object.entries(spec.paths).flatMap(([path, methods]) =>
     Object.entries(methods).flatMap(([method, operation]) =>
-      path.includes('/x/tweets/search') ||
-      operation?.summary?.toLowerCase().includes('followers')
+      path.includes("/x/tweets/search") || operation?.summary?.toLowerCase().includes("followers")
         ? [{ method: method.toUpperCase(), path, ...operation }]
-        : []
-    )
+        : [],
+    ),
   );
-}
+};
 ```
 
 ## Route guest paid reads
@@ -98,39 +106,39 @@ MCP returns normalized snake_case fields, structured errors, and date-time field
 
 ```javascript
 async () => {
-  const query = 'from:username MCP';
+  const query = "from:username MCP";
   const { result: page } = await xquik.request({
-    path: '/api/v1/x/tweets/search',
-    query: { q: query, limit: '50' }
+    path: "/api/v1/x/tweets/search",
+    query: { q: query, limit: "50" },
   });
 
   return {
-    source: 'xquik_mcp',
-    job: 'tweet_search',
+    source: "xquik_mcp",
+    job: "tweet_search",
     query,
     rows: page.tweets.map((tweet) => ({
       tweet_id: tweet.id,
       text: tweet.text ?? null,
       author_id: tweet.author?.id ?? null,
       author_username: tweet.author?.username ?? null,
-      created_at: tweet['created'] ?? null,
-      url: tweet.url ?? null
+      created_at: tweet["created"] ?? null,
+      url: tweet.url ?? null,
     })),
     has_more: page.has_more,
-    next_cursor: page.next_cursor
+    next_cursor: page.next_cursor,
   };
-}
+};
 ```
 
 ## Follow cursor rules
 
-| Source | Next request |
-| --- | --- |
+| Source                                                                   | Next request                                                 |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------ |
 | MCP tweet, profile, follower, reply, timeline, community, and list pages | Pass `next_cursor` back as `cursor` when `has_more` is true. |
-| MCP `/api/v1/draws`, `/api/v1/extractions`, and `/api/v1/events` | Pass `next_cursor` back as `cursor`. |
-| MCP `/api/v1/radar` | Pass `next_cursor` back as `after`. |
-| MCP `/api/v1/drafts` | Pass `next_cursor` back as `afterCursor`. |
-| REST and generated SDKs | Follow the response fields documented on that endpoint page. |
+| MCP `/api/v1/draws`, `/api/v1/extractions`, and `/api/v1/events`         | Pass `next_cursor` back as `cursor`.                         |
+| MCP `/api/v1/radar`                                                      | Pass `next_cursor` back as `after`.                          |
+| MCP `/api/v1/drafts`                                                     | Pass `next_cursor` back as `afterCursor`.                    |
+| REST and generated SDKs                                                  | Follow the response fields documented on that endpoint page. |
 
 Full account sessions can check `GET /api/v1/credits` before large reads.
 Guest sessions receive balance and top-up context in `402`, while the direct
@@ -173,39 +181,57 @@ and queue payloads.
 ## Know when to leave MCP
 
 <CardGroup cols={2}>
+
   <Card title="File exports" icon="braces" href="/guides/response-formats-exports">
+
     Use extraction export endpoints for CSV, JSON, XLSX, Markdown, or PDF files.
+
   </Card>
 
   <Card title="Webhook receivers" icon="webhook" href="/guides/twitter-webhook-testing">
+
     Use signed webhooks when downstream systems need fresh monitor events.
+
   </Card>
 
   <Card title="Replay jobs" icon="database" href="/guides/brand-monitoring-workflow">
+
     Use stored events and delivery rows when receivers miss work.
+
   </Card>
 
   <Card title="SDK backends" icon="boxes" href="/sdks">
+
     Use SDKs when a backend owns retries, storage, and batch orchestration.
+
   </Card>
 </CardGroup>
 
 ## Continue with focused references
 
 <CardGroup cols={2}>
+
   <Card title="MCP tools reference" icon="terminal" href="/mcp/tools">
+
     Review Code Mode, OpenAPI-native tools, response contracts, and examples.
+
   </Card>
 
   <Card title="Docs MCP server" icon="book-open" href="/mcp/docs-mcp">
+
     Connect read-only documentation search beside the API MCP server.
+
   </Card>
 
   <Card title="No-Code handoff" icon="workflow" href="/guides/no-code-workflow-handoff">
+
     Hand monitor events, exports, and direct reads to workflow platforms.
+
   </Card>
 
   <Card title="Webhook testing" icon="webhook" href="/guides/twitter-webhook-testing">
+
     Verify signed receivers before accepting production events.
+
   </Card>
 </CardGroup>

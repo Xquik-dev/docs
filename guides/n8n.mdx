@@ -2,7 +2,19 @@
 title: "n8n Twitter node for X API automation & webhooks"
 sidebarTitle: "n8n"
 description: "Build n8n Twitter workflows for tweet search, follower exports, monitors, and webhooks. Add media posts, AI agents, and cursor-safe handoffs through Xquik."
-keywords: ["n8n Twitter node", "n8n Twitter", "n8n Twitter integration", "n8n Twitter API", "n8n Twitter automation", "n8n Twitter scraper", "n8n Twitter search", "n8n Twitter agent", "n8n Twitter media upload", "Twitter webhook workflow"]
+keywords:
+  [
+    "n8n Twitter node",
+    "n8n Twitter",
+    "n8n Twitter integration",
+    "n8n Twitter API",
+    "n8n Twitter automation",
+    "n8n Twitter scraper",
+    "n8n Twitter search",
+    "n8n Twitter agent",
+    "n8n Twitter media upload",
+    "Twitter webhook workflow",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -34,16 +46,23 @@ and MCP tools.
 Create a reusable n8n credential for Xquik:
 
 <CardGroup cols={3}>
+
   <Card title="Authentication" icon="key-round">
+
     Select Header Auth for the HTTP Request credential.
+
   </Card>
 
   <Card title="Header name" icon="braces">
+
     Set the header name to `x-api-key`.
+
   </Card>
 
   <Card title="Header value" icon="shield-check">
+
     Paste your Xquik API key as the credential value.
+
   </Card>
 </CardGroup>
 
@@ -57,52 +76,76 @@ exported workflow JSON.
 Use custom code nodes only for signature checks or bounded transforms.
 
 <CardGroup cols={2}>
+
   <Card title="Credential" icon="key-round">
+
     Create an `Xquik API Key` credential and inject it as `x-api-key`.
+
   </Card>
 
   <Card title="Base URL" icon="link">
+
     Point every REST action at `https://xquik.com/api/v1`.
+
   </Card>
 
   <Card title="Request helper" icon="workflow">
+
     Support `GET`, `POST`, `PATCH`, `DELETE`, JSON bodies, structured errors, and `Retry-After` backoff.
+
   </Card>
 
   <Card title="Resources" icon="boxes">
+
     Start with Tweet, User, Trends, Extraction, Monitor, and Webhook resources.
+
   </Card>
 
   <Card title="Actions" icon="play">
+
     Ship Get Tweet, Search Tweets, Get User, Get Trends, Create Tweet, Create Extraction, Create Monitor, and Create Webhook first.
+
   </Card>
 
   <Card title="Sources" icon="radio">
+
     Add Monitor Event Webhook and Extraction Completed Polling sources.
+
   </Card>
 </CardGroup>
 
 Handle these response classes explicitly:
 
 <CardGroup cols={2}>
+
   <Card title="400 invalid input" icon="circle-alert">
+
     Copy the Xquik `error` and `message` fields into the failed item.
+
   </Card>
 
   <Card title="401 authentication" icon="key-round">
+
     Ask the user to check the Header Auth credential and `x-api-key` value.
+
   </Card>
 
   <Card title="402 billing state" icon="credit-card">
+
     Route to subscription or credit setup before retrying the node.
+
   </Card>
 
   <Card title="429 rate limit" icon="timer">
+
     Read `Retry-After` from response headers and wait before retrying.
+
   </Card>
 
   <Card title="5xx transient" icon="refresh-cw">
+
     Enable n8n Retry on Fail with exponential backoff, then fail the item.
+
   </Card>
 </CardGroup>
 
@@ -114,44 +157,65 @@ rows, and retry queues. Use snake_case storage keys for handoff rows even when
 direct API responses use camelCase.
 
 <CardGroup cols={2}>
+
   <Card title="Tweet search page" icon="search">
+
     Store request `q`; map each tweet `id`, `text`, `author.username`, and `createdAt` to `tweet_id`, `text`, `author_username`, and `created_at`; keep `has_next_page` and `next_cursor` for page loops.
+
   </Card>
 
   <Card title="User profile rows" icon="users">
+
     Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profile_picture`, `has_next_page`, `next_cursor`, and the lookup or search input.
+
   </Card>
 
   <Card title="Trend rows" icon="trending-up">
+
     Store each trend `name`, `rank`, `query`, and `description`. Keep response `count`, `woeid`, and the requested region with the workflow run.
+
   </Card>
 
   <Card title="Tweet or reply write" icon="send">
+
     Send a unique `Idempotency-Key`. Store `id`, `status`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+
   </Card>
 
   <Card title="Media attachments" icon="image">
+
     For tweets or replies, pass public URLs in `media`; do not send `media_ids`. For DMs, upload first, pass 1 `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.
+
   </Card>
 
   <Card title="Monitor and webhook setup" icon="radio">
+
     Store monitor `id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`; store webhook `id`, `url`, `eventTypes`, and one-time `secret`. For storage rows, map production `deliveryId` to `delivery_id` for receiver retry de-dupe and `streamEventId` to `stream_event_id` when one monitor event should process once across endpoint changes.
+
   </Card>
 
   <Card title="Webhook event de-dupe" icon="fingerprint">
+
     Store `deliveryId` for receiver retry de-dupe and `streamEventId` when one monitor event should process once across endpoint changes.
+
   </Card>
 
   <Card title="Stored event replay" icon="activity">
+
     Call `GET /events` with `cursor` when a workflow needs replay. Map `id`, `monitorId`, `monitorType`, `occurredAt`, `hasMore`, and `nextCursor` to `event_id`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, and `next_cursor`.
+
   </Card>
 
   <Card title="Receiver acceptance" icon="copy-check">
+
     Return `2xx` after accepting duplicate `deliveryId` or `streamEventId`; keep endpoint signing values, raw request body, raw signature, and full headers out of n8n executions, data stores, Slack messages, Sheets rows, and retry queues.
+
   </Card>
 
   <Card title="Extraction job" icon="database">
+
     Store `id` as `extraction_id`, `toolType` as `tool_type`, plus `status`, `has_more`, and `next_cursor` before batch loops fetch detail rows.
+
   </Card>
 </CardGroup>
 
@@ -161,19 +225,28 @@ Use this recipe to integrate AI agents with Xquik. The agent can search live
 tweets, summarize trends, inspect profiles, and compare follower activity.
 
 <Steps>
+
   <Step title="Add an AI agent node">
+
     Create an AI Agent workflow with your preferred chat model.
+
   </Step>
   <Step title="Add an MCP client tool">
+
     Set Server Transport to `HTTP Streamable`. Set MCP Endpoint URL to `https://xquik.com/mcp`. Set Authentication to `Header Auth`. Create or select a Header Auth credential. Set Name to `x-api-key` and Value to your Xquik API key.
+
   </Step>
   <Step title="Prompt the agent">
+
     Tell the agent to use Xquik for X search, trends, account lookups, and extraction planning.
+
   </Step>
 </Steps>
 
 <Note>
-  The MCP Client Tool also supports `MCP OAuth2`. This recipe uses Header Auth for unattended workflows with an n8n credential.
+
+The MCP Client Tool also supports `MCP OAuth2`. This recipe uses Header Auth for unattended workflows with an n8n credential.
+
 </Note>
 
 Suggested agent system prompt:
@@ -197,24 +270,35 @@ Use this when a Slack channel should receive new tweets, replies, quotes, or ret
 ### Workflow shape
 
 <CardGroup cols={2}>
+
   <Card title="Webhook trigger" icon="webhook">
+
     Receive Xquik monitor events on the production Webhook URL.
+
   </Card>
 
   <Card title="Create webhook" icon="send">
+
     Use HTTP Request to call `POST /webhooks` with the Webhook Trigger URL.
+
   </Card>
 
   <Card title="Create monitor" icon="radio">
+
     Use HTTP Request to call `POST /monitors` for the username and event types.
+
   </Card>
 
   <Card title="Format alert" icon="type">
+
     Use Set to build Slack text from `data`, with `username` as fallback.
+
   </Card>
 
   <Card title="Post alert" icon="message-square">
+
     Send the formatted message to Slack after the webhook and monitor exist.
+
   </Card>
 </CardGroup>
 
@@ -274,28 +358,41 @@ Use this when a team needs bulk follower, reply, quote, media, list, community, 
 ### Workflow shape
 
 <CardGroup cols={2}>
+
   <Card title="Schedule trigger" icon="calendar-clock">
+
     Run daily or hourly exports; execute manually while testing.
+
   </Card>
 
   <Card title="Create extraction" icon="send">
+
     Use HTTP Request to call `POST /extractions` and store the returned `id`.
+
   </Card>
 
   <Card title="Wait before polling" icon="timer">
+
     Pause before the first status check so the extraction can start.
+
   </Card>
 
   <Card title="Fetch results" icon="list-checks">
+
     Use HTTP Request to call `GET /extractions/{id}` and read `job.status`.
+
   </Card>
 
   <Card title="Gate completed jobs" icon="circle-check">
+
     Use IF to continue only when `job.status` is `completed`.
+
   </Card>
 
   <Card title="Append rows" icon="file-spreadsheet">
+
     Use Google Sheets Append Row with the mapped result fields below.
+
   </Card>
 </CardGroup>
 
@@ -336,32 +433,47 @@ Store the returned `id` for the polling step.
 Map these fields into Google Sheets:
 
 <CardGroup cols={2}>
+
   <Card title="Tweet ID" icon="hash">
+
     Map to `id`.
+
   </Card>
 
   <Card title="Author" icon="at-sign">
+
     Map to `author.username`.
+
   </Card>
 
   <Card title="Text" icon="type">
+
     Map to `text`.
+
   </Card>
 
   <Card title="Created at" icon="calendar">
+
     Map to `createdAt`.
+
   </Card>
 
   <Card title="Likes" icon="heart">
+
     Map to `likeCount`.
+
   </Card>
 
   <Card title="Reposts" icon="repeat-2">
+
     Map to `retweetCount`.
+
   </Card>
 
   <Card title="URL" icon="link">
+
     Build from `https://x.com/{author.username}/status/{id}`.
+
   </Card>
 </CardGroup>
 
@@ -370,36 +482,53 @@ For jobs larger than 1,000 rows, loop while `hasMore` is `true` and pass `cursor
 ## Useful REST actions
 
 <CardGroup cols={2}>
+
   <Card title="Get tweet" icon="message-circle">
+
     Read one or more posts with `GET /x/tweets?ids=<id>`.
+
   </Card>
 
   <Card title="Search tweets" icon="search">
+
     Run X query searches with `GET /x/tweets/search?q=<query>`.
+
   </Card>
 
   <Card title="Get user" icon="user-round">
+
     Fetch an X profile with `GET /x/users/{id}`.
+
   </Card>
 
   <Card title="Get trends" icon="trending-up">
+
     Read regional X trends with `GET /x/trends`.
+
   </Card>
 
   <Card title="Create tweet" icon="send">
+
     Publish text or media posts with `POST /x/tweets`.
+
   </Card>
 
   <Card title="Create extraction" icon="boxes">
+
     Start bulk export jobs with `POST /extractions`.
+
   </Card>
 
   <Card title="Create monitor" icon="radio">
+
     Watch accounts or keywords with `POST /monitors`.
+
   </Card>
 
   <Card title="Create webhook" icon="webhook">
+
     Register signed delivery URLs with `POST /webhooks`.
+
   </Card>
 </CardGroup>
 

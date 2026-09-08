@@ -40,14 +40,14 @@ schemas. Xquik exposes `docs`, `search`, and `execute` as remote MCP tools.
 This Google ADK guide assigns one responsibility to each boundary. The Agent
 Development Kit MCP client loads Xquik route schemas during startup.
 
-| Boundary | Google ADK control | Twitter agent benefit |
-| --- | --- | --- |
-| Remote MCP | `McpToolset` | Connect Gemini to tweet, profile, follower, and monitor routes |
-| Final response | Pydantic `output_schema` | Reject malformed tweet rows and pagination state |
-| Session continuity | `InMemoryRunner` or a durable session service | Resume with the same tweet IDs and cursors |
-| Agent handoff | `output_key` and sub-agents | Separate research, review, and publishing |
-| X actions | `require_confirmation` | Pause before the `execute` execution tool runs |
-| Tenant credentials | `header_provider` | Resolve one Xquik key for each tenant |
+| Boundary           | Google ADK control                            | Twitter agent benefit                                          |
+| ------------------ | --------------------------------------------- | -------------------------------------------------------------- |
+| Remote MCP         | `McpToolset`                                  | Connect Gemini to tweet, profile, follower, and monitor routes |
+| Final response     | Pydantic `output_schema`                      | Reject malformed tweet rows and pagination state               |
+| Session continuity | `InMemoryRunner` or a durable session service | Resume with the same tweet IDs and cursors                     |
+| Agent handoff      | `output_key` and sub-agents                   | Separate research, review, and publishing                      |
+| X actions          | `require_confirmation`                        | Pause before the `execute` execution tool runs                 |
+| Tenant credentials | `header_provider`                             | Resolve one Xquik key for each tenant                          |
 
 Choose ADK when Gemini already powers the surrounding workflow. Choose a
 direct REST client for deterministic jobs without model decisions.
@@ -226,13 +226,13 @@ schema with this response format.
 
 Send the search route a focused `q`. Keep the exact query in the handoff.
 
-| Search intent | Example `q` |
-| --- | --- |
-| Latest topic tweets | `"Google ADK" MCP` |
+| Search intent                 | Example `q`                                          |
+| ----------------------------- | ---------------------------------------------------- |
+| Latest topic tweets           | `"Google ADK" MCP`                                   |
 | One account's timeline window | `from:googlecloud since:2026-07-01 until:2026-08-01` |
-| Popular English posts | `"agent development kit" lang:en min_faves:25` |
-| Questions without reposts | `"Twitter API agent" ? -filter:retweets` |
-| Exact tweet | A numeric Tweet ID or X status URL |
+| Popular English posts         | `"agent development kit" lang:en min_faves:25`       |
+| Questions without reposts     | `"Twitter API agent" ? -filter:retweets`             |
+| Exact tweet                   | A numeric Tweet ID or X status URL                   |
 
 This Twitter API integration accepts standard X search operators. Use
 `queryType=Latest` for chronological monitoring. Use `Top` for engagement
@@ -394,14 +394,14 @@ outside Gemini prompts and ADK events.
 
 Handle every documented status with its matching recovery step.
 
-| Status | Meaning | Agent action |
-| --- | --- | --- |
-| `400` | The search query is missing or invalid | Fix `q`; do not retry unchanged |
-| `401` | Guest authentication cannot complete this request | Provide an Xquik API key or connect X |
-| `402` | The account lacks credits | Stop and request account action |
-| `424` | The upstream X dependency failed | Retry with bounded backoff |
-| `429` | The Twitter API rate limit applies | Wait for reset guidance, then resume the cursor |
-| `502` | The X dependency returned an invalid response | Retry later without changing IDs |
+| Status | Meaning                                           | Agent action                                    |
+| ------ | ------------------------------------------------- | ----------------------------------------------- |
+| `400`  | The search query is missing or invalid            | Fix `q`; do not retry unchanged                 |
+| `401`  | Guest authentication cannot complete this request | Provide an Xquik API key or connect X           |
+| `402`  | The account lacks credits                         | Stop and request account action                 |
+| `424`  | The upstream X dependency failed                  | Retry with bounded backoff                      |
+| `429`  | The Twitter API rate limit applies                | Wait for reset guidance, then resume the cursor |
+| `502`  | The X dependency returned an invalid response     | Retry later without changing IDs                |
 
 Do not restart pagination after `429`. Retain `next_cursor` and completed
 result identifiers. Deduplicate recovered results through the exact `tweet_id`.
@@ -412,42 +412,59 @@ building retry logic. See [error handling](/guides/error-handling).
 ## Handoff checklist
 
 <CardGroup cols={2}>
+
   <Card title="Tweet search rows" icon="search">
+
     Store `tweet_id`, `text`, `author_username`, `created`, `url`, `has_more`, `next_cursor`, and the original `q`.
+
   </Card>
   <Card title="User profile rows" icon="users">
+
     Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profile_picture`, `has_more`, `next_cursor`, and the source lookup or search query.
+
   </Card>
   <Card title="Trend rows" icon="trending-up">
+
     Store each trend `name`, `rank`, `query`, and `description`. Keep response `count`, `woeid`, and the requested region with the run checkpoint.
+
   </Card>
   <Card title="Monitor and webhook setup" icon="radio">
+
     Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager. On production deliveries, store `delivery_id` for receiver retry de-dupe and `stream_event_id` when one monitor event should process once across endpoint changes.
+
   </Card>
   <Card title="Stored event replay" icon="activity">
+
     Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, `next_cursor`, and the `cursor` query for the next page.
+
   </Card>
   <Card title="Extraction jobs" icon="database">
+
     Store `extraction_id`, `status`, `poll`, and `export_after_complete`; poll before loading CSV, JSON, or XLSX rows.
+
   </Card>
   <Card title="Writes" icon="send">
+
     Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, `charged_credits`, and `poll`; do not resend pending writes.
+
   </Card>
   <Card title="Media attachments" icon="image">
+
     For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`. For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.
+
   </Card>
 </CardGroup>
 
 ## Choose Google ADK MCP or the REST API
 
-| Requirement | Google ADK with MCP | Direct REST API |
-| --- | --- | --- |
-| Natural-language tweet research | Strong fit | Write query logic yourself |
-| Gemini multi-agent handoffs | Native fit | Add an orchestrator |
-| Strict scheduled follower export | Extra model step | Strong fit |
-| Human-approved tweet posting | ADK confirmation flow | Build approval state yourself |
-| Predictable latency and cost | Less predictable | More predictable |
-| Typed final handoff | `output_schema` | SDK or Pydantic model |
+| Requirement                      | Google ADK with MCP   | Direct REST API               |
+| -------------------------------- | --------------------- | ----------------------------- |
+| Natural-language tweet research  | Strong fit            | Write query logic yourself    |
+| Gemini multi-agent handoffs      | Native fit            | Add an orchestrator           |
+| Strict scheduled follower export | Extra model step      | Strong fit                    |
+| Human-approved tweet posting     | ADK confirmation flow | Build approval state yourself |
+| Predictable latency and cost     | Less predictable      | More predictable              |
+| Typed final handoff              | `output_schema`       | SDK or Pydantic model         |
 
 Use MCP when Gemini chooses among related Twitter API operations. Use REST for
 fixed routes, scheduled exports, or latency-sensitive services.
@@ -457,13 +474,13 @@ fixed routes, scheduled exports, or latency-sensitive services.
 Google ADK 2.x keeps compatibility aliases. New code should use current API
 symbols.
 
-| Older pattern | Current pattern |
-| --- | --- |
-| `from google.adk.agents import LlmAgent` | `from google.adk import Agent` |
-| `MCPToolset` | `McpToolset` |
-| `StreamableHTTPServerParams` | `StreamableHTTPConnectionParams` |
-| Manual toolset cleanup | `async with InMemoryRunner(...)` |
-| Prompt-only JSON | Pydantic `output_schema` |
+| Older pattern                            | Current pattern                  |
+| ---------------------------------------- | -------------------------------- |
+| `from google.adk.agents import LlmAgent` | `from google.adk import Agent`   |
+| `MCPToolset`                             | `McpToolset`                     |
+| `StreamableHTTPServerParams`             | `StreamableHTTPConnectionParams` |
+| Manual toolset cleanup                   | `async with InMemoryRunner(...)` |
+| Prompt-only JSON                         | Pydantic `output_schema`         |
 
 `MCPToolset` now emits a deprecation warning. The current class uses the
 `McpToolset` capitalization.
@@ -472,11 +489,11 @@ symbols.
 
 These versions were checked on August 2, 2026.
 
-| Package | Checked compatible version | Compatible range used here |
-| --- | --- | --- |
-| `google-adk` | 2.6.1 | `>=2.6,<2.7` |
-| `mcp` | 1.29.0 | `>=1.24,<2` through the `mcp` extra |
-| `pydantic` | 2.13.4 | `>=2.12,<3` |
+| Package      | Checked compatible version | Compatible range used here          |
+| ------------ | -------------------------- | ----------------------------------- |
+| `google-adk` | 2.6.1                      | `>=2.6,<2.7`                        |
+| `mcp`        | 1.29.0                     | `>=1.24,<2` through the `mcp` extra |
+| `pydantic`   | 2.13.4                     | `>=2.12,<3`                         |
 
 Pin a tested minor range. Review ADK 2.x release notes before widening it.
 

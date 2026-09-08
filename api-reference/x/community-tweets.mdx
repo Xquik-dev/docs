@@ -3,7 +3,15 @@ title: "Twitter community posts API & X timeline export"
 sidebarTitle: "Get community tweets"
 description: "Export X community tweets with authors, text, replies, reposts, likes, quotes, and media. Traverse cursor pages or save CSV, JSON, and XLSX exports for reviews."
 api: "GET /x/communities/{id}/tweets"
-keywords: ["export community tweets", "X community tweets API", "Twitter community API", "community tweet export", "community timeline", "community posts"]
+keywords:
+  [
+    "export community tweets",
+    "X community tweets API",
+    "Twitter community API",
+    "community tweet export",
+    "community timeline",
+    "community posts",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -11,9 +19,13 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 import TweetCommunityResultFilterParams from "/snippets/tweet-community-result-filter-params.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="200" id="response-x-community-tweets-200">
+
     ```json
     {
       "tweets": [],
@@ -21,54 +33,66 @@ import TweetCommunityResultFilterParams from "/snippets/tweet-community-result-f
       "next_cursor": ""
     }
     ```
+
   </Tab>
 
   <Tab title="400" id="response-x-community-tweets-400">
+
     ```json
     {
       "error": "invalid_input",
       "message": "Invalid input. Check the request body."
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-x-community-tweets-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required."
     }
     ```
+
   </Tab>
 
   <Tab title="402" id="response-x-community-tweets-402">
+
     ```json
     {
       "error": "insufficient_credits",
       "message": "Insufficient credits. Top up or subscribe to continue."
     }
     ```
+
   </Tab>
 
   <Tab title="404" id="response-x-community-tweets-404">
+
     ```json
     {
       "error": "not_found",
       "message": "Resource not found."
     }
     ```
+
   </Tab>
 
   <Tab title="424" id="response-x-community-tweets-424">
+
     ```json
     {
       "error": "x_api_unavailable",
       "message": "X data source temporarily unavailable. Try again later."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-x-community-tweets-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -76,17 +100,21 @@ import TweetCommunityResultFilterParams from "/snippets/tweet-community-result-f
       "retryAfter": 60
     }
     ```
+
   </Tab>
 
   <Tab title="502" id="response-x-community-tweets-502">
+
     ```json
     {
       "error": "x_api_unavailable",
       "message": "X data source temporarily unavailable. Try again later."
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
@@ -104,14 +132,14 @@ cursor pages.
 This endpoint accepts a community ID without a keyword. It preserves the
 returned feed order for timeline archives, content review, and moderation.
 
-| Feed decision | Request or response field | Archive rule |
-| --- | --- | --- |
-| Community scope | Path `{id}` | Keep this ID on every exported tweet row. |
-| Feed coverage | No `q` parameter | Archive posts without text filtering. |
-| Returned order | Response tweet sequence | Preserve the order instead of re-ranking rows. |
-| Continuation | `has_next_page` and `next_cursor` | Save each page before advancing. |
-| Duplicate control | Tweet `id` | Deduplicate moving-feed pages by stable tweet ID. |
-| Saved export | `community_post_extractor` | Produce CSV, JSON, or XLSX timeline files. |
+| Feed decision     | Request or response field         | Archive rule                                      |
+| ----------------- | --------------------------------- | ------------------------------------------------- |
+| Community scope   | Path `{id}`                       | Keep this ID on every exported tweet row.         |
+| Feed coverage     | No `q` parameter                  | Archive posts without text filtering.             |
+| Returned order    | Response tweet sequence           | Preserve the order instead of re-ranking rows.    |
+| Continuation      | `has_next_page` and `next_cursor` | Save each page before advancing.                  |
+| Duplicate control | Tweet `id`                        | Deduplicate moving-feed pages by stable tweet ID. |
+| Saved export      | `community_post_extractor`        | Produce CSV, JSON, or XLSX timeline files.        |
 
 Choose Community Search for keyword filters, `Latest`, or `Top` ranking.
 
@@ -205,85 +233,91 @@ API pages for live ingestion. Mark interrupted or credit-bounded runs as
 partial.
 
 <Note>
-  Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
+Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
 </Note>
 
 <Callout icon="coins" color="#5c3327">
-  **1 credit per tweet returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+
+**1 credit per tweet returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+
 </Callout>
 
 <CodeGroup>
-  ```bash cURL
-  curl https://xquik.com/api/v1/x/communities/1234567890/tweets \
-    -H "x-api-key: xq_your_api_key_here" | jq
-  ```
 
-  ```javascript Node.js
-  const communityId = "1234567890";
-  const response = await fetch(`https://xquik.com/api/v1/x/communities/${communityId}/tweets`, {
-    headers: { "x-api-key": "xq_your_api_key_here" },
-  });
-  const data = await response.json();
-  const nextCursor = data.has_next_page && data.next_cursor ? data.next_cursor : null;
-  const tweetRows = data.tweets.map((tweet) => ({
-    community_id: communityId,
-    tweet_id: tweet.id,
-    text: tweet.text,
-    author_id: tweet.author?.id ?? null,
-    author_username: tweet.author?.username ?? null,
-    author_name: tweet.author?.name ?? null,
-    author_followers: tweet.author?.followers ?? null,
-    author_verified: tweet.author?.verified ?? null,
-    author_profile_picture: tweet.author?.profilePicture ?? null,
-    created_at: tweet.createdAt ?? null,
-    like_count: tweet.likeCount ?? null,
-    reply_count: tweet.replyCount ?? null,
-    retweet_count: tweet.retweetCount ?? null,
-    media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
-    has_next_page: data.has_next_page,
-    next_cursor: nextCursor,
-  }));
+```bash cURL
+curl https://xquik.com/api/v1/x/communities/1234567890/tweets \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
 
-  process.stdout.write(JSON.stringify(tweetRows, null, 2));
-  ```
+```javascript Node.js
+const communityId = "1234567890";
+const response = await fetch(`https://xquik.com/api/v1/x/communities/${communityId}/tweets`, {
+  headers: { "x-api-key": "xq_your_api_key_here" },
+});
+const data = await response.json();
+const nextCursor = data.has_next_page && data.next_cursor ? data.next_cursor : null;
+const tweetRows = data.tweets.map((tweet) => ({
+  community_id: communityId,
+  tweet_id: tweet.id,
+  text: tweet.text,
+  author_id: tweet.author?.id ?? null,
+  author_username: tweet.author?.username ?? null,
+  author_name: tweet.author?.name ?? null,
+  author_followers: tweet.author?.followers ?? null,
+  author_verified: tweet.author?.verified ?? null,
+  author_profile_picture: tweet.author?.profilePicture ?? null,
+  created_at: tweet.createdAt ?? null,
+  like_count: tweet.likeCount ?? null,
+  reply_count: tweet.replyCount ?? null,
+  retweet_count: tweet.retweetCount ?? null,
+  media_urls: tweet.media?.map((item) => item.mediaUrl).filter(Boolean) ?? [],
+  has_next_page: data.has_next_page,
+  next_cursor: nextCursor,
+}));
 
-  ```python Python
-  import json
-  import requests
+process.stdout.write(JSON.stringify(tweetRows, null, 2));
+```
 
-  community_id = "1234567890"
-  response = requests.get(
-      f"https://xquik.com/api/v1/x/communities/{community_id}/tweets",
-      headers={"x-api-key": "xq_your_api_key_here"},
-  )
-  data = response.json()
-  next_cursor = data.get("next_cursor") if data.get("has_next_page") else None
-  tweet_rows = [
-      {
-          "community_id": community_id,
-          "tweet_id": tweet["id"],
-          "text": tweet["text"],
-          "author_id": (tweet.get("author") or {}).get("id"),
-          "author_username": (tweet.get("author") or {}).get("username"),
-          "author_name": (tweet.get("author") or {}).get("name"),
-          "author_followers": (tweet.get("author") or {}).get("followers"),
-          "author_verified": (tweet.get("author") or {}).get("verified"),
-          "author_profile_picture": (tweet.get("author") or {}).get("profilePicture"),
-          "created_at": tweet.get("createdAt"),
-          "like_count": tweet.get("likeCount"),
-          "reply_count": tweet.get("replyCount"),
-          "retweet_count": tweet.get("retweetCount"),
-          "media_urls": [
-              item["mediaUrl"] for item in tweet.get("media", []) if item.get("mediaUrl")
-          ],
-          "has_next_page": data.get("has_next_page", False),
-          "next_cursor": next_cursor,
-      }
-      for tweet in data["tweets"]
-  ]
+```python Python
+import json
+import requests
 
-  print(json.dumps(tweet_rows, indent=2))
-  ```
+community_id = "1234567890"
+response = requests.get(
+    f"https://xquik.com/api/v1/x/communities/{community_id}/tweets",
+    headers={"x-api-key": "xq_your_api_key_here"},
+)
+data = response.json()
+next_cursor = data.get("next_cursor") if data.get("has_next_page") else None
+tweet_rows = [
+    {
+        "community_id": community_id,
+        "tweet_id": tweet["id"],
+        "text": tweet["text"],
+        "author_id": (tweet.get("author") or {}).get("id"),
+        "author_username": (tweet.get("author") or {}).get("username"),
+        "author_name": (tweet.get("author") or {}).get("name"),
+        "author_followers": (tweet.get("author") or {}).get("followers"),
+        "author_verified": (tweet.get("author") or {}).get("verified"),
+        "author_profile_picture": (tweet.get("author") or {}).get("profilePicture"),
+        "created_at": tweet.get("createdAt"),
+        "like_count": tweet.get("likeCount"),
+        "reply_count": tweet.get("replyCount"),
+        "retweet_count": tweet.get("retweetCount"),
+        "media_urls": [
+            item["mediaUrl"] for item in tweet.get("media", []) if item.get("mediaUrl")
+        ],
+        "has_next_page": data.get("has_next_page", False),
+        "next_cursor": next_cursor,
+    }
+    for tweet in data["tweets"]
+]
+
+print(json.dumps(tweet_rows, indent=2))
+```
+
 </CodeGroup>
 
 ## Direct community tweet handoff
@@ -294,21 +328,30 @@ Store each Tweet ID in its own record. Preserve the Community ID, author, text,
 creation time, engagement counts, media, and cursor checkpoint.
 
 <CardGroup cols={2}>
+
   <Card title="Community tweet rows" icon="message-square-text">
+
     Store one row per post in the community. Keep author fields and engagement
     counts with the tweet row for review queues and exports.
+
   </Card>
   <Card title="Next page" icon="arrow-right">
+
     Keep `has_next_page` beside `next_cursor` for each page. Continue only when
     `has_next_page` is `true` and `next_cursor` is present.
+
   </Card>
   <Card title="Default page" icon="rows-3">
+
     Request 1 to 100 tweets with `pageSize`. The default is 20. Treat the value
     as an upper bound because the source or available credits can return fewer.
+
   </Card>
   <Card title="Saved export" icon="file-spreadsheet">
+
     Use `community_post_extractor` when the workflow needs a saved job with
     CSV/JSON/XLSX output.
+
   </Card>
 </CardGroup>
 
@@ -377,48 +420,67 @@ fields let another reviewer repeat the comparison without guessing its scope.
 ## Path parameters
 
 <ParamField path="id" type="string" required>
-  Community ID (numeric string).
+
+Community ID (numeric string).
+
 </ParamField>
 
 ## Query parameters
 
 <ParamField query="cursor" type="string">
-  Pagination cursor from a previous response. Omit for the first page.
+
+Pagination cursor from a previous response. Omit for the first page.
+
 </ParamField>
 
 <ParamField query="pageSize" type="number">
-  Upper bound for tweets per page. Range: 1-100. Default: `20`.
+
+Upper bound for tweets per page. Range: 1-100. Default: `20`.
+
 </ParamField>
 
 ## Which community endpoint?
 
 <CardGroup cols={2}>
+
   <Card title="Community tweets" icon="message-square-text">
+
     Use `GET /x/communities/{id}/tweets` for posts from one known community.
+
   </Card>
   <Card title="Community tweet search" icon="search">
+
     Use [`GET /x/communities/tweets`](/api-reference/x/community-search)
     with `communityId` and `q` to search within one community.
+
   </Card>
   <Card title="Community members" icon="users">
+
     Use [`GET /x/communities/{id}/members`](/api-reference/x/community-members)
     for account rows from the same community.
+
   </Card>
   <Card title="Bulk community jobs" icon="file-spreadsheet">
+
     Use [`Create extraction`](/api-reference/extractions/create) with
     `community_post_extractor`, `community_extractor`, or
     `community_moderator_explorer` when the workflow needs a saved export.
+
   </Card>
 </CardGroup>
 
 ## Headers
 
 <ParamField header="x-api-key" type="string">
-  Full account key. Sessions and OAuth also work.
+
+Full account key. Sessions and OAuth also work.
+
 </ParamField>
 
 <ParamField header="Authorization" type="string">
-  `Bearer xq_your_guest_key_here` for `paid_reads`.
+
+`Bearer xq_your_guest_key_here` for `paid_reads`.
+
 </ParamField>
 
 ## Response
@@ -426,33 +488,36 @@ fields let another reviewer repeat the comparison without guessing its scope.
 ### 200 OK
 
 <ResponseField name="tweets" type="object[]">
-  Array of community tweets.
-  **Tweet object fields.**
-    <ResponseField name="id" type="string">Tweet ID.</ResponseField>
-    <ResponseField name="text" type="string">Contains the complete Tweet text.</ResponseField>
-    <ResponseField name="type" type="string">Classifies the Tweet when X returns a type.</ResponseField>
-    <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
-    <ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet. Omitted if unavailable.</ResponseField>
-    <ResponseField name="likeCount" type="number">Reports the number of likes when available.</ResponseField>
-    <ResponseField name="retweetCount" type="number">Reports the number of reposts when available.</ResponseField>
-    <ResponseField name="replyCount" type="number">Reports the number of replies when available.</ResponseField>
-    <ResponseField name="quoteCount" type="number">Reports the number of quotes when available.</ResponseField>
-    <ResponseField name="viewCount" type="number">Reports the number of views when available.</ResponseField>
-    <ResponseField name="bookmarkCount" type="number">Reports the number of bookmarks when available.</ResponseField>
-    <ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
-    <ResponseField name="lang" type="string">Reports the Tweet language code when available.</ResponseField>
-    <ResponseField name="isReply" type="boolean">Whether the tweet is a reply. Omitted if unavailable.</ResponseField>
-    <ResponseField name="inReplyToId" type="string">Tweet ID being replied to. Omitted if not a reply.</ResponseField>
-    <ResponseField name="inReplyToUserId" type="string">Identifies the replied-to user when available.</ResponseField>
-    <ResponseField name="inReplyToUsername" type="string">Reports the replied-to username when available.</ResponseField>
-    <ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
-    <ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
-    <ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
-    <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
-    <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
-    <ResponseField name="contentDisclosure" type="object">Returns paid-promotion and AI-generated-media labels when available. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia`.</ResponseField>
-    <ResponseField name="author" type="object">
+
+Array of community tweets.
+**Tweet object fields.**
+
+<ResponseField name="id" type="string">Tweet ID.</ResponseField>
+<ResponseField name="text" type="string">Contains the complete Tweet text.</ResponseField>
+<ResponseField name="type" type="string">Classifies the Tweet when X returns a type.</ResponseField>
+<ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
+<ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet. Omitted if unavailable.</ResponseField>
+<ResponseField name="likeCount" type="number">Reports the number of likes when available.</ResponseField>
+<ResponseField name="retweetCount" type="number">Reports the number of reposts when available.</ResponseField>
+<ResponseField name="replyCount" type="number">Reports the number of replies when available.</ResponseField>
+<ResponseField name="quoteCount" type="number">Reports the number of quotes when available.</ResponseField>
+<ResponseField name="viewCount" type="number">Reports the number of views when available.</ResponseField>
+<ResponseField name="bookmarkCount" type="number">Reports the number of bookmarks when available.</ResponseField>
+<ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
+<ResponseField name="lang" type="string">Reports the Tweet language code when available.</ResponseField>
+<ResponseField name="isReply" type="boolean">Whether the tweet is a reply. Omitted if unavailable.</ResponseField>
+<ResponseField name="inReplyToId" type="string">Tweet ID being replied to. Omitted if not a reply.</ResponseField>
+<ResponseField name="inReplyToUserId" type="string">Identifies the replied-to user when available.</ResponseField>
+<ResponseField name="inReplyToUsername" type="string">Reports the replied-to username when available.</ResponseField>
+<ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
+<ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
+<ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
+<ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
+<ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
+<ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
+<ResponseField name="contentDisclosure" type="object">Returns paid-promotion and AI-generated-media labels when available. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia`.</ResponseField>
+<ResponseField name="author" type="object">
+
       Tweet author profile. Omitted if unavailable.
       **Author object fields.**
         <ResponseField name="id" type="string">Author user ID.</ResponseField>
@@ -464,6 +529,7 @@ fields let another reviewer repeat the comparison without guessing its scope.
 
     </ResponseField>
     <ResponseField name="media" type="object[]">
+
       Lists media items attached to the Tweet. Omitted when none exist.
       **Media object fields.**
         <ResponseField name="mediaUrl" type="string">Provides the direct media URL.</ResponseField>
@@ -510,14 +576,17 @@ fields let another reviewer repeat the comparison without guessing its scope.
 ```json
 { "error": "invalid_community_id" }
 ```
+
 The community ID is empty or invalid.
 
 ### 401 Unauthenticated
 
 Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
 ```json
 { "error": "unauthenticated" }
 ```
+
 Missing or invalid API key.
 
 ### 402 Payment required
@@ -530,6 +599,7 @@ No checkout starts automatically. Confirm any payment action.
 ```json
 { "error": "not_found" }
 ```
+
 Xquik could not resolve the Community. Check the Community ID.
 
 ### 502 X API unavailable
@@ -537,6 +607,7 @@ Xquik could not resolve the Community. Check the Community ID.
 ```json
 { "error": "x_api_unavailable" }
 ```
+
 The read service returned an error. Retry after a short delay.
 
 ### 429 Rate limit exceeded
@@ -544,6 +615,7 @@ The read service returned an error. Retry after a short delay.
 ```json
 { "error": "rate_limit_exceeded", "retryAfter": 60 }
 ```
+
 The request exceeded your tier rate limit. Wait for the `Retry-After` header before retrying.
 
 ### 424 Dependency failed
@@ -551,8 +623,11 @@ The request exceeded your tier rate limit. Wait for the `Retry-After` header bef
 ```json
 { "error": "x_api_unavailable" }
 ```
+
 The read service was unavailable. Retry after a short delay.
 
 <Note>
-  **Next steps.** [Community Info](/api-reference/x/community-info) for community details, or [Community Members](/api-reference/x/community-members) to list members.
+
+**Next steps.** [Community Info](/api-reference/x/community-info) for community details, or [Community Members](/api-reference/x/community-members) to list members.
+
 </Note>

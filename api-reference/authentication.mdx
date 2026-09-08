@@ -2,7 +2,19 @@
 title: "X API key authentication for tweets & webhooks"
 sidebarTitle: "Authentication"
 description: "Authenticate tweets, follower exports, monitors, webhooks, and X writes with Xquik API keys, guest keys, OAuth 2.1, sessions, or MPP. See request fields."
-keywords: ["X API key", "Twitter API key", "x-api-key", "REST API authentication", "REST API key", "X API token", "Xquik API key", "API key authentication", "OAuth 2.1", "guest API key"]
+keywords:
+  [
+    "X API key",
+    "Twitter API key",
+    "x-api-key",
+    "REST API authentication",
+    "REST API key",
+    "X API token",
+    "Xquik API key",
+    "API key authentication",
+    "OAuth 2.1",
+    "guest API key",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -95,37 +107,56 @@ This access control matrix maps each API endpoint to its accepted method. Most
 routes accept an API key or dashboard session cookie.
 
 <CardGroup cols={2}>
+
   <Card title="API key only" icon="key-round">
+
     `GET /account` accepts `x-api-key`. Use it to check plan, credit balance, and monitor billing from server-side integrations.
+
   </Card>
   <Card title="Session cookie only" icon="shield">
+
     `POST /api-keys`, `GET /api-keys`, and `DELETE /api-keys/{id}` require a dashboard session cookie. The session identifies the authenticated user.
+
   </Card>
   <Card title="Account and billing" icon="user-cog">
+
     `PATCH /account`, `PUT /account/x-identity`, and `POST /subscribe` accept either `x-api-key` or a dashboard session cookie.
+
   </Card>
   <Card title="Events and webhooks" icon="radio">
+
     `* /monitors/*`, `GET /events/*`, `* /webhooks/*`, and `GET /webhooks/{id}/deliveries` accept either auth method.
+
   </Card>
   <Card title="Tweets, exports, and X actions" icon="database">
+
     `* /draws/*`, `* /extractions/*`, `* /x/*`, `POST /x/media/download`, `* /x-accounts/*`, and `* /x-write/*` accept either auth method.
+
   </Card>
   <Card title="Content tools and support" icon="sparkles">
+
     `GET /trends`, `GET /radar`, `* /styles/*`, `* /drafts/*`, `POST /compose`, and `* /support/*` accept either auth method.
+
   </Card>
   <Card title="Guest paid reads" icon="wallet-cards">
+
     A guest key has scope `paid_reads`. It authenticates only the 33 prepaid GET routes plus guest status and top-up. It never grants account, write, automation, account credential, or OAuth access.
+
   </Card>
 </CardGroup>
 
 <Info>
-  API key creation, listing, and revocation require a same-origin dashboard
-  session. API keys and OAuth bearer tokens cannot manage API keys.
+
+API key creation, listing, and revocation require a same-origin dashboard
+session. API keys and OAuth bearer tokens cannot manage API keys.
+
 </Info>
 
 <Info>
-  The MCP server also supports OAuth 2.1 with PKCE for browser-based clients.
-  See [OAuth 2.1](/oauth/overview) for current client compatibility and setup.
+
+The MCP server also supports OAuth 2.1 with PKCE for browser-based clients.
+See [OAuth 2.1](/oauth/overview) for current client compatibility and setup.
+
 </Info>
 
 ## Accountless guest keys
@@ -136,7 +167,9 @@ a one-use hosted checkout, a guest key, and a status URL without charging.
 The guest key remains inactive for paid reads until payment is verified. It can authenticate `GET /api/v1/guest-wallets/status` while pending. Once active, it can call exactly the [33 eligible paid-read routes](/guides/guest-wallets#eligible-paid-read-routes).
 
 <Warning>
-  Never create a guest wallet or top-up automatically after a `401` or `402`. Ask the user to choose an amount and explicitly confirm. The user must open and complete the hosted checkout.
+
+Never create a guest wallet or top-up automatically after a `401` or `402`. Ask the user to choose an amount and explicitly confirm. The user must open and complete the hosted checkout.
+
 </Warning>
 
 Guest credential routes are direct REST only. The API MCP server never exposes wallet creation, status, or top-up as executable operations. See [Accountless guest wallets](/guides/guest-wallets) for the complete flow.
@@ -154,12 +187,12 @@ authentication for those reads. Without credentials, the API server returns a
 WWW-Authenticate: Payment id="challenge_id_here", realm="xquik.com", method="tempo", intent="charge", request="payment_request_here"
 ```
 
-| Parameter | Description |
-|-----------|-------------|
-| `id` | Unique challenge identifier |
-| `realm` | Protection space (`xquik.com`) |
-| `method` | Payment method (`tempo`) |
-| `intent` | Payment intent (`charge`) |
+| Parameter | Description                                                 |
+| --------- | ----------------------------------------------------------- |
+| `id`      | Unique challenge identifier                                 |
+| `realm`   | Protection space (`xquik.com`)                              |
+| `method`  | Payment method (`tempo`)                                    |
+| `intent`  | Payment intent (`charge`)                                   |
 | `request` | Base64url-encoded JSON with amount, currency, and recipient |
 
 ### Credential header
@@ -190,7 +223,9 @@ success before processing the result.
 See the [MPP overview](/mpp/machine-payments-protocol#eligible-endpoints) for all 7 direct MPP operations and fixed prices.
 
 <Info>
-  The 26 non-MPP paid reads return `401` with `WWW-Authenticate: Bearer` and the optional guest wallet action. The 7 direct MPP operations return `402` with `WWW-Authenticate: Payment` and the same guest action. A failed read never creates checkout.
+
+The 26 non-MPP paid reads return `401` with `WWW-Authenticate: Bearer` and the optional guest wallet action. The 7 direct MPP operations return `402` with `WWW-Authenticate: Payment` and the same guest action. A failed read never creates checkout.
+
 </Info>
 
 ## Key management
@@ -237,7 +272,9 @@ access.
 Apply these API security controls to every environment.
 
 <AccordionGroup>
+
   <Accordion title="Store keys in environment variables">
+
     Never hardcode API keys in your source code. Use environment variables to keep keys separate from your codebase:
 
     ```bash .env
@@ -263,8 +300,10 @@ Apply these API security controls to every environment.
     ```
 
     </CodeGroup>
+
   </Accordion>
   <Accordion title="Never commit keys to version control">
+
     Add `.env` to your `.gitignore` to prevent accidental commits:
 
     ```bash .gitignore
@@ -275,8 +314,10 @@ Apply these API security controls to every environment.
     ```
 
     If a key is accidentally committed, revoke it immediately from your dashboard and generate a new one. Consider the exposed key compromised even if you force-push to remove it from history.
+
   </Accordion>
   <Accordion title="Rotate keys regularly">
+
     Rotate API keys periodically to limit the impact of a potential leak:
 
     1. Create a new key from the dashboard
@@ -285,8 +326,10 @@ Apply these API security controls to every environment.
     4. Revoke the old key
 
     Xquik supports multiple active keys, so you can rotate without downtime.
+
   </Accordion>
   <Accordion title="Use separate keys for development & production">
+
     Create distinct API keys for each environment. This limits blast radius if a development key is compromised and records usage per environment:
 
     ```bash .env.local
@@ -300,9 +343,12 @@ Apply these API security controls to every environment.
     ```
 
     Name your keys descriptively (e.g., "Production - Backend", "Staging", "Local Dev") so you can identify them in the dashboard.
+
   </Accordion>
 </AccordionGroup>
 
 <Note>
-  **Next steps.** [Quickstart](/x-api-quickstart) for a complete setup walkthrough, or [OAuth Overview](/oauth/overview) for OAuth 2.1 integration.
+
+**Next steps.** [Quickstart](/x-api-quickstart) for a complete setup walkthrough, or [OAuth Overview](/oauth/overview) for OAuth 2.1 integration.
+
 </Note>

@@ -38,14 +38,14 @@ publishes Twitter API operations through 3 MCP tools: `docs`, `search`, and `exe
 
 Use each boundary for one responsibility.
 
-| Boundary | Framework control | Twitter agent benefit |
-| --- | --- | --- |
-| Remote MCP | `MCPStreamableHTTPTool` | Connect agents to tweet, profile, follower, and monitor routes |
-| Final response | Pydantic `response_format` | Reject malformed tweet rows and pagination state |
-| Tenant context | `header_provider` | Resolve one Xquik key for each agent run |
-| X actions | MCP `approval_mode` | Pause before the shared `execute` execution tool runs |
-| Agent handoff | `AgentSession` and typed models | Preserve IDs without copying whole transcripts |
-| Tool scope | `allowed_tools` | Expose documentation, contract search, or execution tools |
+| Boundary       | Framework control               | Twitter agent benefit                                          |
+| -------------- | ------------------------------- | -------------------------------------------------------------- |
+| Remote MCP     | `MCPStreamableHTTPTool`         | Connect agents to tweet, profile, follower, and monitor routes |
+| Final response | Pydantic `response_format`      | Reject malformed tweet rows and pagination state               |
+| Tenant context | `header_provider`               | Resolve one Xquik key for each agent run                       |
+| X actions      | MCP `approval_mode`             | Pause before the shared `execute` execution tool runs          |
+| Agent handoff  | `AgentSession` and typed models | Preserve IDs without copying whole transcripts                 |
+| Tool scope     | `allowed_tools`                 | Expose documentation, contract search, or execution tools      |
 
 Choose it for Python services requiring model-selected tool calls. Choose direct
 REST for fixed jobs without model choices.
@@ -190,14 +190,14 @@ The MCP runtime returns normalized snake_case fields through
 
 Send a precise `q` to the tweet search route. Keep it in the handoff.
 
-| Search intent | Example `q` |
-| --- | --- |
-| Framework discussions | `"Microsoft Agent Framework" MCP` |
-| One account's timeline | `from:Microsoft since:2026-07-01 until:2026-08-01` |
-| Popular Python posts | `"Twitter API" Python lang:en min_faves:25` |
-| Questions without reposts | `"tweet search agent" ? -filter:retweets` |
-| Customer support mentions | `@brand (help OR issue) -filter:retweets` |
-| Exact tweet | A numeric Tweet ID or X status URL |
+| Search intent             | Example `q`                                        |
+| ------------------------- | -------------------------------------------------- |
+| Framework discussions     | `"Microsoft Agent Framework" MCP`                  |
+| One account's timeline    | `from:Microsoft since:2026-07-01 until:2026-08-01` |
+| Popular Python posts      | `"Twitter API" Python lang:en min_faves:25`        |
+| Questions without reposts | `"tweet search agent" ? -filter:retweets`          |
+| Customer support mentions | `@brand (help OR issue) -filter:retweets`          |
+| Exact tweet               | A numeric Tweet ID or X status URL                 |
 
 Use `queryType=Latest` for chronological monitoring. Use `Top` for
 engagement-ranked research. See the [tweet search API
@@ -383,14 +383,14 @@ or post X actions.
 The tweet search contract documents these responses. Handle each status
 independently.
 
-| Status | Meaning | Agent action |
-| --- | --- | --- |
-| `400` | The search query is missing or invalid | Fix `q`; do not retry unchanged |
-| `401` | Authentication cannot complete this request | Provide an Xquik key or connect X |
-| `402` | The account lacks credits | Stop and request account action |
-| `424` | The upstream X dependency failed | Retry with bounded backoff |
-| `429` | The Twitter API rate limit applies | Wait for reset guidance, then resume the cursor |
-| `502` | The X dependency returned an invalid response | Retry later without changing IDs |
+| Status | Meaning                                       | Agent action                                    |
+| ------ | --------------------------------------------- | ----------------------------------------------- |
+| `400`  | The search query is missing or invalid        | Fix `q`; do not retry unchanged                 |
+| `401`  | Authentication cannot complete this request   | Provide an Xquik key or connect X               |
+| `402`  | The account lacks credits                     | Stop and request account action                 |
+| `424`  | The upstream X dependency failed              | Retry with bounded backoff                      |
+| `429`  | The Twitter API rate limit applies            | Wait for reset guidance, then resume the cursor |
+| `502`  | The X dependency returned an invalid response | Retry later without changing IDs                |
 
 Do not restart pagination after `429`. Preserve `next_cursor` and completed
 tweet IDs. Deduplicate by `tweet_id` after recovery.
@@ -401,36 +401,49 @@ each route's documented statuses. See [error handling](/guides/error-handling).
 ## Preserve Microsoft Agent Framework workflows and handoffs
 
 <CardGroup cols={2}>
+
   <Card title="Tweet search rows" icon="search">
+
     Store `tweet_id`, `text`, `author_username`, `created`, `url`, `has_more`, `next_cursor`, and the original `q`.
+
   </Card>
   <Card title="Profile and follower rows" icon="users">
+
     Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profile_picture`, `has_more`, `next_cursor`, and the source lookup.
+
   </Card>
   <Card title="Monitor and webhook state" icon="radio">
+
     Store `monitor_id`, `event_types`, `next_billing_at`, `webhook_id`, and `url`. Keep the one-time webhook `secret` in a secret manager.
+
   </Card>
   <Card title="Stored event replay" icon="activity">
+
     Store `event_id`, `type`, `monitor_id`, `occurred_at`, `has_more`, `next_cursor`, and the requested `cursor` value.
+
   </Card>
   <Card title="Follower export jobs" icon="file-spreadsheet">
+
     Store `extraction_id`, `status`, `poll`, and `export_after_complete`. Poll before loading CSV, JSON, or XLSX rows.
+
   </Card>
   <Card title="Tweets and replies" icon="send">
+
     Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `status`, `charged_credits`, and `poll`. Never resend a pending write.
+
   </Card>
 </CardGroup>
 
 ## Choose MCP or the direct REST API
 
-| Requirement | Microsoft Agent Framework with MCP | Direct REST API |
-| --- | --- | --- |
-| Natural-language tweet research | Strong fit | Write route selection yourself |
-| Microsoft agent sessions | Native fit | Add session orchestration |
-| Strict scheduled follower export | Extra model step | Strong fit |
-| Human-approved tweet posting | Function approval flow | Build approval state yourself |
-| Predictable latency and cost | Less predictable | More predictable |
-| Typed final handoff | Pydantic `response_format` | SDK or Pydantic model |
+| Requirement                      | Microsoft Agent Framework with MCP | Direct REST API                |
+| -------------------------------- | ---------------------------------- | ------------------------------ |
+| Natural-language tweet research  | Strong fit                         | Write route selection yourself |
+| Microsoft agent sessions         | Native fit                         | Add session orchestration      |
+| Strict scheduled follower export | Extra model step                   | Strong fit                     |
+| Human-approved tweet posting     | Function approval flow             | Build approval state yourself  |
+| Predictable latency and cost     | Less predictable                   | More predictable               |
+| Typed final handoff              | Pydantic `response_format`         | SDK or Pydantic model          |
 
 Use MCP for real-time research across related Twitter API operations. Use REST
 for fixed routes, scheduled exports, or latency-sensitive services.
@@ -440,13 +453,13 @@ for fixed routes, scheduled exports, or latency-sensitive services.
 Use current 1.13 APIs. Several preview-era examples use removed names.
 Microsoft Agent Framework unifies lessons from Semantic Kernel and AutoGen.
 
-| Preview-era pattern | Current pattern |
-| --- | --- |
-| Preview agent class | `Agent(...)` |
-| Legacy client keyword | `client=` |
-| Legacy model identifier | Provider client's `model=` |
-| Dedicated streaming method | `run(..., stream=True)` |
-| Prompt-only JSON | Pydantic `response_format` and `result.value` |
+| Preview-era pattern        | Current pattern                                    |
+| -------------------------- | -------------------------------------------------- |
+| Preview agent class        | `Agent(...)`                                       |
+| Legacy client keyword      | `client=`                                          |
+| Legacy model identifier    | Provider client's `model=`                         |
+| Dedicated streaming method | `run(..., stream=True)`                            |
+| Prompt-only JSON           | Pydantic `response_format` and `result.value`      |
 | Static shared auth headers | `header_provider` and `function_invocation_kwargs` |
 
 Current releases also scope runtime MCP headers to matching origins. Keep the
@@ -456,13 +469,13 @@ framework updated for those authentication fixes.
 
 We checked these versions on August 3, 2026.
 
-| Package | Checked compatible version | Supported range used here |
-| --- | --- | --- |
-| `agent-framework` | 1.13.0 | `==1.13.0` |
-| `agent-framework-core` | 1.13.0 | Installed by the meta-package |
-| `agent-framework-openai` | 1.12.0 | Installed by the meta-package |
-| `mcp` | 1.29.0 | `>=1.24,<2` |
-| `pydantic` | 2.13.4 | `>=2,<3` |
+| Package                  | Checked compatible version | Supported range used here     |
+| ------------------------ | -------------------------- | ----------------------------- |
+| `agent-framework`        | 1.13.0                     | `==1.13.0`                    |
+| `agent-framework-core`   | 1.13.0                     | Installed by the meta-package |
+| `agent-framework-openai` | 1.12.0                     | Installed by the meta-package |
+| `mcp`                    | 1.29.0                     | `>=1.24,<2`                   |
+| `pydantic`               | 2.13.4                     | `>=2,<3`                      |
 
 Pin a tested release. Review Microsoft Agent Framework release notes before
 widening the range.

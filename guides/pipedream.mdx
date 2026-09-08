@@ -2,7 +2,24 @@
 title: "Pipedream automation for Twitter API & webhooks"
 sidebarTitle: "Pipedream"
 description: "Build Pipedream workflow automation for tweet search, follower exports, Twitter monitors, signed webhooks, scheduled reads, and approved posts through Xquik."
-keywords: ["pipedream automation", "pipedream workflow automation", "pipedream automation platform", "pipedream twitter", "pipedream twitter integration", "twitter automation", "twitter webhook", "workflow automation", "serverless api integration", "event driven workflows", "custom api integration", "custom javascript automation", "twitter automation workflow", "tweet search automation", "twitter monitor webhook"]
+keywords:
+  [
+    "pipedream automation",
+    "pipedream workflow automation",
+    "pipedream automation platform",
+    "pipedream twitter",
+    "pipedream twitter integration",
+    "twitter automation",
+    "twitter webhook",
+    "workflow automation",
+    "serverless api integration",
+    "event driven workflows",
+    "custom api integration",
+    "custom javascript automation",
+    "twitter automation workflow",
+    "tweet search automation",
+    "twitter monitor webhook",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -82,23 +99,36 @@ pd login
 ## Component shape
 
 <CardGroup cols={2}>
+
   <Card title="App" icon="app-window">
+
     `components/xquik/app/xquik.app.ts`
+
   </Card>
   <Card title="Auth" icon="key-round">
+
     API key prop injected as `x-api-key`.
+
   </Card>
   <Card title="Base URL" icon="link">
+
     `https://xquik.com/api/v1`
+
   </Card>
   <Card title="Actions" icon="play">
+
     Get Tweet, Search Tweets, Get User, Get Trends, Create Tweet, Create Extraction, Create Monitor, and Create Webhook.
+
   </Card>
   <Card title="Sources" icon="radio">
+
     Monitor Event Webhook and Extraction Completed Polling.
+
   </Card>
   <Card title="Shared helper" icon="workflow">
+
     JSON requests, structured Xquik errors, and `Retry-After` handling.
+
   </Card>
 </CardGroup>
 
@@ -195,29 +225,46 @@ This strategy protects Slack alerts, CRM rows, and warehouse loads.
 ## Starter actions
 
 <CardGroup cols={2}>
+
   <Card title="Get tweet" icon="message-square">
+
     Call `GET /x/tweets/{id}` and return one tweet.
+
   </Card>
   <Card title="Search tweets" icon="search">
+
     Call `GET /x/tweets/search` and return an array of tweets.
+
   </Card>
   <Card title="Get user" icon="user">
+
     Call `GET /x/users/{id}` and return one user.
+
   </Card>
   <Card title="Get trends" icon="trending-up">
+
     Call `GET /x/trends` and return a trend list.
+
   </Card>
   <Card title="Create tweet" icon="send">
+
     Call `POST /x/tweets` and return created tweet metadata.
+
   </Card>
   <Card title="Create extraction" icon="database">
+
     Call `POST /extractions` and return the job ID and status.
+
   </Card>
   <Card title="Create monitor" icon="radio">
+
     Call `POST /monitors` and return the monitor ID and status.
+
   </Card>
   <Card title="Create webhook" icon="webhook">
+
     Call `POST /webhooks` and return the webhook ID and signing secret.
+
   </Card>
 </CardGroup>
 
@@ -261,35 +308,56 @@ Pipedream exports and source metadata pass stable fields between workflow steps.
 Destinations should receive normalized fields, not complete API responses.
 
 <CardGroup cols={2}>
+
   <Card title="Search tweets action" icon="search">
+
     Export `tweet_count`, `has_more`, and `next_cursor`; return tweet rows with `tweet_id`, `text`, `author_username`, `created_at`, and optional `url`.
+
   </Card>
   <Card title="User profile action" icon="users">
+
     Export `user_id`, `username`, `name`, `followers`, `verified`, and `profile_picture`; return one profile row for `GET /x/users/{id}`.
+
   </Card>
   <Card title="Trend rows" icon="trending-up">
+
     Export `trend_count` and `woeid`; return trend rows with `name`, `rank`, `query`, and `description`, then keep the selected region with workflow event metadata.
+
   </Card>
   <Card title="Tweet or reply write" icon="send">
+
     Send a unique `Idempotency-Key`. Export `id`, `status`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+
   </Card>
   <Card title="Media attachments" icon="image">
+
     For tweets or replies, pass public URLs in `media` and export `tweet_id` or `write_action_id`. For DMs, upload first, pass one `media_id` in `media_ids`, export `message_id`, and leave `reply_to_message_id` unset.
+
   </Card>
   <Card title="Monitor and webhook setup" icon="radio">
+
     Export monitor `id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`; export webhook `id`, `url`, `eventTypes`, and one-time `secret`. For Pipedream data stores, map production `deliveryId` to `delivery_id` for receiver retry de-dupe and `streamEventId` to `stream_event_id` when one monitor event should process once across endpoint changes.
+
   </Card>
   <Card title="Monitor event source" icon="fingerprint">
+
     Emit `deliveryId` for endpoint-level retry de-dupe, `streamEventId` for event-level de-dupe across endpoint changes, and `occurredAt` as `ts`.
+
   </Card>
   <Card title="Stored event replay" icon="activity">
+
     Call `GET /api/v1/events` with `cursor` when a workflow needs replay. Export `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, and `next_cursor`.
+
   </Card>
   <Card title="Receiver acceptance" icon="copy-check">
+
     Return `2xx` after accepting duplicate `deliveryId` or `streamEventId`; keep endpoint signing values, raw request body, raw signature, and full headers out of step exports, logs, data stores, Slack messages, CRM rows, and retry queues.
+
   </Card>
   <Card title="Extraction polling source" icon="database">
+
     Emit completed job `id`, `tool_type`, and `status`; fetch detail rows and carry `has_more` plus `next_cursor` into warehouse batches.
+
   </Card>
 </CardGroup>
 
@@ -307,26 +375,41 @@ Setup flow:
 Payload mapping:
 
 <CardGroup cols={3}>
+
   <Card title="Event ID" icon="fingerprint">
+
     Map Pipedream `id` to `streamEventId` for event-level de-dupe, or `deliveryId` for endpoint-level de-dupe.
+
   </Card>
   <Card title="Event type" icon="bell">
+
     Map `eventType` to route `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.retweet` events.
+
   </Card>
   <Card title="Occurred at" icon="calendar-clock">
+
     Map `occurredAt` as the event timestamp.
+
   </Card>
   <Card title="Username" icon="at-sign">
+
     Map `username` for account monitor events.
+
   </Card>
   <Card title="Tweet ID" icon="hash">
+
     Map `data.id` as the tweet identifier.
+
   </Card>
   <Card title="Text" icon="type">
+
     Map `data.text` as the tweet body.
+
   </Card>
   <Card title="Author username" icon="user-round">
+
     Map `data.author.userName` when present. Use `username` as the monitored-account fallback.
+
   </Card>
 </CardGroup>
 
@@ -399,51 +482,78 @@ export default {
 ### Search tweets to Slack
 
 <CardGroup cols={2}>
+
   <Card title="Schedule trigger" icon="calendar-clock">
+
     Run the workflow on the reporting cadence.
+
   </Card>
   <Card title="Xquik search tweets" icon="search">
+
     Call the Search Tweets action and return recent matching posts.
+
   </Card>
   <Card title="Engagement filter" icon="funnel">
+
     Keep only tweets that meet the minimum engagement threshold.
+
   </Card>
   <Card title="Slack send message" icon="message-square">
+
     Send the selected tweet text, author, and link to the channel.
+
   </Card>
 </CardGroup>
 
 ### Monitor events to CRM
 
 <CardGroup cols={2}>
+
   <Card title="Monitor event source" icon="radio">
+
     Receive Xquik monitor events from the webhook source.
+
   </Card>
   <Card title="Event type filter" icon="funnel">
+
     Route `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.retweet` events separately.
+
   </Card>
   <Card title="Get user enrichment" icon="user">
+
     Enrich the event with the Get User action before CRM routing.
+
   </Card>
   <Card title="CRM upsert" icon="database">
+
     Upsert by user ID to avoid duplicate account records.
+
   </Card>
 </CardGroup>
 
 ### Extraction to warehouse
 
 <CardGroup cols={2}>
+
   <Card title="Create extraction" icon="database">
+
     Start the extraction job with `POST /extractions`.
+
   </Card>
   <Card title="Extraction completed source" icon="radio">
+
     Poll for completed jobs before loading rows downstream.
+
   </Card>
   <Card title="Fetch extraction detail" icon="file-text">
+
     Fetch the completed extraction detail and result rows.
+
   </Card>
   <Card title="Warehouse destination" icon="database">
+
     Send normalized rows to the warehouse destination.
+
   </Card>
 </CardGroup>
 
@@ -479,26 +589,41 @@ They should not automate unsolicited replies, follows, or direct messages.
 Add focused tests before sharing the component package:
 
 <CardGroup cols={2}>
+
   <Card title="Auth injection" icon="shield-check">
+
     Every request includes `x-api-key` and never logs the key.
+
   </Card>
   <Card title="Invalid key" icon="key-round">
+
     `401` produces "Authentication failed. Check the Xquik API key."
+
   </Card>
   <Card title="Rate limit" icon="timer">
+
     `429` includes `Retry-After` when present.
+
   </Card>
   <Card title="Search action" icon="search">
+
     Returns an array with stable tweet IDs.
+
   </Card>
   <Card title="Create webhook" icon="webhook">
+
     Sends callback URL and selected event types.
+
   </Card>
   <Card title="Webhook source" icon="radio">
+
     Emits one event per payload with a stable ID.
+
   </Card>
   <Card title="Polling source" icon="database">
+
     Emits only completed extraction jobs.
+
   </Card>
 </CardGroup>
 

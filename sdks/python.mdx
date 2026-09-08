@@ -2,7 +2,17 @@
 title: "Python SDK for tweet search, exports & X automation"
 sidebarTitle: Python
 description: "Use the Xquik Python SDK to search tweets, export CSV, JSON Lines, or XLSX, post tweets, upload media, send DMs, and build X API workers. See code examples."
-keywords: ["Python SDK", "Twitter scraper Python", "X API Python", "tweet search Python", "CSV export", "JSON export", "XLSX export", "async SDK"]
+keywords:
+  [
+    "Python SDK",
+    "Twitter scraper Python",
+    "X API Python",
+    "tweet search Python",
+    "CSV export",
+    "JSON export",
+    "XLSX export",
+    "async SDK",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -17,10 +27,10 @@ Use the Python SDK for typed sync or async access to Xquik from scripts, noteboo
 
 Use this page when Python must search tweets or export them to CSV, JSON Lines, or XLSX. It can export followers, post tweets, upload media, send DMs, monitor tweets, or load records into pandas, a warehouse, a queue, CRM, or an agent.
 
-| Python task | SDK call | Save |
-| --- | --- | --- |
-| Search tweets | `client.x.tweets.search` | `next_cursor` |
-| Export followers | `client.extractions.run` | `job.id` |
+| Python task      | SDK call                 | Save          |
+| ---------------- | ------------------------ | ------------- |
+| Search tweets    | `client.x.tweets.search` | `next_cursor` |
+| Export followers | `client.extractions.run` | `job.id`      |
 
 ## Install
 
@@ -97,7 +107,7 @@ asyncio.run(main())
 
 ## Workflow: search tweets to CSV, JSON Lines, or XLSX
 
-This job is for data scripts, notebooks, scheduled workers, and agent tools that need tweet search results in a durable handoff file. It calls `GET /x/tweets/search` through `client.x.tweets.search`, uses the generated `TweetSearchParams` shape, and writes analyst-friendly CSV plus JSON Lines for queues, warehouses, and replayable processing.
+Search with `client.x.tweets.search`, `GET /x/tweets/search`, and generated `TweetSearchParams`. Save CSV and JSON Lines for notebooks, workers, agents, queues, warehouses, and replay.
 
 ```python
 import csv
@@ -185,23 +195,36 @@ with csv_output.open("w", newline="", encoding="utf-8") as csv_file, jsonl_outpu
 The method accepts the same query inputs as the REST endpoint:
 
 <CardGroup cols={2}>
+
   <Card title="q" icon="search">
+
     Python argument `q` maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.
+
   </Card>
   <Card title="limit" icon="list">
+
     Python argument `limit` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `page.has_next_page` is true, keep the same `q`, filters, `query_type`, and `limit` when you continue with `page.next_cursor`.
+
   </Card>
   <Card title="cursor" icon="arrow-right">
+
     Python argument `cursor` maps to REST `cursor`. Pass the opaque cursor from `page.next_cursor` to request the next page.
+
   </Card>
   <Card title="since_time" icon="clock">
+
     Python argument `since_time` maps to REST `sinceTime`. Use it as the ISO 8601 lower time bound.
+
   </Card>
   <Card title="until_time" icon="clock">
+
     Python argument `until_time` maps to REST `untilTime`. Use it as the ISO 8601 upper time bound.
+
   </Card>
   <Card title="query_type" icon="sliders-horizontal">
+
     Python argument `query_type` maps to REST `queryType`. Use `Latest` for chronological results or `Top` for engagement-ranked results.
+
   </Card>
 </CardGroup>
 
@@ -210,14 +233,21 @@ The method accepts the same query inputs as the REST endpoint:
 `client.x.tweets.search` returns a `PaginatedTweets` Pydantic model:
 
 <CardGroup cols={2}>
+
   <Card title="page.tweets" icon="message-square-text">
+
     JSON field `tweets`. Contains `SearchTweet` records with `id`, `text`, optional `author`, `created_at`, `like_count`, `reply_count`, `retweet_count`, `quote_count`, `bookmark_count`, `view_count`, and `is_note_tweet` when available.
+
   </Card>
   <Card title="page.has_next_page" icon="circle-check">
+
     Python field `page.has_next_page`. JSON field `has_next_page`. Tells your script whether another page exists.
+
   </Card>
   <Card title="page.next_cursor" icon="arrow-right">
+
     JSON field `next_cursor`. Store it only when `page.has_next_page` is true. For bounded pulls that return fewer tweets than `limit`, pass it back as `cursor` with the same query, filters, `query_type`, and `limit`.
+
   </Card>
 </CardGroup>
 
@@ -228,7 +258,9 @@ Project `page.tweets` into CSV rows for analysts and JSON Lines rows for queues 
 Use this workflow when a Python script, notebook, worker, or agent tool needs an owned follower list for a CRM import, warehouse load, analyst CSV file, XLSX workbook, or resumable JSON handoff. It calls `POST /extractions/estimate` through `client.extractions.estimate_cost`, creates the job with `client.extractions.run`, reads saved rows with `client.extractions.retrieve`, and downloads files with `client.extractions.export_results`.
 
 <Info>
+
 `client.extractions.run` returns the queued `202 Accepted` receipt from `POST /extractions`: REST `id`, `toolType`, and `status: "running"` as Python `job.id`, `job.tool_type`, and `job.status`. Store `job.id` immediately, then poll `client.extractions.retrieve` before reading pages or calling `client.extractions.export_results`. Credit reservation happens after the job starts. If available credits changed since `estimate_cost`, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
+
 </Info>
 
 ```python
@@ -455,26 +487,41 @@ The client retries connection errors, 408, 409, 429, and 5xx responses by defaul
 All SDK exceptions inherit from `x_twitter_scraper.APIError`.
 
 <CardGroup cols={2}>
+
   <Card title="400 Bad request" icon="triangle-alert">
+
     Throws `BadRequestError`.
+
   </Card>
   <Card title="401 Unauthenticated" icon="lock">
+
     Throws `AuthenticationError`.
+
   </Card>
   <Card title="403 Permission denied" icon="shield">
+
     Throws `PermissionDeniedError`.
+
   </Card>
   <Card title="404 Not found" icon="circle-x">
+
     Throws `NotFoundError`.
+
   </Card>
   <Card title="422 Unprocessable entity" icon="triangle-alert">
+
     Throws `UnprocessableEntityError`.
+
   </Card>
   <Card title="429 Rate limited" icon="gauge">
+
     Throws `RateLimitError`.
+
   </Card>
   <Card title="5xx server error" icon="server">
+
     Throws `InternalServerError`.
+
   </Card>
 </CardGroup>
 

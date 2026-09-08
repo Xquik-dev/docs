@@ -2,7 +2,17 @@
 title: "Twitter media uploads for tweets & DMs | tweet API"
 sidebarTitle: "Media uploads"
 description: "Upload images, GIFs, WebP, AVIF, or MP4 by file or URL. Use mediaUrl for tweets and replies, or mediaId for one DM attachment. Includes exact API steps."
-keywords: ["media upload", "upload media", "Twitter media upload", "X media upload", "post tweets with media", "send DM with media", "mediaUrl", "mediaId"]
+keywords:
+  [
+    "media upload",
+    "upload media",
+    "Twitter media upload",
+    "X media upload",
+    "post tweets with media",
+    "send DM with media",
+    "mediaUrl",
+    "mediaId",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -14,54 +24,78 @@ Use this workflow when a product, support, CRM, or AI agent system needs a hoste
 If you already have public image URLs or a public MP4 video URL for a tweet or reply, skip `POST /x/media` and pass those URLs directly in the `media` array on `POST /x/tweets`. Send up to 4 images or exactly 1 MP4 video up to 100 MB. Use `POST /x/media` when you need Xquik to host a local file, validate a generated media URL, or produce a `mediaId` for a DM attachment.
 
 <Callout icon="video" color="#2563eb">
-  **Need to post an MP4 tweet?** If the MP4 is already a public HTTPS URL, skip upload and call [Create Tweet](/api-reference/x-write/create-tweet) with `media: ["https://example.com/video.mp4"]`. Use `POST /x/media` first only when Xquik must host a local file or validate a generated URL, then pass the returned `mediaUrl` to `POST /x/tweets`.
+
+**Need to post an MP4 tweet?** If the MP4 is already a public HTTPS URL, skip upload and call [Create Tweet](/api-reference/x-write/create-tweet) with `media: ["https://example.com/video.mp4"]`. Use `POST /x/media` first only when Xquik must host a local file or validate a generated URL, then pass the returned `mediaUrl` to `POST /x/tweets`.
+
 </Callout>
 
 ## When to use this workflow
 
 <CardGroup cols={2}>
+
   <Card title="Upload a local file" icon="paperclip">
+
     Upload a local image, GIF, or MP4 with `POST /x/media` and `multipart/form-data`.
+
   </Card>
 
   <Card title="Upload generated media" icon="image">
+
     Upload AI-generated media from a URL with `POST /x/media` and `application/json`.
+
   </Card>
 
   <Card title="Post tweets with public media URLs" icon="send">
+
     Pass the URLs directly in the `media` array on `POST /x/tweets`.
+
   </Card>
 
   <Card title="Post tweets with media uploaded through Xquik" icon="image">
+
     Pass returned `mediaUrl` in the `media` array on `POST /x/tweets`.
+
   </Card>
 
   <Card title="Post tweet replies with uploaded media" icon="message-square">
+
     Pass `mediaUrl` plus `reply_to_tweet_id` on `POST /x/tweets`.
+
   </Card>
 
   <Card title="Send a DM with uploaded media" icon="message-square">
+
     Pass returned `mediaId` as the only item in `media_ids` on `POST /x/dm/{userId}`.
+
   </Card>
 </CardGroup>
 
 ## Data you get
 
 <CardGroup cols={2}>
+
   <Card title="DM attachment ID" icon="paperclip">
+
     `mediaId` is the uploaded media ID for one-item DM `media_ids` arrays. Media IDs are valid for 24 hours after upload.
+
   </Card>
 
   <Card title="Tweet media URL" icon="image">
+
     `mediaUrl` is the public media URL for tweet `media` arrays.
+
   </Card>
 
   <Card title="Upload confirmation" icon="circle-check">
+
     `success` is `true` after upload completes.
+
   </Card>
 
   <Card title="Tweet confirmation" icon="send">
+
     `tweetId` is returned by `POST /x/tweets` after the media tweet or reply is confirmed.
+
   </Card>
 </CardGroup>
 
@@ -131,28 +165,41 @@ write. Keep the field boundary explicit: tweets and replies use public
 ```
 
 <CardGroup cols={2}>
+
   <Card title="Upload checkpoint" icon="paperclip">
+
     Store returned `mediaId`, `mediaUrl`, `success`, source URL or filename, and the upload endpoint.
+
   </Card>
 
   <Card title="Tweet URL checkpoint" icon="send">
+
     Store the public `mediaUrl` in `media`, plus returned `tweetId`, `chargedCredits`, and optional `writeActionId`.
+
   </Card>
 
   <Card title="Reply URL checkpoint" icon="message-square">
+
     Store `reply_to_tweet_id`, public `mediaUrl`, returned `tweetId`, and pending confirmation state when present.
+
   </Card>
 
   <Card title="DM ID checkpoint" icon="mail">
+
     Store exactly one uploaded `mediaId` in `media_ids`, plus returned `messageId` and recipient ID.
+
   </Card>
 
   <Card title="Field boundary" icon="split">
+
     Reject tweet handoffs that put uploaded media IDs in `media` or send `media_ids` to `POST /x/tweets`.
+
   </Card>
 
   <Card title="Audit row" icon="file-check">
+
     Store upload, tweet, reply, and DM IDs together so downstream systems can reconcile each media path.
+
   </Card>
 </CardGroup>
 
@@ -182,24 +229,35 @@ curl -X POST https://xquik.com/api/v1/x/media \
 ### URL upload checklist
 
 <CardGroup cols={2}>
+
   <Card title="HTTPS URL" icon="lock">
+
     Non-HTTPS URLs return `422 media_download_failed`.
+
   </Card>
 
   <Card title="Public host" icon="globe">
+
     Private or reserved IP targets are rejected.
+
   </Card>
 
   <Card title="Supported content type" icon="file-image">
+
     AVIF, GIF, JPEG, PNG, WebP, and MP4 are accepted.
+
   </Card>
 
   <Card title="Size cap" icon="gauge">
+
     Larger URL downloads than 15,728,640 bytes return `422 media_download_failed`.
+
   </Card>
 
   <Card title="30-second response window" icon="timer">
+
     Slow origins can time out before upload starts.
+
   </Card>
 </CardGroup>
 
@@ -337,57 +395,83 @@ curl -X POST https://xquik.com/api/v1/x/media \
 Upload media costs 10 credits per upload call. Posting a tweet or reply is a separate 30-credit create-tweet call before media surcharges; sending the DM is a separate 10-credit write call.
 
 <CardGroup cols={2}>
+
   <Card title="Invalid input" icon="circle-alert">
+
     Status `400`. Error `invalid_input`. Check `account`, file type, file presence, URL presence, and `is_long_video`.
+
   </Card>
 
   <Card title="Billing or credits" icon="credit-card">
+
     Status `402`. Errors `no_subscription` or `insufficient_credits`. Subscribe or top up credits before retrying.
+
   </Card>
 
   <Card title="Reconnect account" icon="refresh-cw">
+
     Status `403`. Error `account_needs_reauth`. Reconnect the X account from the dashboard.
+
   </Card>
 
   <Card title="Media download failed" icon="triangle-alert">
+
     Status `422`. Error `media_download_failed`. Use an HTTPS URL that returns a supported media file, or switch to multipart upload.
+
   </Card>
 
   <Card title="Rate limit or temporary failure" icon="timer-reset">
+
     Status `429` or `503`. Retry with exponential backoff and respect `Retry-After` when present.
+
   </Card>
 </CardGroup>
 
 ## Handoff checklist
 
 <CardGroup cols={2}>
+
   <Card title="Tweet workflow" icon="send">
+
     Save `mediaUrl` and pass it to `POST /x/tweets` as `media`.
+
   </Card>
 
   <Card title="Reply workflow" icon="message-square">
+
     Save the parent tweet ID, `mediaUrl`, returned `tweetId`, and any `writeActionId`.
+
   </Card>
 
   <Card title="DM workflow" icon="mail">
+
     Save `mediaId` and pass it to `POST /x/dm/{userId}` as one `media_ids` item.
+
   </Card>
 
   <Card title="JSON Lines" icon="braces">
+
     Store upload, tweet/reply, or DM handoff rows in `xquik-media-handoff.jsonl` with `media_id` and `media_url`.
+
   </Card>
 
   <Card title="Agent workflow" icon="bot">
+
     Use JSON URL upload only when the agent needs Xquik to validate or host a
     generated URL, or needs a DM `mediaId`. For tweet-only public URLs, pass
     them directly to `POST /x/tweets`.
+
   </Card>
 
   <Card title="File workflow" icon="folder-open">
+
     Prefer multipart upload when your app owns the file bytes.
+
   </Card>
 </CardGroup>
 
 <Note>
-  **Related.** [Upload Media](/api-reference/x-write/upload-media) &middot; [Create Tweet](/api-reference/x-write/create-tweet) &middot; [Send Direct Message](/api-reference/x-write/send-dm)
+
+**Related.** [Upload Media](/api-reference/x-write/upload-media) &middot; [Create Tweet](/api-reference/x-write/create-tweet) &middot; [Send Direct Message](/api-reference/x-write/send-dm)
+
 </Note>

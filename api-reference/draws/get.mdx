@@ -3,15 +3,28 @@ title: "Twitter giveaway winner API & draw verification"
 sidebarTitle: "Get draw"
 description: "Retrieve one Twitter giveaway draw by ID. Verify source tweet metrics, entry counts, ordered primary and backup winners, timestamps, and result status."
 api: "GET /draws/{id}"
-keywords: ["Twitter giveaway winner API", "Twitter giveaway verification", "giveaway draw ID", "past giveaway winners", "X giveaway results", "backup winner", "tweet giveaway results"]
+keywords:
+  [
+    "Twitter giveaway winner API",
+    "Twitter giveaway verification",
+    "giveaway draw ID",
+    "past giveaway winners",
+    "X giveaway results",
+    "backup winner",
+    "tweet giveaway results",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="200" id="response-draws-get-200">
+
     ```json
     {
       "draw": {
@@ -24,27 +37,33 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "winners": []
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-draws-get-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
+
   </Tab>
 
   <Tab title="404" id="response-draws-get-404">
+
     ```json
     {
       "error": "not_found",
       "message": "Resource not found."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-draws-get-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -52,8 +71,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "retryAfter": 60
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
@@ -72,25 +93,36 @@ Use this route to review one completed or pending draw. Keep its draw ID with
 winner announcements, support records, and exports.
 
 <Callout icon="circle-check" color="#16a34a">
-  **Free** - does not consume credits
+
+**Free** - does not consume credits
+
 </Callout>
 
 <CardGroup cols={2}>
+
   <Card title="Source tweet snapshot" icon="message-square-text">
+
     Read the tweet ID, URL, text, author, and engagement counts captured for
     the draw.
+
   </Card>
   <Card title="Candidate counts" icon="users-round">
+
     Compare `totalEntries` with `validEntries`. Neither value reports the
     number of winners.
+
   </Card>
   <Card title="Ordered winners" icon="trophy">
+
     Preserve `position`, `authorUsername`, `tweetId`, and `isBackup` for every
     selected account.
+
   </Card>
   <Card title="Draw timing" icon="clock-3">
+
     Store `createdAt` for creation. Store `drawnAt` when winner selection has
     finished.
+
   </Card>
 </CardGroup>
 
@@ -99,86 +131,87 @@ draw ID. Use [Export Draw](/api-reference/draws/export) for winner or entry
 files.
 
 <CodeGroup>
-  ```bash cURL
-  curl --fail-with-body https://xquik.com/api/v1/draws/f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345 \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
-  ```
 
-  ```javascript Node.js
-  const drawId = "f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345";
-  const response = await fetch(`https://xquik.com/api/v1/draws/${drawId}`, {
-    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
-  });
-  const result = await response.json();
-  if (!response.ok) {
-    throw new Error(result.message || "Giveaway draw request failed.");
-  }
+```bash cURL
+curl --fail-with-body https://xquik.com/api/v1/draws/f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345 \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
 
-  const verification = {
-    draw_id: result.draw.id,
-    tweet_id: result.draw.tweetId,
-    tweet_url: result.draw.tweetUrl,
-    status: result.draw.status,
-    total_entries: result.draw.totalEntries,
-    valid_entries: result.draw.validEntries,
-    created_at: result.draw.createdAt,
-    drawn_at: result.draw.drawnAt || null,
-    primary_winners: result.winners.filter((winner) => !winner.isBackup),
-    backup_winners: result.winners.filter((winner) => winner.isBackup),
-  };
-  process.stdout.write(`${JSON.stringify(verification)}\n`);
-  ```
+```javascript Node.js
+const drawId = "f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345";
+const response = await fetch(`https://xquik.com/api/v1/draws/${drawId}`, {
+  headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+});
+const result = await response.json();
+if (!response.ok) {
+  throw new Error(result.message || "Giveaway draw request failed.");
+}
 
-  ```python Python
-  import requests
+const verification = {
+  draw_id: result.draw.id,
+  tweet_id: result.draw.tweetId,
+  tweet_url: result.draw.tweetUrl,
+  status: result.draw.status,
+  total_entries: result.draw.totalEntries,
+  valid_entries: result.draw.validEntries,
+  created_at: result.draw.createdAt,
+  drawn_at: result.draw.drawnAt || null,
+  primary_winners: result.winners.filter((winner) => !winner.isBackup),
+  backup_winners: result.winners.filter((winner) => winner.isBackup),
+};
+process.stdout.write(`${JSON.stringify(verification)}\n`);
+```
 
-  draw_id = "f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345"
-  response = requests.get(
-      f"https://xquik.com/api/v1/draws/{draw_id}",
-      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-  )
-  response.raise_for_status()
-  result = response.json()
-  verification = {
-      "draw_id": result["draw"]["id"],
-      "tweet_id": result["draw"]["tweetId"],
-      "tweet_url": result["draw"]["tweetUrl"],
-      "status": result["draw"]["status"],
-      "primary_winners": [
-          winner for winner in result["winners"] if not winner["isBackup"]
-      ],
-      "backup_winners": [
-          winner for winner in result["winners"] if winner["isBackup"]
-      ],
-  }
-  print(verification)
-  ```
+```python Python
+import requests
 
-  ```go Go
-  package main
+draw_id = "f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345"
+response = requests.get(
+    f"https://xquik.com/api/v1/draws/{draw_id}",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+)
+response.raise_for_status()
+result = response.json()
+verification = {
+    "draw_id": result["draw"]["id"],
+    "tweet_id": result["draw"]["tweetId"],
+    "tweet_url": result["draw"]["tweetUrl"],
+    "status": result["draw"]["status"],
+    "primary_winners": [
+        winner for winner in result["winners"] if not winner["isBackup"]
+    ],
+    "backup_winners": [
+        winner for winner in result["winners"] if winner["isBackup"]
+    ],
+}
+print(verification)
+```
 
-  import (
-  	"fmt"
-  	"io"
-  	"log"
-  	"net/http"
-  )
+```go Go
+package main
 
-  func main() {
-    drawID := "f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345"
-  	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/draws/"+drawID, nil)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+import (
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
 
-  	resp, err := http.DefaultClient.Do(req)
-  	if err != nil {
-  		log.Fatal(err)
-  	}
-  	defer resp.Body.Close()
+func main() {
+  drawID := "f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345"
+	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/draws/"+drawID, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 
-  	body, err := io.ReadAll(resp.Body)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -186,8 +219,9 @@ files.
 		log.Fatalf("giveaway draw failed with %d: %s", resp.StatusCode, string(body))
 	}
 	fmt.Println(string(body))
-  }
-  ```
+}
+```
+
 </CodeGroup>
 
 ## Interpret Twitter giveaway winner rows
@@ -196,21 +230,30 @@ Winner order is part of the result. Preserve each 1-indexed `position` instead
 of sorting by username or tweet ID.
 
 <CardGroup cols={2}>
+
   <Card title="Primary winner" icon="medal">
+
     `isBackup` is `false`. Use the original `position` in announcements and
     fulfillment records.
+
   </Card>
   <Card title="Backup winner" icon="shield-plus">
+
     `isBackup` is `true`. Keep the row separate until replacement approval is
     recorded.
+
   </Card>
   <Card title="Winning reply" icon="reply">
+
     `tweetId` identifies the selected reply. Store it beside the winner's X
     username.
+
   </Card>
   <Card title="Winner account" icon="at-sign">
+
     `authorUsername` identifies the selected X account at draw time. Keep the
     tweet ID as the stable join value.
+
   </Card>
 </CardGroup>
 
@@ -260,17 +303,23 @@ on every row. Never infer filter rules from entry counts.
 ## Path parameters
 
 <ParamField path="id" type="string" required>
-  The draw public ID. Returned when you [create a draw](/api-reference/draws/create) or [list draws](/api-reference/draws/twitter-giveaway-history).
+
+The draw public ID. Returned when you [create a draw](/api-reference/draws/create) or [list draws](/api-reference/draws/twitter-giveaway-history).
+
 </ParamField>
 
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Send your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+
+Send your Xquik API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+
 </ParamField>
 
 <ParamField header="Authorization" type="string">
-  Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.
+
+Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.
+
 </ParamField>
 
 ## Response
@@ -278,31 +327,71 @@ on every row. Never infer filter rules from entry counts.
 ### 200 OK
 
 <ResponseField name="draw" type="object">
-  Draw details including tweet metadata.
-  **Draw object fields.**
-    <ResponseField name="id" type="string">Draw public ID returned by Xquik.</ResponseField>
-    <ResponseField name="tweetId" type="string">X tweet ID.</ResponseField>
-    <ResponseField name="tweetUrl" type="string">Original tweet URL.</ResponseField>
-    <ResponseField name="tweetText" type="string">Full text content of the tweet.</ResponseField>
-    <ResponseField name="tweetAuthorUsername" type="string">Username of the tweet author.</ResponseField>
-    <ResponseField name="tweetLikeCount" type="number">Like count at time of draw.</ResponseField>
-    <ResponseField name="tweetRetweetCount" type="number">Retweet count at time of draw.</ResponseField>
-    <ResponseField name="tweetReplyCount" type="number">Reply count at time of draw.</ResponseField>
-    <ResponseField name="tweetQuoteCount" type="number">Quote tweet count at time of draw.</ResponseField>
-    <ResponseField name="status" type="string">Draw status (e.g. `completed`).</ResponseField>
-    <ResponseField name="totalEntries" type="number">Inspected candidate entries.</ResponseField>
-    <ResponseField name="validEntries" type="number">Entries that passed all filters.</ResponseField>
-    <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
-    <ResponseField name="drawnAt" type="string">ISO 8601 timestamp of when winners were selected. Present only for completed draws.</ResponseField>
+
+Draw details including tweet metadata.
+**Draw object fields.**
+
+<ResponseField name="id" type="string">
+  Draw public ID returned by Xquik.
+</ResponseField>
+<ResponseField name="tweetId" type="string">
+  X tweet ID.
+</ResponseField>
+<ResponseField name="tweetUrl" type="string">
+  Original tweet URL.
+</ResponseField>
+<ResponseField name="tweetText" type="string">
+  Full text content of the tweet.
+</ResponseField>
+<ResponseField name="tweetAuthorUsername" type="string">
+  Username of the tweet author.
+</ResponseField>
+<ResponseField name="tweetLikeCount" type="number">
+  Like count at time of draw.
+</ResponseField>
+<ResponseField name="tweetRetweetCount" type="number">
+  Retweet count at time of draw.
+</ResponseField>
+<ResponseField name="tweetReplyCount" type="number">
+  Reply count at time of draw.
+</ResponseField>
+<ResponseField name="tweetQuoteCount" type="number">
+  Quote tweet count at time of draw.
+</ResponseField>
+<ResponseField name="status" type="string">
+  Draw status (e.g. `completed`).
+</ResponseField>
+<ResponseField name="totalEntries" type="number">
+  Inspected candidate entries.
+</ResponseField>
+<ResponseField name="validEntries" type="number">
+  Entries that passed all filters.
+</ResponseField>
+<ResponseField name="createdAt" type="string">
+  ISO 8601 creation timestamp.
+</ResponseField>
+<ResponseField name="drawnAt" type="string">
+  ISO 8601 timestamp of when winners were selected. Present only for completed draws.
+</ResponseField>
 
 </ResponseField>
 <ResponseField name="winners" type="array">
-  Selected winners and backup winners ordered by position.
-  **Winner object fields.**
-    <ResponseField name="position" type="number">Winner position (1-indexed).</ResponseField>
-    <ResponseField name="authorUsername" type="string">X username of the winner.</ResponseField>
-    <ResponseField name="tweetId" type="string">Tweet ID of the winning reply.</ResponseField>
-    <ResponseField name="isBackup" type="boolean">`true` if this is a backup winner.</ResponseField>
+
+Selected winners and backup winners ordered by position.
+**Winner object fields.**
+
+<ResponseField name="position" type="number">
+  Winner position (1-indexed).
+</ResponseField>
+<ResponseField name="authorUsername" type="string">
+  X username of the winner.
+</ResponseField>
+<ResponseField name="tweetId" type="string">
+  Tweet ID of the winning reply.
+</ResponseField>
+<ResponseField name="isBackup" type="boolean">
+  `true` if this is a backup winner.
+</ResponseField>
 
 </ResponseField>
 
@@ -352,6 +441,7 @@ on every row. Never infer filter rules from entry counts.
 ```json
 { "error": "unauthenticated" }
 ```
+
 The API key or OAuth bearer token is missing or invalid. Replace it before
 retrying.
 
@@ -360,29 +450,44 @@ retrying.
 ```json
 { "error": "not_found" }
 ```
+
 No draw exists with this ID, or it belongs to a different account.
 
 ### 429 Rate limited
 
 ```json
-{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Try again later.",
+  "retryAfter": 1
+}
 ```
+
 Too many requests. Wait for the `Retry-After` header before retrying.
 
 ## Handle giveaway draw responses
 
 <CardGroup cols={2}>
+
   <Card title="200 Draw result" icon="circle-check">
+
     Read `draw` and `winners`. Split primary and backup winners before handoff.
+
   </Card>
   <Card title="401 Authentication" icon="key-round">
+
     Authentication failed. Replace the API key or OAuth bearer token first.
+
   </Card>
   <Card title="404 Draw missing" icon="search-x">
+
     No accessible draw matches that ID. Check its account and exact value.
+
   </Card>
   <Card title="429 Rate limit" icon="timer">
+
     Too many requests. Honor `Retry-After`, then retry the same draw ID.
+
   </Card>
 </CardGroup>
 
@@ -419,7 +524,9 @@ No. Retrieving an existing draw is free. Running a new draw can consume
 credits.
 
 <Note>
-  **Related.** [Export Draw](/api-reference/draws/export) downloads results.
-  [Giveaway History](/api-reference/draws/twitter-giveaway-history) lists past
-  draws. [Create Draw](/api-reference/draws/create) runs a new selection.
+
+**Related.** [Export Draw](/api-reference/draws/export) downloads results.
+[Giveaway History](/api-reference/draws/twitter-giveaway-history) lists past
+draws. [Create Draw](/api-reference/draws/create) runs a new selection.
+
 </Note>

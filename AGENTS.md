@@ -3,13 +3,28 @@
 This repository is the public documentation site. Treat every committed file as
 public-facing unless it is explicitly a standard open-source project file.
 
-Every commit reduces handwritten test LOC & non-test code LOC separately.
-Both deltas must be negative against the parent. No category offsets another.
-Count every language & location, including shell scripts & development tooling.
-Test-only scripts & helpers count as tests; other scripts count as non-test code.
-Report before, after & delta for both categories. Count each line once.
-Exclude generated code, formatting, minification, moves, renames & reclassification.
-Preserve valuable tests, docs, assertions, coverage, guards, diagnostics & behavior.
+Every commit reduces combined handwritten source & test LOC against its parent.
+Use Git's native additions minus deletions, matching GitHub's diff statistics.
+Count all languages, including infrastructure, shell scripts & development tooling.
+Consistently exclude generated & non-code files. Never build custom LOC counters.
+Formatting, minification, moves, reclassification & deleted valuable tests never qualify.
+Preserve docs, assertions, coverage, guards, diagnostics & behavior.
+
+Each commit gains 0.1 percentage points across all four TS/JS coverage metrics.
+Include untested code & compare the full suite against its parent consistently.
+Metrics reaching 100% may gain less; metrics already there stay there.
+Check other languages behaviorally & track measurement gaps separately.
+Coverage below 100% alone never blocks delivery.
+
+Run all applicable local checks through `bun run check:all` within 20 seconds.
+Include tests, coverage, LOC, types, lint, formatting, security, contracts & docs.
+Report p99 measurement coverage honestly, including gaps.
+Failed, incomplete or unavailable checks block delivery.
+Builds, deployments, p99 coverage, performance, costs & discovery scores remain improvement targets.
+Their unmet targets alone never block delivery; the 20-second check limit does.
+Fix security, correctness, billing, deployment-safety & contract defects before shipping.
+Publish required docs before the affected application deployment.
+Verify production before declaring deployment complete.
 
 ## Confidentiality
 

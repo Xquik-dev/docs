@@ -9,9 +9,13 @@ keywords: ["api key", "create", "generate", "authentication"]
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="201" id="response-api-keys-create-201">
+
     ```json
     {
       "id": "42",
@@ -21,27 +25,33 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "createdAt": "2025-01-15T12:00:00Z"
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-api-keys-create-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
+
   </Tab>
 
   <Tab title="403" id="response-api-keys-create-403">
+
     ```json
     {
       "error": "api_key_limit_reached",
       "message": "API key limit reached. Delete an existing key first."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-api-keys-create-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -49,8 +59,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "retryAfter": 60
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
@@ -60,119 +72,129 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 Use this route only when creating a new credential. `fullKey` appears at creation, so store it immediately in a secret manager. List operations return inventory data and never replace this storage step.
 
 <Callout icon="circle-check" color="#16a34a">
-  **Free** - does not consume credits
+
+**Free** - does not consume credits
+
 </Callout>
 
 Store `fullKey` immediately and log only `id` and `prefix`.
 
 <CodeGroup>
-  ```bash cURL
-  response=$(curl -sS -X POST https://xquik.com/api/v1/api-keys \
-    -H "Cookie: session_token=YOUR_SESSION_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d '{"name": "Production"}')
-  full_key=$(jq -r '.fullKey' <<<"$response")
-  key_id=$(jq -r '.id' <<<"$response")
-  key_prefix=$(jq -r '.prefix' <<<"$response")
-  # Store $full_key in your secret manager; do not print it in logs.
-  printf 'Created API key %s (%s)\n' "$key_id" "$key_prefix"
-  ```
 
-  ```javascript Node.js
-  const response = await fetch("https://xquik.com/api/v1/api-keys", {
-    method: "POST",
-    headers: {
-      "Cookie": "session_token=YOUR_SESSION_TOKEN",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ name: "Production" }),
-  });
-  const key = await response.json();
-  const apiKey = key.fullKey;
-  // Store apiKey in your secret manager; do not print it in logs.
-  process.stdout.write(`Created API key ${key.id} (${key.prefix})\n`);
-  ```
+```bash cURL
+response=$(curl -sS -X POST https://xquik.com/api/v1/api-keys \
+  -H "Cookie: session_token=YOUR_SESSION_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Production"}')
+full_key=$(jq -r '.fullKey' <<<"$response")
+key_id=$(jq -r '.id' <<<"$response")
+key_prefix=$(jq -r '.prefix' <<<"$response")
+# Store $full_key in your secret manager; do not print it in logs.
+printf 'Created API key %s (%s)\n' "$key_id" "$key_prefix"
+```
 
-  ```python Python
-  import requests
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/api-keys", {
+  method: "POST",
+  headers: {
+    Cookie: "session_token=YOUR_SESSION_TOKEN",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ name: "Production" }),
+});
+const key = await response.json();
+const apiKey = key.fullKey;
+// Store apiKey in your secret manager; do not print it in logs.
+process.stdout.write(`Created API key ${key.id} (${key.prefix})\n`);
+```
 
-  response = requests.post(
-      "https://xquik.com/api/v1/api-keys",
-      cookies={"session_token": "YOUR_SESSION_TOKEN"},
-      json={"name": "Production"},
-  )
-  key = response.json()
-  api_key = key["fullKey"]
-  # Store api_key in your secret manager; do not print it in logs.
-  print(f"Created API key {key['id']} ({key['prefix']})")
-  ```
+```python Python
+import requests
 
-  ```go Go
-  package main
+response = requests.post(
+    "https://xquik.com/api/v1/api-keys",
+    cookies={"session_token": "YOUR_SESSION_TOKEN"},
+    json={"name": "Production"},
+)
+key = response.json()
+api_key = key["fullKey"]
+# Store api_key in your secret manager; do not print it in logs.
+print(f"Created API key {key['id']} ({key['prefix']})")
+```
 
-  import (
-    "bytes"
-    "encoding/json"
-    "fmt"
-    "log"
-    "net/http"
-  )
+```go Go
+package main
 
-  func main() {
-    body, err := json.Marshal(map[string]string{"name": "Production"})
-    if err != nil {
-      log.Fatal(err)
-    }
+import (
+  "bytes"
+  "encoding/json"
+  "fmt"
+  "log"
+  "net/http"
+)
 
-    req, err := http.NewRequest("POST", "https://xquik.com/api/v1/api-keys", bytes.NewReader(body))
-    if err != nil {
-      log.Fatal(err)
-    }
-    req.Header.Set("Content-Type", "application/json")
-    req.AddCookie(&http.Cookie{Name: "session_token", Value: "YOUR_SESSION_TOKEN"})
-
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil {
-      log.Fatal(err)
-    }
-    defer resp.Body.Close()
-
-    var key map[string]string
-    if err := json.NewDecoder(resp.Body).Decode(&key); err != nil {
-      log.Fatal(err)
-    }
-
-    apiKey := key["fullKey"]
-    // Store apiKey in your secret manager; do not print it in logs.
-    _ = apiKey
-    fmt.Printf("Created API key %s (%s)\n", key["id"], key["prefix"])
+func main() {
+  body, err := json.Marshal(map[string]string{"name": "Production"})
+  if err != nil {
+    log.Fatal(err)
   }
-  ```
+
+  req, err := http.NewRequest("POST", "https://xquik.com/api/v1/api-keys", bytes.NewReader(body))
+  if err != nil {
+    log.Fatal(err)
+  }
+  req.Header.Set("Content-Type", "application/json")
+  req.AddCookie(&http.Cookie{Name: "session_token", Value: "YOUR_SESSION_TOKEN"})
+
+  resp, err := http.DefaultClient.Do(req)
+  if err != nil {
+    log.Fatal(err)
+  }
+  defer resp.Body.Close()
+
+  var key map[string]string
+  if err := json.NewDecoder(resp.Body).Decode(&key); err != nil {
+    log.Fatal(err)
+  }
+
+  apiKey := key["fullKey"]
+  // Store apiKey in your secret manager; do not print it in logs.
+  _ = apiKey
+  fmt.Printf("Created API key %s (%s)\n", key["id"], key["prefix"])
+}
+```
+
 </CodeGroup>
 
-| API key receipt column | Response source | Storage rule |
-| --- | --- | --- |
-| Key ID | `id` | Use this ID for later revocation. |
-| Full API key | `fullKey` | Store it once in an approved secret manager. |
-| Safe prefix | `prefix` | Use this value in logs and key inventories. |
-| Key label | `name` | Identify the workload or environment. |
-| Creation time | `createdAt` | Record when credential access began. |
-| Active-key limit | `403 api_key_limit_reached` | Revoke an unused key before retrying. |
+| API key receipt column | Response source             | Storage rule                                 |
+| ---------------------- | --------------------------- | -------------------------------------------- |
+| Key ID                 | `id`                        | Use this ID for later revocation.            |
+| Full API key           | `fullKey`                   | Store it once in an approved secret manager. |
+| Safe prefix            | `prefix`                    | Use this value in logs and key inventories.  |
+| Key label              | `name`                      | Identify the workload or environment.        |
+| Creation time          | `createdAt`                 | Record when credential access began.         |
+| Active-key limit       | `403 api_key_limit_reached` | Revoke an unused key before retrying.        |
 
 ## Headers
 
 <ParamField header="Cookie" type="string">
-  Dashboard session cookie. Format: `session_token=YOUR_SESSION_TOKEN`.
+
+Dashboard session cookie. Format: `session_token=YOUR_SESSION_TOKEN`.
+
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
-  Must be `application/json`.
+
+Must be `application/json`.
+
 </ParamField>
 
 ## Body
 
 <ParamField body="name" type="string">
-  Display name for the key. Defaults to `"Default"` if omitted.
+
+Display name for the key. Defaults to `"Default"` if omitted.
+
 </ParamField>
 
 ## Response
@@ -180,19 +202,29 @@ Store `fullKey` immediately and log only `id` and `prefix`.
 ### 201 Created
 
 <ResponseField name="id" type="string">
-  Unique identifier for the API key.
+
+Unique identifier for the API key.
+
 </ResponseField>
 <ResponseField name="fullKey" type="string">
-  The complete API key including the `xq_` prefix.
+
+The complete API key including the `xq_` prefix.
+
 </ResponseField>
 <ResponseField name="prefix" type="string">
-  First 8 characters of the key including the `xq_` prefix (e.g. `"xq_a1b2"`).
+
+First 8 characters of the key including the `xq_` prefix (e.g. `"xq_a1b2"`).
+
 </ResponseField>
 <ResponseField name="name" type="string">
-  Display name of the key.
+
+Display name of the key.
+
 </ResponseField>
 <ResponseField name="createdAt" type="string">
-  ISO 8601 creation timestamp.
+
+ISO 8601 creation timestamp.
+
 </ResponseField>
 
 ```json
@@ -206,7 +238,9 @@ Store `fullKey` immediately and log only `id` and `prefix`.
 ```
 
 <Warning>
-  The `fullKey` is returned **only once**. Store it securely. It cannot be retrieved again.
+
+The `fullKey` is returned **only once**. Store it securely. It cannot be retrieved again.
+
 </Warning>
 
 ### 401 Unauthenticated
@@ -214,25 +248,38 @@ Store `fullKey` immediately and log only `id` and `prefix`.
 ```json
 { "error": "unauthenticated" }
 ```
+
 Missing, expired, or invalid dashboard session cookie.
 
 ### 403 Key limit reached
 
 ```json
-{ "error": "api_key_limit_reached", "limit": 100, "message": "API key limit reached. Delete an existing key first." }
+{
+  "error": "api_key_limit_reached",
+  "limit": 100,
+  "message": "API key limit reached. Delete an existing key first."
+}
 ```
+
 You have reached the maximum number of active API keys (100). Revoke an active key before creating a new one. Revoked keys do not count toward the active limit.
 
 ### 429 Rate limited
 
 ```json
-{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Try again later.",
+  "retryAfter": 60
+}
 ```
+
 Too many requests. Wait for the `Retry-After` header before retrying.
 
 <Note>
-  API key creation requires a same-origin dashboard session. API keys and OAuth
-  bearer tokens cannot create additional keys.
 
-  **Related.** [List API Keys](/api-reference/api-keys/list) &middot; [Revoke API Key](/api-reference/api-keys/revoke)
+API key creation requires a same-origin dashboard session. API keys and OAuth
+bearer tokens cannot create additional keys.
+
+**Related.** [List API Keys](/api-reference/api-keys/list) &middot; [Revoke API Key](/api-reference/api-keys/revoke)
+
 </Note>

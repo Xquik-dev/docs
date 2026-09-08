@@ -41,14 +41,14 @@ The Mastra AI agent framework adds tools, routing, memory, and workflows.
 Use an X API agent when a model must choose related operations. Use REST for
 fixed routes, scheduled exports, or predictable latency.
 
-| Boundary | Mastra control | Twitter agent result |
-| --- | --- | --- |
-| Remote MCP | `MCPClient` | Connect tweet, profile, follower, and monitor tools |
-| Final response | Zod `structuredOutput` | Reject malformed rows and cursor state |
-| Per-call tools | `listToolsets()` | Isolate each user's Xquik key |
-| X actions | `requireToolApproval` | Pause before the `execute` tool runs |
-| Tool errors | `onToolError: "throw"` | Preserve failed MCP results |
-| Cleanup | `disconnect()` | Close remote sessions |
+| Boundary       | Mastra control         | Twitter agent result                                |
+| -------------- | ---------------------- | --------------------------------------------------- |
+| Remote MCP     | `MCPClient`            | Connect tweet, profile, follower, and monitor tools |
+| Final response | Zod `structuredOutput` | Reject malformed rows and cursor state              |
+| Per-call tools | `listToolsets()`       | Isolate each user's Xquik key                       |
+| X actions      | `requireToolApproval`  | Pause before the `execute` tool runs                |
+| Tool errors    | `onToolError: "throw"` | Preserve failed MCP results                         |
+| Cleanup        | `disconnect()`         | Close remote sessions                               |
 
 ## Mastra Twitter API prerequisites
 
@@ -108,11 +108,7 @@ const handoffSchema = z.object({
   has_more: z.boolean(),
   next_cursor: z.string().nullable(),
   pages_fetched: z.number().int().positive(),
-  stop_reason: z.enum([
-    "complete",
-    "requested_limit",
-    "cursor_stalled",
-  ]),
+  stop_reason: z.enum(["complete", "requested_limit", "cursor_stalled"]),
 });
 
 const mcp = new MCPClient({
@@ -151,10 +147,9 @@ try {
     inputSchema: z.object({ query: z.string().min(1) }),
     outputSchema: handoffSchema,
     execute: async ({ inputData }) => {
-      const result = await agent.generate(
-        `Search 50 latest tweets for: ${inputData.query}`,
-        { structuredOutput: { schema: handoffSchema } },
-      );
+      const result = await agent.generate(`Search 50 latest tweets for: ${inputData.query}`, {
+        structuredOutput: { schema: handoffSchema },
+      });
 
       return handoffSchema.parse(result.object);
     },
@@ -207,12 +202,12 @@ A registered agent can also run the workflow through a Mastra instance.
 
 Keep the exact `q` in every checkpoint.
 
-| Search intent | Example `q` |
-| --- | --- |
-| Framework posts | `"Mastra" MCP` |
-| One timeline | `from:mastra_ai since:2026-07-01 until:2026-08-01` |
-| Popular TypeScript posts | `"Twitter API" TypeScript lang:en min_faves:25` |
-| Questions | `"tweet search agent" ? -filter:retweets` |
+| Search intent            | Example `q`                                        |
+| ------------------------ | -------------------------------------------------- |
+| Framework posts          | `"Mastra" MCP`                                     |
+| One timeline             | `from:mastra_ai since:2026-07-01 until:2026-08-01` |
+| Popular TypeScript posts | `"Twitter API" TypeScript lang:en min_faves:25`    |
+| Questions                | `"tweet search agent" ? -filter:retweets`          |
 
 Use `queryType=Latest` for time-ordered research. Pass `next_cursor` unchanged.
 Stop when `has_more` becomes false. Also stop when a cursor repeats.
@@ -241,10 +236,12 @@ Show the route, method, arguments, and X account before approval.
 Never treat MCP annotations as an authorization boundary. They are server-provided hints.
 
 <Warning>
-  `@mastra/core` 1.55.0 predates the declined-call fix in
-  [PR #20487](https://github.com/mastra-ai/mastra/pull/20487). Do not enable
-  writes on that release. Upgrade after a stable fix. Then prove declined
-  calls never execute.
+
+`@mastra/core` 1.55.0 predates the declined-call fix in
+[PR #20487](https://github.com/mastra-ai/mastra/pull/20487). Do not enable
+writes on that release. Upgrade after a stable fix. Then prove declined
+calls never execute.
+
 </Warning>
 
 Use a guest `paid_reads` key for a firm read-only boundary. See [guest
@@ -344,23 +341,36 @@ servers.
 Store validated identifiers outside the model transcript.
 
 <CardGroup cols={2}>
+
   <Card title="Tweet search rows" icon="search">
+
     Store `tweet_id`, `text`, `author_username`, `created`, `url`, `has_more`, `next_cursor`, and the original `q`.
+
   </Card>
   <Card title="Follower exports" icon="users">
+
     A Twitter follower scraper API handoff keeps `user_id`, `username`, `followers`, `has_more`, and `next_cursor`.
+
   </Card>
   <Card title="Monitor events" icon="radio">
+
     Store `monitor_id`, `event_id`, `type`, `occurred_at`, and replay cursors.
+
   </Card>
   <Card title="Extraction jobs" icon="database">
+
     Store `extraction_id`, `status`, `poll`, and `export_after_complete`.
+
   </Card>
   <Card title="Approved X actions" icon="send">
+
     Store `tweet_id`, `write_action_id`, `status`, and `poll`. Never resend pending writes.
+
   </Card>
   <Card title="Webhook deliveries" icon="webhook">
+
     Store `webhook_id`, `delivery_id`, and `stream_event_id`. Protect the secret.
+
   </Card>
 </CardGroup>
 
@@ -370,14 +380,14 @@ Persist the validated `result.object`, not free-form `result.text`.
 
 Match each documented status before retrying.
 
-| Status | Meaning | Agent action |
-| --- | --- | --- |
-| `400` | The search query is missing or invalid | Fix `q` |
-| `401` | Guest authentication cannot complete this request | Provide a key or connect X |
-| `402` | The account lacks credits | Request account action |
-| `424` | The upstream X dependency failed | Apply bounded backoff |
-| `429` | The Twitter API rate limit applies | Preserve the cursor and wait |
-| `502` | The X dependency returned an invalid response | Retry later |
+| Status | Meaning                                           | Agent action                 |
+| ------ | ------------------------------------------------- | ---------------------------- |
+| `400`  | The search query is missing or invalid            | Fix `q`                      |
+| `401`  | Guest authentication cannot complete this request | Provide a key or connect X   |
+| `402`  | The account lacks credits                         | Request account action       |
+| `424`  | The upstream X dependency failed                  | Apply bounded backoff        |
+| `429`  | The Twitter API rate limit applies                | Preserve the cursor and wait |
+| `502`  | The X dependency returned an invalid response     | Retry later                  |
 
 Keep `onToolError: "throw"`. It preserves MCP `isError` failures. Never restart
 pagination after `429`. Read each route before designing retry logic.
@@ -386,12 +396,12 @@ pagination after `429`. Read each route before designing retry logic.
 
 These stable versions were checked on August 3, 2026.
 
-| Package | Checked version | Requirement |
-| --- | --- | --- |
-| `@mastra/core` | 1.55.0 | Node.js 22.13 or later |
-| `@mastra/mcp` | 1.15.0 | `@mastra/core` below 2.0 |
-| `@modelcontextprotocol/sdk` | 1.30.0 | Installed through Mastra |
-| `zod` | 4.4.3 | `^3.25` or `^4` |
+| Package                     | Checked version | Requirement              |
+| --------------------------- | --------------- | ------------------------ |
+| `@mastra/core`              | 1.55.0          | Node.js 22.13 or later   |
+| `@mastra/mcp`               | 1.15.0          | `@mastra/core` below 2.0 |
+| `@modelcontextprotocol/sdk` | 1.30.0          | Installed through Mastra |
+| `zod`                       | 4.4.3           | `^3.25` or `^4`          |
 
 `@mastra/mcp` 1.15.0 predates the concurrent reconnect fix in
 [PR #20530](https://github.com/mastra-ai/mastra/pull/20530). Avoid parallel

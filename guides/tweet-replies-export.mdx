@@ -2,7 +2,17 @@
 title: "Export Twitter replies with a scraper API guide"
 sidebarTitle: "Reply export"
 description: "Export Twitter replies through a scraper API. Estimate credits, paginate reply rows, and save CSV, JSON, or XLSX files with exact Xquik API steps and errors."
-keywords: ["scrape tweet replies", "tweet replies scraper", "Twitter replies export", "X replies API", "reply_extractor", "CSV export", "JSON export", "XLSX export"]
+keywords:
+  [
+    "scrape tweet replies",
+    "tweet replies scraper",
+    "Twitter replies export",
+    "X replies API",
+    "reply_extractor",
+    "CSV export",
+    "JSON export",
+    "XLSX export",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -20,37 +30,57 @@ Incomplete recovery keeps partial rows and reports `pagination_safety_limit`.
 ## When to use this workflow
 
 <CardGroup cols={2}>
+
   <Card title="Spreadsheet export" icon="file-spreadsheet">
+
     Use `reply_extractor` plus CSV or XLSX export when analysts need reply rows.
+
   </Card>
   <Card title="App ingestion" icon="database">
+
     Use `reply_extractor` plus paginated JSON results for queues, CRMs, or warehouses.
+
   </Card>
   <Card title="Moderation queue" icon="list-check">
+
     Use the direct replies API plus JSON Lines rows before storing, hiding, labeling, or routing replies.
+
   </Card>
   <Card title="Latest page" icon="search">
+
     Use `GET /x/tweets/{id}/replies` when you only need the newest reply page.
+
   </Card>
   <Card title="Cost control" icon="gauge">
+
     Estimate first, then cap results with `resultsLimit`.
+
   </Card>
 </CardGroup>
 
 ## Data you get
 
 <CardGroup cols={2}>
+
   <Card title="Reply author" icon="user-round">
+
     User ID, username, display name, follower count, verified state, and profile image.
+
   </Card>
   <Card title="Reply tweet" icon="message-square-text">
+
     Tweet ID, tweet text, and tweet created time.
+
   </Card>
   <Card title="Engagement" icon="chart-no-axes-combined">
+
     Likes, reposts, replies, quotes, views, and bookmarks.
+
   </Card>
   <Card title="Metadata" icon="braces">
+
     Language, source app, and conversation ID.
+
   </Card>
 </CardGroup>
 
@@ -107,18 +137,27 @@ Store one checkpoint that carries the target tweet through estimate, job creatio
 ```
 
 <CardGroup cols={2}>
+
   <Card title="Estimate checkpoint" icon="calculator">
+
     Keep the estimate response with `targetTweetId`.
     A successful count lookup sets `source` to `replyCount`.
+
   </Card>
   <Card title="Job checkpoint" icon="clipboard-check">
+
     Store the returned job `id`, `status`, and `poll_path`; do not expect reply rows in the create response.
+
   </Card>
   <Card title="Cursor checkpoint" icon="shuffle">
+
     Store `page_cursor`, `next_cursor`, and `has_more` for JSON page loops, then pass `nextCursor` back as `cursor`.
+
   </Card>
   <Card title="Export checkpoint" icon="download">
+
     Store the chosen CSV, JSON, or XLSX `export_paths` and the normalized reply fields sent downstream.
+
   </Card>
 </CardGroup>
 
@@ -269,9 +308,7 @@ let cursor;
 let pageIndex = 0;
 
 do {
-  const url = new URL(
-    `https://xquik.com/api/v1/x/tweets/${tweetId}/replies`,
-  );
+  const url = new URL(`https://xquik.com/api/v1/x/tweets/${tweetId}/replies`);
   if (cursor) {
     url.searchParams.set("cursor", cursor);
   }
@@ -312,9 +349,7 @@ do {
       bookmark_count: tweet.bookmarkCount ?? 0,
       is_note_tweet: tweet.isNoteTweet ?? false,
       tweet_source: tweet.source ?? null,
-      media_urls: (tweet.media ?? [])
-        .map((item) => item.mediaUrl)
-        .filter(Boolean),
+      media_urls: (tweet.media ?? []).map((item) => item.mediaUrl).filter(Boolean),
       page_index: pageIndex,
       page_cursor: cursor ?? "",
       next_cursor: page.next_cursor,
@@ -385,37 +420,57 @@ Respect the read rate limit on live Twitter API pages. Use the parent reply coun
 Handle common errors before retrying:
 
 <CardGroup cols={2}>
+
   <Card title="400 invalid tweet ID" icon="circle-alert">
+
     Status `400`. Error `invalid_tweet_id`. Use a numeric tweet ID.
+
   </Card>
   <Card title="401 unauthenticated" icon="key-round">
+
     Status `401`. Error `unauthenticated`. Send a valid `x-api-key`.
+
   </Card>
   <Card title="402 billing or credits" icon="coins">
+
     Status `402`. Errors `no_subscription`, `subscription_inactive`, `no_credits`, or `insufficient_credits`. Subscribe, add credits, or lower `resultsLimit`.
+
   </Card>
   <Card title="429 rate limit" icon="timer-reset">
+
     Status `429`. Error `rate_limit_exceeded`. Wait for `retryAfter` or the `Retry-After` header.
+
   </Card>
   <Card title="424 or 502 upstream unavailable" icon="rotate-ccw">
+
     Status `424` or `502`. Error `x_api_unavailable`. Retry with exponential backoff.
+
   </Card>
 </CardGroup>
 
 ## Handoff checklist
 
 <CardGroup cols={2}>
+
   <Card title="Spreadsheet" icon="file-spreadsheet">
+
     Export `format=csv` to `xquik-replies.csv` or `format=xlsx` to `xquik-replies.xlsx`.
+
   </Card>
   <Card title="App ingestion" icon="database">
+
     Export `format=json` to `xquik-replies.json`, convert it to `xquik-replies.jsonl`, or paginate `GET /extractions/{id}`.
+
   </Card>
   <Card title="Cost control" icon="gauge">
+
     Set `resultsLimit` on create calls when you need a smaller run.
+
   </Card>
   <Card title="New reply alerts" icon="radio">
+
     Create an account or keyword monitor with `tweet.reply` events.
+
   </Card>
 </CardGroup>
 

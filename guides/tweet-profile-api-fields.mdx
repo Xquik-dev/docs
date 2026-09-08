@@ -48,15 +48,15 @@ It does not become `created_at`.
 
 ## Choose the object before mapping fields
 
-| Need | Primary object | Stable join key |
-| --- | --- | --- |
-| Tweet text and engagement | Tweet | `id` |
-| Reply or thread relationship | Tweet | `conversationId` and `inReplyToId` |
-| Quote context | `quoted_tweet` | Nested tweet `id` |
-| Repost context | `retweeted_tweet` | Nested tweet `id` |
-| Author profile | `author` | Author `id` |
-| Image, video, or GIF | `media[]` | `mediaKey` or media `id` |
-| Pagination | Page envelope | Returned cursor |
+| Need                         | Primary object    | Stable join key                    |
+| ---------------------------- | ----------------- | ---------------------------------- |
+| Tweet text and engagement    | Tweet             | `id`                               |
+| Reply or thread relationship | Tweet             | `conversationId` and `inReplyToId` |
+| Quote context                | `quoted_tweet`    | Nested tweet `id`                  |
+| Repost context               | `retweeted_tweet` | Nested tweet `id`                  |
+| Author profile               | `author`          | Author `id`                        |
+| Image, video, or GIF         | `media[]`         | `mediaKey` or media `id`           |
+| Pagination                   | Page envelope     | Returned cursor                    |
 
 Do not flatten every object into one unversioned row. Nested tweets and authors
 have their own IDs. Store those IDs before building joins.
@@ -64,30 +64,41 @@ have their own IDs. Store those IDs before building joins.
 ## Field presence rules
 
 <CardGroup cols={2}>
+
   <Card title="Required fields" icon="badge-check">
+
     Tweet objects require `id`, `text`, and documented engagement counts.
     Profile objects require `id`, `username`, and `name`.
+
   </Card>
 
   <Card title="Optional fields" icon="circle-dashed">
+
     Optional fields are omitted when X does not supply them. Absence is not an
     empty string, false value, or zero count.
+
   </Card>
 
   <Card title="String IDs" icon="fingerprint">
+
     Keep tweet, user, media, conversation, and reply IDs as strings. Large IDs
     can lose precision in spreadsheet or JavaScript number types.
+
   </Card>
 
   <Card title="Count snapshots" icon="chart-no-axes-column">
+
     Likes, replies, reposts, quotes, views, bookmarks, followers, and following
     counts can change after collection. Store `collected_at` downstream.
+
   </Card>
 </CardGroup>
 
 <Warning>
-  A zero tweet metric can mean X did not report that count. Do not treat every
-  zero as a measured absence.
+
+A zero tweet metric can mean X did not report that count. Do not treat every
+zero as a measured absence.
+
 </Warning>
 
 ## Tweet fields
@@ -103,25 +114,25 @@ Core tweet fields group into these roles:
 - Quote and repost context: `isQuoteStatus`, `quoted_tweet`, `quotedTweetId`, `retweeted_tweet`, and `isNoteTweet`
 - Related data: `author`, `media`, `reactionContext`, `retweetCount`, `replyCount`, `likeCount`, `quoteCount`, `viewCount`, and `bookmarkCount`
 
-| Field               | Description                       |
-| ------------------- | --------------------------------- |
-| `article`           | X Article metadata                |
-| `card`              | Link card metadata                |
-| `communityId`       | Community ID                      |
-| `communityNote`     | Community Note text, links, icons, and style |
-| `edit`              | Edit history and remaining state  |
-| `grokShareAttachment` | Public Grok share content and links |
-| `isTranslatable`    | Translation availability          |
-| `jetfuelAttachment` | Interactive attachment metadata   |
-| `noteTweet`         | Long-form content and inline media |
-| `place`             | Tagged place metadata             |
-| `postCta`           | Public post action metadata       |
-| `possiblySensitive` | X sensitivity state               |
-| `previousCounts`    | Pre-edit engagement counts        |
-| `reactionContext`   | Referenced public post and user   |
-| `scopes`            | Sanitized public scope metadata   |
-| `tombstone`         | Unavailable tweet metadata        |
-| `viewState`         | X view-state metadata             |
+| Field                 | Description                                  |
+| --------------------- | -------------------------------------------- |
+| `article`             | X Article metadata                           |
+| `card`                | Link card metadata                           |
+| `communityId`         | Community ID                                 |
+| `communityNote`       | Community Note text, links, icons, and style |
+| `edit`                | Edit history and remaining state             |
+| `grokShareAttachment` | Public Grok share content and links          |
+| `isTranslatable`      | Translation availability                     |
+| `jetfuelAttachment`   | Interactive attachment metadata              |
+| `noteTweet`           | Long-form content and inline media           |
+| `place`               | Tagged place metadata                        |
+| `postCta`             | Public post action metadata                  |
+| `possiblySensitive`   | X sensitivity state                          |
+| `previousCounts`      | Pre-edit engagement counts                   |
+| `reactionContext`     | Referenced public post and user              |
+| `scopes`              | Sanitized public scope metadata              |
+| `tombstone`           | Unavailable tweet metadata                   |
+| `viewState`           | X view-state metadata                        |
 
 Tweets also include available entities, disclosures, nested tweets, and media.
 
@@ -176,23 +187,32 @@ Keep original tweets separate from outer repost records.
 Xquik removes viewer-specific state from its nested user.
 
 <CardGroup cols={2}>
+
   <Card title="Direct reply" icon="reply">
+
     Join `inReplyToId` to the parent tweet. Keep `conversationId` for the full
     thread.
+
   </Card>
 
   <Card title="Quote" icon="quote">
+
     Join `quoted_tweet.id` to the quoted tweet. Attribute quote text to the
     outer tweet.
+
   </Card>
 
   <Card title="Repost" icon="repeat-2">
+
     Join `retweeted_tweet.id` to the original tweet. Do not merge their metric
     snapshots.
+
   </Card>
 
   <Card title="Note tweet" icon="notebook-tabs">
+
     Preserve `noteTweet.inlineMedia` positions with long-form text and formatting.
+
   </Card>
 </CardGroup>
 
@@ -242,27 +262,27 @@ Store the user profile using its stable `id`.
 A profile page can change its username, name, bio, and images.
 Keep pinned tweet IDs as strings.
 
-| Field                             | Description                                  |
-| --------------------------------- | -------------------------------------------- |
-| `accountBasedIn`                  | Observed account location metadata           |
-| `affiliatesHighlightedLabel`      | Affiliate label metadata                     |
-| `businessAccountAffiliatesCount`  | Business affiliate count                     |
-| `creatorSubscriptionsCount`       | Creator subscription count                   |
-| `professional`                    | Professional profile metadata                |
-| `hasGraduatedAccess`              | Graduated access state                       |
-| `hasHiddenSubscriptionsOnProfile` | Hidden subscription state                    |
-| `highlightsInfo`                  | Profile highlights metadata                  |
-| `identityVerification`            | Identity verification metadata               |
-| `isProfileTranslatable`           | Profile translation availability             |
-| `parodyCommentaryFanLabel`        | Parody or fan label                          |
-| `profileDescriptionLanguage`      | Detected bio language                        |
-| `profileImageShape`               | Profile image shape                          |
-| `profileInterstitialType`         | Profile interstitial type                    |
-| `profileSortEnabled`              | Profile sorting state                        |
-| `profileTranslatorType`           | Profile translator type                      |
-| `superFollowEligible`             | Subscription eligibility                     |
-| `superFollowsUserProfileActive`   | Active subscription profile state            |
-| `tipJar`                          | Public creator support handles               |
+| Field                             | Description                        |
+| --------------------------------- | ---------------------------------- |
+| `accountBasedIn`                  | Observed account location metadata |
+| `affiliatesHighlightedLabel`      | Affiliate label metadata           |
+| `businessAccountAffiliatesCount`  | Business affiliate count           |
+| `creatorSubscriptionsCount`       | Creator subscription count         |
+| `professional`                    | Professional profile metadata      |
+| `hasGraduatedAccess`              | Graduated access state             |
+| `hasHiddenSubscriptionsOnProfile` | Hidden subscription state          |
+| `highlightsInfo`                  | Profile highlights metadata        |
+| `identityVerification`            | Identity verification metadata     |
+| `isProfileTranslatable`           | Profile translation availability   |
+| `parodyCommentaryFanLabel`        | Parody or fan label                |
+| `profileDescriptionLanguage`      | Detected bio language              |
+| `profileImageShape`               | Profile image shape                |
+| `profileInterstitialType`         | Profile interstitial type          |
+| `profileSortEnabled`              | Profile sorting state              |
+| `profileTranslatorType`           | Profile translator type            |
+| `superFollowEligible`             | Subscription eligibility           |
+| `superFollowsUserProfileActive`   | Active subscription profile state  |
+| `tipJar`                          | Public creator support handles     |
 
 Xquik removes account-specific actions, permissions, and relationships from
 public reads. Use dedicated write routes or X for account state.
@@ -330,38 +350,38 @@ Store media files only when returned URLs and availability allow it.
 
 Every media object includes `mediaUrl`, `type`, and `url`.
 
-| Field                | Description                  |
-| -------------------- | ---------------------------- |
-| `adultContent`       | Adult content state          |
-| `allowDownload`      | Download permission          |
-| `altText`            | Accessibility text           |
-| `aspectRatio`        | Video aspect ratio           |
-| `availabilityStatus` | Media availability state     |
-| `availabilityReason` | Media availability reason    |
-| `description`        | Media description            |
-| `displayUrl`         | Display URL                  |
-| `durationMillis`     | Video duration               |
-| `embeddable`         | Embedding availability       |
-| `expandedUrl`        | Expanded media URL           |
-| `faceRects`          | Detected face rectangles     |
-| `focusRects`         | Crop focus rectangles        |
-| `grokPostId`         | Related Grok post ID         |
-| `graphicViolence`    | Graphic violence state       |
-| `height`             | Media height                 |
-| `id`                 | Media ID                     |
-| `indices`            | Source-text indices          |
-| `mediaKey`           | X media key                  |
-| `monetizable`        | Monetization state           |
+| Field                   | Description                   |
+| ----------------------- | ----------------------------- |
+| `adultContent`          | Adult content state           |
+| `allowDownload`         | Download permission           |
+| `altText`               | Accessibility text            |
+| `aspectRatio`           | Video aspect ratio            |
+| `availabilityStatus`    | Media availability state      |
+| `availabilityReason`    | Media availability reason     |
+| `description`           | Media description             |
+| `displayUrl`            | Display URL                   |
+| `durationMillis`        | Video duration                |
+| `embeddable`            | Embedding availability        |
+| `expandedUrl`           | Expanded media URL            |
+| `faceRects`             | Detected face rectangles      |
+| `focusRects`            | Crop focus rectangles         |
+| `grokPostId`            | Related Grok post ID          |
+| `graphicViolence`       | Graphic violence state        |
+| `height`                | Media height                  |
+| `id`                    | Media ID                      |
+| `indices`               | Source-text indices           |
+| `mediaKey`              | X media key                   |
+| `monetizable`           | Monetization state            |
 | `otherSensitiveContent` | Other sensitive content state |
-| `sizes`              | Available image sizes        |
-| `sourceStatusId`     | Source tweet ID              |
-| `sourceUserId`       | Source user ID               |
-| `tags`               | Tagged users                 |
-| `title`              | Media title                  |
-| `videoVariants`      | Video encodings and bitrates |
-| `visitSiteUrl`       | Public destination URL       |
-| `watchNowUrl`        | Public media action URL      |
-| `width`              | Media width                  |
+| `sizes`                 | Available image sizes         |
+| `sourceStatusId`        | Source tweet ID               |
+| `sourceUserId`          | Source user ID                |
+| `tags`                  | Tagged users                  |
+| `title`                 | Media title                   |
+| `videoVariants`         | Video encodings and bitrates  |
+| `visitSiteUrl`          | Public destination URL        |
+| `watchNowUrl`           | Public media action URL       |
+| `width`                 | Media width                   |
 
 ### Map photos, videos, and GIFs
 
@@ -479,12 +499,12 @@ Keep nested JSON when flattening would erase relationships.
 
 ## Interface mapping
 
-| Interface | Field style | Contract |
-| ------- | ----------- | -------- |
-| REST API | Mostly `camelCase` | `quoted_tweet`, `retweeted_tweet`, and `profile_bio` are documented exceptions |
-| Generated SDKs | Language-native names | Generated OpenAPI models |
-| MCP | Normalized | Most names use `snake_case`; REST `createdAt` becomes MCP `created` |
-| Apify Actors | Configurable | Dataset schemas and Actor READMEs |
+| Interface      | Field style           | Contract                                                                       |
+| -------------- | --------------------- | ------------------------------------------------------------------------------ |
+| REST API       | Mostly `camelCase`    | `quoted_tweet`, `retweeted_tweet`, and `profile_bio` are documented exceptions |
+| Generated SDKs | Language-native names | Generated OpenAPI models                                                       |
+| MCP            | Normalized            | Most names use `snake_case`; REST `createdAt` becomes MCP `created`            |
+| Apify Actors   | Configurable          | Dataset schemas and Actor READMEs                                              |
 
 ### Read Actor diagnostics
 
@@ -492,21 +512,23 @@ Interrupted extraction preserves available data and adds a free `partial` diagno
 Read the `diagnostics` output and `run-report` before retrying unfinished targets.
 Diagnostic records use `resultType: "diagnostic"` and never count as billable results.
 
-| Field | Meaning |
-| ----- | ------- |
-| `status` | Extraction outcome, such as `partial` or `zero-output` |
-| `message` | Explanation of the extraction outcome |
-| `availableResults` | Accepted data rows preserved by the run |
-| `failedTargets` | Targets that failed during extraction |
-| `retryable` | Whether retrying unfinished work is appropriate |
-| `nextAction` | Suggested recovery step |
+| Field              | Meaning                                                |
+| ------------------ | ------------------------------------------------------ |
+| `status`           | Extraction outcome, such as `partial` or `zero-output` |
+| `message`          | Explanation of the extraction outcome                  |
+| `availableResults` | Accepted data rows preserved by the run                |
+| `failedTargets`    | Targets that failed during extraction                  |
+| `retryable`        | Whether retrying unfinished work is appropriate        |
+| `nextAction`       | Suggested recovery step                                |
 
 `SUCCEEDED` and HTTP 200 confirm run completion and response delivery.
 They do not prove complete extraction. Check the diagnostic and report together.
 Keep any other platform status accurate when investigating interrupted runs.
 
 <Info>
-  Xquik omits unavailable optional fields. It never invents missing X values.
+
+Xquik omits unavailable optional fields. It never invents missing X values.
+
 </Info>
 
 ### Keep interface names explicit
@@ -523,32 +545,45 @@ MCP `created`. Actor datasets follow each Actor's documented output mode.
 ## Avoid tweet metadata mapping errors
 
 <AccordionGroup>
+
   <Accordion title="Large IDs become rounded numbers">
+
     Precision lost. Store tweet, user, conversation, reply, and media IDs as
     strings before spreadsheet or JavaScript processing.
+
   </Accordion>
 
   <Accordion title="Missing optional fields become false or zero">
+
     Meaning changed. Preserve field absence. Add a separate downstream default
     only when the consumer requires one.
+
   </Accordion>
 
   <Accordion title="Reply and conversation IDs are merged">
+
     Relationship lost. Keep `inReplyToId` for the parent. Keep
     `conversationId` for the root.
+
   </Accordion>
 
   <Accordion title="Quote and repost metrics are combined">
+
     Counts misattributed. Keep outer and nested tweet IDs in separate rows.
+
   </Accordion>
 
   <Accordion title="Profile growth uses usernames as keys">
+
     History split. Use the stable X user ID. Store the observed username as an
     attribute.
+
   </Accordion>
 
   <Accordion title="REST and MCP timestamps share one field name">
+
     Mapping failed. Map REST `createdAt` and MCP `created` explicitly.
+
   </Accordion>
 </AccordionGroup>
 

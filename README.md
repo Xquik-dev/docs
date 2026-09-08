@@ -43,21 +43,21 @@ fixes or validating contracts. Generated client APIs live in the SDK repositorie
 
 ## Common questions
 
-| Customer question | Documentation |
-| --- | --- |
-| How do I search tweets through an API? | [Search Tweets API](https://docs.xquik.com/api-reference/x/search-tweets) |
-| How do I export tweet search results? | [Tweet Search Export](https://docs.xquik.com/guides/tweet-scraper-csv-export) |
-| How do I read an account timeline? | [User Tweets API](https://docs.xquik.com/api-reference/x/user-tweets) |
-| How do I export followers? | [Follower Export Guide](https://docs.xquik.com/guides/follower-export-crm) |
-| How do I scrape following accounts? | [Following API](https://docs.xquik.com/api-reference/x/following) |
-| How do I read my home timeline? | [Home Timeline API](https://docs.xquik.com/api-reference/x/timeline) |
-| How do I monitor accounts or keywords? | [Brand Monitoring Guide](https://docs.xquik.com/guides/brand-monitoring-workflow) |
-| How do I verify signed webhooks? | [Webhook Guide](https://docs.xquik.com/webhooks/overview) |
-| How do I post or reply? | [Create Tweet API](https://docs.xquik.com/api-reference/x-write/create-tweet) |
-| How do I send DMs with returned message IDs? | [Direct Message Workflow](https://docs.xquik.com/guides/direct-message-workflow) |
-| How do I run Apify dataset workflows? | [Xquik on Apify](https://apify.com/xquik) |
-| How does Xquik compare with the X API? | [X API Alternative Guide](https://docs.xquik.com/alternatives/x-api) |
-| How can an AI agent use Xquik? | [MCP Server Guide](https://docs.xquik.com/mcp) |
+| Customer question                            | Documentation                                                                     |
+| -------------------------------------------- | --------------------------------------------------------------------------------- |
+| How do I search tweets through an API?       | [Search Tweets API](https://docs.xquik.com/api-reference/x/search-tweets)         |
+| How do I export tweet search results?        | [Tweet Search Export](https://docs.xquik.com/guides/tweet-scraper-csv-export)     |
+| How do I read an account timeline?           | [User Tweets API](https://docs.xquik.com/api-reference/x/user-tweets)             |
+| How do I export followers?                   | [Follower Export Guide](https://docs.xquik.com/guides/follower-export-crm)        |
+| How do I scrape following accounts?          | [Following API](https://docs.xquik.com/api-reference/x/following)                 |
+| How do I read my home timeline?              | [Home Timeline API](https://docs.xquik.com/api-reference/x/timeline)              |
+| How do I monitor accounts or keywords?       | [Brand Monitoring Guide](https://docs.xquik.com/guides/brand-monitoring-workflow) |
+| How do I verify signed webhooks?             | [Webhook Guide](https://docs.xquik.com/webhooks/overview)                         |
+| How do I post or reply?                      | [Create Tweet API](https://docs.xquik.com/api-reference/x-write/create-tweet)     |
+| How do I send DMs with returned message IDs? | [Direct Message Workflow](https://docs.xquik.com/guides/direct-message-workflow)  |
+| How do I run Apify dataset workflows?        | [Xquik on Apify](https://apify.com/xquik)                                         |
+| How does Xquik compare with the X API?       | [X API Alternative Guide](https://docs.xquik.com/alternatives/x-api)              |
+| How can an AI agent use Xquik?               | [MCP Server Guide](https://docs.xquik.com/mcp)                                    |
 
 Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
 
@@ -92,29 +92,30 @@ openapi.yaml        OpenAPI 3.1 source of truth
 
 ## Local development
 
-Install Node.js 22, Bun 1.3.14, and REUSE 6.2.0.
+Install Bun, Go, Gitleaks, shfmt & uv. Use the pinned npm version in `package.json`.
 
 ```bash
-npm ci --ignore-scripts
-npm run check:dependencies
-npm run test:agent-docs
-npm run docs:validate
-npm run docs:links
-npm audit --audit-level=low
-reuse lint
+bunx --bun npm@12.0.1 ci --ignore-scripts
+bun run check:all
 ```
 
-Run `npm exec -- mint dev` when visual previewing is necessary.
+Clone the application beside this repository for product contract checks.
+Otherwise, set `XQUIK_ROOT` & `XQUIK_PRODUCT_ROOT` to the application candidate.
+Missing product source fails validation.
+
+Coverage compares the full suite against the parent commit.
+Retain its verified reports under Git's `coverage-baselines/<parent SHA>/` directory.
+Missing parent evidence fails validation.
+
+Run `bun run --bun --no-install mint dev` when visual previewing is necessary.
 
 ## Deployment
 
 `main` auto-deploys to [docs.xquik.com](https://docs.xquik.com).
-
 Deployment status appears in commit check runs.
 
-GitHub Actions runs documentation, contract, security, and licensing checks.
-
-Run every static check before pushing.
+GitHub Actions is unavailable. Run every required check locally before pushing.
+Verify the published pages after deployment.
 
 ## Contributing
 

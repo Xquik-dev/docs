@@ -16,24 +16,11 @@ interface OpenApiDocument {
 }
 
 function parseOpenApi(): OpenApiDocument {
-  const runtime = globalThis as unknown as Readonly<{
-    readonly Bun?: Readonly<{
-      readonly YAML?: Readonly<{
-        readonly parse: (source: string) => unknown;
-      }>;
-    }>;
-  }>;
-  const parse = runtime.Bun?.YAML?.parse;
-  if (parse === undefined) {
-    throw new Error("Bun.YAML.parse is required for error contract tests.");
-  }
-  return parse(readFileSync("openapi.yaml", "utf8")) as OpenApiDocument;
+  return Bun.YAML.parse(readFileSync("openapi.yaml", "utf8")) as OpenApiDocument;
 }
 
 function requireErrorVariant(title: string): SchemaNode {
-  const variants = parseOpenApi().components?.schemas?.["Error"]?.properties?.[
-    "error"
-  ]?.oneOf;
+  const variants = parseOpenApi().components?.schemas?.["Error"]?.properties?.["error"]?.oneOf;
   const variant = variants?.find((candidate) => candidate.title === title);
   if (variant === undefined) {
     throw new Error(`OpenAPI Error is missing ${title}.`);
@@ -53,10 +40,7 @@ describe("public error contract", (): void => {
     expect.assertions(6);
 
     const guide = readFileSync("guides/error-handling.mdx", "utf8");
-    const legacyCodes = requireEnum(
-      requireErrorVariant("LegacyErrorCode"),
-      "LegacyErrorCode",
-    );
+    const legacyCodes = requireEnum(requireErrorVariant("LegacyErrorCode"), "LegacyErrorCode");
     const structuredCodes = requireEnum(
       requireErrorVariant("StructuredError").properties?.["code"] ?? {},
       "StructuredError.code",
@@ -69,9 +53,7 @@ describe("public error contract", (): void => {
     expect(structuredCodes).toStrictEqual(legacyCodes);
     expect(documentedCodes.length).toBeGreaterThan(0);
     expect(new Set(documentedCodes).size).toBe(documentedCodes.length);
-    expect(
-      documentedCodes.filter((code): boolean => !canonicalCodes.has(code)),
-    ).toStrictEqual([]);
+    expect(documentedCodes.filter((code): boolean => !canonicalCodes.has(code))).toStrictEqual([]);
     expect(guide).toContain("schema lists every public code.");
     expect(guide).not.toMatch(/no_addon|monitor_limit_reached/u);
   });

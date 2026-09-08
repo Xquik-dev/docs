@@ -9,9 +9,13 @@ keywords: ["guest wallet", "status", "payment verification", "paid_reads", "bala
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="200" id="response-guest-wallets-status-200">
+
     ```json
     {
       "balance": "66666",
@@ -36,26 +40,32 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "wallet_id": "gw_example"
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-guest-wallets-status-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-guest-wallets-status-429">
+
     ```json
     {
       "error": "rate_limited",
       "message": "Try again later."
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
@@ -63,10 +73,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 Poll this endpoint after the user completes hosted checkout. The guest key can authenticate this status route while the wallet is pending, but it cannot call paid read routes until payment is verified.
 
 <CodeGroup>
-  ```bash cURL
-  curl https://xquik.com/api/v1/guest-wallets/status \
-    -H "Authorization: Bearer xq_your_guest_key_here" | jq
-  ```
+
+```bash cURL
+curl https://xquik.com/api/v1/guest-wallets/status \
+  -H "Authorization: Bearer xq_your_guest_key_here" | jq
+```
+
 </CodeGroup>
 
 Wait at least `poll_after_seconds` before polling again. Continue while it is non-null, then stop. Use `usable` to decide whether paid reads can run. An active wallet can remain usable while a top-up is pending.
@@ -74,36 +86,57 @@ Wait at least `poll_after_seconds` before polling again. Continue while it is no
 ## Headers
 
 <ParamField header="Authorization" type="string" required>
-  Send the guest key as `Bearer xq_your_guest_key_here`.
+
+Send the guest key as `Bearer xq_your_guest_key_here`.
+
 </ParamField>
 
 ## Response
 
-<ResponseField name="balance" type="string">Available guest wallet credits.</ResponseField>
-<ResponseField name="scope" type="string">Always `paid_reads`.</ResponseField>
-<ResponseField name="status" type="string">Combined wallet and pending-checkout state: `active`, `pending`, `expired`, `failed`, `frozen`, or `closed`. A pending top-up can coexist with `usable: true`.</ResponseField>
-<ResponseField name="usable" type="boolean">Whether the key can call eligible paid read routes.</ResponseField>
-<ResponseField name="poll_after_seconds" type="integer | null">`2` while payment is pending. Otherwise `null`.</ResponseField>
-<ResponseField name="latest_purchase" type="object | null">Latest amount, credits, expiry, purchase ID, checkout URL while pending, and purchase status.</ResponseField>
-<ResponseField name="top_up" type="object | null">Direct REST top-up action when the wallet is usable and has no pending checkout.</ResponseField>
-<ResponseField name="wallet_id" type="string">Guest wallet ID.</ResponseField>
+<ResponseField name="balance" type="string">
+  Available guest wallet credits.
+</ResponseField>
+<ResponseField name="scope" type="string">
+  Always `paid_reads`.
+</ResponseField>
+<ResponseField name="status" type="string">
+  Combined wallet and pending-checkout state: `active`, `pending`, `expired`, `failed`, `frozen`, or
+  `closed`. A pending top-up can coexist with `usable: true`.
+</ResponseField>
+<ResponseField name="usable" type="boolean">
+  Whether the key can call eligible paid read routes.
+</ResponseField>
+<ResponseField name="poll_after_seconds" type="integer | null">
+  `2` while payment is pending. Otherwise `null`.
+</ResponseField>
+<ResponseField name="latest_purchase" type="object | null">
+  Latest amount, credits, expiry, purchase ID, checkout URL while pending, and purchase status.
+</ResponseField>
+<ResponseField name="top_up" type="object | null">
+  Direct REST top-up action when the wallet is usable and has no pending checkout.
+</ResponseField>
+<ResponseField name="wallet_id" type="string">
+  Guest wallet ID.
+</ResponseField>
 
 ## Interpret the result
 
 Use these fields together:
 
-| Condition | Meaning | Action |
-| --- | --- | --- |
-| `usable: true`, `status: active` | Paid reads can run. No checkout is pending. | Call eligible reads. Use `top_up` only after confirmation. |
-| `usable: true`, `status: pending` | Existing credits remain usable while a top-up is pending. | Continue affordable reads. Poll after the stated delay. |
-| `usable: false`, `status: pending` | The initial checkout still awaits verified payment. | Do not call paid reads. Poll after the stated delay. |
-| `usable: false`, `status: expired` or `failed` | The initial checkout reached a terminal state. | Stop polling. Get new confirmation before creating another wallet. |
-| `usable: false`, `status: frozen` or `closed` | Wallet access is unavailable. | Stop paid reads. Do not retry payment automatically. |
+| Condition                                      | Meaning                                                   | Action                                                             |
+| ---------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------ |
+| `usable: true`, `status: active`               | Paid reads can run. No checkout is pending.               | Call eligible reads. Use `top_up` only after confirmation.         |
+| `usable: true`, `status: pending`              | Existing credits remain usable while a top-up is pending. | Continue affordable reads. Poll after the stated delay.            |
+| `usable: false`, `status: pending`             | The initial checkout still awaits verified payment.       | Do not call paid reads. Poll after the stated delay.               |
+| `usable: false`, `status: expired` or `failed` | The initial checkout reached a terminal state.            | Stop polling. Get new confirmation before creating another wallet. |
+| `usable: false`, `status: frozen` or `closed`  | Wallet access is unavailable.                             | Stop paid reads. Do not retry payment automatically.               |
 
 `latest_purchase.status` describes only the latest purchase. Use the top-level `usable` field for paid-read access.
 
 <Tabs>
+
   <Tab title="200 OK">
+
     ```json
     {
       "balance": "66666",
@@ -126,12 +159,17 @@ Use these fields together:
       "wallet_id": "gw_example"
     }
     ```
+
   </Tab>
   <Tab title="401 Unauthenticated">
+
     The guest key is missing or invalid. No email or account recovery is available.
+
   </Tab>
   <Tab title="429 Rate limited">
+
     Wait for `Retry-After` before polling again.
+
   </Tab>
 </Tabs>
 
@@ -140,5 +178,7 @@ Use `usable` to decide whether the key can call paid reads.
 The response sends `Cache-Control: no-store, private` and never returns the guest key.
 
 <Note>
-  **Related.** [Guest wallet guide](/guides/guest-wallets) · [Create guest wallet](/api-reference/guest-wallets/create) · [Top up guest wallet](/api-reference/guest-wallets/topup)
+
+**Related.** [Guest wallet guide](/guides/guest-wallets) · [Create guest wallet](/api-reference/guest-wallets/create) · [Top up guest wallet](/api-reference/guest-wallets/topup)
+
 </Note>

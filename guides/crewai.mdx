@@ -25,14 +25,14 @@ Build a CrewAI MCP integration through Xquik's remote Twitter MCP server. Give C
 
 CrewAI offers an agent framework for complex tasks. Give each agent one role. Xquik supplies documentation search and Twitter API operations through `docs`, `search`, and `execute`.
 
-| Boundary | CrewAI control | Benefit |
-| --- | --- | --- |
-| Remote MCP | `MCPServerHTTP` | Reach tweet, profile, follower, and monitor routes |
-| Handoff | Pydantic `output_pydantic` | Reject malformed tweets and cursors |
-| Sequence | `Process.sequential` | Pass exact tweets between specialists |
-| Discovery | Static tool filter | Expose schemas without execution |
-| Review | Tool-free task | Review X actions before writes |
-| Failures | `has_tool_failures` | Stop incomplete research |
+| Boundary   | CrewAI control             | Benefit                                            |
+| ---------- | -------------------------- | -------------------------------------------------- |
+| Remote MCP | `MCPServerHTTP`            | Reach tweet, profile, follower, and monitor routes |
+| Handoff    | Pydantic `output_pydantic` | Reject malformed tweets and cursors                |
+| Sequence   | `Process.sequential`       | Pass exact tweets between specialists              |
+| Discovery  | Static tool filter         | Expose schemas without execution                   |
+| Review     | Tool-free task             | Review X actions before writes                     |
+| Failures   | `has_tool_failures`        | Stop incomplete research                           |
 
 This CrewAI multi agent pattern fits research, verification, and reporting. Use direct REST for deterministic jobs without model decisions.
 
@@ -161,12 +161,12 @@ Always inspect `has_tool_failures`. Never pass incomplete results into follower 
 
 Send a precise `q`. Keep the exact query in the handoff.
 
-| Intent | Example `q` |
-| --- | --- |
-| Framework posts | `"CrewAI" MCP` |
-| Account timeline | `from:crewAIInc since:2026-07-01 until:2026-08-01` |
-| Twitter API Python posts | `"Twitter API" Python lang:en min_faves:25` |
-| Questions | `"multi-agent workflow" ? -filter:retweets` |
+| Intent                   | Example `q`                                        |
+| ------------------------ | -------------------------------------------------- |
+| Framework posts          | `"CrewAI" MCP`                                     |
+| Account timeline         | `from:crewAIInc since:2026-07-01 until:2026-08-01` |
+| Twitter API Python posts | `"Twitter API" Python lang:en min_faves:25`        |
+| Questions                | `"multi-agent workflow" ? -filter:retweets`        |
 
 Use `queryType=Latest` for real time monitoring. Use `Top` for engagement-ranked research. See the [tweet search API contract](/api-reference/x/search-tweets).
 
@@ -306,23 +306,36 @@ Never share agents across tenant keys. Keep keys outside prompts, output, memory
 Store identifiers and checkpoints outside task prose.
 
 <CardGroup cols={2}>
+
   <Card title="Tweet search rows" icon="search">
+
     Store `q`, `tweet_id`, `created`, `has_more`, and `next_cursor`.
+
   </Card>
   <Card title="Follower exports" icon="users">
+
     Store `id` as `user_id`. Keep `username`, `followers`, `has_more`, and `next_cursor`.
+
   </Card>
   <Card title="Monitor events" icon="radio">
+
     Store `monitor_id`, `event_id`, `occurred_at`, `next_cursor`, and `cursor`.
+
   </Card>
   <Card title="Webhook deliveries" icon="webhook">
+
     Store `webhook_id`, `delivery_id`, and `stream_event_id`. Protect `secret` separately.
+
   </Card>
   <Card title="Extraction jobs" icon="database">
+
     Store `extraction_id`, `status`, `poll`, and `export_after_complete`.
+
   </Card>
   <Card title="Approved X actions" icon="send">
+
     Store `tweet_id`, `write_action_id`, `status`, `charged_credits`, and `poll`. Never resend pending writes.
+
   </Card>
 </CardGroup>
 
@@ -332,14 +345,14 @@ Persist `result.pydantic` or `result.to_dict()`. Avoid free-form `result.raw`.
 
 The tweet search contract documents these responses. Keep their meanings separate.
 
-| Status | Meaning | Crew action |
-| --- | --- | --- |
-| `400` | Missing or invalid query | Fix `q`; never retry unchanged |
-| `401` | Guest authentication failed | Provide an Xquik key or connect X |
-| `402` | Credits are unavailable | Stop and request account action |
-| `424` | X dependency failed | Retry with bounded backoff |
-| `429` | Twitter rate limit applies | Wait, then resume the cursor |
-| `502` | Invalid X response | Retry later without changing IDs |
+| Status | Meaning                     | Crew action                       |
+| ------ | --------------------------- | --------------------------------- |
+| `400`  | Missing or invalid query    | Fix `q`; never retry unchanged    |
+| `401`  | Guest authentication failed | Provide an Xquik key or connect X |
+| `402`  | Credits are unavailable     | Stop and request account action   |
+| `424`  | X dependency failed         | Retry with bounded backoff        |
+| `429`  | Twitter rate limit applies  | Wait, then resume the cursor      |
+| `502`  | Invalid X response          | Retry later without changing IDs  |
 
 Inspect `result.tool_failures` after failures. Log the route, safe message, and task index.
 
@@ -351,11 +364,11 @@ POST and DELETE routes use different statuses. Read each route before retrying. 
 
 These versions were checked on August 2, 2026.
 
-| Package | Checked compatible version | Compatible range used here |
-| --- | --- | --- |
-| `crewai` | 1.15.10 | `>=1.15,<1.16` |
-| `mcp` | 1.28.1 | `>=1.28.1,<1.29` through CrewAI |
-| `pydantic` | 2.12.5 | `>=2.11.9,<2.13` through CrewAI |
+| Package    | Checked compatible version | Compatible range used here      |
+| ---------- | -------------------------- | ------------------------------- |
+| `crewai`   | 1.15.10                    | `>=1.15,<1.16`                  |
+| `mcp`      | 1.28.1                     | `>=1.28.1,<1.29` through CrewAI |
+| `pydantic` | 2.12.5                     | `>=2.11.9,<2.13` through CrewAI |
 
 CrewAI 1.15 supports Python 3.10 through 3.13. Review release notes before
 widening these ranges.

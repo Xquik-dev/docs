@@ -3,15 +3,27 @@ title: "Twitter API billing: instant X API credit top-up"
 sidebarTitle: "Quick top-up credits"
 description: "Charge a saved method for USD 10-500 in the Xquik dashboard. Handle authentication, declines, and checkout fallback without double billing or server errors."
 api: "POST /credits/quick-topup"
-keywords: ["X API credits", "Twitter API billing", "quick top-up", "top up credits", "saved payment method", "billing"]
+keywords:
+  [
+    "X API credits",
+    "Twitter API billing",
+    "quick top-up",
+    "top up credits",
+    "saved payment method",
+    "billing",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
+
 <Panel>
+
 <Tabs defaultTabIndex={0} sync={false}>
+
   <Tab title="200" id="response-credits-quick-topup-200">
+
     ```json
     {
       "outcome": "charged",
@@ -19,27 +31,33 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "credits": "1000"
     }
     ```
+
   </Tab>
 
   <Tab title="400" id="response-credits-quick-topup-400">
+
     ```json
     {
       "error": "invalid_input",
       "message": "Invalid input. Check the request body."
     }
     ```
+
   </Tab>
 
   <Tab title="401" id="response-credits-quick-topup-401">
+
     ```json
     {
       "error": "unauthenticated",
       "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
+
   </Tab>
 
   <Tab title="429" id="response-credits-quick-topup-429">
+
     ```json
     {
       "error": "rate_limit_exceeded",
@@ -47,8 +65,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "retryAfter": 60
     }
     ```
+
   </Tab>
 </Tabs>
+
 </Panel>
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
@@ -57,8 +77,7 @@ Add API credits from the Xquik dashboard with a saved payment method.
 
 ## Add API credits with a saved payment method
 
-Use quick top-up after the dashboard confirms an amount from USD 10 through
-500. This route requires a same-origin Xquik session. External integrations
+Use quick top-up after the dashboard confirms an amount from USD 10 through 500. This route requires a same-origin Xquik session. External integrations
 must use the [hosted top-up endpoint](/api-reference/credits/topup).
 
 Read `outcome` before handling any other response field. `charged` means the
@@ -75,10 +94,13 @@ hosted checkout session by `session_id`. This route returns its own immediate
 payment outcome for the saved payment method.
 
 <Callout icon="circle-check" color="#16a34a">
-  **Free** - does not consume credits
+
+**Free** - does not consume credits
+
 </Callout>
 
 <CodeGroup>
+
 ```javascript Dashboard browser
 const response = await fetch("/api/v1/credits/quick-topup", {
   method: "POST",
@@ -95,28 +117,33 @@ if (result.outcome === "charged") {
   window.location.assign("/account/subscription");
 }
 ```
+
 </CodeGroup>
 
-| Credit top-up outcome | Response fields | Next action |
-| --- | --- | --- |
-| Immediate charge | `outcome: "charged"` | Store `credits` and the updated `balance`. |
-| Payment authentication | `outcome: "requires_action"` | Complete the billing confirmation flow. |
-| Missing payment method | `outcome: "no_payment_method"` | Create a checkout top-up instead. |
-| Declined payment method | `outcome: "declined"` | Ask for another payment method. |
-| Added credits | `credits` | Treat the bigint value as a string. |
-| Updated balance | `balance` | Gate the next tweet, follower, or monitor job. |
-| Confirmation secret | `clientSecret` | Send it only to the billing confirmation flow. |
+| Credit top-up outcome   | Response fields                | Next action                                    |
+| ----------------------- | ------------------------------ | ---------------------------------------------- |
+| Immediate charge        | `outcome: "charged"`           | Store `credits` and the updated `balance`.     |
+| Payment authentication  | `outcome: "requires_action"`   | Complete the billing confirmation flow.        |
+| Missing payment method  | `outcome: "no_payment_method"` | Create a checkout top-up instead.              |
+| Declined payment method | `outcome: "declined"`          | Ask for another payment method.                |
+| Added credits           | `credits`                      | Treat the bigint value as a string.            |
+| Updated balance         | `balance`                      | Gate the next tweet, follower, or monitor job. |
+| Confirmation secret     | `clientSecret`                 | Send it only to the billing confirmation flow. |
 
 ## Headers
 
 <ParamField header="Content-Type" type="string" required>
-  Must be `application/json`.
+
+Must be `application/json`.
+
 </ParamField>
 
 ## Body
 
 <ParamField body="dollars" type="number" required>
-  Amount in US dollars to charge. Minimum $10, maximum $500.
+
+Amount in US dollars to charge. Minimum $10, maximum $500.
+
 </ParamField>
 
 At USD 0.00015 per credit, a USD 25 quick top-up adds 166,666 credits, rounded down to whole credits.
@@ -130,9 +157,15 @@ Use hosted checkout for `declined` or `no_payment_method`.
 
 Payment succeeded immediately. Credits added to your balance.
 
-<ResponseField name="outcome" type="string">Always `"charged"`.</ResponseField>
-<ResponseField name="balance" type="string">Updated credit balance after top-up (Bigint string).</ResponseField>
-<ResponseField name="credits" type="string">Number of credits added (Bigint string).</ResponseField>
+<ResponseField name="outcome" type="string">
+  Always `"charged"`.
+</ResponseField>
+<ResponseField name="balance" type="string">
+  Updated credit balance after top-up (Bigint string).
+</ResponseField>
+<ResponseField name="credits" type="string">
+  Number of credits added (Bigint string).
+</ResponseField>
 
 ```json
 {
@@ -146,8 +179,12 @@ Payment succeeded immediately. Credits added to your balance.
 
 Payment requires additional authentication (e.g., 3D Secure). Use the returned client secret with the billing confirmation flow to complete the payment.
 
-<ResponseField name="outcome" type="string">Always `"requires_action"`.</ResponseField>
-<ResponseField name="clientSecret" type="string">Payment client secret for completing the payment.</ResponseField>
+<ResponseField name="outcome" type="string">
+  Always `"requires_action"`.
+</ResponseField>
+<ResponseField name="clientSecret" type="string">
+  Payment client secret for completing the payment.
+</ResponseField>
 
 ```json
 {
@@ -160,7 +197,9 @@ Payment requires additional authentication (e.g., 3D Secure). Use the returned c
 
 No saved payment method on file. Redirect the user to add one via the billing portal, or use the standard [top-up endpoint](/api-reference/credits/topup) instead.
 
-<ResponseField name="outcome" type="string">Always `"no_payment_method"`.</ResponseField>
+<ResponseField name="outcome" type="string">
+  Always `"no_payment_method"`.
+</ResponseField>
 
 ```json
 {
@@ -172,7 +211,9 @@ No saved payment method on file. Redirect the user to add one via the billing po
 
 The saved method failed. Open hosted checkout so the user can choose another.
 
-<ResponseField name="outcome" type="string">Always `"declined"`.</ResponseField>
+<ResponseField name="outcome" type="string">
+  Always `"declined"`.
+</ResponseField>
 
 ```json
 {
@@ -185,6 +226,7 @@ The saved method failed. Open hosted checkout so the user can choose another.
 ```json
 { "error": "Invalid input" }
 ```
+
 The request body is missing a numeric `dollars` value or includes too many decimal places.
 
 ### 401 Unauthenticated
@@ -192,15 +234,23 @@ The request body is missing a numeric `dollars` value or includes too many decim
 ```json
 { "error": "unauthenticated" }
 ```
+
 Missing or invalid API key.
 
 ### 429 Rate limited
 
 ```json
-{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Try again later.",
+  "retryAfter": 60
+}
 ```
+
 Too many requests. Wait for the `Retry-After` header before retrying.
 
 <Note>
-  **Related.** [Top Up Credits](/api-reference/credits/topup) · [Get Top-Up Status](/api-reference/credits/topup-status) · [Get Credits](/api-reference/credits/get) · [Billing Guide](/guides/billing)
+
+**Related.** [Top Up Credits](/api-reference/credits/topup) · [Get Top-Up Status](/api-reference/credits/topup-status) · [Get Credits](/api-reference/credits/get) · [Billing Guide](/guides/billing)
+
 </Note>
