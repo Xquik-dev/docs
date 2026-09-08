@@ -102,6 +102,9 @@ bun run check:all
 Clone the application beside this repository for product contract checks.
 Otherwise, set `XQUIK_ROOT` & `XQUIK_PRODUCT_ROOT` to the application candidate.
 Missing product source fails validation.
+Reuse verified static checks through the application's existing validation cache.
+Changes to docs, dependencies, or commands invalidate those results.
+Full tests, coverage, LOC checks, and measurement reports always run.
 
 Coverage compares the full suite against the parent commit.
 Retain its verified reports under Git's `coverage-baselines/<parent SHA>/` directory.

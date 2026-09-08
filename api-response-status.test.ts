@@ -13,6 +13,9 @@ import {
 } from "./scripts/lib/generated-response-examples";
 
 const PROJECT_ROOT = process.cwd();
+const spec = Bun.YAML.parse(
+  readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
+) as OpenApiSpec;
 const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
   PROJECT_ROOT,
   "snippets/write-action-lifecycle-response.mdx",
@@ -32,10 +35,6 @@ interface ResponseStatusFinding {
   readonly issue: string;
   readonly operation: string;
   readonly status: string;
-}
-
-function parseYaml(source: string): OpenApiSpec {
-  return Bun.YAML.parse(source) as OpenApiSpec;
 }
 
 const apiReferenceFiles = [
@@ -109,23 +108,12 @@ function generatedJsonResponse(
   const tabStart = generated.indexOf(`<Tab title="${status}"`);
   if (tabStart === -1) return undefined;
 
-  const fence = "```json\n";
-  const fenceStart = generated.indexOf(fence, tabStart);
-  if (fenceStart === -1) return undefined;
-
-  const fenceEnd = generated.indexOf("\n    ```", fenceStart + fence.length);
-  if (fenceEnd === -1) return undefined;
-
-  const json = generated
-    .slice(fenceStart + fence.length, fenceEnd)
-    .split("\n")
-    .map((line): string => line.replace(/^    /u, ""))
-    .join("\n");
-  return JSON.parse(json) as Readonly<Record<string, unknown>>;
-}
-
-function operationKey(apiDoc: ApiDoc): string {
-  return `${apiDoc.method.toUpperCase()} ${apiDoc.path}`;
+  const json = /```json\n(?<body>[\s\S]*?)\n    ```/u.exec(generated.slice(tabStart))?.groups?.[
+    "body"
+  ];
+  return json === undefined
+    ? undefined
+    : (JSON.parse(json.replace(/^    /gmu, "")) as Readonly<Record<string, unknown>>);
 }
 
 function responseStatuses(operation: OpenApiOperation): readonly string[] {
@@ -148,12 +136,13 @@ function collectStatusFindings({
   const findings: ResponseStatusFinding[] = [];
 
   for (const apiDoc of readApiDocs()) {
+    const operationLabel = `${apiDoc.method.toUpperCase()} ${apiDoc.path}`;
     const operation = spec.paths?.[apiDoc.path]?.[apiDoc.method];
     if (operation === undefined) {
       findings.push({
         file: apiDoc.file,
         issue: "API reference frontmatter does not match openapi.yaml.",
-        operation: operationKey(apiDoc),
+        operation: operationLabel,
         status: apiDoc.path,
       });
       continue;
@@ -168,7 +157,7 @@ function collectStatusFindings({
       findings.push({
         file: apiDoc.file,
         issue: `OpenAPI ${issuePrefix}response status is missing from endpoint docs.`,
-        operation: operationKey(apiDoc),
+        operation: operationLabel,
         status,
       });
     }
@@ -179,7 +168,7 @@ function collectStatusFindings({
       findings.push({
         file: apiDoc.file,
         issue: `Endpoint docs include a ${issuePrefix}status not present in OpenAPI.`,
-        operation: operationKey(apiDoc),
+        operation: operationLabel,
         status,
       });
     }
@@ -191,7 +180,6 @@ function collectStatusFindings({
 describe("API success response status documentation", (): void => {
   it("generates the documented response blocks from canonical schemas", (): void => {
     expect.assertions(1);
-    const spec = parseYaml(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
     const mismatches = readApiDocs().flatMap((apiDoc): readonly string[] => {
       const scope = apiDoc.file.replace(/^api-reference\//u, "").replace(/\.mdx$/u, "");
       const operation = spec.paths?.[apiDoc.path]?.[apiDoc.method];
@@ -202,6 +190,19 @@ describe("API success response status documentation", (): void => {
         : [apiDoc.file];
     });
     expect(mismatches).toStrictEqual([]);
+  });
+
+  it("combines response schema fields without losing false or zero values", (): void => {
+    expect.assertions(1);
+    const schema = {
+      allOf: [
+        { type: "object", properties: { available: { type: "boolean" } } },
+        { type: "object", properties: { score: { type: "integer" } } },
+      ],
+    };
+    const responses = { "200": { content: { "application/json": { schema } } } };
+    const block = responseExampleBlock({}, { responses }, "combined");
+    expect(generatedJsonResponse(block, "200")).toStrictEqual({ available: false, score: 0 });
   });
 
   it.each([
@@ -217,7 +218,6 @@ describe("API success response status documentation", (): void => {
     },
   ])("matches $issuePrefix\u200bresponse tabs to OpenAPI", (providers): void => {
     expect.assertions(1);
-    const spec = parseYaml(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
     expect(collectStatusFindings({ ...providers, spec })).toStrictEqual([]);
   });
 
@@ -268,7 +268,6 @@ describe("API success response status documentation", (): void => {
   it("keeps write success examples aligned with each canonical action", (): void => {
     expect.assertions(2);
 
-    const spec = parseYaml(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
     const writeDocs = readApiDocs().flatMap((apiDoc) => {
       const action = spec.paths?.[apiDoc.path]?.[apiDoc.method]?.["x-write-action"];
       return action === undefined ? [] : [{ action, apiDoc }];
