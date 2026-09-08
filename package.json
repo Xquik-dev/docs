@@ -12,7 +12,7 @@
     "sync:response-examples": "bun scripts/sync-api-response-examples.mjs",
     "test:agent-docs": "bun run --bun --no-install vitest run",
     "test:coverage": "coverage_report=$(mktemp -d \"$(git rev-parse --git-path coverage)-XXXXXXXX\"); bun run test:agent-docs --coverage --coverage.provider=istanbul '--coverage.include=**/*.{js,jsx,mjs,cjs,ts,tsx}' '--coverage.exclude=**/*.test.*' --coverage.reporter=text --coverage.reporter=json-summary --coverage.reporter=json --coverage.reportOnFailure --coverage.reportsDirectory=\"$coverage_report\" && bun run check:coverage \"$coverage_report/coverage-summary.json\"",
-    "check:all": "bun run --parallel --no-exit-on-error check:security check:dependencies check:response-examples lint format:check format:go:check format:shell:check test:coverage test:coverage-tool docs:validate docs:links report:p99 check:licenses",
+    "check:all": "bun run --parallel --no-exit-on-error check:static test:coverage test:coverage-tool report:p99 check:loc",
     "check:coverage": "go run scripts/check-coverage.go",
     "test:coverage-tool": "go test -cover scripts/check-coverage.go scripts/check-coverage_test.go scripts/check-loc_test.go",
     "format:go:check": "gofmt -d scripts/*.go && test -z \"$(gofmt -l scripts/*.go)\"",
@@ -20,7 +20,8 @@
     "format:shell:check": "shfmt -d scripts/*.sh",
     "check:security": "bash scripts/check-security.sh",
     "report:p99": "printf '{\"baseCommit\":\"%s\",\"scope\":\"documentation tooling\",\"coverage\":null,\"status\":\"unmeasured\",\"gaps\":[\"No representative per-operation latency distributions are retained.\",\"Check and build wall times do not establish p99.\"]}\\n' \"$(git rev-parse HEAD)\"",
-    "check:licenses": "uvx --from reuse==6.2.0 reuse lint"
+    "check:licenses": "uvx --from reuse==6.2.0 reuse lint",
+    "check:static": "bash \"${XQUIK_ROOT:-${XQUIK_PRODUCT_ROOT:-../xquik}}/scripts/check-all.sh\" lane static bun run --parallel --no-exit-on-error check:security check:dependencies check:response-examples lint format:check format:go:check format:shell:check docs:validate docs:links check:licenses"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",

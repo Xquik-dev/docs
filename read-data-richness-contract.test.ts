@@ -75,6 +75,7 @@ const TWEET_FIELDS = [
   "possiblySensitive",
   "previousCounts",
   "reactionContext",
+  "sportsContext",
   "viewState",
   "scopes",
   "entities",
@@ -184,11 +185,7 @@ const MEDIA_FIELDS = [
   "width",
 ] as const;
 
-function parseOpenApi(source: string): OpenApiDocument {
-  return Bun.YAML.parse(source) as OpenApiDocument;
-}
-
-const PARSED_OPENAPI = parseOpenApi(OPENAPI);
+const PARSED_OPENAPI = Bun.YAML.parse(OPENAPI) as OpenApiDocument;
 
 function schemaFields(openApi: Readonly<OpenApiDocument>, name: string): readonly string[] {
   const schema = openApi.components?.schemas?.[name];

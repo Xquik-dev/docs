@@ -20,8 +20,10 @@ Run all applicable local checks through `bun run check:all` within 20 seconds.
 Include tests, coverage, LOC, types, lint, formatting, security, contracts & docs.
 Report p99 measurement coverage honestly, including gaps.
 Failed, incomplete or unavailable checks block delivery.
-Builds, deployments, p99 coverage, performance, costs & discovery scores remain improvement targets.
-Their unmet targets alone never block delivery; the 20-second check limit does.
+Build timing, p99 coverage, performance, costs & discovery scores remain improvement targets.
+Server deployments must finish within 60 seconds, including setup & verification.
+Overruns block unrelated delivery until corrective work meets the timing gate.
+Corrective commits must still pass every other delivery gate.
 Fix security, correctness, billing, deployment-safety & contract defects before shipping.
 Publish required docs before the affected application deployment.
 Verify production before declaring deployment complete.
