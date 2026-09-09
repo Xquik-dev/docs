@@ -237,7 +237,7 @@ export function responseExampleBlock(document, operation, scope) {
 }
 
 /** @param {string} source @param {string} block @returns {string} */
-function replaceGeneratedBlock(source, block) {
+export function replaceGeneratedBlock(source, block) {
   const sourceWithoutBlock = stripGeneratedResponseExamples(source);
 
   const frontmatter = /^---\r?\n[\s\S]*?\r?\n---\r?\n/u.exec(sourceWithoutBlock);

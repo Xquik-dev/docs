@@ -2815,8 +2815,8 @@ const FORBIDDEN_TYPES_GUIDE_COMPLETENESS_OVERCLAIMS = [
 ] as const;
 
 const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
-  'description: "Handle Xquik API errors with exact status guidance and safe retries. Recover cursors, confirm writes, repair monitors, restore webhooks, and check dependencies."',
-  "Use each `error` code to choose recovery.",
+  'description: "Recover Xquik requests, cursors, writes, monitors, webhooks, and dependencies. Follow retry safety, restore account access, and handle reply restrictions."',
+  "Choose recovery by `error` code.",
   "safeToRetry",
   "Start with HTTP status. Retry only when stated.",
   '<Card title="400 request validation" icon="circle-alert">',
@@ -2830,7 +2830,7 @@ const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   "## Common error codes",
   "schema lists every public code.",
   '<Card title="422 write validation" icon="message-circle-warning">',
-  "`x_dm_not_allowed`, `x_target_not_found`, `x_content_too_long`",
+  "`x_dm_not_allowed`, `x_reply_not_allowed`, `x_target_not_found`, `x_content_too_long`",
   '<Card title="202 active write" icon="clock">',
   "Store the action and poll `statusUrl` while `terminal` is",
   "Follow `Retry-After`, `pollAfterMs`, and `nextAction`.",
@@ -2839,7 +2839,7 @@ const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   '<Card title="500, 502, and 503 transient failures" icon="rotate-ccw">',
   "For writes, retry only when",
   '<Card title="HTTP status" icon="gauge">',
-  "`429 Too Many Requests` means the request is rate limited or waiting on an",
+  "`429 Too Many Requests` signals a rate limit or account cooldown.",
   '<Card title="Retry-After header" icon="timer">',
   "The `Retry-After` header gives seconds to wait before sending the same",
   '<Card title="x_write_ambiguous" icon="activity">',
@@ -3705,7 +3705,7 @@ const REQUIRED_WRITE_VALIDATION_ERROR_GUIDE_SNIPPETS = [
   '<Card title="x_dm_not_allowed" icon="message-circle">',
   "Recipient does not accept DMs from this account.",
   '<Card title="x_target_not_found" icon="search-x">',
-  "Verify the ID or username before",
+  "Verify the ID and that account's access before",
   '<Card title="x_content_too_long" icon="message-circle-warning">',
   "Content exceeds the character limit.",
   '<Card title="x_rejected" icon="circle-x">',
@@ -13597,14 +13597,179 @@ describe("repository discovery", (): void => {
     ]).toStrictEqual([]);
   });
 
-  it("keeps the guest wallet boundary and settlement invariant explicit", (): void => {
+  it.each([
+    [
+      "keeps the guest wallet boundary and settlement invariant explicit",
+      "guides/guest-wallets.mdx",
+      "Guest wallet guide",
+      REQUIRED_GUEST_WALLET_GUIDE_SNIPPETS,
+    ],
+    [
+      "keeps glossary API key links aligned with dashboard routing",
+      "guides/glossary.mdx",
+      "Glossary API key dashboard link",
+      REQUIRED_GLOSSARY_API_KEY_SNIPPETS,
+    ],
+    [
+      "keeps account usage fields aligned with monitor billing behavior",
+      "api-reference/account/get.mdx",
+      "Account API docs",
+      REQUIRED_ACCOUNT_API_SNIPPETS,
+    ],
+    [
+      "keeps troubleshooting recovery handoffs source-backed",
+      "guides/troubleshooting.mdx",
+      "Troubleshooting recovery handoffs",
+      REQUIRED_TROUBLESHOOTING_RECOVERY_SNIPPETS,
+    ],
+    [
+      "keeps mobile guide content constrained to the viewport",
+      "custom.css",
+      "Custom CSS mobile viewport guard",
+      REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS,
+    ],
+    [
+      "keeps shared monitor types aligned with account and keyword monitor APIs",
+      "guides/x-api-typescript-types.mdx",
+      "Types guide monitor objects",
+      REQUIRED_MONITOR_TYPES_GUIDE_SNIPPETS,
+    ],
+    [
+      "keeps shared event types aligned with account and keyword monitor events",
+      "guides/x-api-typescript-types.mdx",
+      "Types guide event object",
+      REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS,
+    ],
+    [
+      "keeps shared draft types aligned with draft API formatting",
+      "guides/x-api-typescript-types.mdx",
+      "Types guide draft object",
+      REQUIRED_DRAFT_TYPES_GUIDE_SNIPPETS,
+    ],
+    [
+      "keeps the X accounts list API page clear about health states",
+      "api-reference/x-accounts/list.mdx",
+      "List X accounts API docs",
+      REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS,
+    ],
+    [
+      "keeps the connect X account API page clear about TOTP setup",
+      "api-reference/x-accounts/connect.mdx",
+      "Connect X account TOTP docs",
+      REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS,
+    ],
+    [
+      "keeps the re-authenticate X account API page clear about TOTP setup",
+      "api-reference/x-accounts/reauth.mdx",
+      "Re-authenticate X account TOTP docs",
+      REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS,
+    ],
+    [
+      "keeps the submit X account email code API page clear about the pending login handoff",
+      "api-reference/x-accounts/submit-challenge.mdx",
+      "Submit X account email code pending login handoff",
+      REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS,
+    ],
+    [
+      "keeps the bulk retry X accounts API page clear about retry boundaries",
+      "api-reference/x-accounts/bulk-retry.mdx",
+      "Bulk retry X accounts retry boundaries",
+      REQUIRED_X_ACCOUNTS_BULK_RETRY_SNIPPETS,
+    ],
+    [
+      "keeps the get X account API page clear about account state recovery",
+      "api-reference/x-accounts/get.mdx",
+      "Get X account state recovery",
+      REQUIRED_X_ACCOUNTS_GET_STATE_SNIPPETS,
+    ],
+    [
+      "keeps the disconnect X account API page clear about removal effects",
+      "api-reference/x-accounts/disconnect.mdx",
+      "Disconnect X account removal effects",
+      REQUIRED_X_ACCOUNTS_DISCONNECT_SNIPPETS,
+    ],
+    [
+      "keeps the Twitter giveaway picker guide source-backed",
+      "guides/twitter-giveaway-picker.mdx",
+      "Twitter giveaway picker guide",
+      REQUIRED_TWITTER_GIVEAWAY_PICKER_SNIPPETS,
+    ],
+    [
+      "keeps the comment and retweet picker guide source-backed",
+      "guides/twitter-comment-retweet-picker.mdx",
+      "Comment and retweet picker guide",
+      REQUIRED_TWITTER_COMMENT_RETWEET_PICKER_SNIPPETS,
+    ],
+    [
+      "keeps the target audience discovery workflow source-backed",
+      "guides/target-audience-discovery-workflow.mdx",
+      "Target audience discovery workflow",
+      REQUIRED_TARGET_AUDIENCE_DISCOVERY_WORKFLOW_SNIPPETS,
+    ],
+    [
+      "keeps the brand monitoring workflow source-backed",
+      "guides/brand-monitoring-workflow.mdx",
+      "Brand monitoring workflow",
+      REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS,
+    ],
+    [
+      "keeps the no-code workflow handoff source-backed",
+      "guides/no-code-workflow-handoff.mdx",
+      "No-code workflow handoff",
+      REQUIRED_NO_CODE_WORKFLOW_HANDOFF_SNIPPETS,
+    ],
+    [
+      "keeps the tweet metadata field guide source-backed",
+      "guides/tweet-profile-api-fields.mdx",
+      "Tweet metadata field guide",
+      REQUIRED_TWEET_PROFILE_API_FIELDS_SNIPPETS,
+    ],
+    [
+      "keeps Zapier comparison workflow details source-backed",
+      "alternatives/zapier.mdx",
+      "Zapier alternative",
+      REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      "keeps Pipedream comparison workflow details source-backed",
+      "alternatives/pipedream.mdx",
+      "Pipedream alternative",
+      REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      "keeps the Make alternative focused on source-backed workflow handoffs",
+      "alternatives/make.mdx",
+      "Make alternative",
+      REQUIRED_MAKE_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      "keeps the PhantomBuster alternative focused on no-code automation handoffs",
+      "alternatives/phantombuster.mdx",
+      "PhantomBuster alternative",
+      REQUIRED_PHANTOMBUSTER_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      "keeps the X API alternative aligned with current official pricing signals",
+      "alternatives/x-api.mdx",
+      "X API alternative",
+      REQUIRED_X_API_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      "keeps the Twitter API Pro alternative aligned with current official X API scope",
+      "alternatives/twitter-api-pro.mdx",
+      "Twitter API Pro alternative",
+      REQUIRED_TWITTER_API_PRO_ALTERNATIVE_SNIPPETS,
+    ],
+    [
+      "keeps the Audiense alternative focused on audience intelligence handoffs",
+      "alternatives/audiense.mdx",
+      "Audiense alternative",
+      REQUIRED_AUDIENSE_ALTERNATIVE_SNIPPETS,
+    ],
+  ])("%s", (_name, path, label, snippets): void => {
     expect.assertions(1);
-
-    const source = readFileSync("guides/guest-wallets.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(source, "Guest wallet guide", REQUIRED_GUEST_WALLET_GUIDE_SNIPPETS),
-    ).toStrictEqual([]);
+    const source = readFileSync(path, "utf8");
+    expect(collectSnippetFindings(source, label, snippets)).toStrictEqual([]);
   });
 
   it("keeps guest wallet creation secrets out of example output", (): void => {
@@ -13660,20 +13825,6 @@ describe("repository discovery", (): void => {
     ).toStrictEqual([]);
   });
 
-  it("keeps glossary API key links aligned with dashboard routing", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/glossary.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Glossary API key dashboard link",
-        REQUIRED_GLOSSARY_API_KEY_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
   it("keeps the X API glossary concrete and source-backed", (): void => {
     expect.assertions(1);
 
@@ -13686,16 +13837,6 @@ describe("repository discovery", (): void => {
         REQUIRED_X_API_GLOSSARY_SNIPPETS,
         FORBIDDEN_X_API_GLOSSARY_SNIPPETS,
       ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps account usage fields aligned with monitor billing behavior", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/account/get.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(source, "Account API docs", REQUIRED_ACCOUNT_API_SNIPPETS),
     ).toStrictEqual([]);
   });
 
@@ -13815,34 +13956,6 @@ describe("repository discovery", (): void => {
         "Twitter API rate-limit guide",
         REQUIRED_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS,
         FORBIDDEN_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps troubleshooting recovery handoffs source-backed", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/troubleshooting.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Troubleshooting recovery handoffs",
-        REQUIRED_TROUBLESHOOTING_RECOVERY_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps mobile guide content constrained to the viewport", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("custom.css", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Custom CSS mobile viewport guard",
-        REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
@@ -14896,34 +15009,6 @@ describe("repository discovery", (): void => {
     ).toStrictEqual([]);
   });
 
-  it("keeps shared monitor types aligned with account and keyword monitor APIs", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/x-api-typescript-types.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Types guide monitor objects",
-        REQUIRED_MONITOR_TYPES_GUIDE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps shared event types aligned with account and keyword monitor events", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/x-api-typescript-types.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Types guide event object",
-        REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
   it("keeps the list events API page useful for event row handoff", (): void => {
     expect.assertions(1);
 
@@ -14950,20 +15035,6 @@ describe("repository discovery", (): void => {
         "Get event API docs",
         REQUIRED_EVENT_GET_API_HANDOFF_SNIPPETS,
         FORBIDDEN_EVENT_GET_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps shared draft types aligned with draft API formatting", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/x-api-typescript-types.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Types guide draft object",
-        REQUIRED_DRAFT_TYPES_GUIDE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
@@ -15431,108 +15502,10 @@ describe("repository discovery", (): void => {
     ).toStrictEqual([]);
   });
 
-  it("keeps the X accounts list API page clear about health states", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x-accounts/list.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "List X accounts API docs",
-        REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
   it("keeps X account public docs aligned with the current connection contract", (): void => {
     expect.assertions(1);
 
     expect(collectStaleXAccountPublicContractFindings()).toStrictEqual([]);
-  });
-
-  it("keeps the connect X account API page clear about TOTP setup", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x-accounts/connect.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Connect X account TOTP docs",
-        REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the re-authenticate X account API page clear about TOTP setup", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x-accounts/reauth.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Re-authenticate X account TOTP docs",
-        REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the submit X account email code API page clear about the pending login handoff", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x-accounts/submit-challenge.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Submit X account email code pending login handoff",
-        REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the bulk retry X accounts API page clear about retry boundaries", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x-accounts/bulk-retry.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Bulk retry X accounts retry boundaries",
-        REQUIRED_X_ACCOUNTS_BULK_RETRY_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the get X account API page clear about account state recovery", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x-accounts/get.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Get X account state recovery",
-        REQUIRED_X_ACCOUNTS_GET_STATE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the disconnect X account API page clear about removal effects", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x-accounts/disconnect.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Disconnect X account removal effects",
-        REQUIRED_X_ACCOUNTS_DISCONNECT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
   });
 
   it("keeps the workflows overview handoff matrix concrete", (): void => {
@@ -15595,90 +15568,6 @@ describe("repository discovery", (): void => {
         "Campaign verification workflow",
         REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS,
         FORBIDDEN_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the Twitter giveaway picker guide source-backed", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/twitter-giveaway-picker.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Twitter giveaway picker guide",
-        REQUIRED_TWITTER_GIVEAWAY_PICKER_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the comment and retweet picker guide source-backed", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/twitter-comment-retweet-picker.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Comment and retweet picker guide",
-        REQUIRED_TWITTER_COMMENT_RETWEET_PICKER_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the target audience discovery workflow source-backed", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/target-audience-discovery-workflow.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Target audience discovery workflow",
-        REQUIRED_TARGET_AUDIENCE_DISCOVERY_WORKFLOW_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the brand monitoring workflow source-backed", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/brand-monitoring-workflow.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Brand monitoring workflow",
-        REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the no-code workflow handoff source-backed", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/no-code-workflow-handoff.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "No-code workflow handoff",
-        REQUIRED_NO_CODE_WORKFLOW_HANDOFF_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the tweet metadata field guide source-backed", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/tweet-profile-api-fields.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Tweet metadata field guide",
-        REQUIRED_TWEET_PROFILE_API_FIELDS_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
@@ -16016,16 +15905,6 @@ describe("repository discovery", (): void => {
     ]).toStrictEqual([]);
   });
 
-  it("keeps Zapier comparison workflow details source-backed", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("alternatives/zapier.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(source, "Zapier alternative", REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS),
-    ).toStrictEqual([]);
-  });
-
   it("keeps the Zapier guide setup cards source-backed", (): void => {
     expect.assertions(6);
 
@@ -16042,20 +15921,6 @@ describe("repository discovery", (): void => {
     );
     expect(
       FORBIDDEN_ZAPIER_GUIDE_SNIPPETS.filter((snippet) => source.includes(snippet)),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps Pipedream comparison workflow details source-backed", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("alternatives/pipedream.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Pipedream alternative",
-        REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS,
-      ),
     ).toStrictEqual([]);
   });
 
@@ -16312,30 +16177,6 @@ describe("repository discovery", (): void => {
     ).toStrictEqual([]);
   });
 
-  it("keeps the Make alternative focused on source-backed workflow handoffs", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("alternatives/make.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(source, "Make alternative", REQUIRED_MAKE_ALTERNATIVE_SNIPPETS),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the PhantomBuster alternative focused on no-code automation handoffs", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("alternatives/phantombuster.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "PhantomBuster alternative",
-        REQUIRED_PHANTOMBUSTER_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
   it("keeps the alternatives sector matrix concrete", (): void => {
     expect.assertions(3);
 
@@ -16453,44 +16294,6 @@ describe("repository discovery", (): void => {
     }
 
     expect(findings).toStrictEqual([]);
-  });
-
-  it("keeps the X API alternative aligned with current official pricing signals", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("alternatives/x-api.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(source, "X API alternative", REQUIRED_X_API_ALTERNATIVE_SNIPPETS),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the Twitter API Pro alternative aligned with current official X API scope", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("alternatives/twitter-api-pro.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Twitter API Pro alternative",
-        REQUIRED_TWITTER_API_PRO_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the Audiense alternative focused on audience intelligence handoffs", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("alternatives/audiense.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Audiense alternative",
-        REQUIRED_AUDIENSE_ALTERNATIVE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
   });
 
   it("keeps volatile Apify marketplace claims out of public Markdown", (): void => {
