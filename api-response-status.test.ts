@@ -5,7 +5,10 @@ import type {
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { responseExampleBlock } from "./scripts/sync-api-response-examples.mjs";
+import {
+  replaceGeneratedBlock,
+  responseExampleBlock,
+} from "./scripts/sync-api-response-examples.mjs";
 
 import {
   GENERATED_RESPONSE_EXAMPLES_END,
@@ -185,7 +188,8 @@ describe("API success response status documentation", (): void => {
       const operation = spec.paths?.[apiDoc.path]?.[apiDoc.method];
       if (operation === undefined) return [apiDoc.file];
       const generated = responseExampleBlock(spec, operation, scope);
-      return generatedResponseBlock(apiDoc.source) === generatedResponseBlock(generated)
+      return generatedResponseBlock(apiDoc.source) === generatedResponseBlock(generated) &&
+        replaceGeneratedBlock(apiDoc.source, generated) === apiDoc.source
         ? []
         : [apiDoc.file];
     });

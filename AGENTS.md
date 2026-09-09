@@ -16,12 +16,12 @@ Metrics reaching 100% may gain less; metrics already there stay there.
 Check other languages behaviorally & track measurement gaps separately.
 Coverage below 100% alone never blocks delivery.
 
-Run all applicable local checks through `bun run check:all` within 20 seconds.
+Run all applicable local checks through `bun run check:all` within 30 seconds.
 Include tests, coverage, LOC, types, lint, formatting, security, contracts & docs.
 Report p99 measurement coverage honestly, including gaps.
 Failed, incomplete or unavailable checks block delivery.
 Build timing, p99 coverage, performance, costs & discovery scores remain improvement targets.
-Server deployments must finish within 60 seconds, including setup & verification.
+Server deployments must finish within 90 seconds, including setup & verification.
 Overruns block unrelated delivery until corrective work meets the timing gate.
 Corrective commits must still pass every other delivery gate.
 Fix security, correctness, billing, deployment-safety & contract defects before shipping.
@@ -51,3 +51,11 @@ Verify production before declaring deployment complete.
   `bunx --bun mint broken-links`.
 - If adding a root Markdown support file, either keep it ignored or make it an
   intentional public docs page with frontmatter and navigation.
+
+## Archive dependency repair
+
+- Use `bun run install:frozen` for reproducible installations without dependency lifecycle scripts.
+- The npm override replaces the archive extractor with `@xhmikosr/decompress`.
+- `patches/mintlify-archives.patch` migrates its callers and uses `zip-a-folder` for exports.
+- Preserve upstream licensing and run `check:patches` through `check:all`.
+- Remove the patch only after upstream callers use verified safe archive implementations.

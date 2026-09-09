@@ -16,7 +16,6 @@ interface OpenApiSchema {
   readonly "x-stainless-naming"?: {
     readonly csharp: { readonly type_name: string };
   };
-  readonly "x-stainless-override-schema"?: OpenApiSchema;
 }
 
 interface OpenApiResponse {
@@ -117,17 +116,15 @@ describe("X account connection documentation contract", (): void => {
       "#/components/schemas/SanitizedXAccount",
     );
     expect(connect["201"].content["application/json"].schema.type).toBeUndefined();
-    expect(
-      refs(connect["201"].content["application/json"].schema["x-stainless-override-schema"] ?? {}),
-    ).toStrictEqual([
-      "#/components/schemas/SanitizedXAccount",
-      "#/components/schemas/XAccountConnectionContinuation",
-    ]);
-    expect(
-      connect["201"].content["application/json"].schema["x-stainless-override-schema"]?.[
-        "x-stainless-naming"
-      ]?.csharp.type_name,
-    ).toBe("AccountCreateResponse");
+    expect(connect["201"].content["application/json"].schema).not.toHaveProperty(
+      "x-stainless-override-schema",
+    );
+    expect(status.content["application/json"].schema.discriminator?.mapping).toStrictEqual({
+      failed: "#/components/schemas/XAccountConnectionAttemptFailed",
+      pending: "#/components/schemas/XAccountConnectionAttemptPending",
+      requires_email_code: "#/components/schemas/XAccountConnectionChallenge",
+      success: "#/components/schemas/XAccountConnectionAttemptSuccess",
+    });
     expect(connect["202"].content["application/json"].schema.$ref).toBe(
       "#/components/schemas/XAccountConnectionContinuation",
     );
@@ -184,21 +181,14 @@ describe("X account connection documentation contract", (): void => {
     ]);
   });
 
-  it("keeps every status section aligned with its OpenAPI variant", (): void => {
-    expect.assertions(4);
-
-    expect(responseFieldsForSection("200 Pending")).toStrictEqual(
-      schemaFields("XAccountConnectionAttemptPending"),
-    );
-    expect(responseFieldsForSection("200 Success")).toStrictEqual(
-      schemaFields("XAccountConnectionAttemptSuccess"),
-    );
-    expect(responseFieldsForSection("200 Failed")).toStrictEqual(
-      schemaFields("XAccountConnectionAttemptFailed"),
-    );
-    expect(responseFieldsForSection("200 Email code required")).toStrictEqual(
-      schemaFields("XAccountConnectionChallenge"),
-    );
+  it.each([
+    ["200 Pending", "XAccountConnectionAttemptPending"],
+    ["200 Success", "XAccountConnectionAttemptSuccess"],
+    ["200 Failed", "XAccountConnectionAttemptFailed"],
+    ["200 Email code required", "XAccountConnectionChallenge"],
+  ])("aligns %s fields with its OpenAPI variant", (title, schema): void => {
+    expect.assertions(1);
+    expect(responseFieldsForSection(title)).toStrictEqual(schemaFields(schema));
   });
 
   it("requires the TOTP secret for a durable connection", (): void => {

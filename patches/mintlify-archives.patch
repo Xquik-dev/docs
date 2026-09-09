@@ -1,0 +1,63 @@
+--- a/@mintlify/cli/bin/templates.js
++++ b/@mintlify/cli/bin/templates.js
+@@ -10,7 +10,7 @@
+ import { jsx as _jsx } from "react/jsx-runtime";
+ import { select } from '@inquirer/prompts';
+ import { addLog, SpinnerLog, removeLastLog } from '@mintlify/previewing';
+-import AdmZip from 'adm-zip';
++import decompress from 'adm-zip';
+ import fse from 'fs-extra';
+ import path from 'path';
+ const TEMPLATES_REPO_OWNER = 'mintlify';
+@@ -95,8 +95,7 @@
+             }
+             addLog(_jsx(SpinnerLog, { message: "extracting template..." }));
+             try {
+-                const zip = new AdmZip(zipPath);
+-                zip.extractAllTo(extractDir, true);
++                yield decompress(zipPath, extractDir);
+             }
+             finally {
+                 removeLastLog();
+--- a/@mintlify/cli/bin/init.js
++++ b/@mintlify/cli/bin/init.js
+@@ -11,7 +11,7 @@
+ import { select, input } from '@inquirer/prompts';
+ import { addLogs, addLog, SpinnerLog, removeLastLog } from '@mintlify/previewing';
+ import { docsConfigSchema, validatePathWithinCwd } from '@mintlify/validation';
+-import AdmZip from 'adm-zip';
++import decompress from 'adm-zip';
+ import fse from 'fs-extra';
+ import { Box, Text } from 'ink';
+ import { isAI } from './helpers.js';
+@@ -163,7 +163,7 @@
+     yield fse.writeFile(installDir + '/starter.zip', Buffer.from(buffer));
+     removeLastLog();
+     addLog(_jsx(SpinnerLog, { message: "extracting..." }));
+-    new AdmZip(installDir + '/starter.zip').extractAllTo(installDir, true);
++    yield decompress(installDir + '/starter.zip', installDir);
+     removeLastLog();
+     yield fse.copy(installDir + '/starter-main', installDir, {
+         overwrite: true,
+--- a/@mintlify/previewing/dist/local-preview/export.js
++++ b/@mintlify/previewing/dist/local-preview/export.js
+@@ -1,7 +1,7 @@
+ import { jsx as _jsx } from "react/jsx-runtime";
+ import { getAllPathsInDecoratedNav, getAllPathsInDocsNav } from '@mintlify/common';
+ import { prebuild } from '@mintlify/prebuild';
+-import AdmZip from 'adm-zip';
++import { zip } from 'zip-a-folder';
+ import express from 'express';
+ import fse, { pathExists } from 'fs-extra';
+ import { createServer } from 'http';
+@@ -180,9 +180,7 @@
+         addLog(_jsx(SpinnerLog, { message: "collecting static assets..." }));
+         await bundleStaticAssets(exportDir, groups);
+         addLog(_jsx(SpinnerLog, { message: "creating zip archive..." }));
+-        const zip = new AdmZip();
+-        zip.addLocalFolder(exportDir);
+-        zip.writeZip(outputPath);
++        await zip(exportDir, outputPath);
+         clearLogs();
+         addLog(_jsx(SuccessLog, { message: `exported to ${outputPath}` }));
+     }
